@@ -1,6 +1,6 @@
 import Foundation
 
-/// Sends feedback to glide-trackball.netlify.app's /api/feedback (the same
+/// Sends feedback to glideball.netlify.app's /api/feedback (the same
 /// protocol as CedarLogic's): the report as JSON first, then each attachment
 /// in pieces, then "that's all" — which is when the developer hears of it.
 ///
@@ -10,7 +10,7 @@ import Foundation
 ///
 /// Foundation only, so it can be compiled on its own against a mock server.
 struct FeedbackClient {
-    static let productionServer = URL(string: "https://glide-trackball.netlify.app")!
+    static let productionServer = URL(string: "https://glideball.netlify.app")!
     /// Not a secret (it ships in the app); it keeps out what just wanders by.
     static let appKey = "TKsnHSb_TNX9SlHJtd9s59z3"
     /// Development: `defaults write com.leviholliday.glide GlideFeedbackServer http://127.0.0.1:8765`

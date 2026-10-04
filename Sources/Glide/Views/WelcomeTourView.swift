@@ -485,7 +485,7 @@ struct WelcomeTourView: View {
                     Label("Send Feedback…", systemImage: "paperplane").padding(.horizontal, 4)
                 }
                 Button {
-                    NSWorkspace.shared.open(URL(string: "https://glide-trackball.netlify.app")!)
+                    NSWorkspace.shared.open(URL(string: "https://glideball.netlify.app")!)
                 } label: {
                     Label("Glide Website", systemImage: "safari").padding(.horizontal, 4)
                 }

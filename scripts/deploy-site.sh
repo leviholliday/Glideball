@@ -1,5 +1,5 @@
 #!/bin/zsh
-# Deploys website/ (pages + feedback functions) to glide-trackball.netlify.app
+# Deploys website/ (pages + feedback functions) to glideball.netlify.app
 # from a clean copy: only files git tracks (or would track), plus a fresh
 # `npm ci` for the functions — so local test data, lockfiles and node_modules
 # junk never reach the live site.

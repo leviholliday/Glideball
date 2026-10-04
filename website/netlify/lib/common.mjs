@@ -122,7 +122,7 @@ const NTFY_TAGS = { low: "speech_balloon", normal: "speech_balloon", high: "warn
 export async function notify(item) {
   const topic = env("NTFY_TOPIC");
   if (!topic) return;
-  const site = env("URL") || "https://glide-trackball.netlify.app";
+  const site = env("URL") || "https://glideball.netlify.app";
   const priority = item.priority[0].toUpperCase() + item.priority.slice(1);
   const lost = (item.files ?? []).filter((f) => !f.done).length;
   const version = [item.app?.version, item.app?.build ? `(build ${item.app.build})` : ""].filter(Boolean).join(" ");

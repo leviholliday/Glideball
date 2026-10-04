@@ -13,7 +13,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-NETLIFY_SITE="749c72a7-7049-463e-8555-48263ed392ec"   # glide-trackball.netlify.app
+NETLIFY_SITE="749c72a7-7049-463e-8555-48263ed392ec"   # glideball.netlify.app
 
 usage() { print -u2 "usage: scripts/ship.sh <version> \"<release notes>\" [--beta]"; exit 64; }
 
@@ -70,5 +70,5 @@ if (( BETA )); then
 else
   print "\n✓ Glide $VERSION is out:"
   print "  Release:  https://github.com/leviholliday/glide/releases/tag/v${VERSION#v}"
-  print "  Website:  https://glide-trackball.netlify.app"
+  print "  Website:  https://glideball.netlify.app"
 fi

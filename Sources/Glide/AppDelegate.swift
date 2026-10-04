@@ -83,7 +83,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     @objc private func openWebsite(_ sender: Any?) {
-        NSWorkspace.shared.open(URL(string: "https://glide-trackball.netlify.app")!)
+        NSWorkspace.shared.open(URL(string: "https://glideball.netlify.app")!)
     }
 
     @objc private func exportSettings() { showWindow(); AppModel.shared.exportSettings() }
