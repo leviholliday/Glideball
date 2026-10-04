@@ -1,0 +1,102 @@
+{
+  "config" : {
+    "appProfiles" : [
+      {
+        "bundleID" : "com.apple.Safari",
+        "name" : "Safari",
+        "trackingSpeed" : 9
+      }
+    ],
+    "ballScrollSpeed" : 1,
+    "buttons" : {
+      "1" : {
+        "modifiedClick" : {
+          "button" : 0,
+          "modifiers" : 262144
+        }
+      },
+      "2" : {
+        "shortcut" : {
+          "_0" : {
+            "keyCode" : 123,
+            "keyName" : "←",
+            "modifiers" : 262144
+          }
+        }
+      },
+      "3" : {
+        "holdShortcut" : {
+          "_0" : {
+            "keyCode" : 49,
+            "keyName" : "Space",
+            "modifiers" : 262144
+          }
+        }
+      }
+    },
+    "chords" : [
+      {
+        "action" : {
+          "holdShortcut" : {
+            "_0" : {
+              "keyCode" : 49,
+              "keyName" : "Space",
+              "modifiers" : 262144
+            }
+          }
+        },
+        "buttons" : [
+          0,
+          2,
+          3
+        ],
+        "id" : "39EF141B-073D-4688-9E19-AA686010B27D"
+      },
+      {
+        "action" : {
+          "dragLock" : {
+
+          }
+        },
+        "buttons" : [
+          2,
+          3
+        ],
+        "id" : "9F65F335-69E3-40D3-9356-55CF4C36E054"
+      }
+    ],
+    "enabled" : true,
+    "flyAcceleration" : 0.5,
+    "flyDistance" : 4,
+    "flyGlide" : 0.35,
+    "globalShortcuts" : {
+      "ballScroll" : null,
+      "dragLock" : null,
+      "pause" : {
+        "keyCode" : 5,
+        "keyName" : "G",
+        "modifiers" : 1835008
+      },
+      "precision" : {
+        "keyCode" : 35,
+        "keyName" : "P",
+        "modifiers" : 786432
+      }
+    },
+    "nativeScrollSpeed" : 0.5,
+    "precisionSpeed" : 1,
+    "reverseScroll" : false,
+    "scrollAcceleration" : 0.5,
+    "scrollDistance" : 14,
+    "scrollMode" : "flywheel",
+    "scrollSmoothness" : 0.4,
+    "shiftScrollsHorizontally" : true,
+    "smoothScrolling" : true,
+    "throwAmount" : 0.4,
+    "throwEnabled" : true,
+    "trackingSpeed" : 12
+  },
+  "exportedAt" : "2026-10-04T22:47:33Z",
+  "exportedFrom" : "Test Mac",
+  "version" : 1
+}
