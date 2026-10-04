@@ -46,7 +46,8 @@ final class SettingsSync {
             && FileManager.default.isWritableFile(atPath: root)
     }
 
-    static let unavailableMessage = "Turn on iCloud Drive in System Settings → Apple Account → iCloud"
+    static let unavailableMessage = String(localized: "Turn on iCloud Drive in System Settings → Apple Account → iCloud",
+                                           comment: "Use the names System Settings shows in this language")
 
     private enum Keys {
         static let enabled = "GlideSyncEnabled"
@@ -238,7 +239,7 @@ final class SettingsSync {
                 try Self.write(Self.encoder.encode(file), to: settingsURL)
             } catch {
                 DispatchQueue.main.async { [self] in
-                    setStatus(.error("Couldn’t save settings to iCloud Drive: \(error.localizedDescription)"))
+                    setStatus(.error(String(localized: "Couldn’t save settings to iCloud Drive: \(error.localizedDescription)")))
                 }
                 return
             }
@@ -325,7 +326,7 @@ final class SettingsSync {
             case .data(let contents): data = contents
             }
         } catch {
-            return .failed("Couldn’t read settings from iCloud Drive: \(error.localizedDescription)")
+            return .failed(String(localized: "Couldn’t read settings from iCloud Drive: \(error.localizedDescription)"))
         }
         do {
             let file = try Self.decoder.decode(SharedFile.self, from: data)
@@ -334,8 +335,7 @@ final class SettingsSync {
         } catch {
             guard (try? JSONSerialization.jsonObject(with: data)) != nil else { return .corrupt }
             // JSON we can't understand most likely came from a newer Glide: leave it be.
-            return .failed("Settings in iCloud Drive were saved by a newer version of Glide. "
-                + "Update Glide on this Mac to keep syncing.")
+            return .failed(String(localized: "Settings in iCloud Drive were saved by a newer version of Glide. Update Glide on this Mac to keep syncing."))
         }
     }
 

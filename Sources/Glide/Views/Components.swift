@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - Glass card
 
 struct GlassCard<Content: View>: View {
-    var title: String? = nil
+    var title: LocalizedStringKey? = nil
     var symbol: String? = nil
     var tint: Color? = nil
     @ViewBuilder var content: Content
@@ -106,14 +106,14 @@ extension View {
 // MARK: - Slider row
 
 struct TuningSlider: View {
-    let title: String
+    let title: LocalizedStringKey
     let symbol: String
     @Binding var value: Double
     let range: ClosedRange<Double>
     var step: Double? = nil
     let format: (Double) -> String
-    var lowLabel: String? = nil
-    var highLabel: String? = nil
+    var lowLabel: LocalizedStringKey? = nil
+    var highLabel: LocalizedStringKey? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -139,9 +139,9 @@ struct TuningSlider: View {
             .controlSize(.large)
             if lowLabel != nil || highLabel != nil {
                 HStack {
-                    Text(lowLabel ?? "")
+                    if let lowLabel { Text(lowLabel) }
                     Spacer()
-                    Text(highLabel ?? "")
+                    if let highLabel { Text(highLabel) }
                 }
                 .font(.system(size: 11))
                 .foregroundStyle(.tertiary)
@@ -151,8 +151,8 @@ struct TuningSlider: View {
 }
 
 struct ToggleRow: View {
-    let title: String
-    let subtitle: String?
+    let title: LocalizedStringKey
+    let subtitle: LocalizedStringKey?
     let symbol: String
     @Binding var isOn: Bool
 
@@ -172,6 +172,13 @@ struct ToggleRow: View {
         }
         .toggleStyle(.switch)
     }
+}
+
+extension LocalizedStringKey {
+    /// Text that's already localized (or never is: names, shortcuts), for a
+    /// view that takes a `LocalizedStringKey`. Its key is just "%@", which no
+    /// table defines, so it shows as is.
+    static func verbatim(_ text: String) -> LocalizedStringKey { "\(text)" }
 }
 
 // MARK: - Background
@@ -216,7 +223,7 @@ struct GlideBackground: View {
 // MARK: - Status pill
 
 struct StatusPill: View {
-    let text: String
+    let text: LocalizedStringKey
     let color: Color
 
     var body: some View {
@@ -235,7 +242,7 @@ struct StatusPill: View {
 
 /// A mode that's on right now (Precision, Drag lock…), shown in the header.
 struct ModePill: View {
-    let text: String
+    let text: LocalizedStringKey
     let symbol: String
     let tint: Color
 
@@ -274,17 +281,17 @@ struct PointerPresetRow: View {
     @Binding var speed: Double
 
     private struct Preset: Identifiable {
-        let name: String
+        let name: LocalizedStringKey
         let symbol: String
         let speed: Double
-        var id: String { name }
+        var id: String { symbol }
     }
 
     private let presets: [Preset] = [
-        .init(name: "Precise", symbol: "scope", speed: 1.5),
-        .init(name: "macOS", symbol: "applelogo", speed: 3),
-        .init(name: "Fast", symbol: "hare", speed: 5),
-        .init(name: "Turbo", symbol: "bolt", speed: 7.5),
+        .init(name: LocalizedStringKey("Precise"), symbol: "scope", speed: 1.5),
+        .init(name: LocalizedStringKey("macOS"), symbol: "applelogo", speed: 3),
+        .init(name: LocalizedStringKey("Fast"), symbol: "hare", speed: 5),
+        .init(name: LocalizedStringKey("Turbo"), symbol: "bolt", speed: 7.5),
     ]
 
     var body: some View {

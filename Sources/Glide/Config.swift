@@ -57,42 +57,44 @@ enum ButtonAction: Codable, Hashable {
     case dragLock          // press: left button goes down and stays; press again (or click) lets go
 
     struct Preset: Identifiable {
+        /// Shown in menus (localized).
         let title: String
         let symbol: String
         let action: ButtonAction
         var id: String { title }
     }
 
+    // Titles are display text only — what's saved is the action itself.
     static let presets: [Preset] = [
-        .init(title: "Default", symbol: "arrow.uturn.backward", action: .system),
-        .init(title: "Left click", symbol: "cursorarrow.click", action: .leftClick),
-        .init(title: "Right click", symbol: "contextualmenu.and.cursorarrow", action: .rightClick),
-        .init(title: "Middle click", symbol: "circle.circle", action: .middleClick),
-        .init(title: "Control-click", symbol: "control", action: .modifiedClick(button: 0, modifiers: CGEventFlags.maskControl.rawValue)),
-        .init(title: "Control-right-click", symbol: "control", action: .modifiedClick(button: 1, modifiers: CGEventFlags.maskControl.rawValue)),
-        .init(title: "Command-click", symbol: "command", action: .modifiedClick(button: 0, modifiers: CGEventFlags.maskCommand.rawValue)),
-        .init(title: "Shift-click", symbol: "shift", action: .modifiedClick(button: 0, modifiers: CGEventFlags.maskShift.rawValue)),
-        .init(title: "Option-click", symbol: "option", action: .modifiedClick(button: 0, modifiers: CGEventFlags.maskAlternate.rawValue)),
-        .init(title: "Back", symbol: "chevron.backward", action: .back),
-        .init(title: "Forward", symbol: "chevron.forward", action: .forward),
-        .init(title: "Previous Space", symbol: "rectangle.lefthalf.inset.filled.arrow.left", action: .shortcut(.previousSpace)),
-        .init(title: "Next Space", symbol: "rectangle.righthalf.inset.filled.arrow.right", action: .shortcut(.nextSpace)),
-        .init(title: "Mission Control", symbol: "rectangle.3.group", action: .shortcut(.missionControl)),
-        .init(title: "App Exposé", symbol: "macwindow.on.rectangle", action: .shortcut(.appExpose)),
-        .init(title: "Browser Back", symbol: "arrow.backward.circle", action: .shortcut(.browserBack)),
-        .init(title: "Browser Forward", symbol: "arrow.forward.circle", action: .shortcut(.browserForward)),
-        .init(title: "Spotlight", symbol: "magnifyingglass", action: .shortcut(.spotlight)),
+        .init(title: String(localized: "Default", comment: "Button action: what the button normally does"), symbol: "arrow.uturn.backward", action: .system),
+        .init(title: String(localized: "Left click"), symbol: "cursorarrow.click", action: .leftClick),
+        .init(title: String(localized: "Right click"), symbol: "contextualmenu.and.cursorarrow", action: .rightClick),
+        .init(title: String(localized: "Middle click"), symbol: "circle.circle", action: .middleClick),
+        .init(title: String(localized: "Control-click"), symbol: "control", action: .modifiedClick(button: 0, modifiers: CGEventFlags.maskControl.rawValue)),
+        .init(title: String(localized: "Control-right-click"), symbol: "control", action: .modifiedClick(button: 1, modifiers: CGEventFlags.maskControl.rawValue)),
+        .init(title: String(localized: "Command-click"), symbol: "command", action: .modifiedClick(button: 0, modifiers: CGEventFlags.maskCommand.rawValue)),
+        .init(title: String(localized: "Shift-click"), symbol: "shift", action: .modifiedClick(button: 0, modifiers: CGEventFlags.maskShift.rawValue)),
+        .init(title: String(localized: "Option-click"), symbol: "option", action: .modifiedClick(button: 0, modifiers: CGEventFlags.maskAlternate.rawValue)),
+        .init(title: String(localized: "Back", comment: "Browser back: what the top-right button does by default"), symbol: "chevron.backward", action: .back),
+        .init(title: String(localized: "Forward", comment: "Browser forward"), symbol: "chevron.forward", action: .forward),
+        .init(title: String(localized: "Previous Space", comment: "Mission Control: switch to the Space on the left"), symbol: "rectangle.lefthalf.inset.filled.arrow.left", action: .shortcut(.previousSpace)),
+        .init(title: String(localized: "Next Space", comment: "Mission Control: switch to the Space on the right"), symbol: "rectangle.righthalf.inset.filled.arrow.right", action: .shortcut(.nextSpace)),
+        .init(title: String(localized: "Mission Control"), symbol: "rectangle.3.group", action: .shortcut(.missionControl)),
+        .init(title: String(localized: "App Exposé"), symbol: "macwindow.on.rectangle", action: .shortcut(.appExpose)),
+        .init(title: String(localized: "Browser Back"), symbol: "arrow.backward.circle", action: .shortcut(.browserBack)),
+        .init(title: String(localized: "Browser Forward"), symbol: "arrow.forward.circle", action: .shortcut(.browserForward)),
+        .init(title: String(localized: "Spotlight"), symbol: "magnifyingglass", action: .shortcut(.spotlight)),
         .init(title: "Wispr Flow", symbol: "waveform", action: .holdShortcut(.wisprFlow)),
-        .init(title: "Copy", symbol: "doc.on.doc", action: .shortcut(.copy)),
-        .init(title: "Paste", symbol: "doc.on.clipboard", action: .shortcut(.paste)),
-        .init(title: "Undo", symbol: "arrow.uturn.backward.circle", action: .shortcut(.undo)),
-        .init(title: "New Tab", symbol: "plus.square.on.square", action: .shortcut(.newTab)),
-        .init(title: "Close Tab", symbol: "xmark.square", action: .shortcut(.closeTab)),
-        .init(title: "Precision (hold)", symbol: "scope", action: .precisionHold),
-        .init(title: "Precision (toggle)", symbol: "dot.circle.viewfinder", action: .precisionToggle),
-        .init(title: "Scroll with ball (hold)", symbol: "arrow.up.and.down.and.arrow.left.and.right", action: .ballScrollHold),
-        .init(title: "Drag lock", symbol: "hand.draw", action: .dragLock),
-        .init(title: "Do nothing", symbol: "nosign", action: .disabled),
+        .init(title: String(localized: "Copy"), symbol: "doc.on.doc", action: .shortcut(.copy)),
+        .init(title: String(localized: "Paste"), symbol: "doc.on.clipboard", action: .shortcut(.paste)),
+        .init(title: String(localized: "Undo"), symbol: "arrow.uturn.backward.circle", action: .shortcut(.undo)),
+        .init(title: String(localized: "New Tab"), symbol: "plus.square.on.square", action: .shortcut(.newTab)),
+        .init(title: String(localized: "Close Tab"), symbol: "xmark.square", action: .shortcut(.closeTab)),
+        .init(title: String(localized: "Precision (hold)"), symbol: "scope", action: .precisionHold),
+        .init(title: String(localized: "Precision (toggle)"), symbol: "dot.circle.viewfinder", action: .precisionToggle),
+        .init(title: String(localized: "Scroll with ball (hold)"), symbol: "arrow.up.and.down.and.arrow.left.and.right", action: .ballScrollHold),
+        .init(title: String(localized: "Drag lock"), symbol: "hand.draw", action: .dragLock),
+        .init(title: String(localized: "Do nothing"), symbol: "nosign", action: .disabled),
     ]
 
     var title: String {
@@ -101,7 +103,7 @@ enum ButtonAction: Codable, Hashable {
         case .shortcut(let s), .holdShortcut(let s): return s.display
         default: break
         }
-        return "Custom"
+        return String(localized: "Custom", comment: "Button action that isn't one of the presets")
     }
 
     var symbol: String {
@@ -157,19 +159,19 @@ struct GlobalShortcuts: Codable, Equatable {
 
         var title: String {
             switch self {
-            case .pause: "Pause / resume Glide"
-            case .precision: "Precision"
-            case .ballScroll: "Scroll with ball"
-            case .dragLock: "Drag lock"
+            case .pause: String(localized: "Pause / resume Glide")
+            case .precision: String(localized: "Precision", comment: "Mode that slows the pointer for fine work")
+            case .ballScroll: String(localized: "Scroll with ball", comment: "Mode: rolling the ball scrolls instead of moving the pointer")
+            case .dragLock: String(localized: "Drag lock", comment: "Mode: the left button stays held down so you can drag without holding it")
             }
         }
 
         var subtitle: String {
             switch self {
-            case .pause: "Your escape hatch: Glide steps aside until you press it again."
-            case .precision: "Slows the pointer for fine work until you press it again."
-            case .ballScroll: "Rolling the ball scrolls and the pointer stays put, until you press it again."
-            case .dragLock: "Grabs what's under the pointer once you let go of the keys. Press again, or click, to drop."
+            case .pause: String(localized: "Your escape hatch: Glide steps aside until you press it again.")
+            case .precision: String(localized: "Slows the pointer for fine work until you press it again.")
+            case .ballScroll: String(localized: "Rolling the ball scrolls and the pointer stays put, until you press it again.")
+            case .dragLock: String(localized: "Grabs what's under the pointer once you let go of the keys. Press again, or click, to drop.")
             }
         }
 
@@ -212,10 +214,11 @@ struct GlobalShortcuts: Codable, Equatable {
     /// Why `shortcut` can't be used for `action`, or nil if it can.
     func refusal(for shortcut: KeyShortcut, as action: Action) -> String? {
         if shortcut.flags.intersection([.maskCommand, .maskControl, .maskAlternate]).isEmpty {
-            return "Include ⌘, ⌃, or ⌥ — \(shortcut.display) on its own would stop working everywhere else."
+            return String(localized: "Include ⌘, ⌃, or ⌥ — \(shortcut.display) on its own would stop working everywhere else.")
         }
         if let other = Action.allCases.first(where: { $0 != action && self[$0]?.sameKeys(as: shortcut) == true }) {
-            return "\(shortcut.display) is already the shortcut for \(other.title)."
+            return String(localized: "\(shortcut.display) is already the shortcut for \(other.title).",
+                          comment: "First %@ is a keyboard shortcut like ⌃⌥⌘G; second is a mode name like “Precision”")
         }
         return nil
     }
@@ -379,9 +382,19 @@ enum GlideSettingsFileError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .unsupportedVersion(let version):
-            "This settings file uses unsupported version \(version)."
+            String(localized: "This settings file uses unsupported version \(version).")
         }
     }
+}
+
+// Numbers on screen, in the reader's own number format.
+extension Double {
+    /// Like "%.2g": "4.5", "12", "0.25".
+    var twoDigits: String { formatted(.number.precision(.significantDigits(1...2))) }
+    /// 0.5 → "50%" ("50 %" in French and German), truncated like `Int(x * 100)`.
+    var wholePercent: String { formatted(.percent.precision(.fractionLength(0)).rounded(rule: .towardZero)) }
+    /// 1.25 → "1.3"
+    func decimals(_ digits: Int) -> String { formatted(.number.precision(.fractionLength(digits))) }
 }
 
 /// A one-line-per-area description of a setup, for export and import previews.
@@ -396,16 +409,19 @@ extension GlideConfig {
     var summary: [SettingsSummaryRow] {
         let remapped = buttons.values.filter { $0 != .system }.count
         let scroll: String = switch scrollMode {
-        case .native: String(format: "Native · speed %.2g", nativeScrollSpeed)
-        case .flywheel: "Flywheel · \(Int(flyDistance)) pt, \(Int(flyAcceleration * 100))% power"
-        case .follow: "Follow · \(Int(scrollDistance)) pt per tick"
+        case .native: String(localized: "Native · speed \(nativeScrollSpeed.twoDigits)")
+        case .flywheel: String(localized: "Flywheel · \(Int(flyDistance)) pt, \(flyAcceleration.wholePercent) power")
+        case .follow: String(localized: "Follow · \(Int(scrollDistance)) pt per tick")
         }
         return [
-            .init(symbol: "cursorarrow.motionlines", title: "Pointer speed", value: String(format: "%g", trackingSpeed)),
-            .init(symbol: "arrow.up.and.down.circle", title: "Scrolling", value: scroll),
-            .init(symbol: "button.programmable", title: "Buttons", value: remapped == 0 ? "Default" : "\(remapped) remapped"),
-            .init(symbol: "square.on.square", title: "Combos", value: chords.isEmpty ? "None" : "\(chords.count)"),
-            .init(symbol: "square.grid.2x2", title: "App setups", value: appProfilesSummary),
+            .init(symbol: "cursorarrow.motionlines", title: String(localized: "Pointer speed"), value: trackingSpeed.formatted()),
+            .init(symbol: "arrow.up.and.down.circle", title: String(localized: "Scrolling"), value: scroll),
+            .init(symbol: "button.programmable", title: String(localized: "Buttons"),
+                  value: remapped == 0 ? String(localized: "Default", comment: "Button action: what the button normally does")
+                                       : String(localized: "\(remapped) remapped", comment: "Number of buttons that do something other than normal")),
+            .init(symbol: "square.on.square", title: String(localized: "Combos"),
+                  value: chords.isEmpty ? String(localized: "None", comment: "No combos / no app setups") : chords.count.formatted()),
+            .init(symbol: "square.grid.2x2", title: String(localized: "App setups"), value: appProfilesSummary),
         ]
     }
 }

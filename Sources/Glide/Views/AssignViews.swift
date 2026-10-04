@@ -50,7 +50,7 @@ private struct ButtonChips: View {
     var body: some View {
         HStack(spacing: 6) {
             ForEach(Array(buttons.enumerated()), id: \.offset) { i, b in
-                if i > 0 { Text("+").font(.system(size: 14, weight: .bold)).foregroundStyle(.secondary) }
+                if i > 0 { Text(verbatim: "+").font(.system(size: 14, weight: .bold)).foregroundStyle(.secondary) }
                 Text(AppModel.buttonName(b))
                     .font(.system(size: 12, weight: .semibold))
                     .padding(.horizontal, 10)

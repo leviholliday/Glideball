@@ -4,12 +4,9 @@ import SwiftUI
 struct ButtonsView: View {
     @Bindable var model: AppModel
 
-    private let buttons: [(index: Int, name: String, normally: String)] = [
-        (0, "Bottom left", "Left click"),
-        (1, "Bottom right", "Right click"),
-        (2, "Top left", "Middle click"),
-        (3, "Top right", "Back"),
-    ]
+    private let buttons: [(index: Int, name: String, normally: String)] = (0..<4).map {
+        ($0, AppModel.buttonName($0), AppModel.buttonDefault($0))
+    }
 
     var body: some View {
         VStack(spacing: 18) {
@@ -58,7 +55,7 @@ struct ButtonRow: View {
                 Circle()
                     .fill(isPressed ? Color.cyan : Color.white.opacity(0.12))
                     .shadow(color: isPressed ? .cyan : .clear, radius: 10)
-                Text("\(index + 1)")
+                Text(verbatim: "\(index + 1)")
                     .font(.system(size: 14, weight: .bold, design: .rounded))
                     .foregroundStyle(isPressed ? .black : .primary)
             }

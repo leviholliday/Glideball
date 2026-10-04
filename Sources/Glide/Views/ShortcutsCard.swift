@@ -107,17 +107,18 @@ struct KeyboardShortcutsCard: View {
         guard recording != action else { return nil }
         guard let s = shortcuts[action] else {
             return action == .pause
-                ? Note(text: "No pause shortcut. You can still pause Glide from its menu-bar icon or the switch at the top of this window.")
+                ? Note(text: String(localized: "No pause shortcut. You can still pause Glide from its menu-bar icon or the switch at the top of this window."))
                 : nil
         }
         if GlobalHotKeys.shared.failed.contains(action) {
-            return Note(text: "Couldn't turn on \(s.display) — another app already uses it. Choose a different shortcut.")
+            return Note(text: String(localized: "Couldn't turn on \(s.display) — another app already uses it. Choose a different shortcut."))
         }
         if GlobalHotKeys.systemUses(s) {
-            return Note(text: "macOS uses \(s.display) for one of its own shortcuts (System Settings › Keyboard › Keyboard Shortcuts), so it may never reach Glide.")
+            return Note(text: String(localized: "macOS uses \(s.display) for one of its own shortcuts (System Settings › Keyboard › Keyboard Shortcuts), so it may never reach Glide.",
+                                     comment: "Use the names System Settings shows in this language"))
         }
         if s.flags.intersection([.maskControl, .maskAlternate]).isEmpty {
-            return Note(text: "Apps use ⌘ shortcuts like \(s.display) too — while it's set, Glide takes it from every app.", warning: false)
+            return Note(text: String(localized: "Apps use ⌘ shortcuts like \(s.display) too — while it's set, Glide takes it from every app."), warning: false)
         }
         return nil
     }

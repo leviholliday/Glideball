@@ -137,7 +137,8 @@ final class UpdateChecker {
             if let file, (response as? HTTPURLResponse)?.statusCode == 200 {
                 result = Result { try Self.prepare(zip: file, expectedVersion: update.version) }
             } else {
-                result = .failure(UpdateError("The download didn’t finish\(error.map { ": \($0.localizedDescription)" } ?? ".")"))
+                result = .failure(UpdateError(error.map { String(localized: "The download didn’t finish: \($0.localizedDescription)") }
+                                              ?? String(localized: "The download didn’t finish.")))
             }
             DispatchQueue.main.async {
                 self.progressObservation = nil
@@ -172,13 +173,13 @@ final class UpdateChecker {
         unzip.arguments = ["-x", "-k", zip.path, work.path]
         try unzip.run()
         unzip.waitUntilExit()
-        guard unzip.terminationStatus == 0 else { throw UpdateError("Couldn’t unpack the update.") }
+        guard unzip.terminationStatus == 0 else { throw UpdateError(String(localized: "Couldn’t unpack the update.")) }
 
         let app = work.appendingPathComponent("Glide.app")
         guard let info = Bundle(url: app)?.infoDictionary,
               info["CFBundleIdentifier"] as? String == Bundle.main.bundleIdentifier,
               info["CFBundleShortVersionString"] as? String == expectedVersion else {
-            throw UpdateError("The download isn’t the expected Glide \(expectedVersion).")
+            throw UpdateError(String(localized: "The download isn’t the expected Glide \(expectedVersion)."))
         }
         try verifySignature(of: app)
         return app
@@ -193,12 +194,12 @@ final class UpdateChecker {
         guard SecCodeCopySelf([], &me) == errSecSuccess, let me,
               SecCodeCopyStaticCode(me, [], &staticMe) == errSecSuccess, let staticMe,
               SecCodeCopyDesignatedRequirement(staticMe, [], &requirement) == errSecSuccess, let requirement else {
-            throw UpdateError("Couldn’t read Glide’s own signature to compare against.")
+            throw UpdateError(String(localized: "Couldn’t read Glide’s own signature to compare against."))
         }
         var candidate: SecStaticCode?
         guard SecStaticCodeCreateWithPath(app as CFURL, [], &candidate) == errSecSuccess, let candidate,
               SecStaticCodeCheckValidity(candidate, SecCSFlags(rawValue: kSecCSCheckAllArchitectures), requirement) == errSecSuccess else {
-            throw UpdateError("The update isn’t signed by Glide’s developer, so it wasn’t installed.")
+            throw UpdateError(String(localized: "The update isn’t signed by Glide’s developer, so it wasn’t installed."))
         }
     }
 
@@ -221,7 +222,7 @@ final class UpdateChecker {
         do {
             try helper.run()
         } catch {
-            installState = .failed("Couldn’t start the installer: \(error.localizedDescription)")
+            installState = .failed(String(localized: "Couldn’t start the installer: \(error.localizedDescription)"))
             return
         }
         // Glide normally refuses to quit unless asked from its own menu; the

@@ -192,7 +192,7 @@ struct MakeItYoursCard: View {
                                 .foregroundStyle(LinearGradient(colors: [.cyan, .pink], startPoint: .top, endPoint: .bottom))
                                 .symbolEffect(.bounce, value: allDone)
                         } else {
-                            Text("\(done.count)")
+                            Text(verbatim: "\(done.count)")
                                 .font(.system(size: 26, weight: .bold, design: .rounded))
                                 .contentTransition(.numericText(value: Double(done.count)))
                             Text("of \(ChecklistItem.allCases.count)")
@@ -262,12 +262,14 @@ struct MakeItYoursCard: View {
                     Text(item.title)
                         .font(.system(size: 13, weight: .medium))
                         .lineLimit(1)
+                        .minimumScaleFactor(0.85)
                         .strikethrough(isDone, color: .secondary)
                         .foregroundStyle(isDone ? .secondary : .primary)
                     Text(item.hint)
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
+                        .minimumScaleFactor(0.85)
                 }
                 Spacer(minLength: 4)
                 Image(systemName: "arrow.right")
@@ -286,7 +288,8 @@ struct MakeItYoursCard: View {
         .onHover { inside in
             withAnimation(.snappy(duration: 0.18)) { hovered = inside ? item : (hovered == item ? nil : hovered) }
         }
-        .help(isDone ? "Done — open to change it" : "Open the \(tab(for: item).rawValue) tab")
+        .help(isDone ? String(localized: "Done — open to change it")
+                     : String(localized: "Open the \(tab(for: item).title) tab", comment: "%@ is a tab name"))
     }
 
     private func tab(for item: ChecklistItem) -> GlideTab {
@@ -339,8 +342,9 @@ struct YourTrackballCard: View {
     }
 
     private var footnote: String {
-        guard let first = delight.firstDay ?? delight.ledger.started else { return "Counted on this Mac only" }
-        return "Since \(first.formatted(.dateTime.month(.abbreviated).day().year())) · on this Mac only"
+        guard let first = delight.firstDay ?? delight.ledger.started else { return String(localized: "Counted on this Mac only") }
+        return String(localized: "Since \(first.formatted(.dateTime.month(.abbreviated).day().year())) · on this Mac only",
+                      comment: "%@ is a date")
     }
 }
 
@@ -355,9 +359,11 @@ private struct LifetimeTile: View {
                 Image(systemName: metric.symbol)
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(metric.gradient)
-                Text(metric == .clicks ? "Lifetime clicks" : "Lifetime · \(metric.title.lowercased())")
+                Text(title)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
             Text(metric.format(value))
                 .font(.system(size: 26, weight: .bold, design: .rounded))
@@ -368,19 +374,29 @@ private struct LifetimeTile: View {
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassEffect(.regular, in: .rect(cornerRadius: 20))
     }
 
+    private var title: String {
+        switch metric {
+        case .clicks: String(localized: "Lifetime clicks")
+        case .scroll: String(localized: "Lifetime · scrolled")
+        case .ball: String(localized: "Lifetime · ball rolled")
+        }
+    }
+
     private var comparison: String {
         let value = delight.lifetime.value(metric)
         if metric == .clicks {
             let days = max(1, delight.historyDays + 1)
-            return days > 1 ? "About \(Int(value / Double(days)).formatted()) a day" : "Counting from today"
+            return days > 1 ? String(localized: "About \(Int(value / Double(days)).formatted()) a day", comment: "Clicks per day; %@ is a number")
+                            : String(localized: "Counting from today")
         }
-        return Landmarks.compare(value, metric: metric) ?? "Give it a spin"
+        return Landmarks.compare(value, metric: metric) ?? String(localized: "Give it a spin")
     }
 }
 
@@ -443,11 +459,19 @@ private struct WeekChart: View {
             .frame(height: 150)
             .animation(reduceMotion ? nil : .spring(response: 0.55, dampingFraction: 0.8), value: metric)
             .animation(reduceMotion ? nil : .spring(response: 0.7, dampingFraction: 0.75), value: grown)
-            .accessibilityLabel("Last seven days of \(metric.title.lowercased())")
+            .accessibilityLabel(accessibilityTitle)
         }
         .onAppear {
             // Bars grow in once each time Overview opens.
             if reduceMotion { grown = true } else { DispatchQueue.main.async { grown = true } }
+        }
+    }
+
+    private var accessibilityTitle: String {
+        switch metric {
+        case .clicks: String(localized: "Last seven days of clicks")
+        case .scroll: String(localized: "Last seven days of scrolling")
+        case .ball: String(localized: "Last seven days of ball rolling")
         }
     }
 }
@@ -462,9 +486,10 @@ private struct PersonalBests: View {
                 let best = max(delight.pastBest.value(m), delight.today.value(m))
                 let isToday = delight.today.value(m) > delight.pastBest.value(m) && delight.historyDays > 0
                 row(symbol: m.symbol, color: m.color,
-                    title: m == .clicks ? "Most clicks in a day" : m == .scroll ? "Most scrolled in a day" : "Most rolled in a day",
+                    title: m == .clicks ? String(localized: "Most clicks in a day")
+                        : m == .scroll ? String(localized: "Most scrolled in a day") : String(localized: "Most rolled in a day"),
                     value: best > 0 ? m.format(best) : "—",
-                    date: isToday ? "today" : delight.pastBestDay[m].map(short))
+                    date: isToday ? Self.today : delight.pastBestDay[m].map(short))
             }
             ForEach(RecordKind.allCases) { k in
                 let v = delight.ledger.record(k)
@@ -475,8 +500,10 @@ private struct PersonalBests: View {
         }
     }
 
+    private static let today = String(localized: "today", comment: "When a personal best was set; short (about 6 letters fit)")
+
     private func short(_ d: Date) -> String {
-        Calendar.current.isDateInToday(d) ? "today" : d.formatted(.dateTime.month(.abbreviated).day())
+        Calendar.current.isDateInToday(d) ? Self.today : d.formatted(.dateTime.month(.abbreviated).day())
     }
 
     private func row(symbol: String, color: Color, title: String, value: String, date: String?) -> some View {
@@ -485,7 +512,7 @@ private struct PersonalBests: View {
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(color)
                 .frame(width: 18)
-            Text(title).font(.system(size: 12)).lineLimit(1)
+            Text(title).font(.system(size: 12)).lineLimit(1).minimumScaleFactor(0.8)
             Spacer(minLength: 4)
             Text(value)
                 .font(.system(size: 12, weight: .semibold, design: .rounded))
@@ -494,7 +521,9 @@ private struct PersonalBests: View {
             if let date {
                 Text(date)
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(date == "today" ? AnyShapeStyle(.orange) : AnyShapeStyle(.tertiary))
+                    .foregroundStyle(date == Self.today ? AnyShapeStyle(.orange) : AnyShapeStyle(.tertiary))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
                     .frame(width: 44, alignment: .trailing)
             } else {
                 Color.clear.frame(width: 44, height: 1)
@@ -573,6 +602,7 @@ private struct BadgeView: View {
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(earned != nil ? .primary : .secondary)
                 .lineLimit(1)
+                .minimumScaleFactor(0.75)
             Text(caption)
                 .font(.system(size: 10, weight: .medium, design: .rounded))
                 .monospacedDigit()
@@ -581,14 +611,17 @@ private struct BadgeView: View {
         }
         .opacity(earned == nil && progress == nil ? 0.6 : 1)
         .onHover { h in withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) { hovering = h } }
-        .help(earned.map { "\(m.detail) — earned \($0.formatted(date: .abbreviated, time: .omitted))" } ?? "Goal: \(m.detail)")
+        .help(earned.map { String(localized: "\(m.detail) — earned \($0.formatted(date: .abbreviated, time: .omitted))",
+                                  comment: "Badge tooltip: what earns it, then the date") }
+              ?? String(localized: "Goal: \(m.detail)", comment: "Badge tooltip: what earns it"))
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(m.title). \(m.detail). \(earned != nil ? "Earned" : "Not yet earned")")
+        .accessibilityLabel(earned != nil ? String(localized: "\(m.title). \(m.detail). Earned", comment: "Badge name, then what earns it")
+                                          : String(localized: "\(m.title). \(m.detail). Not yet earned", comment: "Badge name, then what earns it"))
     }
 
     private var caption: String {
         if let earned { return earned.formatted(.dateTime.month(.abbreviated).day()) }
-        if let progress { return "\(Int(min(progress, 0.99) * 100))%" }
+        if let progress { return min(progress, 0.99).wholePercent }
         return m.metric == .clicks ? Int(m.threshold).formatted() : Tally.shortDistance(m.threshold)
     }
 

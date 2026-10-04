@@ -160,8 +160,23 @@ final class AppModel {
     }
 
     static func buttonName(_ b: Int) -> String {
-        ["Bottom left", "Bottom right", "Top left", "Top right"].indices.contains(b)
-            ? ["Bottom left", "Bottom right", "Top left", "Top right"][b] : "Button \(b + 1)"
+        switch b {
+        case 0: String(localized: "Bottom left", comment: "Trackball button position")
+        case 1: String(localized: "Bottom right", comment: "Trackball button position")
+        case 2: String(localized: "Top left", comment: "Trackball button position")
+        case 3: String(localized: "Top right", comment: "Trackball button position")
+        default: String(localized: "Button \(b + 1)")
+        }
+    }
+
+    /// What a button does without Glide.
+    static func buttonDefault(_ b: Int) -> String {
+        switch b {
+        case 0: String(localized: "Left click")
+        case 1: String(localized: "Right click")
+        case 2: String(localized: "Middle click")
+        default: String(localized: "Back", comment: "Browser back: what the top-right button does by default")
+        }
     }
 
     /// Kensington Expert Mouse sensor: ~400 counts per inch of ball travel.
@@ -352,7 +367,8 @@ final class AppModel {
     private static var defaultExportName: String {
         let f = DateFormatter()
         f.dateFormat = "MMM d, yyyy"
-        return "Glide Settings – \(f.string(from: Date())).\(GlideSettingsFile.fileExtension)"
+        return String(localized: "Glide Settings – \(f.string(from: Date()))", comment: "Exported file name; %@ is the date")
+            + ".\(GlideSettingsFile.fileExtension)"
     }
 
     func exportData() throws -> Data {
@@ -376,24 +392,24 @@ final class AppModel {
 
     func exportSettings() {
         let panel = NSSavePanel()
-        panel.title = "Export Glide Settings"
-        panel.message = "Save your Glide setup to a file you can back up or open on another Mac."
+        panel.title = String(localized: "Export Glide Settings")
+        panel.message = String(localized: "Save your Glide setup to a file you can back up or open on another Mac.")
         panel.nameFieldStringValue = Self.defaultExportName
         panel.allowedContentTypes = [Self.settingsType]
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
         do {
             try exportData().write(to: url, options: .atomic)
-            show(.init(symbol: "checkmark.circle.fill", text: "Saved “\(url.deletingPathExtension().lastPathComponent)”", action: .reveal(url)))
+            show(.init(symbol: "checkmark.circle.fill", text: String(localized: "Saved “\(url.deletingPathExtension().lastPathComponent)”"), action: .reveal(url)))
         } catch {
-            show(.init(symbol: "exclamationmark.triangle.fill", text: "Couldn’t export: \(error.localizedDescription)", isError: true))
+            show(.init(symbol: "exclamationmark.triangle.fill", text: String(localized: "Couldn’t export: \(error.localizedDescription)"), isError: true))
         }
     }
 
     func importSettings() {
         let panel = NSOpenPanel()
-        panel.title = "Import Glide Settings"
-        panel.message = "Choose a Glide settings file. You’ll see what’s in it before anything changes."
+        panel.title = String(localized: "Import Glide Settings")
+        panel.message = String(localized: "Choose a Glide settings file. You’ll see what’s in it before anything changes.")
         panel.allowedContentTypes = Self.settingsFileTypes
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
@@ -418,7 +434,7 @@ final class AppModel {
             requestedTab = .backup
         } catch {
             show(.init(symbol: "exclamationmark.triangle.fill",
-                       text: "That doesn’t look like a Glide settings file.", isError: true))
+                       text: String(localized: "That doesn’t look like a Glide settings file."), isError: true))
         }
     }
 
@@ -428,14 +444,14 @@ final class AppModel {
         configBeforeImport = config
         config = incoming
         pendingImport = nil
-        show(.init(symbol: "arrow.down.doc.fill", text: "Imported “\(pending.fileName)”", action: .undoImport))
+        show(.init(symbol: "arrow.down.doc.fill", text: String(localized: "Imported “\(pending.fileName)”"), action: .undoImport))
     }
 
     func undoImport() {
         guard let previous = configBeforeImport else { return }
         config = previous
         configBeforeImport = nil
-        show(.init(symbol: "arrow.uturn.backward.circle.fill", text: "Restored your previous settings"))
+        show(.init(symbol: "arrow.uturn.backward.circle.fill", text: String(localized: "Restored your previous settings")))
     }
 
     /// Takes settings synced from another Mac without echoing them back as a local change.

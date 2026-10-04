@@ -37,7 +37,8 @@ struct BackupView: View {
         let info = Bundle.main.infoDictionary
         let version = info?["CFBundleShortVersionString"] as? String ?? "?"
         let build = info?["CFBundleVersion"] as? String ?? "?"
-        return "Glide \(version) (\(build)) · Settings files end in .\(GlideSettingsFile.fileExtension) and open in Glide with a double-click."
+        return String(localized: "Glide \(version) (\(build)) · Settings files end in .\(GlideSettingsFile.fileExtension) and open in Glide with a double-click.",
+                      comment: "Glide 2.6 (9) · …end in .glide-settings…")
     }
 }
 
@@ -239,12 +240,13 @@ private struct ImportPreview: View {
     }
 
     private var origin: String {
-        var parts: [String] = []
-        if let date = pending.file.exportedAt {
-            parts.append("Exported " + date.formatted(date: .abbreviated, time: .shortened))
+        let date = pending.file.exportedAt?.formatted(date: .abbreviated, time: .shortened)
+        switch (date, pending.file.exportedFrom) {
+        case let (date?, from?): return String(localized: "Exported \(date) from \(from)", comment: "Date, then the Mac's name")
+        case let (date?, nil): return String(localized: "Exported \(date)")
+        case let (nil, from?): return String(localized: "Exported from \(from)", comment: "The Mac's name")
+        case (nil, nil): return String(localized: "Glide settings file")
         }
-        if let from = pending.file.exportedFrom { parts.append("from \(from)") }
-        return parts.isEmpty ? "Glide settings file" : parts.joined(separator: " ")
     }
 }
 
@@ -316,10 +318,11 @@ private struct SyncCard: View {
 
     private var statusText: String {
         switch sync.status {
-        case .off: "Off — settings stay on this Mac"
+        case .off: String(localized: "Off — settings stay on this Mac")
         case .unavailable(let why): why
-        case .syncing: "Syncing…"
-        case .upToDate(let date): "Up to date · " + date.formatted(.relative(presentation: .named))
+        case .syncing: String(localized: "Syncing…")
+        case .upToDate(let date): String(localized: "Up to date · \(date.formatted(.relative(presentation: .named)))",
+                                         comment: "%@ is a relative time like “5 minutes ago”")
         case .error(let message): message
         }
     }

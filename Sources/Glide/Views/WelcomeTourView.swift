@@ -18,12 +18,9 @@ struct WelcomeTourView: View {
     @FocusState private var focused: Bool
     @Environment(\.appearsActive) private var appearsActive
 
-    private static let buttons: [(index: Int, name: String, normally: String)] = [
-        (0, "Bottom left", "Left click"),
-        (1, "Bottom right", "Right click"),
-        (2, "Top left", "Middle click"),
-        (3, "Top right", "Back"),
-    ]
+    private static let buttons: [(index: Int, name: String, normally: String)] = (0..<4).map {
+        ($0, AppModel.buttonName($0), AppModel.buttonDefault($0))
+    }
 
     var body: some View {
         ZStack {
@@ -142,9 +139,9 @@ struct WelcomeTourView: View {
 
     private var nextTitle: String {
         switch step {
-        case .welcome: "Get Started"
-        case .done: "Start Using Glide"
-        default: "Continue"
+        case .welcome: String(localized: "Get Started")
+        case .done: String(localized: "Start Using Glide")
+        default: String(localized: "Continue")
         }
     }
 
@@ -190,7 +187,7 @@ struct WelcomeTourView: View {
         }
     }
 
-    private func header(_ symbol: String, _ title: String, _ subtitle: String) -> some View {
+    private func header(_ symbol: String, _ title: LocalizedStringKey, _ subtitle: LocalizedStringKey) -> some View {
         HStack(alignment: .top, spacing: 14) {
             Image(systemName: symbol)
                 .font(.system(size: 22, weight: .semibold))
@@ -239,7 +236,7 @@ struct WelcomeTourView: View {
         .frame(maxWidth: .infinity)
     }
 
-    private func feature(_ symbol: String, _ text: String) -> some View {
+    private func feature(_ symbol: String, _ text: LocalizedStringKey) -> some View {
         Label(text, systemImage: symbol)
             .font(.system(size: 13, weight: .medium))
             .padding(.horizontal, 14)
@@ -275,7 +272,7 @@ struct WelcomeTourView: View {
         }
     }
 
-    private func permissionRow(_ name: String, symbol: String, detail: String, granted: Bool,
+    private func permissionRow(_ name: LocalizedStringKey, symbol: String, detail: LocalizedStringKey, granted: Bool,
                                action: @escaping () -> Void) -> some View {
         HStack(spacing: 14) {
             Image(systemName: symbol)
@@ -333,13 +330,13 @@ struct WelcomeTourView: View {
         let isPressed = model.pressed.contains(index)
         let isFound = found.contains(index)
         let action = model.config.buttons[index] ?? .system
-        let does = index == 0 ? "Left click — always" : action == .system ? normally : action.title
+        let does = index == 0 ? String(localized: "Left click — always") : action == .system ? normally : action.title
         return HStack(spacing: 12) {
             ZStack {
                 Circle()
                     .fill(isPressed ? Color.cyan : Color.white.opacity(0.12))
                     .shadow(color: isPressed ? .cyan : .clear, radius: 10)
-                Text("\(index + 1)")
+                Text(verbatim: "\(index + 1)")
                     .font(.system(size: 13, weight: .bold, design: .rounded))
                     .foregroundStyle(isPressed ? .black : .primary)
             }
