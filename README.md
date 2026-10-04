@@ -61,6 +61,7 @@ The Overview tab shows an animated Expert Mouse whose buttons light up and whose
 - **Export** your settings as a `.glide-settings` file. You can save it, share it, or drag it straight out of the window.
 - **Import** a file by double-clicking it, dropping it on the window, or using File › Import. Glide shows a side-by-side preview of what will change before replacing anything, and you can undo the import.
 - **Sync with iCloud Drive** keeps every Mac signed in to your Apple Account in step through the `iCloud Drive › Glide` folder. No extra account is needed. The pause switch stays separate on each Mac.
+- **Automatic backups** save a snapshot of your settings once a day (only when something changed), plus one before every import or restore. Glide keeps every backup from the last two weeks, then one per month for a year, and deletes anything older. Each backup is about 1 KB, so the whole history stays under 50 KB. The Sync tab shows them on a timeline with what each one would change, and restores one with a click (and Undo).
 
 <details>
 <summary><b>More screenshots</b></summary>
