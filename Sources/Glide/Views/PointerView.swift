@@ -4,20 +4,6 @@ import SwiftUI
 struct PointerView: View {
     @Bindable var model: AppModel
 
-    private struct Preset: Identifiable {
-        let name: String
-        let symbol: String
-        let speed: Double
-        var id: String { name }
-    }
-
-    private let presets: [Preset] = [
-        .init(name: "Precise", symbol: "scope", speed: 1.5),
-        .init(name: "macOS", symbol: "applelogo", speed: 3),
-        .init(name: "Fast", symbol: "hare", speed: 5),
-        .init(name: "Turbo", symbol: "bolt", speed: 7.5),
-    ]
-
     var body: some View {
         HStack(alignment: .top, spacing: 18) {
             VStack(spacing: 18) {
@@ -31,26 +17,7 @@ struct PointerView: View {
                         .foregroundStyle(.secondary)
                 }
                 GlassCard(title: "Presets", symbol: "wand.and.stars") {
-                    GlassEffectContainer(spacing: 10) {
-                        HStack(spacing: 10) {
-                            ForEach(presets) { p in
-                                Button {
-                                    withAnimation(.smooth) {
-                                        model.config.trackingSpeed = p.speed
-                                    }
-                                } label: {
-                                    VStack(spacing: 6) {
-                                        Image(systemName: p.symbol).font(.system(size: 18))
-                                        Text(p.name).font(.system(size: 12, weight: .medium))
-                                    }
-                                    .foregroundStyle(.primary)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 6)
-                                }
-                                .buttonStyle(.glass)
-                            }
-                        }
-                    }
+                    PointerPresetRow(speed: $model.config.trackingSpeed)
                 }
                 Text("Applies only to the Expert Mouse — your other mice and trackpad keep their own settings. macOS still moves the cursor itself, so there's zero added lag.")
                     .font(.system(size: 12))

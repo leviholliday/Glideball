@@ -21,6 +21,7 @@ final class Telemetry: @unchecked Sendable {
         var ball = 0.0
         var notches = 0.0
         var pressed = Set<Int>()
+        var tapped = Set<Int>()   // pressed since the last sample, even if already let go
         var totals = Totals()
         var lastSample = CACurrentMediaTime()
     }
@@ -40,6 +41,7 @@ final class Telemetry: @unchecked Sendable {
         state.withLock {
             if down {
                 if $0.pressed.insert(index).inserted { $0.totals.clicks += 1 }
+                $0.tapped.insert(index)
             } else {
                 $0.pressed.remove(index)
             }
@@ -56,7 +58,10 @@ final class Telemetry: @unchecked Sendable {
             let now = CACurrentMediaTime()
             let dt = max(now - s.lastSample, 1.0 / 240)
             s.lastSample = now
-            let out = Sample(ballSpeed: s.ball / dt, notchRate: s.notches / dt, pressed: s.pressed, totals: s.totals)
+            // A click shorter than one sample still shows for a frame.
+            let out = Sample(ballSpeed: s.ball / dt, notchRate: s.notches / dt,
+                             pressed: s.pressed.union(s.tapped), totals: s.totals)
+            s.tapped = []
             s.ball = 0
             s.notches = 0
             return out

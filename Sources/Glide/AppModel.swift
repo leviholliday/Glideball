@@ -45,6 +45,19 @@ final class AppModel {
     var requestedTab: GlideTab?
     /// The Send Feedback sheet over the main window.
     var showingFeedback = false
+    /// The Welcome Tour over the main window (see WelcomeTour.swift).
+    var showingWelcomeTour = false
+    /// Try Kensington's other trackballs and prerelease updates. Per-Mac,
+    /// never synced — see `BetaProgram`. Takes effect immediately.
+    var betaProgram = BetaProgram.isEnabled {
+        didSet {
+            guard betaProgram != oldValue else { return }
+            UserDefaults.standard.set(betaProgram, forKey: BetaProgram.defaultsKey)
+            engine.setBetaProgram(betaProgram)
+            updates.includePrereleases = betaProgram
+            updates.check()
+        }
+    }
     /// Shares settings with the user's other Macs through iCloud Drive.
     let sync = SettingsSync(onRemoteConfig: { AppModel.shared.applyRemoteConfig($0) })
 

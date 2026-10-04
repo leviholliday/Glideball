@@ -158,3 +158,67 @@ struct StatusPill: View {
         .glassEffect(.regular, in: .capsule)
     }
 }
+
+// MARK: - Beta badge
+
+/// A small "BETA" capsule for devices supported through the Beta program.
+struct BetaBadge: View {
+    var body: some View {
+        Text("BETA")
+            .font(.system(size: 9, weight: .bold, design: .rounded))
+            .tracking(0.6)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .foregroundStyle(.white)
+            .background(Capsule().fill(LinearGradient(colors: [.purple, .pink], startPoint: .leading, endPoint: .trailing)))
+            .help("Supported through the Beta program — you may hit bugs")
+    }
+}
+
+// MARK: - Pointer speed presets
+
+/// Precise / macOS / Fast / Turbo — used on the Pointer tab and in the Welcome Tour.
+struct PointerPresetRow: View {
+    @Binding var speed: Double
+
+    private struct Preset: Identifiable {
+        let name: String
+        let symbol: String
+        let speed: Double
+        var id: String { name }
+    }
+
+    private let presets: [Preset] = [
+        .init(name: "Precise", symbol: "scope", speed: 1.5),
+        .init(name: "macOS", symbol: "applelogo", speed: 3),
+        .init(name: "Fast", symbol: "hare", speed: 5),
+        .init(name: "Turbo", symbol: "bolt", speed: 7.5),
+    ]
+
+    var body: some View {
+        GlassEffectContainer(spacing: 10) {
+            HStack(spacing: 10) {
+                ForEach(presets) { p in
+                    let selected = abs(speed - p.speed) < 0.01
+                    let button = Button {
+                        withAnimation(.smooth) { speed = p.speed }
+                    } label: {
+                        VStack(spacing: 6) {
+                            Image(systemName: p.symbol).font(.system(size: 18))
+                            Text(p.name).font(.system(size: 12, weight: .medium))
+                        }
+                        .foregroundStyle(.primary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 6)
+                    }
+                    .accessibilityAddTraits(selected ? .isSelected : [])
+                    if selected {
+                        button.buttonStyle(.glassProminent).tint(.cyan.opacity(0.7))
+                    } else {
+                        button.buttonStyle(.glass)
+                    }
+                }
+            }
+        }
+    }
+}

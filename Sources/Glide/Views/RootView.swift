@@ -56,7 +56,14 @@ struct RootView: View {
                     .id(toast.id)
             }
         }
+        .overlay {
+            if model.showingWelcomeTour {
+                WelcomeTourView(model: model)
+                    .transition(.opacity.combined(with: .scale(scale: 1.02)))
+            }
+        }
         .animation(.smooth(duration: 0.3), value: tab)
+        .animation(.smooth(duration: 0.35), value: model.showingWelcomeTour)
         .animation(.smooth, value: model.permissionsOK)
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: model.toast)
         .sheet(isPresented: $model.showingFeedback) {
@@ -82,8 +89,12 @@ struct RootView: View {
                 .frame(width: 44, height: 44)
             VStack(alignment: .leading, spacing: 1) {
                 Text("Glide").font(.system(size: 22, weight: .bold, design: .rounded))
-                Text("Kensington Expert Mouse").font(.system(size: 12)).foregroundStyle(.secondary)
-                    .lineLimit(1)
+                HStack(spacing: 6) {
+                    Text(model.status.deviceName ?? "Kensington Expert Mouse")
+                        .font(.system(size: 12)).foregroundStyle(.secondary)
+                        .lineLimit(1)
+                    if model.status.deviceConnected && model.status.deviceIsBeta { BetaBadge() }
+                }
             }
             Spacer()
             tabBar
@@ -133,12 +144,15 @@ struct RootView: View {
     private var statusText: String {
         if !model.permissionsOK { return "Needs permission" }
         if !model.config.enabled { return "Paused" }
-        return model.status.deviceConnected ? "Connected" : "Not connected"
+        if !model.status.deviceConnected && model.status.unsupportedDeviceName != nil { return "Beta only" }
+        guard model.status.deviceConnected else { return "Not connected" }
+        return model.status.deviceIsBeta ? "Connected · Beta" : "Connected"
     }
 
     private var statusColor: Color {
         if !model.permissionsOK { return .orange }
         if !model.config.enabled { return .gray }
+        if !model.status.deviceConnected && model.status.unsupportedDeviceName != nil { return .purple }
         return model.status.deviceConnected ? .green : .red
     }
 }
@@ -191,14 +205,18 @@ struct UpdateButton: View {
                 .glassEffect(.regular.tint(.cyan.opacity(0.3)), in: .capsule)
         case .idle, .failed:
             Menu {
-                Button("Install \(update.version) & Relaunch") { updates.install() }
-                Button("What’s New in \(update.version)…") { NSWorkspace.shared.open(update.page) }
+                Button("Install \(update.displayVersion) & Relaunch") { updates.install() }
+                Button("What’s New in \(update.displayVersion)…") { NSWorkspace.shared.open(update.page) }
+                if update.isPrerelease {
+                    Divider()
+                    Text("A Beta program build — it may have bugs")
+                }
                 if case .failed(let message) = updates.installState {
                     Divider()
                     Text("Last try failed: \(message)")
                 }
             } label: {
-                Label(updates.installState == .idle ? update.version : "Retry",
+                Label(updates.installState == .idle ? update.displayVersion : "Retry",
                       systemImage: "arrow.down.circle.fill")
                     .font(.system(size: 12, weight: .semibold))
             }
@@ -206,7 +224,7 @@ struct UpdateButton: View {
             .buttonStyle(.glassProminent)
             .tint(updates.installState == .idle ? .cyan : .orange)
             .fixedSize()
-            .help("Glide \(update.version) is available — install it or see what's new")
+            .help("Glide \(update.displayVersion) is available — install it or see what's new")
         }
     }
 }
