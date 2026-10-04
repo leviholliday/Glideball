@@ -25,6 +25,7 @@ final class AppModel {
                 engine.releaseAll()
             }
             pushToEngine()
+            if config.globalShortcuts != oldValue.globalShortcuts { GlobalHotKeys.shared.apply(config.globalShortcuts) }
             if !applyingRemoteConfig { sync.localConfigChanged(config) }
         }
     }

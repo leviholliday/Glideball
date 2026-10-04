@@ -125,7 +125,8 @@ struct RootView: View {
             Toggle("", isOn: $model.config.enabled)
                 .toggleStyle(.switch)
                 .labelsHidden()
-                .help("Pause or resume Glide — also ⌃⌥⌘G from anywhere")
+                .help(model.config.globalShortcuts.pause.map { "Pause or resume Glide — also \($0.display) from anywhere" }
+                      ?? "Pause or resume Glide")
         }
     }
 

@@ -83,9 +83,15 @@ final class Engine {
     private var modes = Modes()
     private var precisionHeld = false
     private var precisionToggled = false
-    private var ballScrolling = false
+    private var precisionManual = false        // toggled on from the keyboard or menu bar
+    private var ballScrolling = false          // the ball scrolls: held, latched, or both
+    private var ballScrollHeld = false         // a Scroll-with-ball button is down
+    private var ballScrollLatched = false      // switched on from the keyboard, until switched off
     private var ballSign: Double = 1           // raw ball counts → macOS scroll sign
     private var dragLocked = false
+    private var dragLockManual = false         // grabbed from the keyboard
+    private var modifierWait: Timer?           // a keyboard Drag lock waiting for its keys to lift
+    private var modifierWaitDone: ((Bool?) -> Void)?
     private var moveTap: CFMachPort?           // only while a drag lock is on
     private var moveTapSource: CFRunLoopSource?
     private var leftDown = false               // a left press has passed the tap without its release
@@ -188,6 +194,104 @@ final class Engine {
         _ = done.wait(timeout: .now() + 0.5)
         // Even if the input thread were stuck, never leave the cursor frozen.
         _ = CGAssociateMouseAndMouseCursorPosition(1)
+    }
+
+    /// Glide's modes a keyboard shortcut (or the menu bar) can switch.
+    enum ToggleMode: String { case precision, ballScroll, dragLock }
+
+    /// Switches a mode on or off from the keyboard or menu bar, like the
+    /// matching button action. Unlike a held button, a keyboard Scroll with
+    /// ball stays on until it's switched off (or Glide pauses, quits, or the
+    /// trackball is unplugged). `done` gets the new state on main, or nil if
+    /// nothing changed: Glide is paused, the mode can't work right now, or a
+    /// Drag lock gave up waiting for the shortcut's keys to lift.
+    func toggleMode(_ mode: ToggleMode, done: ((Bool?) -> Void)? = nil) {
+        let report: (Bool?) -> Void = { on in
+            if let done { DispatchQueue.main.async { done(on) } }
+        }
+        perform {
+            guard self.config.enabled else { return report(nil) }
+            switch mode {
+            case .precision:
+                self.precisionToggled.toggle()
+                self.precisionManual = self.precisionToggled
+                self.applyPointer()
+                report(self.precisionToggled)
+            case .ballScroll:
+                if self.ballScrollLatched {
+                    self.endBallScroll(latched: true, glide: true)
+                } else {
+                    // Freezing the cursor only makes sense if the trackball can scroll.
+                    guard self.tap != nil, self.canReadBall else { return report(nil) }
+                    self.beginBallScroll(latched: true)
+                }
+                report(self.ballScrollLatched)
+            case .dragLock:
+                guard self.tap != nil else { return report(nil) }
+                self.whenModifiersLift(report) {
+                    if self.dragLocked {
+                        self.endDragLock()
+                    } else {
+                        self.beginDragLock(manual: true)
+                    }
+                    return self.dragLocked
+                }
+                return
+            }
+            self.diagnostics.record("mode \(mode.rawValue) toggled from keyboard")
+            self.publishModes()
+        }
+    }
+
+    /// Ends a keyboard Scroll with ball (sleep, screen lock) so the cursor is
+    /// never left frozen while nobody's looking.
+    func endBallScrollLatch() {
+        perform {
+            if self.ballScrollLatched { self.endBallScroll(latched: true, glide: false) }
+        }
+    }
+
+    /// A supported trackball is connected and Glide can read its ball.
+    private var canReadBall: Bool { hid != nil && deviceSupported.values.contains(true) }
+
+    /// Runs `body` once ⌘⌃⌥⇧ are all up, so the grab (or drop) is a plain
+    /// click — never a ⌃-click or an ⌥-copy. Pressing the shortcut again
+    /// while waiting cancels; after 3 s it gives up. Input thread.
+    private func whenModifiersLift(_ report: @escaping (Bool?) -> Void, _ body: @escaping () -> Bool) {
+        if modifierWait != nil {
+            cancelModifierWait(silently: true)
+            return report(nil)
+        }
+        let keys: CGEventFlags = [.maskCommand, .maskControl, .maskAlternate, .maskShift]
+        func keysUp() -> Bool { CGEventSource.flagsState(.hidSystemState).intersection(keys).isEmpty }
+        let run = { [unowned self] in
+            let on = body()
+            self.diagnostics.record("drag lock \(on ? "on" : "off") from keyboard")
+            self.publishModes()
+            report(on)
+        }
+        if keysUp() { return run() }
+        let deadline = CACurrentMediaTime() + 3
+        modifierWaitDone = report
+        let t = Timer(timeInterval: 0.015, repeats: true) { [unowned self] _ in
+            if keysUp() {
+                self.cancelModifierWait(silently: true)
+                run()
+            } else if CACurrentMediaTime() > deadline {
+                self.cancelModifierWait(silently: false)
+            }
+        }
+        RunLoop.current.add(t, forMode: .common)
+        modifierWait = t
+    }
+
+    /// Stops waiting; unless `silently`, tells the waiting caller nothing happened.
+    private func cancelModifierWait(silently: Bool) {
+        modifierWait?.invalidate()
+        modifierWait = nil
+        let done = modifierWaitDone
+        modifierWaitDone = nil
+        if !silently { done?(nil) }
     }
 
     private func perform(_ block: @escaping () -> Void) {
@@ -608,7 +712,7 @@ final class Engine {
                 }
                 return pass
             case .ballScroll:
-                if phase == .up { endBallScroll(glide: true) }
+                if phase == .up { endBallScroll(latched: false, glide: true) }
                 return nil
             case .dragButton:
                 // Rolling before letting go of the lock button already drags.
@@ -766,17 +870,18 @@ final class Engine {
         case .precisionToggle:
             for b in buttons { overrides[b] = .swallow }
             precisionToggled.toggle()
+            precisionManual = false
             applyPointer()
         case .ballScrollHold:
             for b in buttons { overrides[b] = .ballScroll }
-            beginBallScroll()
+            beginBallScroll(latched: false)
         case .dragLock:
             if dragLocked {
                 for b in buttons { overrides[b] = .swallow }
                 endDragLock()
             } else {
                 for b in buttons { overrides[b] = .dragButton }
-                beginDragLock()
+                beginDragLock(manual: false)
             }
         default:
             return false
@@ -795,29 +900,44 @@ final class Engine {
         publishModes()
     }
 
-    private func beginBallScroll() {
+    /// Starts a hold (button down) or a latch (keyboard). The ball scrolls
+    /// while either is on; only the hold is watched by the failsafe.
+    private func beginBallScroll(latched: Bool) {
+        if latched {
+            ballScrollLatched = true
+        } else {
+            ballScrollHeld = true
+            startHoldFailsafe()
+        }
         guard !ballScrolling else { return }
         ballScrolling = true
         // Ball forward counts as "wheel up"; with natural scrolling the page follows the ball.
         ballSign = Self.naturalScrolling ? 1 : -1
         _ = CGAssociateMouseAndMouseCursorPosition(0)   // the cursor stays put
         scroller.beginBall()
-        startHoldFailsafe()
     }
 
-    private func endBallScroll(glide: Bool) {
+    /// Ends the hold (or the latch). The ball stops scrolling once neither is left.
+    private func endBallScroll(latched: Bool, glide: Bool) {
+        if latched {
+            ballScrollLatched = false
+        } else {
+            ballScrollHeld = false
+            for (b, o) in overrides {
+                if case .ballScroll = o { overrides[b] = .swallow }   // a combo's other buttons
+            }
+        }
+        guard !ballScrollHeld, !ballScrollLatched else { return }
         _ = CGAssociateMouseAndMouseCursorPosition(1)
         guard ballScrolling else { return }
         ballScrolling = false
-        for (b, o) in overrides {
-            if case .ballScroll = o { overrides[b] = .swallow }
-        }
         scroller.endBall(glide: glide)
         publishModes()
     }
 
-    private func beginDragLock() {
+    private func beginDragLock(manual: Bool) {
         dragLocked = true
+        dragLockManual = manual
         Self.postLeft(down: true)
         installMoveTap()
     }
@@ -825,6 +945,7 @@ final class Engine {
     private func endDragLock() {
         guard dragLocked else { return }
         dragLocked = false
+        dragLockManual = false
         removeMoveTap()
         Self.postLeft(down: false)
         for (b, o) in overrides {
@@ -899,7 +1020,7 @@ final class Engine {
     }
 
     private func checkHolds() {
-        guard precisionHeld || ballScrolling else {
+        guard precisionHeld || ballScrollHeld else {   // a keyboard latch is never a lost hold
             holdFailsafe?.invalidate()
             holdFailsafe = nil
             return
@@ -913,18 +1034,22 @@ final class Engine {
         }
         guard lost else { return }
         diagnostics.record("hold failsafe: button release never arrived")
-        if ballScrolling { endBallScroll(glide: false) }
+        if ballScrollHeld { endBallScroll(latched: false, glide: false) }
         if precisionHeld { endPrecisionHold() }
     }
 
     /// Ends everything at once (pause, ⌃⌥⌘G, quit, unplug). Input thread.
     private func releaseModes() {
+        cancelModifierWait(silently: true)
         if ballScrolling { scroller.cancelBall() }
         ballScrolling = false
+        ballScrollHeld = false
+        ballScrollLatched = false
         _ = CGAssociateMouseAndMouseCursorPosition(1)
         endDragLock()
         precisionHeld = false
         precisionToggled = false
+        precisionManual = false
         for (b, o) in overrides {
             switch o {
             case .precision, .ballScroll, .dragButton: overrides[b] = .swallow   // their releases stay ours
@@ -936,15 +1061,21 @@ final class Engine {
     }
 
     /// A toggled mode whose action is no longer assigned anywhere could never
-    /// be switched off again, so end it.
+    /// be switched off again, so end it. Modes switched on from the keyboard
+    /// can always be switched off from the menu bar (Precision) or with a
+    /// click (Drag lock) — but a keyboard Scroll with ball freezes the cursor,
+    /// so it ends as soon as its shortcut is gone.
     private func dropOrphanedModes() {
-        guard precisionToggled || dragLocked else { return }
+        guard precisionToggled || dragLocked || ballScrollLatched else { return }
         let assigned = Set(config.buttons.values).union(config.chords.map(\.action))
-        if precisionToggled && !assigned.contains(.precisionToggle) {
+        if precisionToggled && !precisionManual && !assigned.contains(.precisionToggle) {
             precisionToggled = false
             applyPointer()
         }
-        if dragLocked && !assigned.contains(.dragLock) { endDragLock() }
+        if dragLocked && !dragLockManual && !assigned.contains(.dragLock) { endDragLock() }
+        if ballScrollLatched && config.globalShortcuts.ballScroll == nil {
+            endBallScroll(latched: true, glide: false)
+        }
         publishModes()
     }
 

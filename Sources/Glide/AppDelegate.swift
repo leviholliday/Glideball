@@ -6,6 +6,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var window: NSWindow?
     private var launchedAtLogin = false
     private var statusItem: NSStatusItem?
+    private var precisionItem: NSMenuItem?
     private var isExplicitlyQuitting = false
 
     func applicationWillFinishLaunching(_ notification: Notification) {
@@ -23,7 +24,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         setUpStatusItem()
         _ = AppModel.shared   // starts the engine
         watchModes()
-        registerPanicHotKey()
+        startHotKeys()
         if firstLaunch { AppModel.shared.showWelcomeTour() }
         if firstLaunch || !launchedAtLogin || !AppModel.shared.permissionsOK { showWindow() }
     }
@@ -114,6 +115,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let menu = NSMenu()
         menu.addItem(withTitle: "Show Glide", action: #selector(showGlide), keyEquivalent: "")
         menu.addItem(withTitle: "Pause / Resume Glide", action: #selector(toggleGlide), keyEquivalent: "")
+        // Scroll with ball and Drag lock act at the pointer, which is up here
+        // in the menu bar after choosing an item — so only Precision is offered.
+        precisionItem = menu.addItem(withTitle: "Precision", action: #selector(togglePrecision), keyEquivalent: "")
+        menu.addItem(.separator())
         menu.addItem(withTitle: "Send Feedback…", action: #selector(sendFeedback), keyEquivalent: "")
         menu.addItem(.separator())
         menu.addItem(withTitle: "Quit Glide", action: #selector(quitGlide), keyEquivalent: "q")
@@ -136,6 +141,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let symbol = modes.dragLocked ? "hand.draw.fill" : modes.precision ? "scope" : "cursorarrow.click"
         statusItem?.button?.image = NSImage(systemSymbolName: symbol, accessibilityDescription: "Glide")
         statusItem?.button?.image?.isTemplate = true
+        precisionItem?.state = modes.precision ? .on : .off
     }
 
     @objc private func showGlide(_ sender: Any?) {
@@ -146,27 +152,49 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         AppModel.shared.config.enabled.toggle()
     }
 
+    @objc private func togglePrecision(_ sender: Any?) {
+        toggleMode(.precision)
+    }
+
     @objc private func quitGlide(_ sender: Any?) {
         isExplicitlyQuitting = true
         NSApp.terminate(nil)
     }
 
-    /// ⌃⌥⌘G pauses / resumes Glide from anywhere — an escape hatch that works
-    /// even if a mapping makes the mouse unusable. Needs no permissions.
-    private func registerPanicHotKey() {
-        var spec = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
-        InstallEventHandler(GetApplicationEventTarget(), { _, _, _ in
-            DispatchQueue.main.async {
+    /// Glide's global shortcuts. Pause (⌃⌥⌘G unless changed) is the escape
+    /// hatch that works even if a mapping makes the mouse unusable; the others
+    /// switch Precision, Scroll with ball, and Drag lock. No permissions needed.
+    private func startHotKeys() {
+        GlobalHotKeys.shared.start(AppModel.shared.config.globalShortcuts) { [weak self] action in
+            switch action {
+            case .pause:
                 let model = AppModel.shared
                 model.config.enabled.toggle()
                 NSSound(named: model.config.enabled ? "Pop" : "Funk")?.play()
+            case .precision: self?.toggleMode(.precision)
+            case .ballScroll: self?.toggleMode(.ballScroll)
+            case .dragLock: self?.toggleMode(.dragLock)
             }
-            return noErr
-        }, 1, &spec, nil, nil)
-        var ref: EventHotKeyRef?
-        RegisterEventHotKey(UInt32(kVK_ANSI_G), UInt32(controlKey | optionKey | cmdKey),
-                            EventHotKeyID(signature: OSType(0x474C4944), id: 1),
-                            GetApplicationEventTarget(), 0, &ref)
+        }
+        // A keyboard Scroll with ball freezes the cursor until switched off:
+        // never carry that across sleep or a locked screen.
+        let end: (Notification) -> Void = { _ in AppModel.shared.engine.endBallScrollLatch() }
+        let workspace = NSWorkspace.shared.notificationCenter
+        for name in [NSWorkspace.willSleepNotification, NSWorkspace.screensDidSleepNotification,
+                     NSWorkspace.sessionDidResignActiveNotification] {
+            workspace.addObserver(forName: name, object: nil, queue: .main, using: end)
+        }
+        DistributedNotificationCenter.default().addObserver(forName: .init("com.apple.screenIsLocked"),
+                                                            object: nil, queue: .main, using: end)
+    }
+
+    /// A quiet sound says which way it went; a beep means nothing changed
+    /// (Glide is paused, or the trackball isn't there to scroll with).
+    private func toggleMode(_ mode: Engine.ToggleMode) {
+        AppModel.shared.engine.toggleMode(mode) { on in
+            guard let on else { return NSSound.beep() }
+            NSSound(named: on ? "Tink" : "Purr")?.play()
+        }
     }
 
     private func buildMenu() {

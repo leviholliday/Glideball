@@ -50,6 +50,8 @@ In Flywheel and Follow, holding ⇧ scrolls sideways, ⌘/⌃/⌥ + scroll keep 
 
 Press **⌃⌥⌘G** anywhere to pause or resume Glide. It needs no permissions, so it works even if a mapping has left the trackball hard to use. The switch in the window header does the same thing.
 
+Under **Overview › Keyboard shortcuts** you can change it, and add optional shortcuts that switch **Precision**, **Scroll with ball** (stays on until you press it again) and **Drag lock** on and off from any app.
+
 ### Live dashboard
 
 The Overview tab shows an animated Expert Mouse whose buttons light up and whose ring spins as you use them. It also has live graphs of ball speed (in/s) and scroll-ring speed (notches/s), and today's clicks, distance rolled and distance scrolled. **Open at login** starts Glide quietly in the background.

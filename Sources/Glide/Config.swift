@@ -147,6 +147,115 @@ extension KeyedDecodingContainer {
     }
 }
 
+/// Glide's own system-wide keyboard shortcuts. Each is optional; only Pause
+/// has one out of the box (⌃⌥⌘G, the escape hatch).
+struct GlobalShortcuts: Codable, Equatable {
+    enum Action: Int, CaseIterable, Identifiable {
+        // Raw values are the Carbon hot key IDs (Pause was always 1).
+        case pause = 1, precision, ballScroll, dragLock
+        var id: Int { rawValue }
+
+        var title: String {
+            switch self {
+            case .pause: "Pause / resume Glide"
+            case .precision: "Precision"
+            case .ballScroll: "Scroll with ball"
+            case .dragLock: "Drag lock"
+            }
+        }
+
+        var subtitle: String {
+            switch self {
+            case .pause: "Your escape hatch: Glide steps aside until you press it again."
+            case .precision: "Slows the pointer for fine work until you press it again."
+            case .ballScroll: "Rolling the ball scrolls and the pointer stays put, until you press it again."
+            case .dragLock: "Grabs what's under the pointer once you let go of the keys. Press again, or click, to drop."
+            }
+        }
+
+        var symbol: String {
+            switch self {
+            case .pause: "pause.circle"
+            case .precision: "scope"
+            case .ballScroll: "arrow.up.and.down.and.arrow.left.and.right"
+            case .dragLock: "hand.draw"
+            }
+        }
+    }
+
+    static let defaultPause = KeyShortcut.make(kVK_ANSI_G, "G", [.maskControl, .maskAlternate, .maskCommand])
+
+    var pause: KeyShortcut? = GlobalShortcuts.defaultPause
+    var precision: KeyShortcut?
+    var ballScroll: KeyShortcut?
+    var dragLock: KeyShortcut?
+
+    subscript(action: Action) -> KeyShortcut? {
+        get {
+            switch action {
+            case .pause: pause
+            case .precision: precision
+            case .ballScroll: ballScroll
+            case .dragLock: dragLock
+            }
+        }
+        set {
+            switch action {
+            case .pause: pause = newValue
+            case .precision: precision = newValue
+            case .ballScroll: ballScroll = newValue
+            case .dragLock: dragLock = newValue
+            }
+        }
+    }
+
+    /// Why `shortcut` can't be used for `action`, or nil if it can.
+    func refusal(for shortcut: KeyShortcut, as action: Action) -> String? {
+        if shortcut.flags.intersection([.maskCommand, .maskControl, .maskAlternate]).isEmpty {
+            return "Include ⌘, ⌃, or ⌥ — \(shortcut.display) on its own would stop working everywhere else."
+        }
+        if let other = Action.allCases.first(where: { $0 != action && self[$0]?.sameKeys(as: shortcut) == true }) {
+            return "\(shortcut.display) is already the shortcut for \(other.title)."
+        }
+        return nil
+    }
+
+    init() {}
+
+    private enum CodingKeys: String, CodingKey { case pause, precision, ballScroll, dragLock }
+
+    // A cleared shortcut is written as null so it stays cleared; a missing (or
+    // unreadable) one means the default.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        func read(_ key: CodingKeys, _ fallback: KeyShortcut?) -> KeyShortcut? {
+            guard c.contains(key) else { return fallback }
+            if (try? c.decodeNil(forKey: key)) == true { return nil }
+            return (try? c.decode(KeyShortcut.self, forKey: key)) ?? fallback
+        }
+        let d = GlobalShortcuts()
+        pause = read(.pause, d.pause)
+        precision = read(.precision, d.precision)
+        ballScroll = read(.ballScroll, d.ballScroll)
+        dragLock = read(.dragLock, d.dragLock)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(pause, forKey: .pause)
+        try c.encode(precision, forKey: .precision)
+        try c.encode(ballScroll, forKey: .ballScroll)
+        try c.encode(dragLock, forKey: .dragLock)
+    }
+}
+
+extension KeyShortcut {
+    /// Same key and modifiers (the display name doesn't matter).
+    func sameKeys(as other: KeyShortcut) -> Bool {
+        keyCode == other.keyCode && modifiers == other.modifiers
+    }
+}
+
 /// How the scroll ring is turned into scrolling.
 enum ScrollMode: String, Codable, CaseIterable, Identifiable {
     case native     // macOS's own wheel scrolling (what Kensington's driver relied on)
@@ -193,6 +302,9 @@ struct GlideConfig: Codable, Equatable {
     // Per-app setups: used instead of the above while that app is in front.
     var appProfiles: [AppProfile] = []
 
+    /// System-wide keyboard shortcuts (pause, and switching Glide's modes).
+    var globalShortcuts = GlobalShortcuts()
+
     init() {}
 
     // Missing keys fall back to defaults so new settings never wipe old ones.
@@ -219,6 +331,7 @@ struct GlideConfig: Codable, Equatable {
         buttons = try c.decodeLenientActions(forKey: .buttons) ?? d.buttons
         chords = try c.decodeLenientChords(forKey: .chords) ?? d.chords
         appProfiles = try c.decodeIfPresent([AppProfile].self, forKey: .appProfiles) ?? d.appProfiles
+        globalShortcuts = try c.decodeIfPresent(GlobalShortcuts.self, forKey: .globalShortcuts) ?? d.globalShortcuts
     }
 
     private static let key = "GlideConfig"
