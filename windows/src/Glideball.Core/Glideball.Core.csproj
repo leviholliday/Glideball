@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Platform-free logic: scroll physics, buttons/combos, settings, backups,
+       device matching. No Win32 here, so it builds and tests anywhere. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Glideball.Core</RootNamespace>
+    <AssemblyName>Glideball.Core</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Glideball.Core.Tests" />
+  </ItemGroup>
+
+</Project>
