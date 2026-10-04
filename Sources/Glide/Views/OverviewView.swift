@@ -45,7 +45,7 @@ struct OverviewView: View {
                           symbol: "power", isOn: Binding(get: { model.launchAtLogin }, set: { model.setLaunchAtLogin($0) }))
                 Divider().opacity(0.4)
                 ToggleRow(title: "Menu bar icon",
-                          subtitle: "Quick access to pause, precision and updates. Glide keeps running either way — reopen it from the Dock.",
+                          subtitle: "Quick access to pause, precision and updates. Glideball keeps running either way — reopen it from the Dock.",
                           symbol: "menubar.rectangle", isOn: $model.menuBarIcon)
                 Divider().opacity(0.4)
                 LanguageRow()
@@ -64,7 +64,7 @@ struct OverviewView: View {
                     .disabled(!model.delight.celebrationsOn)
                     .opacity(model.delight.celebrationsOn ? 1 : 0.5)
                 Divider().opacity(0.4)
-                ToggleRow(title: "Launch sounds", subtitle: "A soft chime as Glide opens. Never when your Mac is muted.",
+                ToggleRow(title: "Launch sounds", subtitle: "A soft chime as Glideball opens. Never when your Mac is muted.",
                           symbol: "music.note", isOn: Bindable(LaunchExperience.shared).soundsOn)
                 Divider().opacity(0.4)
                 HStack(spacing: 10) {
@@ -85,7 +85,7 @@ struct OverviewView: View {
                     .buttonStyle(.glass)
                 }
                 Divider().opacity(0.4)
-                Text("Closing this window keeps Glide running. Click Glide in the Dock to bring it back, or press ⌘Q to quit — your trackball then goes back to normal.")
+                Text("Closing this window keeps Glideball running. Click Glideball in the Dock to bring it back, or press ⌘Q to quit — your trackball then goes back to normal.")
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -113,7 +113,7 @@ struct OverviewView: View {
         } else if let name = status.unsupportedDeviceName {
             // A Kensington Glide only supports in the Beta program: a gentle nudge, not an error.
             VStack(spacing: 8) {
-                caption("Turn on the Beta program to try Glide with your \(name).")
+                caption("Turn on the Beta program to try Glideball with your \(name).")
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
                 Button {
@@ -320,7 +320,7 @@ struct LanguageRow: View {
                 .frame(width: 22)
             VStack(alignment: .leading, spacing: 1) {
                 Text("Language").font(.system(size: 14, weight: .medium))
-                Text("Glide can speak a different language from the rest of your Mac.")
+                Text("Glideball can speak a different language from the rest of your Mac.")
                     .font(.system(size: 11)).foregroundStyle(.secondary)
             }
             Spacer()
@@ -346,7 +346,7 @@ struct LanguageRow: View {
     }
 }
 
-/// "Glide 2.6 — up to date" with a Check for Updates button.
+/// "Glideball 2.6 — up to date" with a Check for Updates button.
 struct UpdatesRow: View {
     let updates: UpdateChecker
 
@@ -383,16 +383,16 @@ struct UpdatesRow: View {
     }
 
     private var status: String {
-        let current = "Glide \(GlideVersion(updates.currentVersion)?.display ?? updates.currentVersion)"
+        let current = "Glideball \(GlideVersion(updates.currentVersion)?.display ?? updates.currentVersion)"
         if let update = updates.available {
             let new = GlideVersion(update.version)?.display ?? update.version
-            return String(localized: "\(current) · \(new) is ready to install", comment: "Glide 2.6 · 2.7 is ready to install")
+            return String(localized: "\(current) · \(new) is ready to install", comment: "Glideball 2.6 · 2.7 is ready to install")
         }
         switch updates.manualCheck {
-        case .upToDate: return String(localized: "\(current) · You’re up to date ✓", comment: "%@ is “Glide 2.6”")
-        case .failed: return String(localized: "\(current) · Couldn’t reach GitHub — try again later", comment: "%@ is “Glide 2.6”")
-        case .checking: return String(localized: "\(current) · Checking…", comment: "%@ is “Glide 2.6”")
-        case .idle: return String(localized: "\(current) · Checks automatically once a day", comment: "%@ is “Glide 2.6”")
+        case .upToDate: return String(localized: "\(current) · You’re up to date ✓", comment: "%@ is “Glideball 2.6”")
+        case .failed: return String(localized: "\(current) · Couldn’t reach GitHub — try again later", comment: "%@ is “Glideball 2.6”")
+        case .checking: return String(localized: "\(current) · Checking…", comment: "%@ is “Glideball 2.6”")
+        case .idle: return String(localized: "\(current) · Checks automatically once a day", comment: "%@ is “Glideball 2.6”")
         }
     }
 }

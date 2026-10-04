@@ -120,7 +120,7 @@ final class Engine {
             self.setUp()
             CFRunLoopRun()
         }
-        thread.name = "Glide input"
+        thread.name = "Glideball input"
         thread.qualityOfService = .userInteractive
         thread.start()
         ready.wait()

@@ -38,7 +38,9 @@ final class UpdateChecker {
 
     /// The newest releases, prereleases included (GitHub's "latest" never is one).
     static let releasesAPI = URL(string: "https://api.github.com/repos/leviholliday/glide/releases?per_page=30")!
-    static let assetName = "Glide.zip"
+    static let assetName = "Glideball.zip"
+    /// What versions before the rename (≤ 2.7.1) download; releases still attach it.
+    static let legacyAssetName = "Glide.zip"
     @ObservationIgnored private var timer: Timer?
     @ObservationIgnored private var progressObservation: NSKeyValueObservation?
     /// Offer prereleases too — the Beta program. Call `check()` after changing it.
@@ -106,7 +108,8 @@ final class UpdateChecker {
         guard let tag = json["tag_name"] as? String,
               let page = (json["html_url"] as? String).flatMap(URL.init(string:)) else { return nil }
         let assets = json["assets"] as? [[String: Any]] ?? []
-        let zip = assets.first { $0["name"] as? String == assetName }?["browser_download_url"] as? String
+        let zip = (assets.first { $0["name"] as? String == assetName }
+                   ?? assets.first { $0["name"] as? String == legacyAssetName })?["browser_download_url"] as? String
         let version = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
         return Update(version: version,
                       page: page,
@@ -175,11 +178,13 @@ final class UpdateChecker {
         unzip.waitUntilExit()
         guard unzip.terminationStatus == 0 else { throw UpdateError(String(localized: "Couldn’t unpack the update.")) }
 
-        let app = work.appendingPathComponent("Glide.app")
+        // "Glideball.app" since 2.8; older releases unpack "Glide.app".
+        let app = ["Glideball.app", "Glide.app"].map { work.appendingPathComponent($0) }
+            .first { FileManager.default.fileExists(atPath: $0.path) } ?? work.appendingPathComponent("Glideball.app")
         guard let info = Bundle(url: app)?.infoDictionary,
               info["CFBundleIdentifier"] as? String == Bundle.main.bundleIdentifier,
               info["CFBundleShortVersionString"] as? String == expectedVersion else {
-            throw UpdateError(String(localized: "The download isn’t the expected Glide \(expectedVersion)."))
+            throw UpdateError(String(localized: "The download isn’t the expected Glideball \(expectedVersion)."))
         }
         try verifySignature(of: app)
         return app
@@ -194,27 +199,35 @@ final class UpdateChecker {
         guard SecCodeCopySelf([], &me) == errSecSuccess, let me,
               SecCodeCopyStaticCode(me, [], &staticMe) == errSecSuccess, let staticMe,
               SecCodeCopyDesignatedRequirement(staticMe, [], &requirement) == errSecSuccess, let requirement else {
-            throw UpdateError(String(localized: "Couldn’t read Glide’s own signature to compare against."))
+            throw UpdateError(String(localized: "Couldn’t read Glideball’s own signature to compare against."))
         }
         var candidate: SecStaticCode?
         guard SecStaticCodeCreateWithPath(app as CFURL, [], &candidate) == errSecSuccess, let candidate,
               SecStaticCodeCheckValidity(candidate, SecCSFlags(rawValue: kSecCSCheckAllArchitectures), requirement) == errSecSuccess else {
-            throw UpdateError(String(localized: "The update isn’t signed by Glide’s developer, so it wasn’t installed."))
+            throw UpdateError(String(localized: "The update isn’t signed by Glideball’s developer, so it wasn’t installed."))
         }
     }
 
     /// Hands off to a tiny shell helper that swaps the app once Glide has quit.
     private func relaunch(into newApp: URL) {
         installState = .installing
-        let current = Bundle.main.bundleURL.path
+        let current = AppRename.installPath(for: Bundle.main.bundleURL).path
+        let old = Bundle.main.bundleURL.path   // differs only when moving Glide.app → Glideball.app
         let pid = ProcessInfo.processInfo.processIdentifier
         let script = """
+        current="\(current)"
         while kill -0 \(pid) 2>/dev/null; do sleep 0.2; done
         rm -rf "\(current).old"
-        mv "\(current)" "\(current).old" && mv "\(newApp.path)" "\(current)" && rm -rf "\(current).old" \
-          || { rm -rf "\(current)"; mv "\(current).old" "\(current)"; }
-        xattr -dr com.apple.quarantine "\(current)" 2>/dev/null
-        open "\(current)"
+        [ -d "\(current)" ] && mv "\(current)" "\(current).old"
+        if mv "\(newApp.path)" "\(current)"; then
+          rm -rf "\(current).old"
+          [ "\(old)" != "\(current)" ] && rm -rf "\(old)"
+        else
+          rm -rf "\(current)"; [ -d "\(current).old" ] && mv "\(current).old" "\(current)"
+          current="\(old)"
+        fi
+        xattr -dr com.apple.quarantine "$current" 2>/dev/null
+        open "$current"
         """
         let helper = Process()
         helper.executableURL = URL(fileURLWithPath: "/bin/sh")

@@ -206,7 +206,7 @@ struct MakeItYoursCard: View {
 
                 if allDone {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("You’ve made Glide yours.")
+                        Text("You’ve made Glideball yours.")
                             .font(.system(size: 18, weight: .semibold, design: .rounded))
                         Text("Speed, scrolling, buttons, a combo and an app setup — all tuned to you. Change anything, any time.")
                             .font(.system(size: 12))

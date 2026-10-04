@@ -100,7 +100,7 @@
 			<string>개요에서 +%lld개 더 보기</string>
 		</dict>
 	</dict>
-	<key>Glide now keeps your records — %lld badges already earned</key>
+	<key>Glideball now keeps your records — %lld badges already earned</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
 		<string>%#@count@</string>

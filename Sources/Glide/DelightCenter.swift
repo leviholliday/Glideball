@@ -253,8 +253,8 @@ final class DelightCenter {
             }
         case .record(let k, _): k.newRecordTitle
         case .checklistStep(let item): item.doneTitle
-        case .checklistDone: String(localized: "Glide is all yours")
-        case .welcome(let n): String(localized: "Glide now keeps your records — \(n) badges already earned")
+        case .checklistDone: String(localized: "Glideball is all yours")
+        case .welcome(let n): String(localized: "Glideball now keeps your records — \(n) badges already earned")
         }
     }
 

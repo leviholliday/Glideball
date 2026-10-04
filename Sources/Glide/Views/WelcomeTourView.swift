@@ -105,7 +105,7 @@ struct WelcomeTourView: View {
                 Button("Skip for now") { advance(force: true) }
                     .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
-                    .help("Glide stays out of the way until both permissions are on")
+                    .help("Glideball stays out of the way until both permissions are on")
             }
             Button(action: { advance() }) {
                 HStack(spacing: 6) {
@@ -140,7 +140,7 @@ struct WelcomeTourView: View {
     private var nextTitle: String {
         switch step {
         case .welcome: String(localized: "Get Started")
-        case .done: String(localized: "Start Using Glide")
+        case .done: String(localized: "Start Using Glideball")
         default: String(localized: "Continue")
         }
     }
@@ -214,7 +214,7 @@ struct WelcomeTourView: View {
                 .resizable()
                 .frame(width: 120, height: 120)
                 .shadow(color: .cyan.opacity(0.45), radius: 30)
-            Text("Welcome to Glide")
+            Text("Welcome to Glideball")
                 .font(.system(size: 36, weight: .bold, design: .rounded))
             Text("Your Kensington trackball, tuned exactly the way you like it.")
                 .font(.system(size: 16))
@@ -249,20 +249,20 @@ struct WelcomeTourView: View {
     private var permissionsPage: some View {
         VStack(alignment: .leading, spacing: 16) {
             header("lock.shield", "Two quick permissions",
-                   "Glide needs these to read your trackball and change what it does. Until both are on, your trackball works normally and Glide stays out of the way.")
+                   "Glideball needs these to read your trackball and change what it does. Until both are on, your trackball works normally and Glideball stays out of the way.")
             permissionRow("Accessibility", symbol: "accessibility",
-                          detail: "Lets Glide change what your buttons and scroll ring do.",
+                          detail: "Lets Glideball change what your buttons and scroll ring do.",
                           granted: model.hasAccessibility, action: model.requestAccessibility)
             permissionRow("Input Monitoring", symbol: "keyboard.badge.eye",
-                          detail: "Lets Glide tell your trackball apart from your other mice and trackpad.",
+                          detail: "Lets Glideball tell your trackball apart from your other mice and trackpad.",
                           granted: model.hasInputMonitoring, action: model.requestInputMonitoring)
             Spacer(minLength: 0)
             Group {
                 if model.permissionsOK {
-                    Label("All set — Glide can see your trackball.", systemImage: "checkmark.seal.fill")
+                    Label("All set — Glideball can see your trackball.", systemImage: "checkmark.seal.fill")
                         .foregroundStyle(.green)
                 } else {
-                    Label("Switch Glide on in each list in System Settings, then come back — the checkmarks update by themselves.",
+                    Label("Switch Glideball on in each list in System Settings, then come back — the checkmarks update by themselves.",
                           systemImage: "info.circle")
                         .foregroundStyle(.secondary)
                 }
@@ -361,12 +361,12 @@ struct WelcomeTourView: View {
 
     @ViewBuilder private var buttonsFootnote: some View {
         if !model.permissionsOK {
-            Label("Glide can't see your buttons until both permissions are on. You can come back to this tour from Help.",
+            Label("Glideball can't see your buttons until both permissions are on. You can come back to this tour from Help.",
                   systemImage: "lock")
                 .foregroundStyle(.orange)
         } else if !model.status.deviceConnected {
             if let name = model.status.unsupportedDeviceName {
-                Label("Your \(name) works with Glide through the Beta program — you can turn it on at the end of the tour.",
+                Label("Your \(name) works with Glideball through the Beta program — you can turn it on at the end of the tour.",
                       systemImage: "flask")
                     .foregroundStyle(.secondary)
             } else {
@@ -394,7 +394,7 @@ struct WelcomeTourView: View {
             VStack(alignment: .leading, spacing: 10) {
                 Label("Pointer speed", systemImage: "cursorarrow.motionlines")
                     .font(.system(size: 14, weight: .semibold))
-                Text("How far the cursor travels when you roll the ball. macOS stops at its own setting; Glide goes past it.")
+                Text("How far the cursor travels when you roll the ball. macOS stops at its own setting; Glideball goes past it.")
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -420,10 +420,10 @@ struct WelcomeTourView: View {
                         ForEach(["⌃", "⌥", "⌘", "G"], id: \.self) { keycap($0) }
                     }
                     Text("Pause instantly").font(.system(size: 17, weight: .semibold))
-                    Text("Press ⌃⌥⌘G anywhere and Glide pauses — your trackball goes straight back to plain macOS. Press it again to resume.")
+                    Text("Press ⌃⌥⌘G anywhere and Glideball pauses — your trackball goes straight back to plain macOS. Press it again to resume.")
                         .font(.system(size: 12)).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
-                    StatusPill(text: model.config.enabled ? "Glide is on — try it" : "Glide is paused",
+                    StatusPill(text: model.config.enabled ? "Glideball is on — try it" : "Glideball is paused",
                                color: model.config.enabled ? .green : .gray)
                         .animation(.smooth, value: model.config.enabled)
                 }
@@ -435,13 +435,13 @@ struct WelcomeTourView: View {
                         .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.cyan.opacity(0.85)))
                         .shadow(color: .cyan.opacity(0.6), radius: 10)
                     Text("Main click stays a left click").font(.system(size: 17, weight: .semibold))
-                    Text("The bottom-left button is always a left click, whatever else you remap — so Glide can never lock you out.")
+                    Text("The bottom-left button is always a left click, whatever else you remap — so Glideball can never lock you out.")
                         .font(.system(size: 12)).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
             Spacer(minLength: 0)
-            Text("Quitting Glide also puts your trackball back to normal.")
+            Text("Quitting Glideball also puts your trackball back to normal.")
                 .font(.system(size: 12))
                 .foregroundStyle(.tertiary)
         }
@@ -473,7 +473,7 @@ struct WelcomeTourView: View {
                 .symbolEffect(.bounce, options: .nonRepeating)
             Text("You're all set")
                 .font(.system(size: 34, weight: .bold, design: .rounded))
-            Text("Glide keeps running when you close its window — click Glide in the Dock to come back.")
+            Text("Glideball keeps running when you close its window — click Glideball in the Dock to come back.")
                 .font(.system(size: 15))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -487,7 +487,7 @@ struct WelcomeTourView: View {
                 Button {
                     NSWorkspace.shared.open(URL(string: "https://glideball.netlify.app")!)
                 } label: {
-                    Label("Glide Website", systemImage: "safari").padding(.horizontal, 4)
+                    Label("Glideball Website", systemImage: "safari").padding(.horizontal, 4)
                 }
             }
             .buttonStyle(.glass)
@@ -496,7 +496,7 @@ struct WelcomeTourView: View {
             if let name = model.status.unsupportedDeviceName, !model.betaProgram {
                 HStack(spacing: 12) {
                     Image(systemName: "flask").foregroundStyle(.purple)
-                    Text("Turn on the Beta program to try Glide with your \(name).")
+                    Text("Turn on the Beta program to try Glideball with your \(name).")
                         .font(.system(size: 12))
                     Button("Turn On") { model.betaProgram = true }
                         .buttonStyle(.glass)

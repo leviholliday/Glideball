@@ -75,7 +75,7 @@ struct ButtonRow: View {
                     .padding(.horizontal, 12)
                     .padding(.vertical, 7)
                     .glassEffect(.regular, in: .capsule)
-                    .help("Your primary click stays a left click, so Glide can never lock you out.")
+                    .help("Your primary click stays a left click, so Glideball can never lock you out.")
             } else if recording {
                 Text("Type a shortcut…  esc to cancel")
                     .font(.system(size: 12, weight: .medium))

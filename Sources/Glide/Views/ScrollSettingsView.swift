@@ -71,7 +71,7 @@ struct ScrollControls: View {
 
     @ViewBuilder private var nativeCards: some View {
         GlassCard(title: "macOS scrolling", symbol: "applelogo") {
-            Text("Glide steps aside and lets macOS scroll the ring itself — the same system Kensington's driver handed its ticks to. Only the speed is adjustable.")
+            Text("Glideball steps aside and lets macOS scroll the ring itself — the same system Kensington's driver handed its ticks to. Only the speed is adjustable.")
                 .font(.system(size: 12)).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             TuningSlider(title: "Scroll speed", symbol: "gauge.with.dots.needle.50percent",
@@ -95,7 +95,7 @@ struct ScrollControls: View {
             TuningSlider(title: "Spin power", symbol: "tornado",
                          value: $config.flyAcceleration, range: 0...1.5,
                          format: { $0.wholePercent }, lowLabel: "Gentle", highLabel: "Wild")
-            TuningSlider(title: "Glide", symbol: "wind",
+            TuningSlider(title: "Glideball", symbol: "wind",
                          value: $config.flyGlide, range: 0...1,
                          format: { String(localized: "\(Int(SmoothScroller.flyTau(glide: $0) * 1000)) ms", comment: "Milliseconds") },
                          lowLabel: "Grippy", highLabel: "Slippery")

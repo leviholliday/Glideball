@@ -157,7 +157,7 @@ final class BackupStore {
             lastError = nil
         } catch {
             lastError = error.localizedDescription
-            NSLog("Glide: backup failed: \(error)")
+            NSLog("Glideball: backup failed: \(error)")
             return false
         }
         prune()

@@ -124,7 +124,7 @@ struct RootView: View {
                 .resizable()
                 .frame(width: 44, height: 44)
             VStack(alignment: .leading, spacing: 1) {
-                Text(verbatim: "Glide").font(.system(size: 22, weight: .bold, design: .rounded))
+                Text(verbatim: "Glideball").font(.system(size: 22, weight: .bold, design: .rounded))
                 if let profile = model.activeProfile {
                     ActiveProfileBadge(model: model, profile: profile)
                 } else {
@@ -144,7 +144,7 @@ struct RootView: View {
             }
             if model.modes.precision {
                 ModePill(text: "Precision", symbol: "scope", tint: .cyan)
-                    .help("A Precision button is slowing the cursor — press it again (or pause Glide) to stop")
+                    .help("A Precision button is slowing the cursor — press it again (or pause Glideball) to stop")
             }
             if model.modes.dragLocked {
                 ModePill(text: "Drag lock", symbol: "hand.draw.fill", tint: .orange)
@@ -161,8 +161,8 @@ struct RootView: View {
             Toggle("", isOn: $model.config.enabled)
                 .toggleStyle(.switch)
                 .labelsHidden()
-                .help(model.config.globalShortcuts.pause.map { String(localized: "Pause or resume Glide — also \($0.display) from anywhere") }
-                      ?? String(localized: "Pause or resume Glide"))
+                .help(model.config.globalShortcuts.pause.map { String(localized: "Pause or resume Glideball — also \($0.display) from anywhere") }
+                      ?? String(localized: "Pause or resume Glideball"))
         }
     }
 
@@ -291,7 +291,7 @@ private struct ActiveProfileBadge: View {
         .buttonStyle(.plain)
         .help(model.glideIsFrontmost
               ? String(localized: "Previewing \(profile.name)’s setup while you edit it. Other apps use your main setup.")
-              : String(localized: "\(profile.name) is in front, so Glide is using its setup. Click to edit it."))
+              : String(localized: "\(profile.name) is in front, so Glideball is using its setup. Click to edit it."))
     }
 }
 
@@ -300,7 +300,7 @@ struct PermissionsCard: View {
 
     var body: some View {
         GlassCard(title: "Two quick permissions", symbol: "lock.shield", tint: .orange.opacity(0.25)) {
-            Text("Glide needs these to read your trackball and adjust its buttons and scrolling. Until both are on, your trackball works normally and Glide stays out of the way.")
+            Text("Glideball needs these to read your trackball and adjust its buttons and scrolling. Until both are on, your trackball works normally and Glideball stays out of the way.")
                 .font(.system(size: 13))
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -367,7 +367,7 @@ struct UpdateButton: View {
             .buttonStyle(.glassProminent)
             .tint(updates.installState == .idle ? .cyan : .orange)
             .fixedSize()
-            .help("Glide \(update.displayVersion) is available — install it or see what's new")
+            .help("Glideball \(update.displayVersion) is available — install it or see what's new")
         }
     }
 }

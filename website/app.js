@@ -1,4 +1,4 @@
-/* Glide — site interactions. Vanilla JS, no dependencies, no tracking. */
+/* Glideball — site interactions. Vanilla JS, no dependencies, no tracking. */
 (() => {
   'use strict';
 
@@ -797,7 +797,7 @@
 
   /* ------------------------------------------------------------ Download: confetti + what's next */
   function initDownload() {
-    const links = document.querySelectorAll('a[href$="/releases/latest/download/Glide.zip"]');
+    const links = document.querySelectorAll('a[href$="/releases/latest/download/Glideball.zip"]');
     if (!links.length) return;
     let toast = null;
     let hideTimer = 0;
@@ -834,9 +834,9 @@
       const text = document.createElement('div');
       text.className = 'dl-text';
       const title = document.createElement('strong');
-      title.textContent = 'Glide is on its way';
+      title.textContent = 'Glideball is on its way';
       const next = document.createElement('span');
-      next.append('Unzip it and drag Glide to Applications. ');
+      next.append('Unzip it and drag Glideball to Applications. ');
       const steps = document.createElement('a');
       steps.href = '#install';
       steps.textContent = 'First-launch tips';

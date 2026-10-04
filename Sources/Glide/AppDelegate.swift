@@ -19,6 +19,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        if AppRename.moveIfNeeded() { exit(0) }   // relaunches as Glideball.app before touching anything
+        AppRename.finishLoginItem()
         let firstLaunch = WelcomeTour.shouldShowAtLaunch()   // before AppModel loads settings
         _ = AppLanguage.atLaunch   // the language on screen, before anyone can change it
         buildMenu()
@@ -145,12 +147,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private func setUpStatusItem() {
         guard AppModel.showMenuBarIcon else { return }
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        item.button?.image = NSImage(systemSymbolName: "cursorarrow.click", accessibilityDescription: "Glide")
+        item.button?.image = NSImage(systemSymbolName: "cursorarrow.click", accessibilityDescription: "Glideball")
         item.button?.image?.isTemplate = true
 
         let menu = NSMenu()
-        menu.addItem(withTitle: String(localized: "Show Glide"), action: #selector(showGlide), keyEquivalent: "")
-        menu.addItem(withTitle: String(localized: "Pause / Resume Glide"), action: #selector(toggleGlide), keyEquivalent: "")
+        menu.addItem(withTitle: String(localized: "Show Glideball"), action: #selector(showGlide), keyEquivalent: "")
+        menu.addItem(withTitle: String(localized: "Pause / Resume Glideball"), action: #selector(toggleGlide), keyEquivalent: "")
         // Scroll with ball and Drag lock act at the pointer, which is up here
         // in the menu bar after choosing an item — so only Precision is offered.
         precisionItem = menu.addItem(withTitle: String(localized: "Precision"), action: #selector(togglePrecision), keyEquivalent: "")
@@ -158,7 +160,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         menu.addItem(withTitle: String(localized: "Check for Updates…"), action: #selector(checkForUpdates), keyEquivalent: "")
         menu.addItem(withTitle: String(localized: "Send Feedback…"), action: #selector(sendFeedback), keyEquivalent: "")
         menu.addItem(.separator())
-        menu.addItem(withTitle: String(localized: "Quit Glide"), action: #selector(quitGlide), keyEquivalent: "q")
+        menu.addItem(withTitle: String(localized: "Quit Glideball"), action: #selector(quitGlide), keyEquivalent: "q")
         menu.items.forEach { $0.target = self }
         item.menu = menu
         statusItem = item
@@ -176,7 +178,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private func showModes(_ modes: Engine.Modes) {
         let symbol = modes.dragLocked ? "hand.draw.fill" : modes.precision ? "scope" : "cursorarrow.click"
-        statusItem?.button?.image = NSImage(systemSymbolName: symbol, accessibilityDescription: "Glide")
+        statusItem?.button?.image = NSImage(systemSymbolName: symbol, accessibilityDescription: "Glideball")
         statusItem?.button?.image?.isTemplate = true
         precisionItem?.state = modes.precision ? .on : .off
     }
@@ -241,14 +243,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         let appItem = NSMenuItem()
         let appMenu = NSMenu()
-        appMenu.addItem(withTitle: String(localized: "About Glide"), action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        appMenu.addItem(withTitle: String(localized: "About Glideball"), action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
         appMenu.addItem(withTitle: String(localized: "Check for Updates…"), action: #selector(checkForUpdates), keyEquivalent: "").target = self
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: String(localized: "Hide Glide"), action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        appMenu.addItem(withTitle: String(localized: "Hide Glideball"), action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
         let others = appMenu.addItem(withTitle: String(localized: "Hide Others"), action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h")
         others.keyEquivalentModifierMask = [.command, .option]
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: String(localized: "Quit Glide"), action: #selector(quitGlide), keyEquivalent: "q").target = self
+        appMenu.addItem(withTitle: String(localized: "Quit Glideball"), action: #selector(quitGlide), keyEquivalent: "q").target = self
         appItem.submenu = appMenu
         main.addItem(appItem)
 
@@ -272,7 +274,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         helpMenu.addItem(withTitle: String(localized: "Show Welcome Tour…"), action: #selector(showWelcomeTour), keyEquivalent: "").target = self
         helpMenu.addItem(.separator())
         helpMenu.addItem(withTitle: String(localized: "Send Feedback…"), action: #selector(sendFeedback), keyEquivalent: "").target = self
-        helpMenu.addItem(withTitle: String(localized: "Glide Website"), action: #selector(openWebsite), keyEquivalent: "").target = self
+        helpMenu.addItem(withTitle: String(localized: "Glideball Website"), action: #selector(openWebsite), keyEquivalent: "").target = self
         helpItem.submenu = helpMenu
         main.addItem(helpItem)
 

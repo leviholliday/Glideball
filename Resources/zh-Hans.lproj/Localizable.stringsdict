@@ -100,7 +100,7 @@
 			<string>概览中还有 %lld 项</string>
 		</dict>
 	</dict>
-	<key>Glide now keeps your records — %lld badges already earned</key>
+	<key>Glideball now keeps your records — %lld badges already earned</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
 		<string>%#@count@</string>
@@ -111,7 +111,7 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>lld</string>
 			<key>other</key>
-			<string>Glide 现在会保存你的纪录 — 已获得 %lld 枚徽章</string>
+			<string>Glideball 现在会保存你的纪录 — 已获得 %lld 枚徽章</string>
 		</dict>
 	</dict>
 </dict>

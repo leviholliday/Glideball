@@ -335,7 +335,7 @@ final class SettingsSync {
         } catch {
             guard (try? JSONSerialization.jsonObject(with: data)) != nil else { return .corrupt }
             // JSON we can't understand most likely came from a newer Glide: leave it be.
-            return .failed(String(localized: "Settings in iCloud Drive were saved by a newer version of Glide. Update Glide on this Mac to keep syncing."))
+            return .failed(String(localized: "Settings in iCloud Drive were saved by a newer version of Glideball. Update Glideball on this Mac to keep syncing."))
         }
     }
 

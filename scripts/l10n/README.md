@@ -1,6 +1,6 @@
 # Translations
 
-Glide is in English (the development language) plus Spanish, French, German, Italian,
+Glideball is in English (the development language) plus Spanish, French, German, Italian,
 Brazilian Portuguese, Japanese, Korean and Simplified Chinese. Without Xcode there's no
 String Catalog, so translations are classic tables:
 
@@ -11,9 +11,9 @@ Resources/en.lproj/Localizable.stringsdict      English plurals (English needs n
 ```
 
 `build.sh` and `scripts/release.sh` copy every `Resources/*.lproj` into the app before signing.
-`CFBundleLocalizations` in `Resources/Info.plist` lists the languages (it's also what makes Glide
+`CFBundleLocalizations` in `Resources/Info.plist` lists the languages (it's also what makes Glideball
 show up in System Settings › General › Language & Region › Applications). Overview › General ›
-Language sets the same per-app preference from inside Glide.
+Language sets the same per-app preference from inside Glideball.
 
 ## Adding or changing a string
 
@@ -21,7 +21,7 @@ Language sets the same per-app preference from inside Glide.
    - SwiftUI text — `Text("…")`, `Button("…")`, `Label("…", systemImage:)`, `.help("…")`,
      `Toggle`, `Picker`, `Section`, `.accessibilityLabel`… — is localized already: just use a
      literal.
-   - Glide's components take a `LocalizedStringKey` too: `GlassCard(title:)`,
+   - Glideball's components take a `LocalizedStringKey` too: `GlassCard(title:)`,
      `ToggleRow(title:subtitle:)`, `TuningSlider(title:lowLabel:highLabel:)`, `StatusPill(text:)`,
      `ModePill(text:)`, `StatTile(title:)` (full list: `COMPONENTS` in `check.py`). If you add a
      component like that, add it there.
@@ -51,5 +51,5 @@ Language sets the same per-app preference from inside Glide.
    it prints `✓ all languages complete`.
 
 Try a language without changing your Mac: run the built app with
-`Glide.app/Contents/MacOS/Glide -AppleLanguages '(de)'`, or pick it in Overview › General ›
+`Glideball.app/Contents/MacOS/Glideball -AppleLanguages '(de)'`, or pick it in Overview › General ›
 Language and relaunch.

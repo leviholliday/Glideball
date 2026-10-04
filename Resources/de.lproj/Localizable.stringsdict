@@ -114,7 +114,7 @@
 			<string>+%lld weitere in der Übersicht</string>
 		</dict>
 	</dict>
-	<key>Glide now keeps your records — %lld badges already earned</key>
+	<key>Glideball now keeps your records — %lld badges already earned</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
 		<string>%#@count@</string>
@@ -125,9 +125,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>lld</string>
 			<key>one</key>
-			<string>Glide zeichnet jetzt deine Rekorde auf — %lld Abzeichen schon verdient</string>
+			<string>Glideball zeichnet jetzt deine Rekorde auf — %lld Abzeichen schon verdient</string>
 			<key>other</key>
-			<string>Glide zeichnet jetzt deine Rekorde auf — %lld Abzeichen schon verdient</string>
+			<string>Glideball zeichnet jetzt deine Rekorde auf — %lld Abzeichen schon verdient</string>
 		</dict>
 	</dict>
 </dict>

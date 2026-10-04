@@ -12,7 +12,7 @@ struct PointerView: View {
                                  value: $model.config.trackingSpeed, range: 0.5...80, step: 0.5,
                                  format: { $0.twoDigits },
                                  lowLabel: "Slow", highLabel: "Ludicrous")
-                    Text("System Settings tops out at 3. Glide lets the Expert Mouse go far past it.")
+                    Text("System Settings tops out at 3. Glideball lets the Expert Mouse go far past it.")
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 }
@@ -58,7 +58,7 @@ struct ResponseCurveCard: View {
     var body: some View {
         let speed = model.config.trackingSpeed
         let xs = stride(from: 0.0, through: 6.0, by: 0.1).map { $0 }
-        let curve = xs.enumerated().map { P(id: $0, x: $1, y: Self.cursorSpeed(ball: $1, tracking: speed), series: "Glide") }
+        let curve = xs.enumerated().map { P(id: $0, x: $1, y: Self.cursorSpeed(ball: $1, tracking: speed), series: "Glideball") }
         let linear = xs.enumerated().map { P(id: 1000 + $0, x: $1, y: Self.cursorSpeed(ball: $1, tracking: 0), series: "1:1") }
         let liveX = min(model.liveBallSpeed, 6)
         let liveY = Self.cursorSpeed(ball: liveX, tracking: speed)

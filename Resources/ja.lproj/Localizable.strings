@@ -1,10 +1,10 @@
-/* Glide — ja. Keys are the English text. Checked by scripts/l10n/check.py. */
+/* Glideball — ja. Keys are the English text. Checked by scripts/l10n/check.py. */
 
 /* ---- AppDelegate.swift ---- */
 
-"Show Glide" = "Glideを表示";
+"Show Glideball" = "Glideを表示";
 
-"Pause / Resume Glide" = "Glideを一時停止/再開";
+"Pause / Resume Glideball" = "Glideを一時停止/再開";
 
 /* Mode that slows the pointer for fine work */
 "Precision" = "精密モード";
@@ -13,11 +13,11 @@
 
 "Send Feedback…" = "フィードバックを送信…";
 
-"Quit Glide" = "Glideを終了";
+"Quit Glideball" = "Glideを終了";
 
-"About Glide" = "Glideについて";
+"About Glideball" = "Glideについて";
 
-"Hide Glide" = "Glideを非表示";
+"Hide Glideball" = "Glideを非表示";
 
 "Hide Others" = "ほかを非表示";
 
@@ -40,7 +40,7 @@
 
 "Show Welcome Tour…" = "ようこそツアーを表示…";
 
-"Glide Website" = "GlideのWebサイト";
+"Glideball Website" = "GlideのWebサイト";
 
 /* ---- AppModel.swift ---- */
 
@@ -68,21 +68,21 @@
 "Back" = "戻る";
 
 /* Exported file name; %@ is the date */
-"Glide Settings – %@" = "Glideの設定 – %@";
+"Glideball Settings – %@" = "Glideの設定 – %@";
 
-"Export Glide Settings" = "Glideの設定を書き出す";
+"Export Glideball Settings" = "Glideの設定を書き出す";
 
-"Save your Glide setup to a file you can back up or open on another Mac." = "Glideの設定をファイルに保存して、バックアップしたりほかのMacで開いたりできます。";
+"Save your Glideball setup to a file you can back up or open on another Mac." = "Glideの設定をファイルに保存して、バックアップしたりほかのMacで開いたりできます。";
 
 "Saved “%@”" = "「%@」を保存しました";
 
 "Couldn’t export: %@" = "書き出せませんでした：%@";
 
-"Import Glide Settings" = "Glideの設定を読み込む";
+"Import Glideball Settings" = "Glideの設定を読み込む";
 
-"Choose a Glide settings file. You’ll see what’s in it before anything changes." = "Glideの設定ファイルを選択してください。何かが変更される前に内容を確認できます。";
+"Choose a Glideball settings file. You’ll see what’s in it before anything changes." = "Glideの設定ファイルを選択してください。何かが変更される前に内容を確認できます。";
 
-"That doesn’t look like a Glide settings file." = "Glideの設定ファイルではないようです。";
+"That doesn’t look like a Glideball settings file." = "Glideの設定ファイルではないようです。";
 
 "Imported “%@”" = "「%@」を読み込みました";
 
@@ -177,12 +177,12 @@
 /* Button action that isn't one of the presets */
 "Custom" = "カスタム";
 
-"Pause / resume Glide" = "Glideを一時停止/再開";
+"Pause / resume Glideball" = "Glideを一時停止/再開";
 
 /* Mode: rolling the ball scrolls instead of moving the pointer */
 "Scroll with ball" = "ボールでスクロール";
 
-"Your escape hatch: Glide steps aside until you press it again." = "非常口：もう一度押すまでGlideが身を引きます。";
+"Your escape hatch: Glideball steps aside until you press it again." = "非常口：もう一度押すまでGlideが身を引きます。";
 
 "Slows the pointer for fine work until you press it again." = "もう一度押すまで、ポインタを減速して細かい作業をしやすくします。";
 
@@ -226,7 +226,7 @@
 
 "Your clickiest day yet" = "過去最多クリックの日";
 
-"Glide is all yours" = "Glideがすっかりあなた仕様に";
+"Glideball is all yours" = "Glideがすっかりあなた仕様に";
 
 /* %@ is an amount: 1,234 or 12.3 m */
 "%@ today" = "今日は%@";
@@ -494,7 +494,7 @@
 
 "Couldn’t read settings from iCloud Drive: %@" = "iCloud Driveから設定を読み込めませんでした：%@";
 
-"Settings in iCloud Drive were saved by a newer version of Glide. Update Glide on this Mac to keep syncing." = "iCloud Driveの設定は新しいバージョンのGlideで保存されています。同期を続けるには、このMacのGlideをアップデートしてください。";
+"Settings in iCloud Drive were saved by a newer version of Glideball. Update Glideball on this Mac to keep syncing." = "iCloud Driveの設定は新しいバージョンのGlideで保存されています。同期を続けるには、このMacのGlideをアップデートしてください。";
 
 /* ---- UpdateChecker.swift ---- */
 
@@ -504,21 +504,21 @@
 
 "Couldn’t unpack the update." = "アップデートを展開できませんでした。";
 
-"The download isn’t the expected Glide %@." = "ダウンロードしたファイルは想定されたGlide %@ではありません。";
+"The download isn’t the expected Glideball %@." = "ダウンロードしたファイルは想定されたGlide %@ではありません。";
 
-"Couldn’t read Glide’s own signature to compare against." = "比較に使うGlide自身の署名を読み取れませんでした。";
+"Couldn’t read Glideball’s own signature to compare against." = "比較に使うGlide自身の署名を読み取れませんでした。";
 
-"The update isn’t signed by Glide’s developer, so it wasn’t installed." = "このアップデートはGlideの開発者によって署名されていないため、インストールされませんでした。";
+"The update isn’t signed by Glideball’s developer, so it wasn’t installed." = "このアップデートはGlideの開発者によって署名されていないため、インストールされませんでした。";
 
 "Couldn’t start the installer: %@" = "インストーラを起動できませんでした：%@";
 
 /* ---- AppsView.swift ---- */
 
-"When one of these apps is in front, Glide switches to its setup. Anything left on “Main setup” follows your main settings." = "これらのAppのいずれかが最前面にあると、Glideはその設定に切り替えます。「メイン設定」のままの項目はメインの設定に従います。";
+"When one of these apps is in front, Glideball switches to its setup. Anything left on “Main setup” follows your main settings." = "これらのAppのいずれかが最前面にあると、Glideはその設定に切り替えます。「メイン設定」のままの項目はメインの設定に従います。";
 
 "Give an app its own setup" = "Appに専用の設定を";
 
-"Faster tracking in a design app, different buttons in your browser — Glide switches the moment that app comes to the front, and back again when you leave. Pick only the parts you want to change; everything else follows your main setup." = "デザインAppではポインタを速く、ブラウザでは別のボタンに — そのAppが最前面に来た瞬間にGlideが切り替え、離れると元に戻します。変えたい部分だけを選べば、ほかはメイン設定に従います。";
+"Faster tracking in a design app, different buttons in your browser — Glideball switches the moment that app comes to the front, and back again when you leave. Pick only the parts you want to change; everything else follows your main setup." = "デザインAppではポインタを速く、ブラウザでは別のボタンに — そのAppが最前面に来た瞬間にGlideが切り替え、離れると元に戻します。変えたい部分だけを選べば、ほかはメイン設定に従います。";
 
 "Open apps" = "開いているApp";
 
@@ -535,9 +535,9 @@
 /* Open panel button: add the chosen app */
 "Add" = "追加";
 
-"Glide couldn’t identify that app." = "GlideはそのAppを識別できませんでした。";
+"Glideball couldn’t identify that app." = "GlideはそのAppを識別できませんでした。";
 
-"Glide itself always uses your main setup." = "Glide自身では常にメイン設定が使われます。";
+"Glideball itself always uses your main setup." = "Glide自身では常にメイン設定が使われます。";
 
 /* Tab name */
 "Pointer" = "ポインタ";
@@ -609,8 +609,8 @@
 
 /* ---- BackupView.swift ---- */
 
-/* Glide 2.6 (9) · …end in .glide-settings… */
-"Glide %@ (%@) · Settings files end in .%@ and open in Glide with a double-click." = "Glide %@（%@）· 設定ファイルの拡張子は.%@で、ダブルクリックするとGlideで開きます。";
+/* Glideball 2.6 (9) · …end in .glide-settings… */
+"Glideball %@ (%@) · Settings files end in .%@ and open in Glideball with a double-click." = "Glideball %@（%@）· 設定ファイルの拡張子は.%@で、ダブルクリックするとGlideで開きます。";
 
 "Export" = "書き出す";
 
@@ -620,7 +620,7 @@
 
 "Save to File…" = "ファイルに保存…";
 
-"Glide Settings" = "Glideの設定";
+"Glideball Settings" = "Glideの設定";
 
 "Share…" = "共有…";
 
@@ -646,7 +646,7 @@
 /* The Mac's name */
 "Exported from %@" = "%@から書き出し";
 
-"Glide settings file" = "Glide設定ファイル";
+"Glideball settings file" = "Glide設定ファイル";
 
 /* Tab name: export, import and iCloud sync */
 "Sync" = "同期";
@@ -676,7 +676,7 @@
 
 "Left click · locked" = "左クリック · 固定";
 
-"Your primary click stays a left click, so Glide can never lock you out." = "メインのクリックは左クリックのままなので、Glideで操作不能になることはありません。";
+"Your primary click stays a left click, so Glideball can never lock you out." = "メインのクリックは左クリックのままなので、Glideで操作不能になることはありません。";
 
 "Type a shortcut…  esc to cancel" = "ショートカットを入力…  escでキャンセル";
 
@@ -708,7 +708,7 @@
 
 "of %lld" = "/%lld";
 
-"You’ve made Glide yours." = "Glideをすっかり自分仕様にしました。";
+"You’ve made Glideball yours." = "Glideをすっかり自分仕様にしました。";
 
 "Speed, scrolling, buttons, a combo and an app setup — all tuned to you. Change anything, any time." = "速度、スクロール、ボタン、コンボ、App別設定 — すべてあなた好みに調整済み。いつでも変更できます。";
 
@@ -803,7 +803,7 @@
 
 "What went wrong? e.g. “Scrolling jumps in Safari”" = "何が問題でしたか？ 例：「Safariでスクロールが飛ぶ」";
 
-"What would make Glide better?" = "Glideをもっと良くするには？";
+"What would make Glideball better?" = "Glideをもっと良くするには？";
 
 "What would you like to know?" = "何を知りたいですか？";
 
@@ -863,7 +863,7 @@
 /* Switched on */
 "On" = "オン";
 
-/* Areas of Glide the report mentions */
+/* Areas of Glideball the report mentions */
 "Topics" = "トピック";
 
 "That email address doesn’t look right." = "メールアドレスが正しくないようです。";
@@ -882,7 +882,7 @@
 
 "Attachments" = "添付ファイル";
 
-"Include my Glide settings" = "Glideの設定を含める";
+"Include my Glideball settings" = "Glideの設定を含める";
 
 "Your pointer, scrolling and button setup (settings.json) so I can reproduce it. Nothing personal is in it." = "ポインタ、スクロール、ボタンの設定（settings.json）。再現に使います。個人情報は含まれません。";
 
@@ -968,7 +968,7 @@
 
 /* ---- LaunchViews.swift ---- */
 
-"Glide is starting" = "Glideを起動中";
+"Glideball is starting" = "Glideを起動中";
 
 "Click or press Escape to skip" = "クリックまたはEscキーでスキップ";
 
@@ -988,7 +988,7 @@
 
 "Menu bar icon" = "メニューバーアイコン";
 
-"Quick access to pause, precision and updates. Glide keeps running either way — reopen it from the Dock." = "一時停止、精密モード、アップデートにすばやくアクセスできます。どちらの場合もGlideは動作し続けます — Dockから再び開けます。";
+"Quick access to pause, precision and updates. Glideball keeps running either way — reopen it from the Dock." = "一時停止、精密モード、アップデートにすばやくアクセスできます。どちらの場合もGlideは動作し続けます — Dockから再び開けます。";
 
 "Try features before they're finished — like support for other Kensington trackballs and early updates. You may hit bugs." = "完成前の機能を試せます — ほかのKensingtonトラックボールのサポートや先行アップデートなど。バグがあるかもしれません。";
 
@@ -1000,7 +1000,7 @@
 
 "Celebration sounds" = "お祝いのサウンド";
 
-"A soft chime as Glide opens. Never when your Mac is muted." = "Glideの起動時にやさしいチャイムを鳴らします。Macが消音中は鳴りません。";
+"A soft chime as Glideball opens. Never when your Mac is muted." = "Glideの起動時にやさしいチャイムを鳴らします。Macが消音中は鳴りません。";
 
 "Launch sounds" = "起動サウンド";
 
@@ -1008,7 +1008,7 @@
 
 "Found a bug or have an idea? It goes straight to the developer." = "バグを見つけたり、アイデアがあったりしますか？開発者に直接届きます。";
 
-"Closing this window keeps Glide running. Click Glide in the Dock to bring it back, or press ⌘Q to quit — your trackball then goes back to normal." = "このウインドウを閉じてもGlideは動作し続けます。DockのGlideをクリックすると戻れます。⌘Qで終了すると、トラックボールは通常の動作に戻ります。";
+"Closing this window keeps Glideball running. Click Glideball in the Dock to bring it back, or press ⌘Q to quit — your trackball then goes back to normal." = "このウインドウを閉じてもGlideは動作し続けます。DockのGlideをクリックすると戻れます。⌘Qで終了すると、トラックボールは通常の動作に戻ります。";
 
 "Waiting for permissions…" = "許可を待っています…";
 
@@ -1016,7 +1016,7 @@
 
 "Roll, spin, or click — it's live." = "転がす、回す、クリック — リアルタイムで表示されます。";
 
-"Turn on the Beta program to try Glide with your %@." = "ベータプログラムをオンにすると、%@でGlideを試せます。";
+"Turn on the Beta program to try Glideball with your %@." = "ベータプログラムをオンにすると、%@でGlideを試せます。";
 
 "Turn On Beta" = "ベータをオンにする";
 
@@ -1034,7 +1034,7 @@
 
 "Language" = "言語";
 
-"Glide can speak a different language from the rest of your Mac." = "Glideの言語をMacのほかの部分と別にできます。";
+"Glideball can speak a different language from the rest of your Mac." = "Glideの言語をMacのほかの部分と別にできます。";
 
 "Relaunch to Apply" = "再起動して適用";
 
@@ -1046,26 +1046,26 @@
 
 "Check for Updates" = "アップデートを確認";
 
-/* Glide 2.6 · 2.7 is ready to install */
+/* Glideball 2.6 · 2.7 is ready to install */
 "%@ · %@ is ready to install" = "%1$@ · %2$@をインストールできます";
 
-/* %@ is “Glide 2.6” */
+/* %@ is “Glideball 2.6” */
 "%@ · You’re up to date ✓" = "%@ · 最新です ✓";
 
-/* %@ is “Glide 2.6” */
+/* %@ is “Glideball 2.6” */
 "%@ · Couldn’t reach GitHub — try again later" = "%@ · GitHubに接続できませんでした — あとでもう一度お試しください";
 
-/* %@ is “Glide 2.6” */
+/* %@ is “Glideball 2.6” */
 "%@ · Checking…" = "%@ · 確認中…";
 
-/* %@ is “Glide 2.6” */
+/* %@ is “Glideball 2.6” */
 "%@ · Checks automatically once a day" = "%@ · 1日1回自動的に確認します";
 
 /* ---- PointerView.swift ---- */
 
 "Feel" = "操作感";
 
-"System Settings tops out at 3. Glide lets the Expert Mouse go far past it." = "「システム設定」の上限は3です。GlideならExpert Mouseをはるかに速くできます。";
+"System Settings tops out at 3. Glideball lets the Expert Mouse go far past it." = "「システム設定」の上限は3です。GlideならExpert Mouseをはるかに速くできます。";
 
 "Presets" = "プリセット";
 
@@ -1107,15 +1107,15 @@
 /* Tab name */
 "Apps" = "App";
 
-"A Precision button is slowing the cursor — press it again (or pause Glide) to stop" = "精密モードのボタンでカーソルを減速中 — もう一度押すか、Glideを一時停止すると解除されます";
+"A Precision button is slowing the cursor — press it again (or pause Glideball) to stop" = "精密モードのボタンでカーソルを減速中 — もう一度押すか、Glideを一時停止すると解除されます";
 
 "The left button is held by Drag lock — click, or press the Drag lock button again, to let go" = "左ボタンがドラッグロックで押されたままです — クリックするか、ドラッグロックのボタンをもう一度押すと解除されます";
 
 "Ball scroll" = "ボールスクロール";
 
-"Pause or resume Glide — also %@ from anywhere" = "Glideを一時停止または再開 — どこからでも%@で可能";
+"Pause or resume Glideball — also %@ from anywhere" = "Glideを一時停止または再開 — どこからでも%@で可能";
 
-"Pause or resume Glide" = "Glideを一時停止または再開";
+"Pause or resume Glideball" = "Glideを一時停止または再開";
 
 /* Status pill */
 "Needs permission" = "許可が必要";
@@ -1136,11 +1136,11 @@
 
 "Previewing %@’s setup while you edit it. Other apps use your main setup." = "編集中は%@の設定をプレビューしています。ほかのAppではメイン設定が使われます。";
 
-"%@ is in front, so Glide is using its setup. Click to edit it." = "%@が最前面にあるため、Glideはその設定を使用しています。クリックして編集できます。";
+"%@ is in front, so Glideball is using its setup. Click to edit it." = "%@が最前面にあるため、Glideはその設定を使用しています。クリックして編集できます。";
 
 "Two quick permissions" = "2つの簡単な許可";
 
-"Glide needs these to read your trackball and adjust its buttons and scrolling. Until both are on, your trackball works normally and Glide stays out of the way." = "Glideがトラックボールを読み取り、ボタンとスクロールを調整するにはこれらが必要です。両方がオンになるまで、トラックボールは通常どおり動作し、Glideは何もしません。";
+"Glideball needs these to read your trackball and adjust its buttons and scrolling. Until both are on, your trackball works normally and Glideball stays out of the way." = "Glideがトラックボールを読み取り、ボタンとスクロールを調整するにはこれらが必要です。両方がオンになるまで、トラックボールは通常どおり動作し、Glideは何もしません。";
 
 "Accessibility — on" = "アクセシビリティ — オン";
 
@@ -1165,7 +1165,7 @@
 /* Update button after a failed install */
 "Retry" = "再試行";
 
-"Glide %@ is available — install it or see what's new" = "Glide %@が利用可能です — インストールするか新機能を確認";
+"Glideball %@ is available — install it or see what's new" = "Glideball %@が利用可能です — インストールするか新機能を確認";
 
 /* ---- ScrollSettingsView.swift ---- */
 
@@ -1183,7 +1183,7 @@
 
 "macOS scrolling" = "macOSのスクロール";
 
-"Glide steps aside and lets macOS scroll the ring itself — the same system Kensington's driver handed its ticks to. Only the speed is adjustable." = "Glideは身を引いて、macOS自身にリングでスクロールさせます — Kensingtonのドライバがノッチを渡していたのと同じ仕組みです。調整できるのは速度だけです。";
+"Glideball steps aside and lets macOS scroll the ring itself — the same system Kensington's driver handed its ticks to. Only the speed is adjustable." = "Glideは身を引いて、macOS自身にリングでスクロールさせます — Kensingtonのドライバがノッチを渡していたのと同じ仕組みです。調整できるのは速度だけです。";
 
 "Scroll speed" = "スクロール速度";
 
@@ -1204,7 +1204,7 @@
 
 "Wild" = "激しく";
 
-"Glide" = "惰性";
+"Glideball" = "惰性";
 
 /* Milliseconds */
 "%lld ms" = "%lld ms";
@@ -1315,14 +1315,14 @@
 
 "Press the new shortcut, or Esc to cancel" = "新しいショートカットを押すか、Escでキャンセル";
 
-"No pause shortcut. You can still pause Glide from its menu-bar icon or the switch at the top of this window." = "一時停止のショートカットはありません。メニューバーアイコンや、このウインドウ上部のスイッチからでもGlideを一時停止できます。";
+"No pause shortcut. You can still pause Glideball from its menu-bar icon or the switch at the top of this window." = "一時停止のショートカットはありません。メニューバーアイコンや、このウインドウ上部のスイッチからでもGlideを一時停止できます。";
 
 "Couldn't turn on %@ — another app already uses it. Choose a different shortcut." = "%@をオンにできませんでした — ほかのAppがすでに使用しています。別のショートカットを選んでください。";
 
 /* Use the names System Settings shows in this language */
-"macOS uses %@ for one of its own shortcuts (System Settings › Keyboard › Keyboard Shortcuts), so it may never reach Glide." = "macOSは%@を独自のショートカットに使っているため（システム設定 › キーボード › キーボードショートカット）、Glideに届かない可能性があります。";
+"macOS uses %@ for one of its own shortcuts (System Settings › Keyboard › Keyboard Shortcuts), so it may never reach Glideball." = "macOSは%@を独自のショートカットに使っているため（システム設定 › キーボード › キーボードショートカット）、Glideに届かない可能性があります。";
 
-"Apps use ⌘ shortcuts like %@ too — while it's set, Glide takes it from every app." = "Appも%@のような⌘ショートカットを使います — 設定している間は、GlideがすべてのAppからこのショートカットを奪います。";
+"Apps use ⌘ shortcuts like %@ too — while it's set, Glideball takes it from every app." = "Appも%@のような⌘ショートカットを使います — 設定している間は、GlideがすべてのAppからこのショートカットを奪います。";
 
 /* ---- WelcomeTourView.swift ---- */
 
@@ -1334,17 +1334,17 @@
 
 "Skip for now" = "今はスキップ";
 
-"Glide stays out of the way until both permissions are on" = "両方の許可がオンになるまで、Glideは何もしません";
+"Glideball stays out of the way until both permissions are on" = "両方の許可がオンになるまで、Glideは何もしません";
 
 "Step %lld of %lld" = "ステップ%lld/%lld";
 
 "Get Started" = "はじめる";
 
-"Start Using Glide" = "Glideを使い始める";
+"Start Using Glideball" = "Glideを使い始める";
 
 "Continue" = "続ける";
 
-"Welcome to Glide" = "Glideへようこそ";
+"Welcome to Glideball" = "Glideへようこそ";
 
 "Your Kensington trackball, tuned exactly the way you like it." = "Kensingtonトラックボールを、思いどおりの操作感に。";
 
@@ -1356,19 +1356,19 @@
 
 "About a minute. Use Return or the arrow keys to move along." = "1分ほどで終わります。Returnキーか矢印キーで進めます。";
 
-"Glide needs these to read your trackball and change what it does. Until both are on, your trackball works normally and Glide stays out of the way." = "Glideがトラックボールを読み取り、その動作を変更するにはこれらが必要です。両方がオンになるまで、トラックボールは通常どおり動作し、Glideは何もしません。";
+"Glideball needs these to read your trackball and change what it does. Until both are on, your trackball works normally and Glideball stays out of the way." = "Glideがトラックボールを読み取り、その動作を変更するにはこれらが必要です。両方がオンになるまで、トラックボールは通常どおり動作し、Glideは何もしません。";
 
 "Accessibility" = "アクセシビリティ";
 
-"Lets Glide change what your buttons and scroll ring do." = "Glideがボタンとスクロールリングの動作を変更できるようにします。";
+"Lets Glideball change what your buttons and scroll ring do." = "Glideがボタンとスクロールリングの動作を変更できるようにします。";
 
 "Input Monitoring" = "入力監視";
 
-"Lets Glide tell your trackball apart from your other mice and trackpad." = "Glideがトラックボールをほかのマウスやトラックパッドと区別できるようにします。";
+"Lets Glideball tell your trackball apart from your other mice and trackpad." = "Glideがトラックボールをほかのマウスやトラックパッドと区別できるようにします。";
 
-"All set — Glide can see your trackball." = "準備完了 — Glideがトラックボールを認識しています。";
+"All set — Glideball can see your trackball." = "準備完了 — Glideがトラックボールを認識しています。";
 
-"Switch Glide on in each list in System Settings, then come back — the checkmarks update by themselves." = "「システム設定」の各リストでGlideをオンにして、戻ってきてください — チェックマークは自動的に更新されます。";
+"Switch Glideball on in each list in System Settings, then come back — the checkmarks update by themselves." = "「システム設定」の各リストでGlideをオンにして、戻ってきてください — チェックマークは自動的に更新されます。";
 
 "Allow…" = "許可…";
 
@@ -1384,9 +1384,9 @@
 
 "Not pressed yet" = "まだ押されていません";
 
-"Glide can't see your buttons until both permissions are on. You can come back to this tour from Help." = "両方の許可がオンになるまで、Glideはボタンを認識できません。このツアーには「ヘルプ」からいつでも戻れます。";
+"Glideball can't see your buttons until both permissions are on. You can come back to this tour from Help." = "両方の許可がオンになるまで、Glideはボタンを認識できません。このツアーには「ヘルプ」からいつでも戻れます。";
 
-"Your %@ works with Glide through the Beta program — you can turn it on at the end of the tour." = "お使いの%@はベータプログラムを通じてGlideで使えます — ツアーの最後にオンにできます。";
+"Your %@ works with Glideball through the Beta program — you can turn it on at the end of the tour." = "お使いの%@はベータプログラムを通じてGlideで使えます — ツアーの最後にオンにできます。";
 
 "Plug in your Expert Mouse to try this." = "これを試すにはExpert Mouseを接続してください。";
 
@@ -1398,7 +1398,7 @@
 
 "How the scroll ring moves the page. Try one, spin the ring, and switch whenever you like." = "スクロールリングでページがどう動くかです。1つ選んでリングを回してみてください。いつでも切り替えられます。";
 
-"How far the cursor travels when you roll the ball. macOS stops at its own setting; Glide goes past it." = "ボールを転がしたときにカーソルが動く距離です。macOSには上限がありますが、Glideはそれを超えられます。";
+"How far the cursor travels when you roll the ball. macOS stops at its own setting; Glideball goes past it." = "ボールを転がしたときにカーソルが動く距離です。macOSには上限がありますが、Glideはそれを超えられます。";
 
 "Fine-tune both later in the Pointer and Scrolling tabs." = "どちらもあとで「ポインタ」と「スクロール」タブで細かく調整できます。";
 
@@ -1408,21 +1408,21 @@
 
 "Pause instantly" = "すぐに一時停止";
 
-"Press ⌃⌥⌘G anywhere and Glide pauses — your trackball goes straight back to plain macOS. Press it again to resume." = "どこでも⌃⌥⌘Gを押すとGlideが一時停止し、トラックボールは素のmacOSの動作に戻ります。もう一度押すと再開します。";
+"Press ⌃⌥⌘G anywhere and Glideball pauses — your trackball goes straight back to plain macOS. Press it again to resume." = "どこでも⌃⌥⌘Gを押すとGlideが一時停止し、トラックボールは素のmacOSの動作に戻ります。もう一度押すと再開します。";
 
-"Glide is on — try it" = "Glideはオンです — 試してみてください";
+"Glideball is on — try it" = "Glideはオンです — 試してみてください";
 
-"Glide is paused" = "Glideは一時停止中です";
+"Glideball is paused" = "Glideは一時停止中です";
 
 "Main click stays a left click" = "メインのクリックは左クリックのまま";
 
-"The bottom-left button is always a left click, whatever else you remap — so Glide can never lock you out." = "左下のボタンは、ほかをどう変更しても常に左クリックです — だからGlideで操作不能になることはありません。";
+"The bottom-left button is always a left click, whatever else you remap — so Glideball can never lock you out." = "左下のボタンは、ほかをどう変更しても常に左クリックです — だからGlideで操作不能になることはありません。";
 
-"Quitting Glide also puts your trackball back to normal." = "Glideを終了しても、トラックボールは通常の動作に戻ります。";
+"Quitting Glideball also puts your trackball back to normal." = "Glideを終了しても、トラックボールは通常の動作に戻ります。";
 
 "You're all set" = "準備完了です";
 
-"Glide keeps running when you close its window — click Glide in the Dock to come back." = "Glideはウインドウを閉じても動作し続けます — DockのGlideをクリックすると戻れます。";
+"Glideball keeps running when you close its window — click Glideball in the Dock to come back." = "Glideはウインドウを閉じても動作し続けます — DockのGlideをクリックすると戻れます。";
 
 "Turn On" = "オンにする";
 

@@ -1,10 +1,10 @@
-/* Glide — zh-Hans. Keys are the English text. Checked by scripts/l10n/check.py. */
+/* Glideball — zh-Hans. Keys are the English text. Checked by scripts/l10n/check.py. */
 
 /* ---- AppDelegate.swift ---- */
 
-"Show Glide" = "显示 Glide";
+"Show Glideball" = "显示 Glideball";
 
-"Pause / Resume Glide" = "暂停 / 恢复 Glide";
+"Pause / Resume Glideball" = "暂停 / 恢复 Glideball";
 
 /* Mode that slows the pointer for fine work */
 "Precision" = "精准";
@@ -13,11 +13,11 @@
 
 "Send Feedback…" = "发送反馈…";
 
-"Quit Glide" = "退出 Glide";
+"Quit Glideball" = "退出 Glideball";
 
-"About Glide" = "关于 Glide";
+"About Glideball" = "关于 Glideball";
 
-"Hide Glide" = "隐藏 Glide";
+"Hide Glideball" = "隐藏 Glideball";
 
 "Hide Others" = "隐藏其他";
 
@@ -40,7 +40,7 @@
 
 "Show Welcome Tour…" = "显示欢迎导览…";
 
-"Glide Website" = "Glide 网站";
+"Glideball Website" = "Glideball 网站";
 
 /* ---- AppModel.swift ---- */
 
@@ -68,21 +68,21 @@
 "Back" = "后退";
 
 /* Exported file name; %@ is the date */
-"Glide Settings – %@" = "Glide 设置 – %@";
+"Glideball Settings – %@" = "Glideball 设置 – %@";
 
-"Export Glide Settings" = "导出 Glide 设置";
+"Export Glideball Settings" = "导出 Glideball 设置";
 
-"Save your Glide setup to a file you can back up or open on another Mac." = "将 Glide 配置存储为文件，以便备份或在另一台 Mac 上打开。";
+"Save your Glideball setup to a file you can back up or open on another Mac." = "将 Glideball 配置存储为文件，以便备份或在另一台 Mac 上打开。";
 
 "Saved “%@”" = "已存储“%@”";
 
 "Couldn’t export: %@" = "无法导出：%@";
 
-"Import Glide Settings" = "导入 Glide 设置";
+"Import Glideball Settings" = "导入 Glideball 设置";
 
-"Choose a Glide settings file. You’ll see what’s in it before anything changes." = "选取一个 Glide 设置文件。更改任何内容前，你会先看到其中的内容。";
+"Choose a Glideball settings file. You’ll see what’s in it before anything changes." = "选取一个 Glideball 设置文件。更改任何内容前，你会先看到其中的内容。";
 
-"That doesn’t look like a Glide settings file." = "这似乎不是 Glide 设置文件。";
+"That doesn’t look like a Glideball settings file." = "这似乎不是 Glideball 设置文件。";
 
 "Imported “%@”" = "已导入“%@”";
 
@@ -177,12 +177,12 @@
 /* Button action that isn't one of the presets */
 "Custom" = "自定义";
 
-"Pause / resume Glide" = "暂停 / 恢复 Glide";
+"Pause / resume Glideball" = "暂停 / 恢复 Glideball";
 
 /* Mode: rolling the ball scrolls instead of moving the pointer */
 "Scroll with ball" = "用球滚动";
 
-"Your escape hatch: Glide steps aside until you press it again." = "你的逃生舱：Glide 会退居一旁，直到你再按一次。";
+"Your escape hatch: Glideball steps aside until you press it again." = "你的逃生舱：Glideball 会退居一旁，直到你再按一次。";
 
 "Slows the pointer for fine work until you press it again." = "减慢指针以便精细操作，直到你再按一次。";
 
@@ -226,7 +226,7 @@
 
 "Your clickiest day yet" = "你点按最多的一天";
 
-"Glide is all yours" = "Glide 已完全属于你";
+"Glideball is all yours" = "Glideball 已完全属于你";
 
 /* %@ is an amount: 1,234 or 12.3 m */
 "%@ today" = "今天 %@";
@@ -494,7 +494,7 @@
 
 "Couldn’t read settings from iCloud Drive: %@" = "无法从 iCloud 云盘读取设置：%@";
 
-"Settings in iCloud Drive were saved by a newer version of Glide. Update Glide on this Mac to keep syncing." = "iCloud 云盘中的设置由更新版本的 Glide 存储。请在这台 Mac 上更新 Glide 以继续同步。";
+"Settings in iCloud Drive were saved by a newer version of Glideball. Update Glideball on this Mac to keep syncing." = "iCloud 云盘中的设置由更新版本的 Glideball 存储。请在这台 Mac 上更新 Glideball 以继续同步。";
 
 /* ---- UpdateChecker.swift ---- */
 
@@ -504,21 +504,21 @@
 
 "Couldn’t unpack the update." = "无法解压更新。";
 
-"The download isn’t the expected Glide %@." = "下载的文件不是预期的 Glide %@。";
+"The download isn’t the expected Glideball %@." = "下载的文件不是预期的 Glideball %@。";
 
-"Couldn’t read Glide’s own signature to compare against." = "无法读取 Glide 自身的签名以进行比对。";
+"Couldn’t read Glideball’s own signature to compare against." = "无法读取 Glideball 自身的签名以进行比对。";
 
-"The update isn’t signed by Glide’s developer, so it wasn’t installed." = "此更新未经 Glide 开发者签名，因此未安装。";
+"The update isn’t signed by Glideball’s developer, so it wasn’t installed." = "此更新未经 Glideball 开发者签名，因此未安装。";
 
 "Couldn’t start the installer: %@" = "无法启动安装器：%@";
 
 /* ---- AppsView.swift ---- */
 
-"When one of these apps is in front, Glide switches to its setup. Anything left on “Main setup” follows your main settings." = "这些 App 位于最前面时，Glide 会切换到它们的配置。保留为“主配置”的部分将跟随你的主设置。";
+"When one of these apps is in front, Glideball switches to its setup. Anything left on “Main setup” follows your main settings." = "这些 App 位于最前面时，Glideball 会切换到它们的配置。保留为“主配置”的部分将跟随你的主设置。";
 
 "Give an app its own setup" = "为 App 设定专属配置";
 
-"Faster tracking in a design app, different buttons in your browser — Glide switches the moment that app comes to the front, and back again when you leave. Pick only the parts you want to change; everything else follows your main setup." = "在设计 App 中指针更快，在浏览器中按钮不同 — 该 App 一到最前面 Glide 就立即切换，离开后再切回。只选你想更改的部分，其他一切跟随主配置。";
+"Faster tracking in a design app, different buttons in your browser — Glideball switches the moment that app comes to the front, and back again when you leave. Pick only the parts you want to change; everything else follows your main setup." = "在设计 App 中指针更快，在浏览器中按钮不同 — 该 App 一到最前面 Glideball 就立即切换，离开后再切回。只选你想更改的部分，其他一切跟随主配置。";
 
 "Open apps" = "已打开的 App";
 
@@ -535,9 +535,9 @@
 /* Open panel button: add the chosen app */
 "Add" = "添加";
 
-"Glide couldn’t identify that app." = "Glide 无法识别该 App。";
+"Glideball couldn’t identify that app." = "Glideball 无法识别该 App。";
 
-"Glide itself always uses your main setup." = "Glide 本身始终使用主配置。";
+"Glideball itself always uses your main setup." = "Glideball 本身始终使用主配置。";
 
 /* Tab name */
 "Pointer" = "指针";
@@ -609,8 +609,8 @@
 
 /* ---- BackupView.swift ---- */
 
-/* Glide 2.6 (9) · …end in .glide-settings… */
-"Glide %@ (%@) · Settings files end in .%@ and open in Glide with a double-click." = "Glide %@（%@）· 设置文件以 .%@ 结尾，在 Glide 中连按两次即可打开。";
+/* Glideball 2.6 (9) · …end in .glide-settings… */
+"Glideball %@ (%@) · Settings files end in .%@ and open in Glideball with a double-click." = "Glideball %@（%@）· 设置文件以 .%@ 结尾，在 Glideball 中连按两次即可打开。";
 
 "Export" = "导出";
 
@@ -620,7 +620,7 @@
 
 "Save to File…" = "存储到文件…";
 
-"Glide Settings" = "Glide 设置";
+"Glideball Settings" = "Glideball 设置";
 
 "Share…" = "共享…";
 
@@ -646,7 +646,7 @@
 /* The Mac's name */
 "Exported from %@" = "导出自 %@";
 
-"Glide settings file" = "Glide 设置文件";
+"Glideball settings file" = "Glideball 设置文件";
 
 /* Tab name: export, import and iCloud sync */
 "Sync" = "同步";
@@ -676,7 +676,7 @@
 
 "Left click · locked" = "左键点按 · 已锁定";
 
-"Your primary click stays a left click, so Glide can never lock you out." = "你的主点按始终是左键点按，因此 Glide 永远不会让你失去控制。";
+"Your primary click stays a left click, so Glideball can never lock you out." = "你的主点按始终是左键点按，因此 Glideball 永远不会让你失去控制。";
 
 "Type a shortcut…  esc to cancel" = "输入快捷键…  按 esc 取消";
 
@@ -708,7 +708,7 @@
 
 "of %lld" = "共 %lld 项";
 
-"You’ve made Glide yours." = "Glide 已是你的专属。";
+"You’ve made Glideball yours." = "Glideball 已是你的专属。";
 
 "Speed, scrolling, buttons, a combo and an app setup — all tuned to you. Change anything, any time." = "速度、滚动、按钮、组合键和 App 配置 — 全都为你量身调校。随时可以更改。";
 
@@ -803,7 +803,7 @@
 
 "What went wrong? e.g. “Scrolling jumps in Safari”" = "出了什么问题？例如“在 Safari 中滚动会跳动”";
 
-"What would make Glide better?" = "怎样能让 Glide 更好？";
+"What would make Glideball better?" = "怎样能让 Glideball 更好？";
 
 "What would you like to know?" = "你想了解什么？";
 
@@ -863,7 +863,7 @@
 /* Switched on */
 "On" = "开";
 
-/* Areas of Glide the report mentions */
+/* Areas of Glideball the report mentions */
 "Topics" = "主题";
 
 "That email address doesn’t look right." = "该电子邮件地址似乎不对。";
@@ -882,7 +882,7 @@
 
 "Attachments" = "附件";
 
-"Include my Glide settings" = "附上我的 Glide 设置";
+"Include my Glideball settings" = "附上我的 Glideball 设置";
 
 "Your pointer, scrolling and button setup (settings.json) so I can reproduce it. Nothing personal is in it." = "你的指针、滚动和按钮配置（settings.json），方便我重现问题。其中不含任何个人信息。";
 
@@ -968,7 +968,7 @@
 
 /* ---- LaunchViews.swift ---- */
 
-"Glide is starting" = "Glide 正在启动";
+"Glideball is starting" = "Glideball 正在启动";
 
 "Click or press Escape to skip" = "点按或按下 Esc 键跳过";
 
@@ -988,7 +988,7 @@
 
 "Menu bar icon" = "菜单栏图标";
 
-"Quick access to pause, precision and updates. Glide keeps running either way — reopen it from the Dock." = "快速暂停、切换精准模式和检查更新。无论如何 Glide 都会继续运行，可从程序坞重新打开。";
+"Quick access to pause, precision and updates. Glideball keeps running either way — reopen it from the Dock." = "快速暂停、切换精准模式和检查更新。无论如何 Glideball 都会继续运行，可从程序坞重新打开。";
 
 "Try features before they're finished — like support for other Kensington trackballs and early updates. You may hit bugs." = "抢先试用尚未完成的功能，例如支持其他 Kensington 轨迹球以及提前获取更新。可能会遇到错误。";
 
@@ -1000,7 +1000,7 @@
 
 "Celebration sounds" = "庆祝音效";
 
-"A soft chime as Glide opens. Never when your Mac is muted." = "Glide 打开时轻响一声。Mac 静音时不会响。";
+"A soft chime as Glideball opens. Never when your Mac is muted." = "Glideball 打开时轻响一声。Mac 静音时不会响。";
 
 "Launch sounds" = "启动音效";
 
@@ -1008,7 +1008,7 @@
 
 "Found a bug or have an idea? It goes straight to the developer." = "发现了错误或有好点子？会直接发给开发者。";
 
-"Closing this window keeps Glide running. Click Glide in the Dock to bring it back, or press ⌘Q to quit — your trackball then goes back to normal." = "关闭此窗口后 Glide 仍会继续运行。点按程序坞中的 Glide 即可回来，或按 ⌘Q 退出，轨迹球随即恢复正常。";
+"Closing this window keeps Glideball running. Click Glideball in the Dock to bring it back, or press ⌘Q to quit — your trackball then goes back to normal." = "关闭此窗口后 Glideball 仍会继续运行。点按程序坞中的 Glideball 即可回来，或按 ⌘Q 退出，轨迹球随即恢复正常。";
 
 "Waiting for permissions…" = "正在等待权限…";
 
@@ -1016,7 +1016,7 @@
 
 "Roll, spin, or click — it's live." = "滚一滚、转一转或点一点 — 实时显示。";
 
-"Turn on the Beta program to try Glide with your %@." = "开启 Beta 计划，即可在 Glide 中使用你的 %@。";
+"Turn on the Beta program to try Glideball with your %@." = "开启 Beta 计划，即可在 Glideball 中使用你的 %@。";
 
 "Turn On Beta" = "开启 Beta";
 
@@ -1034,7 +1034,7 @@
 
 "Language" = "语言";
 
-"Glide can speak a different language from the rest of your Mac." = "Glide 可以使用与 Mac 其他部分不同的语言。";
+"Glideball can speak a different language from the rest of your Mac." = "Glideball 可以使用与 Mac 其他部分不同的语言。";
 
 "Relaunch to Apply" = "重新启动以应用";
 
@@ -1046,26 +1046,26 @@
 
 "Check for Updates" = "检查更新";
 
-/* Glide 2.6 · 2.7 is ready to install */
+/* Glideball 2.6 · 2.7 is ready to install */
 "%@ · %@ is ready to install" = "%@ · %@ 已可安装";
 
-/* %@ is “Glide 2.6” */
+/* %@ is “Glideball 2.6” */
 "%@ · You’re up to date ✓" = "%@ · 已是最新版本 ✓";
 
-/* %@ is “Glide 2.6” */
+/* %@ is “Glideball 2.6” */
 "%@ · Couldn’t reach GitHub — try again later" = "%@ · 无法连接 GitHub，请稍后再试";
 
-/* %@ is “Glide 2.6” */
+/* %@ is “Glideball 2.6” */
 "%@ · Checking…" = "%@ · 正在检查…";
 
-/* %@ is “Glide 2.6” */
+/* %@ is “Glideball 2.6” */
 "%@ · Checks automatically once a day" = "%@ · 每天自动检查一次";
 
 /* ---- PointerView.swift ---- */
 
 "Feel" = "手感";
 
-"System Settings tops out at 3. Glide lets the Expert Mouse go far past it." = "“系统设置”最高只到 3。Glide 能让 Expert Mouse 远超这个速度。";
+"System Settings tops out at 3. Glideball lets the Expert Mouse go far past it." = "“系统设置”最高只到 3。Glideball 能让 Expert Mouse 远超这个速度。";
 
 "Presets" = "预设";
 
@@ -1107,15 +1107,15 @@
 /* Tab name */
 "Apps" = "App";
 
-"A Precision button is slowing the cursor — press it again (or pause Glide) to stop" = "精准按钮正在减慢指针速度 — 再按一次（或暂停 Glide）即可停止";
+"A Precision button is slowing the cursor — press it again (or pause Glideball) to stop" = "精准按钮正在减慢指针速度 — 再按一次（或暂停 Glideball）即可停止";
 
 "The left button is held by Drag lock — click, or press the Drag lock button again, to let go" = "左键正被拖移锁定按住 — 点按或再按一次拖移锁定按钮即可松开";
 
 "Ball scroll" = "球体滚动";
 
-"Pause or resume Glide — also %@ from anywhere" = "暂停或恢复 Glide — 也可在任意位置按 %@";
+"Pause or resume Glideball — also %@ from anywhere" = "暂停或恢复 Glideball — 也可在任意位置按 %@";
 
-"Pause or resume Glide" = "暂停或恢复 Glide";
+"Pause or resume Glideball" = "暂停或恢复 Glideball";
 
 /* Status pill */
 "Needs permission" = "需要权限";
@@ -1136,11 +1136,11 @@
 
 "Previewing %@’s setup while you edit it. Other apps use your main setup." = "编辑期间正在预览“%@”的配置。其他 App 使用主配置。";
 
-"%@ is in front, so Glide is using its setup. Click to edit it." = "%@ 位于最前面，因此 Glide 正在使用它的配置。点按以编辑。";
+"%@ is in front, so Glideball is using its setup. Click to edit it." = "%@ 位于最前面，因此 Glideball 正在使用它的配置。点按以编辑。";
 
 "Two quick permissions" = "两项快速授权";
 
-"Glide needs these to read your trackball and adjust its buttons and scrolling. Until both are on, your trackball works normally and Glide stays out of the way." = "Glide 需要这些权限来读取轨迹球并调整其按钮和滚动。两项都开启前，轨迹球照常工作，Glide 不会干扰。";
+"Glideball needs these to read your trackball and adjust its buttons and scrolling. Until both are on, your trackball works normally and Glideball stays out of the way." = "Glideball 需要这些权限来读取轨迹球并调整其按钮和滚动。两项都开启前，轨迹球照常工作，Glideball 不会干扰。";
 
 "Accessibility — on" = "辅助功能 — 已开启";
 
@@ -1165,7 +1165,7 @@
 /* Update button after a failed install */
 "Retry" = "重试";
 
-"Glide %@ is available — install it or see what's new" = "Glide %@ 已推出 — 安装或了解新功能";
+"Glideball %@ is available — install it or see what's new" = "Glideball %@ 已推出 — 安装或了解新功能";
 
 /* ---- ScrollSettingsView.swift ---- */
 
@@ -1183,7 +1183,7 @@
 
 "macOS scrolling" = "macOS 滚动";
 
-"Glide steps aside and lets macOS scroll the ring itself — the same system Kensington's driver handed its ticks to. Only the speed is adjustable." = "Glide 退居一旁，让 macOS 亲自处理滚动环的滚动 — Kensington 的驱动程序也正是把每一格交给这套系统。只能调节速度。";
+"Glideball steps aside and lets macOS scroll the ring itself — the same system Kensington's driver handed its ticks to. Only the speed is adjustable." = "Glideball 退居一旁，让 macOS 亲自处理滚动环的滚动 — Kensington 的驱动程序也正是把每一格交给这套系统。只能调节速度。";
 
 "Scroll speed" = "滚动速度";
 
@@ -1204,7 +1204,7 @@
 
 "Wild" = "狂野";
 
-"Glide" = "滑行";
+"Glideball" = "滑行";
 
 /* Milliseconds */
 "%lld ms" = "%lld 毫秒";
@@ -1315,14 +1315,14 @@
 
 "Press the new shortcut, or Esc to cancel" = "按下新快捷键，或按 Esc 取消";
 
-"No pause shortcut. You can still pause Glide from its menu-bar icon or the switch at the top of this window." = "没有暂停快捷键。你仍可以从菜单栏图标或此窗口顶部的开关暂停 Glide。";
+"No pause shortcut. You can still pause Glideball from its menu-bar icon or the switch at the top of this window." = "没有暂停快捷键。你仍可以从菜单栏图标或此窗口顶部的开关暂停 Glideball。";
 
 "Couldn't turn on %@ — another app already uses it. Choose a different shortcut." = "无法开启 %@，另一个 App 已在使用它。请选择其他快捷键。";
 
 /* Use the names System Settings shows in this language */
-"macOS uses %@ for one of its own shortcuts (System Settings › Keyboard › Keyboard Shortcuts), so it may never reach Glide." = "macOS 已将 %@ 用于自己的快捷键（系统设置 › 键盘 › 键盘快捷键），因此它可能永远到不了 Glide。";
+"macOS uses %@ for one of its own shortcuts (System Settings › Keyboard › Keyboard Shortcuts), so it may never reach Glideball." = "macOS 已将 %@ 用于自己的快捷键（系统设置 › 键盘 › 键盘快捷键），因此它可能永远到不了 Glideball。";
 
-"Apps use ⌘ shortcuts like %@ too — while it's set, Glide takes it from every app." = "App 也会使用 %@ 这类 ⌘ 快捷键，设置后 Glide 会从所有 App 中接管它。";
+"Apps use ⌘ shortcuts like %@ too — while it's set, Glideball takes it from every app." = "App 也会使用 %@ 这类 ⌘ 快捷键，设置后 Glideball 会从所有 App 中接管它。";
 
 /* ---- WelcomeTourView.swift ---- */
 
@@ -1334,17 +1334,17 @@
 
 "Skip for now" = "暂时跳过";
 
-"Glide stays out of the way until both permissions are on" = "两项权限都开启前，Glide 不会干扰";
+"Glideball stays out of the way until both permissions are on" = "两项权限都开启前，Glideball 不会干扰";
 
 "Step %lld of %lld" = "第 %lld 步，共 %lld 步";
 
 "Get Started" = "开始";
 
-"Start Using Glide" = "开始使用 Glide";
+"Start Using Glideball" = "开始使用 Glideball";
 
 "Continue" = "继续";
 
-"Welcome to Glide" = "欢迎使用 Glide";
+"Welcome to Glideball" = "欢迎使用 Glideball";
 
 "Your Kensington trackball, tuned exactly the way you like it." = "你的 Kensington 轨迹球，完全按你喜欢的方式调校。";
 
@@ -1356,19 +1356,19 @@
 
 "About a minute. Use Return or the arrow keys to move along." = "大约一分钟。使用 Return 键或方向键继续。";
 
-"Glide needs these to read your trackball and change what it does. Until both are on, your trackball works normally and Glide stays out of the way." = "Glide 需要这些权限来读取轨迹球并改变它的功能。两项都开启前，轨迹球照常工作，Glide 不会干扰。";
+"Glideball needs these to read your trackball and change what it does. Until both are on, your trackball works normally and Glideball stays out of the way." = "Glideball 需要这些权限来读取轨迹球并改变它的功能。两项都开启前，轨迹球照常工作，Glideball 不会干扰。";
 
 "Accessibility" = "辅助功能";
 
-"Lets Glide change what your buttons and scroll ring do." = "让 Glide 能够改变按钮和滚动环的功能。";
+"Lets Glideball change what your buttons and scroll ring do." = "让 Glideball 能够改变按钮和滚动环的功能。";
 
 "Input Monitoring" = "输入监控";
 
-"Lets Glide tell your trackball apart from your other mice and trackpad." = "让 Glide 能够区分你的轨迹球与其他鼠标和触控板。";
+"Lets Glideball tell your trackball apart from your other mice and trackpad." = "让 Glideball 能够区分你的轨迹球与其他鼠标和触控板。";
 
-"All set — Glide can see your trackball." = "一切就绪 — Glide 已经能识别你的轨迹球了。";
+"All set — Glideball can see your trackball." = "一切就绪 — Glideball 已经能识别你的轨迹球了。";
 
-"Switch Glide on in each list in System Settings, then come back — the checkmarks update by themselves." = "在“系统设置”的每个列表中开启 Glide，然后回到这里，勾号会自动更新。";
+"Switch Glideball on in each list in System Settings, then come back — the checkmarks update by themselves." = "在“系统设置”的每个列表中开启 Glideball，然后回到这里，勾号会自动更新。";
 
 "Allow…" = "允许…";
 
@@ -1384,9 +1384,9 @@
 
 "Not pressed yet" = "尚未按下";
 
-"Glide can't see your buttons until both permissions are on. You can come back to this tour from Help." = "两项权限都开启前，Glide 无法识别你的按钮。你可以从“帮助”菜单回到此导览。";
+"Glideball can't see your buttons until both permissions are on. You can come back to this tour from Help." = "两项权限都开启前，Glideball 无法识别你的按钮。你可以从“帮助”菜单回到此导览。";
 
-"Your %@ works with Glide through the Beta program — you can turn it on at the end of the tour." = "你的 %@ 可通过 Beta 计划配合 Glide 使用 — 你可以在导览结束时开启。";
+"Your %@ works with Glideball through the Beta program — you can turn it on at the end of the tour." = "你的 %@ 可通过 Beta 计划配合 Glideball 使用 — 你可以在导览结束时开启。";
 
 "Plug in your Expert Mouse to try this." = "插入你的 Expert Mouse 来试试。";
 
@@ -1398,7 +1398,7 @@
 
 "How the scroll ring moves the page. Try one, spin the ring, and switch whenever you like." = "滚动环如何移动页面。挑一种，转转滚动环，随时可以切换。";
 
-"How far the cursor travels when you roll the ball. macOS stops at its own setting; Glide goes past it." = "滚动轨迹球时指针移动的距离。macOS 有自己的上限，Glide 可以超越它。";
+"How far the cursor travels when you roll the ball. macOS stops at its own setting; Glideball goes past it." = "滚动轨迹球时指针移动的距离。macOS 有自己的上限，Glideball 可以超越它。";
 
 "Fine-tune both later in the Pointer and Scrolling tabs." = "稍后可在“指针”和“滚动”标签页中微调。";
 
@@ -1408,21 +1408,21 @@
 
 "Pause instantly" = "一键暂停";
 
-"Press ⌃⌥⌘G anywhere and Glide pauses — your trackball goes straight back to plain macOS. Press it again to resume." = "在任意位置按下 ⌃⌥⌘G，Glide 就会暂停，轨迹球立即恢复为原本的 macOS 行为。再按一次即可恢复。";
+"Press ⌃⌥⌘G anywhere and Glideball pauses — your trackball goes straight back to plain macOS. Press it again to resume." = "在任意位置按下 ⌃⌥⌘G，Glideball 就会暂停，轨迹球立即恢复为原本的 macOS 行为。再按一次即可恢复。";
 
-"Glide is on — try it" = "Glide 已开启 — 试试看";
+"Glideball is on — try it" = "Glideball 已开启 — 试试看";
 
-"Glide is paused" = "Glide 已暂停";
+"Glideball is paused" = "Glideball 已暂停";
 
 "Main click stays a left click" = "主点按始终是左键点按";
 
-"The bottom-left button is always a left click, whatever else you remap — so Glide can never lock you out." = "无论你如何重新映射，左下按钮始终是左键点按，因此 Glide 永远不会让你失去控制。";
+"The bottom-left button is always a left click, whatever else you remap — so Glideball can never lock you out." = "无论你如何重新映射，左下按钮始终是左键点按，因此 Glideball 永远不会让你失去控制。";
 
-"Quitting Glide also puts your trackball back to normal." = "退出 Glide 也会让轨迹球恢复正常。";
+"Quitting Glideball also puts your trackball back to normal." = "退出 Glideball 也会让轨迹球恢复正常。";
 
 "You're all set" = "一切就绪";
 
-"Glide keeps running when you close its window — click Glide in the Dock to come back." = "关闭窗口后 Glide 仍会继续运行 — 点按程序坞中的 Glide 即可回来。";
+"Glideball keeps running when you close its window — click Glideball in the Dock to come back." = "关闭窗口后 Glideball 仍会继续运行 — 点按程序坞中的 Glideball 即可回来。";
 
 "Turn On" = "开启";
 

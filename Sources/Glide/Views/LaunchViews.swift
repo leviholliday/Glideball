@@ -27,7 +27,7 @@ struct LaunchOverlay: View {
             // launch can eat into the animation.
             .onAppear { DispatchQueue.main.async { launch.began() } }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Glide is starting")
+            .accessibilityLabel("Glideball is starting")
             .accessibilityHint("Click or press Escape to skip")
             .accessibilityAddTraits(.isButton)
         }
@@ -419,7 +419,7 @@ private struct SwirlSparks: View {
     }
 }
 
-/// "Glide", a letter at a time, then a band of light across it.
+/// "Glideball", a letter at a time, then a band of light across it.
 private struct ShimmerTitle: View {
     let t: Double
     let start: Double
@@ -427,7 +427,7 @@ private struct ShimmerTitle: View {
     var fontSize: CGFloat = 78
 
     private var font: Font { .system(size: fontSize, weight: .bold, design: .rounded) }
-    private var letters: [Character] { Array("Glide") }
+    private var letters: [Character] { Array("Glideball") }
 
     var body: some View {
         let shimmer = LaunchMath.span(t, start + 0.6, start + 1.45)
@@ -506,7 +506,7 @@ private struct BloomingMesh: View {
 /// the mesh blooms (0–1.4 s), the ball rolls in and catches the light
 /// (0.45–2.8), the ring spins up with its ridges lighting in turn and sparks
 /// gathering into orbit (1.95–3.9), then the big moment at 3.9 s: a flash,
-/// "Glide" writes in with a shimmer, the tagline (4.8), and at 6.4 the glass
+/// "Glideball" writes in with a shimmer, the tagline (4.8), and at 6.4 the glass
 /// opens onto the window.
 private struct IntroScene: View {
     let t: Double

@@ -159,7 +159,7 @@ struct GlobalShortcuts: Codable, Equatable {
 
         var title: String {
             switch self {
-            case .pause: String(localized: "Pause / resume Glide")
+            case .pause: String(localized: "Pause / resume Glideball")
             case .precision: String(localized: "Precision", comment: "Mode that slows the pointer for fine work")
             case .ballScroll: String(localized: "Scroll with ball", comment: "Mode: rolling the ball scrolls instead of moving the pointer")
             case .dragLock: String(localized: "Drag lock", comment: "Mode: the left button stays held down so you can drag without holding it")
@@ -168,7 +168,7 @@ struct GlobalShortcuts: Codable, Equatable {
 
         var subtitle: String {
             switch self {
-            case .pause: String(localized: "Your escape hatch: Glide steps aside until you press it again.")
+            case .pause: String(localized: "Your escape hatch: Glideball steps aside until you press it again.")
             case .precision: String(localized: "Slows the pointer for fine work until you press it again.")
             case .ballScroll: String(localized: "Rolling the ball scrolls and the pointer stays put, until you press it again.")
             case .dragLock: String(localized: "Grabs what's under the pointer once you let go of the keys. Press again, or click, to drop.")

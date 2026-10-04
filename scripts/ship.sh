@@ -1,5 +1,5 @@
 #!/bin/zsh
-# Ships a Glide update end to end:
+# Ships a Glideball update end to end:
 #   1. scripts/release.sh  — universal build, sign, zip, tag, GitHub release
 #   2. Netlify             — redeploy the website (its download links always
 #                            point at the newest release)
@@ -7,8 +7,8 @@
 #
 # Usage: scripts/ship.sh 2.1 "What's new in this version"
 #        scripts/ship.sh 2.4-beta.1 "What's new in this beta" --beta
-# Everyone running Glide sees the new version in its top bar within a day and installs it in one click.
-# A beta (--beta or --prerelease) is a GitHub prerelease: only Glide's Beta program sees it,
+# Everyone running Glideball sees the new version in its top bar within a day and installs it in one click.
+# A beta (--beta or --prerelease) is a GitHub prerelease: only Glideball's Beta program sees it,
 # and the website — which always offers the newest full release — isn't redeployed.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -58,17 +58,17 @@ if (( BETA )); then
 else
   scripts/release.sh "$VERSION" "$NOTES"
   print "\n==> Deploying the website"
-  scripts/deploy-site.sh "Glide $VERSION"
+  scripts/deploy-site.sh "Glideball $VERSION"
 fi
 
-print "\n==> Installing Glide $VERSION on this Mac"
+print "\n==> Installing Glideball $VERSION on this Mac"
 ./build.sh | tail -1
 
 if (( BETA )); then
-  print "\n✓ Glide $VERSION is out to the Beta program:"
+  print "\n✓ Glideball $VERSION is out to the Beta program:"
   print "  Release:  https://github.com/leviholliday/glide/releases/tag/v${VERSION#v}"
 else
-  print "\n✓ Glide $VERSION is out:"
+  print "\n✓ Glideball $VERSION is out:"
   print "  Release:  https://github.com/leviholliday/glide/releases/tag/v${VERSION#v}"
   print "  Website:  https://glideball.netlify.app"
 fi

@@ -128,7 +128,7 @@ export async function notify(item) {
   const version = [item.app?.version, item.app?.build ? `(build ${item.app.build})` : ""].filter(Boolean).join(" ");
   const body = {
     topic,
-    title: `Glide feedback: ${item.title}`.slice(0, 150),
+    title: `Glideball feedback: ${item.title}`.slice(0, 150),
     message: `${priority} · ${PLATFORM_NAMES[item.platform] ?? item.platform}` +
       (item.platform === "web" ? "" : ` · ${version || "unknown version"}`) +
       ((item.tags ?? []).length ? ` · ${item.tags.join(", ")}` : "") +

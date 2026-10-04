@@ -46,7 +46,7 @@ final class FeedbackDraft {
         var titlePrompt: String {
             switch self {
             case .bug: String(localized: "What went wrong? e.g. “Scrolling jumps in Safari”")
-            case .idea: String(localized: "What would make Glide better?")
+            case .idea: String(localized: "What would make Glideball better?")
             case .question: String(localized: "What would you like to know?")
             }
         }
@@ -284,7 +284,7 @@ final class FeedbackDraft {
         let app = Self.appInfo, sys = Self.systemInfo
         // Shown in the sheet only; what's sent is `context` and the raw infos.
         var out = [
-            Fact(label: "Glide", value: String(localized: "\(app["version"] ?? "?") (build \(app["build"] ?? "?"))", comment: "2.6 (build 9)")),
+            Fact(label: "Glideball", value: String(localized: "\(app["version"] ?? "?") (build \(app["build"] ?? "?"))", comment: "2.6 (build 9)")),
             Fact(label: "macOS", value: sys["macOS"] ?? "?"),
             Fact(label: String(localized: "Mac model"), value: sys["model"] ?? "?"),
             Fact(label: String(localized: "Architecture", comment: "Processor architecture: arm64 or x86_64"), value: sys["arch"] ?? "?"),
@@ -294,14 +294,14 @@ final class FeedbackDraft {
                      ?? String(localized: "Not connected", comment: "Status pill")),
         ]
         if model.betaProgram { out.append(Fact(label: String(localized: "Beta program"), value: String(localized: "On", comment: "Switched on"))) }
-        if !topics.isEmpty { out.append(Fact(label: String(localized: "Topics", comment: "Areas of Glide the report mentions"), value: topics.joined(separator: ", "))) }
+        if !topics.isEmpty { out.append(Fact(label: String(localized: "Topics", comment: "Areas of Glideball the report mentions"), value: topics.joined(separator: ", "))) }
         return out
     }
 
     /// The facts on one line, for the footer of the disclosure.
     func factsLine(_ model: AppModel) -> String {
         let app = Self.appInfo, sys = Self.systemInfo
-        return "Glide \(app["version"] ?? "?") · macOS \((sys["macOS"] ?? "").components(separatedBy: " (").first ?? "") · \(sys["model"] ?? "Mac")"
+        return "Glideball \(app["version"] ?? "?") · macOS \((sys["macOS"] ?? "").components(separatedBy: " (").first ?? "") · \(sys["model"] ?? "Mac")"
     }
 
     private static func sysctl(_ name: String) -> String? {
@@ -597,7 +597,7 @@ struct FeedbackView: View {
             }
 
             VStack(spacing: 10) {
-                ToggleRow(title: "Include my Glide settings",
+                ToggleRow(title: "Include my Glideball settings",
                           subtitle: "Your pointer, scrolling and button setup (settings.json) so I can reproduce it. Nothing personal is in it.",
                           symbol: "slider.horizontal.3", isOn: $draft.includeSettings)
                 ToggleRow(title: "Include the scroll log",

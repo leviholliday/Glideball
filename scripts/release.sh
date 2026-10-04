@@ -44,8 +44,11 @@ BIN_ARM=.build/release/Glide
 BIN_X86=.build/x86/release/Glide
 BIN=release/Glide-universal
 OUT=release
-APP=$OUT/Glide.app
-ZIP=$OUT/Glide.zip
+APP=$OUT/Glideball.app
+ZIP=$OUT/Glideball.zip
+# Glide 2.7.1 and earlier look for Glide.zip holding Glide.app; attach that too so
+# they can update (the new app renames itself to Glideball.app on first launch).
+LEGACY_ZIP=$OUT/Glide.zip
 PLISTBUDDY=/usr/libexec/PlistBuddy
 
 # ---------------------------------------------------------------- output
@@ -128,7 +131,7 @@ STAGE=preflight    # how far the irreversible part has got
 REMOTE='' MERGE_REF=''
 
 gh_command() {
-  print -r -- "gh release create $TAG $ZIP --title ${(qq):-Glide $DISPLAY_VERSION} --notes ${(qq)NOTES} --verify-tag${PRERELEASE_FLAG:+ $PRERELEASE_FLAG}"
+  print -r -- "gh release create $TAG $ZIP $LEGACY_ZIP --title ${(qq):-Glideball $DISPLAY_VERSION} --notes ${(qq)NOTES} --verify-tag${PRERELEASE_FLAG:+ $PRERELEASE_FLAG}"
 }
 PRERELEASE_FLAG=''
 (( PRERELEASE )) && PRERELEASE_FLAG=--prerelease
@@ -289,7 +292,7 @@ lipo -create "$BIN_ARM" "$BIN_X86" -output "$BIN" || die "lipo couldn't merge th
 lipo -info "$BIN"
 
 step "Assembling $APP"
-rm -rf "$APP" "$ZIP"
+rm -rf "$APP" "$ZIP" "$LEGACY_ZIP" "$OUT/legacy"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/Glide"
 cp "$PLIST" "$APP/Contents/Info.plist"
@@ -324,6 +327,9 @@ step "Packaging $ZIP"
 ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP" || die "ditto could not create $ZIP"
 SHA=$(shasum -a 256 "$ZIP" | awk '{print $1}')
 SIZE=$(du -h "$ZIP" | awk '{print $1}')
+mkdir -p "$OUT/legacy" && ditto "$APP" "$OUT/legacy/Glide.app"
+ditto -c -k --sequesterRsrc --keepParent "$OUT/legacy/Glide.app" "$LEGACY_ZIP" || die "ditto could not create $LEGACY_ZIP"
+rm -rf "$OUT/legacy"
 info "Size:     $SIZE"
 info "SHA-256:  $SHA"
 
@@ -347,7 +353,7 @@ step "Committing and tagging $TAG"
 git commit --quiet -m "Release $TAG" -- "$PLIST" || die "git commit failed"
 PLIST_DIRTY=0
 STAGE=committed
-git tag -a "$TAG" -m "Glide $VERSION" || die "git tag $TAG failed"
+git tag -a "$TAG" -m "Glideball $VERSION" || die "git tag $TAG failed"
 STAGE=tagged
 info "$(git log -1 --format='%h %s')"
 
@@ -360,10 +366,10 @@ STAGE=pushed
 step "Creating GitHub release $TAG"
 typeset -a gh_flags
 (( PRERELEASE )) && gh_flags=(--prerelease)
-gh release create "$TAG" "$ZIP" --title "Glide $DISPLAY_VERSION" --notes "$NOTES" --verify-tag "${gh_flags[@]}" \
+gh release create "$TAG" "$ZIP" "$LEGACY_ZIP" --title "Glideball $DISPLAY_VERSION" --notes "$NOTES" --verify-tag "${gh_flags[@]}" \
   || die "gh release create failed"
 STAGE=done
 
-step "${GREEN}Released Glide $DISPLAY_VERSION ($NEW_BUILD)${RESET}${PRERELEASE_FLAG:+ as a prerelease}"
+step "${GREEN}Released Glideball $DISPLAY_VERSION ($NEW_BUILD)${RESET}${PRERELEASE_FLAG:+ as a prerelease}"
 info "Asset:    $ZIP ($SIZE)" \
      "SHA-256:  $SHA"

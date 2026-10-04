@@ -1,4 +1,4 @@
-// Feedback from the Glide app and the website's feedback page: the item
+// Feedback from the Glideball app and the website's feedback page: the item
 // itself, then its attachments a piece at a time, then "that's all" (which
 // is when Levi hears of it).
 //
@@ -43,7 +43,7 @@ async function route(req, context) {
   // Not a secret (it's in the app and in the site's feedback page), but it
   // keeps out what just wanders by.
   const key = env("APP_KEY");
-  if (key && !sameSecret(req.headers.get("x-glide-key"), key)) return fail(403, "Not from Glide.");
+  if (key && !sameSecret(req.headers.get("x-glide-key"), key)) return fail(403, "Not from Glideball.");
 
   const url = new URL(req.url);
   const path = url.pathname.replace(/\/+$/, "");

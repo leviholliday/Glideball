@@ -16,7 +16,7 @@ struct AppsView: View {
                 HStack(alignment: .top, spacing: 18) {
                     VStack(spacing: 18) {
                         listCard
-                        Text("When one of these apps is in front, Glide switches to its setup. Anything left on “Main setup” follows your main settings.")
+                        Text("When one of these apps is in front, Glideball switches to its setup. Anything left on “Main setup” follows your main settings.")
                             .font(.system(size: 12))
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -85,7 +85,7 @@ struct AppsView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Give an app its own setup")
                         .font(.system(size: 17, weight: .semibold))
-                    Text("Faster tracking in a design app, different buttons in your browser — Glide switches the moment that app comes to the front, and back again when you leave. Pick only the parts you want to change; everything else follows your main setup.")
+                    Text("Faster tracking in a design app, different buttons in your browser — Glideball switches the moment that app comes to the front, and back again when you leave. Pick only the parts you want to change; everything else follows your main setup.")
                         .font(.system(size: 13))
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -160,11 +160,11 @@ private struct AddAppMenu: View {
         panel.canChooseDirectories = false
         guard panel.runModal() == .OK, let url = panel.url else { return }
         guard let id = Bundle(url: url)?.bundleIdentifier else {
-            model.show(.init(symbol: "exclamationmark.triangle.fill", text: String(localized: "Glide couldn’t identify that app."), isError: true))
+            model.show(.init(symbol: "exclamationmark.triangle.fill", text: String(localized: "Glideball couldn’t identify that app."), isError: true))
             return
         }
         if id == Bundle.main.bundleIdentifier {
-            model.show(.init(symbol: "info.circle.fill", text: String(localized: "Glide itself always uses your main setup.")))
+            model.show(.init(symbol: "info.circle.fill", text: String(localized: "Glideball itself always uses your main setup.")))
             return
         }
         withAnimation(.smooth) { model.addProfile(bundleID: id, name: url.deletingPathExtension().lastPathComponent) }

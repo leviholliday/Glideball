@@ -330,7 +330,7 @@ final class AppModel {
         do {
             if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
         } catch {
-            NSLog("Glide: launch at login failed: \(error)")
+            NSLog("Glideball: launch at login failed: \(error)")
         }
         launchAtLogin = SMAppService.mainApp.status == .enabled
     }
@@ -372,7 +372,7 @@ final class AppModel {
     private static var defaultExportName: String {
         let f = DateFormatter()
         f.dateFormat = "MMM d, yyyy"
-        return String(localized: "Glide Settings – \(f.string(from: Date()))", comment: "Exported file name; %@ is the date")
+        return String(localized: "Glideball Settings – \(f.string(from: Date()))", comment: "Exported file name; %@ is the date")
             + ".\(GlideSettingsFile.fileExtension)"
     }
 
@@ -397,8 +397,8 @@ final class AppModel {
 
     func exportSettings() {
         let panel = NSSavePanel()
-        panel.title = String(localized: "Export Glide Settings")
-        panel.message = String(localized: "Save your Glide setup to a file you can back up or open on another Mac.")
+        panel.title = String(localized: "Export Glideball Settings")
+        panel.message = String(localized: "Save your Glideball setup to a file you can back up or open on another Mac.")
         panel.nameFieldStringValue = Self.defaultExportName
         panel.allowedContentTypes = [Self.settingsType]
         guard panel.runModal() == .OK, let url = panel.url else { return }
@@ -413,8 +413,8 @@ final class AppModel {
 
     func importSettings() {
         let panel = NSOpenPanel()
-        panel.title = String(localized: "Import Glide Settings")
-        panel.message = String(localized: "Choose a Glide settings file. You’ll see what’s in it before anything changes.")
+        panel.title = String(localized: "Import Glideball Settings")
+        panel.message = String(localized: "Choose a Glideball settings file. You’ll see what’s in it before anything changes.")
         panel.allowedContentTypes = Self.settingsFileTypes
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
@@ -439,7 +439,7 @@ final class AppModel {
             requestedTab = .backup
         } catch {
             show(.init(symbol: "exclamationmark.triangle.fill",
-                       text: String(localized: "That doesn’t look like a Glide settings file."), isError: true))
+                       text: String(localized: "That doesn’t look like a Glideball settings file."), isError: true))
         }
     }
 

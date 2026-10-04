@@ -12,7 +12,7 @@ struct SettingsDocument: Transferable {
             guard let url = doc.model.exportToTemporaryFile() else { throw CocoaError(.fileWriteUnknown) }
             return SentTransferredFile(url)
         }
-        .suggestedFileName("Glide Settings.\(GlideSettingsFile.fileExtension)")
+        .suggestedFileName("Glideball Settings.\(GlideSettingsFile.fileExtension)")
     }
 }
 
@@ -38,8 +38,8 @@ struct BackupView: View {
         let info = Bundle.main.infoDictionary
         let version = info?["CFBundleShortVersionString"] as? String ?? "?"
         let build = info?["CFBundleVersion"] as? String ?? "?"
-        return String(localized: "Glide \(version) (\(build)) · Settings files end in .\(GlideSettingsFile.fileExtension) and open in Glide with a double-click.",
-                      comment: "Glide 2.6 (9) · …end in .glide-settings…")
+        return String(localized: "Glideball \(version) (\(build)) · Settings files end in .\(GlideSettingsFile.fileExtension) and open in Glideball with a double-click.",
+                      comment: "Glideball 2.6 (9) · …end in .glide-settings…")
     }
 }
 
@@ -76,7 +76,7 @@ private struct ExportCard: View {
                     .buttonStyle(.glassProminent)
                     .keyboardShortcut("e", modifiers: .command)
                     ShareLink(item: SettingsDocument(model: model),
-                              preview: SharePreview("Glide Settings", image: Image(nsImage: NSApp.applicationIconImage))) {
+                              preview: SharePreview("Glideball Settings", image: Image(nsImage: NSApp.applicationIconImage))) {
                         Label("Share…", systemImage: "square.and.arrow.up")
                             .frame(maxWidth: .infinity)
                     }
@@ -246,7 +246,7 @@ private struct ImportPreview: View {
         case let (date?, from?): return String(localized: "Exported \(date) from \(from)", comment: "Date, then the Mac's name")
         case let (date?, nil): return String(localized: "Exported \(date)")
         case let (nil, from?): return String(localized: "Exported from \(from)", comment: "The Mac's name")
-        case (nil, nil): return String(localized: "Glide settings file")
+        case (nil, nil): return String(localized: "Glideball settings file")
         }
     }
 }
