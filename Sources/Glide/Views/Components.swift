@@ -107,7 +107,6 @@ struct ToggleRow: View {
 
 struct GlideBackground: View {
     @Environment(\.colorScheme) private var scheme
-    @State private var shifted = false
 
     var body: some View {
         let dark = scheme == .dark
@@ -120,19 +119,23 @@ struct GlideBackground: View {
             Color(red: 0.70, green: 0.82, blue: 1.00), Color(red: 0.95, green: 0.80, blue: 0.95), Color(red: 0.72, green: 0.94, blue: 0.90),
             Color(red: 0.88, green: 0.90, blue: 1.00), Color(red: 1.00, green: 0.86, blue: 0.86), Color(red: 0.84, green: 0.92, blue: 1.00),
         ]
-        MeshGradient(
-            width: 3, height: 3,
-            points: [
-                [0, 0], [0.5, 0], [1, 0],
-                [0, 0.5], shifted ? [0.62, 0.42] : [0.38, 0.6], [1, 0.5],
-                [0, 1], [0.5, 1], [1, 1],
-            ],
-            colors: colors
-        )
-        .ignoresSafeArea()
-        .onAppear {
-            withAnimation(.easeInOut(duration: 9).repeatForever(autoreverses: true)) { shifted = true }
+        // The centre point drifts slowly. 20 fps is indistinguishable for motion
+        // this slow and keeps the glass on top from re-rendering 120 times a second.
+        TimelineView(.animation(minimumInterval: 1.0 / 20)) { context in
+            let t = context.date.timeIntervalSinceReferenceDate
+            let phase = (sin(t * .pi / 9) + 1) / 2          // 0…1 and back every 18 s
+            let x = Float(0.38 + 0.24 * phase), y = Float(0.6 - 0.18 * phase)
+            MeshGradient(
+                width: 3, height: 3,
+                points: [
+                    [0, 0], [0.5, 0], [1, 0],
+                    [0, 0.5], [x, y], [1, 0.5],
+                    [0, 1], [0.5, 1], [1, 1],
+                ],
+                colors: colors
+            )
         }
+        .ignoresSafeArea()
     }
 }
 

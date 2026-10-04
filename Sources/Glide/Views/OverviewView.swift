@@ -82,37 +82,13 @@ struct ActivityChartCard: View {
         GlassCard(title: "Live activity", symbol: "waveform.path.ecg") {
             VStack(alignment: .leading, spacing: 4) {
                 legend("Ball speed", color: .cyan, value: String(format: "%.1f in/s", model.liveBallSpeed))
-                Chart(model.activity) { p in
-                    AreaMark(x: .value("Time", p.time), y: .value("Ball", p.ballSpeed))
-                        .interpolationMethod(.monotone)
-                        .foregroundStyle(LinearGradient(colors: [.cyan.opacity(0.55), .cyan.opacity(0.02)], startPoint: .top, endPoint: .bottom))
-                    LineMark(x: .value("Time", p.time), y: .value("Ball", p.ballSpeed))
-                        .interpolationMethod(.monotone)
-                        .foregroundStyle(.cyan)
-                        .lineStyle(StrokeStyle(lineWidth: 2))
-                }
-                .chartXScale(domain: -AppModel.historySeconds...0)
-                .chartYScale(domain: 0...max(4, (model.activity.map(\.ballSpeed).max() ?? 0) * 1.2))
-                .chartXAxis(.hidden)
-                .chartYAxis { AxisMarks(position: .trailing, values: .automatic(desiredCount: 3)) { _ in AxisGridLine().foregroundStyle(.white.opacity(0.08)) } }
-                .frame(height: 90)
+                Sparkline(values: model.activity.map(\.ballSpeed), floor: 4, color: .cyan)
+                    .frame(height: 90)
 
                 legend("Scroll ring", color: .pink, value: String(format: "%.0f notches/s", model.liveNotchRate))
                     .padding(.top, 8)
-                Chart(model.activity) { p in
-                    AreaMark(x: .value("Time", p.time), y: .value("Notches", p.notchRate))
-                        .interpolationMethod(.monotone)
-                        .foregroundStyle(LinearGradient(colors: [.pink.opacity(0.55), .pink.opacity(0.02)], startPoint: .top, endPoint: .bottom))
-                    LineMark(x: .value("Time", p.time), y: .value("Notches", p.notchRate))
-                        .interpolationMethod(.monotone)
-                        .foregroundStyle(.pink)
-                        .lineStyle(StrokeStyle(lineWidth: 2))
-                }
-                .chartXScale(domain: -AppModel.historySeconds...0)
-                .chartYScale(domain: 0...max(10, (model.activity.map(\.notchRate).max() ?? 0) * 1.2))
-                .chartXAxis(.hidden)
-                .chartYAxis { AxisMarks(position: .trailing, values: .automatic(desiredCount: 3)) { _ in AxisGridLine().foregroundStyle(.white.opacity(0.08)) } }
-                .frame(height: 70)
+                Sparkline(values: model.activity.map(\.notchRate), floor: 10, color: .pink)
+                    .frame(height: 70)
             }
         }
     }
@@ -123,6 +99,52 @@ struct ActivityChartCard: View {
             Text(name).font(.system(size: 12, weight: .medium))
             Spacer()
             Text(value).font(.system(size: 12, weight: .semibold, design: .rounded)).monospacedDigit().foregroundStyle(.secondary)
+        }
+    }
+}
+
+/// A live area + line graph drawn straight into a Canvas. Far cheaper than
+/// Swift Charts for data that changes 30 times a second.
+struct Sparkline: View {
+    let values: [Double]
+    /// The y-axis never shrinks below this, so a quiet trackball reads as quiet.
+    let floor: Double
+    let color: Color
+
+    var body: some View {
+        Canvas { context, size in
+            guard values.count > 1 else { return }
+            let top = max(floor, (values.max() ?? 0) * 1.2)
+            let step = size.width / CGFloat(values.count - 1)
+            func point(_ i: Int) -> CGPoint {
+                CGPoint(x: CGFloat(i) * step, y: size.height * (1 - CGFloat(values[i] / top)))
+            }
+
+            // Faint guide lines at a third and two thirds.
+            for f in [1.0 / 3, 2.0 / 3] {
+                var guide = Path()
+                guide.move(to: CGPoint(x: 0, y: size.height * f))
+                guide.addLine(to: CGPoint(x: size.width, y: size.height * f))
+                context.stroke(guide, with: .color(.white.opacity(0.08)), lineWidth: 1)
+            }
+
+            // Smooth curve through the samples (midpoint quadratic curves).
+            var line = Path()
+            line.move(to: point(0))
+            for i in 1..<values.count {
+                let p0 = point(i - 1), p1 = point(i)
+                line.addQuadCurve(to: CGPoint(x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2), control: p0)
+            }
+            line.addLine(to: point(values.count - 1))
+
+            var area = line
+            area.addLine(to: CGPoint(x: size.width, y: size.height))
+            area.addLine(to: CGPoint(x: 0, y: size.height))
+            area.closeSubpath()
+            context.fill(area, with: .linearGradient(
+                Gradient(colors: [color.opacity(0.55), color.opacity(0.02)]),
+                startPoint: .zero, endPoint: CGPoint(x: 0, y: size.height)))
+            context.stroke(line, with: .color(color), style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
         }
     }
 }
