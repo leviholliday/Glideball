@@ -289,6 +289,7 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/Glide"
 cp "$PLIST" "$APP/Contents/Info.plist"
 cp "$ICON" "$APP/Contents/Resources/AppIcon.icns"
+cp Resources/IntroMusic.m4a Resources/LaunchChime.m4a "$APP/Contents/Resources/"   # scripts/make-intro-music.py
 xattr -cr "$APP"   # stray extended attributes make codesign refuse the bundle
 
 # Same identity lookup as build.sh: the local "Glide Local Signing" certificate

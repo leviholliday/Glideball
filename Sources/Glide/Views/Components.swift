@@ -29,7 +29,78 @@ struct GlassCard<Content: View>: View {
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassEffect(tint.map { .regular.tint($0) } ?? .regular, in: .rect(cornerRadius: 26))
+        .staggeredAppear()
     }
+}
+
+// MARK: - Staggered appearance
+
+/// The first time a tab opens, its cards rise in one after another rather
+/// than all at once. `RootView` arms it; cards ask it, as they appear, how
+/// long to wait. Anything appearing outside such a burst just shows.
+final class CardStagger {
+    /// The next burst of appearing cards staggers (set when a tab first opens).
+    var armed = true
+    private var burstStart = Date.distantPast
+    private var count = 0
+
+    static let step = 0.03
+    static let maxSteps = 5
+    static let duration = 0.24
+
+    /// How long this card should wait before rising in, or nil to just show.
+    func nextDelay() -> Double? {
+        let now = Date()
+        if now.timeIntervalSince(burstStart) < 0.3 {
+            defer { count += 1 }
+            return Double(min(count, Self.maxSteps)) * Self.step
+        }
+        guard armed else { return nil }
+        armed = false
+        burstStart = now
+        count = 1
+        return 0
+    }
+}
+
+private struct CardStaggerKey: EnvironmentKey {
+    static let defaultValue: CardStagger? = nil
+}
+
+extension EnvironmentValues {
+    var cardStagger: CardStagger? {
+        get { self[CardStaggerKey.self] }
+        set { self[CardStaggerKey.self] = newValue }
+    }
+}
+
+private struct StaggeredAppear: ViewModifier {
+    @Environment(\.cardStagger) private var stagger
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var shown = false
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(shown ? 1 : 0)
+            .offset(y: shown || reduceMotion ? 0 : 14)
+            .scaleEffect(shown || reduceMotion ? 1 : 0.985, anchor: .top)
+            .onAppear {
+                guard !shown else { return }
+                if let delay = stagger?.nextDelay() {
+                    let curve: Animation = reduceMotion ? .easeOut(duration: 0.2) : .smooth(duration: CardStagger.duration)
+                    withAnimation(curve.delay(delay)) {
+                        shown = true
+                    }
+                } else {
+                    shown = true
+                }
+            }
+    }
+}
+
+extension View {
+    /// Rises in with its neighbours the first time its tab opens.
+    func staggeredAppear() -> some View { modifier(StaggeredAppear()) }
 }
 
 // MARK: - Slider row
@@ -108,13 +179,16 @@ struct ToggleRow: View {
 struct GlideBackground: View {
     @Environment(\.colorScheme) private var scheme
 
+    /// The 3×3 mesh in dark mode (also what the launch animations bloom into).
+    static let darkColors: [Color] = [
+        Color(red: 0.06, green: 0.07, blue: 0.20), Color(red: 0.18, green: 0.10, blue: 0.42), Color(red: 0.05, green: 0.16, blue: 0.30),
+        Color(red: 0.10, green: 0.30, blue: 0.55), Color(red: 0.38, green: 0.18, blue: 0.62), Color(red: 0.05, green: 0.38, blue: 0.48),
+        Color(red: 0.08, green: 0.10, blue: 0.24), Color(red: 0.55, green: 0.20, blue: 0.48), Color(red: 0.06, green: 0.14, blue: 0.28),
+    ]
+
     var body: some View {
         let dark = scheme == .dark
-        let colors: [Color] = dark ? [
-            Color(red: 0.06, green: 0.07, blue: 0.20), Color(red: 0.18, green: 0.10, blue: 0.42), Color(red: 0.05, green: 0.16, blue: 0.30),
-            Color(red: 0.10, green: 0.30, blue: 0.55), Color(red: 0.38, green: 0.18, blue: 0.62), Color(red: 0.05, green: 0.38, blue: 0.48),
-            Color(red: 0.08, green: 0.10, blue: 0.24), Color(red: 0.55, green: 0.20, blue: 0.48), Color(red: 0.06, green: 0.14, blue: 0.28),
-        ] : [
+        let colors: [Color] = dark ? Self.darkColors : [
             Color(red: 0.80, green: 0.86, blue: 1.00), Color(red: 0.90, green: 0.82, blue: 1.00), Color(red: 0.78, green: 0.95, blue: 0.98),
             Color(red: 0.70, green: 0.82, blue: 1.00), Color(red: 0.95, green: 0.80, blue: 0.95), Color(red: 0.72, green: 0.94, blue: 0.90),
             Color(red: 0.88, green: 0.90, blue: 1.00), Color(red: 1.00, green: 0.86, blue: 0.86), Color(red: 0.84, green: 0.92, blue: 1.00),
