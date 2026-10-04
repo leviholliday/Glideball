@@ -124,6 +124,29 @@ struct Chord: Codable, Hashable, Identifiable {
     var action: ButtonAction
 }
 
+// Settings written by a newer Glide can contain actions this version doesn't
+// know. Skip just those buttons and combos instead of failing to read — and so
+// losing — the whole settings file.
+private struct LenientAction: Decodable {
+    let action: ButtonAction?
+    init(from decoder: Decoder) { action = try? ButtonAction(from: decoder) }
+}
+
+private struct LenientChord: Decodable {
+    let chord: Chord?
+    init(from decoder: Decoder) { chord = try? Chord(from: decoder) }
+}
+
+extension KeyedDecodingContainer {
+    func decodeLenientActions(forKey key: Key) throws -> [Int: ButtonAction]? {
+        try decodeIfPresent([Int: LenientAction].self, forKey: key)?.compactMapValues(\.action)
+    }
+
+    func decodeLenientChords(forKey key: Key) throws -> [Chord]? {
+        try decodeIfPresent([LenientChord].self, forKey: key)?.compactMap(\.chord)
+    }
+}
+
 /// How the scroll ring is turned into scrolling.
 enum ScrollMode: String, Codable, CaseIterable, Identifiable {
     case native     // macOS's own wheel scrolling (what Kensington's driver relied on)
@@ -193,8 +216,8 @@ struct GlideConfig: Codable, Equatable {
         throwAmount = try c.decodeIfPresent(Double.self, forKey: .throwAmount) ?? d.throwAmount
         shiftScrollsHorizontally = try c.decodeIfPresent(Bool.self, forKey: .shiftScrollsHorizontally) ?? d.shiftScrollsHorizontally
         ballScrollSpeed = try c.decodeIfPresent(Double.self, forKey: .ballScrollSpeed) ?? d.ballScrollSpeed
-        buttons = try c.decodeIfPresent([Int: ButtonAction].self, forKey: .buttons) ?? d.buttons
-        chords = try c.decodeIfPresent([Chord].self, forKey: .chords) ?? d.chords
+        buttons = try c.decodeLenientActions(forKey: .buttons) ?? d.buttons
+        chords = try c.decodeLenientChords(forKey: .chords) ?? d.chords
         appProfiles = try c.decodeIfPresent([AppProfile].self, forKey: .appProfiles) ?? d.appProfiles
     }
 

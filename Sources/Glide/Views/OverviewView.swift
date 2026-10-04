@@ -13,10 +13,7 @@ struct OverviewView: View {
                                   ballPhase: model.ballPhase)
                         .frame(maxWidth: .infinity)
                         .animation(.linear(duration: 1 / AppModel.sampleRate), value: model.ringAngle)
-                    Text(!model.permissionsOK ? "Waiting for permissions…"
-                         : model.status.deviceConnected ? "Roll, spin, or click — it's live." : "Plug in your Expert Mouse.")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
+                    deviceCaption
                         .frame(maxWidth: .infinity)
                 }
                 .frame(width: 270)
@@ -37,6 +34,10 @@ struct OverviewView: View {
             GlassCard(title: "General", symbol: "gearshape") {
                 ToggleRow(title: "Open at login", subtitle: "Starts quietly in the background so your trackball is always tuned.",
                           symbol: "power", isOn: Binding(get: { model.launchAtLogin }, set: { model.setLaunchAtLogin($0) }))
+                Divider().opacity(0.4)
+                ToggleRow(title: "Beta program",
+                          subtitle: "Try features before they're finished — like support for other Kensington trackballs and early updates. You may hit bugs.",
+                          symbol: "flask", isOn: $model.betaProgram)
                 Divider().opacity(0.4)
                 HStack(spacing: 10) {
                     Image(systemName: "bubble.left.and.text.bubble.right")
@@ -62,6 +63,46 @@ struct OverviewView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+
+    /// What's connected, under the trackball picture.
+    @ViewBuilder private var deviceCaption: some View {
+        let status = model.status
+        if !model.permissionsOK {
+            caption("Waiting for permissions…")
+        } else if status.deviceConnected {
+            VStack(spacing: 4) {
+                HStack(spacing: 6) {
+                    Text(status.deviceName ?? "Kensington Expert Mouse")
+                        .font(.system(size: 12, weight: .semibold))
+                        .lineLimit(1)
+                    if status.deviceIsBeta { BetaBadge() }
+                }
+                caption("Roll, spin, or click — it's live.")
+            }
+        } else if let name = status.unsupportedDeviceName {
+            // A Kensington Glide only supports in the Beta program: a gentle nudge, not an error.
+            VStack(spacing: 8) {
+                caption("Turn on the Beta program to try Glide with your \(name).")
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button {
+                    model.betaProgram = true
+                } label: {
+                    Label("Turn On Beta", systemImage: "flask")
+                }
+                .buttonStyle(.glass)
+                .controlSize(.small)
+            }
+        } else {
+            caption("Plug in your Expert Mouse.")
+        }
+    }
+
+    private func caption(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 12))
+            .foregroundStyle(.secondary)
     }
 
     static func meters(_ m: Double) -> String {

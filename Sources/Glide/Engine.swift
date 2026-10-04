@@ -16,6 +16,12 @@ final class Engine {
         var deviceConnected = false
         var tapActive = false
         var listening = false
+        /// The supported device in use (the Expert Mouse if several), e.g. "Kensington Expert Mouse".
+        var deviceName: String?
+        /// That device is a Kensington Glide only supports in the Beta program.
+        var deviceIsBeta = false
+        /// A connected Kensington pointing device Glide leaves alone unless the Beta program is on.
+        var unsupportedDeviceName: String?
     }
 
     /// Glide's own button modes that are currently on, for the UI.
@@ -34,7 +40,9 @@ final class Engine {
     private var foundationRunLoop: RunLoop!
     private var tap: CFMachPort?
     private var hid: IOHIDManager?
-    private var deviceIsKensington: [Int: Bool] = [:]
+    private var devices: [Int: DeviceIdentity] = [:]   // connected pointing devices
+    private var deviceSupported: [Int: Bool] = [:]     // …that Glide works with (see DeviceIdentity)
+    private var betaProgram = BetaProgram.isEnabled
     private var lastActiveIsKensington = false
     private var lastValueStamp: [Int: UInt64] = [:]
     private var status = Status()
@@ -139,6 +147,20 @@ final class Engine {
 
     func reapplyPointer() { perform { self.applyPointer() } }
 
+    /// The Beta program adds Kensington's other pointing devices. Takes effect
+    /// immediately: devices are re-sorted and pointer speeds re-applied.
+    func setBetaProgram(_ on: Bool) {
+        perform {
+            guard on != self.betaProgram else { return }
+            self.betaProgram = on
+            self.deviceSupported = self.devices.mapValues { $0.isSupported(beta: on) }
+            self.lastActiveIsKensington = false   // re-learned from the next raw input
+            self.pointer.devicesChanged()
+            self.applyPointer()
+            self.publish()
+        }
+    }
+
     /// Lets go of any shortcut a button is holding down (pause, quit), so a
     /// key can never stay stuck.
     func releaseHeldKeys() {
@@ -195,12 +217,19 @@ final class Engine {
 
     private func applyPointer() {
         pointer.apply(.init(trackingSpeed: precisionActive ? config.precisionSpeed : config.trackingSpeed,
-                            scrollSpeed: config.scrollMode == .native ? config.nativeScrollSpeed : nil))
+                            scrollSpeed: config.scrollMode == .native ? config.nativeScrollSpeed : nil,
+                            betaProgram: betaProgram))
     }
 
     private func publish() {
         var s = Status()
-        s.deviceConnected = deviceIsKensington.values.contains(true)
+        s.deviceConnected = deviceSupported.values.contains(true)
+        let supported = devices.filter { deviceSupported[$0.key] == true }.values
+            .sorted { ($0.kind == .expertMouse ? 0 : 1, $0.displayName) < ($1.kind == .expertMouse ? 0 : 1, $1.displayName) }
+        s.deviceName = supported.first?.displayName
+        s.deviceIsBeta = supported.first.map { $0.kind != .expertMouse } ?? false
+        s.unsupportedDeviceName = devices.filter { $0.value.kind == .otherKensington && deviceSupported[$0.key] != true }
+            .values.map(\.displayName).sorted().first
         s.tapActive = tap.map { CGEvent.tapIsEnabled(tap: $0) } ?? false
         s.listening = hid != nil
         guard s != status else { return }
@@ -243,14 +272,29 @@ final class Engine {
         Int(bitPattern: Unmanaged.passUnretained(device).toOpaque())
     }
 
-    private static func isKensington(_ device: IOHIDDevice) -> Bool {
-        (IOHIDDeviceGetProperty(device, kIOHIDVendorIDKey as CFString) as? Int) == PointerTuner.vendorID
+    private static func identity(of device: IOHIDDevice) -> DeviceIdentity {
+        DeviceIdentity(vendorID: IOHIDDeviceGetProperty(device, kIOHIDVendorIDKey as CFString) as? Int,
+                       productID: IOHIDDeviceGetProperty(device, kIOHIDProductIDKey as CFString) as? Int,
+                       name: IOHIDDeviceGetProperty(device, kIOHIDProductKey as CFString) as? String)
+    }
+
+    /// Whether Glide works with this device: the Expert Mouse always, other
+    /// Kensington pointing devices in the Beta program. Cached per device.
+    private func isSupported(_ device: IOHIDDevice) -> Bool {
+        let k = Self.key(device)
+        if let known = deviceSupported[k] { return known }
+        let identity = devices[k] ?? Self.identity(of: device)
+        let supported = identity.isSupported(beta: betaProgram)
+        devices[k] = identity
+        deviceSupported[k] = supported
+        return supported
     }
 
     private func deviceAdded(_ device: IOHIDDevice) {
-        let isK = Self.isKensington(device)
-        deviceIsKensington[Self.key(device)] = isK
-        if isK {
+        let k = Self.key(device)
+        devices[k] = nil
+        deviceSupported[k] = nil
+        if isSupported(device) {
             pointer.devicesChanged()
             // The HID service appears slightly after the device; apply twice to be sure.
             for delay in [0.3, 1.5] {
@@ -262,24 +306,20 @@ final class Engine {
     }
 
     private func deviceRemoved(_ device: IOHIDDevice) {
-        if deviceIsKensington[Self.key(device)] == true {
+        if deviceSupported[Self.key(device)] == true {
             // Unplugged mid-hold: its button releases will never come.
             hidButtonsDown.removeAll()
             releaseModes()
         }
-        deviceIsKensington[Self.key(device)] = nil
+        devices[Self.key(device)] = nil
+        deviceSupported[Self.key(device)] = nil
         publish()
     }
 
     private func hidValue(_ value: IOHIDValue) {
         let element = IOHIDValueGetElement(value)
         let device = IOHIDElementGetDevice(element)
-        let k = Self.key(device)
-        let isK: Bool
-        if let known = deviceIsKensington[k] { isK = known } else {
-            isK = Self.isKensington(device)
-            deviceIsKensington[k] = isK
-        }
+        let isK = isSupported(device)
         lastActiveIsKensington = isK
         guard isK else { return }
 

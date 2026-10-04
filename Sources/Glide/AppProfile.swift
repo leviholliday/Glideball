@@ -17,6 +17,16 @@ struct AppProfile: Codable, Equatable, Identifiable {
         self.name = name
     }
 
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        bundleID = try c.decode(String.self, forKey: .bundleID)
+        name = try c.decodeIfPresent(String.self, forKey: .name) ?? bundleID
+        trackingSpeed = try c.decodeIfPresent(Double.self, forKey: .trackingSpeed)
+        scroll = try c.decodeIfPresent(ScrollSettings.self, forKey: .scroll)
+        buttons = try c.decodeLenientActions(forKey: .buttons)
+        chords = try c.decodeLenientChords(forKey: .chords)
+    }
+
     /// "Speed 6 · Flywheel scrolling · 2 buttons", for the app list.
     var summary: String {
         var parts: [String] = []

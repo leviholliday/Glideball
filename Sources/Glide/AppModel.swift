@@ -50,6 +50,19 @@ final class AppModel {
     var requestedTab: GlideTab?
     /// The Send Feedback sheet over the main window.
     var showingFeedback = false
+    /// The Welcome Tour over the main window (see WelcomeTour.swift).
+    var showingWelcomeTour = false
+    /// Try Kensington's other trackballs and prerelease updates. Per-Mac,
+    /// never synced — see `BetaProgram`. Takes effect immediately.
+    var betaProgram = BetaProgram.isEnabled {
+        didSet {
+            guard betaProgram != oldValue else { return }
+            UserDefaults.standard.set(betaProgram, forKey: BetaProgram.defaultsKey)
+            engine.setBetaProgram(betaProgram)
+            updates.includePrereleases = betaProgram
+            updates.check()
+        }
+    }
     /// Shares settings with the user's other Macs through iCloud Drive.
     let sync = SettingsSync(onRemoteConfig: { AppModel.shared.applyRemoteConfig($0) })
 
@@ -202,6 +215,8 @@ final class AppModel {
         didSet { if isEditingProfiles != oldValue { pushToEngine() } }
     }
     @ObservationIgnored private var pushedConfig = GlideConfig()
+    /// While the Welcome Tour asks you to press each button, run without remaps or combos.
+    @ObservationIgnored var mappingsSuspended = false
 
     /// Whose setup the engine should run: the frontmost app's, or — while
     /// Glide itself is in front — the one open on the Apps tab, else the main setup.
@@ -221,8 +236,12 @@ final class AppModel {
     }
 
     /// Sends the setup for whoever's in front to the engine, if it changed.
-    private func pushToEngine() {
-        let resolved = config.resolved(for: profileTarget)
+    func pushToEngine() {
+        var resolved = config.resolved(for: profileTarget)
+        if mappingsSuspended {
+            resolved.buttons = [:]
+            resolved.chords = []
+        }
         guard resolved != pushedConfig else { return }
         pushedConfig = resolved
         engine.update(resolved)

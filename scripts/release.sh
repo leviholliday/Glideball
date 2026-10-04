@@ -3,6 +3,7 @@
 #
 #   scripts/release.sh 1.1 "Release notes text"
 #   scripts/release.sh --dry-run 1.1 "Release notes text"
+#   scripts/release.sh --prerelease 2.4-beta.1 "Release notes text"
 #
 # What it does, in order:
 #   1. Preflight: clean git tree, on a branch, tag unused, gh logged in.
@@ -15,6 +16,16 @@
 #   4. Package:   release/Glide.zip via ditto, and print its SHA-256.
 #   5. Publish:   commit "Release v<version>", tag v<version>, push both, and
 #                 create the GitHub release with Glide.zip attached.
+#
+# Prereleases (--prerelease, or --beta) go only to people in Glide's Beta
+# program: the GitHub release is marked as a prerelease, which the website's
+# "latest" download links and normal users' update checks skip. Their version
+# must look like one — 2.4-beta.1 or 2.4-rc.1 — and a version that looks like
+# one must be released with --prerelease, so a beta can't reach everyone by
+# accident. CFBundleShortVersionString gets the same string ("2.4-beta.1"):
+# macOS only treats it as display text (it's CFBundleVersion, the build
+# number, that must keep increasing), and the update checker requires the
+# downloaded app's CFBundleShortVersionString to equal the tag exactly.
 #
 # --dry-run runs steps 1-4 (a missing gh login is only a warning), then puts
 # Info.plist back: nothing is committed, tagged, pushed, or published.
@@ -52,14 +63,17 @@ die()  { printf '%serror:%s %s\n' "$RED" "$RESET" "$1" >&2; shift; (( $# )) && p
 
 usage() {
   cat <<'EOF'
-Usage: scripts/release.sh [--dry-run] <version> "<release notes>"
+Usage: scripts/release.sh [--dry-run] [--prerelease] <version> "<release notes>"
 
-  <version>         Marketing version, e.g. 1.1 or 1.2.3 (a leading "v" is ignored)
+  <version>         Marketing version, e.g. 1.1 or 1.2.3 (a leading "v" is ignored);
+                    a prerelease adds -beta.N or -rc.N, e.g. 2.4-beta.1
   <release notes>   Text for the GitHub release
 
 Options:
   -n, --dry-run     Bump, build, sign, and zip release/Glide.zip, then stop:
                     no commit, tag, push, or GitHub release. Info.plist is put back.
+  -p, --prerelease  Publish as a GitHub prerelease: only Beta program members are
+      --beta        offered it. Required for, and only for, -beta.N / -rc.N versions.
   -h, --help        Show this help
 EOF
 }
@@ -67,12 +81,14 @@ EOF
 # ---------------------------------------------------------------- arguments
 
 DRY_RUN=0
+PRERELEASE=0
 typeset -a positional
 only_positional=0
 for arg in "$@"; do
   if (( only_positional )); then positional+=("$arg"); continue; fi
   case $arg in
     -n|--dry-run) DRY_RUN=1 ;;
+    -p|--prerelease|--beta) PRERELEASE=1 ;;
     -h|--help)    usage; exit 0 ;;
     --)           only_positional=1 ;;
     -*)           usage >&2; die "unknown option: $arg" ;;
@@ -89,9 +105,21 @@ VERSION=${positional[1]#v}
 NOTES=${positional[2]}
 TAG="v$VERSION"
 
-[[ $VERSION =~ '^[0-9]+(\.[0-9]+){1,2}$' ]] \
-  || die "invalid version '${positional[1]}'" "Use numbers separated by dots, e.g. 1.1 or 1.2.3."
+[[ $VERSION =~ '^[0-9]+(\.[0-9]+){1,2}(-(beta|rc)\.[1-9][0-9]*)?$' ]] \
+  || die "invalid version '${positional[1]}'" \
+         "Use numbers separated by dots, e.g. 1.1 or 1.2.3; a prerelease adds -beta.N or -rc.N, e.g. 2.4-beta.1."
 [[ -n ${NOTES//[[:space:]]/} ]] || die "release notes are empty"
+
+if [[ $VERSION == *-* ]]; then
+  (( PRERELEASE )) || die "$VERSION is a prerelease version, but --prerelease wasn't given" \
+    "Add --prerelease so only Beta program members get it, or release a plain version like ${VERSION%%-*}."
+else
+  (( ! PRERELEASE )) || die "--prerelease needs a prerelease version, e.g. $VERSION-beta.1" \
+    "Glide tells betas apart from final releases by the version: 2.4-beta.1 comes before 2.4."
+fi
+
+# "2.4-beta.1" → "2.4 beta 1", the way Glide shows it.
+DISPLAY_VERSION=${${VERSION/-beta./ beta }/-rc./ RC }
 
 # ---------------------------------------------------------------- cleanup
 
@@ -100,7 +128,25 @@ STAGE=preflight    # how far the irreversible part has got
 REMOTE='' MERGE_REF=''
 
 gh_command() {
-  print -r -- "gh release create $TAG $ZIP --title ${(qq):-Glide $VERSION} --notes ${(qq)NOTES} --verify-tag"
+  print -r -- "gh release create $TAG $ZIP --title ${(qq):-Glide $DISPLAY_VERSION} --notes ${(qq)NOTES} --verify-tag${PRERELEASE_FLAG:+ $PRERELEASE_FLAG}"
+}
+PRERELEASE_FLAG=''
+(( PRERELEASE )) && PRERELEASE_FLAG=--prerelease
+
+# Is version $1 lower than $2? Knows that 2.4-beta.1 < 2.4-beta.2 < 2.4-rc.1 < 2.4,
+# the order Glide's update checker uses (zsh's is-at-least puts 2.4-beta.1 after 2.4).
+version_lt() {
+  local a=${1%%-*} b=${2%%-*}
+  local pa=${1#$a} pb=${2#$b}               # "" or "-beta.1"
+  is-at-least "$a" "$b" || return 1         # numbers: $2 is lower
+  is-at-least "$b" "$a" || return 0         # numbers: $1 is lower
+  [[ -z $pa ]] && return 1                  # same numbers: a final release is never lower
+  [[ -z $pb ]] && return 0                  # …and a prerelease is lower than its release
+  local -A rank=(alpha 0 beta 1 rc 2)
+  local sa=${${pa#-}%%.*} sb=${${pb#-}%%.*}
+  local ra=${rank[$sa]:-0} rb=${rank[$sb]:-0}
+  (( ra != rb )) && { (( ra < rb )); return }
+  (( ${pa##*.} < ${pb##*.} ))
 }
 
 on_exit() {
@@ -207,13 +253,14 @@ NEW_BUILD=$(( CUR_BUILD + 1 ))
 autoload -Uz is-at-least
 if [[ $VERSION == "$CUR_VERSION" ]]; then
   warn "$PLIST already says $VERSION; only the build number will change"
-elif ! is-at-least "$CUR_VERSION" "$VERSION"; then
+elif version_lt "$VERSION" "$CUR_VERSION"; then
   warn "$VERSION is lower than the current version $CUR_VERSION"
 fi
 
 info "Branch:   $BRANCH${REMOTE:+ → $REMOTE}"
 info "Version:  $CUR_VERSION ($CUR_BUILD) → $VERSION ($NEW_BUILD)"
 info "Tag:      $TAG"
+(( PRERELEASE )) && info "Kind:     prerelease (Beta program only)"
 (( DRY_RUN )) && info "Mode:     dry run (no commit, tag, push, or release)"
 
 # ---------------------------------------------------------------- 2. version
@@ -301,10 +348,12 @@ git push "$REMOTE" "refs/tags/$TAG" || die "pushing tag $TAG failed"
 STAGE=pushed
 
 step "Creating GitHub release $TAG"
-gh release create "$TAG" "$ZIP" --title "Glide $VERSION" --notes "$NOTES" --verify-tag \
+typeset -a gh_flags
+(( PRERELEASE )) && gh_flags=(--prerelease)
+gh release create "$TAG" "$ZIP" --title "Glide $DISPLAY_VERSION" --notes "$NOTES" --verify-tag "${gh_flags[@]}" \
   || die "gh release create failed"
 STAGE=done
 
-step "${GREEN}Released Glide $VERSION ($NEW_BUILD)${RESET}"
+step "${GREEN}Released Glide $DISPLAY_VERSION ($NEW_BUILD)${RESET}${PRERELEASE_FLAG:+ as a prerelease}"
 info "Asset:    $ZIP ($SIZE)" \
      "SHA-256:  $SHA"

@@ -5,6 +5,8 @@ import Security
 
 /// Checks GitHub once a day for a newer Glide release and installs it in place.
 /// This and iCloud Drive sync are the only times Glide touches the network.
+/// Everyone gets full releases; members of the Beta program also get
+/// prereleases (tagged like v2.4-beta.1).
 ///
 /// Installing: download the release zip, unpack it, and only accept it if it's
 /// signed with the same certificate and bundle identifier as the running app
@@ -14,10 +16,14 @@ import Security
 @Observable
 final class UpdateChecker {
     struct Update: Equatable {
-        let version: String
+        let version: String           // as tagged, without the "v": "2.4" or "2.4-beta.1"
         let page: URL
         let download: URL?
         let notes: String
+        var isPrerelease = false
+
+        /// "2.4" or "2.4 beta 1".
+        var displayVersion: String { GlideVersion(version)?.display ?? version }
     }
 
     enum InstallState: Equatable {
@@ -30,10 +36,13 @@ final class UpdateChecker {
     private(set) var available: Update?
     private(set) var installState: InstallState = .idle
 
-    static let releasesAPI = URL(string: "https://api.github.com/repos/leviholliday/glide/releases/latest")!
+    /// The newest releases, prereleases included (GitHub's "latest" never is one).
+    static let releasesAPI = URL(string: "https://api.github.com/repos/leviholliday/glide/releases?per_page=30")!
     static let assetName = "Glide.zip"
     @ObservationIgnored private var timer: Timer?
     @ObservationIgnored private var progressObservation: NSKeyValueObservation?
+    /// Offer prereleases too — the Beta program. Call `check()` after changing it.
+    @ObservationIgnored var includePrereleases = BetaProgram.isEnabled
 
     var currentVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
@@ -48,37 +57,53 @@ final class UpdateChecker {
         // Always ask GitHub fresh: a cached "latest release" would hide a new update.
         var request = URLRequest(url: Self.releasesAPI, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 15)
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        let prereleases = includePrereleases
         URLSession.shared.dataTask(with: request) { [weak self] data, response, _ in
-            guard let self, let data, (response as? HTTPURLResponse)?.statusCode == 200,
-                  let update = Self.parse(data) else { return }
-            let newer = Self.isNewer(update.version, than: self.currentVersion)
+            guard let self, let data, (response as? HTTPURLResponse)?.statusCode == 200 else { return }
+            let newest = Self.newest(in: data, includePrereleases: prereleases)
+            let newer = newest.map { Self.isNewer($0.version, than: self.currentVersion) } ?? false
             DispatchQueue.main.async {
-                self.available = newer ? update : nil
+                // The Beta program switch changed while this was in flight: a fresh check is coming.
+                guard prereleases == self.includePrereleases else { return }
+                self.available = newer ? newest : nil
             }
         }.resume()
     }
 
-    static func parse(_ data: Data) -> Update? {
-        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let tag = json["tag_name"] as? String,
+    /// The highest-versioned release in a GitHub release list. Drafts never
+    /// count; prereleases only for the Beta program. A tag that reads like a
+    /// prerelease ("2.4-beta.1") counts as one even if GitHub isn't told so.
+    static func newest(in data: Data, includePrereleases: Bool) -> Update? {
+        guard let list = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else { return nil }
+        return list.compactMap { json -> (GlideVersion, Update)? in
+            guard json["draft"] as? Bool != true,
+                  let update = parse(json), let version = GlideVersion(update.version),
+                  includePrereleases || !update.isPrerelease else { return nil }
+            return (version, update)
+        }
+        .max { $0.0 < $1.0 }?.1
+    }
+
+    /// One release from the GitHub API.
+    static func parse(_ json: [String: Any]) -> Update? {
+        guard let tag = json["tag_name"] as? String,
               let page = (json["html_url"] as? String).flatMap(URL.init(string:)) else { return nil }
         let assets = json["assets"] as? [[String: Any]] ?? []
         let zip = assets.first { $0["name"] as? String == assetName }?["browser_download_url"] as? String
-        return Update(version: tag.hasPrefix("v") ? String(tag.dropFirst()) : tag,
+        let version = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
+        return Update(version: version,
                       page: page,
                       download: zip.flatMap(URL.init(string:)),
-                      notes: json["body"] as? String ?? "")
+                      notes: json["body"] as? String ?? "",
+                      isPrerelease: json["prerelease"] as? Bool == true || GlideVersion(version)?.isPrerelease == true)
     }
 
-    /// Compares dotted version numbers: "1.10" > "1.9".
+    /// "1.10" > "1.9", and "2.4" > "2.4-beta.2" > "2.4-beta.1" > "2.3".
+    /// Anything unreadable is never newer.
     static func isNewer(_ a: String, than b: String) -> Bool {
-        let x = a.split(separator: ".").map { Int($0) ?? 0 }
-        let y = b.split(separator: ".").map { Int($0) ?? 0 }
-        for i in 0..<max(x.count, y.count) {
-            let l = i < x.count ? x[i] : 0, r = i < y.count ? y[i] : 0
-            if l != r { return l > r }
-        }
-        return false
+        guard let x = GlideVersion(a) else { return false }
+        guard let y = GlideVersion(b) else { return true }
+        return x > y
     }
 
     // MARK: Installing
@@ -183,5 +208,75 @@ final class UpdateChecker {
             return
         }
         NSApp.terminate(nil)
+    }
+}
+
+/// A Glide version number: "2.4", "2.4.1", or a prerelease of one — "2.4-beta.1"
+/// (the form release.sh tags and writes to CFBundleShortVersionString). Also
+/// reads "2.4b1", "2.4 beta 1", "2.4-rc.1" and "2.4-alpha.1". A prerelease
+/// comes before its final release: 2.4-beta.1 < 2.4-beta.2 < 2.4-rc.1 < 2.4.
+struct GlideVersion: Comparable, CustomStringConvertible {
+    enum Stage: Int, Comparable {
+        case alpha, beta, rc
+        static func < (a: Stage, b: Stage) -> Bool { a.rawValue < b.rawValue }
+        var name: String { switch self { case .alpha: "alpha"; case .beta: "beta"; case .rc: "RC" } }
+    }
+
+    let numbers: [Int]
+    let prerelease: (stage: Stage, number: Int)?
+
+    var isPrerelease: Bool { prerelease != nil }
+
+    init?(_ string: String) {
+        var s = Substring(string.trimmingCharacters(in: .whitespaces))
+        if s.first == "v" || s.first == "V" { s = s.dropFirst() }
+        // Numbers first: "2.4" or "2.4.1".
+        let core = s.prefix { $0.isNumber || $0 == "." }
+        let numbers = core.split(separator: ".", omittingEmptySubsequences: false).map { Int($0) }
+        guard !core.isEmpty, !core.hasSuffix("."), numbers.allSatisfy({ $0 != nil }) else { return nil }
+        self.numbers = numbers.map { $0! }
+        // Then an optional prerelease: "-beta.1", "b1", " beta 1", "-rc.2"…
+        var rest = s.dropFirst(core.count).lowercased()[...]
+        if rest.isEmpty { prerelease = nil; return }
+        rest = rest.drop { $0 == "-" || $0 == " " || $0 == "." }
+        let label = rest.prefix { $0.isLetter }
+        let stage: Stage
+        switch label {
+        case "a", "alpha": stage = .alpha
+        case "b", "beta": stage = .beta
+        case "rc": stage = .rc
+        default: return nil
+        }
+        let numberText = rest.dropFirst(label.count).drop { $0 == "." || $0 == " " || $0 == "-" }
+        if numberText.isEmpty {
+            prerelease = (stage, 0)
+        } else if let n = Int(numberText), n >= 0 {
+            prerelease = (stage, n)
+        } else {
+            return nil
+        }
+    }
+
+    /// For people: "2.4", "2.4 beta 1".
+    var display: String {
+        let base = numbers.map(String.init).joined(separator: ".")
+        guard let p = prerelease else { return base }
+        return p.number > 0 ? "\(base) \(p.stage.name) \(p.number)" : "\(base) \(p.stage.name)"
+    }
+
+    var description: String { display }
+
+    static func == (a: GlideVersion, b: GlideVersion) -> Bool { !(a < b) && !(b < a) }
+
+    static func < (a: GlideVersion, b: GlideVersion) -> Bool {
+        for i in 0..<max(a.numbers.count, b.numbers.count) {
+            let l = i < a.numbers.count ? a.numbers[i] : 0, r = i < b.numbers.count ? b.numbers[i] : 0
+            if l != r { return l < r }
+        }
+        switch (a.prerelease, b.prerelease) {
+        case (nil, nil), (nil, _?): return false        // a final release is never before its prerelease
+        case (_?, nil): return true
+        case let (x?, y?): return (x.stage.rawValue, x.number) < (y.stage.rawValue, y.number)
+        }
     }
 }

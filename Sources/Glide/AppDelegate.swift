@@ -18,12 +18,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        let firstLaunch = WelcomeTour.shouldShowAtLaunch()   // before AppModel loads settings
         buildMenu()
         setUpStatusItem()
         _ = AppModel.shared   // starts the engine
         watchModes()
         registerPanicHotKey()
-        if !launchedAtLogin || !AppModel.shared.permissionsOK { showWindow() }
+        if firstLaunch { AppModel.shared.showWelcomeTour() }
+        if firstLaunch || !launchedAtLogin || !AppModel.shared.permissionsOK { showWindow() }
     }
 
     // Closing the window keeps Glide running so the trackball stays tuned.
@@ -51,6 +53,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     @objc private func sendFeedback(_ sender: Any?) {
         showWindow()
         AppModel.shared.showingFeedback = true
+    }
+
+    @objc private func showWelcomeTour(_ sender: Any?) {
+        showWindow()
+        AppModel.shared.showWelcomeTour()
     }
 
     @objc private func openWebsite(_ sender: Any?) {
@@ -92,6 +99,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func windowWillClose(_ notification: Notification) {
         AppModel.shared.stopSampling()
+        // Closing the window ends the tour (and gives the buttons their mappings back).
+        if AppModel.shared.showingWelcomeTour { AppModel.shared.closeWelcomeTour() }
     }
 
     func windowDidMiniaturize(_ notification: Notification) { AppModel.shared.stopSampling() }
@@ -192,6 +201,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         let helpItem = NSMenuItem()
         let helpMenu = NSMenu(title: "Help")
+        helpMenu.addItem(withTitle: "Show Welcome Tour…", action: #selector(showWelcomeTour), keyEquivalent: "").target = self
+        helpMenu.addItem(.separator())
         helpMenu.addItem(withTitle: "Send Feedback…", action: #selector(sendFeedback), keyEquivalent: "").target = self
         helpMenu.addItem(withTitle: "Glide Website", action: #selector(openWebsite), keyEquivalent: "").target = self
         helpItem.submenu = helpMenu

@@ -260,6 +260,8 @@ final class FeedbackDraft {
             "trackingSpeed": String(format: "%g", c.trackingSpeed),
         ]
         if model.sync.isEnabled { out["iCloudSync"] = "on" }
+        if let device = model.status.deviceName { out["device"] = device }
+        if model.betaProgram { out["betaProgram"] = "on" }
         return out
     }
 
@@ -276,8 +278,9 @@ final class FeedbackDraft {
             Fact(label: "Mac model", value: sys["model"] ?? "?"),
             Fact(label: "Architecture", value: sys["arch"] ?? "?"),
             Fact(label: "Scroll mode", value: mode),
-            Fact(label: "Expert Mouse", value: model.status.deviceConnected ? "Connected" : "Not connected"),
+            Fact(label: "Trackball", value: model.status.deviceName.map { model.status.deviceIsBeta ? "\($0) (beta)" : $0 } ?? "Not connected"),
         ]
+        if model.betaProgram { out.append(Fact(label: "Beta program", value: "On")) }
         if !topics.isEmpty { out.append(Fact(label: "Topics", value: topics.joined(separator: ", "))) }
         return out
     }
