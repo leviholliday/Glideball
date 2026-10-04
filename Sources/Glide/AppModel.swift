@@ -70,6 +70,17 @@ final class AppModel {
     /// Shares settings with the user's other Macs through iCloud Drive.
     let sync = SettingsSync(onRemoteConfig: { AppModel.shared.applyRemoteConfig($0) })
 
+    /// The menu-bar icon (on unless turned off in Overview › General). Per-Mac.
+    static var showMenuBarIcon: Bool {
+        UserDefaults.standard.object(forKey: "GlideShowMenuBarIcon") as? Bool ?? true
+    }
+    var menuBarIcon: Bool = AppModel.showMenuBarIcon {
+        didSet {
+            UserDefaults.standard.set(menuBarIcon, forKey: "GlideShowMenuBarIcon")
+            (NSApp.delegate as? AppDelegate)?.updateStatusItemVisibility()
+        }
+    }
+
     var permissionsOK: Bool { hasAccessibility && hasInputMonitoring }
 
     static let settingsType = UTType(exportedAs: "com.leviholliday.glide.settings", conformingTo: .json)

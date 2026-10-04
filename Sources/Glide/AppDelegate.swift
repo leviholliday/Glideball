@@ -36,7 +36,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     /// windows. Glide is an input utility, so keep it alive until its own menu
     /// explicitly requests a quit.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        isExplicitlyQuitting ? .terminateNow : .terminateCancel
+        if isExplicitlyQuitting || Self.systemIsEndingSession() { return .terminateNow }
+        return .terminateCancel
+    }
+
+    /// Logging out, restarting and shutting down send a quit with a reason;
+    /// Glide must never be the app that holds those up.
+    private static func systemIsEndingSession() -> Bool {
+        guard let event = NSAppleEventManager.shared().currentAppleEvent,
+              event.eventClass == kCoreEventClass, event.eventID == kAEQuitApplication,
+              let reason = event.attributeDescriptor(forKeyword: kAEQuitReason)?.enumCodeValue else { return false }
+        return [kAELogOut, kAEReallyLogOut, kAEShowRestartDialog, kAEShowShutdownDialog,
+                kAERestart, kAEShutDown, kAEShowRestartDialog].map { OSType($0) }.contains(reason)
+    }
+
+    /// Quits for real — the Quit menu items and the updater's relaunch.
+    func quitNow() {
+        isExplicitlyQuitting = true
+        NSApp.terminate(nil)
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
@@ -107,7 +124,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func windowDidMiniaturize(_ notification: Notification) { AppModel.shared.stopSampling() }
     func windowDidDeminiaturize(_ notification: Notification) { AppModel.shared.startSampling() }
 
+    /// Shows or hides the menu-bar icon to match the "Menu bar icon" setting.
+    func updateStatusItemVisibility() {
+        if AppModel.showMenuBarIcon {
+            if statusItem == nil {
+                setUpStatusItem()
+                showModes(AppModel.shared.modes)
+            }
+        } else if let item = statusItem {
+            NSStatusBar.system.removeStatusItem(item)
+            statusItem = nil
+            precisionItem = nil
+        }
+    }
+
     private func setUpStatusItem() {
+        guard AppModel.showMenuBarIcon else { return }
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         item.button?.image = NSImage(systemSymbolName: "cursorarrow.click", accessibilityDescription: "Glide")
         item.button?.image?.isTemplate = true
@@ -119,6 +151,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         // in the menu bar after choosing an item — so only Precision is offered.
         precisionItem = menu.addItem(withTitle: "Precision", action: #selector(togglePrecision), keyEquivalent: "")
         menu.addItem(.separator())
+        menu.addItem(withTitle: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "")
         menu.addItem(withTitle: "Send Feedback…", action: #selector(sendFeedback), keyEquivalent: "")
         menu.addItem(.separator())
         menu.addItem(withTitle: "Quit Glide", action: #selector(quitGlide), keyEquivalent: "q")
@@ -156,9 +189,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         toggleMode(.precision)
     }
 
-    @objc private func quitGlide(_ sender: Any?) {
-        isExplicitlyQuitting = true
-        NSApp.terminate(nil)
+    @objc private func quitGlide(_ sender: Any?) { quitNow() }
+
+    @objc private func checkForUpdates(_ sender: Any?) {
+        showWindow()
+        AppModel.shared.updates.checkNow()
     }
 
     /// Glide's global shortcuts. Pause (⌃⌥⌘G unless changed) is the escape
@@ -203,6 +238,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let appItem = NSMenuItem()
         let appMenu = NSMenu()
         appMenu.addItem(withTitle: "About Glide", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        appMenu.addItem(withTitle: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "").target = self
         appMenu.addItem(.separator())
         appMenu.addItem(withTitle: "Hide Glide", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
         let others = appMenu.addItem(withTitle: "Hide Others", action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h")

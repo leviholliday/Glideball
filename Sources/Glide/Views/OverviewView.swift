@@ -43,6 +43,12 @@ struct OverviewView: View {
                 ToggleRow(title: "Open at login", subtitle: "Starts quietly in the background so your trackball is always tuned.",
                           symbol: "power", isOn: Binding(get: { model.launchAtLogin }, set: { model.setLaunchAtLogin($0) }))
                 Divider().opacity(0.4)
+                ToggleRow(title: "Menu bar icon",
+                          subtitle: "Quick access to pause, precision and updates. Glide keeps running either way — reopen it from the Dock.",
+                          symbol: "menubar.rectangle", isOn: $model.menuBarIcon)
+                Divider().opacity(0.4)
+                UpdatesRow(updates: model.updates)
+                Divider().opacity(0.4)
                 ToggleRow(title: "Beta program",
                           subtitle: "Try features before they're finished — like support for other Kensington trackballs and early updates. You may hit bugs.",
                           symbol: "flask", isOn: $model.betaProgram)
@@ -264,6 +270,54 @@ struct Sparkline: View {
                 Gradient(colors: [color.opacity(0.55), color.opacity(0.02)]),
                 startPoint: .zero, endPoint: CGPoint(x: 0, y: size.height)))
             context.stroke(line, with: .color(color), style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+        }
+    }
+}
+
+/// "Glide 2.6 — up to date" with a Check for Updates button.
+struct UpdatesRow: View {
+    let updates: UpdateChecker
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "arrow.down.circle")
+                .font(.system(size: 14, weight: .medium))
+                .frame(width: 22)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Updates").font(.system(size: 14, weight: .medium))
+                Text(status).font(.system(size: 11)).foregroundStyle(.secondary)
+                    .contentTransition(.opacity)
+            }
+            Spacer()
+            if let update = updates.available {
+                Button("Install \(GlideVersion(update.version)?.display ?? update.version)") { updates.install() }
+                    .buttonStyle(.glassProminent)
+                    .tint(.cyan)
+            } else {
+                Button {
+                    updates.checkNow()
+                } label: {
+                    if updates.manualCheck == .checking {
+                        ProgressView().controlSize(.small).frame(width: 110)
+                    } else {
+                        Text("Check for Updates")
+                    }
+                }
+                .buttonStyle(.glass)
+                .disabled(updates.manualCheck == .checking)
+            }
+        }
+        .animation(.smooth, value: updates.manualCheck)
+    }
+
+    private var status: String {
+        let current = "Glide \(GlideVersion(updates.currentVersion)?.display ?? updates.currentVersion)"
+        if let update = updates.available { return "\(current) · \(GlideVersion(update.version)?.display ?? update.version) is ready to install" }
+        switch updates.manualCheck {
+        case .upToDate: return "\(current) · You’re up to date ✓"
+        case .failed: return "\(current) · Couldn’t reach GitHub — try again later"
+        case .checking: return "\(current) · Checking…"
+        case .idle: return "\(current) · Checks automatically once a day"
         }
     }
 }

@@ -53,19 +53,36 @@ final class UpdateChecker {
         timer = Timer.scheduledTimer(withTimeInterval: 24 * 3600, repeats: true) { [weak self] _ in self?.check() }
     }
 
-    func check() {
+    /// What a "Check for Updates" the user asked for found — shown next to the button.
+    enum ManualCheck: Equatable { case idle, checking, upToDate, failed }
+    private(set) var manualCheck: ManualCheck = .idle
+
+    /// A check the user asked for: reports back even when there's nothing new.
+    func checkNow() {
+        manualCheck = .checking
+        check { [weak self] ok in
+            guard let self else { return }
+            self.manualCheck = !ok ? .failed : (self.available == nil ? .upToDate : .idle)
+        }
+    }
+
+    func check(completion: ((Bool) -> Void)? = nil) {
         // Always ask GitHub fresh: a cached "latest release" would hide a new update.
         var request = URLRequest(url: Self.releasesAPI, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 15)
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
         let prereleases = includePrereleases
         URLSession.shared.dataTask(with: request) { [weak self] data, response, _ in
-            guard let self, let data, (response as? HTTPURLResponse)?.statusCode == 200 else { return }
+            guard let self, let data, (response as? HTTPURLResponse)?.statusCode == 200 else {
+                DispatchQueue.main.async { completion?(false) }
+                return
+            }
             let newest = Self.newest(in: data, includePrereleases: prereleases)
             let newer = newest.map { Self.isNewer($0.version, than: self.currentVersion) } ?? false
             DispatchQueue.main.async {
                 // The Beta program switch changed while this was in flight: a fresh check is coming.
-                guard prereleases == self.includePrereleases else { return }
+                guard prereleases == self.includePrereleases else { completion?(true); return }
                 self.available = newer ? newest : nil
+                completion?(true)
             }
         }.resume()
     }
@@ -207,7 +224,9 @@ final class UpdateChecker {
             installState = .failed("Couldn’t start the installer: \(error.localizedDescription)")
             return
         }
-        NSApp.terminate(nil)
+        // Glide normally refuses to quit unless asked from its own menu; the
+        // update's relaunch counts as asked.
+        if let app = NSApp.delegate as? AppDelegate { app.quitNow() } else { NSApp.terminate(nil) }
     }
 }
 
