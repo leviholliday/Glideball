@@ -5,6 +5,8 @@ import SwiftUI
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var window: NSWindow?
     private var launchedAtLogin = false
+    private var statusItem: NSStatusItem?
+    private var isExplicitlyQuitting = false
 
     func applicationWillFinishLaunching(_ notification: Notification) {
         // Launched by "Open at Login"? Then start quietly with no window.
@@ -17,6 +19,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         buildMenu()
+        setUpStatusItem()
         _ = AppModel.shared   // starts the engine
         registerPanicHotKey()
         if !launchedAtLogin || !AppModel.shared.permissionsOK { showWindow() }
@@ -24,6 +27,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     // Closing the window keeps Glide running so the trackball stays tuned.
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
+
+    /// Some window-management utilities ask an app to quit once it has no
+    /// windows. Glide is an input utility, so keep it alive until its own menu
+    /// explicitly requests a quit.
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        isExplicitlyQuitting ? .terminateNow : .terminateCancel
+    }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         showWindow()
@@ -76,6 +86,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func windowDidMiniaturize(_ notification: Notification) { AppModel.shared.stopSampling() }
     func windowDidDeminiaturize(_ notification: Notification) { AppModel.shared.startSampling() }
 
+    private func setUpStatusItem() {
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        item.button?.image = NSImage(systemSymbolName: "cursorarrow.click", accessibilityDescription: "Glide")
+        item.button?.image?.isTemplate = true
+
+        let menu = NSMenu()
+        menu.addItem(withTitle: "Show Glide", action: #selector(showGlide), keyEquivalent: "")
+        menu.addItem(withTitle: "Pause / Resume Glide", action: #selector(toggleGlide), keyEquivalent: "")
+        menu.addItem(.separator())
+        menu.addItem(withTitle: "Quit Glide", action: #selector(quitGlide), keyEquivalent: "q")
+        menu.items.forEach { $0.target = self }
+        item.menu = menu
+        statusItem = item
+    }
+
+    @objc private func showGlide(_ sender: Any?) {
+        showWindow()
+    }
+
+    @objc private func toggleGlide(_ sender: Any?) {
+        AppModel.shared.config.enabled.toggle()
+    }
+
+    @objc private func quitGlide(_ sender: Any?) {
+        isExplicitlyQuitting = true
+        NSApp.terminate(nil)
+    }
+
     /// ⌃⌥⌘G pauses / resumes Glide from anywhere — an escape hatch that works
     /// even if a mapping makes the mouse unusable. Needs no permissions.
     private func registerPanicHotKey() {
@@ -105,7 +143,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let others = appMenu.addItem(withTitle: "Hide Others", action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h")
         others.keyEquivalentModifierMask = [.command, .option]
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: "Quit Glide", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appMenu.addItem(withTitle: "Quit Glide", action: #selector(quitGlide), keyEquivalent: "q").target = self
         appItem.submenu = appMenu
         main.addItem(appItem)
 
