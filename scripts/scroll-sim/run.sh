@@ -8,5 +8,6 @@ swiftc -O -swift-version 5 -o "$OUT" \
   Sources/Glide/Config.swift \
   Sources/Glide/Telemetry.swift \
   Sources/Glide/Diagnostics.swift \
+  Sources/Glide/AppProfile.swift \
   scripts/scroll-sim/main.swift
 "$OUT"
