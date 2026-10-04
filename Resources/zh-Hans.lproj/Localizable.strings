@@ -1204,7 +1204,7 @@
 
 "Wild" = "狂野";
 
-"Glideball" = "滑行";
+"Glide" = "滑行";
 
 /* Milliseconds */
 "%lld ms" = "%lld 毫秒";

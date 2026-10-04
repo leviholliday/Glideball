@@ -15,6 +15,12 @@
   <a href="https://glideball.netlify.app">Website</a>
   &nbsp;·&nbsp;
   Requires macOS 26 Tahoe or later
+  <br>
+  <a href="#linux--windows-preview">Linux &amp; Windows: <b>Preview</b></a>
+</p>
+
+<p align="center">
+  <img src="docs/demo.gif" width="640" alt="Glideball's launch: a trackball spins up, the name appears, and the Overview window opens">
 </p>
 
 <p align="center">
@@ -94,6 +100,18 @@ Glideball speaks English, Español, Français, Deutsch, Italiano, Português (Br
 Closing the window keeps Glideball running. Click its Dock icon to bring the window back, or press ⌘Q to quit. When a new version is out, an **Update** button appears in the window header.
 
 **To uninstall,** quit Glideball and move it to the Trash. To also remove its settings, run `defaults delete com.leviholliday.glide`.
+
+## Linux & Windows (Preview)
+
+> [!NOTE]
+> **These are previews.** They share the Mac app's scroll physics, buttons, combos and `.glide-settings` file format, and their automated tests pass, but they've barely been tried on real hardware yet. Expect rough edges — and please [send feedback](https://glideball.netlify.app/feedback/).
+
+| | Download | Details |
+|---|---|---|
+| **Linux** (Ubuntu 24.04+, Fedora 39+) | [Glideball-Linux-Preview.tar.gz](https://github.com/leviholliday/glideball/releases/latest/download/Glideball-Linux-Preview.tar.gz) · [.deb](https://github.com/leviholliday/glideball/releases/latest/download/Glideball-Linux-Preview.deb) | Unpack and run `./install.sh`. See [linux/README.md](linux/README.md). |
+| **Windows** 10/11 | [Installer (x64)](https://github.com/leviholliday/glideball/releases/latest/download/Glideball-Windows-Preview-Setup-x64.exe) · [ARM](https://github.com/leviholliday/glideball/releases/latest/download/Glideball-Windows-Preview-Setup-arm64.exe) | Unsigned, so SmartScreen warns once (More info › Run anyway). See [windows/README.md](windows/README.md). |
+
+Both only take over Kensington trackballs; every other mouse, touchpad and trackball is left alone. Settings exported on a Mac import on Linux and Windows, and the other way round.
 
 ## How it works
 

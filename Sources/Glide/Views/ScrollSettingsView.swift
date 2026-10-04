@@ -95,7 +95,7 @@ struct ScrollControls: View {
             TuningSlider(title: "Spin power", symbol: "tornado",
                          value: $config.flyAcceleration, range: 0...1.5,
                          format: { $0.wholePercent }, lowLabel: "Gentle", highLabel: "Wild")
-            TuningSlider(title: "Glideball", symbol: "wind",
+            TuningSlider(title: "Glide", symbol: "wind",
                          value: $config.flyGlide, range: 0...1,
                          format: { String(localized: "\(Int(SmoothScroller.flyTau(glide: $0) * 1000)) ms", comment: "Milliseconds") },
                          lowLabel: "Grippy", highLabel: "Slippery")

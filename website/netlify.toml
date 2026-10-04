@@ -16,6 +16,30 @@
   status = 301
   force = true
 
+[[redirects]]
+  from = "/download/linux"
+  to = "https://github.com/leviholliday/glideball/releases/latest/download/Glideball-Linux-Preview.tar.gz"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/download/linux-deb"
+  to = "https://github.com/leviholliday/glideball/releases/latest/download/Glideball-Linux-Preview.deb"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/download/windows"
+  to = "https://github.com/leviholliday/glideball/releases/latest/download/Glideball-Windows-Preview-Setup-x64.exe"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/download/windows-arm"
+  to = "https://github.com/leviholliday/glideball/releases/latest/download/Glideball-Windows-Preview-Setup-arm64.exe"
+  status = 302
+  force = true
+
 # The site is published from this folder, so keep what isn't a page out of
 # reach: the functions' source, the npm files and node_modules.
 [[redirects]]

@@ -1204,7 +1204,7 @@
 
 "Wild" = "Wild";
 
-"Glideball" = "Gleiten";
+"Glide" = "Gleiten";
 
 /* Milliseconds */
 "%lld ms" = "%lld ms";

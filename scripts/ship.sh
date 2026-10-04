@@ -61,6 +61,9 @@ else
   scripts/deploy-site.sh "Glideball $VERSION"
 fi
 
+print "\n==> Attaching the Linux & Windows previews (waits for CI)"
+scripts/attach-previews.sh "v${VERSION#v}" || print -u2 "warning: previews not attached — rerun: scripts/attach-previews.sh v${VERSION#v}"
+
 print "\n==> Installing Glideball $VERSION on this Mac"
 ./build.sh | tail -1
 
