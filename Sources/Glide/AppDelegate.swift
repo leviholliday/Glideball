@@ -20,6 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let firstLaunch = WelcomeTour.shouldShowAtLaunch()   // before AppModel loads settings
+        _ = AppLanguage.atLaunch   // the language on screen, before anyone can change it
         buildMenu()
         setUpStatusItem()
         _ = AppModel.shared   // starts the engine

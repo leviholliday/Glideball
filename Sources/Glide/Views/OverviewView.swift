@@ -48,6 +48,8 @@ struct OverviewView: View {
                           subtitle: "Quick access to pause, precision and updates. Glide keeps running either way — reopen it from the Dock.",
                           symbol: "menubar.rectangle", isOn: $model.menuBarIcon)
                 Divider().opacity(0.4)
+                LanguageRow()
+                Divider().opacity(0.4)
                 UpdatesRow(updates: model.updates)
                 Divider().opacity(0.4)
                 ToggleRow(title: "Beta program",
@@ -304,6 +306,43 @@ struct Sparkline: View {
                 startPoint: .zero, endPoint: CGPoint(x: 0, y: size.height)))
             context.stroke(line, with: .color(color), style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
         }
+    }
+}
+
+/// Glide's own language, separate from the Mac's. Takes effect on relaunch.
+struct LanguageRow: View {
+    @State private var choice = AppLanguage.chosen
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "globe")
+                .font(.system(size: 14, weight: .medium))
+                .frame(width: 22)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Language").font(.system(size: 14, weight: .medium))
+                Text("Glide can speak a different language from the rest of your Mac.")
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+            }
+            Spacer()
+            if choice != AppLanguage.atLaunch {
+                Button("Relaunch to Apply", action: AppLanguage.relaunch)
+                    .buttonStyle(.glassProminent)
+                    .tint(.cyan)
+                    .transition(.scale(scale: 0.8).combined(with: .opacity))
+            }
+            Picker("Language", selection: $choice) {
+                Text("System Default").tag(AppLanguage?.none)
+                Divider()
+                ForEach(AppLanguage.allCases) { language in
+                    Text(verbatim: language.nativeName).tag(AppLanguage?.some(language))
+                }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .fixedSize()
+        }
+        .animation(.smooth(duration: 0.25), value: choice)
+        .onChange(of: choice) { _, new in AppLanguage.chosen = new }
     }
 }
 
