@@ -212,6 +212,11 @@ done
 
 git rev-parse --quiet --verify "refs/tags/$TAG" >/dev/null && die "tag $TAG already exists locally"
 
+# Missing translations don't stop a release (that text shows in English), but say so.
+if command -v python3 >/dev/null && ! python3 scripts/l10n/check.py --quiet >/dev/null 2>&1; then
+  warn "some translations are missing or broken" "Run scripts/l10n/check.py to see which; untranslated text shows in English."
+fi
+
 if (( DRY_RUN )); then
   if ! command -v gh >/dev/null; then
     warn "gh is not installed; a real release needs it (brew install gh)"
@@ -290,6 +295,10 @@ cp "$BIN" "$APP/Contents/MacOS/Glide"
 cp "$PLIST" "$APP/Contents/Info.plist"
 cp "$ICON" "$APP/Contents/Resources/AppIcon.icns"
 cp Resources/IntroMusic.m4a Resources/LaunchChime.m4a "$APP/Contents/Resources/"   # scripts/make-intro-music.py
+lprojs=(Resources/*.lproj(N))   # translations (scripts/l10n) — copied before signing so the seal covers them
+(( ${#lprojs} )) || die "no Resources/*.lproj translations found"
+cp -R "${lprojs[@]}" "$APP/Contents/Resources/" || die "couldn't copy the translations"
+info "Languages: ${(j:, :)${lprojs:t:r}}"
 xattr -cr "$APP"   # stray extended attributes make codesign refuse the bundle
 
 # Same identity lookup as build.sh: the local "Glide Local Signing" certificate
