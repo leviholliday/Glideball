@@ -22,6 +22,7 @@ final class AppModel {
             config.save()
             if !config.enabled && oldValue.enabled { engine.releaseHeldKeys() }
             engine.update(config)
+            if !applyingRemoteConfig { sync.localConfigChanged(config) }
         }
     }
 
@@ -42,6 +43,8 @@ final class AppModel {
     var toast: Toast?
     var pendingImport: PendingImport?
     var requestedTab: GlideTab?
+    /// Shares settings with the user's other Macs through iCloud Drive.
+    let sync = SettingsSync(onRemoteConfig: { AppModel.shared.applyRemoteConfig($0) })
 
     var permissionsOK: Bool { hasAccessibility && hasInputMonitoring }
 
@@ -110,6 +113,7 @@ final class AppModel {
     @ObservationIgnored private var smoothedBall = 0.0
     @ObservationIgnored private var smoothedNotch = 0.0
     @ObservationIgnored private var saveCounter = 0
+    @ObservationIgnored private var applyingRemoteConfig = false
 
     private init() {
         let cfg = GlideConfig.load()
@@ -132,6 +136,7 @@ final class AppModel {
             self?.engine.reapplyPointer()
         }
         startSampling()
+        sync.syncNow(current: cfg)   // pick up changes made on other Macs while Glide was closed
         updates.start()
     }
 
@@ -283,6 +288,13 @@ final class AppModel {
         config = previous
         configBeforeImport = nil
         show(.init(symbol: "arrow.uturn.backward.circle.fill", text: "Restored your previous settings"))
+    }
+
+    /// Takes settings synced from another Mac without echoing them back as a local change.
+    private func applyRemoteConfig(_ remote: GlideConfig) {
+        applyingRemoteConfig = true
+        config = remote
+        applyingRemoteConfig = false
     }
 
     // MARK: Live activity (only while the window is visible)
