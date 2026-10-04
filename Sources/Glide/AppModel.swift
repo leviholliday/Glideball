@@ -21,7 +21,7 @@ final class AppModel {
             guard config != oldValue else { return }
             config.save()
             if !config.enabled && oldValue.enabled { engine.releaseHeldKeys() }
-            engine.update(config)
+            pushToEngine()
             if !applyingRemoteConfig { sync.localConfigChanged(config) }
         }
     }
@@ -62,8 +62,11 @@ final class AppModel {
     }
 
     var assignStep: AssignStep = .idle
+    /// The app setup Quick assign writes to; nil = the main setup.
+    @ObservationIgnored private var assignProfileID: String?
 
-    func beginAssign() {
+    func beginAssign(for profileID: String? = nil) {
+        assignProfileID = profileID
         assignStep = .waitingForButtons
         // Never wait forever: give up after 10 seconds.
         DispatchQueue.main.asyncAfter(deadline: .now() + 10) { [weak self] in
@@ -77,24 +80,50 @@ final class AppModel {
 
     func finishAssign(_ action: ButtonAction) {
         guard case .waitingForAction(let buttons) = assignStep else { return }
-        if buttons == [0] {
-            // Keep the primary click available even when assigning shortcuts.
-        } else if buttons.count == 1, let b = buttons.first {
-            config.buttons[b] = action
-        } else {
-            let sorted = buttons.sorted()
-            if let i = config.chords.firstIndex(where: { $0.buttons == sorted }) {
-                config.chords[i].action = action
-            } else {
-                config.chords.append(Chord(buttons: sorted, action: action))
+        if let id = assignProfileID, let p = config.appProfiles.firstIndex(where: { $0.id == id }) {
+            // Assigning inside an app setup customizes that area if it wasn't already.
+            var profile = config.appProfiles[p]
+            var map = profile.buttons ?? config.buttons
+            var chords = profile.chords ?? config.chords
+            if Self.assign(action, to: buttons, buttons: &map, chords: &chords) {
+                profile.chords = chords
+            } else if buttons != [0] {
+                profile.buttons = map
             }
+            config.appProfiles[p] = profile
+        } else {
+            var c = config
+            Self.assign(action, to: buttons, buttons: &c.buttons, chords: &c.chords)
+            config = c
         }
         assignStep = .idle
+        assignProfileID = nil
+    }
+
+    /// Returns true when it made or changed a combo.
+    @discardableResult
+    private static func assign(_ action: ButtonAction, to buttons: Set<Int>,
+                               buttons map: inout [Int: ButtonAction], chords: inout [Chord]) -> Bool {
+        if buttons == [0] {
+            // Keep the primary click available even when assigning shortcuts.
+            return false
+        } else if buttons.count == 1, let b = buttons.first {
+            map[b] = action
+            return false
+        }
+        let sorted = buttons.sorted()
+        if let i = chords.firstIndex(where: { $0.buttons == sorted }) {
+            chords[i].action = action
+        } else {
+            chords.append(Chord(buttons: sorted, action: action))
+        }
+        return true
     }
 
     func cancelAssign() {
         engine.learnNextPress(nil)
         assignStep = .idle
+        assignProfileID = nil
     }
 
     static func buttonName(_ b: Int) -> String {
@@ -120,7 +149,13 @@ final class AppModel {
     private init() {
         let cfg = GlideConfig.load()
         config = cfg
-        engine = Engine(config: cfg)
+        let front = NSWorkspace.shared.frontmostApplication
+        let frontIsGlide = front?.processIdentifier == ProcessInfo.processInfo.processIdentifier
+        glideIsFrontmost = frontIsGlide
+        frontmostBundleID = front?.bundleIdentifier
+        let initial = cfg.resolved(for: frontIsGlide ? nil : front?.bundleIdentifier)
+        pushedConfig = initial
+        engine = Engine(config: initial)
         engine.telemetry.restore(Self.loadTotals())
         engine.onStatus = { [weak self] s in self?.status = s }
         engine.start()
@@ -137,9 +172,70 @@ final class AppModel {
                                                           object: nil, queue: .main) { [weak self] _ in
             self?.engine.reapplyPointer()
         }
+        NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didActivateApplicationNotification,
+                                                          object: nil, queue: .main) { [weak self] note in
+            self?.frontmostChanged(note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication)
+        }
         startSampling()
         sync.syncNow(current: cfg)   // pick up changes made on other Macs while Glide was closed
         updates.start()
+    }
+
+    // MARK: App setups — follow the frontmost app
+
+    /// The app in front, and whether that's Glide itself.
+    private(set) var frontmostBundleID: String?
+    private(set) var glideIsFrontmost = false
+    /// The setup selected on the Apps tab (kept across tab switches).
+    var selectedProfileID: String? {
+        didSet { if selectedProfileID != oldValue { pushToEngine() } }
+    }
+    /// True while the Apps tab is on screen. With Glide in front, the selected
+    /// setup is then previewed so its changes can be felt as you make them.
+    var isEditingProfiles = false {
+        didSet { if isEditingProfiles != oldValue { pushToEngine() } }
+    }
+    @ObservationIgnored private var pushedConfig = GlideConfig()
+
+    /// Whose setup the engine should run: the frontmost app's, or — while
+    /// Glide itself is in front — the one open on the Apps tab, else the main setup.
+    private var profileTarget: String? {
+        glideIsFrontmost ? (isEditingProfiles ? selectedProfileID : nil) : frontmostBundleID
+    }
+
+    /// The app setup in effect right now, if any.
+    var activeProfile: AppProfile? { config.profile(for: profileTarget) }
+
+    private func frontmostChanged(_ app: NSRunningApplication?) {
+        let isGlide = app?.processIdentifier == ProcessInfo.processInfo.processIdentifier
+        let id = app?.bundleIdentifier
+        if glideIsFrontmost != isGlide { glideIsFrontmost = isGlide }
+        if frontmostBundleID != id { frontmostBundleID = id }
+        pushToEngine()
+    }
+
+    /// Sends the setup for whoever's in front to the engine, if it changed.
+    private func pushToEngine() {
+        let resolved = config.resolved(for: profileTarget)
+        guard resolved != pushedConfig else { return }
+        pushedConfig = resolved
+        engine.update(resolved)
+    }
+
+    /// Adds a setup for an app (or selects it if it already has one).
+    func addProfile(bundleID: String, name: String) {
+        if !config.appProfiles.contains(where: { $0.bundleID == bundleID }) {
+            config.appProfiles.append(AppProfile(bundleID: bundleID, name: name))
+        }
+        selectedProfileID = bundleID
+    }
+
+    func deleteProfile(_ id: String) {
+        guard let i = config.appProfiles.firstIndex(where: { $0.id == id }) else { return }
+        config.appProfiles.remove(at: i)
+        if selectedProfileID == id {
+            selectedProfileID = config.appProfiles.indices.contains(i) ? config.appProfiles[i].id : config.appProfiles.last?.id
+        }
     }
 
     // MARK: Permissions

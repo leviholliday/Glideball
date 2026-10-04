@@ -155,6 +155,9 @@ struct GlideConfig: Codable, Equatable {
         Chord(buttons: [0, 2, 3], action: .holdShortcut(.wisprFlow)),
     ]
 
+    // Per-app setups: used instead of the above while that app is in front.
+    var appProfiles: [AppProfile] = []
+
     init() {}
 
     // Missing keys fall back to defaults so new settings never wipe old ones.
@@ -178,6 +181,7 @@ struct GlideConfig: Codable, Equatable {
         shiftScrollsHorizontally = try c.decodeIfPresent(Bool.self, forKey: .shiftScrollsHorizontally) ?? d.shiftScrollsHorizontally
         buttons = try c.decodeIfPresent([Int: ButtonAction].self, forKey: .buttons) ?? d.buttons
         chords = try c.decodeIfPresent([Chord].self, forKey: .chords) ?? d.chords
+        appProfiles = try c.decodeIfPresent([AppProfile].self, forKey: .appProfiles) ?? d.appProfiles
     }
 
     private static let key = "GlideConfig"
@@ -251,6 +255,7 @@ extension GlideConfig {
             .init(symbol: "arrow.up.and.down.circle", title: "Scrolling", value: scroll),
             .init(symbol: "button.programmable", title: "Buttons", value: remapped == 0 ? "Default" : "\(remapped) remapped"),
             .init(symbol: "square.on.square", title: "Combos", value: chords.isEmpty ? "None" : "\(chords.count)"),
+            .init(symbol: "square.grid.2x2", title: "App setups", value: appProfilesSummary),
         ]
     }
 }

@@ -5,6 +5,7 @@ enum GlideTab: String, CaseIterable, Identifiable {
     case pointer = "Pointer"
     case scroll = "Scrolling"
     case buttons = "Buttons"
+    case apps = "Apps"
     case backup = "Sync"
 
     var id: String { rawValue }
@@ -14,6 +15,7 @@ enum GlideTab: String, CaseIterable, Identifiable {
         case .pointer: "cursorarrow.motionlines"
         case .scroll: "arrow.up.and.down.circle"
         case .buttons: "button.programmable"
+        case .apps: "square.grid.2x2"
         case .backup: "arrow.triangle.2.circlepath.icloud"
         }
     }
@@ -37,6 +39,7 @@ struct RootView: View {
                         case .pointer: PointerView(model: model)
                         case .scroll: ScrollSettingsView(model: model)
                         case .buttons: ButtonsView(model: model)
+                        case .apps: AppsView(model: model)
                         case .backup: BackupView(model: model)
                         }
                     }
@@ -82,8 +85,12 @@ struct RootView: View {
                 .frame(width: 44, height: 44)
             VStack(alignment: .leading, spacing: 1) {
                 Text("Glide").font(.system(size: 22, weight: .bold, design: .rounded))
-                Text("Kensington Expert Mouse").font(.system(size: 12)).foregroundStyle(.secondary)
-                    .lineLimit(1)
+                if let profile = model.activeProfile {
+                    ActiveProfileBadge(model: model, profile: profile)
+                } else {
+                    Text("Kensington Expert Mouse").font(.system(size: 12)).foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
             }
             Spacer()
             tabBar
@@ -106,21 +113,29 @@ struct RootView: View {
                     Button {
                         tab = t
                     } label: {
-                        Label(t.rawValue, systemImage: t.symbol)
-                            .font(.system(size: 13, weight: .medium))
-                            .lineLimit(1)
-                            .fixedSize()
-                            .padding(.horizontal, 11)
-                            .padding(.vertical, 8)
-                            .foregroundStyle(tab == t ? .primary : .secondary)
-                            .background {
-                                if tab == t {
-                                    Capsule()
-                                        .fill(.white.opacity(0.18))
-                                        .matchedGeometryEffect(id: "sel", in: tabNS)
-                                }
+                        // Icon over a short label keeps six tabs narrow enough
+                        // for the header at the window's 960 pt minimum.
+                        VStack(spacing: 2) {
+                            Image(systemName: t.symbol)
+                                .font(.system(size: 15, weight: .medium))
+                                .frame(height: 18)
+                            Text(t.rawValue)
+                                .font(.system(size: 11, weight: .medium))
+                                .lineLimit(1)
+                                .fixedSize()
+                        }
+                        .frame(minWidth: 44)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 5)
+                        .foregroundStyle(tab == t ? .primary : .secondary)
+                        .background {
+                            if tab == t {
+                                Capsule()
+                                    .fill(.white.opacity(0.18))
+                                    .matchedGeometryEffect(id: "sel", in: tabNS)
                             }
-                            .contentShape(Capsule())
+                        }
+                        .contentShape(Capsule())
                     }
                     .buttonStyle(.plain)
                 }
@@ -140,6 +155,30 @@ struct RootView: View {
         if !model.permissionsOK { return .orange }
         if !model.config.enabled { return .gray }
         return model.status.deviceConnected ? .green : .red
+    }
+}
+
+/// "Using Safari setup" under the app name while an app setup is in effect.
+private struct ActiveProfileBadge: View {
+    let model: AppModel
+    let profile: AppProfile
+
+    var body: some View {
+        Button {
+            model.selectedProfileID = profile.id
+            model.requestedTab = .apps
+        } label: {
+            HStack(spacing: 5) {
+                AppIcon(bundleID: profile.bundleID, size: 14)
+                Text("Using \(profile.name) setup")
+                    .font(.system(size: 12, weight: .medium))
+                    .lineLimit(1)
+            }
+        }
+        .buttonStyle(.plain)
+        .help(model.glideIsFrontmost
+              ? "Previewing \(profile.name)’s setup while you edit it. Other apps use your main setup."
+              : "\(profile.name) is in front, so Glide is using its setup. Click to edit it.")
     }
 }
 

@@ -4,30 +4,12 @@ import SwiftUI
 struct ScrollSettingsView: View {
     @Bindable var model: AppModel
 
-    private struct Preset: Identifiable {
-        let name: String, symbol: String
-        let distance: Double, smooth: Double, accel: Double, throwOn: Bool, throwAmount: Double
-        var id: String { name }
-    }
-    private let presets: [Preset] = [
-        .init(name: "Precise", symbol: "scope", distance: 10, smooth: 0.25, accel: 0.25, throwOn: false, throwAmount: 0.3),
-        .init(name: "Control", symbol: "hand.raised.fingers.spread", distance: 14, smooth: 0.4, accel: 0.5, throwOn: true, throwAmount: 0.4),
-        .init(name: "Fling", symbol: "wind", distance: 18, smooth: 0.5, accel: 0.7, throwOn: true, throwAmount: 0.75),
-    ]
-
     var body: some View {
         VStack(spacing: 18) {
             ModePicker(mode: $model.config.scrollMode)
             HStack(alignment: .top, spacing: 18) {
-                VStack(spacing: 18) {
-                    switch model.config.scrollMode {
-                    case .native: nativeCards
-                    case .flywheel: flywheelCards
-                    case .follow: followCards
-                    }
-                    if model.config.scrollMode != .native { directionCard }
-                }
-                .frame(width: 340)
+                ScrollControls(config: $model.config)
+                    .frame(width: 340)
 
                 VStack(spacing: 18) {
                     switch model.config.scrollMode {
@@ -44,6 +26,34 @@ struct ScrollSettingsView: View {
             }
         }
     }
+}
+
+/// The tuning cards for the chosen scroll mode. Shared by the Scrolling tab
+/// and app setups; only the scrolling fields of `config` are touched.
+struct ScrollControls: View {
+    @Binding var config: GlideConfig
+
+    private struct Preset: Identifiable {
+        let name: String, symbol: String
+        let distance: Double, smooth: Double, accel: Double, throwOn: Bool, throwAmount: Double
+        var id: String { name }
+    }
+    private let presets: [Preset] = [
+        .init(name: "Precise", symbol: "scope", distance: 10, smooth: 0.25, accel: 0.25, throwOn: false, throwAmount: 0.3),
+        .init(name: "Control", symbol: "hand.raised.fingers.spread", distance: 14, smooth: 0.4, accel: 0.5, throwOn: true, throwAmount: 0.4),
+        .init(name: "Fling", symbol: "wind", distance: 18, smooth: 0.5, accel: 0.7, throwOn: true, throwAmount: 0.75),
+    ]
+
+    var body: some View {
+        VStack(spacing: 18) {
+            switch config.scrollMode {
+            case .native: nativeCards
+            case .flywheel: flywheelCards
+            case .follow: followCards
+            }
+            if config.scrollMode != .native { directionCard }
+        }
+    }
 
     @ViewBuilder private var nativeCards: some View {
         GlassCard(title: "macOS scrolling", symbol: "applelogo") {
@@ -51,7 +61,7 @@ struct ScrollSettingsView: View {
                 .font(.system(size: 12)).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             TuningSlider(title: "Scroll speed", symbol: "gauge.with.dots.needle.50percent",
-                         value: $model.config.nativeScrollSpeed, range: 0...5, step: 0.05,
+                         value: $config.nativeScrollSpeed, range: 0...5, step: 0.05,
                          format: { String(format: "%.2f", $0) }, lowLabel: "Slow", highLabel: "Fast")
             Text("System Settings' scroll-speed slider goes up to 1.7. This only affects the Expert Mouse.")
                 .font(.system(size: 11)).foregroundStyle(.tertiary)
@@ -65,21 +75,21 @@ struct ScrollSettingsView: View {
                 .font(.system(size: 12)).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             TuningSlider(title: "Slow-turn distance", symbol: "arrow.up.and.down",
-                         value: $model.config.flyDistance, range: 1...20, step: 1,
+                         value: $config.flyDistance, range: 1...20, step: 1,
                          format: { "\(Int($0)) pt" }, lowLabel: "Precise", highLabel: "Far")
             TuningSlider(title: "Spin power", symbol: "tornado",
-                         value: $model.config.flyAcceleration, range: 0...1.5,
+                         value: $config.flyAcceleration, range: 0...1.5,
                          format: { "\(Int($0 * 100))%" }, lowLabel: "Gentle", highLabel: "Wild")
             TuningSlider(title: "Glide", symbol: "wind",
-                         value: $model.config.flyGlide, range: 0...1,
+                         value: $config.flyGlide, range: 0...1,
                          format: { "\(Int(SmoothScroller.flyTau(glide: $0) * 1000)) ms" },
                          lowLabel: "Grippy", highLabel: "Slippery")
             ToggleRow(title: "Smooth scrolling", subtitle: "Off = plain steps, exactly like a basic mouse",
-                      symbol: "water.waves", isOn: $model.config.smoothScrolling)
+                      symbol: "water.waves", isOn: $config.smoothScrolling)
             Button("Kensington feel") {
                 withAnimation(.smooth) {
-                    model.config.flyDistance = 4; model.config.flyAcceleration = 0.5; model.config.flyGlide = 0.35
-                    model.config.smoothScrolling = true
+                    config.flyDistance = 4; config.flyAcceleration = 0.5; config.flyGlide = 0.35
+                    config.smoothScrolling = true
                 }
             }
             .buttonStyle(.glass)
@@ -93,12 +103,12 @@ struct ScrollSettingsView: View {
                             ForEach(presets) { p in
                                 Button {
                                     withAnimation(.smooth) {
-                                        model.config.scrollDistance = p.distance
-                                        model.config.scrollSmoothness = p.smooth
-                                        model.config.scrollAcceleration = p.accel
-                                        model.config.throwEnabled = p.throwOn
-                                        model.config.throwAmount = p.throwAmount
-                                        model.config.smoothScrolling = true
+                                        config.scrollDistance = p.distance
+                                        config.scrollSmoothness = p.smooth
+                                        config.scrollAcceleration = p.accel
+                                        config.throwEnabled = p.throwOn
+                                        config.throwAmount = p.throwAmount
+                                        config.smoothScrolling = true
                                     }
                                 } label: {
                                     VStack(spacing: 6) {
@@ -119,37 +129,37 @@ struct ScrollSettingsView: View {
                 }
                 GlassCard(title: "Feel", symbol: "slider.horizontal.3") {
                     ToggleRow(title: "Smooth scrolling", subtitle: "Off = plain steps, exactly like a basic mouse",
-                              symbol: "water.waves", isOn: $model.config.smoothScrolling)
+                              symbol: "water.waves", isOn: $config.smoothScrolling)
                     TuningSlider(title: "Distance per notch", symbol: "arrow.up.and.down",
-                                 value: $model.config.scrollDistance, range: 1...40, step: 1,
+                                 value: $config.scrollDistance, range: 1...40, step: 1,
                                  format: { "\(Int($0)) pt" }, lowLabel: "Fine", highLabel: "Far")
                     TuningSlider(title: "Follow", symbol: "hand.point.up.left",
-                                 value: $model.config.scrollSmoothness, range: 0...1,
+                                 value: $config.scrollSmoothness, range: 0...1,
                                  format: { "\(Int(SmoothScroller.timeConstant(smoothness: $0) * 1000)) ms" },
                                  lowLabel: "Locked to ring", highLabel: "Softer")
-                        .disabled(!model.config.smoothScrolling)
+                        .disabled(!config.smoothScrolling)
                     TuningSlider(title: "Spin acceleration", symbol: "tornado",
-                                 value: $model.config.scrollAcceleration, range: 0...1,
+                                 value: $config.scrollAcceleration, range: 0...1,
                                  format: { $0 < 0.01 ? "Off" : "\(Int($0 * 100))%" },
                                  lowLabel: "Constant", highLabel: "Spin to fly")
                 }
                 GlassCard(title: "Throw", symbol: "paperplane") {
                     ToggleRow(title: "Throw to coast", subtitle: "Spin fast and let go — the page glides and lands",
-                              symbol: "paperplane.fill", isOn: $model.config.throwEnabled)
+                              symbol: "paperplane.fill", isOn: $config.throwEnabled)
                     TuningSlider(title: "Throw distance", symbol: "ruler",
-                                 value: $model.config.throwAmount, range: 0...1,
-                                 format: { String(format: "%.1f s", SmoothScroller.throwDuration(speed: ThrowCard.typicalSpeed(model.config), throwAmount: $0)) },
+                                 value: $config.throwAmount, range: 0...1,
+                                 format: { String(format: "%.1f s", SmoothScroller.throwDuration(speed: ThrowCard.typicalSpeed(config), throwAmount: $0)) },
                                  lowLabel: "Short", highLabel: "Long")
-                        .disabled(!model.config.throwEnabled)
+                        .disabled(!config.throwEnabled)
                 }
     }
 
     private var directionCard: some View {
                 GlassCard(title: "Direction", symbol: "arrow.left.arrow.right") {
                     ToggleRow(title: "Flip direction", subtitle: "Only if it scrolls the wrong way with your scroll reverser",
-                              symbol: "arrow.up.arrow.down", isOn: $model.config.reverseScroll)
+                              symbol: "arrow.up.arrow.down", isOn: $config.reverseScroll)
                     ToggleRow(title: "Shift scrolls sideways", subtitle: "Hold ⇧ while spinning the ring",
-                              symbol: "shift", isOn: $model.config.shiftScrollsHorizontally)
+                              symbol: "shift", isOn: $config.shiftScrollsHorizontally)
                 }
     }
 }

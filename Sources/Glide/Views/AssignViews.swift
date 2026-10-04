@@ -64,6 +64,8 @@ private struct ButtonChips: View {
 /// "Press a trackball button, then press a shortcut."
 struct AssignPanel: View {
     @Bindable var model: AppModel
+    /// Assign into this app setup instead of the main one.
+    var profileID: String? = nil
     @State private var monitor: Any?
     @State private var pulse = false
 
@@ -78,7 +80,7 @@ struct AssignPanel: View {
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 16)
-                    Button { model.beginAssign() } label: {
+                    Button { model.beginAssign(for: profileID) } label: {
                         Label("Assign", systemImage: "hand.point.up.left.fill").padding(.horizontal, 6)
                     }
                     .buttonStyle(.glassProminent)
@@ -144,26 +146,32 @@ struct AssignPanel: View {
 
 /// Saved multi-button combos.
 struct CombosCard: View {
-    @Bindable var model: AppModel
+    @Binding var chords: [Chord]
+
+    init(chords: Binding<[Chord]>) { _chords = chords }
+
+    init(model: AppModel) {
+        _chords = Binding(get: { model.config.chords }, set: { model.config.chords = $0 })
+    }
 
     var body: some View {
         GlassCard(title: "Combos", symbol: "square.on.square") {
-            if model.config.chords.isEmpty {
+            if chords.isEmpty {
                 Text("No combos yet. Use Quick assign and hold two or three buttons together.")
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
             }
-            ForEach(model.config.chords) { chord in
+            ForEach(chords) { chord in
                 HStack(spacing: 12) {
                     ButtonChips(buttons: chord.buttons)
                     Spacer()
                     ActionMenu(action: chord.action) { action in
-                        if let i = model.config.chords.firstIndex(where: { $0.id == chord.id }) {
-                            model.config.chords[i].action = action
+                        if let i = chords.firstIndex(where: { $0.id == chord.id }) {
+                            chords[i].action = action
                         }
                     }
                     Button {
-                        model.config.chords.removeAll { $0.id == chord.id }
+                        chords.removeAll { $0.id == chord.id }
                     } label: {
                         Image(systemName: "trash")
                     }
