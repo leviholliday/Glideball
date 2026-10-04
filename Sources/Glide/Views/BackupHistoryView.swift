@@ -65,12 +65,18 @@ struct BackupHistoryCard: View {
 
     private var statusText: String {
         guard let newest = store.backups.first else {
-            return store.isEnabled ? "On — nothing backed up yet" : "Off"
+            return store.isEnabled
+                ? String(localized: "On — nothing backed up yet", comment: "Automatic backups status")
+                : String(localized: "Off", comment: "Automatic backups status")
         }
         let size = ByteCountFormatter.string(fromByteCount: Int64(store.totalBytes), countStyle: .file)
-        let count = store.backups.count == 1 ? "1 backup" : "\(store.backups.count) backups"
-        let state = store.isEnabled ? "" : "Off · "
-        return "\(state)\(count) · \(size) · newest \(BackupDates.label(newest.date, style: .recent).lowercasedFirst)"
+        let count = String(localized: "\(store.backups.count) backups")
+        guard store.isEnabled else {
+            return String(localized: "Off · \(count) · \(size)", comment: "Automatic backups status: count, total size")
+        }
+        let latest = BackupDates.label(newest.date, style: .recent)
+        return String(localized: "\(count) · \(size) · Latest: \(latest)",
+                      comment: "Automatic backups status: count, total size, date of the newest backup")
     }
 
     // MARK: List
@@ -126,9 +132,9 @@ struct BackupHistoryCard: View {
         let lastWeek = store.backups.filter { (7..<BackupStore.dailyWindowDays).contains(age($0)) }
         let monthly = store.backups.filter { age($0) >= BackupStore.dailyWindowDays }
         return [
-            Section(title: "This week", monthly: false, backups: thisWeek),
-            Section(title: "The week before", monthly: false, backups: lastWeek),
-            Section(title: "Monthly", monthly: true, backups: monthly),
+            Section(title: String(localized: "This week", comment: "Backups list section"), monthly: false, backups: thisWeek),
+            Section(title: String(localized: "The week before", comment: "Backups list section"), monthly: false, backups: lastWeek),
+            Section(title: String(localized: "Monthly", comment: "Backups list section"), monthly: true, backups: monthly),
         ].filter { !$0.backups.isEmpty }
     }
 }
@@ -196,7 +202,7 @@ private struct BackupRow: View {
             Label("Same as now", systemImage: "checkmark")
                 .font(.system(size: 11, weight: .medium)).foregroundStyle(.green)
         } else if let changes, !changes.isEmpty {
-            Text(changes.count == 1 ? "1 difference" : "\(changes.count) differences")
+            Text("\(changes.count) differences")
                 .font(.system(size: 11)).foregroundStyle(.secondary)
         } else {
             Text("Small differences")
@@ -285,9 +291,9 @@ private struct BackupRow: View {
     private var kindLabel: String? {
         switch backup.kind {
         case .daily: nil
-        case .beforeImport: "Before import"
-        case .beforeRestore: "Before restore"
-        case .manual: "Saved by you"
+        case .beforeImport: String(localized: "Before import", comment: "Kind of backup")
+        case .beforeRestore: String(localized: "Before restore", comment: "Kind of backup")
+        case .manual: String(localized: "Saved by you", comment: "Kind of backup")
         }
     }
 }
@@ -388,12 +394,5 @@ enum BackupDates {
         if calendar.isDateInToday(date) { return String(localized: "Today, \(time)") }
         if calendar.isDateInYesterday(date) { return String(localized: "Yesterday, \(time)") }
         return date.formatted(.dateTime.weekday(.wide).month(.abbreviated).day())
-    }
-}
-
-private extension String {
-    var lowercasedFirst: String {
-        guard let first else { return self }
-        return first.lowercased() + dropFirst()
     }
 }

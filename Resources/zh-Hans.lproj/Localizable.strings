@@ -1427,3 +1427,36 @@
 "Turn On" = "开启";
 
 "See this tour again any time from Help › Show Welcome Tour…" = "随时可以从“帮助 › 显示欢迎导览…”再次查看此导览";
+
+/* ---- BackupHistoryView.swift (automatic backups) ---- */
+"%@ · %@ · Latest: %@" = "%@ · %@ · 最新：%@";
+"2 weeks ago" = "2 周前";
+"A year ago" = "1 年前";
+"Automatic backups" = "自动备份";
+"Back Up Now" = "立即备份";
+"Back up your settings once a day" = "每天备份一次你的设置";
+"Backed up your settings" = "已备份你的设置";
+"Backups" = "备份";
+"Before import" = "导入前";
+"Before restore" = "恢复前";
+"Couldn’t back up: %@" = "无法备份：%@";
+"Every day of the last two weeks, then one a month for a year. Each backup is about a kilobyte, and only made when something changed." = "最近两周每天一份，之后一年内每月一份。每份备份约 1 KB，只在设置有变化时才会创建。";
+"Monthly" = "每月";
+"Off · %@ · %@" = "已关闭 · %@ · %@";
+"On — nothing backed up yet" = "已开启 — 尚无备份";
+"Only fine-tuning differs (a value inside a mode or app setup)." = "只有细微调整不同（某个模式或 App 设置中的数值）。";
+"Restore" = "恢复";
+"Restored the backup from %@" = "已恢复 %@ 的备份";
+"Same as now" = "与当前相同";
+"Saved by you" = "由你保存";
+"Small differences" = "细微差别";
+"That backup couldn’t be read." = "无法读取该备份。";
+"The week before" = "再往前一周";
+"This backup matches your settings right now." = "此备份与你当前的设置相同。";
+"Today" = "今天";
+"Today, %@" = "今天 %@";
+"Unreadable" = "无法读取";
+"Yesterday, %@" = "昨天 %@";
+"Your first backup is made the next time your settings change." = "下次设置变化时会创建第一份备份。";
+"Your settings already match that backup" = "你的设置已与该备份相同";
+"unknown error" = "未知错误";

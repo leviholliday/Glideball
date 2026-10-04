@@ -1427,3 +1427,36 @@
 "Turn On" = "Attiva";
 
 "See this tour again any time from Help › Show Welcome Tour…" = "Rivedi questo tour quando vuoi da Aiuto › Mostra tour di benvenuto…";
+
+/* ---- BackupHistoryView.swift (automatic backups) ---- */
+"%@ · %@ · Latest: %@" = "%@ · %@ · Ultimo: %@";
+"2 weeks ago" = "2 settimane fa";
+"A year ago" = "Un anno fa";
+"Automatic backups" = "Backup automatici";
+"Back Up Now" = "Esegui backup ora";
+"Back up your settings once a day" = "Esegui il backup delle impostazioni una volta al giorno";
+"Backed up your settings" = "Backup delle impostazioni eseguito";
+"Backups" = "Backup";
+"Before import" = "Prima dell’importazione";
+"Before restore" = "Prima del ripristino";
+"Couldn’t back up: %@" = "Impossibile eseguire il backup: %@";
+"Every day of the last two weeks, then one a month for a year. Each backup is about a kilobyte, and only made when something changed." = "Ogni giorno delle ultime due settimane, poi uno al mese per un anno. Ogni backup occupa circa un kilobyte e viene creato solo se qualcosa è cambiato.";
+"Monthly" = "Mensili";
+"Off · %@ · %@" = "Disattivati · %@ · %@";
+"On — nothing backed up yet" = "Attivi — ancora nessun backup";
+"Only fine-tuning differs (a value inside a mode or app setup)." = "Cambiano solo le regolazioni fini (un valore in una modalità o in una configurazione app).";
+"Restore" = "Ripristina";
+"Restored the backup from %@" = "Ripristinato il backup del %@";
+"Same as now" = "Uguale ad adesso";
+"Saved by you" = "Salvato da te";
+"Small differences" = "Piccole differenze";
+"That backup couldn’t be read." = "Impossibile leggere quel backup.";
+"The week before" = "La settimana prima";
+"This backup matches your settings right now." = "Questo backup corrisponde alle tue impostazioni attuali.";
+"Today" = "Oggi";
+"Today, %@" = "Oggi, %@";
+"Unreadable" = "Illeggibile";
+"Yesterday, %@" = "Ieri, %@";
+"Your first backup is made the next time your settings change." = "Il primo backup verrà creato la prossima volta che modifichi le impostazioni.";
+"Your settings already match that backup" = "Le tue impostazioni corrispondono già a quel backup";
+"unknown error" = "errore sconosciuto";

@@ -1427,3 +1427,36 @@
 "Turn On" = "オンにする";
 
 "See this tour again any time from Help › Show Welcome Tour…" = "このツアーは「ヘルプ」›「ようこそツアーを表示…」からいつでも見られます";
+
+/* ---- BackupHistoryView.swift (automatic backups) ---- */
+"%@ · %@ · Latest: %@" = "%@ · %@ · 最新：%@";
+"2 weeks ago" = "2週間前";
+"A year ago" = "1年前";
+"Automatic backups" = "自動バックアップ";
+"Back Up Now" = "今すぐバックアップ";
+"Back up your settings once a day" = "1日に1回設定をバックアップ";
+"Backed up your settings" = "設定をバックアップしました";
+"Backups" = "バックアップ";
+"Before import" = "読み込み前";
+"Before restore" = "復元前";
+"Couldn’t back up: %@" = "バックアップできませんでした：%@";
+"Every day of the last two weeks, then one a month for a year. Each backup is about a kilobyte, and only made when something changed." = "直近2週間は毎日、その後は1年間月に1つずつ保存します。各バックアップは約1KBで、変更があったときだけ作成されます。";
+"Monthly" = "月ごと";
+"Off · %@ · %@" = "オフ · %@ · %@";
+"On — nothing backed up yet" = "オン — まだバックアップはありません";
+"Only fine-tuning differs (a value inside a mode or app setup)." = "細かな調整だけが異なります（モードやApp設定内の値）。";
+"Restore" = "復元";
+"Restored the backup from %@" = "%@のバックアップを復元しました";
+"Same as now" = "現在と同じ";
+"Saved by you" = "手動で保存";
+"Small differences" = "わずかな違い";
+"That backup couldn’t be read." = "そのバックアップを読み込めませんでした。";
+"The week before" = "その前の週";
+"This backup matches your settings right now." = "このバックアップは現在の設定と同じです。";
+"Today" = "今日";
+"Today, %@" = "今日 %@";
+"Unreadable" = "読み込めません";
+"Yesterday, %@" = "昨日 %@";
+"Your first backup is made the next time your settings change." = "次に設定を変更したときに最初のバックアップが作成されます。";
+"Your settings already match that backup" = "設定はすでにそのバックアップと同じです";
+"unknown error" = "不明なエラー";

@@ -1427,3 +1427,36 @@
 "Turn On" = "Ativar";
 
 "See this tour again any time from Help › Show Welcome Tour…" = "Veja este tour de novo quando quiser em Ajuda › Mostrar Tour de Boas-vindas…";
+
+/* ---- BackupHistoryView.swift (automatic backups) ---- */
+"%@ · %@ · Latest: %@" = "%@ · %@ · Mais recente: %@";
+"2 weeks ago" = "Há 2 semanas";
+"A year ago" = "Há um ano";
+"Automatic backups" = "Backups automáticos";
+"Back Up Now" = "Fazer Backup Agora";
+"Back up your settings once a day" = "Faça backup dos ajustes uma vez por dia";
+"Backed up your settings" = "Backup dos ajustes feito";
+"Backups" = "Backups";
+"Before import" = "Antes de importar";
+"Before restore" = "Antes de restaurar";
+"Couldn’t back up: %@" = "Não foi possível fazer o backup: %@";
+"Every day of the last two weeks, then one a month for a year. Each backup is about a kilobyte, and only made when something changed." = "Todos os dias das últimas duas semanas e, depois, um por mês durante um ano. Cada backup tem cerca de um kilobyte e só é feito quando algo muda.";
+"Monthly" = "Mensais";
+"Off · %@ · %@" = "Desativados · %@ · %@";
+"On — nothing backed up yet" = "Ativados — nenhum backup ainda";
+"Only fine-tuning differs (a value inside a mode or app setup)." = "Só diferem ajustes finos (um valor dentro de um modo ou configuração de app).";
+"Restore" = "Restaurar";
+"Restored the backup from %@" = "Backup de %@ restaurado";
+"Same as now" = "Igual a agora";
+"Saved by you" = "Feito por você";
+"Small differences" = "Pequenas diferenças";
+"That backup couldn’t be read." = "Não foi possível ler esse backup.";
+"The week before" = "A semana anterior";
+"This backup matches your settings right now." = "Este backup é igual aos seus ajustes atuais.";
+"Today" = "Hoje";
+"Today, %@" = "Hoje, %@";
+"Unreadable" = "Ilegível";
+"Yesterday, %@" = "Ontem, %@";
+"Your first backup is made the next time your settings change." = "Seu primeiro backup será feito na próxima vez que seus ajustes mudarem.";
+"Your settings already match that backup" = "Seus ajustes já são iguais a esse backup";
+"unknown error" = "erro desconhecido";

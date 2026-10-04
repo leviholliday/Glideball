@@ -1427,3 +1427,36 @@
 "Turn On" = "Activer";
 
 "See this tour again any time from Help › Show Welcome Tour…" = "Revoyez cette visite à tout moment via Aide › Afficher la visite de bienvenue…";
+
+/* ---- BackupHistoryView.swift (automatic backups) ---- */
+"%@ · %@ · Latest: %@" = "%@ · %@ · Dernière : %@";
+"2 weeks ago" = "Il y a 2 semaines";
+"A year ago" = "Il y a un an";
+"Automatic backups" = "Sauvegardes automatiques";
+"Back Up Now" = "Sauvegarder maintenant";
+"Back up your settings once a day" = "Sauvegarder vos réglages une fois par jour";
+"Backed up your settings" = "Réglages sauvegardés";
+"Backups" = "Sauvegardes";
+"Before import" = "Avant l’importation";
+"Before restore" = "Avant la restauration";
+"Couldn’t back up: %@" = "Sauvegarde impossible : %@";
+"Every day of the last two weeks, then one a month for a year. Each backup is about a kilobyte, and only made when something changed." = "Chaque jour des deux dernières semaines, puis une par mois pendant un an. Chaque sauvegarde pèse environ un kilo-octet et n’est créée que si quelque chose a changé.";
+"Monthly" = "Mensuelles";
+"Off · %@ · %@" = "Désactivées · %@ · %@";
+"On — nothing backed up yet" = "Activées — aucune sauvegarde pour l’instant";
+"Only fine-tuning differs (a value inside a mode or app setup)." = "Seuls des réglages fins diffèrent (une valeur dans un mode ou un réglage d’app).";
+"Restore" = "Restaurer";
+"Restored the backup from %@" = "Sauvegarde du %@ restaurée";
+"Same as now" = "Identique à maintenant";
+"Saved by you" = "Créée par vous";
+"Small differences" = "Petites différences";
+"That backup couldn’t be read." = "Impossible de lire cette sauvegarde.";
+"The week before" = "La semaine d’avant";
+"This backup matches your settings right now." = "Cette sauvegarde correspond à vos réglages actuels.";
+"Today" = "Aujourd’hui";
+"Today, %@" = "Aujourd’hui, %@";
+"Unreadable" = "Illisible";
+"Yesterday, %@" = "Hier, %@";
+"Your first backup is made the next time your settings change." = "Votre première sauvegarde sera créée la prochaine fois que vos réglages changeront.";
+"Your settings already match that backup" = "Vos réglages correspondent déjà à cette sauvegarde";
+"unknown error" = "erreur inconnue";

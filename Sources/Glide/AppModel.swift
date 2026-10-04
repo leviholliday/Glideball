@@ -464,28 +464,29 @@ final class AppModel {
     /// ones as a checkpoint. Undo works the same as for an import.
     func restoreBackup(_ backup: BackupStore.Backup) {
         guard var restored = backups.load(backup) else {
-            show(.init(symbol: "exclamationmark.triangle.fill", text: "That backup couldn’t be read.", isError: true))
+            show(.init(symbol: "exclamationmark.triangle.fill", text: String(localized: "That backup couldn’t be read."), isError: true))
             backups.reload()
             return
         }
         restored.enabled = config.enabled
         guard restored != config else {
-            show(.init(symbol: "checkmark.circle.fill", text: "Your settings already match that backup"))
+            show(.init(symbol: "checkmark.circle.fill", text: String(localized: "Your settings already match that backup")))
             return
         }
         backups.checkpoint(config, kind: .beforeRestore)
         configBeforeImport = config
         config = restored
         let when = backup.date.formatted(.dateTime.month(.abbreviated).day().hour().minute())
-        show(.init(symbol: "clock.arrow.circlepath", text: "Restored the backup from \(when)", action: .undoImport))
+        show(.init(symbol: "clock.arrow.circlepath", text: String(localized: "Restored the backup from \(when)", comment: "Toast; the date and time of the backup"), action: .undoImport))
     }
 
     func backUpNow() {
         if backups.checkpoint(config, kind: .manual) {
-            show(.init(symbol: "checkmark.circle.fill", text: "Backed up your settings", action: nil))
+            show(.init(symbol: "checkmark.circle.fill", text: String(localized: "Backed up your settings")))
         } else {
+            let reason = backups.lastError ?? String(localized: "unknown error")
             show(.init(symbol: "exclamationmark.triangle.fill",
-                       text: "Couldn’t back up: \(backups.lastError ?? "unknown error")", isError: true))
+                       text: String(localized: "Couldn’t back up: \(reason)"), isError: true))
         }
     }
 

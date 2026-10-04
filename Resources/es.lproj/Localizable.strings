@@ -1427,3 +1427,36 @@
 "Turn On" = "Activar";
 
 "See this tour again any time from Help › Show Welcome Tour…" = "Vuelve a ver este recorrido cuando quieras desde Ayuda › Mostrar recorrido de bienvenida…";
+
+/* ---- BackupHistoryView.swift (automatic backups) ---- */
+"%@ · %@ · Latest: %@" = "%@ · %@ · Última: %@";
+"2 weeks ago" = "Hace 2 semanas";
+"A year ago" = "Hace un año";
+"Automatic backups" = "Copias automáticas";
+"Back Up Now" = "Hacer copia ahora";
+"Back up your settings once a day" = "Haz una copia de tus ajustes una vez al día";
+"Backed up your settings" = "Se ha hecho una copia de tus ajustes";
+"Backups" = "Copias de seguridad";
+"Before import" = "Antes de importar";
+"Before restore" = "Antes de restaurar";
+"Couldn’t back up: %@" = "No se pudo hacer la copia: %@";
+"Every day of the last two weeks, then one a month for a year. Each backup is about a kilobyte, and only made when something changed." = "Cada día de las últimas dos semanas y, después, una al mes durante un año. Cada copia ocupa alrededor de un kilobyte y solo se hace cuando algo cambia.";
+"Monthly" = "Mensuales";
+"Off · %@ · %@" = "Desactivadas · %@ · %@";
+"On — nothing backed up yet" = "Activadas — aún no hay copias";
+"Only fine-tuning differs (a value inside a mode or app setup)." = "Solo cambian ajustes finos (un valor dentro de un modo o de una configuración de app).";
+"Restore" = "Restaurar";
+"Restored the backup from %@" = "Se ha restaurado la copia del %@";
+"Same as now" = "Igual que ahora";
+"Saved by you" = "Hecha por ti";
+"Small differences" = "Pequeñas diferencias";
+"That backup couldn’t be read." = "No se pudo leer esa copia.";
+"The week before" = "La semana anterior";
+"This backup matches your settings right now." = "Esta copia coincide con tus ajustes actuales.";
+"Today" = "Hoy";
+"Today, %@" = "Hoy, %@";
+"Unreadable" = "Ilegible";
+"Yesterday, %@" = "Ayer, %@";
+"Your first backup is made the next time your settings change." = "Tu primera copia se hará la próxima vez que cambien tus ajustes.";
+"Your settings already match that backup" = "Tus ajustes ya coinciden con esa copia";
+"unknown error" = "error desconocido";

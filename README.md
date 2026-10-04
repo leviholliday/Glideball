@@ -63,6 +63,10 @@ The Overview tab shows an animated Expert Mouse whose buttons light up and whose
 - **Sync with iCloud Drive** keeps every Mac signed in to your Apple Account in step through the `iCloud Drive › Glide` folder. No extra account is needed. The pause switch stays separate on each Mac.
 - **Automatic backups** save a snapshot of your settings once a day (only when something changed), plus one before every import or restore. Glide keeps every backup from the last two weeks, then one per month for a year, and deletes anything older. Each backup is about 1 KB, so the whole history stays under 50 KB. The Sync tab shows them on a timeline with what each one would change, and restores one with a click (and Undo).
 
+### Nine languages
+
+Glide speaks English, Español, Français, Deutsch, Italiano, Português (Brasil), 日本語, 한국어 and 简体中文. It follows your Mac's language, or pick one in Overview › General › Language. Translators: see [`scripts/l10n/README.md`](scripts/l10n/README.md).
+
 <details>
 <summary><b>More screenshots</b></summary>
 <br>

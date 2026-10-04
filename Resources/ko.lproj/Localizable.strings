@@ -1427,3 +1427,36 @@
 "Turn On" = "켜기";
 
 "See this tour again any time from Help › Show Welcome Tour…" = "도움말 › 환영 투어 보기…에서 언제든지 이 투어를 다시 볼 수 있어요";
+
+/* ---- BackupHistoryView.swift (automatic backups) ---- */
+"%@ · %@ · Latest: %@" = "%@ · %@ · 최신: %@";
+"2 weeks ago" = "2주 전";
+"A year ago" = "1년 전";
+"Automatic backups" = "자동 백업";
+"Back Up Now" = "지금 백업";
+"Back up your settings once a day" = "하루에 한 번 설정 백업";
+"Backed up your settings" = "설정을 백업했어요";
+"Backups" = "백업";
+"Before import" = "가져오기 전";
+"Before restore" = "복원 전";
+"Couldn’t back up: %@" = "백업할 수 없어요: %@";
+"Every day of the last two weeks, then one a month for a year. Each backup is about a kilobyte, and only made when something changed." = "최근 2주 동안은 매일, 그 후 1년 동안은 한 달에 하나씩 보관해요. 백업 하나는 약 1KB이고, 무언가 바뀌었을 때만 만들어져요.";
+"Monthly" = "월별";
+"Off · %@ · %@" = "끔 · %@ · %@";
+"On — nothing backed up yet" = "켬 — 아직 백업이 없어요";
+"Only fine-tuning differs (a value inside a mode or app setup)." = "세부 조정만 달라요(모드나 앱 설정 안의 값).";
+"Restore" = "복원";
+"Restored the backup from %@" = "%@ 백업을 복원했어요";
+"Same as now" = "지금과 같음";
+"Saved by you" = "직접 저장함";
+"Small differences" = "작은 차이";
+"That backup couldn’t be read." = "그 백업을 읽을 수 없어요.";
+"The week before" = "그 전 주";
+"This backup matches your settings right now." = "이 백업은 현재 설정과 같아요.";
+"Today" = "오늘";
+"Today, %@" = "오늘 %@";
+"Unreadable" = "읽을 수 없음";
+"Yesterday, %@" = "어제 %@";
+"Your first backup is made the next time your settings change." = "다음에 설정이 바뀌면 첫 백업이 만들어져요.";
+"Your settings already match that backup" = "설정이 이미 그 백업과 같아요";
+"unknown error" = "알 수 없는 오류";
