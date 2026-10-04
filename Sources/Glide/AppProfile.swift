@@ -30,14 +30,16 @@ struct AppProfile: Codable, Equatable, Identifiable {
     /// "Speed 6 · Flywheel scrolling · 2 buttons", for the app list.
     var summary: String {
         var parts: [String] = []
-        if let trackingSpeed { parts.append(String(format: "Speed %g", trackingSpeed)) }
-        if let scroll { parts.append("\(scroll.scrollMode.title) scrolling") }
+        if let trackingSpeed { parts.append(String(localized: "Speed \(trackingSpeed.formatted())", comment: "Pointer speed in an app setup")) }
+        if let scroll { parts.append(scroll.scrollMode.scrollingTitle) }
         if let buttons {
             let n = buttons.filter { $0.key != 0 && $0.value != .system }.count
-            parts.append(n == 0 ? "Default buttons" : "\(n) button\(n == 1 ? "" : "s")")
+            parts.append(n == 0 ? String(localized: "Default buttons") : String(localized: "\(n) buttons", comment: "Remapped buttons in an app setup"))
         }
-        if let chords { parts.append(chords.isEmpty ? "No combos" : "\(chords.count) combo\(chords.count == 1 ? "" : "s")") }
-        return parts.isEmpty ? "Uses your main setup" : parts.joined(separator: " · ")
+        if let chords {
+            parts.append(chords.isEmpty ? String(localized: "No combos") : String(localized: "\(chords.count) combos"))
+        }
+        return parts.isEmpty ? String(localized: "Uses your main setup") : parts.joined(separator: " · ")
     }
 }
 
@@ -82,9 +84,18 @@ extension ScrollSettings {
 extension ScrollMode {
     var title: String {
         switch self {
-        case .native: "Native"
-        case .flywheel: "Flywheel"
-        case .follow: "Follow"
+        case .native: String(localized: "Native", comment: "Scroll mode: macOS's own scrolling")
+        case .flywheel: String(localized: "Flywheel", comment: "Scroll mode: each tick pushes the page, friction slows it")
+        case .follow: String(localized: "Follow", comment: "Scroll mode: the page follows the ring exactly")
+        }
+    }
+
+    /// "Flywheel scrolling", for an app setup's summary.
+    var scrollingTitle: String {
+        switch self {
+        case .native: String(localized: "Native scrolling")
+        case .flywheel: String(localized: "Flywheel scrolling")
+        case .follow: String(localized: "Follow scrolling")
         }
     }
 }
@@ -138,9 +149,9 @@ extension GlideConfig {
 
     var appProfilesSummary: String {
         switch appProfiles.count {
-        case 0: "None"
+        case 0: String(localized: "None", comment: "No combos / no app setups")
         case 1...2: appProfiles.map(\.name).joined(separator: ", ")
-        default: "\(appProfiles.count) apps"
+        default: String(localized: "\(appProfiles.count) apps")
         }
     }
 }

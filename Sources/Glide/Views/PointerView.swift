@@ -10,7 +10,7 @@ struct PointerView: View {
                 GlassCard(title: "Feel", symbol: "slider.horizontal.3") {
                     TuningSlider(title: "Tracking speed", symbol: "gauge.with.dots.needle.67percent",
                                  value: $model.config.trackingSpeed, range: 0.5...80, step: 0.5,
-                                 format: { String(format: "%.2g", $0) },
+                                 format: { $0.twoDigits },
                                  lowLabel: "Slow", highLabel: "Ludicrous")
                     Text("System Settings tops out at 3. Glide lets the Expert Mouse go far past it.")
                         .font(.system(size: 11))
@@ -22,7 +22,7 @@ struct PointerView: View {
                 GlassCard(title: "Precision mode", symbol: "scope") {
                     TuningSlider(title: "Precision speed", symbol: "tortoise",
                                  value: $model.config.precisionSpeed, range: 0.25...3, step: 0.05,
-                                 format: { String(format: "%.2g", $0) },
+                                 format: { $0.twoDigits },
                                  lowLabel: "Pixel-exact", highLabel: "macOS default")
                     Text("Set a button to Precision in Buttons. Hold it (or toggle it on) and the cursor slows to this speed for fine work, then snaps back.")
                         .font(.system(size: 11))
@@ -109,7 +109,7 @@ struct ResponseCurveCard: View {
         }
     }
 
-    private func legend(color: Color, text: String) -> some View {
+    private func legend(color: Color, text: LocalizedStringKey) -> some View {
         HStack(spacing: 6) {
             Capsule().fill(color).frame(width: 14, height: 4)
             Text(text).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)

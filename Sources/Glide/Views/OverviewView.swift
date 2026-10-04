@@ -48,6 +48,8 @@ struct OverviewView: View {
                           subtitle: "Quick access to pause, precision and updates. Glide keeps running either way — reopen it from the Dock.",
                           symbol: "menubar.rectangle", isOn: $model.menuBarIcon)
                 Divider().opacity(0.4)
+                LanguageRow()
+                Divider().opacity(0.4)
                 UpdatesRow(updates: model.updates)
                 Divider().opacity(0.4)
                 ToggleRow(title: "Beta program",
@@ -127,7 +129,7 @@ struct OverviewView: View {
         }
     }
 
-    private func caption(_ text: String) -> some View {
+    private func caption(_ text: LocalizedStringKey) -> some View {
         Text(text)
             .font(.system(size: 12))
             .foregroundStyle(.secondary)
@@ -142,15 +144,15 @@ struct OverviewView: View {
     }
 
     static func meters(_ m: Double) -> String {
-        if m < 1 { return String(format: "%.0f cm", m * 100) }
-        if m < 1000 { return String(format: "%.1f m", m) }
-        return String(format: "%.2f km", m / 1000)
+        if m < 1 { return Tally.length(m * 100, .centimeters, digits: 0) }
+        if m < 1000 { return Tally.length(m, .meters, digits: 1) }
+        return Tally.length(m / 1000, .kilometers, digits: 2)
     }
 }
 
 struct StatTile: View {
     let symbol: String
-    let title: String
+    let title: LocalizedStringKey
     /// The number, and how to show it. It counts up from zero when the tile
     /// appears, and glides to new values after that.
     let amount: Double
@@ -235,11 +237,15 @@ struct ActivityChartCard: View {
     var body: some View {
         GlassCard(title: "Live activity", symbol: "waveform.path.ecg") {
             VStack(alignment: .leading, spacing: 4) {
-                legend("Ball speed", color: .cyan, value: String(format: "%.1f in/s", model.liveBallSpeed))
+                legend("Ball speed", color: .cyan,
+                       value: String(localized: "\(model.liveBallSpeed.formatted(.number.precision(.fractionLength(1)))) in/s",
+                                     comment: "Ball speed in inches per second"))
                 Sparkline(values: model.activity.map(\.ballSpeed), floor: 4, color: .cyan)
                     .frame(height: 90)
 
-                legend("Scroll ring", color: .pink, value: String(format: "%.0f notches/s", model.liveNotchRate))
+                legend("Scroll ring", color: .pink,
+                       value: String(localized: "\(model.liveNotchRate.formatted(.number.precision(.fractionLength(0)))) notches/s",
+                                     comment: "Scroll ring speed: ring notches (ticks) per second"))
                     .padding(.top, 8)
                 Sparkline(values: model.activity.map(\.notchRate), floor: 10, color: .pink)
                     .frame(height: 70)
@@ -247,7 +253,7 @@ struct ActivityChartCard: View {
         }
     }
 
-    private func legend(_ name: String, color: Color, value: String) -> some View {
+    private func legend(_ name: LocalizedStringKey, color: Color, value: String) -> some View {
         HStack(spacing: 6) {
             Circle().fill(color).frame(width: 7, height: 7)
             Text(name).font(.system(size: 12, weight: .medium))
@@ -303,6 +309,43 @@ struct Sparkline: View {
     }
 }
 
+/// Glide's own language, separate from the Mac's. Takes effect on relaunch.
+struct LanguageRow: View {
+    @State private var choice = AppLanguage.chosen
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "globe")
+                .font(.system(size: 14, weight: .medium))
+                .frame(width: 22)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Language").font(.system(size: 14, weight: .medium))
+                Text("Glide can speak a different language from the rest of your Mac.")
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+            }
+            Spacer()
+            if choice != AppLanguage.atLaunch {
+                Button("Relaunch to Apply", action: AppLanguage.relaunch)
+                    .buttonStyle(.glassProminent)
+                    .tint(.cyan)
+                    .transition(.scale(scale: 0.8).combined(with: .opacity))
+            }
+            Picker("Language", selection: $choice) {
+                Text("System Default").tag(AppLanguage?.none)
+                Divider()
+                ForEach(AppLanguage.allCases) { language in
+                    Text(verbatim: language.nativeName).tag(AppLanguage?.some(language))
+                }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .fixedSize()
+        }
+        .animation(.smooth(duration: 0.25), value: choice)
+        .onChange(of: choice) { _, new in AppLanguage.chosen = new }
+    }
+}
+
 /// "Glide 2.6 — up to date" with a Check for Updates button.
 struct UpdatesRow: View {
     let updates: UpdateChecker
@@ -341,12 +384,15 @@ struct UpdatesRow: View {
 
     private var status: String {
         let current = "Glide \(GlideVersion(updates.currentVersion)?.display ?? updates.currentVersion)"
-        if let update = updates.available { return "\(current) · \(GlideVersion(update.version)?.display ?? update.version) is ready to install" }
+        if let update = updates.available {
+            let new = GlideVersion(update.version)?.display ?? update.version
+            return String(localized: "\(current) · \(new) is ready to install", comment: "Glide 2.6 · 2.7 is ready to install")
+        }
         switch updates.manualCheck {
-        case .upToDate: return "\(current) · You’re up to date ✓"
-        case .failed: return "\(current) · Couldn’t reach GitHub — try again later"
-        case .checking: return "\(current) · Checking…"
-        case .idle: return "\(current) · Checks automatically once a day"
+        case .upToDate: return String(localized: "\(current) · You’re up to date ✓", comment: "%@ is “Glide 2.6”")
+        case .failed: return String(localized: "\(current) · Couldn’t reach GitHub — try again later", comment: "%@ is “Glide 2.6”")
+        case .checking: return String(localized: "\(current) · Checking…", comment: "%@ is “Glide 2.6”")
+        case .idle: return String(localized: "\(current) · Checks automatically once a day", comment: "%@ is “Glide 2.6”")
         }
     }
 }

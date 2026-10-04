@@ -886,7 +886,7 @@ final class Engine {
         default:
             return false
         }
-        diagnostics.record("mode \(action.title) on \(buttons)")
+        diagnostics.record("mode \(action) on \(buttons)")   // not `title`: the log stays in English
         publishModes()
         return true
     }

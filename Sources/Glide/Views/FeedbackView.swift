@@ -20,7 +20,15 @@ final class FeedbackDraft {
     enum Kind: String, CaseIterable, Identifiable {
         case bug, idea, question
         var id: String { rawValue }
+        /// Sent to the server as a tag — never translated.
         var name: String { rawValue.capitalized }
+        var title: String {
+            switch self {
+            case .bug: String(localized: "Bug", comment: "Feedback kind")
+            case .idea: String(localized: "Idea", comment: "Feedback kind")
+            case .question: String(localized: "Question", comment: "Feedback kind")
+            }
+        }
         var symbol: String {
             switch self {
             case .bug: "ladybug.fill"
@@ -37,16 +45,16 @@ final class FeedbackDraft {
         }
         var titlePrompt: String {
             switch self {
-            case .bug: "What went wrong? e.g. “Scrolling jumps in Safari”"
-            case .idea: "What would make Glide better?"
-            case .question: "What would you like to know?"
+            case .bug: String(localized: "What went wrong? e.g. “Scrolling jumps in Safari”")
+            case .idea: String(localized: "What would make Glide better?")
+            case .question: String(localized: "What would you like to know?")
             }
         }
         var detailsPrompt: String {
             switch self {
-            case .bug: "What happened, what you expected, and how to make it happen again (if you know)."
-            case .idea: "Tell me more — how would it work, and what would it help with?"
-            case .question: "Any details that help me answer."
+            case .bug: String(localized: "What happened, what you expected, and how to make it happen again (if you know).")
+            case .idea: String(localized: "Tell me more — how would it work, and what would it help with?")
+            case .question: String(localized: "Any details that help me answer.")
             }
         }
     }
@@ -54,13 +62,20 @@ final class FeedbackDraft {
     enum Priority: String, CaseIterable, Identifiable {
         case low, normal, high, blocking
         var id: String { rawValue }
-        var name: String { rawValue.capitalized }
+        var name: String {
+            switch self {
+            case .low: String(localized: "Low", comment: "Bug priority")
+            case .normal: String(localized: "Normal", comment: "Bug priority")
+            case .high: String(localized: "High", comment: "Bug priority")
+            case .blocking: String(localized: "Blocking", comment: "Bug priority: can't use the trackball properly")
+            }
+        }
         var hint: String {
             switch self {
-            case .low: "A small thing, whenever"
-            case .normal: "Worth fixing"
-            case .high: "Gets in my way"
-            case .blocking: "I can’t use my trackball properly"
+            case .low: String(localized: "A small thing, whenever")
+            case .normal: String(localized: "Worth fixing")
+            case .high: String(localized: "Gets in my way")
+            case .blocking: String(localized: "I can’t use my trackball properly")
             }
         }
         var color: Color {
@@ -166,19 +181,19 @@ final class FeedbackDraft {
         for url in urls {
             guard !files.contains(where: { $0.url == url }) else { continue }
             guard files.count < Self.maxUserFiles else {
-                problems.append("Up to \(Self.maxUserFiles) pictures or videos can go with one report.")
+                problems.append(String(localized: "Up to \(Self.maxUserFiles) pictures or videos can go with one report."))
                 break
             }
             let ext = url.pathExtension.lowercased()
             guard let type = FeedbackClient.mimeType(forExtension: ext), type.hasPrefix("image/") || type.hasPrefix("video/") else {
-                problems.append("“\(url.lastPathComponent)” isn’t a PNG, JPEG, MOV or MP4.")
+                problems.append(String(localized: "“\(url.lastPathComponent)” isn’t a PNG, JPEG, MOV or MP4."))
                 continue
             }
             let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
             let limit = FeedbackClient.sizeLimits[type] ?? 0
-            guard size > 0 else { problems.append("“\(url.lastPathComponent)” couldn’t be read."); continue }
+            guard size > 0 else { problems.append(String(localized: "“\(url.lastPathComponent)” couldn’t be read.")); continue }
             guard size <= limit else {
-                problems.append("“\(url.lastPathComponent)” is too big (\(limit / 1_000_000) MB at most).")
+                problems.append(String(localized: "“\(url.lastPathComponent)” is too big (\(limit / 1_000_000) MB at most)."))
                 continue
             }
             let file = UserFile(url: url, name: freeName(for: url, ext: ext == "jpeg" ? "jpg" : ext), type: type, size: size,
@@ -267,21 +282,19 @@ final class FeedbackDraft {
 
     func facts(_ model: AppModel) -> [Fact] {
         let app = Self.appInfo, sys = Self.systemInfo
-        let mode = switch model.config.scrollMode {
-        case .native: "Native"
-        case .flywheel: "Flywheel"
-        case .follow: "Follow"
-        }
+        // Shown in the sheet only; what's sent is `context` and the raw infos.
         var out = [
-            Fact(label: "Glide", value: "\(app["version"] ?? "?") (build \(app["build"] ?? "?"))"),
+            Fact(label: "Glide", value: String(localized: "\(app["version"] ?? "?") (build \(app["build"] ?? "?"))", comment: "2.6 (build 9)")),
             Fact(label: "macOS", value: sys["macOS"] ?? "?"),
-            Fact(label: "Mac model", value: sys["model"] ?? "?"),
-            Fact(label: "Architecture", value: sys["arch"] ?? "?"),
-            Fact(label: "Scroll mode", value: mode),
-            Fact(label: "Trackball", value: model.status.deviceName.map { model.status.deviceIsBeta ? "\($0) (beta)" : $0 } ?? "Not connected"),
+            Fact(label: String(localized: "Mac model"), value: sys["model"] ?? "?"),
+            Fact(label: String(localized: "Architecture", comment: "Processor architecture: arm64 or x86_64"), value: sys["arch"] ?? "?"),
+            Fact(label: String(localized: "Scroll mode"), value: model.config.scrollMode.title),
+            Fact(label: String(localized: "Trackball"),
+                 value: model.status.deviceName.map { model.status.deviceIsBeta ? String(localized: "\($0) (beta)") : $0 }
+                     ?? String(localized: "Not connected", comment: "Status pill")),
         ]
-        if model.betaProgram { out.append(Fact(label: "Beta program", value: "On")) }
-        if !topics.isEmpty { out.append(Fact(label: "Topics", value: topics.joined(separator: ", "))) }
+        if model.betaProgram { out.append(Fact(label: String(localized: "Beta program"), value: String(localized: "On", comment: "Switched on"))) }
+        if !topics.isEmpty { out.append(Fact(label: String(localized: "Topics", comment: "Areas of Glide the report mentions"), value: topics.joined(separator: ", "))) }
         return out
     }
 
@@ -338,7 +351,7 @@ final class FeedbackDraft {
 
     func send(_ model: AppModel) {
         guard canSend else { return }
-        if emailLooksWrong { phase = .failed("That email address doesn’t look right."); return }
+        if emailLooksWrong { phase = .failed(String(localized: "That email address doesn’t look right.")); return }
         var attachments = files.map { FeedbackClient.Attachment(name: $0.name, type: $0.type, source: .file($0.url)) }
         if includeSettings, let data = Self.settingsJSON(model) {
             attachments.append(.init(name: "settings.json", type: "application/json", source: .data(data)))
@@ -360,7 +373,7 @@ final class FeedbackDraft {
             context: context(model))
 
         notice = nil
-        withAnimation(.smooth) { phase = .sending(0, "Sending…") }
+        withAnimation(.smooth) { phase = .sending(0, String(localized: "Sending…")) }
         task = Task {
             do {
                 let id = try await FeedbackClient().send(report, attachments: attachments) { [weak self] f, note in
@@ -375,7 +388,7 @@ final class FeedbackDraft {
                 withAnimation(.smooth) { phase = .failed(message) }
                 if !isPresented {
                     model.show(.init(symbol: "exclamationmark.bubble.fill",
-                                     text: "Your feedback didn’t send — open Send Feedback to try again.", isError: true))
+                                     text: String(localized: "Your feedback didn’t send — open Send Feedback to try again."), isError: true))
                 }
             }
             task = nil
@@ -393,7 +406,7 @@ final class FeedbackDraft {
             phase = .sent(id)
         }
         if !isPresented {
-            model.show(.init(symbol: "paperplane.fill", text: "Feedback sent — thank you!"))
+            model.show(.init(symbol: "paperplane.fill", text: String(localized: "Feedback sent — thank you!")))
             phase = .writing
         }
     }
@@ -537,7 +550,7 @@ struct FeedbackView: View {
         return Button {
             draft.kind = kind
         } label: {
-            Label(kind.name, systemImage: kind.symbol)
+            Label(kind.title, systemImage: kind.symbol)
                 .font(.system(size: 13, weight: on ? .semibold : .medium))
                 .foregroundStyle(on ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
                 .frame(maxWidth: .infinity)
@@ -658,9 +671,9 @@ struct FeedbackView: View {
 
     private func pickFiles() {
         let panel = NSOpenPanel()
-        panel.title = "Add Screenshots or Recordings"
-        panel.message = "Pictures or short videos that show what you mean (up to \(FeedbackDraft.maxUserFiles))."
-        panel.prompt = "Attach"
+        panel.title = String(localized: "Add Screenshots or Recordings")
+        panel.message = String(localized: "Pictures or short videos that show what you mean (up to \(FeedbackDraft.maxUserFiles)).")
+        panel.prompt = String(localized: "Attach", comment: "Open panel button")
         panel.allowedContentTypes = FeedbackDraft.pickableTypes
         panel.allowsMultipleSelection = true
         panel.canChooseDirectories = false
@@ -697,7 +710,7 @@ struct FeedbackView: View {
         }
     }
 
-    private func labeled<C: View>(_ label: String, @ViewBuilder _ content: () -> C) -> some View {
+    private func labeled<C: View>(_ label: LocalizedStringKey, @ViewBuilder _ content: () -> C) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label).font(.system(size: 11)).foregroundStyle(.secondary)
             content()
@@ -731,6 +744,8 @@ struct FeedbackView: View {
                     ForEach(draft.facts(model)) { fact in
                         HStack(alignment: .firstTextBaseline) {
                             Text(fact.label).font(.system(size: 12)).foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
                                 .frame(width: 110, alignment: .leading)
                             Text(fact.value).font(.system(size: 12, weight: .medium, design: .rounded))
                                 .textSelection(.enabled)
@@ -803,7 +818,7 @@ struct FeedbackView: View {
             .keyboardShortcut(.cancelAction)
     }
 
-    private func sendButton(title: String, symbol: String) -> some View {
+    private func sendButton(title: LocalizedStringKey, symbol: String) -> some View {
         Button { draft.send(model) } label: {
             Label(title, systemImage: symbol).padding(.horizontal, 4)
         }
@@ -816,10 +831,13 @@ struct FeedbackView: View {
 
     private var sendSummary: String {
         var parts: [String] = []
-        if !draft.files.isEmpty { parts.append(draft.files.count == 1 ? "1 file" : "\(draft.files.count) files") }
-        if draft.includeSettings { parts.append("settings") }
-        if draft.includeLog && FeedbackDraft.hasScrollLog { parts.append("scroll log") }
-        return parts.isEmpty ? "Just your message." : "With " + ListFormatter.localizedString(byJoining: parts) + "."
+        if !draft.files.isEmpty { parts.append(String(localized: "\(draft.files.count) files", comment: "Attached to the report")) }
+        if draft.includeSettings { parts.append(String(localized: "settings", comment: "Listed after “With”: With 2 files, settings and scroll log.")) }
+        if draft.includeLog && FeedbackDraft.hasScrollLog {
+            parts.append(String(localized: "scroll log", comment: "Listed after “With”: With 2 files, settings and scroll log."))
+        }
+        return parts.isEmpty ? String(localized: "Just your message.")
+            : String(localized: "With \(ListFormatter.localizedString(byJoining: parts)).", comment: "%@ is a list: 2 files, settings and scroll log")
     }
 }
 
@@ -930,15 +948,17 @@ private struct SentView: View {
     }
 
     private var thanks: String {
-        let first = draft.name.split(separator: " ").first.map(String.init)
-        return "Thanks\(first.map { ", \($0)" } ?? "") — it went straight to the developer."
+        guard let first = draft.name.split(separator: " ").first.map(String.init) else {
+            return String(localized: "Thanks — it went straight to the developer.")
+        }
+        return String(localized: "Thanks, \(first) — it went straight to the developer.", comment: "%@ is the sender's first name")
     }
 
     private var detail: String {
         if draft.contactOK && !draft.trimmedEmail.isEmpty {
-            return "If there’s a question, the reply goes to \(draft.trimmedEmail)."
+            return String(localized: "If there’s a question, the reply goes to \(draft.trimmedEmail).", comment: "%@ is an email address")
         }
-        return "Every report is read. Add an email next time if you’d like a reply."
+        return String(localized: "Every report is read. Add an email next time if you’d like a reply.")
     }
 }
 

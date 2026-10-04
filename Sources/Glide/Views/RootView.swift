@@ -10,6 +10,17 @@ enum GlideTab: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
     var order: Int { Self.allCases.firstIndex(of: self) ?? 0 }
+    /// The tab's name on screen (the raw value is what's saved).
+    var title: String {
+        switch self {
+        case .overview: String(localized: "Overview", comment: "Tab name")
+        case .pointer: String(localized: "Pointer", comment: "Tab name")
+        case .scroll: String(localized: "Scrolling", comment: "Tab name")
+        case .buttons: String(localized: "Buttons", comment: "Tab name")
+        case .apps: String(localized: "Apps", comment: "Tab name")
+        case .backup: String(localized: "Sync", comment: "Tab name: export, import and iCloud sync")
+        }
+    }
     var symbol: String {
         switch self {
         case .overview: "sparkles"
@@ -113,7 +124,7 @@ struct RootView: View {
                 .resizable()
                 .frame(width: 44, height: 44)
             VStack(alignment: .leading, spacing: 1) {
-                Text("Glide").font(.system(size: 22, weight: .bold, design: .rounded))
+                Text(verbatim: "Glide").font(.system(size: 22, weight: .bold, design: .rounded))
                 if let profile = model.activeProfile {
                     ActiveProfileBadge(model: model, profile: profile)
                 } else {
@@ -146,12 +157,12 @@ struct RootView: View {
                 SavedPill()
                     .transition(.scale(scale: 0.6).combined(with: .opacity))
             }
-            StatusPill(text: statusText, color: statusColor)
+            StatusPill(text: .verbatim(statusText), color: statusColor)
             Toggle("", isOn: $model.config.enabled)
                 .toggleStyle(.switch)
                 .labelsHidden()
-                .help(model.config.globalShortcuts.pause.map { "Pause or resume Glide — also \($0.display) from anywhere" }
-                      ?? "Pause or resume Glide")
+                .help(model.config.globalShortcuts.pause.map { String(localized: "Pause or resume Glide — also \($0.display) from anywhere") }
+                      ?? String(localized: "Pause or resume Glide"))
         }
     }
 
@@ -169,10 +180,10 @@ struct RootView: View {
                                 .font(.system(size: 15, weight: .medium))
                                 .frame(height: 18)
                                 .symbolEffect(.bounce.up.byLayer, options: .speed(1.6), value: bounces[t, default: 0])
-                            Text(t.rawValue)
+                            Text(t.title)
                                 .font(.system(size: 11, weight: .medium))
                                 .lineLimit(1)
-                                .fixedSize()
+                                .minimumScaleFactor(0.8)
                         }
                         .frame(minWidth: 44)
                         .padding(.horizontal, 6)
@@ -242,11 +253,14 @@ struct RootView: View {
     }
 
     private var statusText: String {
-        if !model.permissionsOK { return "Needs permission" }
-        if !model.config.enabled { return "Paused" }
-        if !model.status.deviceConnected && model.status.unsupportedDeviceName != nil { return "Beta only" }
-        guard model.status.deviceConnected else { return "Not connected" }
-        return model.status.deviceIsBeta ? "Connected · Beta" : "Connected"
+        if !model.permissionsOK { return String(localized: "Needs permission", comment: "Status pill") }
+        if !model.config.enabled { return String(localized: "Paused", comment: "Status pill") }
+        if !model.status.deviceConnected && model.status.unsupportedDeviceName != nil {
+            return String(localized: "Beta only", comment: "Status pill: a Kensington device that needs the Beta program")
+        }
+        guard model.status.deviceConnected else { return String(localized: "Not connected", comment: "Status pill") }
+        return model.status.deviceIsBeta ? String(localized: "Connected · Beta", comment: "Status pill")
+                                         : String(localized: "Connected", comment: "Status pill")
     }
 
     private var statusColor: Color {
@@ -276,8 +290,8 @@ private struct ActiveProfileBadge: View {
         }
         .buttonStyle(.plain)
         .help(model.glideIsFrontmost
-              ? "Previewing \(profile.name)’s setup while you edit it. Other apps use your main setup."
-              : "\(profile.name) is in front, so Glide is using its setup. Click to edit it.")
+              ? String(localized: "Previewing \(profile.name)’s setup while you edit it. Other apps use your main setup.")
+              : String(localized: "\(profile.name) is in front, so Glide is using its setup. Click to edit it."))
     }
 }
 
@@ -291,15 +305,20 @@ struct PermissionsCard: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 12) {
-                permissionButton("Accessibility", granted: model.hasAccessibility) { model.requestAccessibility() }
-                permissionButton("Input Monitoring", granted: model.hasInputMonitoring) { model.requestInputMonitoring() }
+                permissionButton(granted: model.hasAccessibility, on: "Accessibility — on", off: "Allow Accessibility…") {
+                    model.requestAccessibility()
+                }
+                permissionButton(granted: model.hasInputMonitoring, on: "Input Monitoring — on", off: "Allow Input Monitoring…") {
+                    model.requestInputMonitoring()
+                }
             }
         }
     }
 
-    private func permissionButton(_ name: String, granted: Bool, action: @escaping () -> Void) -> some View {
+    private func permissionButton(granted: Bool, on: LocalizedStringKey, off: LocalizedStringKey,
+                                  action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Label(granted ? "\(name) — on" : "Allow \(name)…",
+            Label(granted ? on : off,
                   systemImage: granted ? "checkmark.circle.fill" : "hand.raised")
                 .padding(.horizontal, 6)
         }
@@ -340,7 +359,7 @@ struct UpdateButton: View {
                     Text("Last try failed: \(message)")
                 }
             } label: {
-                Label(updates.installState == .idle ? update.displayVersion : "Retry",
+                Label(updates.installState == .idle ? update.displayVersion : String(localized: "Retry", comment: "Update button after a failed install"),
                       systemImage: "arrow.down.circle.fill")
                     .font(.system(size: 12, weight: .semibold))
             }

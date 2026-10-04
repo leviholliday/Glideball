@@ -212,7 +212,10 @@ final class DelightCenter {
 
         var toast = AppModel.Toast(symbol: symbol(for: top), text: title(for: top), celebration: true)
         var detail = self.detail(for: top)
-        if more > 0 { detail = [detail, "+\(more) more on Overview"].compactMap { $0 }.joined(separator: " · ") }
+        if more > 0 {
+            detail = [detail, String(localized: "+\(more) more on Overview", comment: "More celebrations to see on the Overview tab")]
+                .compactMap { $0 }.joined(separator: " · ")
+        }
         toast.detail = detail
         present?(toast)
 
@@ -241,29 +244,30 @@ final class DelightCenter {
 
     private func title(for e: DelightEvent) -> String {
         switch e {
-        case .milestone(let m): "Milestone: \(m.title)"
+        case .milestone(let m): String(localized: "Milestone: \(m.title)", comment: "%@ is a badge name")
         case .dayRecord(let m, _):
             switch m {
-            case .scroll: "Your biggest scrolling day yet"
-            case .ball: "Your most-rolled day yet"
-            case .clicks: "Your clickiest day yet"
+            case .scroll: String(localized: "Your biggest scrolling day yet")
+            case .ball: String(localized: "Your most-rolled day yet")
+            case .clicks: String(localized: "Your clickiest day yet")
             }
-        case .record(let k, _): "New record: \(k.title.lowercased())"
-        case .checklistStep(let item): "Done: \(item.title.lowercased())"
-        case .checklistDone: "Glide is all yours"
-        case .welcome(let n): "Glide now keeps your records — \(n) badge\(n == 1 ? "" : "s") already earned"
+        case .record(let k, _): k.newRecordTitle
+        case .checklistStep(let item): item.doneTitle
+        case .checklistDone: String(localized: "Glide is all yours")
+        case .welcome(let n): String(localized: "Glide now keeps your records — \(n) badges already earned")
         }
     }
 
     private func detail(for e: DelightEvent) -> String? {
         switch e {
         case .milestone(let m): m.detail
-        case .dayRecord(let m, let v): "\(m.format(v)) today"
+        case .dayRecord(let m, let v): String(localized: "\(m.format(v)) today", comment: "%@ is an amount: 1,234 or 12.3 m")
         case .record(let k, let v): k.format(v)
         case .checklistStep:
-            "\(ledger.checklist.count) of \(ChecklistItem.allCases.count) on Make it yours"
-        case .checklistDone: "Every part of your trackball, set up your way."
-        case .welcome: "See them on Overview"
+            String(localized: "\(ledger.checklist.count) of \(ChecklistItem.allCases.count) on Make it yours",
+                   comment: "“Make it yours” is the setup checklist on Overview")
+        case .checklistDone: String(localized: "Every part of your trackball, set up your way.")
+        case .welcome: String(localized: "See them on Overview")
         }
     }
 

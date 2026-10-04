@@ -34,7 +34,7 @@ struct ScrollSettingsView: View {
         GlassCard(title: "Scroll with the ball", symbol: "arrow.up.and.down.and.arrow.left.and.right") {
             TuningSlider(title: "Ball scroll speed", symbol: "gauge.with.dots.needle.50percent",
                          value: $model.config.ballScrollSpeed, range: 0.25...4, step: 0.05,
-                         format: { String(format: "%.2g×", $0) }, lowLabel: "Fine", highLabel: "Fast")
+                         format: { "\($0.twoDigits)×" }, lowLabel: "Fine", highLabel: "Fast")
             Text("Set a button to “Scroll with ball” in Buttons. While you hold it, rolling the ball scrolls in any direction and the cursor stays put. Let go mid-roll and the page glides briefly.")
                 .font(.system(size: 11)).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -48,14 +48,14 @@ struct ScrollControls: View {
     @Binding var config: GlideConfig
 
     private struct Preset: Identifiable {
-        let name: String, symbol: String
+        let name: LocalizedStringKey, symbol: String
         let distance: Double, smooth: Double, accel: Double, throwOn: Bool, throwAmount: Double
-        var id: String { name }
+        var id: String { symbol }
     }
     private let presets: [Preset] = [
-        .init(name: "Precise", symbol: "scope", distance: 10, smooth: 0.25, accel: 0.25, throwOn: false, throwAmount: 0.3),
-        .init(name: "Control", symbol: "hand.raised.fingers.spread", distance: 14, smooth: 0.4, accel: 0.5, throwOn: true, throwAmount: 0.4),
-        .init(name: "Fling", symbol: "wind", distance: 18, smooth: 0.5, accel: 0.7, throwOn: true, throwAmount: 0.75),
+        .init(name: LocalizedStringKey("Precise"), symbol: "scope", distance: 10, smooth: 0.25, accel: 0.25, throwOn: false, throwAmount: 0.3),
+        .init(name: LocalizedStringKey("Control"), symbol: "hand.raised.fingers.spread", distance: 14, smooth: 0.4, accel: 0.5, throwOn: true, throwAmount: 0.4),
+        .init(name: LocalizedStringKey("Fling"), symbol: "wind", distance: 18, smooth: 0.5, accel: 0.7, throwOn: true, throwAmount: 0.75),
     ]
 
     var body: some View {
@@ -76,7 +76,7 @@ struct ScrollControls: View {
                 .fixedSize(horizontal: false, vertical: true)
             TuningSlider(title: "Scroll speed", symbol: "gauge.with.dots.needle.50percent",
                          value: $config.nativeScrollSpeed, range: 0...5, step: 0.05,
-                         format: { String(format: "%.2f", $0) }, lowLabel: "Slow", highLabel: "Fast")
+                         format: { $0.decimals(2) }, lowLabel: "Slow", highLabel: "Fast")
             Text("System Settings' scroll-speed slider goes up to 1.7. This only affects the Expert Mouse.")
                 .font(.system(size: 11)).foregroundStyle(.tertiary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -90,13 +90,14 @@ struct ScrollControls: View {
                 .fixedSize(horizontal: false, vertical: true)
             TuningSlider(title: "Slow-turn distance", symbol: "arrow.up.and.down",
                          value: $config.flyDistance, range: 1...20, step: 1,
-                         format: { "\(Int($0)) pt" }, lowLabel: "Precise", highLabel: "Far")
+                         format: { String(localized: "\(Int($0)) pt", comment: "Points: a distance on screen") },
+                         lowLabel: "Precise", highLabel: "Far")
             TuningSlider(title: "Spin power", symbol: "tornado",
                          value: $config.flyAcceleration, range: 0...1.5,
-                         format: { "\(Int($0 * 100))%" }, lowLabel: "Gentle", highLabel: "Wild")
+                         format: { $0.wholePercent }, lowLabel: "Gentle", highLabel: "Wild")
             TuningSlider(title: "Glide", symbol: "wind",
                          value: $config.flyGlide, range: 0...1,
-                         format: { "\(Int(SmoothScroller.flyTau(glide: $0) * 1000)) ms" },
+                         format: { String(localized: "\(Int(SmoothScroller.flyTau(glide: $0) * 1000)) ms", comment: "Milliseconds") },
                          lowLabel: "Grippy", highLabel: "Slippery")
             ToggleRow(title: "Smooth scrolling", subtitle: "Off = plain steps, exactly like a basic mouse",
                       symbol: "water.waves", isOn: $config.smoothScrolling)
@@ -146,15 +147,16 @@ struct ScrollControls: View {
                               symbol: "water.waves", isOn: $config.smoothScrolling)
                     TuningSlider(title: "Distance per notch", symbol: "arrow.up.and.down",
                                  value: $config.scrollDistance, range: 1...40, step: 1,
-                                 format: { "\(Int($0)) pt" }, lowLabel: "Fine", highLabel: "Far")
+                                 format: { String(localized: "\(Int($0)) pt", comment: "Points: a distance on screen") },
+                                 lowLabel: "Fine", highLabel: "Far")
                     TuningSlider(title: "Follow", symbol: "hand.point.up.left",
                                  value: $config.scrollSmoothness, range: 0...1,
-                                 format: { "\(Int(SmoothScroller.timeConstant(smoothness: $0) * 1000)) ms" },
+                                 format: { String(localized: "\(Int(SmoothScroller.timeConstant(smoothness: $0) * 1000)) ms", comment: "Milliseconds") },
                                  lowLabel: "Locked to ring", highLabel: "Softer")
                         .disabled(!config.smoothScrolling)
                     TuningSlider(title: "Spin acceleration", symbol: "tornado",
                                  value: $config.scrollAcceleration, range: 0...1,
-                                 format: { $0 < 0.01 ? "Off" : "\(Int($0 * 100))%" },
+                                 format: { $0 < 0.01 ? String(localized: "Off", comment: "Slider value: spin acceleration is off") : $0.wholePercent },
                                  lowLabel: "Constant", highLabel: "Spin to fly")
                 }
                 GlassCard(title: "Throw", symbol: "paperplane") {
@@ -162,10 +164,15 @@ struct ScrollControls: View {
                               symbol: "paperplane.fill", isOn: $config.throwEnabled)
                     TuningSlider(title: "Throw distance", symbol: "ruler",
                                  value: $config.throwAmount, range: 0...1,
-                                 format: { String(format: "%.1f s", SmoothScroller.throwDuration(speed: ThrowCard.typicalSpeed(config), throwAmount: $0)) },
+                                 format: { ScrollControls.seconds(SmoothScroller.throwDuration(speed: ThrowCard.typicalSpeed(config), throwAmount: $0)) },
                                  lowLabel: "Short", highLabel: "Long")
                         .disabled(!config.throwEnabled)
                 }
+    }
+
+    /// "1.5 s"
+    static func seconds(_ s: Double) -> String {
+        String(localized: "\(s.decimals(1)) s", comment: "Seconds, e.g. “1.5 s”")
     }
 
     private var directionCard: some View {
@@ -184,9 +191,9 @@ struct ModePicker: View {
 
     private func info(_ m: ScrollMode) -> (String, String, String) {
         switch m {
-        case .native: ("Native", "applelogo", "macOS does the scrolling")
-        case .flywheel: ("Flywheel", "fanblades", "Push and glide — Kensington's feel")
-        case .follow: ("Follow", "hand.point.up.left", "Page tracks the ring exactly")
+        case .native: (m.title, "applelogo", String(localized: "macOS does the scrolling"))
+        case .flywheel: (m.title, "fanblades", String(localized: "Push and glide — Kensington's feel"))
+        case .follow: (m.title, "hand.point.up.left", String(localized: "Page tracks the ring exactly"))
         }
     }
 
@@ -259,8 +266,7 @@ struct FlywheelCurveCard: View {
             .chartYAxis { AxisMarks(values: .automatic(desiredCount: 4)) { _ in AxisGridLine().foregroundStyle(.white.opacity(0.08)); AxisValueLabel() } }
             .frame(height: 220)
             .animation(.smooth(duration: 0.25), value: config.flyAcceleration)
-            Text(String(format: "Each push coasts for about %.1f s before it fades out. Turn the ring the other way to stop it.",
-                        SmoothScroller.flyTau(glide: config.flyGlide) * 6))
+            Text("Each push coasts for about \((SmoothScroller.flyTau(glide: config.flyGlide) * 6).decimals(1)) s before it fades out. Turn the ring the other way to stop it.")
                 .font(.system(size: 11)).foregroundStyle(.secondary)
         }
     }

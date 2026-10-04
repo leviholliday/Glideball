@@ -20,6 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let firstLaunch = WelcomeTour.shouldShowAtLaunch()   // before AppModel loads settings
+        _ = AppLanguage.atLaunch   // the language on screen, before anyone can change it
         buildMenu()
         setUpStatusItem()
         _ = AppModel.shared   // starts the engine
@@ -148,16 +149,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         item.button?.image?.isTemplate = true
 
         let menu = NSMenu()
-        menu.addItem(withTitle: "Show Glide", action: #selector(showGlide), keyEquivalent: "")
-        menu.addItem(withTitle: "Pause / Resume Glide", action: #selector(toggleGlide), keyEquivalent: "")
+        menu.addItem(withTitle: String(localized: "Show Glide"), action: #selector(showGlide), keyEquivalent: "")
+        menu.addItem(withTitle: String(localized: "Pause / Resume Glide"), action: #selector(toggleGlide), keyEquivalent: "")
         // Scroll with ball and Drag lock act at the pointer, which is up here
         // in the menu bar after choosing an item — so only Precision is offered.
-        precisionItem = menu.addItem(withTitle: "Precision", action: #selector(togglePrecision), keyEquivalent: "")
+        precisionItem = menu.addItem(withTitle: String(localized: "Precision"), action: #selector(togglePrecision), keyEquivalent: "")
         menu.addItem(.separator())
-        menu.addItem(withTitle: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "")
-        menu.addItem(withTitle: "Send Feedback…", action: #selector(sendFeedback), keyEquivalent: "")
+        menu.addItem(withTitle: String(localized: "Check for Updates…"), action: #selector(checkForUpdates), keyEquivalent: "")
+        menu.addItem(withTitle: String(localized: "Send Feedback…"), action: #selector(sendFeedback), keyEquivalent: "")
         menu.addItem(.separator())
-        menu.addItem(withTitle: "Quit Glide", action: #selector(quitGlide), keyEquivalent: "q")
+        menu.addItem(withTitle: String(localized: "Quit Glide"), action: #selector(quitGlide), keyEquivalent: "q")
         menu.items.forEach { $0.target = self }
         item.menu = menu
         statusItem = item
@@ -240,38 +241,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         let appItem = NSMenuItem()
         let appMenu = NSMenu()
-        appMenu.addItem(withTitle: "About Glide", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
-        appMenu.addItem(withTitle: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "").target = self
+        appMenu.addItem(withTitle: String(localized: "About Glide"), action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        appMenu.addItem(withTitle: String(localized: "Check for Updates…"), action: #selector(checkForUpdates), keyEquivalent: "").target = self
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: "Hide Glide", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
-        let others = appMenu.addItem(withTitle: "Hide Others", action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h")
+        appMenu.addItem(withTitle: String(localized: "Hide Glide"), action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        let others = appMenu.addItem(withTitle: String(localized: "Hide Others"), action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h")
         others.keyEquivalentModifierMask = [.command, .option]
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: "Quit Glide", action: #selector(quitGlide), keyEquivalent: "q").target = self
+        appMenu.addItem(withTitle: String(localized: "Quit Glide"), action: #selector(quitGlide), keyEquivalent: "q").target = self
         appItem.submenu = appMenu
         main.addItem(appItem)
 
         let fileItem = NSMenuItem()
-        let fileMenu = NSMenu(title: "File")
-        fileMenu.addItem(withTitle: "Export Settings…", action: #selector(exportSettings), keyEquivalent: "e").target = self
-        fileMenu.addItem(withTitle: "Import Settings…", action: #selector(importSettings), keyEquivalent: "o").target = self
+        let fileMenu = NSMenu(title: String(localized: "File", comment: "Menu bar title"))
+        fileMenu.addItem(withTitle: String(localized: "Export Settings…"), action: #selector(exportSettings), keyEquivalent: "e").target = self
+        fileMenu.addItem(withTitle: String(localized: "Import Settings…"), action: #selector(importSettings), keyEquivalent: "o").target = self
         fileMenu.addItem(.separator())
-        fileMenu.addItem(withTitle: "Close Window", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        fileMenu.addItem(withTitle: String(localized: "Close Window"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
         fileItem.submenu = fileMenu
         main.addItem(fileItem)
 
         let windowItem = NSMenuItem()
-        let windowMenu = NSMenu(title: "Window")
-        windowMenu.addItem(withTitle: "Minimize", action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
+        let windowMenu = NSMenu(title: String(localized: "Window", comment: "Menu bar title"))
+        windowMenu.addItem(withTitle: String(localized: "Minimize"), action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
         windowItem.submenu = windowMenu
         main.addItem(windowItem)
 
         let helpItem = NSMenuItem()
-        let helpMenu = NSMenu(title: "Help")
-        helpMenu.addItem(withTitle: "Show Welcome Tour…", action: #selector(showWelcomeTour), keyEquivalent: "").target = self
+        let helpMenu = NSMenu(title: String(localized: "Help", comment: "Menu bar title"))
+        helpMenu.addItem(withTitle: String(localized: "Show Welcome Tour…"), action: #selector(showWelcomeTour), keyEquivalent: "").target = self
         helpMenu.addItem(.separator())
-        helpMenu.addItem(withTitle: "Send Feedback…", action: #selector(sendFeedback), keyEquivalent: "").target = self
-        helpMenu.addItem(withTitle: "Glide Website", action: #selector(openWebsite), keyEquivalent: "").target = self
+        helpMenu.addItem(withTitle: String(localized: "Send Feedback…"), action: #selector(sendFeedback), keyEquivalent: "").target = self
+        helpMenu.addItem(withTitle: String(localized: "Glide Website"), action: #selector(openWebsite), keyEquivalent: "").target = self
         helpItem.submenu = helpMenu
         main.addItem(helpItem)
 

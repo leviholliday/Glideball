@@ -1,0 +1,5 @@
+/* Info.plist: the About window's copyright line, and the settings file's
+   kind in Finder (CFBundleTypeName / UTTypeDescription "Glide Settings"). */
+
+"NSHumanReadableCopyright" = "Kensington Expert Mouseのために作られました。";
+"Glide Settings" = "Glideの設定";

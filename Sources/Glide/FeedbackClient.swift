@@ -118,7 +118,7 @@ struct FeedbackClient {
             case .data(let d): return d
             case .file(let url):
                 do { return try Data(contentsOf: url, options: .mappedIfSafe) } catch {
-                    throw FeedbackError("“\(url.lastPathComponent)” couldn’t be read. Remove it and add it again.")
+                    throw FeedbackError(String(localized: "“\(url.lastPathComponent)” couldn’t be read. Remove it and add it again."))
                 }
             }
         }
@@ -157,17 +157,17 @@ struct FeedbackClient {
 
     /// Checks everything the server would refuse, before anything is sent.
     static func validate(_ report: Report, _ attachments: [Attachment]) throws {
-        if report.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { throw FeedbackError("It needs a title.") }
-        if attachments.count > maxAttachments { throw FeedbackError("That’s too many attachments (at most \(maxAttachments)).") }
+        if report.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { throw FeedbackError(String(localized: "It needs a title.")) }
+        if attachments.count > maxAttachments { throw FeedbackError(String(localized: "That’s too many attachments (at most \(maxAttachments)).")) }
         var names = Set<String>()
         for a in attachments {
-            guard isValidName(a.name) else { throw FeedbackError("“\(a.name)” can’t be sent with that name.") }
-            guard names.insert(a.name).inserted else { throw FeedbackError("Two attachments are called “\(a.name)”.") }
-            guard let limit = sizeLimits[a.type] else { throw FeedbackError("“\(a.name)” isn’t a kind of file that can be sent.") }
+            guard isValidName(a.name) else { throw FeedbackError(String(localized: "“\(a.name)” can’t be sent with that name.")) }
+            guard names.insert(a.name).inserted else { throw FeedbackError(String(localized: "Two attachments are called “\(a.name)”.")) }
+            guard let limit = sizeLimits[a.type] else { throw FeedbackError(String(localized: "“\(a.name)” isn’t a kind of file that can be sent.")) }
             let size = a.size
-            guard size > 0 else { throw FeedbackError("“\(a.name)” is empty or missing.") }
+            guard size > 0 else { throw FeedbackError(String(localized: "“\(a.name)” is empty or missing.")) }
             guard size <= limit else {
-                throw FeedbackError("“\(a.name)” is too big to send (the limit is \(limit / 1_000_000) MB).")
+                throw FeedbackError(String(localized: "“\(a.name)” is too big to send (the limit is \(limit / 1_000_000) MB)."))
             }
         }
     }
@@ -186,7 +186,7 @@ struct FeedbackClient {
         let total = sizes.reduce(0, +)
         // The report itself counts as a sliver; the bytes are the rest.
         let head = total == 0 ? 1.0 : 0.04
-        await progress(0, "Sending…")
+        await progress(0, String(localized: "Sending…"))
         let created: Created
         do {
             let data = try await perform(request("/api/feedback", method: "POST", body: body, type: "application/json"))
@@ -194,17 +194,17 @@ struct FeedbackClient {
         } catch let e as FeedbackError {
             throw e
         } catch is DecodingError {
-            throw FeedbackError("The feedback server sent back something unexpected. Try again in a little while.")
+            throw FeedbackError(String(localized: "The feedback server sent back something unexpected. Try again in a little while."))
         }
-        guard created.chunkSize > 0 else { throw FeedbackError("The feedback server sent back something unexpected.") }
-        await progress(head, total == 0 ? "Sent" : "Sending…")
+        guard created.chunkSize > 0 else { throw FeedbackError(String(localized: "The feedback server sent back something unexpected.")) }
+        await progress(head, total == 0 ? String(localized: "Sent", comment: "Feedback progress") : String(localized: "Sending…"))
         guard !attachments.isEmpty else { return created.id }
 
         var done = 0
-        let mb = { (n: Int) in String(format: "%.1f", Double(n) / 1_000_000) }
+        let mb = { (n: Int) in (Double(n) / 1_000_000).formatted(.number.precision(.fractionLength(1))) }
         for (a, size) in zip(attachments, sizes) {
             let data = try a.load()
-            guard data.count == size else { throw FeedbackError("“\(a.name)” changed while it was being sent. Try again.") }
+            guard data.count == size else { throw FeedbackError(String(localized: "“\(a.name)” changed while it was being sent. Try again.")) }
             let pieces = max(1, (data.count + created.chunkSize - 1) / created.chunkSize)
             for i in 0..<pieces {
                 try Task.checkCancellation()
@@ -213,22 +213,24 @@ struct FeedbackClient {
                 q.queryItems = [.init(name: "id", value: created.id), .init(name: "file", value: a.name),
                                 .init(name: "index", value: String(i)), .init(name: "total", value: String(pieces))]
                 let base = done
-                let note = "Sending \(a.name)…"
+                let note = { (sent: Int) in
+                    String(localized: "Sending \(a.name)… \(mb(sent)) of \(mb(total)) MB", comment: "File name, then megabytes sent so far and in all")
+                }
                 let reporter = PieceProgress { sent in
                     let f = head + (1 - head) * Double(base + Int(sent)) / Double(max(total, 1))
-                    progress(min(f, 1), "\(note) \(mb(base + Int(sent))) of \(mb(total)) MB")
+                    progress(min(f, 1), note(base + Int(sent)))
                 }
                 _ = try await perform(request("/api/feedback/upload", query: q.queryItems, method: "PUT",
                                               token: created.uploadToken, body: data.subdata(in: range),
                                               type: "application/octet-stream"), delegate: reporter)
                 done += range.count
                 await progress(head + (1 - head) * Double(done) / Double(max(total, 1)),
-                               "\(note) \(mb(done)) of \(mb(total)) MB")
+                               note(done))
             }
         }
         _ = try await perform(request("/api/feedback/complete", query: [.init(name: "id", value: created.id)],
                                       method: "POST", token: created.uploadToken, body: nil, type: "application/json"))
-        await progress(1, "Sent")
+        await progress(1, String(localized: "Sent", comment: "Feedback progress"))
         return created.id
     }
 
@@ -252,7 +254,7 @@ struct FeedbackClient {
     /// a 5xx — a bad moment shouldn't lose a report. A 4xx is the server
     /// saying no, so its own words are passed on right away.
     private func perform(_ r: URLRequest, delegate: URLSessionTaskDelegate? = nil) async throws -> Data {
-        var last = FeedbackError("The feedback couldn’t be sent.")
+        var last = FeedbackError(String(localized: "The feedback couldn’t be sent."))
         for attempt in 0..<max(1, tries) {
             if attempt > 0 {
                 try await Task.sleep(nanoseconds: UInt64(0.8 * pow(2, Double(attempt - 1)) * 1_000_000_000))
@@ -271,11 +273,12 @@ struct FeedbackClient {
                 if (200..<300).contains(code) { return data }
                 let said = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["error"] as? String
                 if code >= 500 {
-                    last = FeedbackError(said.map { "The feedback server had a problem: \($0)" }
-                        ?? "The feedback server had a problem (error \(code)). Try again in a minute.")
+                    last = FeedbackError(said.map { String(localized: "The feedback server had a problem: \($0)") }
+                        ?? String(localized: "The feedback server had a problem (error \(code)). Try again in a minute."))
                     continue
                 }
-                throw FeedbackError(said ?? "The feedback server turned it down (error \(code)).")
+                // The server's own words, as it sent them.
+                throw FeedbackError(said ?? String(localized: "The feedback server turned it down (error \(code))."))
             } catch let e as FeedbackError {
                 throw e
             } catch is CancellationError {
@@ -283,10 +286,10 @@ struct FeedbackClient {
             } catch let e as URLError {
                 if e.code == .cancelled { throw CancellationError() }
                 last = FeedbackError(e.code == .timedOut
-                    ? "The feedback server took too long to answer. Check your connection and try again."
-                    : "Couldn’t reach the feedback server. Check your internet connection and try again.")
+                    ? String(localized: "The feedback server took too long to answer. Check your connection and try again.")
+                    : String(localized: "Couldn’t reach the feedback server. Check your internet connection and try again."))
             } catch {
-                last = FeedbackError("Couldn’t reach the feedback server: \(error.localizedDescription)")
+                last = FeedbackError(String(localized: "Couldn’t reach the feedback server: \(error.localizedDescription)"))
             }
         }
         throw last

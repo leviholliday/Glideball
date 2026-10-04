@@ -151,20 +151,20 @@ private struct AddAppMenu: View {
 
     private func chooseApp() {
         let panel = NSOpenPanel()
-        panel.title = "Add an App"
-        panel.message = "Choose the app that should get its own trackball setup."
-        panel.prompt = "Add"
+        panel.title = String(localized: "Add an App")
+        panel.message = String(localized: "Choose the app that should get its own trackball setup.")
+        panel.prompt = String(localized: "Add", comment: "Open panel button: add the chosen app")
         panel.directoryURL = URL(fileURLWithPath: "/Applications")
         panel.allowedContentTypes = [.application]
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
         guard panel.runModal() == .OK, let url = panel.url else { return }
         guard let id = Bundle(url: url)?.bundleIdentifier else {
-            model.show(.init(symbol: "exclamationmark.triangle.fill", text: "Glide couldn’t identify that app.", isError: true))
+            model.show(.init(symbol: "exclamationmark.triangle.fill", text: String(localized: "Glide couldn’t identify that app."), isError: true))
             return
         }
         if id == Bundle.main.bundleIdentifier {
-            model.show(.init(symbol: "info.circle.fill", text: "Glide itself always uses your main setup."))
+            model.show(.init(symbol: "info.circle.fill", text: String(localized: "Glide itself always uses your main setup.")))
             return
         }
         withAnimation(.smooth) { model.addProfile(bundleID: id, name: url.deletingPathExtension().lastPathComponent) }
@@ -178,9 +178,7 @@ private struct ProfileEditor: View {
     let profileID: String
     @State private var confirmingDelete = false
 
-    private static let buttonRows: [(index: Int, normally: String)] = [
-        (0, "Left click"), (1, "Right click"), (2, "Middle click"), (3, "Back"),
-    ]
+    private static let buttonRows: [(index: Int, normally: String)] = (0..<4).map { ($0, AppModel.buttonDefault($0)) }
 
     private var profile: Binding<AppProfile> {
         Binding(
@@ -205,14 +203,14 @@ private struct ProfileEditor: View {
             header(p)
 
             OverrideSection(title: "Pointer", symbol: "cursorarrow.motionlines",
-                            mainSummary: String(format: "speed %g", main.trackingSpeed),
+                            mainSummary: String(localized: "speed \(main.trackingSpeed.formatted())", comment: "Pointer speed, after “Following your main setup ·”"),
                             isCustom: customizing(\.trackingSpeed) { model.config.trackingSpeed }) {
                 GlassCard {
                     TuningSlider(title: "Tracking speed", symbol: "gauge.with.dots.needle.67percent",
                                  value: Binding(get: { profile.wrappedValue.trackingSpeed ?? model.config.trackingSpeed },
                                                 set: { profile.wrappedValue.trackingSpeed = $0 }),
                                  range: 0.5...80, step: 0.5,
-                                 format: { String(format: "%.2g", $0) },
+                                 format: { $0.twoDigits },
                                  lowLabel: "Slow", highLabel: "Ludicrous")
                 }
             }
@@ -240,7 +238,8 @@ private struct ProfileEditor: View {
             }
 
             OverrideSection(title: "Combos", symbol: "square.on.square",
-                            mainSummary: main.chords.isEmpty ? "none" : "\(main.chords.count) combo\(main.chords.count == 1 ? "" : "s")",
+                            mainSummary: main.chords.isEmpty ? String(localized: "none", comment: "No combos, after “Following your main setup ·”")
+                                                             : String(localized: "\(main.chords.count) combos"),
                             isCustom: customizing(\.chords) { model.config.chords }) {
                 CombosCard(chords: Binding(get: { profile.wrappedValue.chords ?? model.config.chords },
                                            set: { profile.wrappedValue.chords = $0 }))
@@ -301,14 +300,15 @@ private struct ProfileEditor: View {
 
     private static func remapped(_ buttons: [Int: ButtonAction]) -> String {
         let n = buttons.filter { $0.key != 0 && $0.value != .system }.count
-        return n == 0 ? "default buttons" : "\(n) remapped"
+        return n == 0 ? String(localized: "default buttons", comment: "After “Following your main setup ·”")
+                      : String(localized: "\(n) remapped", comment: "Number of buttons that do something other than normal")
     }
 }
 
 /// One area of an app setup: a "Main setup / Customize" switch, then that
 /// area's usual controls when customized.
 private struct OverrideSection<Content: View>: View {
-    let title: String
+    let title: LocalizedStringKey
     let symbol: String
     let mainSummary: String
     @Binding var isCustom: Bool
@@ -327,6 +327,7 @@ private struct OverrideSection<Content: View>: View {
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
+                        .minimumScaleFactor(0.85)
                 }
                 Spacer(minLength: 12)
                 Picker(title, selection: $isCustom) {

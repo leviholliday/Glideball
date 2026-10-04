@@ -1,0 +1,1429 @@
+/* Glide — zh-Hans. Keys are the English text. Checked by scripts/l10n/check.py. */
+
+/* ---- AppDelegate.swift ---- */
+
+"Show Glide" = "显示 Glide";
+
+"Pause / Resume Glide" = "暂停 / 恢复 Glide";
+
+/* Mode that slows the pointer for fine work */
+"Precision" = "精准";
+
+"Check for Updates…" = "检查更新…";
+
+"Send Feedback…" = "发送反馈…";
+
+"Quit Glide" = "退出 Glide";
+
+"About Glide" = "关于 Glide";
+
+"Hide Glide" = "隐藏 Glide";
+
+"Hide Others" = "隐藏其他";
+
+/* Menu bar title */
+"File" = "文件";
+
+"Export Settings…" = "导出设置…";
+
+"Import Settings…" = "导入设置…";
+
+"Close Window" = "关闭窗口";
+
+/* Menu bar title */
+"Window" = "窗口";
+
+"Minimize" = "最小化";
+
+/* Menu bar title */
+"Help" = "帮助";
+
+"Show Welcome Tour…" = "显示欢迎导览…";
+
+"Glide Website" = "Glide 网站";
+
+/* ---- AppModel.swift ---- */
+
+/* Trackball button position */
+"Bottom left" = "左下";
+
+/* Trackball button position */
+"Bottom right" = "右下";
+
+/* Trackball button position */
+"Top left" = "左上";
+
+/* Trackball button position */
+"Top right" = "右上";
+
+"Button %lld" = "按钮 %lld";
+
+"Left click" = "左键点按";
+
+"Right click" = "右键点按";
+
+"Middle click" = "中键点按";
+
+/* Browser back: what the top-right button does by default */
+"Back" = "后退";
+
+/* Exported file name; %@ is the date */
+"Glide Settings – %@" = "Glide 设置 – %@";
+
+"Export Glide Settings" = "导出 Glide 设置";
+
+"Save your Glide setup to a file you can back up or open on another Mac." = "将 Glide 配置存储为文件，以便备份或在另一台 Mac 上打开。";
+
+"Saved “%@”" = "已存储“%@”";
+
+"Couldn’t export: %@" = "无法导出：%@";
+
+"Import Glide Settings" = "导入 Glide 设置";
+
+"Choose a Glide settings file. You’ll see what’s in it before anything changes." = "选取一个 Glide 设置文件。更改任何内容前，你会先看到其中的内容。";
+
+"That doesn’t look like a Glide settings file." = "这似乎不是 Glide 设置文件。";
+
+"Imported “%@”" = "已导入“%@”";
+
+"Restored your previous settings" = "已恢复你之前的设置";
+
+/* ---- AppProfile.swift ---- */
+
+/* Pointer speed in an app setup */
+"Speed %@" = "速度 %@";
+
+"Default buttons" = "默认按钮";
+
+"No combos" = "无组合键";
+
+"Uses your main setup" = "使用主配置";
+
+/* Scroll mode: macOS's own scrolling */
+"Native" = "原生";
+
+/* Scroll mode: each tick pushes the page, friction slows it */
+"Flywheel" = "飞轮";
+
+/* Scroll mode: the page follows the ring exactly */
+"Follow" = "跟随";
+
+"Native scrolling" = "原生滚动";
+
+"Flywheel scrolling" = "飞轮滚动";
+
+"Follow scrolling" = "跟随滚动";
+
+/* No combos / no app setups */
+"None" = "无";
+
+"%lld apps" = "%lld 个 App";
+
+/* ---- Config.swift ---- */
+
+/* Button action: what the button normally does */
+"Default" = "默认";
+
+"Control-click" = "Control-点按";
+
+"Control-right-click" = "Control-右键点按";
+
+"Command-click" = "Command-点按";
+
+"Shift-click" = "Shift-点按";
+
+"Option-click" = "Option-点按";
+
+/* Browser forward */
+"Forward" = "前进";
+
+/* Mission Control: switch to the Space on the left */
+"Previous Space" = "上一个空间";
+
+/* Mission Control: switch to the Space on the right */
+"Next Space" = "下一个空间";
+
+"Mission Control" = "调度中心";
+
+"App Exposé" = "应用程序 Exposé";
+
+"Browser Back" = "浏览器后退";
+
+"Browser Forward" = "浏览器前进";
+
+"Spotlight" = "聚焦";
+
+"Copy" = "拷贝";
+
+"Paste" = "粘贴";
+
+"Undo" = "撤销";
+
+"New Tab" = "新建标签页";
+
+"Close Tab" = "关闭标签页";
+
+"Precision (hold)" = "精准（按住）";
+
+"Precision (toggle)" = "精准（切换）";
+
+"Scroll with ball (hold)" = "用球滚动（按住）";
+
+/* Mode: the left button stays held down so you can drag without holding it */
+"Drag lock" = "拖移锁定";
+
+"Do nothing" = "无操作";
+
+/* Button action that isn't one of the presets */
+"Custom" = "自定义";
+
+"Pause / resume Glide" = "暂停 / 恢复 Glide";
+
+/* Mode: rolling the ball scrolls instead of moving the pointer */
+"Scroll with ball" = "用球滚动";
+
+"Your escape hatch: Glide steps aside until you press it again." = "你的逃生舱：Glide 会退居一旁，直到你再按一次。";
+
+"Slows the pointer for fine work until you press it again." = "减慢指针以便精细操作，直到你再按一次。";
+
+"Rolling the ball scrolls and the pointer stays put, until you press it again." = "滚动轨迹球即可滚动，指针保持不动，直到你再按一次。";
+
+"Grabs what's under the pointer once you let go of the keys. Press again, or click, to drop." = "松开按键后抓起指针下的对象。再按一次或点按即可放下。";
+
+"Include ⌘, ⌃, or ⌥ — %@ on its own would stop working everywhere else." = "请包含 ⌘、⌃ 或 ⌥ — 单独使用 %@ 会让它在其他地方都失效。";
+
+/* First %@ is a keyboard shortcut like ⌃⌥⌘G; second is a mode name like “Precision” */
+"%@ is already the shortcut for %@." = "%@ 已是“%@”的快捷键。";
+
+"This settings file uses unsupported version %lld." = "此设置文件使用了不受支持的版本 %lld。";
+
+"Native · speed %@" = "原生 · 速度 %@";
+
+"Flywheel · %lld pt, %@ power" = "飞轮 · %lld pt，%@ 力度";
+
+"Follow · %lld pt per tick" = "跟随 · 每格 %lld pt";
+
+"Pointer speed" = "指针速度";
+
+/* Tab name */
+"Scrolling" = "滚动";
+
+/* Tab name */
+"Buttons" = "按钮";
+
+"Combos" = "组合键";
+
+"App setups" = "App 配置";
+
+/* ---- DelightCenter.swift ---- */
+
+/* %@ is a badge name */
+"Milestone: %@" = "里程碑：%@";
+
+"Your biggest scrolling day yet" = "你滚动最多的一天";
+
+"Your most-rolled day yet" = "你滚球最多的一天";
+
+"Your clickiest day yet" = "你点按最多的一天";
+
+"Glide is all yours" = "Glide 已完全属于你";
+
+/* %@ is an amount: 1,234 or 12.3 m */
+"%@ today" = "今天 %@";
+
+/* “Make it yours” is the setup checklist on Overview */
+"%lld of %lld on Make it yours" = "“专属于你”完成 %lld/%lld";
+
+"Every part of your trackball, set up your way." = "轨迹球的每个部分，都按你的方式设置。";
+
+"See them on Overview" = "在概览中查看";
+
+/* ---- FeedbackClient.swift ---- */
+
+"“%@” couldn’t be read. Remove it and add it again." = "无法读取“%@”。请移除后重新添加。";
+
+"It needs a title." = "需要填写标题。";
+
+"That’s too many attachments (at most %lld)." = "附件太多了（最多 %lld 个）。";
+
+"“%@” can’t be sent with that name." = "无法以该名称发送“%@”。";
+
+"Two attachments are called “%@”." = "有两个附件都叫“%@”。";
+
+"“%@” isn’t a kind of file that can be sent." = "“%@”不是可以发送的文件类型。";
+
+"“%@” is empty or missing." = "“%@”为空或已丢失。";
+
+"“%@” is too big to send (the limit is %lld MB)." = "“%@”太大，无法发送（上限为 %lld MB）。";
+
+"Sending…" = "正在发送…";
+
+"The feedback server sent back something unexpected. Try again in a little while." = "反馈服务器返回了意外的内容。请稍后再试。";
+
+"The feedback server sent back something unexpected." = "反馈服务器返回了意外的内容。";
+
+/* Feedback progress */
+"Sent" = "已发送";
+
+"“%@” changed while it was being sent. Try again." = "“%@”在发送过程中发生了更改。请再试一次。";
+
+/* File name, then megabytes sent so far and in all */
+"Sending %@… %@ of %@ MB" = "正在发送 %@… %@ / %@ MB";
+
+"The feedback couldn’t be sent." = "无法发送反馈。";
+
+"The feedback server had a problem: %@" = "反馈服务器出了问题：%@";
+
+"The feedback server had a problem (error %lld). Try again in a minute." = "反馈服务器出了问题（错误 %lld）。请稍后再试。";
+
+"The feedback server turned it down (error %lld)." = "反馈服务器拒绝了它（错误 %lld）。";
+
+"The feedback server took too long to answer. Check your connection and try again." = "反馈服务器响应超时。请检查网络连接，然后再试一次。";
+
+"Couldn’t reach the feedback server. Check your internet connection and try again." = "无法连接反馈服务器。请检查网络连接，然后再试一次。";
+
+"Couldn’t reach the feedback server: %@" = "无法连接反馈服务器：%@";
+
+/* ---- Milestones.swift ---- */
+
+/* Distance scrolled with the ring */
+"Scrolled" = "滚动距离";
+
+/* Distance the ball has rolled */
+"Ball rolled" = "滚球距离";
+
+"Clicks" = "点按";
+
+/* Badge name */
+"First ten metres" = "最初十米";
+
+/* What earns the badge */
+"Scrolled 10 m" = "滚动 10 米";
+
+/* Badge name */
+"Lady Liberty" = "自由女神";
+
+/* What earns the badge */
+"Scrolled the height of the Statue of Liberty (93 m)" = "滚过自由女神像的高度（93 米）";
+
+/* Badge name */
+"Eiffel Tower" = "埃菲尔铁塔";
+
+/* What earns the badge */
+"Scrolled the height of the Eiffel Tower (330 m)" = "滚过埃菲尔铁塔的高度（330 米）";
+
+/* Badge name */
+"First kilometre" = "第一公里";
+
+/* What earns the badge */
+"Scrolled 1 km" = "滚动 1 公里";
+
+/* Badge name */
+"Summit" = "登顶";
+
+/* What earns the badge */
+"Scrolled the height of Everest (8,849 m)" = "滚过珠穆朗玛峰的高度（8,849 米）";
+
+/* Badge name */
+"Scroll marathon" = "滚动马拉松";
+
+/* What earns the badge */
+"Scrolled a marathon (42.2 km)" = "滚动一场马拉松（42.2 公里）";
+
+/* Badge name */
+"Rolling" = "滚起来了";
+
+/* What earns the badge */
+"Rolled the ball 10 m" = "滚球 10 米";
+
+/* Badge name */
+"Pitch length" = "球场全长";
+
+/* What earns the badge */
+"Rolled the length of a football pitch (100 m)" = "滚球走完一个足球场（100 米）";
+
+/* Badge name */
+"One lap" = "一圈";
+
+/* What earns the badge */
+"Rolled one lap of a running track (400 m)" = "滚球绕跑道一圈（400 米）";
+
+/* Badge name */
+"Kilometre roller" = "公里滚球手";
+
+/* What earns the badge */
+"Rolled the ball 1 km" = "滚球 1 公里";
+
+/* Badge name */
+"10K" = "十公里";
+
+/* What earns the badge */
+"Rolled the ball 10 km" = "滚球 10 公里";
+
+/* Badge name */
+"Ball marathon" = "滚球马拉松";
+
+/* What earns the badge */
+"Rolled a marathon (42.2 km)" = "滚球跑完一场马拉松（42.2 公里）";
+
+/* Badge name */
+"Warmed up" = "热身完毕";
+
+/* What earns the badge */
+"100 clicks" = "100 次点按";
+
+/* Badge name */
+"A thousand clicks" = "千次点按";
+
+/* What earns the badge */
+"1,000 clicks" = "1,000 次点按";
+
+/* Badge name */
+"Ten thousand" = "一万次";
+
+/* What earns the badge */
+"10,000 clicks" = "10,000 次点按";
+
+/* Badge name */
+"Click legend" = "点按传奇";
+
+/* What earns the badge */
+"100,000 clicks" = "100,000 次点按";
+
+/* Badge name */
+"One million" = "百万次";
+
+/* What earns the badge */
+"1,000,000 clicks" = "1,000,000 次点按";
+
+"%lld%% of the way up the Statue of Liberty" = "自由女神像高度的 %lld%%";
+
+"The height of the Statue of Liberty" = "自由女神像的高度";
+
+"≈ %@ × the Statue of Liberty" = "≈ %@ × 自由女神像";
+
+"The height of the Eiffel Tower" = "埃菲尔铁塔的高度";
+
+"≈ %@ × the Eiffel Tower" = "≈ %@ × 埃菲尔铁塔";
+
+"The height of the Empire State Building" = "帝国大厦的高度";
+
+"≈ %@ × the Empire State Building" = "≈ %@ × 帝国大厦";
+
+"The height of the Burj Khalifa" = "哈利法塔的高度";
+
+"≈ %@ × the Burj Khalifa" = "≈ %@ × 哈利法塔";
+
+"The height of Mount Everest" = "珠穆朗玛峰的高度";
+
+"≈ %@ × Mount Everest" = "≈ %@ × 珠穆朗玛峰";
+
+"%lld%% of a football pitch" = "足球场长度的 %lld%%";
+
+"The length of a football pitch" = "足球场的长度";
+
+"≈ %@ × a football pitch" = "≈ %@ × 足球场";
+
+"The length of a running-track lap" = "跑道一圈的长度";
+
+"≈ %@ × a running-track lap" = "≈ %@ × 跑道一圈";
+
+"The length of the Golden Gate Bridge" = "金门大桥的长度";
+
+"≈ %@ × the Golden Gate Bridge" = "≈ %@ × 金门大桥";
+
+"The length of a marathon" = "马拉松的长度";
+
+"≈ %@ × a marathon" = "≈ %@ × 马拉松";
+
+"Fastest ring spin" = "滚动环最快转速";
+
+"Longest single scroll" = "最长单次滚动";
+
+/* Fastest the ball has been rolled */
+"Fastest roll" = "最快滚球";
+
+"New record: fastest ring spin" = "新纪录：滚动环最快转速";
+
+"New record: longest single scroll" = "新纪录：最长单次滚动";
+
+"New record: fastest roll" = "新纪录：最快滚球";
+
+/* Scroll ring speed: ring notches (ticks) per second */
+"%@ notches/s" = "%@ 格/秒";
+
+/* Ball speed in inches per second */
+"%@ in/s" = "%@ 英寸/秒";
+
+"Set your pointer speed" = "设定指针速度";
+
+"Pick how scrolling feels" = "选择滚动手感";
+
+"Map a button" = "映射一个按钮";
+
+"Make a combo" = "创建一个组合键";
+
+"Add an app setup" = "添加一个 App 配置";
+
+"Done: set your pointer speed" = "已完成：设定指针速度";
+
+"Done: pick how scrolling feels" = "已完成：选择滚动手感";
+
+"Done: map a button" = "已完成：映射一个按钮";
+
+"Done: make a combo" = "已完成：创建一个组合键";
+
+"Done: add an app setup" = "已完成：添加一个 App 配置";
+
+"Pointer tab — try a preset" = "指针标签页 — 试试预设";
+
+"Scrolling tab — Flywheel, Follow or Native" = "滚动标签页 — 飞轮、跟随或原生";
+
+"Buttons tab — Quick assign takes two presses" = "按钮标签页 — 快速分配只需按两下";
+
+"Buttons tab — press two buttons together" = "按钮标签页 — 同时按下两个按钮";
+
+"Apps tab — a different feel per app" = "App 标签页 — 每个 App 一种手感";
+
+/* ---- SettingsSync.swift ---- */
+
+/* Use the names System Settings shows in this language */
+"Turn on iCloud Drive in System Settings → Apple Account → iCloud" = "在“系统设置” → “Apple 账户” → “iCloud”中开启 iCloud 云盘";
+
+"Couldn’t save settings to iCloud Drive: %@" = "无法将设置存储到 iCloud 云盘：%@";
+
+"Couldn’t read settings from iCloud Drive: %@" = "无法从 iCloud 云盘读取设置：%@";
+
+"Settings in iCloud Drive were saved by a newer version of Glide. Update Glide on this Mac to keep syncing." = "iCloud 云盘中的设置由更新版本的 Glide 存储。请在这台 Mac 上更新 Glide 以继续同步。";
+
+/* ---- UpdateChecker.swift ---- */
+
+"The download didn’t finish: %@" = "下载未完成：%@";
+
+"The download didn’t finish." = "下载未完成。";
+
+"Couldn’t unpack the update." = "无法解压更新。";
+
+"The download isn’t the expected Glide %@." = "下载的文件不是预期的 Glide %@。";
+
+"Couldn’t read Glide’s own signature to compare against." = "无法读取 Glide 自身的签名以进行比对。";
+
+"The update isn’t signed by Glide’s developer, so it wasn’t installed." = "此更新未经 Glide 开发者签名，因此未安装。";
+
+"Couldn’t start the installer: %@" = "无法启动安装器：%@";
+
+/* ---- AppsView.swift ---- */
+
+"When one of these apps is in front, Glide switches to its setup. Anything left on “Main setup” follows your main settings." = "这些 App 位于最前面时，Glide 会切换到它们的配置。保留为“主配置”的部分将跟随你的主设置。";
+
+"Give an app its own setup" = "为 App 设定专属配置";
+
+"Faster tracking in a design app, different buttons in your browser — Glide switches the moment that app comes to the front, and back again when you leave. Pick only the parts you want to change; everything else follows your main setup." = "在设计 App 中指针更快，在浏览器中按钮不同 — 该 App 一到最前面 Glide 就立即切换，离开后再切回。只选你想更改的部分，其他一切跟随主配置。";
+
+"Open apps" = "已打开的 App";
+
+"No other open apps" = "没有其他已打开的 App";
+
+"Choose from Applications…" = "从“应用程序”中选取…";
+
+"Add App…" = "添加 App…";
+
+"Add an App" = "添加 App";
+
+"Choose the app that should get its own trackball setup." = "选取应拥有专属轨迹球配置的 App。";
+
+/* Open panel button: add the chosen app */
+"Add" = "添加";
+
+"Glide couldn’t identify that app." = "Glide 无法识别该 App。";
+
+"Glide itself always uses your main setup." = "Glide 本身始终使用主配置。";
+
+/* Tab name */
+"Pointer" = "指针";
+
+/* Pointer speed, after “Following your main setup ·” */
+"speed %@" = "速度 %@";
+
+"Tracking speed" = "跟踪速度";
+
+"Ludicrous" = "疯狂";
+
+"Slow" = "慢";
+
+/* No combos, after “Following your main setup ·” */
+"none" = "无";
+
+"Delete the %@ setup?" = "要删除“%@”配置吗？";
+
+"Delete Setup" = "删除配置";
+
+"%@ will follow your main setup again." = "%@ 将重新跟随你的主配置。";
+
+"Used whenever %@ is in front. While you edit it here, it’s live so you can try it." = "%@ 位于最前面时使用。在这里编辑时会实时生效，方便你试用。";
+
+"Delete" = "删除";
+
+"Delete this app’s setup" = "删除此 App 的配置";
+
+/* After “Following your main setup ·” */
+"default buttons" = "默认按钮";
+
+"Custom for this app — starts as a copy of your main setup" = "为此 App 自定 — 以主配置的拷贝为起点";
+
+"Following your main setup · %@" = "跟随主配置 · %@";
+
+"Main setup" = "主配置";
+
+"Customize" = "自定";
+
+/* ---- AssignViews.swift ---- */
+
+"Quick assign" = "快速分配";
+
+"Press a trackball button — or hold two or three together for a combo — then press the keyboard shortcut it should send." = "按下轨迹球按钮（或同时按住两三个组成组合键），然后按下它要发送的键盘快捷键。";
+
+"Assign" = "分配";
+
+"Press a button on your trackball… (hold several together for a combo)" = "按下轨迹球上的按钮…（同时按住几个可组成组合键）";
+
+"Cancel" = "取消";
+
+"Now press a keyboard shortcut" = "现在按下键盘快捷键";
+
+"Or choose an action from the menu. Esc cancels." = "或从菜单中选择一个操作。按 Esc 取消。";
+
+"No combos yet. Use Quick assign and hold two or three buttons together." = "还没有组合键。使用快速分配，同时按住两三个按钮。";
+
+"Delete combo" = "删除组合键";
+
+"Buttons in a combo wait a split second (up to 0.16 s for three) to see if their partners join. Buttons not in any combo respond instantly." = "组合键中的按钮会稍等片刻（三键组合最多 0.16 秒），看同伴是否一起按下。不在任何组合键中的按钮会立即响应。";
+
+"New combo" = "新组合键";
+
+"That combo already exists" = "该组合键已存在";
+
+"Pick at least two" = "至少选择两个";
+
+"Add Combo" = "添加组合键";
+
+/* ---- BackupView.swift ---- */
+
+/* Glide 2.6 (9) · …end in .glide-settings… */
+"Glide %@ (%@) · Settings files end in .%@ and open in Glide with a double-click." = "Glide %@（%@）· 设置文件以 .%@ 结尾，在 Glide 中连按两次即可打开。";
+
+"Export" = "导出";
+
+"Drag to Finder, Messages, Mail…" = "拖到访达、信息、邮件…";
+
+"Drag the file anywhere, or:" = "将文件拖到任意位置，或：";
+
+"Save to File…" = "存储到文件…";
+
+"Glide Settings" = "Glide 设置";
+
+"Share…" = "共享…";
+
+"Settings" = "设置";
+
+"Import" = "导入";
+
+"Drop a settings file here" = "将设置文件拖到这里";
+
+"Drop to preview" = "松开以预览";
+
+"You’ll see exactly what changes before anything is replaced." = "替换任何内容前，你会确切看到将要更改的内容。";
+
+"Choose File…" = "选取文件…";
+
+"Replace My Settings" = "替换我的设置";
+
+/* Date, then the Mac's name */
+"Exported %@ from %@" = "%2$@ · 导出于 %1$@";
+
+"Exported %@" = "导出于 %@";
+
+/* The Mac's name */
+"Exported from %@" = "导出自 %@";
+
+"Glide settings file" = "Glide 设置文件";
+
+/* Tab name: export, import and iCloud sync */
+"Sync" = "同步";
+
+"Sync with iCloud Drive" = "通过 iCloud 云盘同步";
+
+"Sync Now" = "立即同步";
+
+"This Mac" = "这台 Mac";
+
+"Your settings live in iCloud Drive › Glide, so every Mac signed in to your Apple Account stays in step — no extra account. The pause switch stays per-Mac." = "你的设置保存在“iCloud 云盘 › Glide”中，因此登录同一 Apple 账户的每台 Mac 都会保持同步，无需额外账户。暂停开关仍按每台 Mac 单独设置。";
+
+"Off — settings stay on this Mac" = "关 — 设置仅保留在这台 Mac 上";
+
+"Syncing…" = "正在同步…";
+
+/* %@ is a relative time like “5 minutes ago” */
+"Up to date · %@" = "已是最新 · %@";
+
+"Show in Finder" = "在访达中显示";
+
+/* ---- ButtonsView.swift ---- */
+
+"Press a button on your trackball — its row lights up." = "按下轨迹球上的按钮，对应的行会亮起。";
+
+"Normally: %@" = "原本：%@";
+
+"Left click · locked" = "左键点按 · 已锁定";
+
+"Your primary click stays a left click, so Glide can never lock you out." = "你的主点按始终是左键点按，因此 Glide 永远不会让你失去控制。";
+
+"Type a shortcut…  esc to cancel" = "输入快捷键…  按 esc 取消";
+
+"Record custom shortcut…" = "录制自定快捷键…";
+
+/* ---- Components.swift ---- */
+
+"BETA" = "BETA";
+
+"Supported through the Beta program — you may hit bugs" = "通过 Beta 计划支持，可能会遇到错误";
+
+"Precise" = "精细";
+
+"macOS" = "macOS";
+
+"Fast" = "快速";
+
+"Turbo" = "极速";
+
+/* ---- DelightViews.swift ---- */
+
+"Saved" = "已存储";
+
+"Your settings are saved and already in effect" = "你的设置已存储并已生效";
+
+"Settings saved" = "设置已存储";
+
+"Make it yours" = "专属于你";
+
+"of %lld" = "共 %lld 项";
+
+"You’ve made Glide yours." = "Glide 已是你的专属。";
+
+"Speed, scrolling, buttons, a combo and an app setup — all tuned to you. Change anything, any time." = "速度、滚动、按钮、组合键和 App 配置 — 全都为你量身调校。随时可以更改。";
+
+"Hide This Card" = "隐藏此卡片";
+
+"Hide this checklist — it won’t come back" = "隐藏此清单 — 不会再出现";
+
+"Hide checklist" = "隐藏清单";
+
+"Done — open to change it" = "已完成 — 打开以更改";
+
+/* %@ is a tab name */
+"Open the %@ tab" = "打开“%@”标签页";
+
+"Your trackball" = "你的轨迹球";
+
+"Badges" = "徽章";
+
+"%lld of %lld" = "%lld/%lld";
+
+"Counted on this Mac only" = "仅在这台 Mac 上统计";
+
+/* %@ is a date */
+"Since %@ · on this Mac only" = "自 %@ 起 · 仅限这台 Mac";
+
+"Lifetime clicks" = "累计点按";
+
+"Lifetime · scrolled" = "累计 · 滚动";
+
+"Lifetime · ball rolled" = "累计 · 滚球";
+
+/* Clicks per day; %@ is a number */
+"About %@ a day" = "每天约 %@ 次";
+
+"Counting from today" = "从今天开始统计";
+
+"Give it a spin" = "转一转试试";
+
+"This week" = "本周";
+
+"Show" = "显示";
+
+"Rolled" = "滚球";
+
+"Day" = "日期";
+
+"Average" = "平均值";
+
+"avg %@" = "平均 %@";
+
+"Last seven days of clicks" = "最近七天的点按";
+
+"Last seven days of scrolling" = "最近七天的滚动";
+
+"Last seven days of ball rolling" = "最近七天的滚球";
+
+"Personal bests" = "个人最佳";
+
+"Most clicks in a day" = "单日最多点按";
+
+"Most rolled in a day" = "单日最多滚球";
+
+"Most scrolled in a day" = "单日最多滚动";
+
+/* When a personal best was set; short (about 6 letters fit) */
+"today" = "今天";
+
+"NEW" = "新";
+
+/* Badge tooltip: what earns it, then the date */
+"%@ — earned %@" = "%@ — 获得于 %@";
+
+/* Badge tooltip: what earns it */
+"Goal: %@" = "目标：%@";
+
+/* Badge name, then what earns it */
+"%@. %@. Earned" = "%@。%@。已获得";
+
+/* Badge name, then what earns it */
+"%@. %@. Not yet earned" = "%@。%@。尚未获得";
+
+/* ---- FeedbackView.swift ---- */
+
+/* Feedback kind */
+"Bug" = "错误";
+
+/* Feedback kind */
+"Idea" = "想法";
+
+/* Feedback kind */
+"Question" = "问题";
+
+"What went wrong? e.g. “Scrolling jumps in Safari”" = "出了什么问题？例如“在 Safari 中滚动会跳动”";
+
+"What would make Glide better?" = "怎样能让 Glide 更好？";
+
+"What would you like to know?" = "你想了解什么？";
+
+"What happened, what you expected, and how to make it happen again (if you know)." = "发生了什么、你期望的是什么，以及如何重现（如果知道的话）。";
+
+"Tell me more — how would it work, and what would it help with?" = "详细说说吧 — 它会如何运作，能帮上什么忙？";
+
+"Any details that help me answer." = "任何有助于我回复的细节。";
+
+/* Bug priority */
+"Low" = "低";
+
+/* Bug priority */
+"Normal" = "普通";
+
+/* Bug priority */
+"High" = "高";
+
+/* Bug priority: can't use the trackball properly */
+"Blocking" = "阻碍使用";
+
+"A small thing, whenever" = "小问题，有空再修";
+
+"Worth fixing" = "值得修复";
+
+"Gets in my way" = "有点碍事";
+
+"I can’t use my trackball properly" = "我无法正常使用轨迹球";
+
+"Up to %lld pictures or videos can go with one report." = "每份报告最多可附带 %lld 个图片或视频。";
+
+"“%@” isn’t a PNG, JPEG, MOV or MP4." = "“%@”不是 PNG、JPEG、MOV 或 MP4 文件。";
+
+"“%@” couldn’t be read." = "无法读取“%@”。";
+
+"“%@” is too big (%lld MB at most)." = "“%@”太大了（最多 %lld MB）。";
+
+/* 2.6 (build 9) */
+"%@ (build %@)" = "%@（构建 %@）";
+
+"Mac model" = "Mac 机型";
+
+/* Processor architecture: arm64 or x86_64 */
+"Architecture" = "架构";
+
+"Scroll mode" = "滚动模式";
+
+"Trackball" = "轨迹球";
+
+"%@ (beta)" = "%@（Beta）";
+
+/* Status pill */
+"Not connected" = "未连接";
+
+"Beta program" = "Beta 计划";
+
+/* Switched on */
+"On" = "开";
+
+/* Areas of Glide the report mentions */
+"Topics" = "主题";
+
+"That email address doesn’t look right." = "该电子邮件地址似乎不对。";
+
+"Your feedback didn’t send — open Send Feedback to try again." = "你的反馈未能发送 — 请打开“发送反馈”再试一次。";
+
+"Feedback sent — thank you!" = "反馈已发送 — 谢谢！";
+
+"Send Feedback" = "发送反馈";
+
+"Bugs, ideas, questions — it goes straight to the developer." = "错误、想法、问题 — 都会直接发给开发者。";
+
+"Close" = "关闭";
+
+"Hide — it keeps sending in the background" = "隐藏 — 会在后台继续发送";
+
+"Attachments" = "附件";
+
+"Include my Glide settings" = "附上我的 Glide 设置";
+
+"Your pointer, scrolling and button setup (settings.json) so I can reproduce it. Nothing personal is in it." = "你的指针、滚动和按钮配置（settings.json），方便我重现问题。其中不含任何个人信息。";
+
+"Include the scroll log" = "附上滚动日志";
+
+"The last %@ lines of timings from the scroll ring (scroll-log.txt) — no keystrokes or window contents." = "滚动环最近 %@ 行计时数据（scroll-log.txt），不含按键或窗口内容。";
+
+"There’s no scroll log yet — scroll with the ring and it will have something to send." = "还没有滚动日志 — 用滚动环滚动一下，就有内容可发送了。";
+
+"Drop screenshots or screen recordings here" = "将截屏或录屏拖到这里";
+
+"Drop to attach" = "松开以附加";
+
+"PNG, JPEG, MOV or MP4 · ⇧⌘5 records the screen" = "PNG、JPEG、MOV 或 MP4 · ⇧⌘5 可录制屏幕";
+
+"Add Screenshot…" = "添加截屏…";
+
+"Add Screenshots or Recordings" = "添加截屏或录屏";
+
+"Pictures or short videos that show what you mean (up to %lld)." = "展示你想说明内容的图片或短视频（最多 %lld 个）。";
+
+/* Open panel button */
+"Attach" = "附加";
+
+"About you — optional" = "关于你（可选）";
+
+"Name" = "姓名";
+
+"Your name" = "你的名字";
+
+"Email — that doesn’t look right" = "电子邮件 — 格式似乎不对";
+
+"Email, if you’d like a reply" = "电子邮件（如需回复）";
+
+"you@example.com" = "you@example.com";
+
+"OK to contact me about this" = "可以就此事联系我";
+
+"Remembered on this Mac for next time. Only used to reply to you." = "会记在这台 Mac 上供下次使用。仅用于回复你。";
+
+"Also sent: %@" = "同时发送：%@";
+
+"So I know where it happened. Nothing else about your Mac is sent." = "以便我知道问题出在哪里。不会发送你 Mac 的其他任何信息。";
+
+"Try Again" = "再试一次";
+
+"Send" = "发送";
+
+"Give it a title first" = "请先填写标题";
+
+"Send (⌘↩)" = "发送（⌘↩）";
+
+/* Listed after “With”: With 2 files, settings and scroll log. */
+"settings" = "设置";
+
+/* Listed after “With”: With 2 files, settings and scroll log. */
+"scroll log" = "滚动日志";
+
+"Just your message." = "仅包含你的留言。";
+
+/* %@ is a list: 2 files, settings and scroll log */
+"With %@." = "附带 %@。";
+
+"Click to open" = "点按以打开";
+
+"Remove" = "移除";
+
+"Send Another" = "再发一份";
+
+"Done" = "完成";
+
+"Reference %@" = "参考编号：%@";
+
+"Thanks — it went straight to the developer." = "谢谢 — 已直接发给开发者。";
+
+/* %@ is the sender's first name */
+"Thanks, %@ — it went straight to the developer." = "谢谢你，%@ — 已直接发给开发者。";
+
+/* %@ is an email address */
+"If there’s a question, the reply goes to %@." = "如有问题，回复将发送至 %@。";
+
+"Every report is read. Add an email next time if you’d like a reply." = "每份报告都会被阅读。如需回复，下次请留下电子邮件。";
+
+/* ---- LaunchViews.swift ---- */
+
+"Glide is starting" = "Glide 正在启动";
+
+"Click or press Escape to skip" = "点按或按下 Esc 键跳过";
+
+"Make your Expert Mouse feel amazing" = "让你的 Expert Mouse 手感超棒";
+
+"Click to skip" = "点按以跳过";
+
+/* ---- OverviewView.swift ---- */
+
+"Clicks today" = "今日点按";
+
+"General" = "通用";
+
+"Open at login" = "登录时打开";
+
+"Starts quietly in the background so your trackball is always tuned." = "在后台静默启动，让你的轨迹球时刻处于最佳状态。";
+
+"Menu bar icon" = "菜单栏图标";
+
+"Quick access to pause, precision and updates. Glide keeps running either way — reopen it from the Dock." = "快速暂停、切换精准模式和检查更新。无论如何 Glide 都会继续运行，可从程序坞重新打开。";
+
+"Try features before they're finished — like support for other Kensington trackballs and early updates. You may hit bugs." = "抢先试用尚未完成的功能，例如支持其他 Kensington 轨迹球以及提前获取更新。可能会遇到错误。";
+
+"Celebrations" = "庆祝";
+
+"A toast and a little confetti when you reach a milestone or set a personal best. Badges are kept either way." = "达成里程碑或刷新个人最佳时，弹出提示并撒点彩纸。无论是否开启，徽章都会保留。";
+
+"A soft chime to go with them." = "同时轻响一声。";
+
+"Celebration sounds" = "庆祝音效";
+
+"A soft chime as Glide opens. Never when your Mac is muted." = "Glide 打开时轻响一声。Mac 静音时不会响。";
+
+"Launch sounds" = "启动音效";
+
+"Feedback" = "反馈";
+
+"Found a bug or have an idea? It goes straight to the developer." = "发现了错误或有好点子？会直接发给开发者。";
+
+"Closing this window keeps Glide running. Click Glide in the Dock to bring it back, or press ⌘Q to quit — your trackball then goes back to normal." = "关闭此窗口后 Glide 仍会继续运行。点按程序坞中的 Glide 即可回来，或按 ⌘Q 退出，轨迹球随即恢复正常。";
+
+"Waiting for permissions…" = "正在等待权限…";
+
+"Kensington Expert Mouse" = "Kensington Expert Mouse";
+
+"Roll, spin, or click — it's live." = "滚一滚、转一转或点一点 — 实时显示。";
+
+"Turn on the Beta program to try Glide with your %@." = "开启 Beta 计划，即可在 Glide 中使用你的 %@。";
+
+"Turn On Beta" = "开启 Beta";
+
+"Plug in your Expert Mouse." = "插入你的 Expert Mouse。";
+
+"Best day" = "最佳一天";
+
+"Your best day so far: %@" = "你迄今最佳的一天：%@";
+
+"Live activity" = "实时活动";
+
+"Ball speed" = "滚球速度";
+
+"Scroll ring" = "滚动环";
+
+"Language" = "语言";
+
+"Glide can speak a different language from the rest of your Mac." = "Glide 可以使用与 Mac 其他部分不同的语言。";
+
+"Relaunch to Apply" = "重新启动以应用";
+
+"System Default" = "系统默认";
+
+"Updates" = "更新";
+
+"Install %@" = "安装 %@";
+
+"Check for Updates" = "检查更新";
+
+/* Glide 2.6 · 2.7 is ready to install */
+"%@ · %@ is ready to install" = "%@ · %@ 已可安装";
+
+/* %@ is “Glide 2.6” */
+"%@ · You’re up to date ✓" = "%@ · 已是最新版本 ✓";
+
+/* %@ is “Glide 2.6” */
+"%@ · Couldn’t reach GitHub — try again later" = "%@ · 无法连接 GitHub，请稍后再试";
+
+/* %@ is “Glide 2.6” */
+"%@ · Checking…" = "%@ · 正在检查…";
+
+/* %@ is “Glide 2.6” */
+"%@ · Checks automatically once a day" = "%@ · 每天自动检查一次";
+
+/* ---- PointerView.swift ---- */
+
+"Feel" = "手感";
+
+"System Settings tops out at 3. Glide lets the Expert Mouse go far past it." = "“系统设置”最高只到 3。Glide 能让 Expert Mouse 远超这个速度。";
+
+"Presets" = "预设";
+
+"Precision mode" = "精准模式";
+
+"Precision speed" = "精准速度";
+
+"Pixel-exact" = "像素级";
+
+"macOS default" = "macOS 默认";
+
+"Set a button to Precision in Buttons. Hold it (or toggle it on) and the cursor slows to this speed for fine work, then snaps back." = "在“按钮”中将某个按钮设为“精准”。按住它（或切换开启），指针就会减慢到此速度以便精细操作，之后立即恢复。";
+
+"Applies only to the Expert Mouse — your other mice and trackpad keep their own settings. macOS still moves the cursor itself, so there's zero added lag." = "仅作用于 Expert Mouse，其他鼠标和触控板保持各自的设置。指针仍由 macOS 自己移动，因此没有任何额外延迟。";
+
+"Response curve" = "响应曲线";
+
+"Ball" = "球";
+
+"Cursor" = "指针";
+
+"Series" = "系列";
+
+"How fast you roll the ball" = "滚球速度";
+
+"How fast the cursor moves" = "指针移动速度";
+
+"Your curve" = "你的曲线";
+
+"No acceleration" = "无加速";
+
+"Roll the ball to see where you are" = "滚动轨迹球，看看你在哪里";
+
+/* ---- RootView.swift ---- */
+
+/* Tab name */
+"Overview" = "概览";
+
+/* Tab name */
+"Apps" = "App";
+
+"A Precision button is slowing the cursor — press it again (or pause Glide) to stop" = "精准按钮正在减慢指针速度 — 再按一次（或暂停 Glide）即可停止";
+
+"The left button is held by Drag lock — click, or press the Drag lock button again, to let go" = "左键正被拖移锁定按住 — 点按或再按一次拖移锁定按钮即可松开";
+
+"Ball scroll" = "球体滚动";
+
+"Pause or resume Glide — also %@ from anywhere" = "暂停或恢复 Glide — 也可在任意位置按 %@";
+
+"Pause or resume Glide" = "暂停或恢复 Glide";
+
+/* Status pill */
+"Needs permission" = "需要权限";
+
+/* Status pill */
+"Paused" = "已暂停";
+
+/* Status pill: a Kensington device that needs the Beta program */
+"Beta only" = "仅限 Beta";
+
+/* Status pill */
+"Connected · Beta" = "已连接 · Beta";
+
+/* Status pill */
+"Connected" = "已连接";
+
+"Using %@ setup" = "正在使用“%@”配置";
+
+"Previewing %@’s setup while you edit it. Other apps use your main setup." = "编辑期间正在预览“%@”的配置。其他 App 使用主配置。";
+
+"%@ is in front, so Glide is using its setup. Click to edit it." = "%@ 位于最前面，因此 Glide 正在使用它的配置。点按以编辑。";
+
+"Two quick permissions" = "两项快速授权";
+
+"Glide needs these to read your trackball and adjust its buttons and scrolling. Until both are on, your trackball works normally and Glide stays out of the way." = "Glide 需要这些权限来读取轨迹球并调整其按钮和滚动。两项都开启前，轨迹球照常工作，Glide 不会干扰。";
+
+"Accessibility — on" = "辅助功能 — 已开启";
+
+"Allow Accessibility…" = "允许辅助功能…";
+
+"Allow Input Monitoring…" = "允许输入监控…";
+
+"Input Monitoring — on" = "输入监控 — 已开启";
+
+"Downloading %lld%%" = "正在下载 %lld%%";
+
+"Restarting…" = "正在重新启动…";
+
+"Install %@ & Relaunch" = "安装 %@ 并重新启动";
+
+"What’s New in %@…" = "%@ 的新功能…";
+
+"A Beta program build — it may have bugs" = "Beta 计划版本 — 可能存在错误";
+
+"Last try failed: %@" = "上次尝试失败：%@";
+
+/* Update button after a failed install */
+"Retry" = "重试";
+
+"Glide %@ is available — install it or see what's new" = "Glide %@ 已推出 — 安装或了解新功能";
+
+/* ---- ScrollSettingsView.swift ---- */
+
+"Scroll with the ball" = "用球滚动";
+
+"Ball scroll speed" = "球体滚动速度";
+
+"Fine" = "精细";
+
+"Set a button to “Scroll with ball” in Buttons. While you hold it, rolling the ball scrolls in any direction and the cursor stays put. Let go mid-roll and the page glides briefly." = "在“按钮”中将某个按钮设为“用球滚动”。按住它时，滚动轨迹球可向任意方向滚动，指针保持不动。滚动中途松开，页面会短暂滑行。";
+
+"Control" = "控制";
+
+"Fling" = "飞速";
+
+"macOS scrolling" = "macOS 滚动";
+
+"Glide steps aside and lets macOS scroll the ring itself — the same system Kensington's driver handed its ticks to. Only the speed is adjustable." = "Glide 退居一旁，让 macOS 亲自处理滚动环的滚动 — Kensington 的驱动程序也正是把每一格交给这套系统。只能调节速度。";
+
+"Scroll speed" = "滚动速度";
+
+"System Settings' scroll-speed slider goes up to 1.7. This only affects the Expert Mouse." = "“系统设置”中的滚动速度滑块最高只到 1.7。此设置仅影响 Expert Mouse。";
+
+"Every tick gives the page a push; friction slows it down. Gentle turns barely coast, hard spins fly — one rule, no mode switching. Tuned from Kensington's own scrolling, at twice its frame rate." = "每一格都会推动页面，摩擦力让它慢下来。轻转几乎不滑行，猛转一飞冲天 — 一条规则，无需切换模式。参照 Kensington 自家的滚动调校，帧率翻倍。";
+
+"Slow-turn distance" = "慢转距离";
+
+/* Points: a distance on screen */
+"%lld pt" = "%lld pt";
+
+"Far" = "远";
+
+"Spin power" = "转动力度";
+
+"Gentle" = "轻柔";
+
+"Wild" = "狂野";
+
+"Glide" = "滑行";
+
+/* Milliseconds */
+"%lld ms" = "%lld 毫秒";
+
+"Grippy" = "抓地";
+
+"Slippery" = "顺滑";
+
+"Off = plain steps, exactly like a basic mouse" = "关 = 逐格滚动，就像普通鼠标一样";
+
+"Smooth scrolling" = "平滑滚动";
+
+"Kensington feel" = "Kensington 手感";
+
+"Control is the recommended starting point: the page follows the ring and stops when you stop." = "推荐从“控制”开始：页面跟随滚动环移动，你停它就停。";
+
+"Distance per notch" = "每格距离";
+
+"Locked to ring" = "紧贴滚动环";
+
+"Softer" = "柔和";
+
+"Spin acceleration" = "转动加速";
+
+/* Slider value: spin acceleration is off */
+"Off" = "关";
+
+"Constant" = "恒定";
+
+"Spin to fly" = "越转越快";
+
+"Throw" = "甩动";
+
+"Spin fast and let go — the page glides and lands" = "快速转动后松手，页面会滑行并停下";
+
+"Throw to coast" = "甩动滑行";
+
+"Throw distance" = "甩动距离";
+
+"Long" = "长";
+
+"Short" = "短";
+
+/* Seconds, e.g. “1.5 s” */
+"%@ s" = "%@ 秒";
+
+"Direction" = "方向";
+
+"Flip direction" = "反转方向";
+
+"Only if it scrolls the wrong way with your scroll reverser" = "仅当搭配滚动反转工具后方向反了时才需开启";
+
+"Hold ⇧ while spinning the ring" = "转动滚动环时按住 ⇧";
+
+"Shift scrolls sideways" = "按住 Shift 横向滚动";
+
+"macOS does the scrolling" = "由 macOS 处理滚动";
+
+"Push and glide — Kensington's feel" = "推动并滑行 — Kensington 的手感";
+
+"Page tracks the ring exactly" = "页面精确跟随滚动环";
+
+"Push per tick" = "每格推力";
+
+"Spin" = "转速";
+
+"pt" = "pt";
+
+"Ring ticks per second" = "滚动环每秒格数";
+
+"Points per tick" = "每格点数";
+
+"Each push coasts for about %@ s before it fades out. Turn the ring the other way to stop it." = "每次推动会滑行约 %@ 秒后逐渐停下。反向转动滚动环即可停止。";
+
+"After a flick" = "轻甩之后";
+
+"Speed" = "速度";
+
+"ms" = "ms";
+
+"A typical flick coasts about %lld pt and lands after %lld ms — then stops dead. Slow down before letting go and it doesn't coast at all. Turn the ring back to catch it." = "一次典型的轻甩会滑行约 %lld pt，%lld 毫秒后停下，然后戛然而止。松手前放慢速度则完全不会滑行。反向转动滚动环即可接住。";
+
+"Throw is off — the page stops the moment the ring stops." = "甩动已关闭 — 滚动环一停，页面立即停止。";
+
+"×" = "×";
+
+"Distance ×" = "距离 ×";
+
+"Try it here" = "在这里试试";
+
+"Row %lld" = "第 %lld 行";
+
+/* ---- ShortcutsCard.swift ---- */
+
+"Keyboard shortcuts" = "键盘快捷键";
+
+"They work in every app, even with this window closed. Click a shortcut to record a new one; Esc cancels." = "它们在所有 App 中都有效，即使关闭此窗口也一样。点按快捷键以录制新快捷键；按 Esc 取消。";
+
+"Go back to %@" = "恢复为 %@";
+
+"Remove this shortcut" = "移除此快捷键";
+
+"Type shortcut…" = "输入快捷键…";
+
+"Record Shortcut" = "录制快捷键";
+
+"Click, then press a new shortcut" = "点按，然后按下新快捷键";
+
+"Press the new shortcut, or Esc to cancel" = "按下新快捷键，或按 Esc 取消";
+
+"No pause shortcut. You can still pause Glide from its menu-bar icon or the switch at the top of this window." = "没有暂停快捷键。你仍可以从菜单栏图标或此窗口顶部的开关暂停 Glide。";
+
+"Couldn't turn on %@ — another app already uses it. Choose a different shortcut." = "无法开启 %@，另一个 App 已在使用它。请选择其他快捷键。";
+
+/* Use the names System Settings shows in this language */
+"macOS uses %@ for one of its own shortcuts (System Settings › Keyboard › Keyboard Shortcuts), so it may never reach Glide." = "macOS 已将 %@ 用于自己的快捷键（系统设置 › 键盘 › 键盘快捷键），因此它可能永远到不了 Glide。";
+
+"Apps use ⌘ shortcuts like %@ too — while it's set, Glide takes it from every app." = "App 也会使用 %@ 这类 ⌘ 快捷键，设置后 Glide 会从所有 App 中接管它。";
+
+/* ---- WelcomeTourView.swift ---- */
+
+"Welcome Tour" = "欢迎导览";
+
+"Close the tour (esc) — reopen it from Help › Show Welcome Tour…" = "关闭导览（esc）— 可从“帮助 › 显示欢迎导览…”重新打开";
+
+"Close tour" = "关闭导览";
+
+"Skip for now" = "暂时跳过";
+
+"Glide stays out of the way until both permissions are on" = "两项权限都开启前，Glide 不会干扰";
+
+"Step %lld of %lld" = "第 %lld 步，共 %lld 步";
+
+"Get Started" = "开始";
+
+"Start Using Glide" = "开始使用 Glide";
+
+"Continue" = "继续";
+
+"Welcome to Glide" = "欢迎使用 Glide";
+
+"Your Kensington trackball, tuned exactly the way you like it." = "你的 Kensington 轨迹球，完全按你喜欢的方式调校。";
+
+"A faster pointer" = "更快的指针";
+
+"A silky scroll ring" = "丝滑的滚动环";
+
+"Buttons that do more" = "更能干的按钮";
+
+"About a minute. Use Return or the arrow keys to move along." = "大约一分钟。使用 Return 键或方向键继续。";
+
+"Glide needs these to read your trackball and change what it does. Until both are on, your trackball works normally and Glide stays out of the way." = "Glide 需要这些权限来读取轨迹球并改变它的功能。两项都开启前，轨迹球照常工作，Glide 不会干扰。";
+
+"Accessibility" = "辅助功能";
+
+"Lets Glide change what your buttons and scroll ring do." = "让 Glide 能够改变按钮和滚动环的功能。";
+
+"Input Monitoring" = "输入监控";
+
+"Lets Glide tell your trackball apart from your other mice and trackpad." = "让 Glide 能够区分你的轨迹球与其他鼠标和触控板。";
+
+"All set — Glide can see your trackball." = "一切就绪 — Glide 已经能识别你的轨迹球了。";
+
+"Switch Glide on in each list in System Settings, then come back — the checkmarks update by themselves." = "在“系统设置”的每个列表中开启 Glide，然后回到这里，勾号会自动更新。";
+
+"Allow…" = "允许…";
+
+"Meet your buttons" = "认识你的按钮";
+
+"Press each button on your trackball." = "依次按下轨迹球上的每个按钮。";
+
+"Left click — always" = "左键点按 — 始终如此";
+
+"Does: %@" = "功能：%@";
+
+"Found" = "已找到";
+
+"Not pressed yet" = "尚未按下";
+
+"Glide can't see your buttons until both permissions are on. You can come back to this tour from Help." = "两项权限都开启前，Glide 无法识别你的按钮。你可以从“帮助”菜单回到此导览。";
+
+"Your %@ works with Glide through the Beta program — you can turn it on at the end of the tour." = "你的 %@ 可通过 Beta 计划配合 Glide 使用 — 你可以在导览结束时开启。";
+
+"Plug in your Expert Mouse to try this." = "插入你的 Expert Mouse 来试试。";
+
+"All four found. Change what they do any time in the Buttons tab." = "四个都找到了。随时可以在“按钮”标签页中更改它们的功能。";
+
+"%lld of 4 found. Shortcuts are paused while you try them, so nothing happens by surprise." = "已找到 %lld/4 个。试按期间快捷键会暂停，不会有意外发生。";
+
+"Choose your scrolling" = "选择滚动方式";
+
+"How the scroll ring moves the page. Try one, spin the ring, and switch whenever you like." = "滚动环如何移动页面。挑一种，转转滚动环，随时可以切换。";
+
+"How far the cursor travels when you roll the ball. macOS stops at its own setting; Glide goes past it." = "滚动轨迹球时指针移动的距离。macOS 有自己的上限，Glide 可以超越它。";
+
+"Fine-tune both later in the Pointer and Scrolling tabs." = "稍后可在“指针”和“滚动”标签页中微调。";
+
+"You're always in control" = "一切尽在掌控";
+
+"Two promises that keep your Mac usable, whatever you set up." = "两项承诺，无论你如何设置，Mac 都始终可用。";
+
+"Pause instantly" = "一键暂停";
+
+"Press ⌃⌥⌘G anywhere and Glide pauses — your trackball goes straight back to plain macOS. Press it again to resume." = "在任意位置按下 ⌃⌥⌘G，Glide 就会暂停，轨迹球立即恢复为原本的 macOS 行为。再按一次即可恢复。";
+
+"Glide is on — try it" = "Glide 已开启 — 试试看";
+
+"Glide is paused" = "Glide 已暂停";
+
+"Main click stays a left click" = "主点按始终是左键点按";
+
+"The bottom-left button is always a left click, whatever else you remap — so Glide can never lock you out." = "无论你如何重新映射，左下按钮始终是左键点按，因此 Glide 永远不会让你失去控制。";
+
+"Quitting Glide also puts your trackball back to normal." = "退出 Glide 也会让轨迹球恢复正常。";
+
+"You're all set" = "一切就绪";
+
+"Glide keeps running when you close its window — click Glide in the Dock to come back." = "关闭窗口后 Glide 仍会继续运行 — 点按程序坞中的 Glide 即可回来。";
+
+"Turn On" = "开启";
+
+"See this tour again any time from Help › Show Welcome Tour…" = "随时可以从“帮助 › 显示欢迎导览…”再次查看此导览";

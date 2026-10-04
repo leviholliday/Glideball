@@ -17,9 +17,9 @@ enum Metric: String, CaseIterable, Identifiable, Codable {
 
     var title: String {
         switch self {
-        case .scroll: "Scrolled"
-        case .ball: "Ball rolled"
-        case .clicks: "Clicks"
+        case .scroll: String(localized: "Scrolled", comment: "Distance scrolled with the ring")
+        case .ball: String(localized: "Ball rolled", comment: "Distance the ball has rolled")
+        case .clicks: String(localized: "Clicks")
         }
     }
 
@@ -78,18 +78,25 @@ struct Tally: Equatable {
     var isEmpty: Bool { clicks == 0 && ballMeters < 0.01 && scrollMeters < 0.01 }
 
     static func distance(_ m: Double) -> String {
-        if m < 1 { return String(format: "%.0f cm", m * 100) }
-        if m < 100 { return String(format: "%.1f m", m) }
-        if m < 1000 { return String(format: "%.0f m", m) }
-        if m < 100_000 { return String(format: "%.2f km", m / 1000) }
-        return String(format: "%.0f km", m / 1000)
+        if m < 1 { return length(m * 100, .centimeters, digits: 0) }
+        if m < 100 { return length(m, .meters, digits: 1) }
+        if m < 1000 { return length(m, .meters, digits: 0) }
+        if m < 100_000 { return length(m / 1000, .kilometers, digits: 2) }
+        return length(m / 1000, .kilometers, digits: 0)
     }
 
     /// For goals and axis labels: "93 m", "1 km", "42.2 km".
     static func shortDistance(_ m: Double) -> String {
-        if m < 1000 { return "\(Int(m.rounded())) m" }
+        if m < 1000 { return length(m.rounded(), .meters, digits: 0) }
         let km = m / 1000
-        return km == km.rounded() ? "\(Int(km)) km" : String(format: "%.1f km", km)
+        return length(km, .kilometers, digits: km == km.rounded() ? 0 : 1)
+    }
+
+    /// "12.3 m", in the reader's own number format and unit names.
+    static func length(_ value: Double, _ unit: UnitLength, digits: Int) -> String {
+        Measurement(value: value, unit: unit).formatted(
+            .measurement(width: .abbreviated, usage: .asProvided,
+                         numberFormatStyle: .number.precision(.fractionLength(digits))))
     }
 }
 
@@ -104,62 +111,92 @@ struct Milestone: Identifiable, Equatable {
     let symbol: String
 
     static let all: [Milestone] = [
-        .init(id: "scroll-10", metric: .scroll, threshold: 10, title: "First ten metres",
-              detail: "Scrolled 10 m", symbol: "arrow.down.to.line"),
-        .init(id: "scroll-93", metric: .scroll, threshold: 93, title: "Lady Liberty",
-              detail: "Scrolled the height of the Statue of Liberty (93 m)", symbol: "building.columns"),
-        .init(id: "scroll-330", metric: .scroll, threshold: 330, title: "Eiffel Tower",
-              detail: "Scrolled the height of the Eiffel Tower (330 m)", symbol: "building.2"),
-        .init(id: "scroll-1k", metric: .scroll, threshold: 1_000, title: "First kilometre",
-              detail: "Scrolled 1 km", symbol: "flag"),
-        .init(id: "scroll-8849", metric: .scroll, threshold: 8_849, title: "Summit",
-              detail: "Scrolled the height of Everest (8,849 m)", symbol: "mountain.2"),
-        .init(id: "scroll-42k", metric: .scroll, threshold: 42_195, title: "Scroll marathon",
-              detail: "Scrolled a marathon (42.2 km)", symbol: "medal"),
+        .init(id: "scroll-10", metric: .scroll, threshold: 10, title: String(localized: "First ten metres", comment: "Badge name"),
+              detail: String(localized: "Scrolled 10 m", comment: "What earns the badge"), symbol: "arrow.down.to.line"),
+        .init(id: "scroll-93", metric: .scroll, threshold: 93, title: String(localized: "Lady Liberty", comment: "Badge name"),
+              detail: String(localized: "Scrolled the height of the Statue of Liberty (93 m)", comment: "What earns the badge"), symbol: "building.columns"),
+        .init(id: "scroll-330", metric: .scroll, threshold: 330, title: String(localized: "Eiffel Tower", comment: "Badge name"),
+              detail: String(localized: "Scrolled the height of the Eiffel Tower (330 m)", comment: "What earns the badge"), symbol: "building.2"),
+        .init(id: "scroll-1k", metric: .scroll, threshold: 1_000, title: String(localized: "First kilometre", comment: "Badge name"),
+              detail: String(localized: "Scrolled 1 km", comment: "What earns the badge"), symbol: "flag"),
+        .init(id: "scroll-8849", metric: .scroll, threshold: 8_849, title: String(localized: "Summit", comment: "Badge name"),
+              detail: String(localized: "Scrolled the height of Everest (8,849 m)", comment: "What earns the badge"), symbol: "mountain.2"),
+        .init(id: "scroll-42k", metric: .scroll, threshold: 42_195, title: String(localized: "Scroll marathon", comment: "Badge name"),
+              detail: String(localized: "Scrolled a marathon (42.2 km)", comment: "What earns the badge"), symbol: "medal"),
 
-        .init(id: "ball-10", metric: .ball, threshold: 10, title: "Rolling",
-              detail: "Rolled the ball 10 m", symbol: "circle.circle"),
-        .init(id: "ball-100", metric: .ball, threshold: 100, title: "Pitch length",
-              detail: "Rolled the length of a football pitch (100 m)", symbol: "sportscourt"),
-        .init(id: "ball-400", metric: .ball, threshold: 400, title: "One lap",
-              detail: "Rolled one lap of a running track (400 m)", symbol: "figure.run"),
-        .init(id: "ball-1k", metric: .ball, threshold: 1_000, title: "Kilometre roller",
-              detail: "Rolled the ball 1 km", symbol: "flag.checkered"),
-        .init(id: "ball-10k", metric: .ball, threshold: 10_000, title: "10K",
-              detail: "Rolled the ball 10 km", symbol: "medal"),
-        .init(id: "ball-42k", metric: .ball, threshold: 42_195, title: "Ball marathon",
-              detail: "Rolled a marathon (42.2 km)", symbol: "trophy"),
+        .init(id: "ball-10", metric: .ball, threshold: 10, title: String(localized: "Rolling", comment: "Badge name"),
+              detail: String(localized: "Rolled the ball 10 m", comment: "What earns the badge"), symbol: "circle.circle"),
+        .init(id: "ball-100", metric: .ball, threshold: 100, title: String(localized: "Pitch length", comment: "Badge name"),
+              detail: String(localized: "Rolled the length of a football pitch (100 m)", comment: "What earns the badge"), symbol: "sportscourt"),
+        .init(id: "ball-400", metric: .ball, threshold: 400, title: String(localized: "One lap", comment: "Badge name"),
+              detail: String(localized: "Rolled one lap of a running track (400 m)", comment: "What earns the badge"), symbol: "figure.run"),
+        .init(id: "ball-1k", metric: .ball, threshold: 1_000, title: String(localized: "Kilometre roller", comment: "Badge name"),
+              detail: String(localized: "Rolled the ball 1 km", comment: "What earns the badge"), symbol: "flag.checkered"),
+        .init(id: "ball-10k", metric: .ball, threshold: 10_000, title: String(localized: "10K", comment: "Badge name"),
+              detail: String(localized: "Rolled the ball 10 km", comment: "What earns the badge"), symbol: "medal"),
+        .init(id: "ball-42k", metric: .ball, threshold: 42_195, title: String(localized: "Ball marathon", comment: "Badge name"),
+              detail: String(localized: "Rolled a marathon (42.2 km)", comment: "What earns the badge"), symbol: "trophy"),
 
-        .init(id: "clicks-100", metric: .clicks, threshold: 100, title: "Warmed up",
-              detail: "100 clicks", symbol: "hand.tap"),
-        .init(id: "clicks-1k", metric: .clicks, threshold: 1_000, title: "A thousand clicks",
-              detail: "1,000 clicks", symbol: "cursorarrow.click"),
-        .init(id: "clicks-10k", metric: .clicks, threshold: 10_000, title: "Ten thousand",
-              detail: "10,000 clicks", symbol: "cursorarrow.click.2"),
-        .init(id: "clicks-100k", metric: .clicks, threshold: 100_000, title: "Click legend",
-              detail: "100,000 clicks", symbol: "star.circle"),
-        .init(id: "clicks-1m", metric: .clicks, threshold: 1_000_000, title: "One million",
-              detail: "1,000,000 clicks", symbol: "crown"),
+        .init(id: "clicks-100", metric: .clicks, threshold: 100, title: String(localized: "Warmed up", comment: "Badge name"),
+              detail: String(localized: "100 clicks", comment: "What earns the badge"), symbol: "hand.tap"),
+        .init(id: "clicks-1k", metric: .clicks, threshold: 1_000, title: String(localized: "A thousand clicks", comment: "Badge name"),
+              detail: String(localized: "1,000 clicks", comment: "What earns the badge"), symbol: "cursorarrow.click"),
+        .init(id: "clicks-10k", metric: .clicks, threshold: 10_000, title: String(localized: "Ten thousand", comment: "Badge name"),
+              detail: String(localized: "10,000 clicks", comment: "What earns the badge"), symbol: "cursorarrow.click.2"),
+        .init(id: "clicks-100k", metric: .clicks, threshold: 100_000, title: String(localized: "Click legend", comment: "Badge name"),
+              detail: String(localized: "100,000 clicks", comment: "What earns the badge"), symbol: "star.circle"),
+        .init(id: "clicks-1m", metric: .clicks, threshold: 1_000_000, title: String(localized: "One million", comment: "Badge name"),
+              detail: String(localized: "1,000,000 clicks", comment: "What earns the badge"), symbol: "crown"),
     ]
 }
 
 // MARK: - Real-world comparisons
 
 enum Landmarks {
-    private struct Landmark { let name: String; let meters: Double }
+    /// Each comparison is a whole sentence, so every language can phrase it
+    /// its own way.
+    private struct Landmark {
+        let meters: Double
+        /// "40% of the way up the Statue of Liberty" (only for the smallest).
+        var part: (Int) -> String = { _ in "" }
+        /// "The height of the Eiffel Tower"
+        let whole: String
+        /// "≈ 3.2 × the Eiffel Tower"
+        let times: (String) -> String
+    }
 
     private static let heights: [Landmark] = [
-        .init(name: "the Statue of Liberty", meters: 93),
-        .init(name: "the Eiffel Tower", meters: 330),
-        .init(name: "the Empire State Building", meters: 443),
-        .init(name: "the Burj Khalifa", meters: 828),
-        .init(name: "Mount Everest", meters: 8_849),
+        .init(meters: 93,
+              part: { pct in String(localized: "\(pct)% of the way up the Statue of Liberty") },
+              whole: String(localized: "The height of the Statue of Liberty"),
+              times: { times in String(localized: "≈ \(times) × the Statue of Liberty") }),
+        .init(meters: 330,
+              whole: String(localized: "The height of the Eiffel Tower"),
+              times: { times in String(localized: "≈ \(times) × the Eiffel Tower") }),
+        .init(meters: 443,
+              whole: String(localized: "The height of the Empire State Building"),
+              times: { times in String(localized: "≈ \(times) × the Empire State Building") }),
+        .init(meters: 828,
+              whole: String(localized: "The height of the Burj Khalifa"),
+              times: { times in String(localized: "≈ \(times) × the Burj Khalifa") }),
+        .init(meters: 8_849,
+              whole: String(localized: "The height of Mount Everest"),
+              times: { times in String(localized: "≈ \(times) × Mount Everest") }),
     ]
     private static let lengths: [Landmark] = [
-        .init(name: "a football pitch", meters: 105),
-        .init(name: "a running-track lap", meters: 400),
-        .init(name: "the Golden Gate Bridge", meters: 2_737),
-        .init(name: "a marathon", meters: 42_195),
+        .init(meters: 105,
+              part: { pct in String(localized: "\(pct)% of a football pitch") },
+              whole: String(localized: "The length of a football pitch"),
+              times: { times in String(localized: "≈ \(times) × a football pitch") }),
+        .init(meters: 400,
+              whole: String(localized: "The length of a running-track lap"),
+              times: { times in String(localized: "≈ \(times) × a running-track lap") }),
+        .init(meters: 2_737,
+              whole: String(localized: "The length of the Golden Gate Bridge"),
+              times: { times in String(localized: "≈ \(times) × the Golden Gate Bridge") }),
+        .init(meters: 42_195,
+              whole: String(localized: "The length of a marathon"),
+              times: { times in String(localized: "≈ \(times) × a marathon") }),
     ]
 
     /// "≈ 3.2 × the Eiffel Tower", "40% of the way up the Statue of Liberty"…
@@ -172,14 +209,12 @@ enum Landmarks {
         }
         guard meters >= 1, let smallest = list.first else { return nil }
         if meters < smallest.meters {
-            let pct = Int((meters / smallest.meters * 100).rounded(.down))
-            return metric == .scroll ? "\(pct)% of the way up \(smallest.name)" : "\(pct)% of \(smallest.name)"
+            return smallest.part(Int((meters / smallest.meters * 100).rounded(.down)))
         }
         let mark = list.last { $0.meters <= meters } ?? smallest
         let ratio = meters / mark.meters
-        if ratio < 1.1 { return metric == .scroll ? "The height of \(mark.name)" : "The length of \(mark.name)" }
-        let times = ratio < 10 ? String(format: "%.1f", ratio) : Int(ratio).formatted()
-        return "≈ \(times) × \(mark.name)"
+        if ratio < 1.1 { return mark.whole }
+        return mark.times(ratio < 10 ? ratio.formatted(.number.precision(.fractionLength(1))) : Int(ratio).formatted())
     }
 }
 
@@ -191,9 +226,18 @@ enum RecordKind: String, CaseIterable, Identifiable, Codable {
 
     var title: String {
         switch self {
-        case .spin: "Fastest ring spin"
-        case .flick: "Longest single scroll"
-        case .roll: "Fastest roll"
+        case .spin: String(localized: "Fastest ring spin")
+        case .flick: String(localized: "Longest single scroll")
+        case .roll: String(localized: "Fastest roll", comment: "Fastest the ball has been rolled")
+        }
+    }
+
+    /// "New record: fastest ring spin"
+    var newRecordTitle: String {
+        switch self {
+        case .spin: String(localized: "New record: fastest ring spin")
+        case .flick: String(localized: "New record: longest single scroll")
+        case .roll: String(localized: "New record: fastest roll")
         }
     }
 
@@ -225,9 +269,11 @@ enum RecordKind: String, CaseIterable, Identifiable, Codable {
 
     func format(_ v: Double) -> String {
         switch self {
-        case .spin: String(format: "%.0f notches/s", v)
+        case .spin: String(localized: "\(v.formatted(.number.precision(.fractionLength(0)))) notches/s",
+                           comment: "Scroll ring speed: ring notches (ticks) per second")
         case .flick: Tally.distance(v)
-        case .roll: String(format: "%.0f in/s", v)
+        case .roll: String(localized: "\(v.formatted(.number.precision(.fractionLength(0)))) in/s",
+                           comment: "Ball speed in inches per second")
         }
     }
 }
@@ -240,21 +286,32 @@ enum ChecklistItem: String, CaseIterable, Identifiable, Codable {
 
     var title: String {
         switch self {
-        case .speed: "Set your pointer speed"
-        case .scroll: "Pick how scrolling feels"
-        case .button: "Map a button"
-        case .combo: "Make a combo"
-        case .app: "Add an app setup"
+        case .speed: String(localized: "Set your pointer speed")
+        case .scroll: String(localized: "Pick how scrolling feels")
+        case .button: String(localized: "Map a button")
+        case .combo: String(localized: "Make a combo")
+        case .app: String(localized: "Add an app setup")
+        }
+    }
+
+    /// "Done: set your pointer speed" — the toast when a step is ticked off.
+    var doneTitle: String {
+        switch self {
+        case .speed: String(localized: "Done: set your pointer speed")
+        case .scroll: String(localized: "Done: pick how scrolling feels")
+        case .button: String(localized: "Done: map a button")
+        case .combo: String(localized: "Done: make a combo")
+        case .app: String(localized: "Done: add an app setup")
         }
     }
 
     var hint: String {
         switch self {
-        case .speed: "Pointer tab — try a preset"
-        case .scroll: "Scrolling tab — Flywheel, Follow or Native"
-        case .button: "Buttons tab — Quick assign takes two presses"
-        case .combo: "Buttons tab — press two buttons together"
-        case .app: "Apps tab — a different feel per app"
+        case .speed: String(localized: "Pointer tab — try a preset")
+        case .scroll: String(localized: "Scrolling tab — Flywheel, Follow or Native")
+        case .button: String(localized: "Buttons tab — Quick assign takes two presses")
+        case .combo: String(localized: "Buttons tab — press two buttons together")
+        case .app: String(localized: "Apps tab — a different feel per app")
         }
     }
 
