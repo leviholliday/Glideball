@@ -23,6 +23,7 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/Glide"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+cp Resources/IntroMusic.m4a Resources/LaunchChime.m4a "$APP/Contents/Resources/"   # scripts/make-intro-music.py
 
 # Sign with the local "Glide Local Signing" certificate so macOS remembers the
 # Accessibility / Input Monitoring permissions across rebuilds. Falls back to

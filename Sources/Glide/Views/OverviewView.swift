@@ -22,12 +22,13 @@ struct OverviewView: View {
                     ActivityChartCard(model: model)
                     HStack(spacing: 18) {
                         StatTile(symbol: "cursorarrow.click.2", title: "Clicks today",
-                                 value: model.totals.clicks.formatted(), best: best(.clicks))
+                                 amount: Double(model.totals.clicks), format: { Int($0.rounded()).formatted() },
+                                 best: best(.clicks))
                         StatTile(symbol: "circle.dotted.circle", title: "Ball rolled",
-                                 value: Self.meters(model.totals.ballCounts / AppModel.countsPerInch * 0.0254),
+                                 amount: model.totals.ballCounts / AppModel.countsPerInch * 0.0254, format: Self.meters,
                                  best: best(.ball))
                         StatTile(symbol: "scroll", title: "Scrolled",
-                                 value: Self.meters(model.totals.scrollPoints * 0.00023), best: best(.scroll))
+                                 amount: model.totals.scrollPoints * 0.00023, format: Self.meters, best: best(.scroll))
                     }
                     .fixedSize(horizontal: false, vertical: true)   // equal heights with or without a best-day bar
                 }
@@ -54,6 +55,9 @@ struct OverviewView: View {
                           symbol: "speaker.wave.2", isOn: Bindable(model.delight).soundsOn)
                     .disabled(!model.delight.celebrationsOn)
                     .opacity(model.delight.celebrationsOn ? 1 : 0.5)
+                Divider().opacity(0.4)
+                ToggleRow(title: "Launch sounds", subtitle: "A soft chime as Glide opens. Never when your Mac is muted.",
+                          symbol: "music.note", isOn: Bindable(LaunchExperience.shared).soundsOn)
                 Divider().opacity(0.4)
                 HStack(spacing: 10) {
                     Image(systemName: "bubble.left.and.text.bubble.right")
@@ -141,7 +145,10 @@ struct OverviewView: View {
 struct StatTile: View {
     let symbol: String
     let title: String
-    let value: String
+    /// The number, and how to show it. It counts up from zero when the tile
+    /// appears, and glides to new values after that.
+    let amount: Double
+    let format: (Double) -> String
     /// Today compared with your best day — progress, never a deadline.
     var best: Best? = nil
 
@@ -150,6 +157,9 @@ struct StatTile: View {
         let label: String
         let color: Color
     }
+
+    @State private var shown: Double = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -165,11 +175,9 @@ struct StatTile: View {
                         .transition(.scale.combined(with: .opacity))
                 }
             }
-            Text(value)
+            CountingText(value: shown, format: format)
                 .font(.system(size: 24, weight: .bold, design: .rounded))
                 .monospacedDigit()
-                .contentTransition(.numericText())
-                .animation(.smooth(duration: 0.3), value: value)
             Text(title).font(.system(size: 12)).foregroundStyle(.secondary)
             if let best {
                 GeometryReader { geo in
@@ -191,7 +199,28 @@ struct StatTile: View {
         .padding(16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .glassEffect(.regular, in: .rect(cornerRadius: 22))
+        .staggeredAppear()
+        .onAppear {
+            if reduceMotion || amount == 0 { shown = amount; return }
+            withAnimation(.smooth(duration: 0.9).delay(0.12)) { shown = amount }
+        }
+        .onChange(of: amount) { _, now in
+            withAnimation(.smooth(duration: 0.3)) { shown = now }
+        }
     }
+}
+
+/// A number drawn from an animatable value, so it counts as it animates.
+private struct CountingText: View, Animatable {
+    var value: Double
+    let format: (Double) -> String
+
+    var animatableData: Double {
+        get { value }
+        set { value = newValue }
+    }
+
+    var body: some View { Text(format(value)) }
 }
 
 struct ActivityChartCard: View {

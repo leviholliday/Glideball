@@ -25,8 +25,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         _ = AppModel.shared   // starts the engine
         watchModes()
         startHotKeys()
-        if firstLaunch { AppModel.shared.showWelcomeTour() }
-        if firstLaunch || !launchedAtLogin || !AppModel.shared.permissionsOK { showWindow() }
+        let showsWindow = firstLaunch || !launchedAtLogin || !AppModel.shared.permissionsOK
+        // The launch animation; the first-launch intro opens the tour itself when it ends.
+        let introPlays = LaunchExperience.shared.prepare(firstLaunch: firstLaunch, showsWindow: showsWindow)
+        if firstLaunch && !introPlays { AppModel.shared.showWelcomeTour() }
+        if showsWindow { showWindow() }
     }
 
     // Closing the window keeps Glide running so the trackball stays tuned.

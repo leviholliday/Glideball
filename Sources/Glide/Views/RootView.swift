@@ -9,6 +9,7 @@ enum GlideTab: String, CaseIterable, Identifiable {
     case backup = "Sync"
 
     var id: String { rawValue }
+    var order: Int { Self.allCases.firstIndex(of: self) ?? 0 }
     var symbol: String {
         switch self {
         case .overview: "sparkles"
@@ -26,6 +27,13 @@ struct RootView: View {
     @State private var tab: GlideTab = GlideTab(rawValue: UserDefaults.standard.string(forKey: "GlideInitialTab") ?? "") ?? .overview
     @Namespace private var tabNS
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Which way the page slides: +1 to a tab further right, -1 to the left.
+    @State private var direction: CGFloat = 1
+    @State private var seenTabs: Set<GlideTab> = []
+    @State private var stagger = CardStagger()
+    /// Bumped to give a newly chosen tab's icon a little bounce.
+    @State private var bounces: [GlideTab: Int] = [:]
+    private let launch = LaunchExperience.shared
 
     var body: some View {
         ZStack {
@@ -34,18 +42,18 @@ struct RootView: View {
                 header
                 if !model.permissionsOK { PermissionsCard(model: model) }
                 ScrollView {
-                    Group {
-                        switch tab {
-                        case .overview: OverviewView(model: model)
-                        case .pointer: PointerView(model: model)
-                        case .scroll: ScrollSettingsView(model: model)
-                        case .buttons: ButtonsView(model: model)
-                        case .apps: AppsView(model: model)
-                        case .backup: BackupView(model: model)
+                    // Pages overlap while one slides out and the next in.
+                    ZStack(alignment: .top) {
+                        // Drawn once the launch animation starts handing
+                        // over, so the first page's cards rise in as it does.
+                        if launch.contentReady {
+                            page(tab)
+                                .padding(.bottom, 24)
+                                .id(tab)
+                                .transition(pageTransition)
                         }
                     }
-                    .padding(.bottom, 24)
-                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                    .environment(\.cardStagger, stagger)
                 }
                 .scrollIndicators(.never)
             }
@@ -74,7 +82,8 @@ struct RootView: View {
                     .transition(.opacity.combined(with: .scale(scale: 1.02)))
             }
         }
-        .animation(.smooth(duration: 0.3), value: tab)
+        // The launch animation, over everything until it hands over.
+        .overlay { LaunchOverlay() }
         .animation(.smooth(duration: 0.35), value: model.showingWelcomeTour)
         .animation(.smooth, value: model.permissionsOK)
         .animation(.smooth(duration: 0.2), value: model.modes)
@@ -86,9 +95,10 @@ struct RootView: View {
         }
         .onChange(of: model.requestedTab) { _, requested in
             guard let requested else { return }
-            tab = requested
+            select(requested)
             model.requestedTab = nil
         }
+        .onAppear { seenTabs.insert(tab) }
         // Drop a settings file anywhere on the window to preview it.
         .dropDestination(for: URL.self) { urls, _ in
             guard let url = urls.first, url.pathExtension == GlideSettingsFile.fileExtension else { return false }
@@ -150,7 +160,7 @@ struct RootView: View {
             HStack(spacing: 2) {
                 ForEach(GlideTab.allCases) { t in
                     Button {
-                        tab = t
+                        select(t)
                     } label: {
                         // Icon over a short label keeps six tabs narrow enough
                         // for the header at the window's 960 pt minimum.
@@ -158,6 +168,7 @@ struct RootView: View {
                             Image(systemName: t.symbol)
                                 .font(.system(size: 15, weight: .medium))
                                 .frame(height: 18)
+                                .symbolEffect(.bounce.up.byLayer, options: .speed(1.6), value: bounces[t, default: 0])
                             Text(t.rawValue)
                                 .font(.system(size: 11, weight: .medium))
                                 .lineLimit(1)
@@ -169,8 +180,14 @@ struct RootView: View {
                         .foregroundStyle(tab == t ? .primary : .secondary)
                         .background {
                             if tab == t {
+                                // The glass bead springs from tab to tab.
                                 Capsule()
                                     .fill(.white.opacity(0.18))
+                                    .overlay {
+                                        Capsule().strokeBorder(LinearGradient(colors: [.white.opacity(0.35), .white.opacity(0.04)],
+                                                                              startPoint: .top, endPoint: .bottom), lineWidth: 0.8)
+                                    }
+                                    .shadow(color: .black.opacity(0.12), radius: 3, y: 1)
                                     .matchedGeometryEffect(id: "sel", in: tabNS)
                             }
                         }
@@ -182,6 +199,46 @@ struct RootView: View {
             .padding(4)
             .glassEffect(.regular, in: .capsule)
         }
+    }
+
+    @ViewBuilder private func page(_ tab: GlideTab) -> some View {
+        switch tab {
+        case .overview: OverviewView(model: model)
+        case .pointer: PointerView(model: model)
+        case .scroll: ScrollSettingsView(model: model)
+        case .buttons: ButtonsView(model: model)
+        case .apps: AppsView(model: model)
+        case .backup: BackupView(model: model)
+        }
+    }
+
+    // MARK: Page transitions
+
+    /// Switches tab: the page slides the way the tab bar reads (left or
+    /// right), and the first visit to a tab staggers its cards in.
+    private func select(_ new: GlideTab) {
+        guard new != tab else { return }
+        // The outgoing page takes its slide direction from its last render,
+        // so set the direction first and switch on the next turn of the run loop.
+        direction = new.order > tab.order ? 1 : -1
+        if !reduceMotion { bounces[new, default: 0] += 1 }
+        if !seenTabs.contains(new) {
+            seenTabs.insert(new)
+            stagger.armed = true
+        }
+        DispatchQueue.main.async {
+            withAnimation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(response: 0.32, dampingFraction: 0.86)) {
+                tab = new
+            }
+        }
+    }
+
+    private var pageTransition: AnyTransition {
+        if reduceMotion { return .opacity }
+        return .asymmetric(
+            insertion: .offset(x: 44 * direction).combined(with: .opacity).combined(with: .scale(scale: 0.985, anchor: .top)),
+            removal: .offset(x: -44 * direction).combined(with: .opacity).combined(with: .scale(scale: 0.985, anchor: .top))
+        )
     }
 
     private var statusText: String {
