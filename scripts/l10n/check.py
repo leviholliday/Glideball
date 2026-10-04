@@ -479,7 +479,8 @@ def check_language(lang: str, keys: dict, plural_keys: set) -> tuple[int, list[s
     strings_path, dict_path = lproj / "Localizable.strings", lproj / "Localizable.stringsdict"
     table: dict[str, str] = {}
     plurals: dict[str, dict] = {}
-    for p in (strings_path, dict_path):
+    # Every table in the folder must parse (InfoPlist.strings too).
+    for p in sorted(lproj.glob("*.strings")) + sorted(lproj.glob("*.stringsdict")):
         if p.exists():
             err = lint(p)
             if err:

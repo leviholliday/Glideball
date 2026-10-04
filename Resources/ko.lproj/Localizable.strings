@@ -1,0 +1,1429 @@
+/* Glide — ko. Keys are the English text. Checked by scripts/l10n/check.py. */
+
+/* ---- AppDelegate.swift ---- */
+
+"Show Glide" = "Glide 보기";
+
+"Pause / Resume Glide" = "Glide 일시 정지/재개";
+
+/* Mode that slows the pointer for fine work */
+"Precision" = "정밀 모드";
+
+"Check for Updates…" = "업데이트 확인…";
+
+"Send Feedback…" = "피드백 보내기…";
+
+"Quit Glide" = "Glide 종료";
+
+"About Glide" = "Glide에 관하여";
+
+"Hide Glide" = "Glide 가리기";
+
+"Hide Others" = "기타 가리기";
+
+/* Menu bar title */
+"File" = "파일";
+
+"Export Settings…" = "설정 내보내기…";
+
+"Import Settings…" = "설정 가져오기…";
+
+"Close Window" = "윈도우 닫기";
+
+/* Menu bar title */
+"Window" = "윈도우";
+
+"Minimize" = "최소화";
+
+/* Menu bar title */
+"Help" = "도움말";
+
+"Show Welcome Tour…" = "환영 투어 보기…";
+
+"Glide Website" = "Glide 웹 사이트";
+
+/* ---- AppModel.swift ---- */
+
+/* Trackball button position */
+"Bottom left" = "왼쪽 아래";
+
+/* Trackball button position */
+"Bottom right" = "오른쪽 아래";
+
+/* Trackball button position */
+"Top left" = "왼쪽 위";
+
+/* Trackball button position */
+"Top right" = "오른쪽 위";
+
+"Button %lld" = "버튼 %lld";
+
+"Left click" = "왼쪽 클릭";
+
+"Right click" = "오른쪽 클릭";
+
+"Middle click" = "가운데 클릭";
+
+/* Browser back: what the top-right button does by default */
+"Back" = "뒤로";
+
+/* Exported file name; %@ is the date */
+"Glide Settings – %@" = "Glide 설정 – %@";
+
+"Export Glide Settings" = "Glide 설정 내보내기";
+
+"Save your Glide setup to a file you can back up or open on another Mac." = "Glide 구성을 파일로 저장해 백업하거나 다른 Mac에서 열 수 있어요.";
+
+"Saved “%@”" = "“%@” 저장됨";
+
+"Couldn’t export: %@" = "내보낼 수 없음: %@";
+
+"Import Glide Settings" = "Glide 설정 가져오기";
+
+"Choose a Glide settings file. You’ll see what’s in it before anything changes." = "Glide 설정 파일을 선택하세요. 무엇이든 바뀌기 전에 파일 내용을 먼저 보여드려요.";
+
+"That doesn’t look like a Glide settings file." = "Glide 설정 파일이 아닌 것 같아요.";
+
+"Imported “%@”" = "“%@” 가져옴";
+
+"Restored your previous settings" = "이전 설정을 복원했어요";
+
+/* ---- AppProfile.swift ---- */
+
+/* Pointer speed in an app setup */
+"Speed %@" = "속도 %@";
+
+"Default buttons" = "기본 버튼";
+
+"No combos" = "콤보 없음";
+
+"Uses your main setup" = "기본 구성 사용";
+
+/* Scroll mode: macOS's own scrolling */
+"Native" = "네이티브";
+
+/* Scroll mode: each tick pushes the page, friction slows it */
+"Flywheel" = "플라이휠";
+
+/* Scroll mode: the page follows the ring exactly */
+"Follow" = "따라가기";
+
+"Native scrolling" = "네이티브 스크롤";
+
+"Flywheel scrolling" = "플라이휠 스크롤";
+
+"Follow scrolling" = "따라가기 스크롤";
+
+/* No combos / no app setups */
+"None" = "없음";
+
+"%lld apps" = "앱 %lld개";
+
+/* ---- Config.swift ---- */
+
+/* Button action: what the button normally does */
+"Default" = "기본값";
+
+"Control-click" = "Control-클릭";
+
+"Control-right-click" = "Control-오른쪽 클릭";
+
+"Command-click" = "Command-클릭";
+
+"Shift-click" = "Shift-클릭";
+
+"Option-click" = "Option-클릭";
+
+/* Browser forward */
+"Forward" = "앞으로";
+
+/* Mission Control: switch to the Space on the left */
+"Previous Space" = "이전 스페이스";
+
+/* Mission Control: switch to the Space on the right */
+"Next Space" = "다음 스페이스";
+
+"Mission Control" = "Mission Control";
+
+"App Exposé" = "앱 Exposé";
+
+"Browser Back" = "브라우저 뒤로";
+
+"Browser Forward" = "브라우저 앞으로";
+
+"Spotlight" = "Spotlight";
+
+"Copy" = "복사하기";
+
+"Paste" = "붙여넣기";
+
+"Undo" = "실행 취소";
+
+"New Tab" = "새로운 탭";
+
+"Close Tab" = "탭 닫기";
+
+"Precision (hold)" = "정밀 모드(누르고 있기)";
+
+"Precision (toggle)" = "정밀 모드(전환)";
+
+"Scroll with ball (hold)" = "볼로 스크롤(누르고 있기)";
+
+/* Mode: the left button stays held down so you can drag without holding it */
+"Drag lock" = "드래그 잠금";
+
+"Do nothing" = "아무것도 안 함";
+
+/* Button action that isn't one of the presets */
+"Custom" = "사용자 설정";
+
+"Pause / resume Glide" = "Glide 일시 정지/재개";
+
+/* Mode: rolling the ball scrolls instead of moving the pointer */
+"Scroll with ball" = "볼로 스크롤";
+
+"Your escape hatch: Glide steps aside until you press it again." = "비상구: 다시 누를 때까지 Glide가 물러나 있어요.";
+
+"Slows the pointer for fine work until you press it again." = "다시 누를 때까지 세밀한 작업을 위해 포인터를 느리게 해요.";
+
+"Rolling the ball scrolls and the pointer stays put, until you press it again." = "다시 누를 때까지 볼을 굴리면 스크롤되고 포인터는 그대로 있어요.";
+
+"Grabs what's under the pointer once you let go of the keys. Press again, or click, to drop." = "키에서 손을 떼면 포인터 아래에 있는 것을 잡아요. 다시 누르거나 클릭하면 놓아요.";
+
+"Include ⌘, ⌃, or ⌥ — %@ on its own would stop working everywhere else." = "⌘, ⌃ 또는 ⌥를 포함하세요 — %@만 쓰면 다른 모든 곳에서 작동하지 않게 돼요.";
+
+/* First %@ is a keyboard shortcut like ⌃⌥⌘G; second is a mode name like “Precision” */
+"%@ is already the shortcut for %@." = "%@은(는) 이미 %@의 단축키예요.";
+
+"This settings file uses unsupported version %lld." = "이 설정 파일은 지원하지 않는 버전 %lld을(를) 사용해요.";
+
+"Native · speed %@" = "네이티브 · 속도 %@";
+
+"Flywheel · %lld pt, %@ power" = "플라이휠 · %lld pt, 파워 %@";
+
+"Follow · %lld pt per tick" = "따라가기 · 틱당 %lld pt";
+
+"Pointer speed" = "포인터 속도";
+
+/* Tab name */
+"Scrolling" = "스크롤";
+
+/* Tab name */
+"Buttons" = "버튼";
+
+"Combos" = "콤보";
+
+"App setups" = "앱 구성";
+
+/* ---- DelightCenter.swift ---- */
+
+/* %@ is a badge name */
+"Milestone: %@" = "마일스톤: %@";
+
+"Your biggest scrolling day yet" = "역대 최다 스크롤한 날";
+
+"Your most-rolled day yet" = "역대 최다 굴린 날";
+
+"Your clickiest day yet" = "역대 최다 클릭한 날";
+
+"Glide is all yours" = "완전히 나만의 Glide";
+
+/* %@ is an amount: 1,234 or 12.3 m */
+"%@ today" = "오늘 %@";
+
+/* “Make it yours” is the setup checklist on Overview */
+"%lld of %lld on Make it yours" = "나만의 Glide 만들기 %lld/%lld 완료";
+
+"Every part of your trackball, set up your way." = "트랙볼의 모든 부분을 내 방식대로.";
+
+"See them on Overview" = "개요에서 확인하세요";
+
+/* ---- FeedbackClient.swift ---- */
+
+"“%@” couldn’t be read. Remove it and add it again." = "“%@” 파일을 읽을 수 없어요. 제거한 다음 다시 추가하세요.";
+
+"It needs a title." = "제목이 필요해요.";
+
+"That’s too many attachments (at most %lld)." = "첨부 파일이 너무 많아요(최대 %lld개).";
+
+"“%@” can’t be sent with that name." = "“%@” 파일은 이 이름으로 보낼 수 없어요.";
+
+"Two attachments are called “%@”." = "두 첨부 파일의 이름이 모두 “%@”이에요.";
+
+"“%@” isn’t a kind of file that can be sent." = "“%@” 파일은 보낼 수 없는 종류예요.";
+
+"“%@” is empty or missing." = "“%@” 파일이 비어 있거나 없어요.";
+
+"“%@” is too big to send (the limit is %lld MB)." = "“%@” 파일이 너무 커서 보낼 수 없어요(최대 %lld MB).";
+
+"Sending…" = "보내는 중…";
+
+"The feedback server sent back something unexpected. Try again in a little while." = "피드백 서버가 예상치 못한 응답을 보냈어요. 잠시 후 다시 시도하세요.";
+
+"The feedback server sent back something unexpected." = "피드백 서버가 예상치 못한 응답을 보냈어요.";
+
+/* Feedback progress */
+"Sent" = "보냄";
+
+"“%@” changed while it was being sent. Try again." = "“%@” 파일이 전송 중에 변경되었어요. 다시 시도하세요.";
+
+/* File name, then megabytes sent so far and in all */
+"Sending %@… %@ of %@ MB" = "%@ 보내는 중… %@/%@MB";
+
+"The feedback couldn’t be sent." = "피드백을 보낼 수 없어요.";
+
+"The feedback server had a problem: %@" = "피드백 서버 문제: %@";
+
+"The feedback server had a problem (error %lld). Try again in a minute." = "피드백 서버에 문제가 있어요(오류 %lld). 잠시 후 다시 시도하세요.";
+
+"The feedback server turned it down (error %lld)." = "피드백 서버가 거부했어요(오류 %lld).";
+
+"The feedback server took too long to answer. Check your connection and try again." = "피드백 서버의 응답이 너무 늦어요. 연결을 확인하고 다시 시도하세요.";
+
+"Couldn’t reach the feedback server. Check your internet connection and try again." = "피드백 서버에 연결할 수 없어요. 인터넷 연결을 확인하고 다시 시도하세요.";
+
+"Couldn’t reach the feedback server: %@" = "피드백 서버에 연결할 수 없음: %@";
+
+/* ---- Milestones.swift ---- */
+
+/* Distance scrolled with the ring */
+"Scrolled" = "스크롤 거리";
+
+/* Distance the ball has rolled */
+"Ball rolled" = "볼 굴린 거리";
+
+"Clicks" = "클릭";
+
+/* Badge name */
+"First ten metres" = "첫 10미터";
+
+/* What earns the badge */
+"Scrolled 10 m" = "10m 스크롤하기";
+
+/* Badge name */
+"Lady Liberty" = "자유의 여신상";
+
+/* What earns the badge */
+"Scrolled the height of the Statue of Liberty (93 m)" = "자유의 여신상 높이(93m) 스크롤하기";
+
+/* Badge name */
+"Eiffel Tower" = "에펠탑";
+
+/* What earns the badge */
+"Scrolled the height of the Eiffel Tower (330 m)" = "에펠탑 높이(330m) 스크롤하기";
+
+/* Badge name */
+"First kilometre" = "첫 1킬로미터";
+
+/* What earns the badge */
+"Scrolled 1 km" = "1km 스크롤하기";
+
+/* Badge name */
+"Summit" = "정상";
+
+/* What earns the badge */
+"Scrolled the height of Everest (8,849 m)" = "에베레스트 높이(8,849m) 스크롤하기";
+
+/* Badge name */
+"Scroll marathon" = "스크롤 마라톤";
+
+/* What earns the badge */
+"Scrolled a marathon (42.2 km)" = "마라톤 거리(42.2km) 스크롤하기";
+
+/* Badge name */
+"Rolling" = "데굴데굴";
+
+/* What earns the badge */
+"Rolled the ball 10 m" = "볼을 10m 굴리기";
+
+/* Badge name */
+"Pitch length" = "축구장 횡단";
+
+/* What earns the badge */
+"Rolled the length of a football pitch (100 m)" = "축구장 길이(100m) 굴리기";
+
+/* Badge name */
+"One lap" = "한 바퀴";
+
+/* What earns the badge */
+"Rolled one lap of a running track (400 m)" = "육상 트랙 한 바퀴(400m) 굴리기";
+
+/* Badge name */
+"Kilometre roller" = "킬로미터 롤러";
+
+/* What earns the badge */
+"Rolled the ball 1 km" = "볼을 1km 굴리기";
+
+/* Badge name */
+"10K" = "1만";
+
+/* What earns the badge */
+"Rolled the ball 10 km" = "볼을 10km 굴리기";
+
+/* Badge name */
+"Ball marathon" = "볼 마라톤";
+
+/* What earns the badge */
+"Rolled a marathon (42.2 km)" = "마라톤 거리(42.2km) 굴리기";
+
+/* Badge name */
+"Warmed up" = "몸풀기 완료";
+
+/* What earns the badge */
+"100 clicks" = "클릭 100회";
+
+/* Badge name */
+"A thousand clicks" = "클릭 천 번";
+
+/* What earns the badge */
+"1,000 clicks" = "클릭 1,000회";
+
+/* Badge name */
+"Ten thousand" = "만 번";
+
+/* What earns the badge */
+"10,000 clicks" = "클릭 10,000회";
+
+/* Badge name */
+"Click legend" = "클릭의 전설";
+
+/* What earns the badge */
+"100,000 clicks" = "클릭 100,000회";
+
+/* Badge name */
+"One million" = "백만";
+
+/* What earns the badge */
+"1,000,000 clicks" = "클릭 1,000,000회";
+
+"%lld%% of the way up the Statue of Liberty" = "자유의 여신상 높이의 %lld%%";
+
+"The height of the Statue of Liberty" = "자유의 여신상 높이";
+
+"≈ %@ × the Statue of Liberty" = "≈ 자유의 여신상의 %@배";
+
+"The height of the Eiffel Tower" = "에펠탑 높이";
+
+"≈ %@ × the Eiffel Tower" = "≈ 에펠탑의 %@배";
+
+"The height of the Empire State Building" = "엠파이어 스테이트 빌딩 높이";
+
+"≈ %@ × the Empire State Building" = "≈ 엠파이어 스테이트 빌딩의 %@배";
+
+"The height of the Burj Khalifa" = "부르즈 할리파 높이";
+
+"≈ %@ × the Burj Khalifa" = "≈ 부르즈 할리파의 %@배";
+
+"The height of Mount Everest" = "에베레스트산 높이";
+
+"≈ %@ × Mount Everest" = "≈ 에베레스트산의 %@배";
+
+"%lld%% of a football pitch" = "축구장의 %lld%%";
+
+"The length of a football pitch" = "축구장 길이";
+
+"≈ %@ × a football pitch" = "≈ 축구장의 %@배";
+
+"The length of a running-track lap" = "육상 트랙 한 바퀴 거리";
+
+"≈ %@ × a running-track lap" = "≈ 육상 트랙 한 바퀴의 %@배";
+
+"The length of the Golden Gate Bridge" = "금문교 길이";
+
+"≈ %@ × the Golden Gate Bridge" = "≈ 금문교의 %@배";
+
+"The length of a marathon" = "마라톤 거리";
+
+"≈ %@ × a marathon" = "≈ 마라톤의 %@배";
+
+"Fastest ring spin" = "가장 빠른 링 회전";
+
+"Longest single scroll" = "가장 긴 한 번의 스크롤";
+
+/* Fastest the ball has been rolled */
+"Fastest roll" = "가장 빠른 굴리기";
+
+"New record: fastest ring spin" = "신기록: 가장 빠른 링 회전";
+
+"New record: longest single scroll" = "신기록: 가장 긴 한 번의 스크롤";
+
+"New record: fastest roll" = "신기록: 가장 빠른 굴리기";
+
+/* Scroll ring speed: ring notches (ticks) per second */
+"%@ notches/s" = "%@틱/초";
+
+/* Ball speed in inches per second */
+"%@ in/s" = "%@인치/초";
+
+"Set your pointer speed" = "포인터 속도 설정하기";
+
+"Pick how scrolling feels" = "스크롤 느낌 고르기";
+
+"Map a button" = "버튼 지정하기";
+
+"Make a combo" = "콤보 만들기";
+
+"Add an app setup" = "앱 구성 추가하기";
+
+"Done: set your pointer speed" = "완료: 포인터 속도 설정하기";
+
+"Done: pick how scrolling feels" = "완료: 스크롤 느낌 고르기";
+
+"Done: map a button" = "완료: 버튼 지정하기";
+
+"Done: make a combo" = "완료: 콤보 만들기";
+
+"Done: add an app setup" = "완료: 앱 구성 추가하기";
+
+"Pointer tab — try a preset" = "포인터 탭 — 프리셋을 사용해 보세요";
+
+"Scrolling tab — Flywheel, Follow or Native" = "스크롤 탭 — 플라이휠, 따라가기 또는 네이티브";
+
+"Buttons tab — Quick assign takes two presses" = "버튼 탭 — 빠른 지정은 두 번만 누르면 돼요";
+
+"Buttons tab — press two buttons together" = "버튼 탭 — 버튼 두 개를 함께 누르세요";
+
+"Apps tab — a different feel per app" = "앱 탭 — 앱마다 다른 느낌으로";
+
+/* ---- SettingsSync.swift ---- */
+
+/* Use the names System Settings shows in this language */
+"Turn on iCloud Drive in System Settings → Apple Account → iCloud" = "시스템 설정 → Apple 계정 → iCloud에서 iCloud Drive를 켜세요";
+
+"Couldn’t save settings to iCloud Drive: %@" = "iCloud Drive에 설정을 저장할 수 없음: %@";
+
+"Couldn’t read settings from iCloud Drive: %@" = "iCloud Drive에서 설정을 읽을 수 없음: %@";
+
+"Settings in iCloud Drive were saved by a newer version of Glide. Update Glide on this Mac to keep syncing." = "iCloud Drive의 설정은 더 최신 버전의 Glide로 저장되었어요. 계속 동기화하려면 이 Mac의 Glide를 업데이트하세요.";
+
+/* ---- UpdateChecker.swift ---- */
+
+"The download didn’t finish: %@" = "다운로드가 완료되지 않음: %@";
+
+"The download didn’t finish." = "다운로드가 완료되지 않았어요.";
+
+"Couldn’t unpack the update." = "업데이트의 압축을 풀 수 없어요.";
+
+"The download isn’t the expected Glide %@." = "다운로드한 파일이 예상한 Glide %@이(가) 아니에요.";
+
+"Couldn’t read Glide’s own signature to compare against." = "비교할 Glide 자체 서명을 읽을 수 없어요.";
+
+"The update isn’t signed by Glide’s developer, so it wasn’t installed." = "업데이트에 Glide 개발자의 서명이 없어서 설치하지 않았어요.";
+
+"Couldn’t start the installer: %@" = "설치 프로그램을 시작할 수 없음: %@";
+
+/* ---- AppsView.swift ---- */
+
+"When one of these apps is in front, Glide switches to its setup. Anything left on “Main setup” follows your main settings." = "이 앱 중 하나가 앞에 있으면 Glide가 해당 앱 구성으로 전환해요. “기본 구성”으로 남겨둔 항목은 기본 설정을 따라요.";
+
+"Give an app its own setup" = "앱에 자체 구성 지정하기";
+
+"Faster tracking in a design app, different buttons in your browser — Glide switches the moment that app comes to the front, and back again when you leave. Pick only the parts you want to change; everything else follows your main setup." = "디자인 앱에서는 더 빠른 트래킹, 브라우저에서는 다른 버튼 — 앱이 앞으로 오는 순간 Glide가 전환하고, 앱을 떠나면 다시 돌아와요. 바꾸고 싶은 부분만 고르세요. 나머지는 모두 기본 구성을 따라요.";
+
+"Open apps" = "열려 있는 앱";
+
+"No other open apps" = "열려 있는 다른 앱 없음";
+
+"Choose from Applications…" = "응용 프로그램에서 선택…";
+
+"Add App…" = "앱 추가…";
+
+"Add an App" = "앱 추가";
+
+"Choose the app that should get its own trackball setup." = "자체 트랙볼 구성을 사용할 앱을 선택하세요.";
+
+/* Open panel button: add the chosen app */
+"Add" = "추가";
+
+"Glide couldn’t identify that app." = "Glide가 해당 앱을 식별할 수 없어요.";
+
+"Glide itself always uses your main setup." = "Glide 자체는 항상 기본 구성을 사용해요.";
+
+/* Tab name */
+"Pointer" = "포인터";
+
+/* Pointer speed, after “Following your main setup ·” */
+"speed %@" = "속도 %@";
+
+"Tracking speed" = "트래킹 속도";
+
+"Ludicrous" = "광속";
+
+"Slow" = "느리게";
+
+/* No combos, after “Following your main setup ·” */
+"none" = "없음";
+
+"Delete the %@ setup?" = "%@ 구성을 삭제할까요?";
+
+"Delete Setup" = "구성 삭제";
+
+"%@ will follow your main setup again." = "%@은(는) 다시 기본 구성을 따라요.";
+
+"Used whenever %@ is in front. While you edit it here, it’s live so you can try it." = "%@이(가) 앞에 있을 때마다 사용돼요. 여기서 편집하는 동안 바로 적용되므로 직접 사용해 볼 수 있어요.";
+
+"Delete" = "삭제";
+
+"Delete this app’s setup" = "이 앱의 구성 삭제";
+
+/* After “Following your main setup ·” */
+"default buttons" = "기본 버튼";
+
+"Custom for this app — starts as a copy of your main setup" = "이 앱 전용 — 기본 구성의 복사본으로 시작해요";
+
+"Following your main setup · %@" = "기본 구성을 따름 · %@";
+
+"Main setup" = "기본 구성";
+
+"Customize" = "사용자화";
+
+/* ---- AssignViews.swift ---- */
+
+"Quick assign" = "빠른 지정";
+
+"Press a trackball button — or hold two or three together for a combo — then press the keyboard shortcut it should send." = "트랙볼 버튼을 누르거나 콤보를 위해 두세 개를 함께 누른 다음, 보낼 키보드 단축키를 누르세요.";
+
+"Assign" = "지정";
+
+"Press a button on your trackball… (hold several together for a combo)" = "트랙볼의 버튼을 누르세요… (콤보는 여러 개를 함께 누르기)";
+
+"Cancel" = "취소";
+
+"Now press a keyboard shortcut" = "이제 키보드 단축키를 누르세요";
+
+"Or choose an action from the menu. Esc cancels." = "또는 메뉴에서 동작을 선택하세요. Esc를 누르면 취소돼요.";
+
+"No combos yet. Use Quick assign and hold two or three buttons together." = "아직 콤보가 없어요. 빠른 지정을 사용해 버튼 두세 개를 함께 누르세요.";
+
+"Delete combo" = "콤보 삭제";
+
+"Buttons in a combo wait a split second (up to 0.16 s for three) to see if their partners join. Buttons not in any combo respond instantly." = "콤보에 포함된 버튼은 함께 눌리는 버튼이 있는지 잠깐(버튼 3개면 최대 0.16초) 기다려요. 콤보에 없는 버튼은 즉시 반응해요.";
+
+"New combo" = "새 콤보";
+
+"That combo already exists" = "이미 있는 콤보예요";
+
+"Pick at least two" = "두 개 이상 선택하세요";
+
+"Add Combo" = "콤보 추가";
+
+/* ---- BackupView.swift ---- */
+
+/* Glide 2.6 (9) · …end in .glide-settings… */
+"Glide %@ (%@) · Settings files end in .%@ and open in Glide with a double-click." = "Glide %@ (%@) · 설정 파일은 .%@ 확장자로 끝나며 이중 클릭하면 Glide에서 열려요.";
+
+"Export" = "내보내기";
+
+"Drag to Finder, Messages, Mail…" = "Finder, 메시지, Mail로 드래그…";
+
+"Drag the file anywhere, or:" = "파일을 아무 곳으로나 드래그하거나:";
+
+"Save to File…" = "파일로 저장…";
+
+"Glide Settings" = "Glide 설정";
+
+"Share…" = "공유…";
+
+"Settings" = "설정";
+
+"Import" = "가져오기";
+
+"Drop a settings file here" = "여기에 설정 파일을 놓으세요";
+
+"Drop to preview" = "놓아서 미리 보기";
+
+"You’ll see exactly what changes before anything is replaced." = "무엇이든 대치되기 전에 어떤 부분이 바뀌는지 정확히 보여드려요.";
+
+"Choose File…" = "파일 선택…";
+
+"Replace My Settings" = "내 설정 대치";
+
+/* Date, then the Mac's name */
+"Exported %@ from %@" = "%1$@, %2$@에서 내보냄";
+
+"Exported %@" = "%@에 내보냄";
+
+/* The Mac's name */
+"Exported from %@" = "%@에서 내보냄";
+
+"Glide settings file" = "Glide 설정 파일";
+
+/* Tab name: export, import and iCloud sync */
+"Sync" = "동기화";
+
+"Sync with iCloud Drive" = "iCloud Drive와 동기화";
+
+"Sync Now" = "지금 동기화";
+
+"This Mac" = "이 Mac";
+
+"Your settings live in iCloud Drive › Glide, so every Mac signed in to your Apple Account stays in step — no extra account. The pause switch stays per-Mac." = "설정은 iCloud Drive › Glide에 저장되므로 같은 Apple 계정으로 로그인한 모든 Mac이 동일하게 유지돼요 — 추가 계정은 필요 없어요. 일시 정지 스위치는 Mac마다 따로 적용돼요.";
+
+"Off — settings stay on this Mac" = "끔 — 설정이 이 Mac에만 저장돼요";
+
+"Syncing…" = "동기화 중…";
+
+/* %@ is a relative time like “5 minutes ago” */
+"Up to date · %@" = "최신 상태 · %@";
+
+"Show in Finder" = "Finder에서 보기";
+
+/* ---- ButtonsView.swift ---- */
+
+"Press a button on your trackball — its row lights up." = "트랙볼의 버튼을 누르면 해당 행이 빛나요.";
+
+"Normally: %@" = "원래 기능: %@";
+
+"Left click · locked" = "왼쪽 클릭 · 고정됨";
+
+"Your primary click stays a left click, so Glide can never lock you out." = "주 클릭은 항상 왼쪽 클릭으로 유지되므로 Glide 때문에 조작이 막힐 일은 없어요.";
+
+"Type a shortcut…  esc to cancel" = "단축키 입력…  esc로 취소";
+
+"Record custom shortcut…" = "사용자 설정 단축키 기록…";
+
+/* ---- Components.swift ---- */
+
+"BETA" = "베타";
+
+"Supported through the Beta program — you may hit bugs" = "베타 프로그램을 통해 지원돼요 — 버그가 있을 수 있어요";
+
+"Precise" = "정밀";
+
+"macOS" = "macOS";
+
+"Fast" = "빠르게";
+
+"Turbo" = "터보";
+
+/* ---- DelightViews.swift ---- */
+
+"Saved" = "저장됨";
+
+"Your settings are saved and already in effect" = "설정이 저장되었고 이미 적용되었어요";
+
+"Settings saved" = "설정 저장됨";
+
+"Make it yours" = "나만의 Glide 만들기";
+
+"of %lld" = "/ %lld";
+
+"You’ve made Glide yours." = "Glide를 나만의 것으로 만들었어요.";
+
+"Speed, scrolling, buttons, a combo and an app setup — all tuned to you. Change anything, any time." = "속도, 스크롤, 버튼, 콤보, 앱 구성까지 — 모두 나에게 맞췄어요. 언제든지 무엇이든 바꿀 수 있어요.";
+
+"Hide This Card" = "이 카드 가리기";
+
+"Hide this checklist — it won’t come back" = "이 체크리스트 가리기 — 다시 나타나지 않아요";
+
+"Hide checklist" = "체크리스트 가리기";
+
+"Done — open to change it" = "완료 — 열어서 변경하기";
+
+/* %@ is a tab name */
+"Open the %@ tab" = "%@ 탭 열기";
+
+"Your trackball" = "내 트랙볼";
+
+"Badges" = "배지";
+
+"%lld of %lld" = "%lld/%lld";
+
+"Counted on this Mac only" = "이 Mac에서만 집계됨";
+
+/* %@ is a date */
+"Since %@ · on this Mac only" = "%@부터 · 이 Mac에서만";
+
+"Lifetime clicks" = "누적 클릭";
+
+"Lifetime · scrolled" = "누적 · 스크롤 거리";
+
+"Lifetime · ball rolled" = "누적 · 볼 굴린 거리";
+
+/* Clicks per day; %@ is a number */
+"About %@ a day" = "하루 약 %@회";
+
+"Counting from today" = "오늘부터 집계";
+
+"Give it a spin" = "한번 돌려보세요";
+
+"This week" = "이번 주";
+
+"Show" = "보기";
+
+"Rolled" = "굴린 거리";
+
+"Day" = "날짜";
+
+"Average" = "평균";
+
+"avg %@" = "평균 %@";
+
+"Last seven days of clicks" = "지난 7일간 클릭";
+
+"Last seven days of scrolling" = "지난 7일간 스크롤";
+
+"Last seven days of ball rolling" = "지난 7일간 볼 굴린 거리";
+
+"Personal bests" = "개인 최고 기록";
+
+"Most clicks in a day" = "하루 최다 클릭";
+
+"Most rolled in a day" = "하루 최다 굴린 거리";
+
+"Most scrolled in a day" = "하루 최다 스크롤";
+
+/* When a personal best was set; short (about 6 letters fit) */
+"today" = "오늘";
+
+"NEW" = "신규";
+
+/* Badge tooltip: what earns it, then the date */
+"%@ — earned %@" = "%@ — %@에 획득";
+
+/* Badge tooltip: what earns it */
+"Goal: %@" = "목표: %@";
+
+/* Badge name, then what earns it */
+"%@. %@. Earned" = "%@. %@. 획득함";
+
+/* Badge name, then what earns it */
+"%@. %@. Not yet earned" = "%@. %@. 아직 획득하지 않음";
+
+/* ---- FeedbackView.swift ---- */
+
+/* Feedback kind */
+"Bug" = "버그";
+
+/* Feedback kind */
+"Idea" = "아이디어";
+
+/* Feedback kind */
+"Question" = "질문";
+
+"What went wrong? e.g. “Scrolling jumps in Safari”" = "무엇이 잘못되었나요? 예: “Safari에서 스크롤이 튀어요”";
+
+"What would make Glide better?" = "Glide가 어떻게 하면 더 좋아질까요?";
+
+"What would you like to know?" = "무엇이 궁금하신가요?";
+
+"What happened, what you expected, and how to make it happen again (if you know)." = "무슨 일이 있었는지, 원래 예상한 동작은 무엇인지, 그리고 (알고 있다면) 다시 재현하는 방법을 적어주세요.";
+
+"Tell me more — how would it work, and what would it help with?" = "더 자세히 알려주세요 — 어떻게 작동하고, 어떤 점에 도움이 될까요?";
+
+"Any details that help me answer." = "답변에 도움이 될 만한 세부 사항을 적어주세요.";
+
+/* Bug priority */
+"Low" = "낮음";
+
+/* Bug priority */
+"Normal" = "보통";
+
+/* Bug priority */
+"High" = "높음";
+
+/* Bug priority: can't use the trackball properly */
+"Blocking" = "치명적";
+
+"A small thing, whenever" = "사소한 것, 언제든 괜찮아요";
+
+"Worth fixing" = "고칠 만한 문제";
+
+"Gets in my way" = "사용에 방해돼요";
+
+"I can’t use my trackball properly" = "트랙볼을 제대로 쓸 수 없어요";
+
+"Up to %lld pictures or videos can go with one report." = "보고서 하나에 사진이나 동영상을 최대 %lld개까지 첨부할 수 있어요.";
+
+"“%@” isn’t a PNG, JPEG, MOV or MP4." = "“%@” 파일은 PNG, JPEG, MOV 또는 MP4가 아니에요.";
+
+"“%@” couldn’t be read." = "“%@” 파일을 읽을 수 없어요.";
+
+"“%@” is too big (%lld MB at most)." = "“%@” 파일이 너무 커요(최대 %lld MB).";
+
+/* 2.6 (build 9) */
+"%@ (build %@)" = "%@ (빌드 %@)";
+
+"Mac model" = "Mac 모델";
+
+/* Processor architecture: arm64 or x86_64 */
+"Architecture" = "아키텍처";
+
+"Scroll mode" = "스크롤 모드";
+
+"Trackball" = "트랙볼";
+
+"%@ (beta)" = "%@ (베타)";
+
+/* Status pill */
+"Not connected" = "연결 안 됨";
+
+"Beta program" = "베타 프로그램";
+
+/* Switched on */
+"On" = "켬";
+
+/* Areas of Glide the report mentions */
+"Topics" = "주제";
+
+"That email address doesn’t look right." = "이메일 주소가 올바르지 않은 것 같아요.";
+
+"Your feedback didn’t send — open Send Feedback to try again." = "피드백이 전송되지 않았어요 — 피드백 보내기를 열어 다시 시도하세요.";
+
+"Feedback sent — thank you!" = "피드백을 보냈어요 — 감사합니다!";
+
+"Send Feedback" = "피드백 보내기";
+
+"Bugs, ideas, questions — it goes straight to the developer." = "버그, 아이디어, 질문 — 개발자에게 바로 전달돼요.";
+
+"Close" = "닫기";
+
+"Hide — it keeps sending in the background" = "가리기 — 백그라운드에서 계속 보내요";
+
+"Attachments" = "첨부 파일";
+
+"Include my Glide settings" = "내 Glide 설정 포함";
+
+"Your pointer, scrolling and button setup (settings.json) so I can reproduce it. Nothing personal is in it." = "문제를 재현할 수 있도록 포인터, 스크롤, 버튼 구성(settings.json)을 보내요. 개인 정보는 포함되지 않아요.";
+
+"Include the scroll log" = "스크롤 로그 포함";
+
+"The last %@ lines of timings from the scroll ring (scroll-log.txt) — no keystrokes or window contents." = "스크롤 링의 최근 타이밍 기록 %@줄(scroll-log.txt) — 키 입력이나 윈도우 내용은 포함되지 않아요.";
+
+"There’s no scroll log yet — scroll with the ring and it will have something to send." = "아직 스크롤 로그가 없어요 — 링으로 스크롤하면 보낼 내용이 생겨요.";
+
+"Drop screenshots or screen recordings here" = "여기에 스크린샷이나 화면 기록을 놓으세요";
+
+"Drop to attach" = "놓아서 첨부";
+
+"PNG, JPEG, MOV or MP4 · ⇧⌘5 records the screen" = "PNG, JPEG, MOV 또는 MP4 · ⇧⌘5로 화면을 기록할 수 있어요";
+
+"Add Screenshot…" = "스크린샷 추가…";
+
+"Add Screenshots or Recordings" = "스크린샷 또는 화면 기록 추가";
+
+"Pictures or short videos that show what you mean (up to %lld)." = "무엇을 말하는지 보여주는 사진이나 짧은 동영상(최대 %lld개).";
+
+/* Open panel button */
+"Attach" = "첨부";
+
+"About you — optional" = "보내는 사람 — 선택 사항";
+
+"Name" = "이름";
+
+"Your name" = "이름 입력";
+
+"Email — that doesn’t look right" = "이메일 — 올바르지 않은 것 같아요";
+
+"Email, if you’d like a reply" = "답장을 원하시면 이메일 입력";
+
+"you@example.com" = "you@example.com";
+
+"OK to contact me about this" = "이 건에 대해 연락해도 괜찮아요";
+
+"Remembered on this Mac for next time. Only used to reply to you." = "다음을 위해 이 Mac에 기억돼요. 답장할 때만 사용돼요.";
+
+"Also sent: %@" = "함께 보냄: %@";
+
+"So I know where it happened. Nothing else about your Mac is sent." = "어디서 발생했는지 알기 위한 정보예요. Mac에 관한 다른 정보는 전송되지 않아요.";
+
+"Try Again" = "다시 시도";
+
+"Send" = "보내기";
+
+"Give it a title first" = "먼저 제목을 입력하세요";
+
+"Send (⌘↩)" = "보내기(⌘↩)";
+
+/* Listed after “With”: With 2 files, settings and scroll log. */
+"settings" = "설정";
+
+/* Listed after “With”: With 2 files, settings and scroll log. */
+"scroll log" = "스크롤 로그";
+
+"Just your message." = "메시지만 보내요.";
+
+/* %@ is a list: 2 files, settings and scroll log */
+"With %@." = "%@도 함께 보내요.";
+
+"Click to open" = "클릭하여 열기";
+
+"Remove" = "제거";
+
+"Send Another" = "하나 더 보내기";
+
+"Done" = "완료";
+
+"Reference %@" = "참조 번호 %@";
+
+"Thanks — it went straight to the developer." = "감사합니다 — 개발자에게 바로 전달됐어요.";
+
+/* %@ is the sender's first name */
+"Thanks, %@ — it went straight to the developer." = "%@ 님, 감사합니다 — 개발자에게 바로 전달됐어요.";
+
+/* %@ is an email address */
+"If there’s a question, the reply goes to %@." = "질문이 있으면 %@(으)로 답장이 가요.";
+
+"Every report is read. Add an email next time if you’d like a reply." = "모든 보고서를 읽어요. 답장을 원하시면 다음에는 이메일을 적어주세요.";
+
+/* ---- LaunchViews.swift ---- */
+
+"Glide is starting" = "Glide 시작 중";
+
+"Click or press Escape to skip" = "클릭하거나 Escape 키를 눌러 건너뛰기";
+
+"Make your Expert Mouse feel amazing" = "Expert Mouse를 최고의 느낌으로";
+
+"Click to skip" = "클릭하여 건너뛰기";
+
+/* ---- OverviewView.swift ---- */
+
+"Clicks today" = "오늘의 클릭";
+
+"General" = "일반";
+
+"Open at login" = "로그인 시 열기";
+
+"Starts quietly in the background so your trackball is always tuned." = "백그라운드에서 조용히 시작되어 트랙볼이 항상 맞춰진 상태로 유지돼요.";
+
+"Menu bar icon" = "메뉴 막대 아이콘";
+
+"Quick access to pause, precision and updates. Glide keeps running either way — reopen it from the Dock." = "일시 정지, 정밀 모드, 업데이트에 빠르게 접근할 수 있어요. 어느 쪽이든 Glide는 계속 실행돼요 — Dock에서 다시 열 수 있어요.";
+
+"Try features before they're finished — like support for other Kensington trackballs and early updates. You may hit bugs." = "완성 전 기능을 먼저 사용해 보세요 — 다른 Kensington 트랙볼 지원이나 미리 받는 업데이트 등. 버그가 있을 수 있어요.";
+
+"Celebrations" = "축하 효과";
+
+"A toast and a little confetti when you reach a milestone or set a personal best. Badges are kept either way." = "마일스톤에 도달하거나 개인 최고 기록을 세우면 알림과 함께 색종이가 살짝 터져요. 배지는 어느 쪽이든 보관돼요.";
+
+"A soft chime to go with them." = "부드러운 차임도 함께 울려요.";
+
+"Celebration sounds" = "축하 사운드";
+
+"A soft chime as Glide opens. Never when your Mac is muted." = "Glide가 열릴 때 부드러운 차임이 울려요. Mac이 음소거 상태일 때는 울리지 않아요.";
+
+"Launch sounds" = "실행 사운드";
+
+"Feedback" = "피드백";
+
+"Found a bug or have an idea? It goes straight to the developer." = "버그를 발견했거나 아이디어가 있나요? 개발자에게 바로 전달돼요.";
+
+"Closing this window keeps Glide running. Click Glide in the Dock to bring it back, or press ⌘Q to quit — your trackball then goes back to normal." = "이 윈도우를 닫아도 Glide는 계속 실행돼요. Dock에서 Glide를 클릭하면 다시 열리고, ⌘Q를 눌러 종료하면 트랙볼이 원래대로 돌아가요.";
+
+"Waiting for permissions…" = "권한 대기 중…";
+
+"Kensington Expert Mouse" = "Kensington Expert Mouse";
+
+"Roll, spin, or click — it's live." = "굴리고, 돌리고, 클릭해 보세요 — 실시간이에요.";
+
+"Turn on the Beta program to try Glide with your %@." = "베타 프로그램을 켜면 %@에서 Glide를 사용해 볼 수 있어요.";
+
+"Turn On Beta" = "베타 켜기";
+
+"Plug in your Expert Mouse." = "Expert Mouse를 연결하세요.";
+
+"Best day" = "최고의 날";
+
+"Your best day so far: %@" = "지금까지 최고의 날: %@";
+
+"Live activity" = "실시간 활동";
+
+"Ball speed" = "볼 속도";
+
+"Scroll ring" = "스크롤 링";
+
+"Language" = "언어";
+
+"Glide can speak a different language from the rest of your Mac." = "Glide는 Mac의 다른 부분과 다른 언어를 사용할 수 있어요.";
+
+"Relaunch to Apply" = "재실행하여 적용";
+
+"System Default" = "시스템 기본값";
+
+"Updates" = "업데이트";
+
+"Install %@" = "%@ 설치";
+
+"Check for Updates" = "업데이트 확인";
+
+/* Glide 2.6 · 2.7 is ready to install */
+"%@ · %@ is ready to install" = "%@ · %@ 설치 준비 완료";
+
+/* %@ is “Glide 2.6” */
+"%@ · You’re up to date ✓" = "%@ · 최신 버전이에요 ✓";
+
+/* %@ is “Glide 2.6” */
+"%@ · Couldn’t reach GitHub — try again later" = "%@ · GitHub에 연결할 수 없어요 — 나중에 다시 시도하세요";
+
+/* %@ is “Glide 2.6” */
+"%@ · Checking…" = "%@ · 확인 중…";
+
+/* %@ is “Glide 2.6” */
+"%@ · Checks automatically once a day" = "%@ · 하루에 한 번 자동으로 확인해요";
+
+/* ---- PointerView.swift ---- */
+
+"Feel" = "느낌";
+
+"System Settings tops out at 3. Glide lets the Expert Mouse go far past it." = "시스템 설정은 최대 3까지예요. Glide는 Expert Mouse를 훨씬 더 빠르게 설정할 수 있어요.";
+
+"Presets" = "프리셋";
+
+"Precision mode" = "정밀 모드";
+
+"Precision speed" = "정밀 모드 속도";
+
+"Pixel-exact" = "픽셀 단위";
+
+"macOS default" = "macOS 기본값";
+
+"Set a button to Precision in Buttons. Hold it (or toggle it on) and the cursor slows to this speed for fine work, then snaps back." = "버튼 탭에서 버튼을 정밀 모드로 설정하세요. 버튼을 누르고 있거나 켜 두면 세밀한 작업을 위해 커서가 이 속도로 느려졌다가 다시 원래대로 돌아와요.";
+
+"Applies only to the Expert Mouse — your other mice and trackpad keep their own settings. macOS still moves the cursor itself, so there's zero added lag." = "Expert Mouse에만 적용돼요 — 다른 마우스와 트랙패드는 각자의 설정을 유지해요. 커서는 여전히 macOS가 직접 움직이므로 지연이 전혀 추가되지 않아요.";
+
+"Response curve" = "응답 곡선";
+
+"Ball" = "볼";
+
+"Cursor" = "커서";
+
+"Series" = "계열";
+
+"How fast you roll the ball" = "볼을 굴리는 속도";
+
+"How fast the cursor moves" = "커서가 움직이는 속도";
+
+"Your curve" = "내 곡선";
+
+"No acceleration" = "가속 없음";
+
+"Roll the ball to see where you are" = "볼을 굴려 현재 위치를 확인하세요";
+
+/* ---- RootView.swift ---- */
+
+/* Tab name */
+"Overview" = "개요";
+
+/* Tab name */
+"Apps" = "앱";
+
+"A Precision button is slowing the cursor — press it again (or pause Glide) to stop" = "정밀 모드 버튼이 커서를 느리게 하고 있어요 — 다시 누르거나 Glide를 일시 정지하면 멈춰요";
+
+"The left button is held by Drag lock — click, or press the Drag lock button again, to let go" = "드래그 잠금이 왼쪽 버튼을 누르고 있어요 — 클릭하거나 드래그 잠금 버튼을 다시 누르면 놓아요";
+
+"Ball scroll" = "볼 스크롤";
+
+"Pause or resume Glide — also %@ from anywhere" = "Glide 일시 정지 또는 재개 — 어디서나 %@ 사용 가능";
+
+"Pause or resume Glide" = "Glide 일시 정지 또는 재개";
+
+/* Status pill */
+"Needs permission" = "권한 필요";
+
+/* Status pill */
+"Paused" = "일시 정지됨";
+
+/* Status pill: a Kensington device that needs the Beta program */
+"Beta only" = "베타 전용";
+
+/* Status pill */
+"Connected · Beta" = "연결됨 · 베타";
+
+/* Status pill */
+"Connected" = "연결됨";
+
+"Using %@ setup" = "%@ 구성 사용 중";
+
+"Previewing %@’s setup while you edit it. Other apps use your main setup." = "편집하는 동안 %@ 구성을 미리 보는 중이에요. 다른 앱은 기본 구성을 사용해요.";
+
+"%@ is in front, so Glide is using its setup. Click to edit it." = "%@이(가) 앞에 있어서 Glide가 해당 앱 구성을 사용 중이에요. 클릭하여 편집하세요.";
+
+"Two quick permissions" = "간단한 권한 두 가지";
+
+"Glide needs these to read your trackball and adjust its buttons and scrolling. Until both are on, your trackball works normally and Glide stays out of the way." = "Glide가 트랙볼을 읽고 버튼과 스크롤을 조정하려면 이 권한이 필요해요. 둘 다 켜기 전까지는 트랙볼이 평소처럼 작동하고 Glide는 관여하지 않아요.";
+
+"Accessibility — on" = "손쉬운 사용 — 켬";
+
+"Allow Accessibility…" = "손쉬운 사용 허용…";
+
+"Allow Input Monitoring…" = "입력 모니터링 허용…";
+
+"Input Monitoring — on" = "입력 모니터링 — 켬";
+
+"Downloading %lld%%" = "다운로드 중 %lld%%";
+
+"Restarting…" = "재시작 중…";
+
+"Install %@ & Relaunch" = "%@ 설치 및 재실행";
+
+"What’s New in %@…" = "%@의 새로운 기능…";
+
+"A Beta program build — it may have bugs" = "베타 프로그램 빌드 — 버그가 있을 수 있어요";
+
+"Last try failed: %@" = "마지막 시도 실패: %@";
+
+/* Update button after a failed install */
+"Retry" = "재시도";
+
+"Glide %@ is available — install it or see what's new" = "Glide %@ 사용 가능 — 설치하거나 새로운 기능 보기";
+
+/* ---- ScrollSettingsView.swift ---- */
+
+"Scroll with the ball" = "볼로 스크롤하기";
+
+"Ball scroll speed" = "볼 스크롤 속도";
+
+"Fine" = "세밀하게";
+
+"Set a button to “Scroll with ball” in Buttons. While you hold it, rolling the ball scrolls in any direction and the cursor stays put. Let go mid-roll and the page glides briefly." = "버튼 탭에서 버튼을 “볼로 스크롤”로 설정하세요. 버튼을 누르고 있는 동안 볼을 굴리면 모든 방향으로 스크롤되고 커서는 그대로 있어요. 굴리는 도중에 놓으면 페이지가 잠깐 미끄러져요.";
+
+"Control" = "컨트롤";
+
+"Fling" = "휙";
+
+"macOS scrolling" = "macOS 스크롤";
+
+"Glide steps aside and lets macOS scroll the ring itself — the same system Kensington's driver handed its ticks to. Only the speed is adjustable." = "Glide는 물러나고 macOS가 직접 링 스크롤을 처리해요 — Kensington 드라이버가 틱을 넘기던 바로 그 시스템이에요. 속도만 조절할 수 있어요.";
+
+"Scroll speed" = "스크롤 속도";
+
+"System Settings' scroll-speed slider goes up to 1.7. This only affects the Expert Mouse." = "시스템 설정의 스크롤 속도 슬라이더는 최대 1.7이에요. 이 설정은 Expert Mouse에만 적용돼요.";
+
+"Every tick gives the page a push; friction slows it down. Gentle turns barely coast, hard spins fly — one rule, no mode switching. Tuned from Kensington's own scrolling, at twice its frame rate." = "틱마다 페이지를 밀어주고, 마찰이 속도를 줄여요. 살살 돌리면 거의 미끄러지지 않고, 세게 돌리면 날아가요 — 규칙은 하나, 모드 전환은 없어요. Kensington 자체 스크롤을 바탕으로 두 배의 프레임률로 조정했어요.";
+
+"Slow-turn distance" = "천천히 돌릴 때 거리";
+
+/* Points: a distance on screen */
+"%lld pt" = "%lld pt";
+
+"Far" = "멀리";
+
+"Spin power" = "회전 파워";
+
+"Gentle" = "살살";
+
+"Wild" = "격하게";
+
+"Glide" = "활주";
+
+/* Milliseconds */
+"%lld ms" = "%lld ms";
+
+"Grippy" = "끈끈하게";
+
+"Slippery" = "미끄럽게";
+
+"Off = plain steps, exactly like a basic mouse" = "끔 = 일반 마우스처럼 한 칸씩 스크롤";
+
+"Smooth scrolling" = "부드러운 스크롤";
+
+"Kensington feel" = "Kensington 느낌";
+
+"Control is the recommended starting point: the page follows the ring and stops when you stop." = "처음에는 컨트롤을 추천해요. 페이지가 링을 따라 움직이고, 링을 멈추면 함께 멈춰요.";
+
+"Distance per notch" = "틱당 거리";
+
+"Locked to ring" = "링에 고정";
+
+"Softer" = "부드럽게";
+
+"Spin acceleration" = "회전 가속";
+
+/* Slider value: spin acceleration is off */
+"Off" = "끔";
+
+"Constant" = "일정하게";
+
+"Spin to fly" = "돌리면 날아가게";
+
+"Throw" = "던지기";
+
+"Spin fast and let go — the page glides and lands" = "빠르게 돌리고 놓으면 페이지가 미끄러지다가 멈춰요";
+
+"Throw to coast" = "던져서 미끄러지기";
+
+"Throw distance" = "던지기 거리";
+
+"Long" = "길게";
+
+"Short" = "짧게";
+
+/* Seconds, e.g. “1.5 s” */
+"%@ s" = "%@초";
+
+"Direction" = "방향";
+
+"Flip direction" = "방향 반전";
+
+"Only if it scrolls the wrong way with your scroll reverser" = "스크롤 반전 앱 사용 시 방향이 반대일 때만";
+
+"Hold ⇧ while spinning the ring" = "링을 돌리는 동안 ⇧ 누르기";
+
+"Shift scrolls sideways" = "Shift를 누르면 가로로 스크롤";
+
+"macOS does the scrolling" = "macOS가 스크롤을 처리해요";
+
+"Push and glide — Kensington's feel" = "밀고 미끄러지기 — Kensington의 느낌";
+
+"Page tracks the ring exactly" = "페이지가 링을 정확히 따라가요";
+
+"Push per tick" = "틱당 밀기";
+
+"Spin" = "회전";
+
+"pt" = "pt";
+
+"Ring ticks per second" = "초당 링 틱 수";
+
+"Points per tick" = "틱당 포인트";
+
+"Each push coasts for about %@ s before it fades out. Turn the ring the other way to stop it." = "한 번 밀 때마다 약 %@초 동안 미끄러지다가 서서히 멈춰요. 링을 반대로 돌리면 멈출 수 있어요.";
+
+"After a flick" = "튕긴 후";
+
+"Speed" = "속도";
+
+"ms" = "ms";
+
+"A typical flick coasts about %lld pt and lands after %lld ms — then stops dead. Slow down before letting go and it doesn't coast at all. Turn the ring back to catch it." = "보통 한 번 튕기면 약 %lld pt 미끄러지고 %lld ms 후에 딱 멈춰요. 놓기 전에 속도를 줄이면 전혀 미끄러지지 않아요. 링을 반대로 돌리면 잡을 수 있어요.";
+
+"Throw is off — the page stops the moment the ring stops." = "던지기가 꺼져 있어요 — 링이 멈추는 순간 페이지도 멈춰요.";
+
+"×" = "×";
+
+"Distance ×" = "거리 ×";
+
+"Try it here" = "여기서 사용해 보세요";
+
+"Row %lld" = "행 %lld";
+
+/* ---- ShortcutsCard.swift ---- */
+
+"Keyboard shortcuts" = "키보드 단축키";
+
+"They work in every app, even with this window closed. Click a shortcut to record a new one; Esc cancels." = "이 윈도우를 닫아도 모든 앱에서 작동해요. 단축키를 클릭하면 새로 기록할 수 있고, Esc를 누르면 취소돼요.";
+
+"Go back to %@" = "%@(으)로 되돌리기";
+
+"Remove this shortcut" = "이 단축키 제거";
+
+"Type shortcut…" = "단축키 입력…";
+
+"Record Shortcut" = "단축키 기록";
+
+"Click, then press a new shortcut" = "클릭한 다음 새 단축키 누르기";
+
+"Press the new shortcut, or Esc to cancel" = "새 단축키를 누르거나 Esc를 눌러 취소하세요";
+
+"No pause shortcut. You can still pause Glide from its menu-bar icon or the switch at the top of this window." = "일시 정지 단축키가 없어요. 메뉴 막대 아이콘이나 이 윈도우 상단의 스위치로도 Glide를 일시 정지할 수 있어요.";
+
+"Couldn't turn on %@ — another app already uses it. Choose a different shortcut." = "%@을(를) 켤 수 없어요 — 다른 앱에서 이미 사용 중이에요. 다른 단축키를 선택하세요.";
+
+/* Use the names System Settings shows in this language */
+"macOS uses %@ for one of its own shortcuts (System Settings › Keyboard › Keyboard Shortcuts), so it may never reach Glide." = "macOS가 %@을(를) 자체 단축키로 사용하므로(시스템 설정 › 키보드 › 키보드 단축키) Glide까지 전달되지 않을 수 있어요.";
+
+"Apps use ⌘ shortcuts like %@ too — while it's set, Glide takes it from every app." = "앱에서도 %@ 같은 ⌘ 단축키를 사용해요 — 이 단축키를 지정해 두면 Glide가 모든 앱에서 가로채요.";
+
+/* ---- WelcomeTourView.swift ---- */
+
+"Welcome Tour" = "환영 투어";
+
+"Close the tour (esc) — reopen it from Help › Show Welcome Tour…" = "투어 닫기(esc) — 도움말 › 환영 투어 보기…에서 다시 열 수 있어요";
+
+"Close tour" = "투어 닫기";
+
+"Skip for now" = "나중에";
+
+"Glide stays out of the way until both permissions are on" = "두 권한이 모두 켜질 때까지 Glide는 관여하지 않아요";
+
+"Step %lld of %lld" = "%lld/%lld단계";
+
+"Get Started" = "시작하기";
+
+"Start Using Glide" = "Glide 사용 시작";
+
+"Continue" = "계속";
+
+"Welcome to Glide" = "Glide에 오신 것을 환영합니다";
+
+"Your Kensington trackball, tuned exactly the way you like it." = "내 Kensington 트랙볼을 원하는 그대로 맞춰보세요.";
+
+"A faster pointer" = "더 빠른 포인터";
+
+"A silky scroll ring" = "부드러운 스크롤 링";
+
+"Buttons that do more" = "더 많은 일을 하는 버튼";
+
+"About a minute. Use Return or the arrow keys to move along." = "1분 정도 걸려요. Return 키나 화살표 키로 넘어가세요.";
+
+"Glide needs these to read your trackball and change what it does. Until both are on, your trackball works normally and Glide stays out of the way." = "Glide가 트랙볼을 읽고 동작을 바꾸려면 이 권한이 필요해요. 둘 다 켜기 전까지는 트랙볼이 평소처럼 작동하고 Glide는 관여하지 않아요.";
+
+"Accessibility" = "손쉬운 사용";
+
+"Lets Glide change what your buttons and scroll ring do." = "Glide가 버튼과 스크롤 링의 기능을 바꿀 수 있게 해줘요.";
+
+"Input Monitoring" = "입력 모니터링";
+
+"Lets Glide tell your trackball apart from your other mice and trackpad." = "Glide가 트랙볼을 다른 마우스나 트랙패드와 구별할 수 있게 해줘요.";
+
+"All set — Glide can see your trackball." = "모두 완료 — Glide가 트랙볼을 인식할 수 있어요.";
+
+"Switch Glide on in each list in System Settings, then come back — the checkmarks update by themselves." = "시스템 설정의 각 목록에서 Glide를 켠 다음 돌아오세요 — 체크 표시는 자동으로 업데이트돼요.";
+
+"Allow…" = "허용…";
+
+"Meet your buttons" = "버튼을 만나보세요";
+
+"Press each button on your trackball." = "트랙볼의 각 버튼을 눌러보세요.";
+
+"Left click — always" = "왼쪽 클릭 — 항상";
+
+"Does: %@" = "기능: %@";
+
+"Found" = "찾음";
+
+"Not pressed yet" = "아직 누르지 않음";
+
+"Glide can't see your buttons until both permissions are on. You can come back to this tour from Help." = "두 권한이 모두 켜지기 전에는 Glide가 버튼을 인식할 수 없어요. 도움말에서 이 투어로 다시 돌아올 수 있어요.";
+
+"Your %@ works with Glide through the Beta program — you can turn it on at the end of the tour." = "%@은(는) 베타 프로그램을 통해 Glide와 함께 작동해요 — 투어 마지막에 켤 수 있어요.";
+
+"Plug in your Expert Mouse to try this." = "이 기능을 사용하려면 Expert Mouse를 연결하세요.";
+
+"All four found. Change what they do any time in the Buttons tab." = "4개 모두 찾았어요. 버튼 탭에서 언제든지 기능을 바꿀 수 있어요.";
+
+"%lld of 4 found. Shortcuts are paused while you try them, so nothing happens by surprise." = "4개 중 %lld개를 찾았어요. 시험하는 동안에는 단축키가 일시 정지되므로 예기치 않은 일이 일어나지 않아요.";
+
+"Choose your scrolling" = "스크롤 방식 선택";
+
+"How the scroll ring moves the page. Try one, spin the ring, and switch whenever you like." = "스크롤 링으로 페이지를 움직이는 방식이에요. 하나를 골라 링을 돌려보고, 언제든 바꿔보세요.";
+
+"How far the cursor travels when you roll the ball. macOS stops at its own setting; Glide goes past it." = "볼을 굴릴 때 커서가 이동하는 거리예요. macOS는 자체 설정에서 멈추지만 Glide는 그 이상으로 갈 수 있어요.";
+
+"Fine-tune both later in the Pointer and Scrolling tabs." = "나중에 포인터 탭과 스크롤 탭에서 세부 조정할 수 있어요.";
+
+"You're always in control" = "언제나 직접 제어할 수 있어요";
+
+"Two promises that keep your Mac usable, whatever you set up." = "무엇을 설정하든 Mac을 계속 쓸 수 있게 해주는 두 가지 약속.";
+
+"Pause instantly" = "즉시 일시 정지";
+
+"Press ⌃⌥⌘G anywhere and Glide pauses — your trackball goes straight back to plain macOS. Press it again to resume." = "어디서든 ⌃⌥⌘G를 누르면 Glide가 일시 정지되고 트랙볼이 기본 macOS 상태로 바로 돌아가요. 다시 누르면 재개돼요.";
+
+"Glide is on — try it" = "Glide 켜짐 — 사용해 보세요";
+
+"Glide is paused" = "Glide 일시 정지됨";
+
+"Main click stays a left click" = "주 클릭은 왼쪽 클릭으로 유지돼요";
+
+"The bottom-left button is always a left click, whatever else you remap — so Glide can never lock you out." = "다른 버튼을 어떻게 바꾸든 왼쪽 아래 버튼은 항상 왼쪽 클릭이에요 — 그래서 Glide 때문에 조작이 막힐 일은 없어요.";
+
+"Quitting Glide also puts your trackball back to normal." = "Glide를 종료해도 트랙볼이 원래대로 돌아가요.";
+
+"You're all set" = "모든 준비가 끝났어요";
+
+"Glide keeps running when you close its window — click Glide in the Dock to come back." = "윈도우를 닫아도 Glide는 계속 실행돼요 — Dock에서 Glide를 클릭하면 돌아올 수 있어요.";
+
+"Turn On" = "켜기";
+
+"See this tour again any time from Help › Show Welcome Tour…" = "도움말 › 환영 투어 보기…에서 언제든지 이 투어를 다시 볼 수 있어요";

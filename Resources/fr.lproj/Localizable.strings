@@ -1,0 +1,1429 @@
+/* Glide — fr. Keys are the English text. Checked by scripts/l10n/check.py. */
+
+/* ---- AppDelegate.swift ---- */
+
+"Show Glide" = "Afficher Glide";
+
+"Pause / Resume Glide" = "Suspendre / Reprendre Glide";
+
+/* Mode that slows the pointer for fine work */
+"Precision" = "Précision";
+
+"Check for Updates…" = "Rechercher des mises à jour…";
+
+"Send Feedback…" = "Envoyer des commentaires…";
+
+"Quit Glide" = "Quitter Glide";
+
+"About Glide" = "À propos de Glide";
+
+"Hide Glide" = "Masquer Glide";
+
+"Hide Others" = "Masquer les autres";
+
+/* Menu bar title */
+"File" = "Fichier";
+
+"Export Settings…" = "Exporter les réglages…";
+
+"Import Settings…" = "Importer des réglages…";
+
+"Close Window" = "Fermer la fenêtre";
+
+/* Menu bar title */
+"Window" = "Fenêtre";
+
+"Minimize" = "Placer dans le Dock";
+
+/* Menu bar title */
+"Help" = "Aide";
+
+"Show Welcome Tour…" = "Afficher la visite de bienvenue…";
+
+"Glide Website" = "Site web de Glide";
+
+/* ---- AppModel.swift ---- */
+
+/* Trackball button position */
+"Bottom left" = "En bas à gauche";
+
+/* Trackball button position */
+"Bottom right" = "En bas à droite";
+
+/* Trackball button position */
+"Top left" = "En haut à gauche";
+
+/* Trackball button position */
+"Top right" = "En haut à droite";
+
+"Button %lld" = "Bouton %lld";
+
+"Left click" = "Clic gauche";
+
+"Right click" = "Clic droit";
+
+"Middle click" = "Clic central";
+
+/* Browser back: what the top-right button does by default */
+"Back" = "Précédent";
+
+/* Exported file name; %@ is the date */
+"Glide Settings – %@" = "Réglages Glide – %@";
+
+"Export Glide Settings" = "Exporter les réglages Glide";
+
+"Save your Glide setup to a file you can back up or open on another Mac." = "Enregistrez votre configuration Glide dans un fichier à sauvegarder ou à ouvrir sur un autre Mac.";
+
+"Saved “%@”" = "« %@ » enregistré";
+
+"Couldn’t export: %@" = "Exportation impossible : %@";
+
+"Import Glide Settings" = "Importer des réglages Glide";
+
+"Choose a Glide settings file. You’ll see what’s in it before anything changes." = "Choisissez un fichier de réglages Glide. Vous verrez son contenu avant toute modification.";
+
+"That doesn’t look like a Glide settings file." = "Ce fichier ne semble pas être un fichier de réglages Glide.";
+
+"Imported “%@”" = "« %@ » importé";
+
+"Restored your previous settings" = "Réglages précédents restaurés";
+
+/* ---- AppProfile.swift ---- */
+
+/* Pointer speed in an app setup */
+"Speed %@" = "Vitesse %@";
+
+"Default buttons" = "Boutons par défaut";
+
+"No combos" = "Aucun combo";
+
+"Uses your main setup" = "Utilise votre configuration principale";
+
+/* Scroll mode: macOS's own scrolling */
+"Native" = "Natif";
+
+/* Scroll mode: each tick pushes the page, friction slows it */
+"Flywheel" = "Inertie";
+
+/* Scroll mode: the page follows the ring exactly */
+"Follow" = "Suivi";
+
+"Native scrolling" = "Défilement natif";
+
+"Flywheel scrolling" = "Défilement à inertie";
+
+"Follow scrolling" = "Défilement suivi";
+
+/* No combos / no app setups */
+"None" = "Aucun";
+
+"%lld apps" = "%lld apps";
+
+/* ---- Config.swift ---- */
+
+/* Button action: what the button normally does */
+"Default" = "Par défaut";
+
+"Control-click" = "Contrôle-clic";
+
+"Control-right-click" = "Contrôle-clic droit";
+
+"Command-click" = "Commande-clic";
+
+"Shift-click" = "Maj-clic";
+
+"Option-click" = "Option-clic";
+
+/* Browser forward */
+"Forward" = "Suivant";
+
+/* Mission Control: switch to the Space on the left */
+"Previous Space" = "Space précédent";
+
+/* Mission Control: switch to the Space on the right */
+"Next Space" = "Space suivant";
+
+"Mission Control" = "Mission Control";
+
+"App Exposé" = "App Exposé";
+
+"Browser Back" = "Page précédente";
+
+"Browser Forward" = "Page suivante";
+
+"Spotlight" = "Spotlight";
+
+"Copy" = "Copier";
+
+"Paste" = "Coller";
+
+"Undo" = "Annuler";
+
+"New Tab" = "Nouvel onglet";
+
+"Close Tab" = "Fermer l’onglet";
+
+"Precision (hold)" = "Précision (maintenir)";
+
+"Precision (toggle)" = "Précision (basculer)";
+
+"Scroll with ball (hold)" = "Défiler avec la boule (maintenir)";
+
+/* Mode: the left button stays held down so you can drag without holding it */
+"Drag lock" = "Verrou de glissement";
+
+"Do nothing" = "Ne rien faire";
+
+/* Button action that isn't one of the presets */
+"Custom" = "Personnalisé";
+
+"Pause / resume Glide" = "Suspendre / reprendre Glide";
+
+/* Mode: rolling the ball scrolls instead of moving the pointer */
+"Scroll with ball" = "Défiler avec la boule";
+
+"Your escape hatch: Glide steps aside until you press it again." = "Votre issue de secours : Glide s’efface jusqu’au prochain appui.";
+
+"Slows the pointer for fine work until you press it again." = "Ralentit le pointeur pour le travail minutieux, jusqu’au prochain appui.";
+
+"Rolling the ball scrolls and the pointer stays put, until you press it again." = "Rouler la boule fait défiler et le pointeur reste immobile, jusqu’au prochain appui.";
+
+"Grabs what's under the pointer once you let go of the keys. Press again, or click, to drop." = "Saisit ce qui est sous le pointeur dès que vous relâchez les touches. Appuyez à nouveau, ou cliquez, pour déposer.";
+
+"Include ⌘, ⌃, or ⌥ — %@ on its own would stop working everywhere else." = "Incluez ⌘, ⌃ ou ⌥ — %@ seul cesserait de fonctionner partout ailleurs.";
+
+/* First %@ is a keyboard shortcut like ⌃⌥⌘G; second is a mode name like “Precision” */
+"%@ is already the shortcut for %@." = "%@ est déjà le raccourci de « %@ ».";
+
+"This settings file uses unsupported version %lld." = "Ce fichier de réglages utilise la version %lld, non prise en charge.";
+
+"Native · speed %@" = "Natif · vitesse %@";
+
+"Flywheel · %lld pt, %@ power" = "Inertie · %lld pt, puissance %@";
+
+"Follow · %lld pt per tick" = "Suivi · %lld pt par cran";
+
+"Pointer speed" = "Vitesse du pointeur";
+
+/* Tab name */
+"Scrolling" = "Défilement";
+
+/* Tab name */
+"Buttons" = "Boutons";
+
+"Combos" = "Combos";
+
+"App setups" = "Configurations d’app";
+
+/* ---- DelightCenter.swift ---- */
+
+/* %@ is a badge name */
+"Milestone: %@" = "Étape franchie : %@";
+
+"Your biggest scrolling day yet" = "Votre plus grosse journée de défilement";
+
+"Your most-rolled day yet" = "Votre journée la plus roulée";
+
+"Your clickiest day yet" = "Votre journée la plus cliquée";
+
+"Glide is all yours" = "Glide est tout à vous";
+
+/* %@ is an amount: 1,234 or 12.3 m */
+"%@ today" = "%@ aujourd’hui";
+
+/* “Make it yours” is the setup checklist on Overview */
+"%lld of %lld on Make it yours" = "%lld sur %lld dans « À votre façon »";
+
+"Every part of your trackball, set up your way." = "Chaque recoin de votre trackball, réglé à votre façon.";
+
+"See them on Overview" = "Voyez-les dans Aperçu";
+
+/* ---- FeedbackClient.swift ---- */
+
+"“%@” couldn’t be read. Remove it and add it again." = "« %@ » n’a pas pu être lu. Retirez-le puis ajoutez-le à nouveau.";
+
+"It needs a title." = "Un titre est nécessaire.";
+
+"That’s too many attachments (at most %lld)." = "Trop de pièces jointes (%lld au maximum).";
+
+"“%@” can’t be sent with that name." = "« %@ » ne peut pas être envoyé sous ce nom.";
+
+"Two attachments are called “%@”." = "Deux pièces jointes s’appellent « %@ ».";
+
+"“%@” isn’t a kind of file that can be sent." = "« %@ » n’est pas un type de fichier pouvant être envoyé.";
+
+"“%@” is empty or missing." = "« %@ » est vide ou introuvable.";
+
+"“%@” is too big to send (the limit is %lld MB)." = "« %@ » est trop volumineux pour être envoyé (limite : %lld Mo).";
+
+"Sending…" = "Envoi…";
+
+"The feedback server sent back something unexpected. Try again in a little while." = "Le serveur de commentaires a renvoyé une réponse inattendue. Réessayez dans un petit moment.";
+
+"The feedback server sent back something unexpected." = "Le serveur de commentaires a renvoyé une réponse inattendue.";
+
+/* Feedback progress */
+"Sent" = "Envoyé";
+
+"“%@” changed while it was being sent. Try again." = "« %@ » a changé pendant l’envoi. Réessayez.";
+
+/* File name, then megabytes sent so far and in all */
+"Sending %@… %@ of %@ MB" = "Envoi de %@… %@ sur %@ Mo";
+
+"The feedback couldn’t be sent." = "Les commentaires n’ont pas pu être envoyés.";
+
+"The feedback server had a problem: %@" = "Le serveur de commentaires a rencontré un problème : %@";
+
+"The feedback server had a problem (error %lld). Try again in a minute." = "Le serveur de commentaires a rencontré un problème (erreur %lld). Réessayez dans une minute.";
+
+"The feedback server turned it down (error %lld)." = "Le serveur de commentaires l’a refusé (erreur %lld).";
+
+"The feedback server took too long to answer. Check your connection and try again." = "Le serveur de commentaires a mis trop de temps à répondre. Vérifiez votre connexion et réessayez.";
+
+"Couldn’t reach the feedback server. Check your internet connection and try again." = "Le serveur de commentaires est injoignable. Vérifiez votre connexion Internet et réessayez.";
+
+"Couldn’t reach the feedback server: %@" = "Le serveur de commentaires est injoignable : %@";
+
+/* ---- Milestones.swift ---- */
+
+/* Distance scrolled with the ring */
+"Scrolled" = "Défilé";
+
+/* Distance the ball has rolled */
+"Ball rolled" = "Boule roulée";
+
+"Clicks" = "Clics";
+
+/* Badge name */
+"First ten metres" = "Dix premiers mètres";
+
+/* What earns the badge */
+"Scrolled 10 m" = "10 m défilés";
+
+/* Badge name */
+"Lady Liberty" = "Dame Liberté";
+
+/* What earns the badge */
+"Scrolled the height of the Statue of Liberty (93 m)" = "La hauteur de la statue de la Liberté défilée (93 m)";
+
+/* Badge name */
+"Eiffel Tower" = "Tour Eiffel";
+
+/* What earns the badge */
+"Scrolled the height of the Eiffel Tower (330 m)" = "La hauteur de la tour Eiffel défilée (330 m)";
+
+/* Badge name */
+"First kilometre" = "Premier kilomètre";
+
+/* What earns the badge */
+"Scrolled 1 km" = "1 km défilé";
+
+/* Badge name */
+"Summit" = "Sommet";
+
+/* What earns the badge */
+"Scrolled the height of Everest (8,849 m)" = "La hauteur de l’Everest défilée (8 849 m)";
+
+/* Badge name */
+"Scroll marathon" = "Marathon du défilement";
+
+/* What earns the badge */
+"Scrolled a marathon (42.2 km)" = "Un marathon défilé (42,2 km)";
+
+/* Badge name */
+"Rolling" = "Ça roule";
+
+/* What earns the badge */
+"Rolled the ball 10 m" = "10 m de boule roulée";
+
+/* Badge name */
+"Pitch length" = "Longueur de terrain";
+
+/* What earns the badge */
+"Rolled the length of a football pitch (100 m)" = "La longueur d’un terrain de foot roulée (100 m)";
+
+/* Badge name */
+"One lap" = "Un tour de piste";
+
+/* What earns the badge */
+"Rolled one lap of a running track (400 m)" = "Un tour de piste d’athlétisme roulé (400 m)";
+
+/* Badge name */
+"Kilometre roller" = "Kilomètre roulé";
+
+/* What earns the badge */
+"Rolled the ball 1 km" = "1 km de boule roulée";
+
+/* Badge name */
+"10K" = "10K";
+
+/* What earns the badge */
+"Rolled the ball 10 km" = "10 km de boule roulée";
+
+/* Badge name */
+"Ball marathon" = "Marathon de la boule";
+
+/* What earns the badge */
+"Rolled a marathon (42.2 km)" = "Un marathon roulé (42,2 km)";
+
+/* Badge name */
+"Warmed up" = "Échauffé";
+
+/* What earns the badge */
+"100 clicks" = "100 clics";
+
+/* Badge name */
+"A thousand clicks" = "Mille clics";
+
+/* What earns the badge */
+"1,000 clicks" = "1 000 clics";
+
+/* Badge name */
+"Ten thousand" = "Dix mille";
+
+/* What earns the badge */
+"10,000 clicks" = "10 000 clics";
+
+/* Badge name */
+"Click legend" = "Légende du clic";
+
+/* What earns the badge */
+"100,000 clicks" = "100 000 clics";
+
+/* Badge name */
+"One million" = "Un million";
+
+/* What earns the badge */
+"1,000,000 clicks" = "1 000 000 de clics";
+
+"%lld%% of the way up the Statue of Liberty" = "%lld %% de la hauteur de la statue de la Liberté";
+
+"The height of the Statue of Liberty" = "La hauteur de la statue de la Liberté";
+
+"≈ %@ × the Statue of Liberty" = "≈ %@ × la statue de la Liberté";
+
+"The height of the Eiffel Tower" = "La hauteur de la tour Eiffel";
+
+"≈ %@ × the Eiffel Tower" = "≈ %@ × la tour Eiffel";
+
+"The height of the Empire State Building" = "La hauteur de l’Empire State Building";
+
+"≈ %@ × the Empire State Building" = "≈ %@ × l’Empire State Building";
+
+"The height of the Burj Khalifa" = "La hauteur de la Burj Khalifa";
+
+"≈ %@ × the Burj Khalifa" = "≈ %@ × la Burj Khalifa";
+
+"The height of Mount Everest" = "La hauteur de l’Everest";
+
+"≈ %@ × Mount Everest" = "≈ %@ × l’Everest";
+
+"%lld%% of a football pitch" = "%lld %% d’un terrain de foot";
+
+"The length of a football pitch" = "La longueur d’un terrain de foot";
+
+"≈ %@ × a football pitch" = "≈ %@ × un terrain de foot";
+
+"The length of a running-track lap" = "Un tour de piste d’athlétisme";
+
+"≈ %@ × a running-track lap" = "≈ %@ × un tour de piste";
+
+"The length of the Golden Gate Bridge" = "La longueur du Golden Gate Bridge";
+
+"≈ %@ × the Golden Gate Bridge" = "≈ %@ × le Golden Gate Bridge";
+
+"The length of a marathon" = "La longueur d’un marathon";
+
+"≈ %@ × a marathon" = "≈ %@ × un marathon";
+
+"Fastest ring spin" = "Anneau le plus rapide";
+
+"Longest single scroll" = "Plus long défilement";
+
+/* Fastest the ball has been rolled */
+"Fastest roll" = "Roulé le plus rapide";
+
+"New record: fastest ring spin" = "Nouveau record : anneau le plus rapide";
+
+"New record: longest single scroll" = "Nouveau record : plus long défilement";
+
+"New record: fastest roll" = "Nouveau record : roulé le plus rapide";
+
+/* Scroll ring speed: ring notches (ticks) per second */
+"%@ notches/s" = "%@ crans/s";
+
+/* Ball speed in inches per second */
+"%@ in/s" = "%@ po/s";
+
+"Set your pointer speed" = "Régler la vitesse du pointeur";
+
+"Pick how scrolling feels" = "Choisir le style de défilement";
+
+"Map a button" = "Attribuer un bouton";
+
+"Make a combo" = "Créer un combo";
+
+"Add an app setup" = "Ajouter une configuration d’app";
+
+"Done: set your pointer speed" = "Fait : régler la vitesse du pointeur";
+
+"Done: pick how scrolling feels" = "Fait : choisir le style de défilement";
+
+"Done: map a button" = "Fait : attribuer un bouton";
+
+"Done: make a combo" = "Fait : créer un combo";
+
+"Done: add an app setup" = "Fait : ajouter une configuration d’app";
+
+"Pointer tab — try a preset" = "Onglet Pointeur — essayez un préréglage";
+
+"Scrolling tab — Flywheel, Follow or Native" = "Onglet Défilement — Inertie, Suivi ou Natif";
+
+"Buttons tab — Quick assign takes two presses" = "Onglet Boutons — l’attribution rapide se fait en deux appuis";
+
+"Buttons tab — press two buttons together" = "Onglet Boutons — appuyez sur deux boutons à la fois";
+
+"Apps tab — a different feel per app" = "Onglet Apps — un ressenti différent par app";
+
+/* ---- SettingsSync.swift ---- */
+
+/* Use the names System Settings shows in this language */
+"Turn on iCloud Drive in System Settings → Apple Account → iCloud" = "Activez iCloud Drive dans Réglages Système → Compte Apple → iCloud";
+
+"Couldn’t save settings to iCloud Drive: %@" = "Impossible d’enregistrer les réglages dans iCloud Drive : %@";
+
+"Couldn’t read settings from iCloud Drive: %@" = "Impossible de lire les réglages depuis iCloud Drive : %@";
+
+"Settings in iCloud Drive were saved by a newer version of Glide. Update Glide on this Mac to keep syncing." = "Les réglages dans iCloud Drive ont été enregistrés par une version plus récente de Glide. Mettez à jour Glide sur ce Mac pour continuer la synchronisation.";
+
+/* ---- UpdateChecker.swift ---- */
+
+"The download didn’t finish: %@" = "Le téléchargement n’a pas abouti : %@";
+
+"The download didn’t finish." = "Le téléchargement n’a pas abouti.";
+
+"Couldn’t unpack the update." = "Impossible de décompresser la mise à jour.";
+
+"The download isn’t the expected Glide %@." = "Le téléchargement n’est pas Glide %@ comme prévu.";
+
+"Couldn’t read Glide’s own signature to compare against." = "Impossible de lire la signature de Glide pour la comparer.";
+
+"The update isn’t signed by Glide’s developer, so it wasn’t installed." = "La mise à jour n’est pas signée par le développeur de Glide : elle n’a donc pas été installée.";
+
+"Couldn’t start the installer: %@" = "Impossible de lancer l’installation : %@";
+
+/* ---- AppsView.swift ---- */
+
+"When one of these apps is in front, Glide switches to its setup. Anything left on “Main setup” follows your main settings." = "Quand l’une de ces apps est au premier plan, Glide passe à sa configuration. Tout ce qui reste sur « Configuration principale » suit vos réglages principaux.";
+
+"Give an app its own setup" = "Donnez à une app sa propre configuration";
+
+"Faster tracking in a design app, different buttons in your browser — Glide switches the moment that app comes to the front, and back again when you leave. Pick only the parts you want to change; everything else follows your main setup." = "Un pointeur plus rapide dans une app de design, d’autres boutons dans votre navigateur — Glide bascule dès que l’app passe au premier plan, et revient quand vous la quittez. Ne choisissez que ce que vous voulez changer ; le reste suit votre configuration principale.";
+
+"Open apps" = "Apps ouvertes";
+
+"No other open apps" = "Aucune autre app ouverte";
+
+"Choose from Applications…" = "Choisir dans Applications…";
+
+"Add App…" = "Ajouter une app…";
+
+"Add an App" = "Ajouter une app";
+
+"Choose the app that should get its own trackball setup." = "Choisissez l’app qui doit avoir sa propre configuration de trackball.";
+
+/* Open panel button: add the chosen app */
+"Add" = "Ajouter";
+
+"Glide couldn’t identify that app." = "Glide n’a pas pu identifier cette app.";
+
+"Glide itself always uses your main setup." = "Glide lui-même utilise toujours votre configuration principale.";
+
+/* Tab name */
+"Pointer" = "Pointeur";
+
+/* Pointer speed, after “Following your main setup ·” */
+"speed %@" = "vitesse %@";
+
+"Tracking speed" = "Vitesse de suivi";
+
+"Ludicrous" = "Démentiel";
+
+"Slow" = "Lent";
+
+/* No combos, after “Following your main setup ·” */
+"none" = "aucun";
+
+"Delete the %@ setup?" = "Supprimer la configuration de %@ ?";
+
+"Delete Setup" = "Supprimer la configuration";
+
+"%@ will follow your main setup again." = "%@ suivra de nouveau votre configuration principale.";
+
+"Used whenever %@ is in front. While you edit it here, it’s live so you can try it." = "Utilisée dès que %@ est au premier plan. Pendant que vous la modifiez ici, elle est active pour que vous puissiez l’essayer.";
+
+"Delete" = "Supprimer";
+
+"Delete this app’s setup" = "Supprimer la configuration de cette app";
+
+/* After “Following your main setup ·” */
+"default buttons" = "boutons par défaut";
+
+"Custom for this app — starts as a copy of your main setup" = "Propre à cette app — part d’une copie de votre configuration principale";
+
+"Following your main setup · %@" = "Suit votre configuration principale · %@";
+
+"Main setup" = "Configuration principale";
+
+"Customize" = "Personnaliser";
+
+/* ---- AssignViews.swift ---- */
+
+"Quick assign" = "Attribution rapide";
+
+"Press a trackball button — or hold two or three together for a combo — then press the keyboard shortcut it should send." = "Appuyez sur un bouton du trackball — ou maintenez-en deux ou trois pour un combo — puis tapez le raccourci clavier qu’il doit envoyer.";
+
+"Assign" = "Attribuer";
+
+"Press a button on your trackball… (hold several together for a combo)" = "Appuyez sur un bouton de votre trackball… (maintenez-en plusieurs pour un combo)";
+
+"Cancel" = "Annuler";
+
+"Now press a keyboard shortcut" = "Tapez maintenant un raccourci clavier";
+
+"Or choose an action from the menu. Esc cancels." = "Ou choisissez une action dans le menu. Échap pour annuler.";
+
+"No combos yet. Use Quick assign and hold two or three buttons together." = "Aucun combo pour l’instant. Utilisez l’attribution rapide et maintenez deux ou trois boutons ensemble.";
+
+"Delete combo" = "Supprimer le combo";
+
+"Buttons in a combo wait a split second (up to 0.16 s for three) to see if their partners join. Buttons not in any combo respond instantly." = "Les boutons d’un combo attendent une fraction de seconde (jusqu’à 0,16 s pour trois) au cas où leurs partenaires suivraient. Les boutons hors combo réagissent instantanément.";
+
+"New combo" = "Nouveau combo";
+
+"That combo already exists" = "Ce combo existe déjà";
+
+"Pick at least two" = "Choisissez-en au moins deux";
+
+"Add Combo" = "Ajouter un combo";
+
+/* ---- BackupView.swift ---- */
+
+/* Glide 2.6 (9) · …end in .glide-settings… */
+"Glide %@ (%@) · Settings files end in .%@ and open in Glide with a double-click." = "Glide %@ (%@) · Les fichiers de réglages se terminent par .%@ et s’ouvrent dans Glide d’un double-clic.";
+
+"Export" = "Exporter";
+
+"Drag to Finder, Messages, Mail…" = "Glissez-le vers le Finder, Messages, Mail…";
+
+"Drag the file anywhere, or:" = "Faites glisser le fichier où vous voulez, ou :";
+
+"Save to File…" = "Enregistrer dans un fichier…";
+
+"Glide Settings" = "Réglages Glide";
+
+"Share…" = "Partager…";
+
+"Settings" = "Réglages";
+
+"Import" = "Importer";
+
+"Drop a settings file here" = "Déposez un fichier de réglages ici";
+
+"Drop to preview" = "Déposez pour prévisualiser";
+
+"You’ll see exactly what changes before anything is replaced." = "Vous verrez exactement ce qui change avant tout remplacement.";
+
+"Choose File…" = "Choisir un fichier…";
+
+"Replace My Settings" = "Remplacer mes réglages";
+
+/* Date, then the Mac's name */
+"Exported %@ from %@" = "Exporté le %@ depuis %@";
+
+"Exported %@" = "Exporté le %@";
+
+/* The Mac's name */
+"Exported from %@" = "Exporté depuis %@";
+
+"Glide settings file" = "Fichier de réglages Glide";
+
+/* Tab name: export, import and iCloud sync */
+"Sync" = "Synchro";
+
+"Sync with iCloud Drive" = "Synchroniser avec iCloud Drive";
+
+"Sync Now" = "Synchroniser";
+
+"This Mac" = "Ce Mac";
+
+"Your settings live in iCloud Drive › Glide, so every Mac signed in to your Apple Account stays in step — no extra account. The pause switch stays per-Mac." = "Vos réglages résident dans iCloud Drive › Glide : chaque Mac connecté à votre Compte Apple reste synchronisé — sans compte supplémentaire. L’interrupteur de pause reste propre à chaque Mac.";
+
+"Off — settings stay on this Mac" = "Désactivé — les réglages restent sur ce Mac";
+
+"Syncing…" = "Synchronisation…";
+
+/* %@ is a relative time like “5 minutes ago” */
+"Up to date · %@" = "À jour · %@";
+
+"Show in Finder" = "Afficher dans le Finder";
+
+/* ---- ButtonsView.swift ---- */
+
+"Press a button on your trackball — its row lights up." = "Appuyez sur un bouton de votre trackball — sa ligne s’allume.";
+
+"Normally: %@" = "Normalement : %@";
+
+"Left click · locked" = "Clic gauche · verrouillé";
+
+"Your primary click stays a left click, so Glide can never lock you out." = "Votre clic principal reste un clic gauche : Glide ne peut jamais vous bloquer.";
+
+"Type a shortcut…  esc to cancel" = "Tapez un raccourci…  Échap pour annuler";
+
+"Record custom shortcut…" = "Enregistrer un raccourci personnalisé…";
+
+/* ---- Components.swift ---- */
+
+"BETA" = "BÊTA";
+
+"Supported through the Beta program — you may hit bugs" = "Pris en charge via le programme bêta — des bugs sont possibles";
+
+"Precise" = "Précis";
+
+"macOS" = "macOS";
+
+"Fast" = "Rapide";
+
+"Turbo" = "Turbo";
+
+/* ---- DelightViews.swift ---- */
+
+"Saved" = "Enregistré";
+
+"Your settings are saved and already in effect" = "Vos réglages sont enregistrés et déjà appliqués";
+
+"Settings saved" = "Réglages enregistrés";
+
+"Make it yours" = "À votre façon";
+
+"of %lld" = "sur %lld";
+
+"You’ve made Glide yours." = "Glide est désormais à votre façon.";
+
+"Speed, scrolling, buttons, a combo and an app setup — all tuned to you. Change anything, any time." = "Vitesse, défilement, boutons, un combo et une configuration d’app — tout est réglé pour vous. Modifiez ce que vous voulez, quand vous voulez.";
+
+"Hide This Card" = "Masquer cette carte";
+
+"Hide this checklist — it won’t come back" = "Masquer cette liste — elle ne reviendra pas";
+
+"Hide checklist" = "Masquer la liste";
+
+"Done — open to change it" = "Fait — ouvrez pour modifier";
+
+/* %@ is a tab name */
+"Open the %@ tab" = "Ouvrir l’onglet %@";
+
+"Your trackball" = "Votre trackball";
+
+"Badges" = "Badges";
+
+"%lld of %lld" = "%lld sur %lld";
+
+"Counted on this Mac only" = "Compté sur ce Mac uniquement";
+
+/* %@ is a date */
+"Since %@ · on this Mac only" = "Depuis le %@ · sur ce Mac uniquement";
+
+"Lifetime clicks" = "Clics au total";
+
+"Lifetime · scrolled" = "Au total · défilé";
+
+"Lifetime · ball rolled" = "Au total · boule roulée";
+
+/* Clicks per day; %@ is a number */
+"About %@ a day" = "Environ %@ par jour";
+
+"Counting from today" = "Comptage à partir d’aujourd’hui";
+
+"Give it a spin" = "Faites un essai";
+
+"This week" = "Cette semaine";
+
+"Show" = "Afficher";
+
+"Rolled" = "Roulé";
+
+"Day" = "Jour";
+
+"Average" = "Moyenne";
+
+"avg %@" = "moy. %@";
+
+"Last seven days of clicks" = "Clics des sept derniers jours";
+
+"Last seven days of scrolling" = "Défilement des sept derniers jours";
+
+"Last seven days of ball rolling" = "Boule roulée ces sept derniers jours";
+
+"Personal bests" = "Records personnels";
+
+"Most clicks in a day" = "Plus de clics en un jour";
+
+"Most rolled in a day" = "Plus roulé en un jour";
+
+"Most scrolled in a day" = "Plus défilé en un jour";
+
+/* When a personal best was set; short (about 6 letters fit) */
+"today" = "auj.";
+
+"NEW" = "NOUVEAU";
+
+/* Badge tooltip: what earns it, then the date */
+"%@ — earned %@" = "%@ — obtenu le %@";
+
+/* Badge tooltip: what earns it */
+"Goal: %@" = "Objectif : %@";
+
+/* Badge name, then what earns it */
+"%@. %@. Earned" = "%@. %@. Obtenu";
+
+/* Badge name, then what earns it */
+"%@. %@. Not yet earned" = "%@. %@. Pas encore obtenu";
+
+/* ---- FeedbackView.swift ---- */
+
+/* Feedback kind */
+"Bug" = "Bug";
+
+/* Feedback kind */
+"Idea" = "Idée";
+
+/* Feedback kind */
+"Question" = "Question";
+
+"What went wrong? e.g. “Scrolling jumps in Safari”" = "Qu’est-ce qui ne va pas ? p. ex. « Le défilement saute dans Safari »";
+
+"What would make Glide better?" = "Qu’est-ce qui rendrait Glide meilleur ?";
+
+"What would you like to know?" = "Que voulez-vous savoir ?";
+
+"What happened, what you expected, and how to make it happen again (if you know)." = "Ce qui s’est passé, ce que vous attendiez, et comment le reproduire (si vous le savez).";
+
+"Tell me more — how would it work, and what would it help with?" = "Dites-m’en plus — comment ça marcherait, et à quoi ça servirait ?";
+
+"Any details that help me answer." = "Tout détail qui m’aide à répondre.";
+
+/* Bug priority */
+"Low" = "Basse";
+
+/* Bug priority */
+"Normal" = "Normale";
+
+/* Bug priority */
+"High" = "Haute";
+
+/* Bug priority: can't use the trackball properly */
+"Blocking" = "Bloquant";
+
+"A small thing, whenever" = "Un détail, sans urgence";
+
+"Worth fixing" = "À corriger";
+
+"Gets in my way" = "Ça me gêne";
+
+"I can’t use my trackball properly" = "Je ne peux pas bien utiliser mon trackball";
+
+"Up to %lld pictures or videos can go with one report." = "Jusqu’à %lld images ou vidéos par rapport.";
+
+"“%@” isn’t a PNG, JPEG, MOV or MP4." = "« %@ » n’est pas un fichier PNG, JPEG, MOV ou MP4.";
+
+"“%@” couldn’t be read." = "« %@ » n’a pas pu être lu.";
+
+"“%@” is too big (%lld MB at most)." = "« %@ » est trop volumineux (%lld Mo au maximum).";
+
+/* 2.6 (build 9) */
+"%@ (build %@)" = "%@ (build %@)";
+
+"Mac model" = "Modèle de Mac";
+
+/* Processor architecture: arm64 or x86_64 */
+"Architecture" = "Architecture";
+
+"Scroll mode" = "Mode de défilement";
+
+"Trackball" = "Trackball";
+
+"%@ (beta)" = "%@ (bêta)";
+
+/* Status pill */
+"Not connected" = "Non connecté";
+
+"Beta program" = "Programme bêta";
+
+/* Switched on */
+"On" = "Activé";
+
+/* Areas of Glide the report mentions */
+"Topics" = "Sujets";
+
+"That email address doesn’t look right." = "Cette adresse e-mail semble incorrecte.";
+
+"Your feedback didn’t send — open Send Feedback to try again." = "Vos commentaires n’ont pas été envoyés — ouvrez Envoyer des commentaires pour réessayer.";
+
+"Feedback sent — thank you!" = "Commentaires envoyés — merci !";
+
+"Send Feedback" = "Envoyer des commentaires";
+
+"Bugs, ideas, questions — it goes straight to the developer." = "Bugs, idées, questions — tout va directement au développeur.";
+
+"Close" = "Fermer";
+
+"Hide — it keeps sending in the background" = "Masquer — l’envoi continue en arrière-plan";
+
+"Attachments" = "Pièces jointes";
+
+"Include my Glide settings" = "Inclure mes réglages Glide";
+
+"Your pointer, scrolling and button setup (settings.json) so I can reproduce it. Nothing personal is in it." = "Votre configuration de pointeur, de défilement et de boutons (settings.json) pour que je puisse reproduire le problème. Rien de personnel dedans.";
+
+"Include the scroll log" = "Inclure le journal de défilement";
+
+"The last %@ lines of timings from the scroll ring (scroll-log.txt) — no keystrokes or window contents." = "Les %@ dernières lignes de mesures de l’anneau de défilement (scroll-log.txt) — ni frappes au clavier, ni contenu de fenêtre.";
+
+"There’s no scroll log yet — scroll with the ring and it will have something to send." = "Pas encore de journal de défilement — faites défiler avec l’anneau et il aura de quoi envoyer.";
+
+"Drop screenshots or screen recordings here" = "Déposez ici des captures ou enregistrements d’écran";
+
+"Drop to attach" = "Déposez pour joindre";
+
+"PNG, JPEG, MOV or MP4 · ⇧⌘5 records the screen" = "PNG, JPEG, MOV ou MP4 · ⇧⌘5 enregistre l’écran";
+
+"Add Screenshot…" = "Ajouter une capture…";
+
+"Add Screenshots or Recordings" = "Ajouter des captures ou des enregistrements";
+
+"Pictures or short videos that show what you mean (up to %lld)." = "Des images ou courtes vidéos qui montrent ce que vous voulez dire (jusqu’à %lld).";
+
+/* Open panel button */
+"Attach" = "Joindre";
+
+"About you — optional" = "À propos de vous — facultatif";
+
+"Name" = "Nom";
+
+"Your name" = "Votre nom";
+
+"Email — that doesn’t look right" = "E-mail — il semble incorrect";
+
+"Email, if you’d like a reply" = "E-mail, si vous souhaitez une réponse";
+
+"you@example.com" = "vous@exemple.fr";
+
+"OK to contact me about this" = "Vous pouvez me contacter à ce sujet";
+
+"Remembered on this Mac for next time. Only used to reply to you." = "Mémorisé sur ce Mac pour la prochaine fois. Utilisé uniquement pour vous répondre.";
+
+"Also sent: %@" = "Également envoyé : %@";
+
+"So I know where it happened. Nothing else about your Mac is sent." = "Pour savoir où c’est arrivé. Rien d’autre sur votre Mac n’est envoyé.";
+
+"Try Again" = "Réessayer";
+
+"Send" = "Envoyer";
+
+"Give it a title first" = "Donnez-lui d’abord un titre";
+
+"Send (⌘↩)" = "Envoyer (⌘↩)";
+
+/* Listed after “With”: With 2 files, settings and scroll log. */
+"settings" = "réglages";
+
+/* Listed after “With”: With 2 files, settings and scroll log. */
+"scroll log" = "journal de défilement";
+
+"Just your message." = "Votre message uniquement.";
+
+/* %@ is a list: 2 files, settings and scroll log */
+"With %@." = "Avec %@.";
+
+"Click to open" = "Cliquez pour ouvrir";
+
+"Remove" = "Retirer";
+
+"Send Another" = "En envoyer un autre";
+
+"Done" = "OK";
+
+"Reference %@" = "Référence %@";
+
+"Thanks — it went straight to the developer." = "Merci — c’est parti directement chez le développeur.";
+
+/* %@ is the sender's first name */
+"Thanks, %@ — it went straight to the developer." = "Merci, %@ — c’est parti directement chez le développeur.";
+
+/* %@ is an email address */
+"If there’s a question, the reply goes to %@." = "En cas de question, la réponse sera envoyée à %@.";
+
+"Every report is read. Add an email next time if you’d like a reply." = "Chaque rapport est lu. Ajoutez un e-mail la prochaine fois si vous souhaitez une réponse.";
+
+/* ---- LaunchViews.swift ---- */
+
+"Glide is starting" = "Glide démarre";
+
+"Click or press Escape to skip" = "Cliquez ou appuyez sur Échap pour passer";
+
+"Make your Expert Mouse feel amazing" = "Rendez votre Expert Mouse formidable";
+
+"Click to skip" = "Cliquez pour passer";
+
+/* ---- OverviewView.swift ---- */
+
+"Clicks today" = "Clics aujourd’hui";
+
+"General" = "Général";
+
+"Open at login" = "Ouvrir à l’ouverture de session";
+
+"Starts quietly in the background so your trackball is always tuned." = "Démarre discrètement en arrière-plan pour que votre trackball soit toujours réglé.";
+
+"Menu bar icon" = "Icône dans la barre des menus";
+
+"Quick access to pause, precision and updates. Glide keeps running either way — reopen it from the Dock." = "Accès rapide à la pause, à la précision et aux mises à jour. Glide reste actif dans tous les cas — rouvrez-le depuis le Dock.";
+
+"Try features before they're finished — like support for other Kensington trackballs and early updates. You may hit bugs." = "Essayez des fonctionnalités avant qu’elles ne soient terminées — comme la prise en charge d’autres trackballs Kensington et des mises à jour anticipées. Des bugs sont possibles.";
+
+"Celebrations" = "Célébrations";
+
+"A toast and a little confetti when you reach a milestone or set a personal best. Badges are kept either way." = "Une notification et quelques confettis quand vous franchissez une étape ou battez un record personnel. Les badges sont conservés dans tous les cas.";
+
+"A soft chime to go with them." = "Un léger carillon pour les accompagner.";
+
+"Celebration sounds" = "Sons de célébration";
+
+"A soft chime as Glide opens. Never when your Mac is muted." = "Un léger carillon à l’ouverture de Glide. Jamais quand votre Mac est en sourdine.";
+
+"Launch sounds" = "Sons de lancement";
+
+"Feedback" = "Commentaires";
+
+"Found a bug or have an idea? It goes straight to the developer." = "Un bug ou une idée ? Ça va directement au développeur.";
+
+"Closing this window keeps Glide running. Click Glide in the Dock to bring it back, or press ⌘Q to quit — your trackball then goes back to normal." = "Fermer cette fenêtre laisse Glide actif. Cliquez sur Glide dans le Dock pour la rouvrir, ou appuyez sur ⌘Q pour quitter — votre trackball redevient alors normal.";
+
+"Waiting for permissions…" = "En attente des autorisations…";
+
+"Kensington Expert Mouse" = "Kensington Expert Mouse";
+
+"Roll, spin, or click — it's live." = "Roulez, tournez ou cliquez — c’est en direct.";
+
+"Turn on the Beta program to try Glide with your %@." = "Activez le programme bêta pour essayer Glide avec votre %@.";
+
+"Turn On Beta" = "Activer la bêta";
+
+"Plug in your Expert Mouse." = "Branchez votre Expert Mouse.";
+
+"Best day" = "Meilleur jour";
+
+"Your best day so far: %@" = "Votre meilleur jour à ce jour : %@";
+
+"Live activity" = "Activité en direct";
+
+"Ball speed" = "Vitesse de la boule";
+
+"Scroll ring" = "Anneau de défilement";
+
+"Language" = "Langue";
+
+"Glide can speak a different language from the rest of your Mac." = "Glide peut parler une autre langue que le reste de votre Mac.";
+
+"Relaunch to Apply" = "Relancer pour appliquer";
+
+"System Default" = "Par défaut du système";
+
+"Updates" = "Mises à jour";
+
+"Install %@" = "Installer %@";
+
+"Check for Updates" = "Rechercher des mises à jour";
+
+/* Glide 2.6 · 2.7 is ready to install */
+"%@ · %@ is ready to install" = "%@ · %@ est prêt à être installé";
+
+/* %@ is “Glide 2.6” */
+"%@ · You’re up to date ✓" = "%@ · Vous êtes à jour ✓";
+
+/* %@ is “Glide 2.6” */
+"%@ · Couldn’t reach GitHub — try again later" = "%@ · GitHub injoignable — réessayez plus tard";
+
+/* %@ is “Glide 2.6” */
+"%@ · Checking…" = "%@ · Recherche…";
+
+/* %@ is “Glide 2.6” */
+"%@ · Checks automatically once a day" = "%@ · Recherche automatique une fois par jour";
+
+/* ---- PointerView.swift ---- */
+
+"Feel" = "Ressenti";
+
+"System Settings tops out at 3. Glide lets the Expert Mouse go far past it." = "Les Réglages Système plafonnent à 3. Glide permet à l’Expert Mouse d’aller bien au-delà.";
+
+"Presets" = "Préréglages";
+
+"Precision mode" = "Mode Précision";
+
+"Precision speed" = "Vitesse de précision";
+
+"Pixel-exact" = "Au pixel près";
+
+"macOS default" = "Défaut macOS";
+
+"Set a button to Precision in Buttons. Hold it (or toggle it on) and the cursor slows to this speed for fine work, then snaps back." = "Attribuez Précision à un bouton dans Boutons. Maintenez-le (ou activez-le) et le curseur ralentit à cette vitesse pour le travail minutieux, puis reprend aussitôt.";
+
+"Applies only to the Expert Mouse — your other mice and trackpad keep their own settings. macOS still moves the cursor itself, so there's zero added lag." = "S’applique uniquement à l’Expert Mouse — vos autres souris et trackpad gardent leurs propres réglages. macOS déplace toujours le curseur lui-même : aucune latence ajoutée.";
+
+"Response curve" = "Courbe de réponse";
+
+"Ball" = "Boule";
+
+"Cursor" = "Curseur";
+
+"Series" = "Série";
+
+"How fast you roll the ball" = "Vitesse de la boule";
+
+"How fast the cursor moves" = "Vitesse du curseur";
+
+"Your curve" = "Votre courbe";
+
+"No acceleration" = "Sans accélération";
+
+"Roll the ball to see where you are" = "Roulez la boule pour voir où vous en êtes";
+
+/* ---- RootView.swift ---- */
+
+/* Tab name */
+"Overview" = "Aperçu";
+
+/* Tab name */
+"Apps" = "Apps";
+
+"A Precision button is slowing the cursor — press it again (or pause Glide) to stop" = "Un bouton Précision ralentit le curseur — appuyez à nouveau (ou mettez Glide en pause) pour arrêter";
+
+"The left button is held by Drag lock — click, or press the Drag lock button again, to let go" = "Le bouton gauche est maintenu par le verrou de glissement — cliquez, ou appuyez à nouveau sur le bouton Verrou de glissement, pour relâcher";
+
+"Ball scroll" = "Défilement à la boule";
+
+"Pause or resume Glide — also %@ from anywhere" = "Suspendre ou reprendre Glide — aussi avec %@ depuis n’importe où";
+
+"Pause or resume Glide" = "Suspendre ou reprendre Glide";
+
+/* Status pill */
+"Needs permission" = "Autorisation requise";
+
+/* Status pill */
+"Paused" = "En pause";
+
+/* Status pill: a Kensington device that needs the Beta program */
+"Beta only" = "Bêta uniquement";
+
+/* Status pill */
+"Connected · Beta" = "Connecté · Bêta";
+
+/* Status pill */
+"Connected" = "Connecté";
+
+"Using %@ setup" = "Configuration de %@ utilisée";
+
+"Previewing %@’s setup while you edit it. Other apps use your main setup." = "Aperçu de la configuration de %@ pendant que vous la modifiez. Les autres apps utilisent votre configuration principale.";
+
+"%@ is in front, so Glide is using its setup. Click to edit it." = "%@ est au premier plan, Glide utilise donc sa configuration. Cliquez pour la modifier.";
+
+"Two quick permissions" = "Deux autorisations rapides";
+
+"Glide needs these to read your trackball and adjust its buttons and scrolling. Until both are on, your trackball works normally and Glide stays out of the way." = "Glide en a besoin pour lire votre trackball et ajuster ses boutons et son défilement. Tant que les deux ne sont pas activées, votre trackball fonctionne normalement et Glide reste discret.";
+
+"Accessibility — on" = "Accessibilité — activée";
+
+"Allow Accessibility…" = "Autoriser l’accessibilité…";
+
+"Allow Input Monitoring…" = "Autoriser la surveillance de l’entrée…";
+
+"Input Monitoring — on" = "Surveillance de l’entrée — activée";
+
+"Downloading %lld%%" = "Téléchargement : %lld %%";
+
+"Restarting…" = "Redémarrage…";
+
+"Install %@ & Relaunch" = "Installer %@ et relancer";
+
+"What’s New in %@…" = "Nouveautés de %@…";
+
+"A Beta program build — it may have bugs" = "Une version du programme bêta — elle peut contenir des bugs";
+
+"Last try failed: %@" = "Dernière tentative échouée : %@";
+
+/* Update button after a failed install */
+"Retry" = "Réessayer";
+
+"Glide %@ is available — install it or see what's new" = "Glide %@ est disponible — installez-le ou découvrez les nouveautés";
+
+/* ---- ScrollSettingsView.swift ---- */
+
+"Scroll with the ball" = "Défiler avec la boule";
+
+"Ball scroll speed" = "Vitesse de défilement à la boule";
+
+"Fine" = "Fin";
+
+"Set a button to “Scroll with ball” in Buttons. While you hold it, rolling the ball scrolls in any direction and the cursor stays put. Let go mid-roll and the page glides briefly." = "Attribuez « Défiler avec la boule » à un bouton dans Boutons. Tant que vous le maintenez, rouler la boule fait défiler dans tous les sens et le curseur reste immobile. Lâchez en plein élan et la page glisse brièvement.";
+
+"Control" = "Contrôle";
+
+"Fling" = "Élan";
+
+"macOS scrolling" = "Défilement macOS";
+
+"Glide steps aside and lets macOS scroll the ring itself — the same system Kensington's driver handed its ticks to. Only the speed is adjustable." = "Glide s’efface et laisse macOS gérer le défilement de l’anneau — le même système auquel le pilote de Kensington confiait ses crans. Seule la vitesse est réglable.";
+
+"Scroll speed" = "Vitesse de défilement";
+
+"System Settings' scroll-speed slider goes up to 1.7. This only affects the Expert Mouse." = "Le curseur de vitesse de défilement des Réglages Système va jusqu’à 1,7. Ceci ne concerne que l’Expert Mouse.";
+
+"Every tick gives the page a push; friction slows it down. Gentle turns barely coast, hard spins fly — one rule, no mode switching. Tuned from Kensington's own scrolling, at twice its frame rate." = "Chaque cran donne une poussée à la page ; la friction la ralentit. Les petits tours glissent à peine, les grands élans s’envolent — une seule règle, sans changer de mode. Calqué sur le défilement de Kensington, à deux fois sa fréquence d’images.";
+
+"Slow-turn distance" = "Distance au ralenti";
+
+/* Points: a distance on screen */
+"%lld pt" = "%lld pt";
+
+"Far" = "Loin";
+
+"Spin power" = "Puissance de rotation";
+
+"Gentle" = "Doux";
+
+"Wild" = "Fou";
+
+"Glide" = "Glisse";
+
+/* Milliseconds */
+"%lld ms" = "%lld ms";
+
+"Grippy" = "Adhérent";
+
+"Slippery" = "Glissant";
+
+"Off = plain steps, exactly like a basic mouse" = "Désactivé = crans simples, comme une souris basique";
+
+"Smooth scrolling" = "Défilement fluide";
+
+"Kensington feel" = "Ressenti Kensington";
+
+"Control is the recommended starting point: the page follows the ring and stops when you stop." = "Contrôle est le point de départ conseillé : la page suit l’anneau et s’arrête quand vous vous arrêtez.";
+
+"Distance per notch" = "Distance par cran";
+
+"Locked to ring" = "Collé à l’anneau";
+
+"Softer" = "Plus doux";
+
+"Spin acceleration" = "Accélération à la rotation";
+
+/* Slider value: spin acceleration is off */
+"Off" = "Désactivée";
+
+"Constant" = "Constante";
+
+"Spin to fly" = "Envolée";
+
+"Throw" = "Lancer";
+
+"Spin fast and let go — the page glides and lands" = "Tournez vite et lâchez — la page glisse puis se pose";
+
+"Throw to coast" = "Lancer pour glisser";
+
+"Throw distance" = "Distance de lancer";
+
+"Long" = "Long";
+
+"Short" = "Court";
+
+/* Seconds, e.g. “1.5 s” */
+"%@ s" = "%@ s";
+
+"Direction" = "Sens";
+
+"Flip direction" = "Inverser le sens";
+
+"Only if it scrolls the wrong way with your scroll reverser" = "Seulement si le défilement va dans le mauvais sens avec votre inverseur de défilement";
+
+"Hold ⇧ while spinning the ring" = "Maintenez ⇧ en tournant l’anneau";
+
+"Shift scrolls sideways" = "Maj fait défiler latéralement";
+
+"macOS does the scrolling" = "macOS gère le défilement";
+
+"Push and glide — Kensington's feel" = "Poussée et glisse — le ressenti Kensington";
+
+"Page tracks the ring exactly" = "La page suit l’anneau exactement";
+
+"Push per tick" = "Poussée par cran";
+
+"Spin" = "Rotation";
+
+"pt" = "pt";
+
+"Ring ticks per second" = "Crans par seconde";
+
+"Points per tick" = "Points par cran";
+
+"Each push coasts for about %@ s before it fades out. Turn the ring the other way to stop it." = "Chaque poussée glisse environ %@ s avant de s’estomper. Tournez l’anneau dans l’autre sens pour l’arrêter.";
+
+"After a flick" = "Après un lancer";
+
+"Speed" = "Vitesse";
+
+"ms" = "ms";
+
+"A typical flick coasts about %lld pt and lands after %lld ms — then stops dead. Slow down before letting go and it doesn't coast at all. Turn the ring back to catch it." = "Un lancer typique glisse d’environ %lld pt et s’arrête après %lld ms — net. Ralentissez avant de lâcher et la page ne glisse pas du tout. Tournez l’anneau en sens inverse pour la rattraper.";
+
+"Throw is off — the page stops the moment the ring stops." = "Lancer désactivé — la page s’arrête dès que l’anneau s’arrête.";
+
+"×" = "×";
+
+"Distance ×" = "Distance ×";
+
+"Try it here" = "Essayez ici";
+
+"Row %lld" = "Ligne %lld";
+
+/* ---- ShortcutsCard.swift ---- */
+
+"Keyboard shortcuts" = "Raccourcis clavier";
+
+"They work in every app, even with this window closed. Click a shortcut to record a new one; Esc cancels." = "Ils fonctionnent dans toutes les apps, même fenêtre fermée. Cliquez sur un raccourci pour en enregistrer un nouveau ; Échap pour annuler.";
+
+"Go back to %@" = "Revenir à %@";
+
+"Remove this shortcut" = "Retirer ce raccourci";
+
+"Type shortcut…" = "Tapez un raccourci…";
+
+"Record Shortcut" = "Enregistrer un raccourci";
+
+"Click, then press a new shortcut" = "Cliquez, puis tapez un nouveau raccourci";
+
+"Press the new shortcut, or Esc to cancel" = "Tapez le nouveau raccourci, ou Échap pour annuler";
+
+"No pause shortcut. You can still pause Glide from its menu-bar icon or the switch at the top of this window." = "Aucun raccourci de pause. Vous pouvez toujours mettre Glide en pause depuis son icône dans la barre des menus ou l’interrupteur en haut de cette fenêtre.";
+
+"Couldn't turn on %@ — another app already uses it. Choose a different shortcut." = "Impossible d’activer %@ — une autre app l’utilise déjà. Choisissez un autre raccourci.";
+
+/* Use the names System Settings shows in this language */
+"macOS uses %@ for one of its own shortcuts (System Settings › Keyboard › Keyboard Shortcuts), so it may never reach Glide." = "macOS utilise %@ pour l’un de ses propres raccourcis (Réglages Système › Clavier › Raccourcis clavier) ; il risque de ne jamais atteindre Glide.";
+
+"Apps use ⌘ shortcuts like %@ too — while it's set, Glide takes it from every app." = "Les apps utilisent aussi des raccourcis ⌘ comme %@ — tant qu’il est défini, Glide le prend à toutes les apps.";
+
+/* ---- WelcomeTourView.swift ---- */
+
+"Welcome Tour" = "Visite de bienvenue";
+
+"Close the tour (esc) — reopen it from Help › Show Welcome Tour…" = "Fermer la visite (Échap) — rouvrez-la via Aide › Afficher la visite de bienvenue…";
+
+"Close tour" = "Fermer la visite";
+
+"Skip for now" = "Passer pour l’instant";
+
+"Glide stays out of the way until both permissions are on" = "Glide reste discret tant que les deux autorisations ne sont pas activées";
+
+"Step %lld of %lld" = "Étape %lld sur %lld";
+
+"Get Started" = "Commencer";
+
+"Start Using Glide" = "Commencer à utiliser Glide";
+
+"Continue" = "Continuer";
+
+"Welcome to Glide" = "Bienvenue dans Glide";
+
+"Your Kensington trackball, tuned exactly the way you like it." = "Votre trackball Kensington, réglé exactement comme vous l’aimez.";
+
+"A faster pointer" = "Un pointeur plus rapide";
+
+"A silky scroll ring" = "Un anneau de défilement tout en douceur";
+
+"Buttons that do more" = "Des boutons qui en font plus";
+
+"About a minute. Use Return or the arrow keys to move along." = "Environ une minute. Utilisez Retour ou les flèches pour avancer.";
+
+"Glide needs these to read your trackball and change what it does. Until both are on, your trackball works normally and Glide stays out of the way." = "Glide en a besoin pour lire votre trackball et changer ce qu’il fait. Tant que les deux ne sont pas activées, votre trackball fonctionne normalement et Glide reste discret.";
+
+"Accessibility" = "Accessibilité";
+
+"Lets Glide change what your buttons and scroll ring do." = "Permet à Glide de changer le rôle de vos boutons et de l’anneau de défilement.";
+
+"Input Monitoring" = "Surveillance de l’entrée";
+
+"Lets Glide tell your trackball apart from your other mice and trackpad." = "Permet à Glide de distinguer votre trackball de vos autres souris et trackpad.";
+
+"All set — Glide can see your trackball." = "C’est prêt — Glide voit votre trackball.";
+
+"Switch Glide on in each list in System Settings, then come back — the checkmarks update by themselves." = "Activez Glide dans chaque liste des Réglages Système, puis revenez — les coches se mettent à jour d’elles-mêmes.";
+
+"Allow…" = "Autoriser…";
+
+"Meet your buttons" = "Découvrez vos boutons";
+
+"Press each button on your trackball." = "Appuyez sur chaque bouton de votre trackball.";
+
+"Left click — always" = "Clic gauche — toujours";
+
+"Does: %@" = "Action : %@";
+
+"Found" = "Trouvé";
+
+"Not pressed yet" = "Pas encore pressé";
+
+"Glide can't see your buttons until both permissions are on. You can come back to this tour from Help." = "Glide ne voit pas vos boutons tant que les deux autorisations ne sont pas activées. Vous pouvez revenir à cette visite depuis le menu Aide.";
+
+"Your %@ works with Glide through the Beta program — you can turn it on at the end of the tour." = "Votre %@ fonctionne avec Glide via le programme bêta — vous pourrez l’activer à la fin de la visite.";
+
+"Plug in your Expert Mouse to try this." = "Branchez votre Expert Mouse pour essayer.";
+
+"All four found. Change what they do any time in the Buttons tab." = "Les quatre sont trouvés. Changez leur rôle à tout moment dans l’onglet Boutons.";
+
+"%lld of 4 found. Shortcuts are paused while you try them, so nothing happens by surprise." = "%lld sur 4 trouvés. Les raccourcis sont en pause pendant l’essai, pour éviter les surprises.";
+
+"Choose your scrolling" = "Choisissez votre défilement";
+
+"How the scroll ring moves the page. Try one, spin the ring, and switch whenever you like." = "La façon dont l’anneau fait défiler la page. Essayez-en un, tournez l’anneau et changez quand vous voulez.";
+
+"How far the cursor travels when you roll the ball. macOS stops at its own setting; Glide goes past it." = "La distance parcourue par le curseur quand vous roulez la boule. macOS s’arrête à son propre réglage ; Glide va au-delà.";
+
+"Fine-tune both later in the Pointer and Scrolling tabs." = "Affinez les deux plus tard dans les onglets Pointeur et Défilement.";
+
+"You're always in control" = "Vous gardez toujours la main";
+
+"Two promises that keep your Mac usable, whatever you set up." = "Deux promesses pour que votre Mac reste utilisable, quels que soient vos réglages.";
+
+"Pause instantly" = "Pause instantanée";
+
+"Press ⌃⌥⌘G anywhere and Glide pauses — your trackball goes straight back to plain macOS. Press it again to resume." = "Appuyez sur ⌃⌥⌘G n’importe où et Glide se met en pause — votre trackball revient directement à macOS standard. Appuyez à nouveau pour reprendre.";
+
+"Glide is on — try it" = "Glide est actif — essayez";
+
+"Glide is paused" = "Glide est en pause";
+
+"Main click stays a left click" = "Le clic principal reste un clic gauche";
+
+"The bottom-left button is always a left click, whatever else you remap — so Glide can never lock you out." = "Le bouton en bas à gauche reste toujours un clic gauche, quoi que vous réattribuiez — Glide ne peut donc jamais vous bloquer.";
+
+"Quitting Glide also puts your trackball back to normal." = "Quitter Glide remet aussi votre trackball à la normale.";
+
+"You're all set" = "Tout est prêt";
+
+"Glide keeps running when you close its window — click Glide in the Dock to come back." = "Glide reste actif quand vous fermez sa fenêtre — cliquez sur Glide dans le Dock pour revenir.";
+
+"Turn On" = "Activer";
+
+"See this tour again any time from Help › Show Welcome Tour…" = "Revoyez cette visite à tout moment via Aide › Afficher la visite de bienvenue…";
