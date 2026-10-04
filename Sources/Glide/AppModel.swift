@@ -19,6 +19,7 @@ final class AppModel {
     var config: GlideConfig {
         didSet {
             guard config != oldValue else { return }
+            backups.willChange(from: oldValue)
             config.save()
             if !config.enabled && oldValue.enabled {
                 engine.releaseHeldKeys()
@@ -69,6 +70,8 @@ final class AppModel {
     }
     /// Shares settings with the user's other Macs through iCloud Drive.
     let sync = SettingsSync(onRemoteConfig: { AppModel.shared.applyRemoteConfig($0) })
+    /// Daily snapshots of the settings, kept two weeks, then monthly for a year.
+    let backups = BackupStore()
 
     /// The menu-bar icon (on unless turned off in Overview › General). Per-Mac.
     static var showMenuBarIcon: Bool {
@@ -217,6 +220,8 @@ final class AppModel {
         delight.present = { [weak self] in self?.show($0) }
         delight.canCelebrate = { [weak self] in self?.showingWelcomeTour == false }
         startSampling()
+        backups.currentConfig = { AppModel.shared.config }
+        backups.start(current: cfg)   // before sync, so today's backup is this Mac's own settings
         sync.syncNow(current: cfg)   // pick up changes made on other Macs while Glide was closed
         updates.start()
     }
@@ -425,6 +430,7 @@ final class AppModel {
     func confirmImport() {
         guard let pending = pendingImport, var incoming = try? pending.file.validatedConfig() else { return }
         incoming.enabled = config.enabled            // the pause switch belongs to this Mac
+        backups.checkpoint(config, kind: .beforeImport)
         configBeforeImport = config
         config = incoming
         pendingImport = nil
@@ -436,6 +442,35 @@ final class AppModel {
         config = previous
         configBeforeImport = nil
         show(.init(symbol: "arrow.uturn.backward.circle.fill", text: "Restored your previous settings"))
+    }
+
+    /// Puts back the settings from an automatic backup, after saving the current
+    /// ones as a checkpoint. Undo works the same as for an import.
+    func restoreBackup(_ backup: BackupStore.Backup) {
+        guard var restored = backups.load(backup) else {
+            show(.init(symbol: "exclamationmark.triangle.fill", text: "That backup couldn’t be read.", isError: true))
+            backups.reload()
+            return
+        }
+        restored.enabled = config.enabled
+        guard restored != config else {
+            show(.init(symbol: "checkmark.circle.fill", text: "Your settings already match that backup"))
+            return
+        }
+        backups.checkpoint(config, kind: .beforeRestore)
+        configBeforeImport = config
+        config = restored
+        let when = backup.date.formatted(.dateTime.month(.abbreviated).day().hour().minute())
+        show(.init(symbol: "clock.arrow.circlepath", text: "Restored the backup from \(when)", action: .undoImport))
+    }
+
+    func backUpNow() {
+        if backups.checkpoint(config, kind: .manual) {
+            show(.init(symbol: "checkmark.circle.fill", text: "Backed up your settings", action: nil))
+        } else {
+            show(.init(symbol: "exclamationmark.triangle.fill",
+                       text: "Couldn’t back up: \(backups.lastError ?? "unknown error")", isError: true))
+        }
     }
 
     /// Takes settings synced from another Mac without echoing them back as a local change.

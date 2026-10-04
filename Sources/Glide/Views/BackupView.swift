@@ -26,6 +26,7 @@ struct BackupView: View {
                 ImportCard(model: model)
             }
             SyncCard(model: model, sync: model.sync)
+            BackupHistoryCard(model: model, store: model.backups)
             Text(versionLine)
                 .font(.system(size: 11))
                 .foregroundStyle(.tertiary)
