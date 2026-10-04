@@ -51,6 +51,10 @@ enum ButtonAction: Codable, Hashable {
     case holdShortcut(KeyShortcut)
     case modifiedClick(button: Int, modifiers: UInt64)   // e.g. ⌃-click
     case disabled
+    case precisionHold     // cursor slows to `precisionSpeed` while held
+    case precisionToggle   // press: precision on, press again: off
+    case ballScrollHold    // while held, rolling the ball scrolls and the cursor stays put
+    case dragLock          // press: left button goes down and stays; press again (or click) lets go
 
     struct Preset: Identifiable {
         let title: String
@@ -84,6 +88,10 @@ enum ButtonAction: Codable, Hashable {
         .init(title: "Undo", symbol: "arrow.uturn.backward.circle", action: .shortcut(.undo)),
         .init(title: "New Tab", symbol: "plus.square.on.square", action: .shortcut(.newTab)),
         .init(title: "Close Tab", symbol: "xmark.square", action: .shortcut(.closeTab)),
+        .init(title: "Precision (hold)", symbol: "scope", action: .precisionHold),
+        .init(title: "Precision (toggle)", symbol: "dot.circle.viewfinder", action: .precisionToggle),
+        .init(title: "Scroll with ball (hold)", symbol: "arrow.up.and.down.and.arrow.left.and.right", action: .ballScrollHold),
+        .init(title: "Drag lock", symbol: "hand.draw", action: .dragLock),
         .init(title: "Do nothing", symbol: "nosign", action: .disabled),
     ]
 
@@ -130,6 +138,8 @@ struct GlideConfig: Codable, Equatable {
     // Pointer: macOS tracking speed for the trackball only.
     // System Settings stops at 3; macOS accepts more.
     var trackingSpeed: Double = 4.0
+    /// Tracking speed while a Precision button is held or toggled on.
+    var precisionSpeed: Double = 1.0
 
     // Scroll ring
     var scrollMode: ScrollMode = .flywheel
@@ -145,6 +155,8 @@ struct GlideConfig: Codable, Equatable {
     var throwAmount: Double = 0.4           // 0 short … 1 long
     var reverseScroll = false
     var shiftScrollsHorizontally = true
+    /// Gain for "Scroll with ball": points scrolled per ball count, × 1.
+    var ballScrollSpeed: Double = 1.0
 
     // Buttons, keyed by macOS button number (0 = primary/bottom-left).
     var buttons: [Int: ButtonAction] = [
@@ -163,6 +175,7 @@ struct GlideConfig: Codable, Equatable {
         let d = GlideConfig()
         enabled = try c.decodeIfPresent(Bool.self, forKey: .enabled) ?? d.enabled
         trackingSpeed = try c.decodeIfPresent(Double.self, forKey: .trackingSpeed) ?? d.trackingSpeed
+        precisionSpeed = try c.decodeIfPresent(Double.self, forKey: .precisionSpeed) ?? d.precisionSpeed
         scrollMode = try c.decodeIfPresent(ScrollMode.self, forKey: .scrollMode) ?? d.scrollMode
         nativeScrollSpeed = try c.decodeIfPresent(Double.self, forKey: .nativeScrollSpeed) ?? d.nativeScrollSpeed
         flyDistance = try c.decodeIfPresent(Double.self, forKey: .flyDistance) ?? d.flyDistance
@@ -176,6 +189,7 @@ struct GlideConfig: Codable, Equatable {
         throwEnabled = try c.decodeIfPresent(Bool.self, forKey: .throwEnabled) ?? d.throwEnabled
         throwAmount = try c.decodeIfPresent(Double.self, forKey: .throwAmount) ?? d.throwAmount
         shiftScrollsHorizontally = try c.decodeIfPresent(Bool.self, forKey: .shiftScrollsHorizontally) ?? d.shiftScrollsHorizontally
+        ballScrollSpeed = try c.decodeIfPresent(Double.self, forKey: .ballScrollSpeed) ?? d.ballScrollSpeed
         buttons = try c.decodeIfPresent([Int: ButtonAction].self, forKey: .buttons) ?? d.buttons
         chords = try c.decodeIfPresent([Chord].self, forKey: .chords) ?? d.chords
     }

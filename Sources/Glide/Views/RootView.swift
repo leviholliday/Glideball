@@ -58,6 +58,7 @@ struct RootView: View {
         }
         .animation(.smooth(duration: 0.3), value: tab)
         .animation(.smooth, value: model.permissionsOK)
+        .animation(.smooth(duration: 0.2), value: model.modes)
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: model.toast)
         .sheet(isPresented: $model.showingFeedback) {
             FeedbackView(model: model)
@@ -90,6 +91,17 @@ struct RootView: View {
             Spacer()
             if let update = model.updates.available {
                 UpdateButton(updates: model.updates, update: update)
+            }
+            if model.modes.precision {
+                ModePill(text: "Precision", symbol: "scope", tint: .cyan)
+                    .help("A Precision button is slowing the cursor — press it again (or pause Glide) to stop")
+            }
+            if model.modes.dragLocked {
+                ModePill(text: "Drag lock", symbol: "hand.draw.fill", tint: .orange)
+                    .help("The left button is held by Drag lock — click, or press the Drag lock button again, to let go")
+            }
+            if model.modes.ballScrolling {
+                ModePill(text: "Ball scroll", symbol: "arrow.up.and.down.and.arrow.left.and.right", tint: .purple)
             }
             StatusPill(text: statusText, color: statusColor)
             Toggle("", isOn: $model.config.enabled)

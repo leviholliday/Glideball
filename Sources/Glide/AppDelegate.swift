@@ -21,6 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         buildMenu()
         setUpStatusItem()
         _ = AppModel.shared   // starts the engine
+        watchModes()
         registerPanicHotKey()
         if !launchedAtLogin || !AppModel.shared.permissionsOK { showWindow() }
     }
@@ -61,6 +62,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         AppModel.shared.engine.releaseHeldKeys()
+        AppModel.shared.engine.releaseAll()
         AppModel.shared.saveTotals()
     }
 
@@ -109,6 +111,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         menu.items.forEach { $0.target = self }
         item.menu = menu
         statusItem = item
+    }
+
+    /// The menu-bar icon shows Precision and Drag lock, even with the window closed.
+    private func watchModes() {
+        let engine = AppModel.shared.engine
+        let modelHandler = engine.onModes   // keeps AppModel.modes updating too
+        engine.onModes = { [weak self] modes in
+            modelHandler?(modes)
+            self?.showModes(modes)
+        }
+    }
+
+    private func showModes(_ modes: Engine.Modes) {
+        let symbol = modes.dragLocked ? "hand.draw.fill" : modes.precision ? "scope" : "cursorarrow.click"
+        statusItem?.button?.image = NSImage(systemSymbolName: symbol, accessibilityDescription: "Glide")
+        statusItem?.button?.image?.isTemplate = true
     }
 
     @objc private func showGlide(_ sender: Any?) {

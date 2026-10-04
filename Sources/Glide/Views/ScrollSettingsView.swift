@@ -26,6 +26,7 @@ struct ScrollSettingsView: View {
                     case .follow: followCards
                     }
                     if model.config.scrollMode != .native { directionCard }
+                    ballScrollCard
                 }
                 .frame(width: 340)
 
@@ -42,6 +43,17 @@ struct ScrollSettingsView: View {
                     TryItCard()
                 }
             }
+        }
+    }
+
+    private var ballScrollCard: some View {
+        GlassCard(title: "Scroll with the ball", symbol: "arrow.up.and.down.and.arrow.left.and.right") {
+            TuningSlider(title: "Ball scroll speed", symbol: "gauge.with.dots.needle.50percent",
+                         value: $model.config.ballScrollSpeed, range: 0.25...4, step: 0.05,
+                         format: { String(format: "%.2g×", $0) }, lowLabel: "Fine", highLabel: "Fast")
+            Text("Set a button to “Scroll with ball” in Buttons. While you hold it, rolling the ball scrolls in any direction and the cursor stays put. Let go mid-roll and the page glides briefly.")
+                .font(.system(size: 11)).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 

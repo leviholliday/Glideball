@@ -52,6 +52,16 @@ struct PointerView: View {
                         }
                     }
                 }
+                GlassCard(title: "Precision mode", symbol: "scope") {
+                    TuningSlider(title: "Precision speed", symbol: "tortoise",
+                                 value: $model.config.precisionSpeed, range: 0.25...3, step: 0.05,
+                                 format: { String(format: "%.2g", $0) },
+                                 lowLabel: "Pixel-exact", highLabel: "macOS default")
+                    Text("Set a button to Precision in Buttons. Hold it (or toggle it on) and the cursor slows to this speed for fine work, then snaps back.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 Text("Applies only to the Expert Mouse — your other mice and trackpad keep their own settings. macOS still moves the cursor itself, so there's zero added lag.")
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)

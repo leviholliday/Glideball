@@ -18,8 +18,16 @@ final class Engine {
         var listening = false
     }
 
+    /// Glide's own button modes that are currently on, for the UI.
+    struct Modes: Equatable {
+        var precision = false
+        var ballScrolling = false
+        var dragLocked = false
+    }
+
     let telemetry = Telemetry()
     var onStatus: ((Status) -> Void)?          // delivered on main
+    var onModes: ((Modes) -> Void)?            // delivered on main
 
     private var config: GlideConfig
     private var runLoop: CFRunLoop!
@@ -31,7 +39,12 @@ final class Engine {
     private var lastValueStamp: [Int: UInt64] = [:]
     private var status = Status()
 
-    private enum Override { case swallow, remap(Int64, CGEventFlags), heldShortcut(KeyShortcut) }
+    private enum Override {
+        case swallow, remap(Int64, CGEventFlags), heldShortcut(KeyShortcut)
+        case precision    // a Precision (hold) button: slow until it lifts
+        case ballScroll   // a Scroll-with-ball button: the ball scrolls until it lifts
+        case dragButton   // the press that started a drag lock
+    }
     private enum Phase { case down, up, drag }
     private var overrides: [Int64: Override] = [:]
 
@@ -57,6 +70,23 @@ final class Engine {
     }
     private let pointer = PointerTuner()
     private let keyQueue = DispatchQueue(label: "glide.keys", qos: .userInteractive)
+
+    // Precision, Scroll with ball, and Drag lock. Input thread only.
+    private var modes = Modes()
+    private var precisionHeld = false
+    private var precisionToggled = false
+    private var ballScrolling = false
+    private var ballSign: Double = 1           // raw ball counts → macOS scroll sign
+    private var dragLocked = false
+    private var moveTap: CFMachPort?           // only while a drag lock is on
+    private var moveTapSource: CFRunLoopSource?
+    private var leftDown = false               // a left press has passed the tap without its release
+    // Held modes end if their button's release is ever lost (see `checkHolds`).
+    private var hidButtonsDown = Set<Int>()    // Kensington buttons physically down, per HID
+    private var hidButtonSeen = false          // HID has shown a press since the hold began
+    private var holdStart: CFTimeInterval = 0
+    private var holdReleasedChecks = 0
+    private var holdFailsafe: Timer?
 
     init(config: GlideConfig) {
         self.config = config
@@ -91,11 +121,18 @@ final class Engine {
 
     func update(_ config: GlideConfig) {
         perform {
+            let wasEnabled = self.config.enabled
             let pointerChanged = config.trackingSpeed != self.config.trackingSpeed
+                || config.precisionSpeed != self.config.precisionSpeed
                 || config.scrollMode != self.config.scrollMode
                 || config.nativeScrollSpeed != self.config.nativeScrollSpeed
             self.config = config
             self.scroller.config = config
+            if wasEnabled && !config.enabled {
+                self.releaseModes()
+            } else {
+                self.dropOrphanedModes()
+            }
             if pointerChanged { self.applyPointer() }
         }
     }
@@ -116,6 +153,19 @@ final class Engine {
             done.signal()
         }
         _ = done.wait(timeout: .now() + 0.5)
+    }
+
+    /// Ends Precision, Scroll with ball, and Drag lock (pause, ⌃⌥⌘G, quit), so
+    /// Glide can never leave the cursor slowed, frozen, or the left button down.
+    func releaseAll() {
+        let done = DispatchSemaphore(value: 0)
+        perform {
+            self.releaseModes()
+            done.signal()
+        }
+        _ = done.wait(timeout: .now() + 0.5)
+        // Even if the input thread were stuck, never leave the cursor frozen.
+        _ = CGAssociateMouseAndMouseCursorPosition(1)
     }
 
     private func perform(_ block: @escaping () -> Void) {
@@ -144,7 +194,7 @@ final class Engine {
     }
 
     private func applyPointer() {
-        pointer.apply(.init(trackingSpeed: config.trackingSpeed,
+        pointer.apply(.init(trackingSpeed: precisionActive ? config.precisionSpeed : config.trackingSpeed,
                             scrollSpeed: config.scrollMode == .native ? config.nativeScrollSpeed : nil))
     }
 
@@ -212,6 +262,11 @@ final class Engine {
     }
 
     private func deviceRemoved(_ device: IOHIDDevice) {
+        if deviceIsKensington[Self.key(device)] == true {
+            // Unplugged mid-hold: its button releases will never come.
+            hidButtonsDown.removeAll()
+            releaseModes()
+        }
         deviceIsKensington[Self.key(device)] = nil
         publish()
     }
@@ -240,12 +295,23 @@ final class Engine {
         lastValueStamp[usageKey] = stamp
 
         switch (page, usage) {
-        case (kHIDPage_GenericDesktop, kHIDUsage_GD_X): telemetry.addBall(dx: v, dy: 0)
-        case (kHIDPage_GenericDesktop, kHIDUsage_GD_Y): telemetry.addBall(dx: 0, dy: v)
+        case (kHIDPage_GenericDesktop, kHIDUsage_GD_X):
+            telemetry.addBall(dx: v, dy: 0)
+            if ballScrolling { scroller.addBallDelta(dx: Double(v) * ballSign, dy: 0) }
+        case (kHIDPage_GenericDesktop, kHIDUsage_GD_Y):
+            telemetry.addBall(dx: 0, dy: v)
+            if ballScrolling { scroller.addBallDelta(dx: 0, dy: Double(v) * ballSign) }
         case (kHIDPage_GenericDesktop, kHIDUsage_GD_Wheel) where v != 0:
             telemetry.addNotch()
             hidWheel(v)
-        case (kHIDPage_Button, let b) where b >= 1: telemetry.button(b - 1, down: v != 0)
+        case (kHIDPage_Button, let b) where b >= 1:
+            telemetry.button(b - 1, down: v != 0)
+            if v != 0 {
+                hidButtonsDown.insert(b)
+                hidButtonSeen = true
+            } else {
+                hidButtonsDown.remove(b)
+            }
         default: break
         }
     }
@@ -293,13 +359,31 @@ final class Engine {
     private var fromKensington: Bool { hid != nil && lastActiveIsKensington }
 
     fileprivate func handle(_ type: CGEventType, _ event: CGEvent) -> Unmanaged<CGEvent>? {
+        let out = route(type, event)
+        // Whether apps currently see the left button down (Precision keeps drags drags).
+        switch out?.takeUnretainedValue().type {
+        case .leftMouseDown?: leftDown = true
+        case .leftMouseUp?: leftDown = false
+        default: break
+        }
+        return out
+    }
+
+    private func route(_ type: CGEventType, _ event: CGEvent) -> Unmanaged<CGEvent>? {
         let pass = Unmanaged.passUnretained(event)
         switch type {
         case .tapDisabledByTimeout, .tapDisabledByUserInput:
             if let tap { CGEvent.tapEnable(tap: tap, enable: true) }
+            if let moveTap { CGEvent.tapEnable(tap: moveTap, enable: true) }
             return pass
         case _ where event.getIntegerValueField(.eventSourceUserData) == Self.syntheticTag:
             return pass   // our own events
+        case .mouseMoved where dragLocked:
+            // macOS may not count our synthetic press as a held button, so it
+            // reports plain moves: make them the drag the lock promised.
+            Self.retarget(event, to: 0, .drag)
+            event.setDoubleValueField(.mouseEventPressure, value: 1)
+            return pass
         case .scrollWheel:
             return handleScroll(event)
         case .flagsChanged:
@@ -414,6 +498,15 @@ final class Engine {
         let pass = Unmanaged.passUnretained(event)
         let button = event.getIntegerValueField(.mouseEventButtonNumber)
 
+        // Drag lock: any click (from any mouse) lets go — and that's all it does.
+        // (A press that may be the start of a Drag lock combo waits for the
+        // combo; if it turns out to be a lone click, `press` lets go instead.)
+        if dragLocked, phase == .down, isLeftPress(event, button), !inDragLockCombo(button) {
+            endDragLock()
+            overrides[button] = .swallow
+            return nil
+        }
+
         if let handler = learnHandler, fromKensington || learnHeld.contains(Int(button)) {
             if phase == .down {
                 learnHeld.insert(Int(button))
@@ -458,6 +551,27 @@ final class Engine {
                     }
                 }
                 return nil
+            case .precision:
+                if phase == .up {
+                    endPrecisionHold()
+                    return nil
+                }
+                // Moving while holding: still a plain move (or a drag) to apps.
+                if leftDown {
+                    Self.retarget(event, to: 0, .drag)
+                } else {
+                    event.type = .mouseMoved
+                    event.setIntegerValueField(.mouseEventButtonNumber, value: 0)
+                }
+                return pass
+            case .ballScroll:
+                if phase == .up { endBallScroll(glide: true) }
+                return nil
+            case .dragButton:
+                // Rolling before letting go of the lock button already drags.
+                guard phase == .drag, dragLocked else { return nil }
+                Self.retarget(event, to: 0, .drag)
+                return pass
             }
         }
         guard phase == .down, config.enabled, fromKensington else { return pass }
@@ -502,6 +616,7 @@ final class Engine {
         let pressedButtons = pending
         pending = []
         let action = chord.action
+        if beginMode(action, buttons: pressedButtons.map(\.button)) { return }
         if case .holdShortcut(let shortcut) = action {
             // Keep Flow's shortcut down until a button in the chord is released.
             for p in pressedButtons { overrides[p.button] = .heldShortcut(shortcut) }
@@ -537,11 +652,18 @@ final class Engine {
     /// Applies a single button's mapping to its press.
     private func press(_ event: CGEvent, button: Int64) -> Unmanaged<CGEvent>? {
         let pass = Unmanaged.passUnretained(event)
+        if dragLocked, isLeftPress(event, button) {
+            endDragLock()
+            overrides[button] = .swallow
+            return nil
+        }
         // Keep the primary click available even if a stale preference says
         // otherwise, so Glide can never make the mouse unusable.
         if button == 0 { return pass }
         let target: Int64
-        switch config.buttons[Int(button)] ?? .system {
+        let action = config.buttons[Int(button)] ?? .system
+        if beginMode(action, buttons: [button]) { return nil }
+        switch action {
         case .system: return pass
         case .leftClick: target = 0
         case .rightClick: target = 1
@@ -565,12 +687,220 @@ final class Engine {
             Self.retarget(event, to: Int64(b), .down)
             event.flags = event.flags.union(flags)
             return pass
+        case .precisionHold, .precisionToggle, .ballScrollHold, .dragLock:
+            return nil   // handled by `beginMode`
         }
         if target == button { return pass }
         overrides[button] = .remap(target, [])
         Self.retarget(event, to: target, .down)
         return pass
     }
+
+    // MARK: Precision, Scroll with ball, Drag lock
+
+    private var precisionActive: Bool { config.enabled && (precisionHeld || precisionToggled) }
+
+    /// Starts one of Glide's stateful actions for a press of `buttons` (one
+    /// button, or a combo). Returns false for every other action.
+    private func beginMode(_ action: ButtonAction, buttons: [Int64]) -> Bool {
+        switch action {
+        case .precisionHold:
+            for b in buttons { overrides[b] = .precision }
+            precisionHeld = true
+            applyPointer()   // now, on this thread: the very next movement is slow
+            startHoldFailsafe()
+        case .precisionToggle:
+            for b in buttons { overrides[b] = .swallow }
+            precisionToggled.toggle()
+            applyPointer()
+        case .ballScrollHold:
+            for b in buttons { overrides[b] = .ballScroll }
+            beginBallScroll()
+        case .dragLock:
+            if dragLocked {
+                for b in buttons { overrides[b] = .swallow }
+                endDragLock()
+            } else {
+                for b in buttons { overrides[b] = .dragButton }
+                beginDragLock()
+            }
+        default:
+            return false
+        }
+        diagnostics.record("mode \(action.title) on \(buttons)")
+        publishModes()
+        return true
+    }
+
+    private func endPrecisionHold() {
+        precisionHeld = false
+        for (b, o) in overrides {
+            if case .precision = o { overrides[b] = .swallow }   // a combo's other buttons
+        }
+        applyPointer()
+        publishModes()
+    }
+
+    private func beginBallScroll() {
+        guard !ballScrolling else { return }
+        ballScrolling = true
+        // Ball forward counts as "wheel up"; with natural scrolling the page follows the ball.
+        ballSign = Self.naturalScrolling ? 1 : -1
+        _ = CGAssociateMouseAndMouseCursorPosition(0)   // the cursor stays put
+        scroller.beginBall()
+        startHoldFailsafe()
+    }
+
+    private func endBallScroll(glide: Bool) {
+        _ = CGAssociateMouseAndMouseCursorPosition(1)
+        guard ballScrolling else { return }
+        ballScrolling = false
+        for (b, o) in overrides {
+            if case .ballScroll = o { overrides[b] = .swallow }
+        }
+        scroller.endBall(glide: glide)
+        publishModes()
+    }
+
+    private func beginDragLock() {
+        dragLocked = true
+        Self.postLeft(down: true)
+        installMoveTap()
+    }
+
+    private func endDragLock() {
+        guard dragLocked else { return }
+        dragLocked = false
+        removeMoveTap()
+        Self.postLeft(down: false)
+        for (b, o) in overrides {
+            if case .dragButton = o { overrides[b] = .swallow }
+        }
+        publishModes()
+    }
+
+    /// Would this press reach apps as a left click?
+    private func isLeftPress(_ event: CGEvent, _ button: Int64) -> Bool {
+        if event.type == .leftMouseDown || button == 0 { return true }
+        guard config.enabled, fromKensington else { return false }
+        switch config.buttons[Int(button)] {
+        case .leftClick?: return true
+        case .modifiedClick(let b, _)?: return b == 0
+        default: return false
+        }
+    }
+
+    private func inDragLockCombo(_ button: Int64) -> Bool {
+        config.enabled && fromKensington
+            && config.chords.contains { $0.action == .dragLock && $0.buttons.contains(Int(button)) }
+    }
+
+    private static func postLeft(down: Bool) {
+        let loc = CGEvent(source: nil)?.location ?? .zero
+        guard let e = CGEvent(mouseEventSource: keySource, mouseType: down ? .leftMouseDown : .leftMouseUp,
+                              mouseCursorPosition: loc, mouseButton: .left) else { return }
+        e.setIntegerValueField(.mouseEventClickState, value: 1)
+        e.setIntegerValueField(.eventSourceUserData, value: syntheticTag)
+        e.post(tap: .cghidEventTap)
+    }
+
+    /// A second tap for plain mouse moves, only while a drag lock is on, so
+    /// ordinary pointer movement never passes through Glide.
+    private func installMoveTap() {
+        guard moveTap == nil else { return }
+        let mask = CGEventMask(1) << CGEventMask(CGEventType.mouseMoved.rawValue)
+        guard let t = CGEvent.tapCreate(tap: .cgSessionEventTap, place: .headInsertEventTap,
+                                        options: .defaultTap, eventsOfInterest: mask,
+                                        callback: glideTapCallback,
+                                        userInfo: Unmanaged.passUnretained(self).toOpaque()) else { return }
+        let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, t, 0)
+        CFRunLoopAddSource(runLoop, source, .commonModes)
+        CGEvent.tapEnable(tap: t, enable: true)
+        moveTap = t
+        moveTapSource = source
+    }
+
+    private func removeMoveTap() {
+        if let moveTap {
+            CGEvent.tapEnable(tap: moveTap, enable: false)
+            CFMachPortInvalidate(moveTap)
+        }
+        if let moveTapSource { CFRunLoopRemoveSource(runLoop, moveTapSource, .commonModes) }
+        moveTap = nil
+        moveTapSource = nil
+    }
+
+    /// Held modes normally end on their button's release. If that release is
+    /// lost (e.g. the tap was briefly off), HID button state ends them: no
+    /// Kensington button down for two checks in a row. Without any HID button
+    /// reports to go on, a hold ends after 10 s.
+    private func startHoldFailsafe() {
+        holdStart = CACurrentMediaTime()
+        holdReleasedChecks = 0
+        hidButtonSeen = !hidButtonsDown.isEmpty
+        guard holdFailsafe == nil else { return }
+        let t = Timer(timeInterval: 0.25, repeats: true) { [unowned self] _ in self.checkHolds() }
+        RunLoop.current.add(t, forMode: .common)
+        holdFailsafe = t
+    }
+
+    private func checkHolds() {
+        guard precisionHeld || ballScrolling else {
+            holdFailsafe?.invalidate()
+            holdFailsafe = nil
+            return
+        }
+        let lost: Bool
+        if hidButtonSeen {
+            holdReleasedChecks = hidButtonsDown.isEmpty ? holdReleasedChecks + 1 : 0
+            lost = holdReleasedChecks >= 2
+        } else {
+            lost = CACurrentMediaTime() - holdStart > 10
+        }
+        guard lost else { return }
+        diagnostics.record("hold failsafe: button release never arrived")
+        if ballScrolling { endBallScroll(glide: false) }
+        if precisionHeld { endPrecisionHold() }
+    }
+
+    /// Ends everything at once (pause, ⌃⌥⌘G, quit, unplug). Input thread.
+    private func releaseModes() {
+        if ballScrolling { scroller.cancelBall() }
+        ballScrolling = false
+        _ = CGAssociateMouseAndMouseCursorPosition(1)
+        endDragLock()
+        precisionHeld = false
+        precisionToggled = false
+        for (b, o) in overrides {
+            switch o {
+            case .precision, .ballScroll, .dragButton: overrides[b] = .swallow   // their releases stay ours
+            default: break
+            }
+        }
+        applyPointer()
+        publishModes()
+    }
+
+    /// A toggled mode whose action is no longer assigned anywhere could never
+    /// be switched off again, so end it.
+    private func dropOrphanedModes() {
+        guard precisionToggled || dragLocked else { return }
+        let assigned = Set(config.buttons.values).union(config.chords.map(\.action))
+        if precisionToggled && !assigned.contains(.precisionToggle) {
+            precisionToggled = false
+            applyPointer()
+        }
+        if dragLocked && !assigned.contains(.dragLock) { endDragLock() }
+        publishModes()
+    }
+
+    private func publishModes() {
+        let m = Modes(precision: precisionActive, ballScrolling: ballScrolling, dragLocked: dragLocked)
+        guard m != modes else { return }
+        modes = m
+        DispatchQueue.main.async { self.onModes?(m) }
+    }
+
 
     private static func retarget(_ e: CGEvent, to button: Int64, _ phase: Phase) {
         switch (button, phase) {
@@ -594,6 +924,7 @@ final class Engine {
         var flags = CGEventFlags()
         switch action {
         case .system, .disabled: return
+        case .precisionHold, .precisionToggle, .ballScrollHold, .dragLock: return   // stateful: `beginMode`
         case .shortcut(let s), .holdShortcut(let s): send(s); return
         case .modifiedClick(let b, let mods): button = Int64(b); flags = CGEventFlags(rawValue: mods)
         case .leftClick: button = 0

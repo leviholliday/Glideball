@@ -35,6 +35,7 @@ final class SmoothScroller: NSObject {
     /// exact code with synthetic tick patterns.
     var clock: () -> CFTimeInterval = CACurrentMediaTime
     var output: ((_ delta: Double) -> Void)?
+    var ballOutput: ((_ dx: Double, _ dy: Double) -> Void)?
 
     private var link: CADisplayLink?
     private var fallbackTimer: Timer?
@@ -297,7 +298,7 @@ final class SmoothScroller: NSObject {
 
         switch mode {
         case .idle:
-            stop()
+            break   // `flush` stops the loop once the ball is idle too
         case .tracking:
             track(now: now, dt: dt)
         case .coasting:
@@ -305,6 +306,7 @@ final class SmoothScroller: NSObject {
         case .flying:
             fly(dt: dt)
         }
+        ballFrame(dt: dt)
         flush()
     }
 
@@ -392,7 +394,124 @@ final class SmoothScroller: NSObject {
             emitted += whole
             post(whole)
         }
+        if mode == .idle && ballMode == .idle { stop() }
+    }
+
+    // MARK: Scrolling with the ball
+
+    /// Points scrolled per ball count at `ballScrollSpeed` 1 (~400 pt per inch of ball).
+    static let ballPointsPerCount = 1.0
+    /// Light smoothing so the ball's 125 Hz reports land evenly on 120 Hz frames.
+    static let ballSmoothing = 0.016
+    /// Only movement this recent counts toward the glide when the button is let go.
+    static let ballGlideWindow = 0.06
+
+    private enum BallMode { case idle, rolling, gliding }
+    private var ballMode = BallMode.idle
+    private var ballTarget = (x: 0.0, y: 0.0)    // where the ball says the page belongs
+    private var ballPos = (x: 0.0, y: 0.0)       // smoothed
+    private var ballEmitted = (x: 0.0, y: 0.0)   // whole points posted
+    private var ballVel = (x: 0.0, y: 0.0)       // glide velocity, points / second
+    private var ballRecent: [(t: CFTimeInterval, x: Double, y: Double)] = []
+
+    var ballActive: Bool { ballMode != .idle }
+
+    /// The ball-scroll button went down: the ball now scrolls.
+    func beginBall() {
+        ballMode = .rolling
+        ballTarget = (0, 0); ballPos = (0, 0); ballEmitted = (0, 0); ballVel = (0, 0)
+        ballRecent.removeAll()
+    }
+
+    /// Raw ball counts, already signed in macOS scroll direction.
+    func addBallDelta(dx: Double, dy: Double) {
+        guard ballMode == .rolling, dx != 0 || dy != 0 else { return }
+        let gain = Self.ballPointsPerCount * max(config.ballScrollSpeed, 0) * (config.reverseScroll ? -1 : 1)
+        let x = dx * gain, y = dy * gain
+        let now = clock()
+        ballTarget.x += x
+        ballTarget.y += y
+        ballRecent.append((now, x, y))
+        ballRecent.removeAll { now - $0.t > Self.ballGlideWindow }
+        start()
+    }
+
+    /// The button came up. With `glide`, a ball still rolling coasts briefly
+    /// (Flywheel friction); otherwise the page just finishes where the ball put it.
+    func endBall(glide: Bool = true) {
+        guard ballMode == .rolling else { return }
+        let now = clock()
+        ballRecent.removeAll { now - $0.t > Self.ballGlideWindow }
+        if glide && config.smoothScrolling && !ballRecent.isEmpty {
+            let w = Self.ballGlideWindow
+            ballVel.x = ballRecent.reduce(0) { $0 + $1.x } / w
+            ballVel.y = ballRecent.reduce(0) { $0 + $1.y } / w
+            let v = (ballVel.x * ballVel.x + ballVel.y * ballVel.y).squareRoot()
+            if v > Self.throwMaxSpeed {
+                ballVel.x *= Self.throwMaxSpeed / v
+                ballVel.y *= Self.throwMaxSpeed / v
+            }
+        }
+        ballRecent.removeAll()
+        ballMode = .gliding
+        diagnostics?.record(String(format: "ball scroll end, glide %.0f,%.0f pt/s", ballVel.x, ballVel.y))
+        start()
+    }
+
+    /// Stops ball scrolling immediately, posting nothing more.
+    func cancelBall() {
+        ballMode = .idle
+        ballVel = (0, 0)
+        ballRecent.removeAll()
         if mode == .idle { stop() }
+    }
+
+    private func ballFrame(dt: Double) {
+        guard ballMode != .idle else { return }
+        if ballMode == .gliding, ballVel.x != 0 || ballVel.y != 0 {
+            let tau = Self.flyTau(glide: config.flyGlide)
+            let fade = exp(-dt / tau)
+            ballTarget.x += ballVel.x * tau * (1 - fade)
+            ballTarget.y += ballVel.y * tau * (1 - fade)
+            ballVel.x *= fade
+            ballVel.y *= fade
+            if (ballVel.x * ballVel.x + ballVel.y * ballVel.y).squareRoot() < 15 {   // under ~1 pt left
+                ballTarget.x += ballVel.x * tau
+                ballTarget.y += ballVel.y * tau
+                ballVel = (0, 0)
+            }
+        }
+        let a = config.smoothScrolling ? 1 - exp(-dt / Self.ballSmoothing) : 1
+        ballPos.x += (ballTarget.x - ballPos.x) * a
+        ballPos.y += (ballTarget.y - ballPos.y) * a
+        if ballMode == .gliding, ballVel.x == 0, ballVel.y == 0,
+           abs(ballTarget.x - ballPos.x) < 0.5, abs(ballTarget.y - ballPos.y) < 0.5 {
+            ballPos = ballTarget
+            ballMode = .idle
+        }
+        // While moving, hold back fractions; once done, land on the nearest point.
+        let px = ballPos.x - ballEmitted.x, py = ballPos.y - ballEmitted.y
+        let wx = ballMode == .idle ? px.rounded() : px.rounded(.towardZero)
+        let wy = ballMode == .idle ? py.rounded() : py.rounded(.towardZero)
+        if wx != 0 || wy != 0 {
+            ballEmitted.x += wx
+            ballEmitted.y += wy
+            postBall(dx: wx, dy: wy)
+        }
+    }
+
+    private func postBall(dx: Double, dy: Double) {
+        let x = Int32(dx), y = Int32(dy)
+        guard x != 0 || y != 0 else { return }
+        if let ballOutput { ballOutput(Double(x), Double(y)); return }
+        guard let e = CGEvent(scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 2,
+                              wheel1: y, wheel2: x, wheel3: 0) else { return }
+        if let loc = CGEvent(source: nil)?.location { e.location = loc }
+        e.flags = []
+        e.setIntegerValueField(.scrollWheelEventIsContinuous, value: 1)
+        e.setIntegerValueField(.eventSourceUserData, value: Engine.syntheticTag)
+        e.post(tap: .cgSessionEventTap)
+        telemetry?.addScroll(points: (dx * dx + dy * dy).squareRoot())
     }
 
     private func post(_ delta: Double) {
