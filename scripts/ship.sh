@@ -21,14 +21,14 @@ netlify api getCurrentUser >/dev/null 2>&1 || { print -u2 "error: not logged in 
 last_tag=$(git describe --tags --abbrev=0 2>/dev/null || true)
 if [[ -n $last_tag ]] && [[ -z $(git log --oneline "$last_tag"..HEAD -- Sources Resources Package.swift) ]]; then
   print -u2 "error: nothing in the app has changed since $last_tag — commit your changes first"
-  print -u2 "       (website-only changes: netlify deploy --prod --dir website --site $NETLIFY_SITE)"
+  print -u2 "       (website-only changes: scripts/deploy-site.sh)"
   exit 1
 fi
 
 scripts/release.sh "$1" "$2"
 
 print "\n==> Deploying the website"
-netlify deploy --prod --dir website --site "$NETLIFY_SITE" --message "Glide $1" | grep -E "Production URL|Deploy is live" || true
+scripts/deploy-site.sh "Glide $1"
 
 print "\n==> Installing Glide $1 on this Mac"
 ./build.sh | tail -1

@@ -43,6 +43,8 @@ final class AppModel {
     var toast: Toast?
     var pendingImport: PendingImport?
     var requestedTab: GlideTab?
+    /// The Send Feedback sheet over the main window.
+    var showingFeedback = false
     /// Shares settings with the user's other Macs through iCloud Drive.
     let sync = SettingsSync(onRemoteConfig: { AppModel.shared.applyRemoteConfig($0) })
 

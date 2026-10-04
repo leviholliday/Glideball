@@ -183,7 +183,8 @@ That builds a universal app, signs it, publishes the GitHub release, redeploys t
 ## Privacy
 
 - **No analytics, telemetry or tracking.**
-- The only network request Glide makes is a check of GitHub's public releases API for a newer version, once at launch and then once a day.
+- Glide makes network requests only to check GitHub's public releases API for a newer version (at launch, then once a day), to sync through your own iCloud Drive if you turn that on, and to send feedback when you press Send — you see everything that's included first.
+- Feedback (from the app's Help menu or the website's [/feedback](https://glide-trackball.netlify.app/feedback/) page) goes to the developer via a small Netlify function; it's read on a password-protected admin page and announced with an ntfy notification.
 - iCloud Drive sync is off until you turn it on. When it's on, your settings go to **your own** iCloud Drive. Glide has no server.
 - Activity totals and the scroll diagnostics log (`~/Library/Logs/Glide/scroll.log`) stay on your Mac.
 

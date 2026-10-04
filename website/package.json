@@ -1,0 +1,12 @@
+{
+  "name": "glide-website",
+  "private": true,
+  "type": "module",
+  "description": "glide-trackball.netlify.app: the Glide website, where feedback from the app and the site arrives, and the page it's read on",
+  "scripts": {
+    "dev": "netlify dev"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^10.0.0"
+  }
+}

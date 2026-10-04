@@ -47,6 +47,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         AppModel.shared.previewImport(url)
     }
 
+    @objc private func sendFeedback(_ sender: Any?) {
+        showWindow()
+        AppModel.shared.showingFeedback = true
+    }
+
+    @objc private func openWebsite(_ sender: Any?) {
+        NSWorkspace.shared.open(URL(string: "https://glide-trackball.netlify.app")!)
+    }
+
     @objc private func exportSettings() { showWindow(); AppModel.shared.exportSettings() }
     @objc private func importSettings() { showWindow(); AppModel.shared.importSettings() }
 
@@ -94,6 +103,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let menu = NSMenu()
         menu.addItem(withTitle: "Show Glide", action: #selector(showGlide), keyEquivalent: "")
         menu.addItem(withTitle: "Pause / Resume Glide", action: #selector(toggleGlide), keyEquivalent: "")
+        menu.addItem(withTitle: "Send Feedback…", action: #selector(sendFeedback), keyEquivalent: "")
         menu.addItem(.separator())
         menu.addItem(withTitle: "Quit Glide", action: #selector(quitGlide), keyEquivalent: "q")
         menu.items.forEach { $0.target = self }
@@ -162,7 +172,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         windowItem.submenu = windowMenu
         main.addItem(windowItem)
 
+        let helpItem = NSMenuItem()
+        let helpMenu = NSMenu(title: "Help")
+        helpMenu.addItem(withTitle: "Send Feedback…", action: #selector(sendFeedback), keyEquivalent: "").target = self
+        helpMenu.addItem(withTitle: "Glide Website", action: #selector(openWebsite), keyEquivalent: "").target = self
+        helpItem.submenu = helpMenu
+        main.addItem(helpItem)
+
         NSApp.mainMenu = main
         NSApp.windowsMenu = windowMenu
+        NSApp.helpMenu = helpMenu
     }
 }

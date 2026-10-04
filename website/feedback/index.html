@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Send feedback · Glide</title>
+  <meta name="description" content="Found a bug in Glide, have an idea, or stuck on something? Send feedback: it goes straight to the developer.">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#120c33" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f1edff" media="(prefers-color-scheme: light)">
+  <link rel="canonical" href="https://glide-trackball.netlify.app/feedback/">
+  <link rel="icon" type="image/png" sizes="64x64" href="/assets/favicon-64.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/feedback/feedback.css">
+  <script src="/feedback/feedback.js" defer></script>
+</head>
+<body>
+  <svg class="sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.8 5.8l2.6 2.6M15.6 15.6l2.6 2.6M18.2 5.8l-2.6 2.6M8.4 15.6l-2.6 2.6"/></symbol>
+    <symbol id="i-bug" viewBox="0 0 24 24"><rect x="7" y="7.5" width="10" height="12.5" rx="5"/><path d="M12 11v9M9.5 7.6a2.5 2.5 0 0 1 5 0M7 12.5H3.5M20.5 12.5H17M7.4 9 4.5 7M16.6 9l2.9-2M7.4 16.5 4.5 18.5M16.6 16.5l2.9 2"/></symbol>
+    <symbol id="i-idea" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2V16h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></symbol>
+    <symbol id="i-question" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.4a2.5 2.5 0 0 1 4.8 1c0 1.7-2.4 2.1-2.4 3.6M12 17h.01"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><circle cx="9" cy="10" r="1.7"/><path d="m20.5 15.5-4.6-4.6-8.4 8.6"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.4 4.4L19 7.5"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M20.5 3.5 10 14M20.5 3.5 14 20.5l-4-6.5-6.5-4z"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.8 21 19.5H3z"/><path d="M12 10v4.2M12 17h.01"/></symbol>
+  </svg>
+
+  <div class="bg" aria-hidden="true">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+    <div class="blob b4"></div>
+    <div class="grain"></div>
+  </div>
+
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="nav-wrap">
+    <div class="nav glass">
+      <a class="brand" href="/" aria-label="Glide home">
+        <img src="/assets/icon-256.webp" width="32" height="32" alt="">
+        <span>Glide</span>
+      </a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="/#features">Features</a>
+        <a href="/#install">Install</a>
+        <a href="/#faq">FAQ</a>
+        <a href="/feedback/" aria-current="page">Feedback</a>
+      </nav>
+      <a class="btn btn-primary btn-sm" href="https://github.com/leviholliday/glide/releases/latest/download/Glide.zip">
+        <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+        <span>Download</span>
+      </a>
+    </div>
+  </header>
+
+  <main id="main" class="fb-main">
+    <div class="container fb-container">
+      <div class="section-head fb-head">
+        <p class="kicker"><svg class="icon" aria-hidden="true"><use href="#i-sparkles"/></svg>Feedback</p>
+        <h1 class="fb-title">Send feedback</h1>
+        <p class="body">Found a bug, have an idea, or stuck on something? Tell me here. It goes straight to the developer.</p>
+      </div>
+
+      <form class="fb-card glass" id="fb-form" novalidate>
+        <fieldset class="fb-types">
+          <legend class="fb-label">What is it?</legend>
+          <div class="fb-seg">
+            <label class="fb-type">
+              <input type="radio" name="type" value="Bug" checked>
+              <span><svg class="icon" aria-hidden="true"><use href="#i-bug"/></svg>Bug</span>
+            </label>
+            <label class="fb-type">
+              <input type="radio" name="type" value="Idea">
+              <span><svg class="icon" aria-hidden="true"><use href="#i-idea"/></svg>Idea</span>
+            </label>
+            <label class="fb-type">
+              <input type="radio" name="type" value="Question">
+              <span><svg class="icon" aria-hidden="true"><use href="#i-question"/></svg>Question</span>
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="fb-field">
+          <label class="fb-label" for="fb-title">Title</label>
+          <input class="fb-input" id="fb-title" name="title" type="text" maxlength="200" required autocomplete="off"
+                 placeholder="Scrolling stops when I switch apps">
+        </div>
+
+        <div class="fb-field">
+          <label class="fb-label" for="fb-details">Details <span class="fb-opt">(optional)</span></label>
+          <textarea class="fb-input" id="fb-details" name="details" rows="6" maxlength="20000"
+                    placeholder="What happened, what you expected, and how to make it happen again. Your macOS version helps too."></textarea>
+        </div>
+
+        <div class="fb-field">
+          <span class="fb-label" id="fb-files-label">Pictures <span class="fb-opt">(optional, up to 4 PNG or JPEG, 12 MB each)</span></span>
+          <div class="fb-drop" id="fb-drop">
+            <input class="sr-only" id="fb-files" type="file" accept="image/png,image/jpeg" multiple aria-labelledby="fb-files-label">
+            <label class="fb-drop-btn" for="fb-files">
+              <svg class="icon" aria-hidden="true"><use href="#i-image"/></svg>
+              <span>Add screenshots</span>
+            </label>
+            <span class="fb-drop-hint">or drop them here</span>
+          </div>
+          <ul class="fb-thumbs" id="fb-thumbs" aria-label="Pictures to send"></ul>
+          <p class="fb-note" id="fb-files-note" role="status"></p>
+        </div>
+
+        <div class="fb-row">
+          <div class="fb-field">
+            <label class="fb-label" for="fb-name">Name <span class="fb-opt">(optional)</span></label>
+            <input class="fb-input" id="fb-name" name="name" type="text" maxlength="100" autocomplete="name">
+          </div>
+          <div class="fb-field">
+            <label class="fb-label" for="fb-email">Email <span class="fb-opt">(optional)</span></label>
+            <input class="fb-input" id="fb-email" name="email" type="email" maxlength="200" autocomplete="email" inputmode="email">
+          </div>
+        </div>
+
+        <label class="fb-check" id="fb-contact-row">
+          <input type="checkbox" id="fb-contact" name="contactOK" disabled>
+          <span>OK to contact me about this</span>
+        </label>
+
+        <!-- For bots only: people never see it, so anything typed here means a bot. -->
+        <div class="fb-hp" aria-hidden="true">
+          <label for="fb-website">Website</label>
+          <input id="fb-website" name="website" type="text" tabindex="-1" autocomplete="off">
+        </div>
+
+        <div class="fb-error" id="fb-error" role="alert" hidden>
+          <svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg>
+          <span id="fb-error-text"></span>
+        </div>
+
+        <div class="fb-actions">
+          <button class="btn btn-primary btn-lg fb-submit" id="fb-submit" type="submit">
+            <svg class="icon" aria-hidden="true"><use href="#i-send"/></svg>
+            <span id="fb-submit-text">Send feedback</span>
+          </button>
+          <div class="fb-progress" id="fb-progress" hidden><div class="fb-bar" id="fb-bar"></div></div>
+          <p class="fb-privacy">Your browser's name and version are sent along to help with bugs. Nothing else is collected.</p>
+        </div>
+      </form>
+
+      <div class="fb-card fb-done glass" id="fb-done" hidden tabindex="-1">
+        <div class="fb-done-mark"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></div>
+        <h2 class="fb-done-title">Thank you!</h2>
+        <p class="body" id="fb-done-text">Your feedback is on its way to the developer.</p>
+        <div class="cta-row">
+          <button class="btn btn-glass btn-lg" id="fb-again" type="button">Send something else</button>
+          <a class="btn btn-primary btn-lg" href="/">Back to Glide</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <img src="/assets/icon-256.webp" width="28" height="28" alt="" loading="lazy">
+        <span>Glide</span>
+      </div>
+      <nav class="footer-links" aria-label="Footer">
+        <a href="https://github.com/leviholliday/glide">GitHub</a>
+        <a href="https://github.com/leviholliday/glide/releases">Releases</a>
+        <a href="/#install">Install</a>
+        <a href="/#faq">FAQ</a>
+        <a href="/feedback/">Feedback</a>
+      </nav>
+      <p class="legal">Glide is an independent project and is not affiliated with or endorsed by Kensington. Kensington and Expert Mouse are trademarks of their respective owners.</p>
+    </div>
+  </footer>
+</body>
+</html>

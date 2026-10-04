@@ -59,6 +59,9 @@ struct RootView: View {
         .animation(.smooth(duration: 0.3), value: tab)
         .animation(.smooth, value: model.permissionsOK)
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: model.toast)
+        .sheet(isPresented: $model.showingFeedback) {
+            FeedbackView(model: model)
+        }
         .onChange(of: model.requestedTab) { _, requested in
             guard let requested else { return }
             tab = requested

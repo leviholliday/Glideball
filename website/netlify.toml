@@ -1,7 +1,13 @@
-# Netlify config for the Glide website (static, no build step).
+# Netlify config for the Glide website (static, no build step), plus the
+# feedback functions: /api/feedback (from the Mac app and /feedback/),
+# /api/admin/* (the admin page at /admin/feedback/), and an hourly cleanup.
 
 [build]
   publish = "."
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
 
 # Short, shareable download link: https://<site>/download
 [[redirects]]
@@ -10,18 +16,56 @@
   status = 301
   force = true
 
+# The site is published from this folder, so keep what isn't a page out of
+# reach: the functions' source, the npm files and node_modules.
+[[redirects]]
+  from = "/netlify/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/node_modules/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/package.json"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/package-lock.json"
+  to = "/404.html"
+  status = 404
+  force = true
+
 # Security headers for every page.
 # - No inline scripts or styles; everything is served from this origin.
 # - Links to github.com are plain navigations, which CSP does not restrict.
+# - img-src blob: is for the feedback page's previews of the pictures picked.
+# - connect-src 'self' covers the feedback page and the admin page talking
+#   to /api/feedback and /api/admin/*.
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; media-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; media-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     X-Frame-Options = "DENY"
     Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
     Cross-Origin-Opener-Policy = "same-origin"
+
+# The admin page: not for search engines. (It also gets every "/*" header
+# above, which already forbids framing: frame-ancestors 'none' and DENY.
+# The two rules never name the same header, since Netlify sends every
+# matching rule's headers.)
+[[headers]]
+  for = "/admin/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
 
 # Images and other static assets: cache for a year.
 # These filenames are not content-hashed, so rename a file (e.g. og-v2.png)

@@ -16,7 +16,23 @@ final class Diagnostics {
     private let start = CACurrentMediaTime()
     private let maxLines = 6000
 
-    init() { try? Data().write(to: Self.url) }
+    /// The previous launch's log, kept so a report sent after a relaunch or
+    /// crash still has something in it.
+    static var previousURL: URL { url.deletingLastPathComponent().appendingPathComponent("scroll-previous.log") }
+
+    init() {
+        let fm = FileManager.default
+        if ((try? Self.url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0) > 0 {
+            try? fm.removeItem(at: Self.previousURL)
+            try? fm.moveItem(at: Self.url, to: Self.previousURL)
+        }
+        try? Data().write(to: Self.url)
+    }
+
+    /// This launch's log if it has anything, otherwise the previous launch's.
+    static var latestNonEmpty: URL? {
+        [url, previousURL].first { ((try? $0.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0) > 0 }
+    }
 
     func record(_ message: @autoclosure () -> String) {
         let t = (CACurrentMediaTime() - start) * 1000

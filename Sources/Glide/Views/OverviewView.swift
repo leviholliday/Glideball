@@ -38,6 +38,24 @@ struct OverviewView: View {
                 ToggleRow(title: "Open at login", subtitle: "Starts quietly in the background so your trackball is always tuned.",
                           symbol: "power", isOn: Binding(get: { model.launchAtLogin }, set: { model.setLaunchAtLogin($0) }))
                 Divider().opacity(0.4)
+                HStack(spacing: 10) {
+                    Image(systemName: "bubble.left.and.text.bubble.right")
+                        .font(.system(size: 14, weight: .medium))
+                        .frame(width: 22)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Feedback").font(.system(size: 14, weight: .medium))
+                        Text("Found a bug or have an idea? It goes straight to the developer.")
+                            .font(.system(size: 11)).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button {
+                        model.showingFeedback = true
+                    } label: {
+                        Label("Send Feedback…", systemImage: "paperplane")
+                    }
+                    .buttonStyle(.glass)
+                }
+                Divider().opacity(0.4)
                 Text("Closing this window keeps Glide running. Click Glide in the Dock to bring it back, or press ⌘Q to quit — your trackball then goes back to normal.")
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
