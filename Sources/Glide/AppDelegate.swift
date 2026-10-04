@@ -30,6 +30,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         return true
     }
 
+    /// Double-clicking a .glide-settings file: open the window and preview it.
+    func application(_ application: NSApplication, open urls: [URL]) {
+        guard let url = urls.first else { return }
+        showWindow()
+        AppModel.shared.previewImport(url)
+    }
+
+    @objc private func exportSettings() { showWindow(); AppModel.shared.exportSettings() }
+    @objc private func importSettings() { showWindow(); AppModel.shared.importSettings() }
+
     func applicationWillTerminate(_ notification: Notification) {
         AppModel.shared.engine.releaseHeldKeys()
         AppModel.shared.saveTotals()
@@ -37,17 +47,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func showWindow() {
         if window == nil {
-            let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 960, height: 680),
+            let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1040, height: 700),
                              styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
                              backing: .buffered, defer: false)
             w.titlebarAppearsTransparent = true
             w.titleVisibility = .hidden
             w.isMovableByWindowBackground = false   // dragging a slider must never move the window
-            w.minSize = NSSize(width: 820, height: 600)
+            w.minSize = NSSize(width: 960, height: 620)
             let hosting = NSHostingView(rootView: RootView(model: AppModel.shared))
             hosting.sizingOptions = []   // the window decides its size, not the content
             w.contentView = hosting
-            w.setContentSize(NSSize(width: 960, height: 680))
+            w.setContentSize(NSSize(width: 1040, height: 700))
             w.isReleasedWhenClosed = false
             w.delegate = self
             w.setFrameAutosaveName("GlideMain")
@@ -99,9 +109,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         appItem.submenu = appMenu
         main.addItem(appItem)
 
+        let fileItem = NSMenuItem()
+        let fileMenu = NSMenu(title: "File")
+        fileMenu.addItem(withTitle: "Export Settings…", action: #selector(exportSettings), keyEquivalent: "e").target = self
+        fileMenu.addItem(withTitle: "Import Settings…", action: #selector(importSettings), keyEquivalent: "o").target = self
+        fileMenu.addItem(.separator())
+        fileMenu.addItem(withTitle: "Close Window", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        fileItem.submenu = fileMenu
+        main.addItem(fileItem)
+
         let windowItem = NSMenuItem()
         let windowMenu = NSMenu(title: "Window")
-        windowMenu.addItem(withTitle: "Close", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
         windowMenu.addItem(withTitle: "Minimize", action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
         windowItem.submenu = windowMenu
         main.addItem(windowItem)

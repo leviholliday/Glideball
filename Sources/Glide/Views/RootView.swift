@@ -5,6 +5,7 @@ enum GlideTab: String, CaseIterable, Identifiable {
     case pointer = "Pointer"
     case scroll = "Scrolling"
     case buttons = "Buttons"
+    case backup = "Sync"
 
     var id: String { rawValue }
     var symbol: String {
@@ -13,6 +14,7 @@ enum GlideTab: String, CaseIterable, Identifiable {
         case .pointer: "cursorarrow.motionlines"
         case .scroll: "arrow.up.and.down.circle"
         case .buttons: "button.programmable"
+        case .backup: "arrow.triangle.2.circlepath.icloud"
         }
     }
 }
@@ -35,6 +37,7 @@ struct RootView: View {
                         case .pointer: PointerView(model: model)
                         case .scroll: ScrollSettingsView(model: model)
                         case .buttons: ButtonsView(model: model)
+                        case .backup: BackupView(model: model)
                         }
                     }
                     .padding(.bottom, 24)
@@ -45,15 +48,27 @@ struct RootView: View {
             .padding(.horizontal, 26)
             .padding(.top, 36)
         }
+        .overlay(alignment: .bottom) {
+            if let toast = model.toast {
+                ToastView(toast: toast, model: model)
+                    .padding(.bottom, 22)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .id(toast.id)
+            }
+        }
         .animation(.smooth(duration: 0.3), value: tab)
         .animation(.smooth, value: model.permissionsOK)
-        .alert("Glide Settings", isPresented: Binding(
-            get: { model.settingsMessage != nil },
-            set: { if !$0 { model.settingsMessage = nil } }
-        )) {
-            Button("OK") { model.settingsMessage = nil }
-        } message: {
-            Text(model.settingsMessage ?? "")
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: model.toast)
+        .onChange(of: model.requestedTab) { _, requested in
+            guard let requested else { return }
+            tab = requested
+            model.requestedTab = nil
+        }
+        // Drop a settings file anywhere on the window to preview it.
+        .dropDestination(for: URL.self) { urls, _ in
+            guard let url = urls.first, url.pathExtension == GlideSettingsFile.fileExtension else { return false }
+            model.previewImport(url)
+            return true
         }
     }
 
@@ -70,17 +85,18 @@ struct RootView: View {
             Spacer()
             tabBar
             Spacer()
-            StatusPill(text: statusText, color: statusColor)
-            Menu {
-                Button("Export Settings…", action: model.exportSettings)
-                Button("Import Settings…", action: model.importSettings)
-            } label: {
-                Image(systemName: "gearshape")
-                    .font(.system(size: 16, weight: .medium))
-                    .frame(width: 30, height: 30)
+            if let update = model.updates.available {
+                Button {
+                    NSWorkspace.shared.open(update.page)
+                } label: {
+                    Label("Update \(update.version)", systemImage: "arrow.down.circle.fill")
+                        .font(.system(size: 12, weight: .semibold))
+                }
+                .buttonStyle(.glassProminent)
+                .tint(.cyan)
+                .help("A newer version of Glide is available — opens the download page")
             }
-            .menuStyle(.borderlessButton)
-            .help("Import or export settings")
+            StatusPill(text: statusText, color: statusColor)
             Toggle("", isOn: $model.config.enabled)
                 .toggleStyle(.switch)
                 .labelsHidden()
@@ -99,7 +115,7 @@ struct RootView: View {
                             .font(.system(size: 13, weight: .medium))
                             .lineLimit(1)
                             .fixedSize()
-                            .padding(.horizontal, 14)
+                            .padding(.horizontal, 11)
                             .padding(.vertical, 8)
                             .foregroundStyle(tab == t ? .primary : .secondary)
                             .background {

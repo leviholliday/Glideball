@@ -196,12 +196,19 @@ struct GlideConfig: Codable, Equatable {
 /// Portable, versioned settings file used by Glide's import and export controls.
 struct GlideSettingsFile: Codable {
     static let currentVersion = 1
+    static let fileExtension = "glide-settings"
     let version: Int
     let config: GlideConfig
+    /// When and where the file was made — shown in the import preview.
+    /// Optional so files from before these fields existed still open.
+    var exportedAt: Date?
+    var exportedFrom: String?
 
-    init(config: GlideConfig) {
+    init(config: GlideConfig, exportedFrom: String? = Host.current().localizedName) {
         version = Self.currentVersion
         self.config = config
+        exportedAt = Date()
+        self.exportedFrom = exportedFrom
     }
 
     func validatedConfig() throws -> GlideConfig {
@@ -220,5 +227,30 @@ enum GlideSettingsFileError: LocalizedError {
         case .unsupportedVersion(let version):
             "This settings file uses unsupported version \(version)."
         }
+    }
+}
+
+/// A one-line-per-area description of a setup, for export and import previews.
+struct SettingsSummaryRow: Identifiable, Equatable {
+    let symbol: String
+    let title: String
+    let value: String
+    var id: String { title }
+}
+
+extension GlideConfig {
+    var summary: [SettingsSummaryRow] {
+        let remapped = buttons.values.filter { $0 != .system }.count
+        let scroll: String = switch scrollMode {
+        case .native: String(format: "Native · speed %.2g", nativeScrollSpeed)
+        case .flywheel: "Flywheel · \(Int(flyDistance)) pt, \(Int(flyAcceleration * 100))% power"
+        case .follow: "Follow · \(Int(scrollDistance)) pt per tick"
+        }
+        return [
+            .init(symbol: "cursorarrow.motionlines", title: "Pointer speed", value: String(format: "%g", trackingSpeed)),
+            .init(symbol: "arrow.up.and.down.circle", title: "Scrolling", value: scroll),
+            .init(symbol: "button.programmable", title: "Buttons", value: remapped == 0 ? "Default" : "\(remapped) remapped"),
+            .init(symbol: "square.on.square", title: "Combos", value: chords.isEmpty ? "None" : "\(chords.count)"),
+        ]
     }
 }

@@ -6,3 +6,4 @@ build/
 /release/
 website/node_modules/
 .netlify/
+.claude/

@@ -36,14 +36,17 @@ final class AppModel {
     var ballPhase = 0.0
     var totals = Telemetry.Totals()
     var launchAtLogin = SMAppService.mainApp.status == .enabled
-    var settingsMessage: String?
+
+    // Backup: a transient notice, an import waiting for confirmation, and a tab
+    // the UI should switch to (e.g. after double-clicking a settings file).
+    var toast: Toast?
+    var pendingImport: PendingImport?
+    var requestedTab: GlideTab?
 
     var permissionsOK: Bool { hasAccessibility && hasInputMonitoring }
 
-    private static let settingsFileTypes: [UTType] = [
-        UTType(filenameExtension: "glide-settings"),
-        .json,
-    ].compactMap { $0 }
+    static let settingsType = UTType(exportedAs: "com.leviholliday.glide.settings", conformingTo: .json)
+    private static let settingsFileTypes: [UTType] = [settingsType, .json]
 
     // MARK: Quick assign — press trackball button(s), then a shortcut
 
@@ -100,6 +103,7 @@ final class AppModel {
     static let sampleRate = 30.0
 
     @ObservationIgnored let engine: Engine
+    let updates = UpdateChecker()
     @ObservationIgnored private var sampler: Timer?
     @ObservationIgnored private var permissionTimer: Timer?
     @ObservationIgnored private var sampleIndex = 0
@@ -128,6 +132,7 @@ final class AppModel {
             self?.engine.reapplyPointer()
         }
         startSampling()
+        updates.start()
     }
 
     // MARK: Permissions
@@ -161,43 +166,123 @@ final class AppModel {
         launchAtLogin = SMAppService.mainApp.status == .enabled
     }
 
-    // MARK: Settings transfer
+    // MARK: Backup — export, import with preview, undo
+
+    struct Toast: Identifiable, Equatable {
+        enum Action: Equatable { case undoImport, reveal(URL) }
+        let id = UUID()
+        let symbol: String
+        let text: String
+        var action: Action? = nil
+        var isError = false
+    }
+
+    struct PendingImport: Identifiable {
+        let id = UUID()
+        let fileName: String
+        let file: GlideSettingsFile
+    }
+
+    @ObservationIgnored private var configBeforeImport: GlideConfig?
+    @ObservationIgnored private var toastDismissal: DispatchWorkItem?
+
+    func show(_ toast: Toast) {
+        self.toast = toast
+        toastDismissal?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            if self?.toast?.id == toast.id { self?.toast = nil }
+        }
+        toastDismissal = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + (toast.action == nil ? 3.5 : 7), execute: work)
+    }
+
+    private static var defaultExportName: String {
+        let f = DateFormatter()
+        f.dateFormat = "MMM d, yyyy"
+        return "Glide Settings – \(f.string(from: Date())).\(GlideSettingsFile.fileExtension)"
+    }
+
+    func exportData() throws -> Data {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+        return try encoder.encode(GlideSettingsFile(config: config))
+    }
+
+    /// A fresh copy of the current settings in a temporary file, for dragging
+    /// out of the window or sharing.
+    func exportToTemporaryFile() -> URL? {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(Self.defaultExportName)
+        do {
+            try exportData().write(to: url, options: .atomic)
+            return url
+        } catch {
+            return nil   // may run off the main thread (drag & share); the caller reports failure
+        }
+    }
 
     func exportSettings() {
         let panel = NSSavePanel()
         panel.title = "Export Glide Settings"
-        panel.nameFieldStringValue = "Glide Settings.glide-settings"
-        panel.allowedContentTypes = Self.settingsFileTypes
+        panel.message = "Save your Glide setup to a file you can back up or open on another Mac."
+        panel.nameFieldStringValue = Self.defaultExportName
+        panel.allowedContentTypes = [Self.settingsType]
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
         do {
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-            let data = try encoder.encode(GlideSettingsFile(config: config))
-            try data.write(to: url, options: .atomic)
-            settingsMessage = "Settings exported successfully."
+            try exportData().write(to: url, options: .atomic)
+            show(.init(symbol: "checkmark.circle.fill", text: "Saved “\(url.deletingPathExtension().lastPathComponent)”", action: .reveal(url)))
         } catch {
-            settingsMessage = "Couldn’t export settings: \(error.localizedDescription)"
+            show(.init(symbol: "exclamationmark.triangle.fill", text: "Couldn’t export: \(error.localizedDescription)", isError: true))
         }
     }
 
     func importSettings() {
         let panel = NSOpenPanel()
         panel.title = "Import Glide Settings"
-        panel.message = "Choose a settings file previously exported from Glide."
+        panel.message = "Choose a Glide settings file. You’ll see what’s in it before anything changes."
         panel.allowedContentTypes = Self.settingsFileTypes
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
         guard panel.runModal() == .OK, let url = panel.url else { return }
+        previewImport(url)
+    }
 
+    /// Reads a settings file and shows what it contains — nothing changes until confirmed.
+    func previewImport(_ url: URL) {
         do {
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
             let data = try Data(contentsOf: url)
-            let file = try JSONDecoder().decode(GlideSettingsFile.self, from: data)
-            config = try file.validatedConfig()
-            settingsMessage = "Settings imported successfully."
+            let file: GlideSettingsFile
+            if let iso = try? decoder.decode(GlideSettingsFile.self, from: data) {
+                file = iso
+            } else {
+                file = try JSONDecoder().decode(GlideSettingsFile.self, from: data)   // older files
+            }
+            _ = try file.validatedConfig()
+            pendingImport = PendingImport(fileName: url.deletingPathExtension().lastPathComponent, file: file)
+            requestedTab = .backup
         } catch {
-            settingsMessage = "Couldn’t import settings: \(error.localizedDescription)"
+            show(.init(symbol: "exclamationmark.triangle.fill",
+                       text: "That doesn’t look like a Glide settings file.", isError: true))
         }
+    }
+
+    func confirmImport() {
+        guard let pending = pendingImport, var incoming = try? pending.file.validatedConfig() else { return }
+        incoming.enabled = config.enabled            // the pause switch belongs to this Mac
+        configBeforeImport = config
+        config = incoming
+        pendingImport = nil
+        show(.init(symbol: "arrow.down.doc.fill", text: "Imported “\(pending.fileName)”", action: .undoImport))
+    }
+
+    func undoImport() {
+        guard let previous = configBeforeImport else { return }
+        config = previous
+        configBeforeImport = nil
+        show(.init(symbol: "arrow.uturn.backward.circle.fill", text: "Restored your previous settings"))
     }
 
     // MARK: Live activity (only while the window is visible)
