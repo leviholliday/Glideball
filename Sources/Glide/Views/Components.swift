@@ -158,3 +158,21 @@ struct StatusPill: View {
         .glassEffect(.regular, in: .capsule)
     }
 }
+
+/// A mode that's on right now (Precision, Drag lock…), shown in the header.
+struct ModePill: View {
+    let text: String
+    let symbol: String
+    let tint: Color
+
+    var body: some View {
+        Label(text, systemImage: symbol)
+            .font(.system(size: 12, weight: .semibold))
+            .lineLimit(1)
+            .fixedSize()
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .glassEffect(.regular.tint(tint.opacity(0.35)), in: .capsule)
+            .transition(.scale(scale: 0.8).combined(with: .opacity))
+    }
+}

@@ -20,13 +20,18 @@ final class AppModel {
         didSet {
             guard config != oldValue else { return }
             config.save()
-            if !config.enabled && oldValue.enabled { engine.releaseHeldKeys() }
+            if !config.enabled && oldValue.enabled {
+                engine.releaseHeldKeys()
+                engine.releaseAll()
+            }
             pushToEngine()
             if !applyingRemoteConfig { sync.localConfigChanged(config) }
         }
     }
 
     var status = Engine.Status()
+    /// Precision / Drag lock / Scroll with ball, while one is on.
+    var modes = Engine.Modes()
     var hasAccessibility = AXIsProcessTrusted()
     var hasInputMonitoring = IOHIDCheckAccess(kIOHIDRequestTypeListenEvent) == kIOHIDAccessTypeGranted
     var pressed: Set<Int> = []
@@ -158,6 +163,7 @@ final class AppModel {
         engine = Engine(config: initial)
         engine.telemetry.restore(Self.loadTotals())
         engine.onStatus = { [weak self] s in self?.status = s }
+        engine.onModes = { [weak self] m in self?.modes = m }
         engine.start()
 
         // Seed an empty chart so it doesn't pop in.
