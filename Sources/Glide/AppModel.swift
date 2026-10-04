@@ -22,6 +22,7 @@ final class AppModel {
             config.save()
             if !config.enabled && oldValue.enabled { engine.releaseHeldKeys() }
             engine.update(config)
+            if !applyingRemoteConfig { sync.localConfigChanged(config) }
         }
     }
 
@@ -37,6 +38,8 @@ final class AppModel {
     var totals = Telemetry.Totals()
     var launchAtLogin = SMAppService.mainApp.status == .enabled
     var settingsMessage: String?
+    /// Shares settings with the user's other Macs through iCloud Drive.
+    let sync = SettingsSync(onRemoteConfig: { AppModel.shared.applyRemoteConfig($0) })
 
     var permissionsOK: Bool { hasAccessibility && hasInputMonitoring }
 
@@ -106,6 +109,7 @@ final class AppModel {
     @ObservationIgnored private var smoothedBall = 0.0
     @ObservationIgnored private var smoothedNotch = 0.0
     @ObservationIgnored private var saveCounter = 0
+    @ObservationIgnored private var applyingRemoteConfig = false
 
     private init() {
         let cfg = GlideConfig.load()
@@ -128,6 +132,7 @@ final class AppModel {
             self?.engine.reapplyPointer()
         }
         startSampling()
+        sync.syncNow(current: cfg)   // pick up changes made on other Macs while Glide was closed
     }
 
     // MARK: Permissions
@@ -198,6 +203,13 @@ final class AppModel {
         } catch {
             settingsMessage = "Couldn’t import settings: \(error.localizedDescription)"
         }
+    }
+
+    /// Takes settings synced from another Mac without echoing them back as a local change.
+    private func applyRemoteConfig(_ remote: GlideConfig) {
+        applyingRemoteConfig = true
+        config = remote
+        applyingRemoteConfig = false
     }
 
     // MARK: Live activity (only while the window is visible)
