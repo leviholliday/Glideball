@@ -18,7 +18,7 @@
 
   <ItemGroup>
     <!-- Golden data generated from the Mac sources by windows/tools/golden/run.sh -->
-    <None Include="Data\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Data\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
