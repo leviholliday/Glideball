@@ -86,15 +86,7 @@ struct RootView: View {
             tabBar
             Spacer()
             if let update = model.updates.available {
-                Button {
-                    NSWorkspace.shared.open(update.page)
-                } label: {
-                    Label("Update \(update.version)", systemImage: "arrow.down.circle.fill")
-                        .font(.system(size: 12, weight: .semibold))
-                }
-                .buttonStyle(.glassProminent)
-                .tint(.cyan)
-                .help("A newer version of Glide is available — opens the download page")
+                UpdateButton(updates: model.updates, update: update)
             }
             StatusPill(text: statusText, color: statusColor)
             Toggle("", isOn: $model.config.enabled)
@@ -173,5 +165,45 @@ struct PermissionsCard: View {
         .buttonStyle(.glassProminent)
         .tint(granted ? .green : .orange)
         .disabled(granted)
+    }
+}
+
+/// "Update 2.1" in the header: install in place, or read what's new.
+struct UpdateButton: View {
+    let updates: UpdateChecker
+    let update: UpdateChecker.Update
+
+    var body: some View {
+        switch updates.installState {
+        case .downloading(let progress):
+            Label("Downloading \(Int(progress * 100))%", systemImage: "arrow.down.circle")
+                .font(.system(size: 12, weight: .semibold))
+                .monospacedDigit()
+                .padding(.horizontal, 12).padding(.vertical, 6)
+                .glassEffect(.regular.tint(.cyan.opacity(0.3)), in: .capsule)
+        case .installing:
+            Label("Restarting…", systemImage: "arrow.clockwise")
+                .font(.system(size: 12, weight: .semibold))
+                .padding(.horizontal, 12).padding(.vertical, 6)
+                .glassEffect(.regular.tint(.cyan.opacity(0.3)), in: .capsule)
+        case .idle, .failed:
+            Menu {
+                Button("Install \(update.version) & Relaunch") { updates.install() }
+                Button("What’s New in \(update.version)…") { NSWorkspace.shared.open(update.page) }
+                if case .failed(let message) = updates.installState {
+                    Divider()
+                    Text("Last try failed: \(message)")
+                }
+            } label: {
+                Label(updates.installState == .idle ? "Update \(update.version)" : "Update failed — retry",
+                      systemImage: "arrow.down.circle.fill")
+                    .font(.system(size: 12, weight: .semibold))
+            }
+            .menuStyle(.button)
+            .buttonStyle(.glassProminent)
+            .tint(updates.installState == .idle ? .cyan : .orange)
+            .fixedSize()
+            .help("A newer version of Glide is available")
+        }
     }
 }

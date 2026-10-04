@@ -172,6 +172,14 @@ rm glide-signing.cnf glide-signing.key glide-signing.crt glide-signing.p12
 
 `security find-identity` will list the certificate as `CSSMERR_TP_NOT_TRUSTED`. That is expected: `codesign` can sign with an untrusted self-signed certificate, and macOS keeps permissions valid across builds as long as the certificate stays the same. Keep the private key to yourself, because anything signed with it under Glide's bundle identifier inherits Glide's permissions.
 
+## Shipping an update
+
+```bash
+scripts/ship.sh 2.1 "What's new in this version"
+```
+
+That builds a universal app, signs it, publishes the GitHub release, redeploys the website, and installs the new build locally. Everyone running Glide sees an **Update** button within a day; one click downloads it, checks that it's signed with the same certificate (tampered downloads are refused), swaps the app, and relaunches — permissions carry over because the signature matches. `scripts/release.sh` does just the GitHub half and has a `--dry-run`.
+
 ## Privacy
 
 - **No analytics, telemetry or tracking.**
