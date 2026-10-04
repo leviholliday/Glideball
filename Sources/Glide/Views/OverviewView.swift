@@ -62,6 +62,8 @@ struct OverviewView: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+
+            KeyboardShortcutsCard(model: model)
         }
     }
 

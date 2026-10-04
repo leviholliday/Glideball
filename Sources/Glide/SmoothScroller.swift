@@ -394,7 +394,7 @@ final class SmoothScroller: NSObject {
             emitted += whole
             post(whole)
         }
-        if mode == .idle && ballMode == .idle { stop() }
+        if mode == .idle && (ballMode == .idle || ballResting) { stop() }
     }
 
     // MARK: Scrolling with the ball
@@ -415,6 +415,12 @@ final class SmoothScroller: NSObject {
     private var ballRecent: [(t: CFTimeInterval, x: Double, y: Double)] = []
 
     var ballActive: Bool { ballMode != .idle }
+
+    /// Rolling, but the page has caught up with the ball: no frames needed
+    /// until it moves again (a keyboard Scroll with ball can stay on for long).
+    private var ballResting: Bool {
+        ballMode == .rolling && abs(ballTarget.x - ballPos.x) < 0.01 && abs(ballTarget.y - ballPos.y) < 0.01
+    }
 
     /// The ball-scroll button went down: the ball now scrolls.
     func beginBall() {
@@ -484,6 +490,7 @@ final class SmoothScroller: NSObject {
         let a = config.smoothScrolling ? 1 - exp(-dt / Self.ballSmoothing) : 1
         ballPos.x += (ballTarget.x - ballPos.x) * a
         ballPos.y += (ballTarget.y - ballPos.y) * a
+        if ballResting { ballPos = ballTarget }   // caught up: land exactly, and let the frame loop rest
         if ballMode == .gliding, ballVel.x == 0, ballVel.y == 0,
            abs(ballTarget.x - ballPos.x) < 0.5, abs(ballTarget.y - ballPos.y) < 0.5 {
             ballPos = ballTarget
