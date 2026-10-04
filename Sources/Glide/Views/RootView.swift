@@ -25,6 +25,7 @@ struct RootView: View {
     @Bindable var model: AppModel
     @State private var tab: GlideTab = GlideTab(rawValue: UserDefaults.standard.string(forKey: "GlideInitialTab") ?? "") ?? .overview
     @Namespace private var tabNS
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack {
@@ -51,6 +52,14 @@ struct RootView: View {
             .padding(.horizontal, 26)
             .padding(.top, 36)
         }
+        .overlay {
+            // Confetti for milestones and records — skipped with Reduce Motion.
+            if let burst = model.delight.burst, !reduceMotion {
+                ConfettiBurst(burst: burst)
+                    .id(burst.id)
+                    .transition(.opacity)
+            }
+        }
         .overlay(alignment: .bottom) {
             if let toast = model.toast {
                 ToastView(toast: toast, model: model)
@@ -69,6 +78,8 @@ struct RootView: View {
         .animation(.smooth(duration: 0.35), value: model.showingWelcomeTour)
         .animation(.smooth, value: model.permissionsOK)
         .animation(.smooth(duration: 0.2), value: model.modes)
+        .animation(.spring(response: 0.35, dampingFraction: 0.6), value: model.delight.showSaved)
+        .animation(.smooth(duration: 0.3), value: model.delight.checklistVisible)
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: model.toast)
         .sheet(isPresented: $model.showingFeedback) {
             FeedbackView(model: model)
@@ -120,6 +131,10 @@ struct RootView: View {
             }
             if model.modes.ballScrolling {
                 ModePill(text: "Ball scroll", symbol: "arrow.up.and.down.and.arrow.left.and.right", tint: .purple)
+            }
+            if model.delight.showSaved {
+                SavedPill()
+                    .transition(.scale(scale: 0.6).combined(with: .opacity))
             }
             StatusPill(text: statusText, color: statusColor)
             Toggle("", isOn: $model.config.enabled)

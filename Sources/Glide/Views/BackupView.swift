@@ -353,10 +353,20 @@ struct ToastView: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Image(systemName: toast.symbol)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(toast.isError ? .orange : .green)
-            Text(toast.text).font(.system(size: 13, weight: .medium)).lineLimit(1)
+            if toast.celebration {
+                CelebrationToastIcon(symbol: toast.symbol)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(toast.text).font(.system(size: 13, weight: .semibold)).lineLimit(1)
+                    if let detail = toast.detail {
+                        Text(detail).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
+                    }
+                }
+            } else {
+                Image(systemName: toast.symbol)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(toast.isError ? .orange : .green)
+                Text(toast.text).font(.system(size: 13, weight: .medium)).lineLimit(1)
+            }
             if let action = toast.action {
                 Divider().frame(height: 16).opacity(0.4)
                 switch action {
@@ -373,8 +383,8 @@ struct ToastView: View {
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .glassEffect(.regular, in: .capsule)
-        .shadow(color: .black.opacity(0.25), radius: 18, y: 8)
+        .padding(.vertical, toast.celebration ? 8 : 10)
+        .glassEffect(toast.celebration ? .regular.tint(.purple.opacity(0.18)) : .regular, in: .capsule)
+        .shadow(color: toast.celebration ? .purple.opacity(0.35) : .black.opacity(0.25), radius: 18, y: 8)
     }
 }

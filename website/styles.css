@@ -1208,3 +1208,227 @@ h3 { font-size: 19px; font-weight: 750; letter-spacing: -0.015em; line-height: 1
   .glass, .btn { border: 1px solid CanvasText; }
   .hero-title, .nf-code { color: CanvasText; background: none; }
 }
+
+/* ==========================================================================
+   Delight — small rewards for real interactions. Everything here is
+   decorative, skipped with reduced motion, and never blocks anything.
+   ========================================================================== */
+
+/* --------------------------------------------------------------- Scroll progress (CSS only) */
+.scroll-progress { display: none; }
+@supports (animation-timeline: scroll()) {
+  .scroll-progress {
+    display: block;
+    position: absolute;
+    left: 22px; right: 22px; bottom: -1px;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--violet), var(--cyan), var(--pink));
+    transform-origin: 0 50%;
+    transform: scaleX(0);
+    opacity: 0.85;
+    pointer-events: none;
+    animation: page-progress linear both;
+    animation-timeline: scroll(root block);
+  }
+  @keyframes page-progress { to { transform: scaleX(1); } }
+}
+
+/* --------------------------------------------------------------- Reveal: a touch of scale */
+.js .reveal { transform: translateY(24px) scale(0.985); }
+
+/* --------------------------------------------------------------- Magnetic download buttons */
+.btn-primary {
+  --mx: 0px;
+  --my: 0px;
+  --gx: 50%;
+  --gy: 50%;
+  position: relative;
+  isolation: isolate;
+  transform: translate3d(var(--mx), var(--my), 0);
+}
+.btn-primary:hover { transform: translate3d(var(--mx), calc(var(--my) - 2px), 0); }
+.btn-primary:active { transform: translate3d(var(--mx), calc(var(--my) + 1px), 0) scale(0.97); }
+.btn-primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+  background: radial-gradient(120px circle at var(--gx) var(--gy), rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0) 70%);
+  opacity: 0;
+  transition: opacity 0.3s var(--ease);
+}
+.btn-primary:hover::after { opacity: 1; }
+.btn-primary.magnet { transition: transform 0.16s var(--ease), box-shadow 0.25s var(--ease); }
+
+/* --------------------------------------------------------------- Cursor glow on glass cards */
+.glow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(380px circle at var(--px, 50%) var(--py, 50%), var(--glow-color, rgba(167, 139, 250, 0.14)), transparent 55%);
+  opacity: 0;
+  transition: opacity 0.4s var(--ease);
+}
+.glow.glowing::after { opacity: 1; }
+@media (prefers-color-scheme: light) {
+  .glow { --glow-color: rgba(255, 255, 255, 0.55); }
+}
+
+/* --------------------------------------------------------------- Download celebration */
+.confetti {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 200;
+}
+.dl-toast {
+  --tx: -50%;
+  position: fixed;
+  left: 50%;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  z-index: 210;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: min(460px, calc(100vw - 32px));
+  padding: 14px 14px 14px 16px;
+  border-radius: 22px;
+  transform: translate(var(--tx), 0);
+  animation: toast-in 0.55s var(--ease) both;
+}
+/* On wide screens, sit in the corner so the page's buttons stay in view. */
+@media (min-width: 760px) {
+  .dl-toast { --tx: 0px; left: auto; right: 24px; bottom: 24px; }
+}
+.dl-toast.leaving { animation: toast-out 0.35s var(--ease) both; }
+.dl-toast .dl-check {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--grad-btn);
+  box-shadow: 0 6px 18px -6px rgba(124, 92, 255, 0.9);
+}
+.dl-toast .dl-check .icon { width: 20px; height: 20px; stroke-width: 2.6; }
+.dl-toast .dl-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 14px; color: var(--ink-2); }
+.dl-toast strong { color: var(--ink); font-size: 15.5px; }
+.dl-toast a { color: var(--accent-ink); font-weight: 700; }
+.dl-toast .dl-close {
+  flex: none;
+  margin-left: auto;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-3);
+  font: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.dl-toast .dl-close:hover { background: var(--line); color: var(--ink); }
+@keyframes toast-in { from { opacity: 0; transform: translate(var(--tx), 24px) scale(0.96); } }
+@keyframes toast-out { to { opacity: 0; transform: translate(var(--tx), 16px) scale(0.98); } }
+
+/* --------------------------------------------------------------- Flick meter */
+.fw-meter {
+  padding: 16px 18px;
+  border-radius: var(--r-lg);
+  background: var(--inset);
+  border: 1px solid var(--inset-border);
+}
+.fm-badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, #f472b6, #a78bfa);
+  box-shadow: 0 6px 16px -6px rgba(244, 114, 182, 0.9);
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.25s var(--ease), transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.fm-badge.show { opacity: 1; transform: scale(1); }
+.fm-bar {
+  position: relative;
+  height: 10px;
+  margin-top: 12px;
+  border-radius: 99px;
+  background: var(--line);
+}
+.fm-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--cyan), var(--violet), var(--pink));
+  transform-origin: 0 50%;
+  transform: scaleX(var(--v, 0));
+  box-shadow: 0 0 14px rgba(167, 139, 250, 0.55);
+}
+.fm-best {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  left: 0;
+  width: 3px;
+  margin-left: -1.5px;
+  border-radius: 2px;
+  background: var(--ink);
+  opacity: 0;
+  transform: translateX(var(--best-x, 0px));
+  transition: transform 0.5s var(--ease), opacity 0.3s;
+}
+.fm-best.on { opacity: 0.85; }
+.fw-meter.record .fm-fill { animation: meter-flash 0.9s var(--ease); }
+@keyframes meter-flash { 30% { box-shadow: 0 0 26px rgba(244, 114, 182, 0.95); filter: brightness(1.35); } }
+.fm-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 0 0;
+}
+.fm-stats dt { color: var(--ink-3); font-size: 12.5px; font-weight: 650; }
+.fm-stats dd { margin: 2px 0 0; font-weight: 800; font-size: 19px; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.fm-stats dd span { color: var(--ink-3); font-size: 12px; font-weight: 650; }
+.fm-stats output { display: inline-block; }
+.fm-stats output.bump { animation: bump 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes bump { 40% { transform: scale(1.18); color: var(--pink); } }
+
+/* --------------------------------------------------------------- Mini trackball */
+.tb-ring { transition: none; will-change: transform; }
+.tb-pad::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  border: 2px solid #a5f3fc;
+  opacity: 0;
+  pointer-events: none;
+}
+.tb-pad.ripple::after { animation: pad-ripple 0.55s var(--ease); }
+@keyframes pad-ripple { from { opacity: 0.9; transform: scale(1); } to { opacity: 0; transform: scale(1.45); } }
+/* A slow idle turn while the card is on screen (compositor-only; JS adds spin on top). */
+.tb.idle .tb-ring { animation: ring-idle 48s linear infinite; }
+@keyframes ring-idle { to { rotate: 360deg; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .js .reveal { transform: none; }
+  .btn-primary, .btn-primary:hover { transform: none; }
+  .glow::after, .tb-pad::after, .scroll-progress { display: none; }
+  .dl-toast, .dl-toast.leaving { animation: none; }
+  .fm-badge { transition: none; }
+  .fw-meter.record .fm-fill, .fm-stats output.bump, .tb.idle .tb-ring { animation: none; }
+}

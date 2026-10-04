@@ -103,6 +103,7 @@
         <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
         <span>Download</span>
       </a>
+      <div class="scroll-progress" aria-hidden="true"></div>
     </div>
   </header>
 
@@ -330,6 +331,19 @@
                 </div>
                 <div class="spark"><canvas data-fw-canvas aria-hidden="true"></canvas></div>
                 <p class="card-note">Last 3 seconds. Plain steps spike; the flywheel spreads each push into a smooth glide.</p>
+              </div>
+              <div class="fw-meter" data-fm>
+                <div class="card-head">
+                  <p class="label-caps"><svg class="icon" aria-hidden="true"><use href="#i-bolt"/></svg>Flick meter</p>
+                  <span class="fm-badge" data-fm-badge aria-hidden="true">New best!</span>
+                </div>
+                <div class="fm-bar" aria-hidden="true"><span class="fm-fill" data-fm-fill></span><span class="fm-best" data-fm-best></span></div>
+                <dl class="fm-stats">
+                  <div><dt>Top speed</dt><dd><output data-fm-top>0</output> <span>px/s</span></dd></div>
+                  <div><dt>Longest glide</dt><dd><output data-fm-glide>0</output> <span>rows</span></dd></div>
+                  <div><dt>This visit</dt><dd><output data-fm-total>0</output> <span>rows</span></dd></div>
+                </dl>
+                <p class="sr-only" aria-live="polite" data-fm-live></p>
               </div>
               <p class="fw-mode-note" data-fw-note aria-live="polite">Flywheel: each tick adds a push, friction (τ&nbsp;≈&nbsp;82&nbsp;ms) glides it to a stop. Same distance, no jolts.</p>
             </div>
