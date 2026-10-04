@@ -1,0 +1,16 @@
+[Unit]
+Description=Glideball trackball service (Kensington Expert Mouse)
+Documentation=https://github.com/leviholliday/glideball/tree/main/linux
+# If it keeps failing, stop retrying: the kernel has already handed the
+# trackball back to the desktop, so the mouse keeps working.
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+ExecStart=@BIN@ daemon
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=default.target

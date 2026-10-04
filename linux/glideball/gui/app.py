@@ -196,8 +196,6 @@ class Window(Adw.ApplicationWindow):
         header.pack_end(self.enable_switch)
         view = Adw.ToolbarView()
         view.add_top_bar(header)
-        bar = Adw.ViewSwitcherBar(stack=stack)
-        view.add_bottom_bar(bar)
         self.toasts.set_child(stack)
         view.set_content(self.toasts)
         self.set_content(view)
@@ -511,7 +509,14 @@ class Window(Adw.ApplicationWindow):
         dialog = Adw.MessageDialog(transient_for=self, heading=S["record_title"], body=S["record_sub"])
         dialog.add_response("cancel", S["cancel"])
         ctrl = Gtk.EventControllerKey()
-        result = {"sc": None}
+        ctrl.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)   # before the dialog's buttons see keys
+        result = {"sc": None, "done": False}
+
+        def finish(*_a):
+            if not result["done"]:
+                result["done"] = True
+                done(result["sc"])
+            return False
 
         def key(_c, _keyval, keycode, state):
             code = keycode - 8   # X11/GDK hardware keycode -> evdev
@@ -539,7 +544,8 @@ class Window(Adw.ApplicationWindow):
             return True
         ctrl.connect("key-pressed", key)
         dialog.add_controller(ctrl)
-        dialog.connect("close-request", lambda _d: (done(result["sc"]), False)[1])
+        dialog.connect("response", finish)
+        dialog.connect("close-request", finish)
         dialog.present()
 
     def _chords(self):
@@ -632,7 +638,7 @@ class Window(Adw.ApplicationWindow):
 
     def _open_folder(self):
         os.makedirs(self.settings.backups.folder, exist_ok=True)
-        Gio.AppInfo.launch_default_for_uri(GLib.filename_to_uri(self.settings.backups.folder), None)
+        Gio.AppInfo.launch_default_for_uri(GLib.filename_to_uri(self.settings.backups.folder, None), None)
 
     def _refresh_backups(self):
         for r in self.backup_rows:

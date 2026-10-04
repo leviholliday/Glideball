@@ -1,0 +1,11 @@
+# Glideball: give the logged-in user (and nobody else) access to
+#   1. /dev/uinput, to create Glideball's virtual pointer and keyboard;
+#   2. Kensington (USB vendor 047d) input devices only, so the daemon can
+#      grab the trackball. Other mice, trackballs and keyboards stay
+#      root/input-group only, exactly as before.
+# "uaccess" is systemd-logind's per-seat ACL: it follows whoever is logged in
+# at the console and is removed when they log out. Must sort before
+# 73-seat-late.rules, hence the 70 prefix.
+
+KERNEL=="uinput", SUBSYSTEM=="misc", OPTIONS+="static_node=uinput", TAG+="uaccess"
+SUBSYSTEM=="input", KERNEL=="event*", ATTRS{id/vendor}=="047d", TAG+="uaccess"

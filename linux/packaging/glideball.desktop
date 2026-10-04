@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Application
+Name=Glideball
+Comment=Pointer speed, smooth scrolling and buttons for the Kensington Expert Mouse
+Exec=@BIN@ gui
+Icon=glideball
+Terminal=false
+Categories=Settings;HardwareSettings;
+Keywords=trackball;mouse;kensington;scroll;
+StartupNotify=true
+Actions=TogglePause;
+
+[Desktop Action TogglePause]
+Name=Pause / Resume Glideball
+Exec=@BIN@ ctl toggle-pause
