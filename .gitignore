@@ -1,0 +1,8 @@
+.build/
+build/
+*.xcodeproj/
+.swiftpm/
+.DS_Store
+/release/
+website/node_modules/
+.netlify/
