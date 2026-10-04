@@ -12,7 +12,7 @@
 # Short, shareable download link: https://<site>/download
 [[redirects]]
   from = "/download"
-  to = "https://github.com/leviholliday/glide/releases/latest/download/Glideball.zip"
+  to = "https://github.com/leviholliday/glideball/releases/latest/download/Glideball.zip"
   status = 301
   force = true
 

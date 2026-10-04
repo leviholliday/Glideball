@@ -37,7 +37,7 @@ final class UpdateChecker {
     private(set) var installState: InstallState = .idle
 
     /// The newest releases, prereleases included (GitHub's "latest" never is one).
-    static let releasesAPI = URL(string: "https://api.github.com/repos/leviholliday/glide/releases?per_page=30")!
+    static let releasesAPI = URL(string: "https://api.github.com/repos/leviholliday/glideball/releases?per_page=30")!
     static let assetName = "Glideball.zip"
     /// What versions before the rename (≤ 2.7.1) download; releases still attach it.
     static let legacyAssetName = "Glide.zip"

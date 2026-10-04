@@ -97,6 +97,8 @@ final class Engine {
     private var leftDown = false               // a left press has passed the tap without its release
     // Held modes end if their button's release is ever lost (see `checkHolds`).
     private var hidButtonsDown = Set<Int>()    // Kensington buttons physically down, per HID
+    private var hidButtonDownAt: [Int: CFTimeInterval] = [:]   // when each last went down
+    private var kensingtonReportsButtons = false   // its buttons reach us over HID at all
     private var hidButtonSeen = false          // HID has shown a press since the hold began
     private var holdStart: CFTimeInterval = 0
     private var holdReleasedChecks = 0
@@ -452,6 +454,8 @@ final class Engine {
             telemetry.button(b - 1, down: v != 0)
             if v != 0 {
                 hidButtonsDown.insert(b)
+                hidButtonDownAt[b] = CACurrentMediaTime()
+                kensingtonReportsButtons = true
                 hidButtonSeen = true
             } else {
                 hidButtonsDown.remove(b)
@@ -501,6 +505,23 @@ final class Engine {
     /// The device that produced the most recent raw input. Without Input
     /// Monitoring we can't tell devices apart, so we leave everything alone.
     private var fromKensington: Bool { hid != nil && lastActiveIsKensington }
+
+    /// Did this click come from the Kensington? "Last active device" isn't enough
+    /// for buttons: a built-in trackpad's clicks never reach IOHIDManager, so a
+    /// trackpad right-click right after using the trackball would look like the
+    /// trackball's. A press only counts when the trackball itself reported that
+    /// button going down (HID usage n+1 = CG button n), just now.
+    private func isKensingtonPress(_ button: Int64) -> Bool {
+        guard hid != nil else { return false }
+        let b = Int(button) + 1
+        if hidButtonsDown.contains(b) { return true }
+        if let t = hidButtonDownAt[b], CACurrentMediaTime() - t < 0.3 { return true }
+        if lastActiveIsKensington && kensingtonReportsButtons {
+            diagnostics.record("press of button \(button) not reported by the trackball: passed through")
+        }
+        // A device whose buttons never arrive over HID: fall back to the last active device.
+        return !kensingtonReportsButtons && lastActiveIsKensington
+    }
 
     fileprivate func handle(_ type: CGEventType, _ event: CGEvent) -> Unmanaged<CGEvent>? {
         let out = route(type, event)
@@ -654,7 +675,7 @@ final class Engine {
             return nil
         }
 
-        if let handler = learnHandler, fromKensington || learnHeld.contains(Int(button)) {
+        if let handler = learnHandler, (phase == .down && isKensingtonPress(button)) || learnHeld.contains(Int(button)) {
             if phase == .down {
                 learnHeld.insert(Int(button))
                 learnMax.formUnion(learnHeld)
@@ -721,7 +742,7 @@ final class Engine {
                 return pass
             }
         }
-        guard phase == .down, config.enabled, fromKensington else { return pass }
+        guard phase == .down, config.enabled, isKensingtonPress(button) else { return pass }
 
         let comboButtons = Set(config.chords.flatMap(\.buttons))
         guard comboButtons.contains(Int(button)) else {
@@ -957,7 +978,7 @@ final class Engine {
     /// Would this press reach apps as a left click?
     private func isLeftPress(_ event: CGEvent, _ button: Int64) -> Bool {
         if event.type == .leftMouseDown || button == 0 { return true }
-        guard config.enabled, fromKensington else { return false }
+        guard config.enabled, isKensingtonPress(button) else { return false }
         switch config.buttons[Int(button)] {
         case .leftClick?: return true
         case .modifiedClick(let b, _)?: return b == 0
@@ -966,7 +987,7 @@ final class Engine {
     }
 
     private func inDragLockCombo(_ button: Int64) -> Bool {
-        config.enabled && fromKensington
+        config.enabled && isKensingtonPress(button)
             && config.chords.contains { $0.action == .dragLock && $0.buttons.contains(Int(button)) }
     }
 

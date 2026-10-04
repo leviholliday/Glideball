@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/leviholliday/glide/releases/latest/download/Glideball.zip"><b>Download Glideball.zip</b></a>
+  <a href="https://github.com/leviholliday/glideball/releases/latest/download/Glideball.zip"><b>Download Glideball.zip</b></a>
   &nbsp;·&nbsp;
   <a href="https://glideball.netlify.app">Website</a>
   &nbsp;·&nbsp;
@@ -83,7 +83,7 @@ Glideball speaks English, Español, Français, Deutsch, Italiano, Português (Br
 > [!IMPORTANT]
 > **Uninstall KensingtonWorks first, then restart your Mac.** Kensington's driver handles the trackball itself and conflicts with Glideball.
 
-1. **Download** [Glideball.zip](https://github.com/leviholliday/glide/releases/latest/download/Glideball.zip), unzip it, and drag **Glideball.app** into **Applications**.
+1. **Download** [Glideball.zip](https://github.com/leviholliday/glideball/releases/latest/download/Glideball.zip), unzip it, and drag **Glideball.app** into **Applications**.
 2. **Open it once and approve it in Gatekeeper.** Glideball is signed with a local certificate, not a paid Apple Developer ID, and isn't notarized, so macOS blocks the first launch. Open Glideball and dismiss the warning. Then go to **System Settings › Privacy & Security**, scroll down to the message about Glideball, click **Open Anyway**, and confirm. You only need to do this once.
 3. **Grant two permissions.** Glideball's window has buttons for both:
    - **Accessibility** lets Glideball rewrite button and scroll events.
@@ -120,7 +120,7 @@ To try changes without a trackball, run **`scripts/scroll-sim/run.sh`**. It comp
 You need macOS 26 and a Swift 6.2 toolchain (Xcode 26 or its Command Line Tools). There is no Xcode project; Glideball is a plain Swift package.
 
 ```sh
-git clone https://github.com/leviholliday/glide.git
+git clone https://github.com/leviholliday/glideball.git
 cd glide
 ./build.sh           # build, install to /Applications/Glideball.app, and launch
 ./build.sh --icon    # also re-render the app icon first

@@ -66,9 +66,9 @@ print "\n==> Installing Glideball $VERSION on this Mac"
 
 if (( BETA )); then
   print "\n✓ Glideball $VERSION is out to the Beta program:"
-  print "  Release:  https://github.com/leviholliday/glide/releases/tag/v${VERSION#v}"
+  print "  Release:  https://github.com/leviholliday/glideball/releases/tag/v${VERSION#v}"
 else
   print "\n✓ Glideball $VERSION is out:"
-  print "  Release:  https://github.com/leviholliday/glide/releases/tag/v${VERSION#v}"
+  print "  Release:  https://github.com/leviholliday/glideball/releases/tag/v${VERSION#v}"
   print "  Website:  https://glideball.netlify.app"
 fi
