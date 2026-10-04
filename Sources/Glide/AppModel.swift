@@ -25,7 +25,10 @@ final class AppModel {
                 engine.releaseAll()
             }
             pushToEngine()
-            if !applyingRemoteConfig { sync.localConfigChanged(config) }
+            if !applyingRemoteConfig {
+                sync.localConfigChanged(config)
+                delight.configChanged(from: oldValue, to: config)
+            }
         }
     }
 
@@ -156,6 +159,8 @@ final class AppModel {
 
     @ObservationIgnored let engine: Engine
     let updates = UpdateChecker()
+    /// Milestones, records, the setup checklist and their celebrations.
+    @ObservationIgnored let delight: DelightCenter
     @ObservationIgnored private var sampler: Timer?
     @ObservationIgnored private var permissionTimer: Timer?
     @ObservationIgnored private var sampleIndex = 0
@@ -175,6 +180,7 @@ final class AppModel {
         pushedConfig = initial
         engine = Engine(config: initial)
         engine.telemetry.restore(Self.loadTotals())
+        delight = DelightCenter(config: cfg)
         engine.onStatus = { [weak self] s in self?.status = s }
         engine.onModes = { [weak self] m in self?.modes = m }
         engine.start()
@@ -195,6 +201,9 @@ final class AppModel {
                                                           object: nil, queue: .main) { [weak self] note in
             self?.frontmostChanged(note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication)
         }
+        delight.reloadHistory(currentKey: totalsDay)
+        delight.present = { [weak self] in self?.show($0) }
+        delight.canCelebrate = { [weak self] in self?.showingWelcomeTour == false }
         startSampling()
         sync.syncNow(current: cfg)   // pick up changes made on other Macs while Glide was closed
         updates.start()
@@ -303,6 +312,10 @@ final class AppModel {
         let text: String
         var action: Action? = nil
         var isError = false
+        /// A second, quieter line (celebrations).
+        var detail: String? = nil
+        /// A milestone, record or finished step — drawn a little more festive.
+        var celebration = false
     }
 
     struct PendingImport: Identifiable {
@@ -321,7 +334,7 @@ final class AppModel {
             if self?.toast?.id == toast.id { self?.toast = nil }
         }
         toastDismissal = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + (toast.action == nil ? 3.5 : 7), execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + (toast.action != nil ? 7 : toast.celebration ? 5 : 3.5), execute: work)
     }
 
     private static var defaultExportName: String {
@@ -424,6 +437,7 @@ final class AppModel {
 
     func startSampling() {
         guard sampler == nil else { return }
+        saveTotals()   // catches a new day that began while the window was closed
         let t = Timer(timeInterval: 1 / Self.sampleRate, repeats: true) { [weak self] _ in self?.sample() }
         RunLoop.main.add(t, forMode: .common)
         sampler = t
@@ -461,6 +475,9 @@ final class AppModel {
 
         saveCounter += 1
         if saveCounter % 300 == 0 { saveTotals() }
+        if saveCounter % Int(Self.sampleRate) == 0 {
+            delight.tick(totals: s.totals, peaks: engine.telemetry.takePeaks())
+        }
     }
 
     // MARK: Daily totals
@@ -488,6 +505,7 @@ final class AppModel {
         if Self.todayKey != totalsDay {
             totalsDay = Self.todayKey
             engine.telemetry.restore(.init())
+            delight.reloadHistory(currentKey: totalsDay)
         }
     }
 }

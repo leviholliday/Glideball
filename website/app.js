@@ -9,6 +9,15 @@
   const lightScheme = window.matchMedia('(prefers-color-scheme: light)');
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
   const hasIO = 'IntersectionObserver' in window;
+  const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
+  const fmtInt = (n) => Math.round(n).toLocaleString('en-US');
+
+  /** Re-triggers a one-shot CSS animation class. */
+  function pulse(el, cls) {
+    el.classList.remove(cls);
+    void el.offsetWidth; // restart the animation
+    el.classList.add(cls);
+  }
 
   /** Calls cb(true/false) as the element enters / leaves the viewport. */
   function watchVisibility(el, cb, margin = '120px') {
@@ -291,6 +300,7 @@
     const note = demo.querySelector('[data-fw-note]');
     const spinBtn = demo.querySelector('[data-fw-spin]');
     const radios = demo.querySelectorAll('input[name="fw-mode"]');
+    const fm = demo.querySelector('[data-fm]');
 
     const TAU = 82; // ms — friction time constant
     const NOTES = {
@@ -323,6 +333,7 @@
     let maxPos = 0;
     let vh = 0;
     let barH = 0;
+    let rowH = 52;
 
     const render = () => {
       track.style.transform = `translate3d(0, ${(-pos).toFixed(2)}px, 0)`;
@@ -337,12 +348,94 @@
       vh = vp.clientHeight;
       barH = Math.max(0, vh - 28);
       maxPos = Math.max(0, track.offsetHeight - vh);
+      rowH = (track.firstElementChild && track.firstElementChild.offsetHeight) || 52;
       pos = clamp(pos, 0, maxPos);
       render();
     };
 
     const spark = new Spark(canvas, { windowMs: 3000, floor: 1200 });
     sparks.push(spark);
+
+    // ---- flick meter: your best moments in this visit. Nothing is stored or sent.
+    const meter = (() => {
+      if (!fm) return { update() {} };
+      const bar = fm.querySelector('.fm-bar');
+      const fill = fm.querySelector('[data-fm-fill]');
+      const bestMark = fm.querySelector('[data-fm-best]');
+      const topOut = fm.querySelector('[data-fm-top]');
+      const glideOut = fm.querySelector('[data-fm-glide]');
+      const totalOut = fm.querySelector('[data-fm-total]');
+      const badge = fm.querySelector('[data-fm-badge]');
+      const live = fm.querySelector('[data-fm-live]');
+      const FULL = 6000; // px/s for a full bar
+      let best = 0;
+      let longest = 0;
+      let total = 0;
+      let glidePeak = 0;
+      let glideDist = 0;
+      let inGlide = false;
+      let stillFor = 0;
+      let shownTotal = -1;
+      let badgeTimer = 0;
+
+      const placeBest = () => {
+        bestMark.style.setProperty('--best-x', `${(clamp(best / FULL, 0, 1) * bar.clientWidth).toFixed(1)}px`);
+        bestMark.classList.add('on');
+      };
+      if ('ResizeObserver' in window) new ResizeObserver(() => { if (best) placeBest(); }).observe(bar);
+
+      const celebrate = () => {
+        badge.classList.add('show');
+        clearTimeout(badgeTimer);
+        badgeTimer = setTimeout(() => badge.classList.remove('show'), 1800);
+        if (!reduceMotion.matches) {
+          pulse(fm, 'record');
+          const r = badge.getBoundingClientRect();
+          Confetti.burst(r.left + r.width / 2, r.top + r.height / 2, { count: 34, power: 0.5, spread: 1.1 });
+        }
+        live.textContent = `New best: ${fmtInt(best)} pixels per second.`;
+      };
+
+      const endGlide = () => {
+        inGlide = false;
+        stillFor = 0;
+        const rows = glideDist / rowH;
+        if (rows >= 1 && rows > longest + 0.5) {
+          longest = rows;
+          glideOut.textContent = fmtInt(Math.floor(longest));
+          if (!reduceMotion.matches) pulse(glideOut, 'bump');
+        }
+        const previous = best;
+        if (glidePeak > best + 1) {
+          best = glidePeak;
+          topOut.textContent = fmtInt(best);
+          if (!reduceMotion.matches) pulse(topOut, 'bump');
+          placeBest();
+          // Only a real improvement on a real flick earns the fanfare.
+          if (previous >= 600 && best >= previous * 1.05) celebrate();
+        }
+        glidePeak = 0;
+        glideDist = 0;
+      };
+
+      return {
+        update(speed, moved, dt) {
+          fill.style.setProperty('--v', clamp(speed / FULL, 0, 1).toFixed(3));
+          if (moved > 0.25) {
+            total += moved;
+            glideDist += moved;
+            glidePeak = Math.max(glidePeak, speed);
+            inGlide = true;
+            stillFor = 0;
+          } else if (inGlide) {
+            stillFor += dt;
+            if (stillFor > 220 || dt === 0) endGlide();
+          }
+          const rowsTotal = Math.floor(total / rowH);
+          if (rowsTotal !== shownTotal) { shownTotal = rowsTotal; totalOut.textContent = fmtInt(rowsTotal); }
+        },
+      };
+    })();
 
     // ---- animation loop (runs only while visible and something is happening)
     let running = false;
@@ -370,16 +463,18 @@
         render();
       }
 
-      const speed = (Math.abs(pos - lastPos) / dt) * 1000; // px/s
+      const moved = Math.abs(pos - lastPos);
+      const speed = (moved / dt) * 1000; // px/s
       lastPos = pos;
       spark.push(t, speed);
       spark.draw(t);
 
       shownSpeed += (speed - shownSpeed) * 0.18;
       speedOut.textContent = String(Math.round(shownSpeed < 1 ? 0 : shownSpeed));
+      meter.update(shownSpeed, moved, dt);
 
       quietFor = (speed < 0.5 && v === 0 && !dragging) ? quietFor + dt : 0;
-      if (quietFor > 3300) { running = false; lastT = 0; speedOut.textContent = '0'; return; }
+      if (quietFor > 3300) { running = false; lastT = 0; speedOut.textContent = '0'; meter.update(0, 0, 0); return; }
       requestAnimationFrame(frame);
     };
 
@@ -519,6 +614,9 @@
     const canvas = card.querySelector('[data-dash-canvas]');
     const speedOut = card.querySelector('[data-dash-speed]');
     const clicksOut = card.querySelector('[data-dash-clicks]');
+    const stage = card.querySelector('[data-dash-stage]');
+    const ring = card.querySelector('.tb-ring');
+    let ringAngle = 0;
 
     const spark = new Spark(canvas, { windowMs: 4000, floor: 900, colors: ['--cyan', '--violet'] });
     sparks.push(spark);
@@ -526,6 +624,7 @@
     let clicks = 0;
     const press = (pad) => {
       pad.classList.add('lit');
+      if (!reduceMotion.matches) pulse(pad, 'ripple');
       clicks += 1;
       clicksOut.textContent = String(clicks);
     };
@@ -583,6 +682,11 @@
         rollX *= 0.9;
         rollY *= 0.9;
         shine.style.transform = `translate3d(${rollX.toFixed(2)}px, ${rollY.toFixed(2)}px, 0)`;
+        // The scroll ring turns with your pointer, like the app's live view.
+        if (ema > 0) {
+          ringAngle = (ringAngle + ema * dt * 0.00022) % 360;
+          ring.style.transform = `rotate(${ringAngle.toFixed(2)}deg)`;
+        }
       }
 
       quietFor = ema === 0 ? quietFor + dt : 0;
@@ -597,8 +701,235 @@
     if ('ResizeObserver' in window) {
       new ResizeObserver(() => { spark.resize(); spark.draw(performance.now()); }).observe(canvas.parentElement);
     }
-    watchVisibility(card, (isVisible) => { visible = isVisible; if (isVisible) wake(); });
+    watchVisibility(card, (isVisible) => {
+      visible = isVisible;
+      stage.classList.toggle('idle', isVisible && !reduceMotion.matches);
+      if (isVisible) wake();
+    });
     spark.draw(performance.now());
+  }
+
+  /* ------------------------------------------------------------ Confetti */
+  /** A short canvas burst. The canvas exists only while pieces are flying. */
+  const Confetti = (() => {
+    const COLORS = ['#a78bfa', '#67e8f9', '#f472b6', '#fde68a', '#818cf8', '#5eead4'];
+    let canvas = null;
+    let ctx = null;
+    let pieces = [];
+    let raf = 0;
+    let last = 0;
+
+    const size = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(window.innerWidth * dpr);
+      canvas.height = Math.round(window.innerHeight * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+
+    const step = (t) => {
+      const dt = clamp((t - last) / 1000, 0, 0.05);
+      last = t;
+      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      const k = 2.3;       // air drag
+      const g = 1150;      // gravity, px/s²
+      pieces = pieces.filter((p) => {
+        p.age += dt;
+        if (p.age < 0) return true;
+        if (p.age > p.life) return false;
+        p.vx -= p.vx * k * dt;
+        p.vy += (g - p.vy * k) * dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.rot += p.vr * dt;
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, (p.life - p.age) / 0.5);
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.scale(Math.max(0.15, Math.abs(Math.cos(p.age * p.flutter))), 1);
+        ctx.fillStyle = p.color;
+        if (p.round) { ctx.beginPath(); ctx.arc(0, 0, p.h * 0.6, 0, Math.PI * 2); ctx.fill(); }
+        else ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+        return true;
+      });
+      if (pieces.length) { raf = requestAnimationFrame(step); return; }
+      raf = 0;
+      window.removeEventListener('resize', size);
+      canvas.remove();
+      canvas = null;
+    };
+
+    return {
+      burst(x, y, { count = 110, power = 1, spread = 0.7 } = {}) {
+        if (reduceMotion.matches) return;
+        if (!canvas) {
+          canvas = document.createElement('canvas');
+          canvas.className = 'confetti';
+          canvas.setAttribute('aria-hidden', 'true');
+          document.body.append(canvas);
+          ctx = canvas.getContext('2d');
+          size();
+          window.addEventListener('resize', size);
+        }
+        for (let i = 0; i < count; i++) {
+          const angle = -Math.PI / 2 + (Math.random() * 2 - 1) * spread;
+          const speed = (480 + Math.random() * 700) * power;
+          pieces.push({
+            x,
+            y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            age: -Math.random() * 0.08,
+            life: 1.5 + Math.random() * 0.9,
+            rot: Math.random() * Math.PI,
+            vr: (Math.random() * 2 - 1) * 10,
+            flutter: 6 + Math.random() * 8,
+            w: 6 + Math.random() * 5,
+            h: 3.5 + Math.random() * 2.5,
+            round: Math.random() < 0.22,
+            color: COLORS[(Math.random() * COLORS.length) | 0],
+          });
+        }
+        if (!raf) { last = performance.now(); raf = requestAnimationFrame(step); }
+      },
+    };
+  })();
+
+  /* ------------------------------------------------------------ Download: confetti + what's next */
+  function initDownload() {
+    const links = document.querySelectorAll('a[href$="/releases/latest/download/Glide.zip"]');
+    if (!links.length) return;
+    let toast = null;
+    let hideTimer = 0;
+    let lastBurst = 0;
+
+    const hide = () => {
+      if (!toast) return;
+      const el = toast;
+      toast = null;
+      clearTimeout(hideTimer);
+      if (reduceMotion.matches) { el.remove(); return; }
+      el.classList.add('leaving');
+      el.addEventListener('animationend', () => el.remove(), { once: true });
+      setTimeout(() => el.remove(), 600);
+    };
+
+    const show = () => {
+      if (toast) { clearTimeout(hideTimer); hideTimer = setTimeout(hide, 9000); return; }
+      const svgNS = 'http://www.w3.org/2000/svg';
+      toast = document.createElement('div');
+      toast.className = 'dl-toast glass';
+      toast.setAttribute('role', 'status');
+
+      const check = document.createElement('span');
+      check.className = 'dl-check';
+      const svg = document.createElementNS(svgNS, 'svg');
+      svg.setAttribute('class', 'icon');
+      svg.setAttribute('aria-hidden', 'true');
+      const use = document.createElementNS(svgNS, 'use');
+      use.setAttribute('href', '#i-check');
+      svg.append(use);
+      check.append(svg);
+
+      const text = document.createElement('div');
+      text.className = 'dl-text';
+      const title = document.createElement('strong');
+      title.textContent = 'Glide is on its way';
+      const next = document.createElement('span');
+      next.append('Unzip it and drag Glide to Applications. ');
+      const steps = document.createElement('a');
+      steps.href = '#install';
+      steps.textContent = 'First-launch tips';
+      steps.addEventListener('click', hide);
+      next.append(steps);
+      text.append(title, next);
+
+      const close = document.createElement('button');
+      close.type = 'button';
+      close.className = 'dl-close';
+      close.setAttribute('aria-label', 'Dismiss');
+      close.textContent = '×';
+      close.addEventListener('click', hide);
+
+      toast.append(check, text, close);
+      document.body.append(toast);
+      hideTimer = setTimeout(hide, 9000);
+    };
+
+    links.forEach((a) => a.addEventListener('click', () => {
+      // Never delay or block the download: celebrate alongside it.
+      const now = performance.now();
+      if (now - lastBurst > 900) {
+        lastBurst = now;
+        const r = a.getBoundingClientRect();
+        Confetti.burst(r.left + r.width / 2, r.top + r.height / 2);
+      }
+      show();
+    }));
+  }
+
+  /* ------------------------------------------------------------ Magnetic buttons */
+  function initMagnetic() {
+    if (!finePointer.matches || reduceMotion.matches) return;
+    document.querySelectorAll('.btn-primary').forEach((btn) => {
+      let raf = 0;
+      let px = 0;
+      let py = 0;
+      let mx = 0;
+      let my = 0;
+      const apply = () => {
+        raf = 0;
+        const r = btn.getBoundingClientRect();
+        // Measure from where the button would be without its current pull.
+        const cx = r.left - mx + r.width / 2;
+        const cy = r.top - my + r.height / 2;
+        mx = clamp((px - cx) * 0.16, -8, 8);
+        my = clamp((py - cy) * 0.28, -5, 5);
+        btn.style.setProperty('--mx', `${mx.toFixed(2)}px`);
+        btn.style.setProperty('--my', `${my.toFixed(2)}px`);
+        btn.style.setProperty('--gx', `${(((px - r.left) / r.width) * 100).toFixed(1)}%`);
+        btn.style.setProperty('--gy', `${(((py - r.top) / r.height) * 100).toFixed(1)}%`);
+      };
+      btn.addEventListener('pointerenter', () => btn.classList.add('magnet'));
+      btn.addEventListener('pointermove', (e) => {
+        px = e.clientX;
+        py = e.clientY;
+        if (!raf) raf = requestAnimationFrame(apply);
+      });
+      btn.addEventListener('pointerleave', () => {
+        cancelAnimationFrame(raf);
+        raf = 0;
+        mx = 0;
+        my = 0;
+        btn.style.setProperty('--mx', '0px');
+        btn.style.setProperty('--my', '0px');
+      });
+    });
+  }
+
+  /* ------------------------------------------------------------ Cursor glow on glass cards */
+  function initGlow() {
+    if (!finePointer.matches || reduceMotion.matches) return;
+    const cards = document.querySelectorAll('.hl.glass, .mode.glass, .card.glass, .step.glass, .sync.glass, .final-card.glass, .faq details.glass, .curve-card, .dash-card');
+    cards.forEach((el) => {
+      el.classList.add('glow');
+      let raf = 0;
+      let x = 0;
+      let y = 0;
+      const apply = () => {
+        raf = 0;
+        const r = el.getBoundingClientRect();
+        el.style.setProperty('--px', `${(x - r.left).toFixed(0)}px`);
+        el.style.setProperty('--py', `${(y - r.top).toFixed(0)}px`);
+      };
+      el.addEventListener('pointerenter', () => el.classList.add('glowing'));
+      el.addEventListener('pointermove', (e) => {
+        x = e.clientX;
+        y = e.clientY;
+        if (!raf) raf = requestAnimationFrame(apply);
+      }, { passive: true });
+      el.addEventListener('pointerleave', () => el.classList.remove('glowing'));
+    });
   }
 
   /* ------------------------------------------------------------ Boot */
@@ -608,6 +939,9 @@
     initCurve();
     initDemo();
     initDash();
+    initDownload();
+    initMagnetic();
+    initGlow();
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();

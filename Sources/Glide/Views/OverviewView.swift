@@ -22,14 +22,22 @@ struct OverviewView: View {
                     ActivityChartCard(model: model)
                     HStack(spacing: 18) {
                         StatTile(symbol: "cursorarrow.click.2", title: "Clicks today",
-                                 value: model.totals.clicks.formatted())
+                                 value: model.totals.clicks.formatted(), best: best(.clicks))
                         StatTile(symbol: "circle.dotted.circle", title: "Ball rolled",
-                                 value: Self.meters(model.totals.ballCounts / AppModel.countsPerInch * 0.0254))
+                                 value: Self.meters(model.totals.ballCounts / AppModel.countsPerInch * 0.0254),
+                                 best: best(.ball))
                         StatTile(symbol: "scroll", title: "Scrolled",
-                                 value: Self.meters(model.totals.scrollPoints * 0.00023))
+                                 value: Self.meters(model.totals.scrollPoints * 0.00023), best: best(.scroll))
                     }
+                    .fixedSize(horizontal: false, vertical: true)   // equal heights with or without a best-day bar
                 }
             }
+
+            if model.delight.checklistVisible {
+                MakeItYoursCard(delight: model.delight) { model.requestedTab = $0 }
+                    .transition(.asymmetric(insertion: .opacity, removal: .scale(scale: 0.96).combined(with: .opacity)))
+            }
+            YourTrackballCard(delight: model.delight)
 
             GlassCard(title: "General", symbol: "gearshape") {
                 ToggleRow(title: "Open at login", subtitle: "Starts quietly in the background so your trackball is always tuned.",
@@ -38,6 +46,14 @@ struct OverviewView: View {
                 ToggleRow(title: "Beta program",
                           subtitle: "Try features before they're finished — like support for other Kensington trackballs and early updates. You may hit bugs.",
                           symbol: "flask", isOn: $model.betaProgram)
+                Divider().opacity(0.4)
+                ToggleRow(title: "Celebrations",
+                          subtitle: "A toast and a little confetti when you reach a milestone or set a personal best. Badges are kept either way.",
+                          symbol: "party.popper", isOn: Bindable(model.delight).celebrationsOn)
+                ToggleRow(title: "Celebration sounds", subtitle: "A soft chime to go with them.",
+                          symbol: "speaker.wave.2", isOn: Bindable(model.delight).soundsOn)
+                    .disabled(!model.delight.celebrationsOn)
+                    .opacity(model.delight.celebrationsOn ? 1 : 0.5)
                 Divider().opacity(0.4)
                 HStack(spacing: 10) {
                     Image(systemName: "bubble.left.and.text.bubble.right")
@@ -105,6 +121,14 @@ struct OverviewView: View {
             .foregroundStyle(.secondary)
     }
 
+    /// Today against your best earlier day, once there are a few days to compare.
+    private func best(_ metric: Metric) -> StatTile.Best? {
+        let d = model.delight
+        let best = d.pastBest.value(metric)
+        guard d.historyDays >= DelightLedger.minHistoryDays, best >= DelightLedger.meaningfulDay(metric) else { return nil }
+        return .init(fraction: d.today.value(metric) / best, label: metric.format(best), color: metric.color)
+    }
+
     static func meters(_ m: Double) -> String {
         if m < 1 { return String(format: "%.0f cm", m * 100) }
         if m < 1000 { return String(format: "%.1f m", m) }
@@ -116,20 +140,54 @@ struct StatTile: View {
     let symbol: String
     let title: String
     let value: String
+    /// Today compared with your best day — progress, never a deadline.
+    var best: Best? = nil
+
+    struct Best: Equatable {
+        let fraction: Double
+        let label: String
+        let color: Color
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Image(systemName: symbol)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(.secondary)
+            HStack {
+                Image(systemName: symbol)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                if let best, best.fraction > 1 {
+                    Label("Best day", systemImage: "sparkles")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.orange)
+                        .transition(.scale.combined(with: .opacity))
+                }
+            }
             Text(value)
                 .font(.system(size: 24, weight: .bold, design: .rounded))
                 .monospacedDigit()
                 .contentTransition(.numericText())
+                .animation(.smooth(duration: 0.3), value: value)
             Text(title).font(.system(size: 12)).foregroundStyle(.secondary)
+            if let best {
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(.white.opacity(0.1))
+                        Capsule()
+                            .fill(LinearGradient(colors: [best.color.opacity(0.6), best.color],
+                                                 startPoint: .leading, endPoint: .trailing))
+                            .frame(width: max(4, geo.size.width * min(best.fraction, 1)))
+                            .shadow(color: best.fraction > 1 ? best.color : .clear, radius: 4)
+                    }
+                }
+                .frame(height: 4)
+                .animation(.smooth(duration: 0.5), value: best.fraction)
+                .help("Your best day so far: \(best.label)")
+            }
         }
+        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: (best?.fraction ?? 0) > 1)
         .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .glassEffect(.regular, in: .rect(cornerRadius: 22))
     }
 }
