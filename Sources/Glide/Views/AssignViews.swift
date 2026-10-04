@@ -179,9 +179,64 @@ struct CombosCard: View {
                     .help("Delete combo")
                 }
             }
-            Text("Buttons in a combo wait 70 ms to see if their partners join. Buttons not in any combo respond instantly.")
+            NewComboRow(chords: $chords)
+            Text("Buttons in a combo wait a split second (up to 0.16 s for three) to see if their partners join. Buttons not in any combo respond instantly.")
                 .font(.system(size: 11))
                 .foregroundStyle(.tertiary)
+        }
+    }
+}
+
+/// Build a combo by ticking buttons — no need to press them all at once.
+private struct NewComboRow: View {
+    @Binding var chords: [Chord]
+    @State private var picked: Set<Int> = []
+    @State private var action: ButtonAction = .shortcut(.missionControl)
+
+    private var sorted: [Int] { picked.sorted() }
+    private var duplicate: Bool { chords.contains { $0.buttons == sorted } }
+    private var canAdd: Bool { picked.count >= 2 && !duplicate }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Divider().opacity(0.3)
+            Text("New combo").font(.system(size: 12, weight: .semibold)).foregroundStyle(.secondary)
+            HStack(spacing: 8) {
+                ForEach(0..<4, id: \.self) { b in
+                    let on = picked.contains(b)
+                    Button {
+                        withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
+                            if on { picked.remove(b) } else { picked.insert(b) }
+                        }
+                    } label: {
+                        Label(AppModel.buttonName(b), systemImage: on ? "checkmark.circle.fill" : "circle")
+                            .font(.system(size: 12, weight: .medium))
+                            .lineLimit(1)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 10).padding(.vertical, 6)
+                    .glassEffect(on ? .regular.tint(.cyan.opacity(0.35)) : .regular, in: .capsule)
+                }
+            }
+            HStack(spacing: 10) {
+                ActionMenu(action: action) { action = $0 }
+                Spacer()
+                if duplicate {
+                    Text("That combo already exists").font(.system(size: 11)).foregroundStyle(.orange)
+                } else if picked.count == 1 {
+                    Text("Pick at least two").font(.system(size: 11)).foregroundStyle(.secondary)
+                }
+                Button {
+                    withAnimation(.smooth) {
+                        chords.append(Chord(buttons: sorted, action: action))
+                        picked = []
+                    }
+                } label: {
+                    Label("Add Combo", systemImage: "plus")
+                }
+                .buttonStyle(.glassProminent)
+                .disabled(!canAdd)
+            }
         }
     }
 }

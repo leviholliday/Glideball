@@ -517,6 +517,9 @@ final class Engine {
 
     /// How long a combo button waits for its partners before acting alone.
     private static let comboWindow: TimeInterval = 0.07
+    /// Longest a combo button's press is ever held back while more fingers land.
+    private static let comboMaxWait: TimeInterval = 0.16
+    private var pendingStart: CFTimeInterval = 0
 
     private var pending: [(button: Int64, event: CGEvent)] = []
     private var pendingTimer: Timer?
@@ -633,12 +636,23 @@ final class Engine {
         if let exact, !biggerPossible {
             fireCombo(exact)
         } else if pending.count == 1 {
-            pendingTimer?.invalidate()
-            let t = Timer(timeInterval: Self.comboWindow, repeats: false) { [unowned self] _ in self.comboWindowEnded() }
-            RunLoop.current.add(t, forMode: .common)
-            pendingTimer = t
+            pendingStart = CACurrentMediaTime()
+            scheduleComboWindow(Self.comboWindow)
+        } else if biggerPossible {
+            // A partner arrived and a bigger combo is still possible: give the
+            // next finger a moment too (three fingers rarely land within 70 ms),
+            // but never hold the first press longer than `comboMaxWait`.
+            let left = Self.comboMaxWait - (CACurrentMediaTime() - pendingStart)
+            scheduleComboWindow(max(0.01, min(Self.comboWindow, left)))
         }
         return nil
+    }
+
+    private func scheduleComboWindow(_ seconds: TimeInterval) {
+        pendingTimer?.invalidate()
+        let t = Timer(timeInterval: seconds, repeats: false) { [unowned self] _ in self.comboWindowEnded() }
+        RunLoop.current.add(t, forMode: .common)
+        pendingTimer = t
     }
 
     private func comboWindowEnded() {
