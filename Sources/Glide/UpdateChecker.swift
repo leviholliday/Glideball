@@ -45,7 +45,8 @@ final class UpdateChecker {
     }
 
     func check() {
-        var request = URLRequest(url: Self.releasesAPI, timeoutInterval: 15)
+        // Always ask GitHub fresh: a cached "latest release" would hide a new update.
+        var request = URLRequest(url: Self.releasesAPI, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 15)
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
         URLSession.shared.dataTask(with: request) { [weak self] data, response, _ in
             guard let self, let data, (response as? HTTPURLResponse)?.statusCode == 200,

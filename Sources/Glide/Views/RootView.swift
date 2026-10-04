@@ -80,7 +80,7 @@ struct RootView: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text("Glide").font(.system(size: 22, weight: .bold, design: .rounded))
                 Text("Kensington Expert Mouse").font(.system(size: 12)).foregroundStyle(.secondary)
-                    .lineLimit(1).fixedSize()
+                    .lineLimit(1)
             }
             Spacer()
             tabBar
@@ -195,7 +195,7 @@ struct UpdateButton: View {
                     Text("Last try failed: \(message)")
                 }
             } label: {
-                Label(updates.installState == .idle ? "Update \(update.version)" : "Update failed — retry",
+                Label(updates.installState == .idle ? update.version : "Retry",
                       systemImage: "arrow.down.circle.fill")
                     .font(.system(size: 12, weight: .semibold))
             }
@@ -203,7 +203,7 @@ struct UpdateButton: View {
             .buttonStyle(.glassProminent)
             .tint(updates.installState == .idle ? .cyan : .orange)
             .fixedSize()
-            .help("A newer version of Glide is available")
+            .help("Glide \(update.version) is available — install it or see what's new")
         }
     }
 }
