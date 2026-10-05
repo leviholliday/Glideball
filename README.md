@@ -89,6 +89,8 @@ Glideball speaks English, Español, Français, Deutsch, Italiano, Português (Br
 > [!IMPORTANT]
 > **Uninstall KensingtonWorks first, then restart your Mac.** Kensington's driver handles the trackball itself and conflicts with Glideball.
 
+Or with [Homebrew](https://brew.sh): `brew install --cask leviholliday/tap/glideball`
+
 1. **Download** [Glideball.zip](https://github.com/leviholliday/glideball/releases/latest/download/Glideball.zip), unzip it, and drag **Glideball.app** into **Applications**.
 2. **Open it once and approve it in Gatekeeper.** Glideball is signed with a local certificate, not a paid Apple Developer ID, and isn't notarized, so macOS blocks the first launch. Open Glideball and dismiss the warning. Then go to **System Settings › Privacy & Security**, scroll down to the message about Glideball, click **Open Anyway**, and confirm. You only need to do this once.
 3. **Grant two permissions.** Glideball's window has buttons for both:

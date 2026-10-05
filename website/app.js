@@ -946,3 +946,17 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 })();
+
+/* Download counter: the site only gets a number once there are 200+ downloads. */
+(() => {
+  const el = document.querySelector("[data-downloads]");
+  if (!el || !window.fetch) return;
+  fetch("/api/downloads")
+    .then((r) => (r.ok ? r.json() : null))
+    .then((d) => {
+      if (!d || typeof d.downloads !== "number") return;
+      el.querySelector("[data-downloads-n]").textContent = d.downloads.toLocaleString();
+      el.hidden = false;
+    })
+    .catch(() => {});
+})();

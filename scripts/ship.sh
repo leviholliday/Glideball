@@ -57,6 +57,8 @@ if (( BETA )); then
   print "\n==> Skipping the website (it offers the newest full release, not betas)"
 else
   scripts/release.sh "$VERSION" "$NOTES"
+  print "\n==> Updating the Homebrew cask"
+  scripts/update-cask.sh "$VERSION" || print -u2 "warning: cask not updated — rerun: scripts/update-cask.sh $VERSION"
   print "\n==> Deploying the website"
   scripts/deploy-site.sh "Glideball $VERSION"
 fi
