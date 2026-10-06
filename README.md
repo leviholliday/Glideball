@@ -40,7 +40,7 @@ System Settings stops tracking speed at 3. Glideball's slider goes from 0.5 to 8
 | Mode | What it does |
 | --- | --- |
 | **Native** | macOS scrolls the ring itself, the way Kensington's driver did. You can set the wheel speed for the Expert Mouse alone, up to 5 (System Settings stops at 1.7). |
-| **Flywheel** *(default)* | Each tick pushes the page and friction slows it down. Gentle turns barely coast and hard spins fly, using one rule with no mode switching. The model comes from measurements of Kensington's own scrolling and runs in sync with your display. Sliders set slow-turn distance, spin power and glide (40–160 ms), and a one-click **Kensington feel** button restores the measured values. |
+| **Flywheel** *(default)* | Each tick pushes the page and friction slows it down. Gentle turns barely coast and hard spins fly, using one rule with no mode switching. The model comes from measurements of Kensington's own scrolling and runs in sync with your display. Sliders set slow-turn distance, spin power, **fast-spin reach** (the harder you spin, the farther the page flies) and glide (40–160 ms), and a one-click **Kensington feel** button restores the measured values. |
 | **Follow** | The page tracks the ring exactly and stops when you stop. Spin acceleration is optional. **Throw to coast** lets a real flick glide and land using macOS's own deceleration curve, and turning the ring back catches it. |
 
 In Flywheel and Follow, holding ⇧ scrolls sideways, ⌘/⌃/⌥ + scroll keep their usual meaning (zoom, for example), and you can flip the direction or turn smoothing off to get plain steps.
