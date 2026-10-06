@@ -6,6 +6,7 @@ scripts/scroll-sim/main.swift (jitter-free, so they're deterministic).
 """
 
 import json
+import math
 import os
 
 import pytest
@@ -15,6 +16,8 @@ from glideball.scroller import ScrollSettings, SmoothScroller
 
 FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures")
 GOLDEN = json.load(open(os.path.join(FIXTURES, "scroll_golden.json")))
+# The goldens from before Fast-spin reach existed (the old hard 12,000 pt/s limit).
+PRE_REACH = json.load(open(os.path.join(FIXTURES, "scroll_golden_pre_reach.json")))
 
 
 def simulate(mode, ticks, dirs, until, **cfg):
@@ -38,10 +41,17 @@ def simulate(mode, ticks, dirs, until, **cfg):
     return frames
 
 
-@pytest.mark.parametrize("case", GOLDEN, ids=[f'{c["mode"]}-{c["name"]}' for c in GOLDEN])
-def test_matches_swift(case):
-    frames = simulate(case["mode"], case["ticks"], case["dirs"], case["until"])
-    expected = case["frames"]
+def spin(rate, count, start=0.05):
+    """Ring ticks at `rate` per second, snapped to 8 ms like the Swift sim."""
+    return [round((start + i / rate) / 0.008) * 0.008 for i in range(count)]
+
+
+def distance(rate, count, reach):
+    ticks = spin(rate, count)
+    return sum(simulate("flywheel", ticks, [1] * count, 3.0, flyReach=reach))
+
+
+def check_frames(frames, expected):
     assert len(frames) == len(expected)
     # Same libm on the same platform gives identical results; allow a 1-point
     # rounding flip per frame elsewhere (glibc vs Darwin pow/exp ulps).
@@ -49,6 +59,68 @@ def test_matches_swift(case):
     assert all(abs(a - b) <= 1 for a, b in zip(frames, expected))
     mismatches = sum(1 for a, b in zip(frames, expected) if a != b)
     assert mismatches <= 2
+
+
+@pytest.mark.parametrize("case", GOLDEN, ids=[f'{c["mode"]}-{c["name"]}' for c in GOLDEN])
+def test_matches_swift(case):
+    frames = simulate(case["mode"], case["ticks"], case["dirs"], case["until"],
+                      flyReach=case.get("flyReach", 0.5))
+    check_frames(frames, case["frames"])
+
+
+@pytest.mark.parametrize("case", PRE_REACH, ids=[f'{c["mode"]}-{c["name"]}' for c in PRE_REACH])
+def test_reach_zero_is_the_old_hard_cap(case):
+    # Reach 0 must behave exactly like the Swift scroller did before the feature.
+    frames = simulate(case["mode"], case["ticks"], case["dirs"], case["until"], flyReach=0.0)
+    check_frames(frames, case["frames"])
+
+
+def test_golden_has_the_reach_scenarios():
+    names = {c["name"] for c in GOLDEN}
+    for reach in ("0.0", "0.5"):
+        for what in ("20 ticks @ 45 t/s", "20 ticks @ 100 t/s", "30 ticks @ 130 t/s"):
+            assert f"reach {reach}: {what}" in names
+    old = {(c["mode"], c["name"]) for c in PRE_REACH}
+    assert old <= {(c["mode"], c["name"]) for c in GOLDEN}
+
+
+def test_gentle_spins_ignore_reach():
+    # A slow spin never reaches 12,000 pt/s, so reach can't matter.
+    a = simulate("flywheel", spin(7, 10), [1] * 10, 2.2, flyReach=0.0)
+    b = simulate("flywheel", spin(7, 10), [1] * 10, 2.2, flyReach=1.0)
+    assert a == b
+
+
+def test_fast_spin_goes_farther_with_reach():
+    slow, fast = distance(45, 20, 0.5), distance(100, 20, 0.5)
+    assert fast > slow * 1.15
+    # With the old hard cap a harder spin gains (almost) nothing.
+    assert distance(100, 20, 0.0) < distance(45, 20, 0.0) * 1.15
+    assert distance(100, 20, 0.5) > distance(100, 20, 0.0)
+    assert distance(100, 20, 1.0) > distance(100, 20, 0.5)
+
+
+def test_fly_speed_is_continuous_at_the_knee_and_bounded():
+    knee = sc.FLY_KNEE
+    for reach in (0.0, 0.25, 0.5, 1.0):
+        assert sc.fly_speed(knee, reach) == knee
+        assert sc.fly_speed(knee + 1e-6, reach) == pytest.approx(knee, abs=1e-3)
+        assert sc.fly_speed(-knee - 1e-6, reach) == pytest.approx(-knee, abs=1e-3)
+        assert sc.fly_speed(-5000, reach) == -5000
+        assert sc.fly_speed(1e9, reach) <= knee + reach * sc.FLY_HEADROOM + 1e-6
+        assert sc.fly_speed(-1e9, reach) == pytest.approx(-sc.fly_speed(1e9, reach))
+        assert sc.fly_speed(knee * 2, reach) <= sc.fly_speed(knee * 3, reach)
+        if reach > 0:    # slope 1 at the knee: no kink
+            assert sc.fly_speed(knee + 1, reach) - knee == pytest.approx(1, abs=1e-3)
+    assert sc.fly_speed(1e9, 0.0) == knee and sc.fly_speed(-1e9, 0.0) == -knee
+    assert sc.fly_speed(30_000, 0.5) == pytest.approx(12_000 + 30_000 * (1 - math.exp(-18_000 / 30_000)))
+
+
+def test_coast_stretch():
+    assert sc.fly_coast_stretch(50_000, 0.0) == 1
+    assert sc.fly_coast_stretch(12_000, 1.0) == 1
+    assert sc.fly_coast_stretch(72_000, 1.0) == pytest.approx(1.8)
+    assert sc.fly_coast_stretch(-72_000, 0.5) == pytest.approx(1.4)
 
 
 def test_kensington_measurements():

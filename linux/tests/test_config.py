@@ -113,3 +113,35 @@ def test_device_support():
     assert not devices.is_supported(0x1209, 0x6762, devices.VIRTUAL_DEVICE_NAME, beta=True)
     assert devices.is_pointer({1: [0x110, 0x111], 2: [0, 1, 8]})
     assert not devices.is_pointer({1: [30, 31]})
+
+
+def test_fly_reach_round_trips_present_and_absent(tmp_path):
+    # Present (as the new Mac app writes it): kept and read.
+    data = json.loads(read("mac_default.glide-settings"))
+    assert data["config"]["flyReach"] == 0.5
+    data["config"]["flyReach"] = 0.8
+    parsed = c.parse_file(json.dumps(data))
+    assert c.Effective(c.config_of(parsed)).flyReach == 0.8
+    path = str(tmp_path / "a.glide-settings")
+    c.save(c.with_changes(parsed, flyGlide=0.5), path)
+    assert json.loads(open(path).read())["config"]["flyReach"] == 0.8
+    c.save(c.with_changes(parsed, flyReach=0.25), path)
+    assert json.loads(open(path).read())["config"]["flyReach"] == 0.25
+
+    # Absent (a file from an older app): the default, and no key is invented on save.
+    del data["config"]["flyReach"]
+    old = c.parse_file(json.dumps(data))
+    assert c.Effective(c.config_of(old)).flyReach == 0.5
+    assert c.default_config()["flyReach"] == 0.5
+    path = str(tmp_path / "b.glide-settings")
+    c.save(old, path)
+    assert "flyReach" not in json.loads(open(path).read())["config"]
+
+    # Garbage falls back to the default.
+    assert c.Effective({"flyReach": "far"}).flyReach == 0.5
+
+
+def test_engine_scroller_gets_fly_reach():
+    from glideball.scroller import ScrollSettings
+    assert ScrollSettings.from_config(c.Effective({"flyReach": 0.2}).__dict__).flyReach == 0.2
+    assert ScrollSettings().flyReach == 0.5
