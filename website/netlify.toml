@@ -67,7 +67,10 @@
   force = true
 
 # Security headers for every page.
-# - No inline scripts or styles; everything is served from this origin.
+# - The site's own scripts and styles come from this origin. The only exceptions are the
+#   two hashed inline blocks and the Google / Cloudflare analytics hosts that the website
+#   analytics notice (a Netlify snippet, set up in the Netlify dashboard) needs. This policy
+#   matches what's live; if the snippet changes, its hashes change with it.
 # - Links to github.com are plain navigations, which CSP does not restrict.
 # - img-src blob: is for the feedback page's previews of the pictures picked.
 # - connect-src 'self' covers the feedback page and the admin page talking
@@ -75,7 +78,7 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; media-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'sha256-eTEVWQ/0jEWhxJ8zoSNXzg50QYCGNQKgme/7vILkuzI=' https://www.googletagmanager.com/gtag/js https://static.cloudflareinsights.com/beacon.min.js; style-src 'self' 'sha256-oAZ6B7wEYWJct08O9lGynuu8sZwNwUVmwkAutT9KCXI='; img-src 'self' data: blob: https://www.google-analytics.com/g/collect https://region1.google-analytics.com/g/collect; font-src 'self'; connect-src 'self' https://www.google-analytics.com/g/collect https://region1.google-analytics.com/g/collect https://cloudflareinsights.com/cdn-cgi/rum; media-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     X-Frame-Options = "DENY"
