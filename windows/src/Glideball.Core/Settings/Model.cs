@@ -127,6 +127,7 @@ public sealed record ScrollSettings
     public double FlyDistance { get; init; } = 4;
     public double FlyAcceleration { get; init; } = 0.5;
     public double FlyGlide { get; init; } = 0.35;
+    public double FlyReach { get; init; } = 0.5;
     public bool SmoothScrolling { get; init; } = true;
     public double ScrollDistance { get; init; } = 14;
     public double ScrollSmoothness { get; init; } = 0.4;
@@ -181,6 +182,8 @@ public sealed class GlideConfig
     public double FlyDistance { get; set; } = 4;
     public double FlyAcceleration { get; set; } = 0.5;
     public double FlyGlide { get; set; } = 0.35;
+    /// <summary>How much farther the very fastest spins go (0 = the old 12,000 pt/s limit).</summary>
+    public double FlyReach { get; set; } = 0.5;
     public bool SmoothScrolling { get; set; } = true;
     public double ScrollDistance { get; set; } = 14;
     public double ScrollSmoothness { get; set; } = 0.4;
@@ -231,6 +234,7 @@ public sealed class GlideConfig
             FlyDistance = FlyDistance,
             FlyAcceleration = FlyAcceleration,
             FlyGlide = FlyGlide,
+            FlyReach = FlyReach,
             SmoothScrolling = SmoothScrolling,
             ScrollDistance = ScrollDistance,
             ScrollSmoothness = ScrollSmoothness,
@@ -247,6 +251,7 @@ public sealed class GlideConfig
             FlyDistance = value.FlyDistance;
             FlyAcceleration = value.FlyAcceleration;
             FlyGlide = value.FlyGlide;
+            FlyReach = value.FlyReach;
             SmoothScrolling = value.SmoothScrolling;
             ScrollDistance = value.ScrollDistance;
             ScrollSmoothness = value.ScrollSmoothness;

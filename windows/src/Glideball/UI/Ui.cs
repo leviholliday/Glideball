@@ -76,7 +76,7 @@ internal static class Ui
 
     /// <summary>A labelled slider with its value shown, reporting changes as they happen.</summary>
     public static FrameworkElement Slider(string label, double min, double max, double value, Func<double, string> format,
-        Action<double> changed, string? note = null, double step = 0)
+        Action<double> changed, string? note = null, double step = 0, string? lowLabel = null, string? highLabel = null)
     {
         var g = new Grid { Margin = new Thickness(0, 6, 0, 8) };
         g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(200) });
@@ -88,8 +88,26 @@ internal static class Ui
         g.Children.Add(left);
         var s = new Slider { Minimum = min, Maximum = max, Value = Math.Clamp(value, min, max), VerticalAlignment = VerticalAlignment.Center };
         if (step > 0) { s.TickFrequency = step; s.IsSnapToTickEnabled = true; }
-        Grid.SetColumn(s, 1);
-        g.Children.Add(s);
+        FrameworkElement track = s;
+        if (lowLabel != null || highLabel != null)
+        {
+            // The ends of the range, named under the slider ("Short" … "Far").
+            var ends = new Grid();
+            ends.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            ends.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            var lo = Note(lowLabel ?? "");
+            var hi = Note(highLabel ?? "");
+            hi.HorizontalAlignment = HorizontalAlignment.Right;
+            Grid.SetColumn(hi, 1);
+            ends.Children.Add(lo);
+            ends.Children.Add(hi);
+            var stack = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+            stack.Children.Add(s);
+            stack.Children.Add(ends);
+            track = stack;
+        }
+        Grid.SetColumn(track, 1);
+        g.Children.Add(track);
         var v = new TextBlock { Text = format(value), HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center,
             Foreground = Brush("SubText") };
         Grid.SetColumn(v, 2);

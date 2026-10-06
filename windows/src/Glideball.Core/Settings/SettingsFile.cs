@@ -71,7 +71,7 @@ public sealed class SettingsFile
     private static readonly string[] ConfigKeys =
     {
         "enabled", "trackingSpeed", "precisionSpeed", "scrollMode", "nativeScrollSpeed", "flyDistance",
-        "flyAcceleration", "flyGlide", "smoothScrolling", "scrollDistance", "scrollSmoothness",
+        "flyAcceleration", "flyGlide", "flyReach", "smoothScrolling", "scrollDistance", "scrollSmoothness",
         "scrollAcceleration", "throwEnabled", "throwAmount", "reverseScroll", "shiftScrollsHorizontally",
         "ballScrollSpeed", "buttons", "chords", "appProfiles", "globalShortcuts",
     };
@@ -105,6 +105,7 @@ public sealed class SettingsFile
             FlyDistance = Num(c["flyDistance"]) ?? d.FlyDistance,
             FlyAcceleration = Num(c["flyAcceleration"]) ?? d.FlyAcceleration,
             FlyGlide = Num(c["flyGlide"]) ?? d.FlyGlide,
+            FlyReach = Num(c["flyReach"]) ?? d.FlyReach,
             SmoothScrolling = Bool(c["smoothScrolling"]) ?? d.SmoothScrolling,
             ScrollDistance = Num(c["scrollDistance"]) ?? d.ScrollDistance,
             ScrollSmoothness = Num(c["scrollSmoothness"]) ?? d.ScrollSmoothness,
@@ -309,6 +310,7 @@ public sealed class SettingsFile
         o["flyDistance"] = s.FlyDistance;
         o["flyAcceleration"] = s.FlyAcceleration;
         o["flyGlide"] = s.FlyGlide;
+        o["flyReach"] = s.FlyReach;
         o["smoothScrolling"] = s.SmoothScrolling;
         o["scrollDistance"] = s.ScrollDistance;
         o["scrollSmoothness"] = s.ScrollSmoothness;
