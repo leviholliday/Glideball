@@ -50,6 +50,7 @@ struct ScrollSettings: Codable, Equatable {
     var flyDistance: Double
     var flyAcceleration: Double
     var flyGlide: Double
+    var flyReach: Double
     var smoothScrolling: Bool
     var scrollDistance: Double
     var scrollSmoothness: Double
@@ -70,6 +71,7 @@ extension ScrollSettings {
         flyDistance = try c.decodeIfPresent(Double.self, forKey: .flyDistance) ?? d.flyDistance
         flyAcceleration = try c.decodeIfPresent(Double.self, forKey: .flyAcceleration) ?? d.flyAcceleration
         flyGlide = try c.decodeIfPresent(Double.self, forKey: .flyGlide) ?? d.flyGlide
+        flyReach = try c.decodeIfPresent(Double.self, forKey: .flyReach) ?? d.flyReach
         smoothScrolling = try c.decodeIfPresent(Bool.self, forKey: .smoothScrolling) ?? d.smoothScrolling
         scrollDistance = try c.decodeIfPresent(Double.self, forKey: .scrollDistance) ?? d.scrollDistance
         scrollSmoothness = try c.decodeIfPresent(Double.self, forKey: .scrollSmoothness) ?? d.scrollSmoothness
@@ -104,7 +106,7 @@ extension GlideConfig {
     var scrollSettings: ScrollSettings {
         get {
             ScrollSettings(scrollMode: scrollMode, nativeScrollSpeed: nativeScrollSpeed,
-                           flyDistance: flyDistance, flyAcceleration: flyAcceleration, flyGlide: flyGlide,
+                           flyDistance: flyDistance, flyAcceleration: flyAcceleration, flyGlide: flyGlide, flyReach: flyReach,
                            smoothScrolling: smoothScrolling, scrollDistance: scrollDistance,
                            scrollSmoothness: scrollSmoothness, scrollAcceleration: scrollAcceleration,
                            throwEnabled: throwEnabled, throwAmount: throwAmount,
@@ -116,6 +118,7 @@ extension GlideConfig {
             flyDistance = newValue.flyDistance
             flyAcceleration = newValue.flyAcceleration
             flyGlide = newValue.flyGlide
+            flyReach = newValue.flyReach
             smoothScrolling = newValue.smoothScrolling
             scrollDistance = newValue.scrollDistance
             scrollSmoothness = newValue.scrollSmoothness

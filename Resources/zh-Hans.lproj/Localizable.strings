@@ -1460,3 +1460,6 @@
 "Your first backup is made the next time your settings change." = "下次设置变化时会创建第一份备份。";
 "Your settings already match that backup" = "你的设置已与该备份相同";
 "unknown error" = "未知错误";
+
+/* ---- Fast-spin reach ---- */
+"Fast-spin reach" = "快速转动的距离";

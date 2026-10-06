@@ -103,3 +103,13 @@ simulate("Big flick, 25 ticks @ 62 t/s", ticks: spin(rate: 62, count: 25), until
 simulate("Short fast flick, 4 ticks @ 62 t/s", ticks: spin(rate: 62, count: 4), until: 1.5, config: fly)
 simulate("Flick, then catch it with one tick back", ticks: flick + [flick.last! + 0.12], until: 2.0, config: fly,
          directions: Array(repeating: 1, count: 10) + [-1])
+
+// How far hard spins go (real spins on the Expert Mouse reach 70–130+ ticks/s).
+print("\n--- Fast-spin reach: the same spin with the old hard limit (reach 0) and the new default (reach 0.5) ---")
+var oldFly = fly; oldFly.flyReach = 0
+for (name, rate, count) in [("20 ticks @ 45 t/s", 45.0, 20), ("20 ticks @ 70 t/s", 70.0, 20), ("20 ticks @ 100 t/s", 100.0, 20),
+                            ("30 ticks @ 130 t/s", 130.0, 30), ("6 ticks @ 120 t/s (a short hard flick)", 120.0, 6)] {
+    print(name)
+    simulate("  reach 0 (old limit)", ticks: spin(rate: rate, count: count), until: 3.0, config: oldFly)
+    simulate("  reach 0.5 (default)", ticks: spin(rate: rate, count: count), until: 3.0, config: fly)
+}

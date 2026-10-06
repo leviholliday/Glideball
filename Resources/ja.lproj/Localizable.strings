@@ -1460,3 +1460,6 @@
 "Your first backup is made the next time your settings change." = "次に設定を変更したときに最初のバックアップが作成されます。";
 "Your settings already match that backup" = "設定はすでにそのバックアップと同じです";
 "unknown error" = "不明なエラー";
+
+/* ---- Fast-spin reach ---- */
+"Fast-spin reach" = "高速回転の到達距離";

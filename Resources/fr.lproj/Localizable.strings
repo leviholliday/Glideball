@@ -1460,3 +1460,6 @@
 "Your first backup is made the next time your settings change." = "Votre première sauvegarde sera créée la prochaine fois que vos réglages changeront.";
 "Your settings already match that backup" = "Vos réglages correspondent déjà à cette sauvegarde";
 "unknown error" = "erreur inconnue";
+
+/* ---- Fast-spin reach ---- */
+"Fast-spin reach" = "Portée des rotations rapides";

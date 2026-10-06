@@ -1460,3 +1460,6 @@
 "Your first backup is made the next time your settings change." = "다음에 설정이 바뀌면 첫 백업이 만들어져요.";
 "Your settings already match that backup" = "설정이 이미 그 백업과 같아요";
 "unknown error" = "알 수 없는 오류";
+
+/* ---- Fast-spin reach ---- */
+"Fast-spin reach" = "빠른 회전 도달 거리";

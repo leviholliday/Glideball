@@ -282,6 +282,7 @@ struct GlideConfig: Codable, Equatable {
     var flyDistance: Double = 4             // points per slow tick
     var flyAcceleration: Double = 0.5       // how hard fast spins push
     var flyGlide: Double = 0.35             // 0 short … 1 long coast (0.35 ≈ Kensington, 82 ms)
+    var flyReach: Double = 0.5              // how much farther the very fastest spins go (0 = the old 12,000 pt/s limit)
     var smoothScrolling = true
     var scrollDistance: Double = 14         // points per ring tick
     var scrollSmoothness: Double = 0.4      // follow softness: 0 locked … 1 soft
@@ -322,6 +323,7 @@ struct GlideConfig: Codable, Equatable {
         flyDistance = try c.decodeIfPresent(Double.self, forKey: .flyDistance) ?? d.flyDistance
         flyAcceleration = try c.decodeIfPresent(Double.self, forKey: .flyAcceleration) ?? d.flyAcceleration
         flyGlide = try c.decodeIfPresent(Double.self, forKey: .flyGlide) ?? d.flyGlide
+        flyReach = try c.decodeIfPresent(Double.self, forKey: .flyReach) ?? d.flyReach
         smoothScrolling = try c.decodeIfPresent(Bool.self, forKey: .smoothScrolling) ?? d.smoothScrolling
         scrollDistance = try c.decodeIfPresent(Double.self, forKey: .scrollDistance) ?? d.scrollDistance
         scrollSmoothness = try c.decodeIfPresent(Double.self, forKey: .scrollSmoothness) ?? d.scrollSmoothness

@@ -210,12 +210,49 @@ final class SmoothScroller: NSObject {
         distance + 5.4 * acceleration * pow(max(rate - 6, 0), 1.3)
     }
 
+    // MARK: Fast-spin reach
+
+    /// Up to this speed a spin is exactly Kensington's measured feel (it used to be a
+    /// hard limit, reached at only ~45 ring ticks/s — so spinning harder went no farther).
+    static let flyKnee = 12_000.0
+
+    /// The fastest the page flies at `reach` 1 beyond the knee, in points/second.
+    static let flyHeadroom = 60_000.0
+
+    /// Page speed for a spin whose pushes add up to `raw`: the same up to the knee, then
+    /// ever harder spins keep going faster but approach a ceiling set by `reach`
+    /// (0 = a hard limit at the knee, the way it used to be).
+    static func flySpeed(raw: Double, reach: Double) -> Double {
+        let room = min(max(reach, 0), 1) * flyHeadroom
+        let a = abs(raw)
+        guard a > flyKnee else { return raw }
+        guard room > 0 else { return raw < 0 ? -flyKnee : flyKnee }
+        let out = flyKnee + room * (1 - exp(-(a - flyKnee) / room))
+        return raw < 0 ? -out : out
+    }
+
+    /// How much longer than usual the page coasts at `speed`: nothing up to the knee,
+    /// then more the faster it flies (like a heavy flywheel), up to ×1.8 at full reach.
+    static func flyCoastStretch(speed: Double, reach: Double) -> Double {
+        let room = min(max(reach, 0), 1) * flyHeadroom
+        guard room > 0 else { return 1 }
+        let t = min(max((abs(speed) - flyKnee) / room, 0), 1)
+        return 1 + 0.8 * min(max(reach, 0), 1) * t
+    }
+
+    /// The pushes added up before the speed limit softens them.
+    private var flyRaw = 0.0
+    private var flyRawMax: Double {
+        let room = min(max(config.flyReach, 0), 1) * Self.flyHeadroom
+        return room > 0 ? Self.flyKnee + 4 * room : Self.flyKnee
+    }
+
     private var flyTicks: [CFTimeInterval] = []
 
     private func flywheelTick(dir: Double, count: Int, horizontal isHorizontal: Bool, turned: Bool, now: CFTimeInterval) {
         if turned || mode != .flying {
             // A reversal stops the page dead; a new push starts from rest.
-            if turned { speed = 0 }
+            if turned { speed = 0; flyRaw = 0 }
             flyTicks.removeAll()
         }
         direction = dir
@@ -231,21 +268,30 @@ final class SmoothScroller: NSObject {
             return
         }
         // A push: the speed that, fading with friction τ, travels exactly `distance`.
-        speed += dir * distance / Self.flyTau(glide: config.flyGlide)
-        speed = max(min(speed, Self.throwMaxSpeed), -Self.throwMaxSpeed)
+        if mode != .flying { flyRaw = speed }
+        flyRaw += dir * distance / Self.flyTau(glide: config.flyGlide)
+        flyRaw = max(min(flyRaw, flyRawMax), -flyRawMax)
+        speed = Self.flySpeed(raw: flyRaw, reach: config.flyReach)
         mode = .flying
         diagnostics?.record(String(format: "fly tick %+d rate=%.0f/s +%.0f pt  speed=%.0f", Int(dir) * count, measured, distance, speed))
         start()
     }
 
     private func fly(dt: Double) {
-        let tau = Self.flyTau(glide: config.flyGlide)
+        let tau = Self.flyTau(glide: config.flyGlide) * Self.flyCoastStretch(speed: speed, reach: config.flyReach)
         let fade = exp(-dt / tau)
-        position += speed * tau * (1 - fade)       // exact distance under exponential friction
-        speed *= fade
+        let before = speed
+        flyRaw *= fade                              // friction acts on the pushes; the limit softens what's seen
+        speed = Self.flySpeed(raw: flyRaw, reach: config.flyReach)
+        if abs(before) <= Self.flyKnee {
+            position += before * tau * (1 - fade)   // exact distance under exponential friction
+        } else {
+            position += (before + speed) / 2 * dt   // beyond the knee the speed is softened: average over the frame
+        }
         if abs(speed) < 15 {                        // under ~1 pt left: land on it now
             position += speed * tau
             speed = 0
+            flyRaw = 0
             mode = .idle
         }
     }
@@ -259,6 +305,7 @@ final class SmoothScroller: NSObject {
     /// Stop all motion where the page is now.
     private func halt() {
         speed = 0
+        flyRaw = 0
         target = position
         window.removeAll(); intervals.removeAll()
         ticksInMovement = 0
