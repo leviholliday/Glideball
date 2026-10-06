@@ -76,6 +76,7 @@ With it off, the trackball simply uses Windows' speed, and **Precision** lowers 
 ### Scrolling details
 
 - **Ring ticks** come from the hook's `WM_MOUSEWHEEL` events attributed to the trackball (one notch = 120 = one tick), are swallowed, and drive the scroller. A frame thread paced by `DwmFlush` (one frame per display refresh) emits the motion as sub-120 wheel deltas.
+- **Fast-spin reach** (Flywheel; *Scrolling › Fast-spin reach*, default 50%, part of per-app scrolling): up to 12,000 pt/s (about 45 ring ticks/s) Flywheel is exactly Kensington's feel; real spins reach 70-130+ ticks/s, so beyond that the speed keeps growing toward a ceiling set by the slider (0 = the old hard 12,000 pt/s limit) and very fast spins coast up to 1.8x longer. Same maths and `flyReach` setting as the Mac.
 - **Points → wheel units**: 1.2 units per point by default (Chromium-based browsers scroll 100 px per 120 units). Change it under *Scrolling › Wheel scale (this PC)*. Apps that only understand whole notches add the small deltas up and scroll once they reach 120, so distances still match.
 - **Shift + ring** emits horizontal wheel input (`HWHEEL`); Shift stays physically held, which apps ignore for horizontal wheel input.
 - **Scroll with ball**: the cursor is pinned with `ClipCursor` (re-applied on each move, since Windows resets clipping on focus changes) and the ball's raw counts drive the scroller.
@@ -126,7 +127,7 @@ dotnet publish src/Glideball/Glideball.csproj -c Release -r win-x64 --self-conta
   -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o out/win-x64
 ```
 
-The core tests also run on macOS/Linux with the .NET 8 SDK. To regenerate the golden scroll data and the Mac sample file after changing `SmoothScroller.swift` or `Config.swift`, run `windows/tools/golden/run.sh` on a Mac.
+The core tests also run on macOS/Linux with the .NET 8 SDK. To regenerate the golden scroll data and the Mac sample file after changing `SmoothScroller.swift` or `Config.swift`, run `windows/tools/golden/run.sh` on a Mac. `scroll-golden-legacy.json` is the pre-Fast-spin recording; it is frozen (the script doesn't touch it) and proves that reach 0 still behaves exactly like the old hard cap.
 
 ## Manual test checklist
 

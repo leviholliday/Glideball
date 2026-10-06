@@ -39,6 +39,7 @@ internal sealed class ScrollingPage : PageBase
             tuning = Ui.Card("Flywheel",
                 Ui.Slider("Slow-turn distance", 1, 20, c.FlyDistance, v => Ui.Num(v, 0) + " pt", v => { State.Edit(x => x.FlyDistance = v); UpdateFlyCurve(); }, null, 1),
                 Ui.Slider("Spin power", 0, 1, c.FlyAcceleration, Ui.Percent, v => { State.Edit(x => x.FlyAcceleration = v); UpdateFlyCurve(); }),
+                Ui.Slider("Fast-spin reach", 0, 1, c.FlyReach, Ui.Percent, v => State.Edit(x => x.FlyReach = v), null, 0, "Short", "Far"),
                 Ui.Slider("Glide", 0, 1, c.FlyGlide, v => Ui.Num(SmoothScroller.FlyTau(v) * 1000, 0) + " ms", v => State.Edit(x => x.FlyGlide = v)),
                 Ui.Buttons(Ui.Button("Kensington feel", () =>
                 {

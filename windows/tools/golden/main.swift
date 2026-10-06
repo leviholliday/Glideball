@@ -60,6 +60,7 @@ struct Scenario: Encodable {
     let scrollSmoothness: Double
     let scrollAcceleration: Double
     let throwAmount: Double
+    let flyReach: Double
     let ticks: [Double]
     let directions: [Double]?
     let until: Double
@@ -71,6 +72,7 @@ func add(_ name: String, _ ticks: [Double], until: Double, config: GlideConfig, 
     scenarios.append(Scenario(name: name, mode: config.scrollMode.rawValue,
                               scrollDistance: config.scrollDistance, scrollSmoothness: config.scrollSmoothness,
                               scrollAcceleration: config.scrollAcceleration, throwAmount: config.throwAmount,
+                              flyReach: config.flyReach,
                               ticks: ticks, directions: directions, until: until,
                               frames: simulate(ticks: ticks, until: until, config: config, directions: directions)))
 }
@@ -101,6 +103,15 @@ add("yours: Typical flick 10 @ 41", spin(rate: 41, count: 10), until: 2.0, confi
 add("yours: Big flick 25 @ 62", spin(rate: 62, count: 25), until: 2.5, config: yours)
 add("yours: Medium turn 16 t/s", spin(rate: 16, count: 12, jitter: 0.2, seed: 16), until: 1.6, config: yours)
 
+// How far hard spins go (scripts/scroll-sim/main.swift): the same spin with the old hard
+// limit (reach 0) and the new default (reach 0.5).
+var oldFly = fly; oldFly.flyReach = 0
+for (name, rate, count) in [("20 ticks @ 45 t/s", 45.0, 20), ("20 ticks @ 70 t/s", 70.0, 20), ("20 ticks @ 100 t/s", 100.0, 20),
+                            ("30 ticks @ 130 t/s", 130.0, 30), ("6 ticks @ 120 t/s", 120.0, 6)] {
+    add("flywheel reach 0: \(name)", spin(rate: rate, count: count), until: 3.0, config: oldFly)
+    add("flywheel reach 0.5: \(name)", spin(rate: rate, count: count), until: 3.0, config: fly)
+}
+
 let out = URL(fileURLWithPath: CommandLine.arguments[1])
 let enc = JSONEncoder()
 enc.outputFormatting = [.sortedKeys]
@@ -109,6 +120,7 @@ try enc.encode(scenarios).write(to: out.appendingPathComponent("scroll-golden.js
 // A Mac-format settings file that uses every kind of value.
 var c = GlideConfig()
 c.trackingSpeed = 6.5
+c.flyReach = 0.8
 c.buttons[1] = .modifiedClick(button: 0, modifiers: CGEventFlags.maskControl.rawValue)
 c.buttons[4] = .holdShortcut(.wisprFlow)
 c.buttons[5] = .precisionHold

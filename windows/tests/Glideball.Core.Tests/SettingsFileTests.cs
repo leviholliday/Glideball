@@ -23,6 +23,7 @@ public class SettingsFileTests
         Assert.Equal(6.5, c.TrackingSpeed);
         Assert.Equal(ScrollMode.Flywheel, c.ScrollMode);
         Assert.Equal(0.35, c.FlyGlide);
+        Assert.Equal(0.8, c.FlyReach);
         Assert.Equal(ButtonAction.Click(0, MacFlags.Control), c.Buttons[1]);
         Assert.Equal(ButtonAction.Press(KeyShortcut.PreviousSpace), c.Buttons[2]);
         Assert.Equal(ButtonAction.Hold(KeyShortcut.WisprFlow), c.Buttons[4]);
@@ -96,9 +97,63 @@ public class SettingsFileTests
         Assert.Equal(9.0, c.TrackingSpeed);
         Assert.Equal(ScrollMode.Flywheel, c.ScrollMode);
         Assert.Equal(4.0, c.FlyDistance);
+        Assert.Equal(0.5, c.FlyReach);   // an older file without it: the default
         Assert.True(c.Enabled);
         // The Mac's defaults, so a file means the same thing on both platforms.
         Assert.Equal(ButtonAction.Press(KeyShortcut.PreviousSpace), c.Buttons[2]);
+    }
+
+    [Fact]
+    public void FlyReachRoundTripsWhetherPresentOrAbsent()
+    {
+        // Present: read, kept in the model, and written back.
+        var c = SettingsFile.Parse("{\"version\":1,\"config\":{\"flyReach\":0.8}}").ValidatedConfig();
+        Assert.Equal(0.8, c.FlyReach);
+        Assert.Equal(0.8, c.Scroll.FlyReach);
+        Assert.Null(c.Extra);   // a known key, not a leftover
+        var again = JsonNode.Parse(SettingsFile.Create(c, null, DateTimeOffset.UtcNow).ToJson())!;
+        Assert.Equal(0.8, (double)again["config"]!["flyReach"]!);
+
+        // Absent (a file from before the setting): the default, which is then written out.
+        var old = SettingsFile.Parse("{\"version\":1,\"config\":{\"flyGlide\":0.2}}").ValidatedConfig();
+        Assert.Equal(0.5, old.FlyReach);
+        Assert.Equal(0.2, old.FlyGlide);
+        var written = JsonNode.Parse(SettingsFile.Create(old, null, DateTimeOffset.UtcNow).ToJson())!;
+        Assert.Equal(0.5, (double)written["config"]!["flyReach"]!);
+
+        // Zero is a real value, not "missing".
+        var zero = SettingsFile.Parse("{\"version\":1,\"config\":{\"flyReach\":0}}").ValidatedConfig();
+        Assert.Equal(0.0, zero.FlyReach);
+    }
+
+    [Fact]
+    public void FlyReachIsPartOfPerAppScrollSettings()
+    {
+        const string json = """
+        {
+          "version": 1,
+          "config": {
+            "flyReach": 0.9,
+            "appProfiles": [
+              { "bundleID": "a.exe", "scroll": { "flyReach": 0.2, "flyGlide": 0.6 } },
+              { "bundleID": "b.exe", "scroll": { "flyGlide": 0.6 } }
+            ]
+          }
+        }
+        """;
+        var c = SettingsFile.Parse(json).ValidatedConfig();
+        Assert.Equal(0.9, c.FlyReach);
+        Assert.Equal(0.2, c.AppProfiles[0].Scroll!.FlyReach);
+        Assert.Equal(0.6, c.AppProfiles[0].Scroll!.FlyGlide);
+        Assert.Equal(0.5, c.AppProfiles[1].Scroll!.FlyReach);   // missing in the app's own setup: the default
+
+        // While that app is in front its own value applies; elsewhere the main one.
+        Assert.Equal(0.2, c.ResolvedFor("a.exe").FlyReach);
+        Assert.Equal(0.9, c.ResolvedFor("other.exe").FlyReach);
+
+        var back = JsonNode.Parse(SettingsFile.Create(c, null, DateTimeOffset.UtcNow).ToJson())!;
+        Assert.Equal(0.9, (double)back["config"]!["flyReach"]!);
+        Assert.Equal(0.2, (double)back["config"]!["appProfiles"]![0]!["scroll"]!["flyReach"]!);
     }
 
     [Fact]

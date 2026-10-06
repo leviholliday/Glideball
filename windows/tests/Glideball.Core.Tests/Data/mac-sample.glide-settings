@@ -76,7 +76,7 @@
           2,
           3
         ],
-        "id" : "CC73CF0E-DEA6-4F7D-B1B3-143005406EF9"
+        "id" : "25D18E14-E516-4946-B8CB-1AF6DA17F0C8"
       },
       {
         "action" : {
@@ -95,6 +95,7 @@
     "flyAcceleration" : 0.5,
     "flyDistance" : 4,
     "flyGlide" : 0.35,
+    "flyReach" : 0.8,
     "globalShortcuts" : {
       "ballScroll" : null,
       "dragLock" : null,
@@ -122,7 +123,7 @@
     "throwEnabled" : true,
     "trackingSpeed" : 6.5
   },
-  "exportedAt" : "2026-10-04T22:48:42Z",
+  "exportedAt" : "2026-10-06T21:43:57Z",
   "exportedFrom" : "Levi's MacBook Pro",
   "version" : 1
 }

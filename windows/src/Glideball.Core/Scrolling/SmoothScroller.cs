@@ -166,13 +166,64 @@ public sealed class SmoothScroller
     public static double FlyTickDistance(double rate, double distance, double acceleration) =>
         distance + 5.4 * acceleration * Math.Pow(Math.Max(rate - 6, 0), 1.3);
 
+    // MARK: Fast-spin reach
+
+    /// <summary>
+    /// Up to this speed a spin is exactly Kensington's measured feel (it used to be a
+    /// hard limit, reached at only ~45 ring ticks/s, so spinning harder went no farther).
+    /// </summary>
+    public const double FlyKnee = 12_000.0;
+
+    /// <summary>The fastest the page flies at reach 1 beyond the knee, in points/second.</summary>
+    public const double FlyHeadroom = 60_000.0;
+
+    /// <summary>
+    /// Page speed for a spin whose pushes add up to <paramref name="raw"/>: the same up to
+    /// the knee, then ever harder spins keep going faster but approach a ceiling set by
+    /// <paramref name="reach"/> (0 = a hard limit at the knee, the way it used to be).
+    /// </summary>
+    public static double FlySpeed(double raw, double reach)
+    {
+        var room = Math.Min(Math.Max(reach, 0), 1) * FlyHeadroom;
+        var a = Math.Abs(raw);
+        if (!(a > FlyKnee)) return raw;
+        if (!(room > 0)) return raw < 0 ? -FlyKnee : FlyKnee;
+        var o = FlyKnee + room * (1 - Math.Exp(-(a - FlyKnee) / room));
+        return raw < 0 ? -o : o;
+    }
+
+    /// <summary>
+    /// How much longer than usual the page coasts at <paramref name="speed"/>: nothing up to
+    /// the knee, then more the faster it flies (like a heavy flywheel), up to ×1.8 at full reach.
+    /// </summary>
+    public static double FlyCoastStretch(double speed, double reach)
+    {
+        var room = Math.Min(Math.Max(reach, 0), 1) * FlyHeadroom;
+        if (!(room > 0)) return 1;
+        var t = Math.Min(Math.Max((Math.Abs(speed) - FlyKnee) / room, 0), 1);
+        return 1 + 0.8 * Math.Min(Math.Max(reach, 0), 1) * t;
+    }
+
+    /// <summary>The pushes added up before the speed limit softens them.</summary>
+    private double flyRaw;
+
+    private double FlyRawMax
+    {
+        get
+        {
+            var room = Math.Min(Math.Max(Config.FlyReach, 0), 1) * FlyHeadroom;
+            return room > 0 ? FlyKnee + 4 * room : FlyKnee;
+        }
+    }
+
     private readonly List<double> flyTicks = new();
 
     private void FlywheelTick(double dir, int count, bool isHorizontal, bool turned, double now)
     {
         if (turned || mode != Mode.Flying)
         {
-            if (turned) speed = 0;
+            // A reversal stops the page dead; a new push starts from rest.
+            if (turned) { speed = 0; flyRaw = 0; }
             flyTicks.Clear();
         }
         direction = dir;
@@ -187,22 +238,31 @@ public sealed class SmoothScroller
             Flush();
             return;
         }
-        speed += dir * distance / FlyTau(Config.FlyGlide);
-        speed = Math.Max(Math.Min(speed, ThrowMaxSpeed), -ThrowMaxSpeed);
+        // A push: the speed that, fading with friction τ, travels exactly `distance`.
+        if (mode != Mode.Flying) flyRaw = speed;
+        flyRaw += dir * distance / FlyTau(Config.FlyGlide);
+        flyRaw = Math.Max(Math.Min(flyRaw, FlyRawMax), -FlyRawMax);
+        speed = FlySpeed(flyRaw, Config.FlyReach);
         mode = Mode.Flying;
         Start();
     }
 
     private void Fly(double dt)
     {
-        var tau = FlyTau(Config.FlyGlide);
+        var tau = FlyTau(Config.FlyGlide) * FlyCoastStretch(speed, Config.FlyReach);
         var fade = Math.Exp(-dt / tau);
-        position += speed * tau * (1 - fade);
-        speed *= fade;
+        var before = speed;
+        flyRaw *= fade;                              // friction acts on the pushes; the limit softens what's seen
+        speed = FlySpeed(flyRaw, Config.FlyReach);
+        if (Math.Abs(before) <= FlyKnee)
+            position += before * tau * (1 - fade);   // exact distance under exponential friction
+        else
+            position += (before + speed) / 2 * dt;   // beyond the knee the speed is softened: average over the frame
         if (Math.Abs(speed) < 15)
         {
             position += speed * tau;
             speed = 0;
+            flyRaw = 0;
             mode = Mode.Idle;
         }
     }
@@ -213,6 +273,7 @@ public sealed class SmoothScroller
     private void Halt()
     {
         speed = 0;
+        flyRaw = 0;
         target = position;
         window.Clear(); intervals.Clear();
         ticksInMovement = 0;
