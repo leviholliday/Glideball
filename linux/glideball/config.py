@@ -101,6 +101,7 @@ def default_config() -> Dict[str, Any]:
         "flyDistance": 4.0,
         "flyAcceleration": 0.5,
         "flyGlide": 0.35,
+        "flyReach": 0.5,
         "smoothScrolling": True,
         "scrollDistance": 14.0,
         "scrollSmoothness": 0.4,
@@ -120,7 +121,7 @@ def default_config() -> Dict[str, Any]:
 
 
 _NUMBER_FIELDS = ("trackingSpeed", "precisionSpeed", "nativeScrollSpeed", "flyDistance", "flyAcceleration",
-                  "flyGlide", "scrollDistance", "scrollSmoothness", "scrollAcceleration", "throwAmount",
+                  "flyGlide", "flyReach", "scrollDistance", "scrollSmoothness", "scrollAcceleration", "throwAmount",
                   "ballScrollSpeed")
 _BOOL_FIELDS = ("enabled", "smoothScrolling", "throwEnabled", "reverseScroll", "shiftScrollsHorizontally")
 SCROLL_MODES = ("native", "flywheel", "follow")

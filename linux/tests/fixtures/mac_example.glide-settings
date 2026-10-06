@@ -50,7 +50,7 @@
           2,
           3
         ],
-        "id" : "39EF141B-073D-4688-9E19-AA686010B27D"
+        "id" : "30AFE458-B3C7-4914-AD47-499EF200CC12"
       },
       {
         "action" : {
@@ -62,13 +62,14 @@
           2,
           3
         ],
-        "id" : "9F65F335-69E3-40D3-9356-55CF4C36E054"
+        "id" : "FFA05772-EE2D-4B6C-BAF5-4E9D0F2DE865"
       }
     ],
     "enabled" : true,
     "flyAcceleration" : 0.5,
     "flyDistance" : 4,
     "flyGlide" : 0.35,
+    "flyReach" : 0.5,
     "globalShortcuts" : {
       "ballScroll" : null,
       "dragLock" : null,
@@ -96,7 +97,7 @@
     "throwEnabled" : true,
     "trackingSpeed" : 12
   },
-  "exportedAt" : "2026-10-04T22:47:33Z",
+  "exportedAt" : "2026-10-06T21:43:10Z",
   "exportedFrom" : "Test Mac",
   "version" : 1
 }

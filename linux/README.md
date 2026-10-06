@@ -74,7 +74,11 @@ or toggled on.
 
 * **Native**: each ring notch is passed through as one wheel notch.
 * **Flywheel** (default): each tick pushes the page and friction slows it.
-  This uses Kensington's measured constants.
+  This uses Kensington's measured constants. The **Fast-spin reach** slider
+  (default 50%) sets how much farther the very fastest spins go: up to
+  12,000 pt/s (about 45 ring ticks/s) the feel is unchanged, and beyond that a
+  harder spin keeps going faster and coasts a little longer, up to a ceiling
+  set by the slider. At 0% you get the old hard limit.
 * **Follow**: the page tracks the ring, and a real flick throws it.
 
 The physics are a line-for-line port of `SmoothScroller.swift`, tested frame for

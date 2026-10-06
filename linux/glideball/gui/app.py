@@ -73,7 +73,8 @@ class Settings:
         self.data = data
 
 
-def slider_row(title, subtitle, lo, hi, value, step, on_change, digits=2, log_scale=False):
+def slider_row(title, subtitle, lo, hi, value, step, on_change, digits=2, log_scale=False,
+               percent=False, low_label=None, high_label=None):
     row = Adw.ActionRow(title=title, subtitle=subtitle or "")
     if log_scale:
         adj = Gtk.Adjustment(lower=math.log(lo), upper=math.log(hi), step_increment=0.01, value=math.log(value))
@@ -86,6 +87,12 @@ def slider_row(title, subtitle, lo, hi, value, step, on_change, digits=2, log_sc
     scale.set_valign(Gtk.Align.CENTER)
     if log_scale:
         scale.set_format_value_func(lambda _s, v: f"{math.exp(v):.1f}")
+    elif percent:
+        scale.set_format_value_func(lambda _s, v: f"{round(v * 100)}%")
+    if low_label:
+        scale.add_mark(lo, Gtk.PositionType.BOTTOM, low_label)
+    if high_label:
+        scale.add_mark(hi, Gtk.PositionType.BOTTOM, high_label)
 
     def changed(a):
         v = math.exp(a.get_value()) if log_scale else a.get_value()
@@ -381,6 +388,8 @@ class Window(Adw.ApplicationWindow):
         rows = {
             "flyDistance": slider_row(S["fly_distance"], "pt", 1, 20, e.flyDistance, 0.5, lambda v: self.settings.set(flyDistance=v), 1),
             "flyAcceleration": slider_row(S["fly_acceleration"], "", 0, 1, e.flyAcceleration, 0.05, lambda v: self.settings.set(flyAcceleration=v)),
+            "flyReach": slider_row(S["fly_reach"], "", 0, 1, e.flyReach, 0.01, lambda v: self.settings.set(flyReach=v), 2,
+                                   percent=True, low_label=S["reach_short"], high_label=S["reach_far"]),
             "flyGlide": slider_row(S["fly_glide"], "", 0, 1, e.flyGlide, 0.05,
                                    lambda v: (self.settings.set(flyGlide=v),
                                               rows["flyGlide"].set_subtitle(f"{scroller.fly_tau(v) * 1000:.0f} ms"))),

@@ -41,7 +41,10 @@ func simulate(ticks: [Double], until end: Double, config: GlideConfig, direction
     return frames
 }
 
-struct Scenario { let name: String; let mode: String; let ticks: [Double]; let dirs: [Double]?; let until: Double }
+struct Scenario {
+    let name: String; let mode: String; let ticks: [Double]; let dirs: [Double]?; let until: Double
+    var reach = 0.5          // flyReach (the default); the original scenarios use it as-is
+}
 let flick = spin(rate: 45, count: 10)
 var scenarios: [Scenario] = []
 for mode in ["follow", "flywheel"] {
@@ -61,12 +64,22 @@ for mode in ["follow", "flywheel"] {
                  dirs: nil, until: 1.5),
     ]
 }
+// How far hard spins go (real spins on the Expert Mouse reach 70-130+ ticks/s): the same spin with
+// the old hard limit (reach 0) and the default (reach 0.5), as in scripts/scroll-sim/main.swift.
+for (name, rate, count) in [("20 ticks @ 45 t/s", 45.0, 20), ("20 ticks @ 70 t/s", 70.0, 20), ("20 ticks @ 100 t/s", 100.0, 20),
+                            ("30 ticks @ 130 t/s", 130.0, 30), ("6 ticks @ 120 t/s", 120.0, 6)] {
+    for reach in [0.0, 0.5] {
+        scenarios.append(Scenario(name: "reach \(reach): \(name)", mode: "flywheel", ticks: spin(rate: rate, count: count),
+                                  dirs: nil, until: 3.0, reach: reach))
+    }
+}
 var out: [[String: Any]] = []
 for s in scenarios {
     var c = GlideConfig()
     c.scrollMode = ScrollMode(rawValue: s.mode)!
+    c.flyReach = s.reach
     out.append(["name": s.name, "mode": s.mode, "ticks": s.ticks, "dirs": s.dirs ?? s.ticks.map { _ in 1.0 },
-                "until": s.until, "frames": simulate(ticks: s.ticks, until: s.until, config: c, directions: s.dirs)])
+                "until": s.until, "flyReach": s.reach, "frames": simulate(ticks: s.ticks, until: s.until, config: c, directions: s.dirs)])
 }
 let dir = CommandLine.arguments[1]
 let data = try! JSONSerialization.data(withJSONObject: out, options: [.sortedKeys])

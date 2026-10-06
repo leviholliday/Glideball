@@ -28,6 +28,11 @@ THROW_MIN_TICKS = 6
 THROW_MAX_SPEED = 12_000.0
 UNBOOSTED_TICKS = 3
 
+# Fast-spin reach (Flywheel): up to the knee a spin is exactly Kensington's measured
+# feel; beyond it the speed keeps growing toward a ceiling set by `flyReach`.
+FLY_KNEE = 12_000.0
+FLY_HEADROOM = 60_000.0
+
 BALL_POINTS_PER_COUNT = 1.0
 BALL_SMOOTHING = 0.016
 BALL_GLIDE_WINDOW = 0.06
@@ -75,6 +80,30 @@ def fly_tick_distance(rate: float, distance: float, acceleration: float) -> floa
     return distance + 5.4 * acceleration * math.pow(max(rate - 6, 0.0), 1.3)
 
 
+def fly_speed(raw: float, reach: float) -> float:
+    """Page speed for a spin whose pushes add up to `raw`: the same up to the knee, then
+    ever harder spins keep going faster but approach a ceiling set by `reach`
+    (0 = a hard limit at the knee, the way it used to be)."""
+    room = _clamp(reach, 0.0, 1.0) * FLY_HEADROOM
+    a = abs(raw)
+    if not (a > FLY_KNEE):
+        return raw
+    if not (room > 0):
+        return -FLY_KNEE if raw < 0 else FLY_KNEE
+    out = FLY_KNEE + room * (1 - math.exp(-(a - FLY_KNEE) / room))
+    return -out if raw < 0 else out
+
+
+def fly_coast_stretch(speed: float, reach: float) -> float:
+    """How much longer than usual the page coasts at `speed`: nothing up to the knee,
+    then more the faster it flies, up to x1.8 at full reach."""
+    room = _clamp(reach, 0.0, 1.0) * FLY_HEADROOM
+    if not (room > 0):
+        return 1.0
+    t = _clamp((abs(speed) - FLY_KNEE) / room, 0.0, 1.0)
+    return 1 + 0.8 * _clamp(reach, 0.0, 1.0) * t
+
+
 def _round_half_away(x: float) -> float:
     """Swift's `.rounded()` (schoolbook: halves away from zero)."""
     return math.copysign(math.floor(abs(x) + 0.5), x)
@@ -91,12 +120,12 @@ BALL_IDLE, BALL_ROLLING, BALL_GLIDING = range(3)
 class ScrollSettings:
     """The scroll-related fields of the config, as plain attributes."""
 
-    __slots__ = ("scrollMode", "flyDistance", "flyAcceleration", "flyGlide", "smoothScrolling",
+    __slots__ = ("scrollMode", "flyDistance", "flyAcceleration", "flyGlide", "flyReach", "smoothScrolling",
                  "scrollDistance", "scrollSmoothness", "scrollAcceleration", "throwEnabled",
                  "throwAmount", "reverseScroll", "shiftScrollsHorizontally", "ballScrollSpeed")
 
     def __init__(self, **kw):
-        defaults = dict(scrollMode="flywheel", flyDistance=4.0, flyAcceleration=0.5, flyGlide=0.35,
+        defaults = dict(scrollMode="flywheel", flyDistance=4.0, flyAcceleration=0.5, flyGlide=0.35, flyReach=0.5,
                         smoothScrolling=True, scrollDistance=14.0, scrollSmoothness=0.4,
                         scrollAcceleration=0.5, throwEnabled=True, throwAmount=0.4,
                         reverseScroll=False, shiftScrollsHorizontally=True, ballScrollSpeed=1.0)
@@ -144,6 +173,7 @@ class SmoothScroller:
         self._throw_duration = 0.0
 
         self._fly_ticks: List[float] = []
+        self._fly_raw = 0.0       # the pushes added up before the speed limit softens them
 
         self._ball_mode = BALL_IDLE
         self._ball_target = [0.0, 0.0]
@@ -228,6 +258,7 @@ class SmoothScroller:
         if turned or self._mode != FLYING:
             if turned:
                 self._speed = 0.0
+                self._fly_raw = 0.0
             self._fly_ticks.clear()
         self._direction = direction
         self._horizontal = is_horizontal
@@ -240,19 +271,34 @@ class SmoothScroller:
             self._position += direction * distance
             self._flush()
             return
-        self._speed += direction * distance / fly_tau(cfg.flyGlide)
-        self._speed = _clamp(self._speed, -THROW_MAX_SPEED, THROW_MAX_SPEED)
+        if self._mode != FLYING:
+            self._fly_raw = self._speed
+        self._fly_raw += direction * distance / fly_tau(cfg.flyGlide)
+        raw_max = self._fly_raw_max()
+        self._fly_raw = max(min(self._fly_raw, raw_max), -raw_max)
+        self._speed = fly_speed(self._fly_raw, cfg.flyReach)
         self._mode = FLYING
         self._start()
 
+    def _fly_raw_max(self) -> float:
+        room = _clamp(self.config.flyReach, 0.0, 1.0) * FLY_HEADROOM
+        return FLY_KNEE + 4 * room if room > 0 else FLY_KNEE
+
     def _fly(self, dt: float) -> None:
-        tau = fly_tau(self.config.flyGlide)
+        cfg = self.config
+        tau = fly_tau(cfg.flyGlide) * fly_coast_stretch(self._speed, cfg.flyReach)
         fade = math.exp(-dt / tau)
-        self._position += self._speed * tau * (1 - fade)
-        self._speed *= fade
+        before = self._speed
+        self._fly_raw *= fade                       # friction acts on the pushes; the limit softens what's seen
+        self._speed = fly_speed(self._fly_raw, cfg.flyReach)
+        if abs(before) <= FLY_KNEE:
+            self._position += before * tau * (1 - fade)   # exact distance under exponential friction
+        else:
+            self._position += (before + self._speed) / 2 * dt   # beyond the knee: average over the frame
         if abs(self._speed) < 15:
             self._position += self._speed * tau
             self._speed = 0.0
+            self._fly_raw = 0.0
             self._mode = IDLE
 
     def _prediction_weight(self) -> float:
@@ -260,6 +306,7 @@ class SmoothScroller:
 
     def _halt(self) -> None:
         self._speed = 0.0
+        self._fly_raw = 0.0
         self._target = self._position
         self._window.clear()
         self._intervals.clear()

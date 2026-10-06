@@ -40,13 +40,14 @@
           2,
           3
         ],
-        "id" : "FCB5220C-F246-4AD0-ACDB-C4CC1E322FD1"
+        "id" : "D0E58CB1-FC24-447D-8FEA-5A4EACCF8943"
       }
     ],
     "enabled" : true,
     "flyAcceleration" : 0.5,
     "flyDistance" : 4,
     "flyGlide" : 0.35,
+    "flyReach" : 0.5,
     "globalShortcuts" : {
       "ballScroll" : null,
       "dragLock" : null,
@@ -70,7 +71,7 @@
     "throwEnabled" : true,
     "trackingSpeed" : 4
   },
-  "exportedAt" : "2026-10-04T22:47:33Z",
+  "exportedAt" : "2026-10-06T21:43:10Z",
   "exportedFrom" : "Test Mac",
   "version" : 1
 }
