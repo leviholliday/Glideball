@@ -5,13 +5,6 @@ import Observation
 import ServiceManagement
 import UniformTypeIdentifiers
 
-struct ActivityPoint: Identifiable {
-    let id: Int
-    let time: Double
-    let ballSpeed: Double     // inches / second of ball surface
-    let notchRate: Double     // notches / second
-}
-
 @Observable
 final class AppModel {
     static let shared = AppModel()
@@ -34,17 +27,16 @@ final class AppModel {
         }
     }
 
-    var status = Engine.Status()
+    var status = Engine.Status() {
+        didSet { if status.deviceConnected != oldValue.deviceConnected { updateSampling() } }
+    }
     /// Precision / Drag lock / Scroll with ball, while one is on.
     var modes = Engine.Modes()
     var hasAccessibility = AXIsProcessTrusted()
     var hasInputMonitoring = IOHIDCheckAccess(kIOHIDRequestTypeListenEvent) == kIOHIDAccessTypeGranted
     var pressed: Set<Int> = []
-    var activity: [ActivityPoint] = []
-    var liveBallSpeed = 0.0
-    var liveNotchRate = 0.0
-    var ringAngle = 0.0
-    var ballPhase = 0.0
+    /// Fast-changing readings for the animated views; see `LiveFeed` for why they aren't here.
+    @ObservationIgnored let live = LiveFeed()
     var totals = Telemetry.Totals()
     var launchAtLogin = SMAppService.mainApp.status == .enabled
 
@@ -184,8 +176,6 @@ final class AppModel {
 
     /// Kensington Expert Mouse sensor: ~400 counts per inch of ball travel.
     static let countsPerInch = 400.0
-    static let historySeconds = 8.0
-    static let sampleRate = 30.0
 
     @ObservationIgnored let engine: Engine
     let updates = UpdateChecker()
@@ -193,10 +183,10 @@ final class AppModel {
     @ObservationIgnored let delight: DelightCenter
     @ObservationIgnored private var sampler: Timer?
     @ObservationIgnored private var permissionTimer: Timer?
-    @ObservationIgnored private var sampleIndex = 0
+    @ObservationIgnored private var lastSampleTime = CACurrentMediaTime()
+    @ObservationIgnored private var lastTotalsPublish = 0.0
     @ObservationIgnored private var smoothedBall = 0.0
     @ObservationIgnored private var smoothedNotch = 0.0
-    @ObservationIgnored private var saveCounter = 0
     @ObservationIgnored private var applyingRemoteConfig = false
 
     private init() {
@@ -215,11 +205,6 @@ final class AppModel {
         engine.onModes = { [weak self] m in self?.modes = m }
         engine.start()
 
-        // Seed an empty chart so it doesn't pop in.
-        let n = Int(Self.historySeconds * Self.sampleRate)
-        activity = (0..<n).map { ActivityPoint(id: $0, time: Double($0 - n) / Self.sampleRate, ballSpeed: 0, notchRate: 0) }
-        sampleIndex = n
-
         permissionTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             self?.refreshPermissions()
         }
@@ -234,7 +219,7 @@ final class AppModel {
         delight.reloadHistory(currentKey: totalsDay)
         delight.present = { [weak self] in self?.show($0) }
         delight.canCelebrate = { [weak self] in self?.showingWelcomeTour == false }
-        startSampling()
+        updateSampling()   // the slow housekeeping tick, until the window opens
         backups.currentConfig = { AppModel.shared.config }
         backups.start(current: cfg)   // before sync, so today's backup is this Mac's own settings
         sync.syncNow(current: cfg)   // pick up changes made on other Macs while Glide was closed
@@ -499,47 +484,72 @@ final class AppModel {
 
     // MARK: Live activity (only while the window is visible)
 
-    func startSampling() {
-        guard sampler == nil else { return }
-        saveTotals()   // catches a new day that began while the window was closed
-        let t = Timer(timeInterval: 1 / Self.sampleRate, repeats: true) { [weak self] _ in self?.sample() }
-        RunLoop.main.add(t, forMode: .common)
-        sampler = t
+    /// How much the window animates. Per-Mac; takes effect at once.
+    var performance = PerformanceMode.saved {
+        didSet {
+            guard performance != oldValue else { return }
+            UserDefaults.standard.set(performance.rawValue, forKey: PerformanceMode.defaultsKey)
+            updateSampling()
+        }
+    }
+    /// The window is the one being used (observed, so the background can drift more slowly otherwise).
+    private(set) var windowIsKey = false
+    /// The window is actually on screen (not closed, minimized, covered, or on a sleeping display).
+    private(set) var windowVisible = false
+    @ObservationIgnored private var samplerInterval = 0.0
+    @ObservationIgnored private var lastDelightTick = 0.0
+    @ObservationIgnored private var lastSave = 0.0
+
+    /// Told by the window's delegate whenever it's shown, hidden, covered, or gains/loses focus.
+    func windowStateChanged(visible: Bool, key: Bool) {
+        if windowIsKey != key { windowIsKey = key }
+        let changed = visible != windowVisible
+        let becameVisible = visible && changed
+        if changed { windowVisible = visible }
+        if changed { saveTotals() }   // catches a day that began while hidden
+        updateSampling()
+        if becameVisible { sample() }                                            // fresh numbers on the first frame
     }
 
-    func stopSampling() {
+    /// One timer, at the rate the window needs: fast while it's showing, and a slow
+    /// housekeeping tick (saving totals, rolling the day) when nobody's looking.
+    private func updateSampling() {
+        let wanted = windowVisible ? performance.sampleInterval(windowIsKey: windowIsKey, deviceConnected: status.deviceConnected) : 10
+        guard sampler == nil || wanted != samplerInterval else { return }
         sampler?.invalidate()
-        sampler = nil
-        saveTotals()
+        samplerInterval = wanted
+        let t = Timer(timeInterval: wanted, repeats: true) { [weak self] _ in self?.sample() }
+        t.tolerance = wanted * 0.15   // lets macOS coalesce wakeups
+        RunLoop.main.add(t, forMode: .common)
+        sampler = t
+        if !windowVisible { live.reset(); smoothedBall = 0; smoothedNotch = 0 }
     }
 
     private func sample() {
+        let now = CACurrentMediaTime()
+        let dt = min(max(now - lastSampleTime, 0.001), 1)
+        lastSampleTime = now
+
+        guard windowVisible else {              // nobody's looking: just keep the day's totals saved
+            if now - lastSave > 10 { lastSave = now; saveTotals() }
+            return
+        }
         let s = engine.telemetry.sample()
-        let ball = s.ballSpeed / Self.countsPerInch
-        smoothedBall = smoothedBall * 0.6 + ball * 0.4
-        smoothedNotch = smoothedNotch * 0.7 + s.notchRate * 0.3
+        // The same smoothing as ever, scaled to however long this step was.
+        let kBall = pow(0.6, dt * 30), kNotch = pow(0.7, dt * 30)
+        smoothedBall = smoothedBall * kBall + (s.ballSpeed / Self.countsPerInch) * (1 - kBall)
+        smoothedNotch = smoothedNotch * kNotch + s.notchRate * (1 - kNotch)
         if smoothedBall < 0.01 { smoothedBall = 0 }
         if smoothedNotch < 0.05 { smoothedNotch = 0 }
+        live.push(ball: smoothedBall, notch: smoothedNotch, dt: dt, interval: samplerInterval)
 
-        sampleIndex += 1
-        var a = activity
-        a.removeFirst()
-        a.append(ActivityPoint(id: sampleIndex, time: 0, ballSpeed: smoothedBall, notchRate: smoothedNotch))
-        // Re-time so the newest sample sits at 0 and older ones are negative seconds.
-        let count = a.count
-        activity = a.enumerated().map { i, p in
-            ActivityPoint(id: p.id, time: Double(i - count + 1) / Self.sampleRate, ballSpeed: p.ballSpeed, notchRate: p.notchRate)
-        }
-        liveBallSpeed = smoothedBall
-        if smoothedNotch > 0 { ringAngle += smoothedNotch * 9 / Self.sampleRate }
-        if smoothedBall > 0 { ballPhase += smoothedBall * 1.4 / Self.sampleRate }
-        liveNotchRate = smoothedNotch
         if s.pressed != pressed { pressed = s.pressed }
-        if s.totals != totals { totals = s.totals }
+        // Totals tick up with every click and scroll; the tiles don't need more than a few updates a second.
+        if s.totals != totals, now - lastTotalsPublish > 0.25 { lastTotalsPublish = now; totals = s.totals }
 
-        saveCounter += 1
-        if saveCounter % 300 == 0 { saveTotals() }
-        if saveCounter % Int(Self.sampleRate) == 0 {
+        if now - lastSave > 10 { lastSave = now; saveTotals() }
+        if now - lastDelightTick >= 1 {
+            lastDelightTick = now
             delight.tick(totals: s.totals, peaks: engine.telemetry.takePeaks())
         }
     }

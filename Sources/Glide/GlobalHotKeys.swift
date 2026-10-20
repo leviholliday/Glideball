@@ -100,15 +100,26 @@ final class GlobalHotKeys {
         return UInt32(m)
     }
 
+    private static var systemHotKeyCache: (at: CFAbsoluteTime, keys: [[String: Any]])?
+
+    /// macOS's own shortcut table, read at most every few seconds (the Overview asks on every redraw).
+    private static func systemHotKeys() -> [[String: Any]]? {
+        let now = CFAbsoluteTimeGetCurrent()
+        if let cache = systemHotKeyCache, now - cache.at < 5 { return cache.keys }
+        typealias Copy = @convention(c) (UnsafeMutablePointer<Unmanaged<CFArray>?>) -> OSStatus
+        // Not in the public headers, but exported by Carbon (which Glide links).
+        guard let sym = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "CopySymbolicHotKeys") else { return nil }
+        var out: Unmanaged<CFArray>?
+        guard unsafeBitCast(sym, to: Copy.self)(&out) == noErr,
+              let keys = out?.takeRetainedValue() as? [[String: Any]] else { return nil }
+        systemHotKeyCache = (now, keys)
+        return keys
+    }
+
     /// Whether one of macOS's own shortcuts (System Settings › Keyboard ›
     /// Keyboard Shortcuts) is the same — macOS then gets it first.
     static func systemUses(_ s: KeyShortcut) -> Bool {
-        typealias Copy = @convention(c) (UnsafeMutablePointer<Unmanaged<CFArray>?>) -> OSStatus
-        // Not in the public headers, but exported by Carbon (which Glide links).
-        guard let sym = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "CopySymbolicHotKeys") else { return false }
-        var out: Unmanaged<CFArray>?
-        guard unsafeBitCast(sym, to: Copy.self)(&out) == noErr,
-              let hotKeys = out?.takeRetainedValue() as? [[String: Any]] else { return false }
+        guard let hotKeys = systemHotKeys() else { return false }
         let mask = UInt32(cmdKey | optionKey | controlKey | shiftKey)
         let mods = carbonModifiers(s.flags)
         return hotKeys.contains { h in

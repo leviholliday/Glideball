@@ -200,9 +200,14 @@ struct GlideBackground: View {
             Color(red: 0.70, green: 0.82, blue: 1.00), Color(red: 0.95, green: 0.80, blue: 0.95), Color(red: 0.72, green: 0.94, blue: 0.90),
             Color(red: 0.88, green: 0.90, blue: 1.00), Color(red: 1.00, green: 0.86, blue: 0.86), Color(red: 0.84, green: 0.92, blue: 1.00),
         ]
-        // The centre point drifts slowly. 20 fps is indistinguishable for motion
-        // this slow and keeps the glass on top from re-rendering 120 times a second.
-        TimelineView(.animation(minimumInterval: 1.0 / 20)) { context in
+        // The centre point drifts slowly, so a few frames a second look the same as many,
+        // and every redraw re-renders the glass on top. How many follows the Performance
+        // setting; when the window isn't the one in use (or it's off) the drift just holds still.
+        let model = AppModel.shared
+        let fps = model.windowVisible
+            ? model.performance.backgroundFPS(windowIsKey: model.windowIsKey, deviceConnected: model.status.deviceConnected)
+            : 0
+        TimelineView(.animation(minimumInterval: 1 / max(fps, 1), paused: fps == 0)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
             let phase = (sin(t * .pi / 9) + 1) / 2          // 0…1 and back every 18 s
             let x = Float(0.38 + 0.24 * phase), y = Float(0.6 - 0.18 * phase)

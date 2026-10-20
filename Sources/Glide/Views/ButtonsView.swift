@@ -13,9 +13,7 @@ struct ButtonsView: View {
         AssignPanel(model: model)
         HStack(alignment: .top, spacing: 18) {
             GlassCard {
-                TrackballView(pressed: model.pressed, ballSpeed: model.liveBallSpeed,
-                              notchRate: model.liveNotchRate, ringAngle: model.ringAngle,
-                              ballPhase: model.ballPhase)
+                TrackballView(feed: model.live, pressed: model.pressed)
                 Text("Press a button on your trackball — its row lights up.")
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)

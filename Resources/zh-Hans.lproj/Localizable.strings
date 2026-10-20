@@ -1463,3 +1463,12 @@
 
 /* ---- Fast-spin reach ---- */
 "Fast-spin reach" = "快速转动的距离";
+
+/* ---- Performance ---- */
+"Performance" = "性能";
+"Smoothest" = "最流畅";
+"Efficient" = "高效";
+"Minimal" = "最少";
+"The window animates at full rate. Uses the most CPU while it's open." = "窗口以全帧率动画。窗口打开时占用的 CPU 最多。";
+"Easy on your CPU: the window animates less when it isn't in front, and holds still when nothing moves." = "对 CPU 更友好：窗口不在前台时动画会减少，没有动静时保持静止。";
+"The window updates only a few times a second and its background holds still. Scrolling and buttons are never affected." = "窗口每秒只更新几次，背景保持静止。滚动和按键永远不受影响。";

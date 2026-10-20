@@ -306,11 +306,8 @@ struct WelcomeTourView: View {
 
     private var buttonsPage: some View {
         HStack(alignment: .center, spacing: 26) {
-            TrackballView(pressed: model.pressed, ballSpeed: model.liveBallSpeed,
-                          notchRate: model.liveNotchRate, ringAngle: model.ringAngle,
-                          ballPhase: model.ballPhase)
+            TrackballView(feed: model.live, pressed: model.pressed)
                 .frame(width: 230)
-                .animation(.linear(duration: 1 / AppModel.sampleRate), value: model.ringAngle)
 
             VStack(alignment: .leading, spacing: 10) {
                 header("hand.tap", "Meet your buttons", "Press each button on your trackball.")

@@ -19,10 +19,14 @@ struct ScrollSettingsView: View {
                     case .native:
                         EmptyView()
                     case .flywheel:
-                        FlywheelCurveCard(config: model.config, liveRate: model.liveNotchRate)
+                        LiveTimeline(feed: model.live, maxFPS: 20) { feed, _ in
+                            FlywheelCurveCard(config: model.config, liveRate: feed.notchRate)
+                        }
                     case .follow:
                         ThrowCard(config: model.config)
-                        SpinCurveCard(config: model.config, liveRate: model.liveNotchRate)
+                        LiveTimeline(feed: model.live, maxFPS: 20) { feed, _ in
+                            SpinCurveCard(config: model.config, liveRate: feed.notchRate)
+                        }
                     }
                     TryItCard()
                 }

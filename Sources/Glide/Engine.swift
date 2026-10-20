@@ -163,6 +163,7 @@ final class Engine {
             self.betaProgram = on
             self.deviceSupported = self.devices.mapValues { $0.isSupported(beta: on) }
             self.lastActiveIsKensington = false   // re-learned from the next raw input
+            self.syncTap()
             self.pointer.devicesChanged()
             self.applyPointer()
             self.publish()
@@ -315,7 +316,7 @@ final class Engine {
     private func maintain() {
         if hid == nil { startListening() }
         if tap == nil { installTap() }
-        if let tap, !CGEvent.tapIsEnabled(tap: tap) { CGEvent.tapEnable(tap: tap, enable: true) }
+        syncTap()   // also re-enables it if macOS ever switched it off while a trackball is connected
         applyPointer()
         diagnostics.flush()
         publish()
@@ -408,6 +409,7 @@ final class Engine {
                 RunLoop.current.add(t, forMode: .common)
             }
         }
+        syncTap()
         publish()
     }
 
@@ -419,6 +421,7 @@ final class Engine {
         }
         devices[Self.key(device)] = nil
         deviceSupported[Self.key(device)] = nil
+        syncTap()
         publish()
     }
 
@@ -500,6 +503,16 @@ final class Engine {
         CFRunLoopAddSource(runLoop, source, .commonModes)
         CGEvent.tapEnable(tap: tap, enable: true)
         self.tap = tap
+        syncTap()
+    }
+
+    /// The tap only matters while a supported trackball is plugged in. Without one it
+    /// would just inspect every click and scroll of the other mice and the trackpad for
+    /// nothing, so it's switched off (and back on the moment a trackball appears).
+    private func syncTap() {
+        guard let tap else { return }
+        let wanted = deviceSupported.values.contains(true)
+        if CGEvent.tapIsEnabled(tap: tap) != wanted { CGEvent.tapEnable(tap: tap, enable: wanted) }
     }
 
     /// The device that produced the most recent raw input. Without Input
@@ -538,7 +551,7 @@ final class Engine {
         let pass = Unmanaged.passUnretained(event)
         switch type {
         case .tapDisabledByTimeout, .tapDisabledByUserInput:
-            if let tap { CGEvent.tapEnable(tap: tap, enable: true) }
+            syncTap()
             if let moveTap { CGEvent.tapEnable(tap: moveTap, enable: true) }
             return pass
         case _ where event.getIntegerValueField(.eventSourceUserData) == Self.syntheticTag:

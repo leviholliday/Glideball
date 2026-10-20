@@ -8,11 +8,8 @@ struct OverviewView: View {
         VStack(spacing: 18) {
             HStack(alignment: .top, spacing: 18) {
                 GlassCard {
-                    TrackballView(pressed: model.pressed, ballSpeed: model.liveBallSpeed,
-                                  notchRate: model.liveNotchRate, ringAngle: model.ringAngle,
-                                  ballPhase: model.ballPhase)
+                    TrackballView(feed: model.live, pressed: model.pressed)
                         .frame(maxWidth: .infinity)
-                        .animation(.linear(duration: 1 / AppModel.sampleRate), value: model.ringAngle)
                     deviceCaption
                         .frame(maxWidth: .infinity)
                 }
@@ -49,6 +46,8 @@ struct OverviewView: View {
                           symbol: "menubar.rectangle", isOn: $model.menuBarIcon)
                 Divider().opacity(0.4)
                 LanguageRow()
+                Divider().opacity(0.4)
+                PerformanceRow(model: model)
                 Divider().opacity(0.4)
                 UpdatesRow(updates: model.updates)
                 Divider().opacity(0.4)
@@ -236,19 +235,22 @@ struct ActivityChartCard: View {
 
     var body: some View {
         GlassCard(title: "Live activity", symbol: "waveform.path.ecg") {
-            VStack(alignment: .leading, spacing: 4) {
-                legend("Ball speed", color: .cyan,
-                       value: String(localized: "\(model.liveBallSpeed.formatted(.number.precision(.fractionLength(1)))) in/s",
-                                     comment: "Ball speed in inches per second"))
-                Sparkline(values: model.activity.map(\.ballSpeed), floor: 4, color: .cyan)
-                    .frame(height: 90)
+            // Redrawn on its own timeline while something moves; the screen around it never is.
+            LiveTimeline(feed: model.live, maxFPS: 30) { feed, _ in
+                VStack(alignment: .leading, spacing: 4) {
+                    legend("Ball speed", color: .cyan,
+                           value: String(localized: "\(feed.ballSpeed.formatted(.number.precision(.fractionLength(1)))) in/s",
+                                         comment: "Ball speed in inches per second"))
+                    Sparkline(values: feed.ballHistory, floor: 4, color: .cyan)
+                        .frame(height: 90)
 
-                legend("Scroll ring", color: .pink,
-                       value: String(localized: "\(model.liveNotchRate.formatted(.number.precision(.fractionLength(0)))) notches/s",
-                                     comment: "Scroll ring speed: ring notches (ticks) per second"))
-                    .padding(.top, 8)
-                Sparkline(values: model.activity.map(\.notchRate), floor: 10, color: .pink)
-                    .frame(height: 70)
+                    legend("Scroll ring", color: .pink,
+                           value: String(localized: "\(feed.notchRate.formatted(.number.precision(.fractionLength(0)))) notches/s",
+                                         comment: "Scroll ring speed: ring notches (ticks) per second"))
+                        .padding(.top, 8)
+                    Sparkline(values: feed.notchHistory, floor: 10, color: .pink)
+                        .frame(height: 70)
+                }
             }
         }
     }
@@ -305,6 +307,41 @@ struct Sparkline: View {
                 Gradient(colors: [color.opacity(0.55), color.opacity(0.02)]),
                 startPoint: .zero, endPoint: CGPoint(x: 0, y: size.height)))
             context.stroke(line, with: .color(color), style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+        }
+    }
+}
+
+/// How much the window animates: Smoothest, Efficient (the default) or Minimal.
+struct PerformanceRow: View {
+    @Bindable var model: AppModel
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "gauge.with.dots.needle.33percent")
+                .font(.system(size: 14, weight: .medium))
+                .frame(width: 22)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Performance").font(.system(size: 14, weight: .medium))
+                Text(detail).font(.system(size: 11)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer()
+            Picker("Performance", selection: $model.performance) {
+                ForEach(PerformanceMode.allCases) { mode in
+                    Text(verbatim: mode.title).tag(mode)
+                }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .fixedSize()
+        }
+    }
+
+    private var detail: LocalizedStringKey {
+        switch model.performance {
+        case .smooth: "The window animates at full rate. Uses the most CPU while it's open."
+        case .efficient: "Easy on your CPU: the window animates less when it isn't in front, and holds still when nothing moves."
+        case .minimal: "The window updates only a few times a second and its background holds still. Scrolling and buttons are never affected."
         }
     }
 }

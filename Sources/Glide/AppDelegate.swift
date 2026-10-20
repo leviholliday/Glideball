@@ -116,19 +116,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             if !w.setFrameUsingName("GlideMain") { w.center() }
             window = w
         }
-        AppModel.shared.startSampling()
         window?.makeKeyAndOrderFront(nil)
         NSApp.activate()
+        reportWindowState()
     }
 
+    /// Tells the model what the window's doing, so it animates only while someone can see it.
+    private func reportWindowState(closing: Bool = false) {
+        guard let w = window else { return }
+        let visible = !closing && w.isVisible && !w.isMiniaturized && w.occlusionState.contains(.visible)
+        AppModel.shared.windowStateChanged(visible: visible, key: visible && w.isKeyWindow)
+    }
+
+    func windowDidBecomeKey(_ notification: Notification) { reportWindowState() }
+    func windowDidResignKey(_ notification: Notification) { reportWindowState() }
+    func windowDidChangeOcclusionState(_ notification: Notification) { reportWindowState() }
+
     func windowWillClose(_ notification: Notification) {
-        AppModel.shared.stopSampling()
+        reportWindowState(closing: true)
         // Closing the window ends the tour (and gives the buttons their mappings back).
         if AppModel.shared.showingWelcomeTour { AppModel.shared.closeWelcomeTour() }
     }
 
-    func windowDidMiniaturize(_ notification: Notification) { AppModel.shared.stopSampling() }
-    func windowDidDeminiaturize(_ notification: Notification) { AppModel.shared.startSampling() }
+    func windowDidMiniaturize(_ notification: Notification) { reportWindowState() }
+    func windowDidDeminiaturize(_ notification: Notification) { reportWindowState() }
 
     /// Shows or hides the menu-bar icon to match the "Menu bar icon" setting.
     func updateStatusItemVisibility() {

@@ -56,11 +56,18 @@ struct ResponseCurveCard: View {
     }
 
     var body: some View {
+        // The live dot follows the ball on its own timeline; nothing else on the page is redrawn for it.
+        LiveTimeline(feed: model.live, maxFPS: 20) { feed, _ in
+            card(liveBall: feed.ballSpeed)
+        }
+    }
+
+    private func card(liveBall: Double) -> some View {
         let speed = model.config.trackingSpeed
         let xs = stride(from: 0.0, through: 6.0, by: 0.1).map { $0 }
         let curve = xs.enumerated().map { P(id: $0, x: $1, y: Self.cursorSpeed(ball: $1, tracking: speed), series: "Glideball") }
         let linear = xs.enumerated().map { P(id: 1000 + $0, x: $1, y: Self.cursorSpeed(ball: $1, tracking: 0), series: "1:1") }
-        let liveX = min(model.liveBallSpeed, 6)
+        let liveX = min(liveBall, 6)
         let liveY = Self.cursorSpeed(ball: liveX, tracking: speed)
         // Fixed scale so a faster setting visibly bends the curve higher.
         let yMax = Self.cursorSpeed(ball: 6, tracking: 6)
@@ -81,7 +88,7 @@ struct ResponseCurveCard: View {
                         .lineStyle(StrokeStyle(lineWidth: 3, lineCap: .round))
                         .interpolationMethod(.monotone)
                 }
-                if model.liveBallSpeed > 0.02 {
+                if liveBall > 0.02 {
                     PointMark(x: .value("Ball", liveX), y: .value("Cursor", liveY))
                         .symbolSize(180)
                         .foregroundStyle(.white)

@@ -3,6 +3,19 @@ import SwiftUI
 /// Live illustration of the Expert Mouse: the scroll ring turns as you spin it,
 /// the ball's highlight drifts while it rolls, and buttons glow when pressed.
 struct TrackballView: View {
+    let feed: LiveFeed
+    let pressed: Set<Int>
+
+    var body: some View {
+        // Redrawn on its own timeline while the ring or ball moves; still when nothing does.
+        LiveTimeline(feed: feed) { f, now in
+            TrackballArt(pressed: pressed, ballSpeed: f.ballSpeed, notchRate: f.notchRate,
+                         ringAngle: f.ringAngle(at: now), ballPhase: f.ballPhase(at: now))
+        }
+    }
+}
+
+private struct TrackballArt: View {
     let pressed: Set<Int>
     let ballSpeed: Double
     let notchRate: Double

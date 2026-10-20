@@ -1463,3 +1463,12 @@
 
 /* ---- Fast-spin reach ---- */
 "Fast-spin reach" = "빠른 회전 도달 거리";
+
+/* ---- Performance ---- */
+"Performance" = "성능";
+"Smoothest" = "가장 부드럽게";
+"Efficient" = "효율적";
+"Minimal" = "최소";
+"The window animates at full rate. Uses the most CPU while it's open." = "창을 최대 프레임으로 애니메이션해요. 창이 열려 있는 동안 CPU를 가장 많이 써요.";
+"Easy on your CPU: the window animates less when it isn't in front, and holds still when nothing moves." = "CPU 부담이 적어요. 창이 앞에 있지 않으면 애니메이션을 줄이고, 움직임이 없으면 멈춰 있어요.";
+"The window updates only a few times a second and its background holds still. Scrolling and buttons are never affected." = "창이 초당 몇 번만 갱신되고 배경도 멈춰 있어요. 스크롤과 버튼에는 영향이 없어요.";

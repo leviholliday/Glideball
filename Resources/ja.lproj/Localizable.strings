@@ -1463,3 +1463,12 @@
 
 /* ---- Fast-spin reach ---- */
 "Fast-spin reach" = "高速回転の到達距離";
+
+/* ---- Performance ---- */
+"Performance" = "パフォーマンス";
+"Smoothest" = "最もなめらか";
+"Efficient" = "効率重視";
+"Minimal" = "最小";
+"The window animates at full rate. Uses the most CPU while it's open." = "ウィンドウを最大のフレームレートでアニメーションします。開いている間はCPUを最も多く使います。";
+"Easy on your CPU: the window animates less when it isn't in front, and holds still when nothing moves." = "CPUに優しい設定です。ウィンドウが手前にないときはアニメーションを減らし、動きがないときは静止します。";
+"The window updates only a few times a second and its background holds still. Scrolling and buttons are never affected." = "ウィンドウの更新は1秒に数回だけで、背景も静止します。スクロールやボタンには影響しません。";

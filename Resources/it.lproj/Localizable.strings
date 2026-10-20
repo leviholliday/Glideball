@@ -1463,3 +1463,12 @@
 
 /* ---- Fast-spin reach ---- */
 "Fast-spin reach" = "Portata delle rotazioni veloci";
+
+/* ---- Performance ---- */
+"Performance" = "Prestazioni";
+"Smoothest" = "Massima fluidità";
+"Efficient" = "Efficiente";
+"Minimal" = "Minimo";
+"The window animates at full rate. Uses the most CPU while it's open." = "La finestra si anima alla massima frequenza. È la scelta che usa più CPU mentre è aperta.";
+"Easy on your CPU: the window animates less when it isn't in front, and holds still when nothing moves." = "Leggero per la CPU: la finestra si anima meno quando non è in primo piano e resta ferma quando nulla si muove.";
+"The window updates only a few times a second and its background holds still. Scrolling and buttons are never affected." = "La finestra si aggiorna solo poche volte al secondo e lo sfondo resta fermo. Scorrimento e pulsanti non ne risentono mai.";
