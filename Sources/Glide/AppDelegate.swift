@@ -10,6 +10,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var isExplicitlyQuitting = false
 
     func applicationWillFinishLaunching(_ notification: Notification) {
+        // Hidden from the Dock (and ⌘-Tab) if the user chose that; it's reopened from the menu-bar icon.
+        if !AppModel.showInDockSaved { NSApp.setActivationPolicy(.accessory) }
         // Launched by "Open at Login"? Then start quietly with no window.
         if let event = NSAppleEventManager.shared().currentAppleEvent,
            event.eventID == kAEOpenApplication,
@@ -77,6 +79,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     @objc private func sendFeedback(_ sender: Any?) {
         showWindow()
         AppModel.shared.showingFeedback = true
+    }
+
+    @objc private func showAbout(_ sender: Any?) {
+        showWindow()
+        AppModel.shared.showingAbout = true
     }
 
     @objc private func showWelcomeTour(_ sender: Any?) {
@@ -254,7 +261,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         let appItem = NSMenuItem()
         let appMenu = NSMenu()
-        appMenu.addItem(withTitle: String(localized: "About Glideball"), action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        appMenu.addItem(withTitle: String(localized: "About Glideball"), action: #selector(showAbout), keyEquivalent: "").target = self
         appMenu.addItem(withTitle: String(localized: "Check for Updates…"), action: #selector(checkForUpdates), keyEquivalent: "").target = self
         appMenu.addItem(.separator())
         appMenu.addItem(withTitle: String(localized: "Hide Glideball"), action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
@@ -282,6 +289,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         let helpItem = NSMenuItem()
         let helpMenu = NSMenu(title: String(localized: "Help", comment: "Menu bar title"))
+        helpMenu.addItem(withTitle: String(localized: "About & Help…"), action: #selector(showAbout), keyEquivalent: "").target = self
         helpMenu.addItem(withTitle: String(localized: "Show Welcome Tour…"), action: #selector(showWelcomeTour), keyEquivalent: "").target = self
         helpMenu.addItem(.separator())
         helpMenu.addItem(withTitle: String(localized: "Send Feedback…"), action: #selector(sendFeedback), keyEquivalent: "").target = self

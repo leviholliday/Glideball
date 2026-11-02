@@ -1472,3 +1472,23 @@
 "The window animates at full rate. Uses the most CPU while it's open." = "窗口以全帧率动画。窗口打开时占用的 CPU 最多。";
 "Easy on your CPU: the window animates less when it isn't in front, and holds still when nothing moves." = "对 CPU 更友好：窗口不在前台时动画会减少，没有动静时保持静止。";
 "The window updates only a few times a second and its background holds still. Scrolling and buttons are never affected." = "窗口每秒只更新几次，背景保持静止。滚动和按键永远不受影响。";
+
+/* ---- About & Help, Show in Dock ---- */
+"About & Help" = "关于与帮助";
+"About & Help…" = "关于与帮助…";
+"Copied" = "已拷贝";
+"Handy to include when you report something." = "报告问题时附上会很有帮助。";
+"Links" = "链接";
+"Made for the Kensington Expert Mouse. Glideball is an independent project and isn’t affiliated with Kensington." = "专为 Kensington Expert Mouse 打造。Glideball 是独立项目，与 Kensington 没有关联。";
+"Show in Dock and app switcher" = "在 Dock 和应用切换器中显示";
+"Support info" = "支持信息";
+"Turn off to run purely in the background. Open Glideball again from its menu-bar icon (which then stays on)." = "关闭后只在后台运行。可通过菜单栏图标（此时会保持开启）重新打开 Glideball。";
+"Version %@ (%@)" = "版本 %@（%@）";
+"Send feedback" = "发送反馈";
+"Ideas, bugs and questions go straight to the developer." = "想法、问题和疑问会直接发给开发者。";
+"Welcome tour" = "欢迎导览";
+"A quick walk through what Glideball can do." = "快速了解 Glideball 能做什么。";
+"Website" = "网站";
+"What’s new in each version" = "各版本的新内容";
+"Report a problem on GitHub" = "在 GitHub 上报告问题";
+"Source code (free and open)" = "源代码（免费开源）";

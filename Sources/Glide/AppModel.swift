@@ -47,6 +47,8 @@ final class AppModel {
     var requestedTab: GlideTab?
     /// The Send Feedback sheet over the main window.
     var showingFeedback = false
+    /// The About & Help sheet over the main window.
+    var showingAbout = false
     /// The Welcome Tour over the main window (see WelcomeTour.swift).
     var showingWelcomeTour = false
     /// Try Kensington's other trackballs and prerelease updates. Per-Mac,
@@ -73,6 +75,23 @@ final class AppModel {
         didSet {
             UserDefaults.standard.set(menuBarIcon, forKey: "GlideShowMenuBarIcon")
             (NSApp.delegate as? AppDelegate)?.updateStatusItemVisibility()
+            if !menuBarIcon && !showInDock { showInDock = true }   // never leave Glideball with no way back in
+        }
+    }
+
+    /// Show Glideball in the Dock and the ⌘-Tab switcher. Off = it runs purely in the
+    /// background and is reopened from its menu-bar icon. Per-Mac.
+    static var showInDockSaved: Bool {
+        // Hidden from the Dock needs the menu-bar icon; without it there'd be no way back in.
+        UserDefaults.standard.object(forKey: "GlideShowInDock") as? Bool ?? true || !showMenuBarIcon
+    }
+    var showInDock: Bool = AppModel.showInDockSaved {
+        didSet {
+            guard showInDock != oldValue else { return }
+            UserDefaults.standard.set(showInDock, forKey: "GlideShowInDock")
+            if !showInDock && !menuBarIcon { menuBarIcon = true }
+            NSApp.setActivationPolicy(showInDock ? .regular : .accessory)
+            if showInDock { NSApp.activate() }   // the window stays in front through the switch
         }
     }
 

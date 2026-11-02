@@ -1472,3 +1472,23 @@
 "The window animates at full rate. Uses the most CPU while it's open." = "창을 최대 프레임으로 애니메이션해요. 창이 열려 있는 동안 CPU를 가장 많이 써요.";
 "Easy on your CPU: the window animates less when it isn't in front, and holds still when nothing moves." = "CPU 부담이 적어요. 창이 앞에 있지 않으면 애니메이션을 줄이고, 움직임이 없으면 멈춰 있어요.";
 "The window updates only a few times a second and its background holds still. Scrolling and buttons are never affected." = "창이 초당 몇 번만 갱신되고 배경도 멈춰 있어요. 스크롤과 버튼에는 영향이 없어요.";
+
+/* ---- About & Help, Show in Dock ---- */
+"About & Help" = "정보 및 도움말";
+"About & Help…" = "정보 및 도움말…";
+"Copied" = "복사했어요";
+"Handy to include when you report something." = "문제를 보고할 때 함께 알려 주면 좋아요.";
+"Links" = "링크";
+"Made for the Kensington Expert Mouse. Glideball is an independent project and isn’t affiliated with Kensington." = "Kensington Expert Mouse를 위해 만들었어요. Glideball은 독립 프로젝트이며 Kensington과 관련이 없어요.";
+"Show in Dock and app switcher" = "Dock과 앱 전환기에 표시";
+"Support info" = "지원 정보";
+"Turn off to run purely in the background. Open Glideball again from its menu-bar icon (which then stays on)." = "끄면 백그라운드에서만 실행돼요. 메뉴 막대 아이콘(그대로 켜져 있어요)으로 Glideball을 다시 열 수 있어요.";
+"Version %@ (%@)" = "버전 %@ (%@)";
+"Send feedback" = "의견 보내기";
+"Ideas, bugs and questions go straight to the developer." = "아이디어, 버그, 질문이 개발자에게 바로 전달돼요.";
+"Welcome tour" = "시작 가이드";
+"A quick walk through what Glideball can do." = "Glideball로 할 수 있는 일을 간단히 둘러봐요.";
+"Website" = "웹사이트";
+"What’s new in each version" = "버전별 새로운 기능";
+"Report a problem on GitHub" = "GitHub에서 문제 신고";
+"Source code (free and open)" = "소스 코드(무료, 오픈 소스)";

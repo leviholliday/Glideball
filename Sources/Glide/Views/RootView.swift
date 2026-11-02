@@ -104,6 +104,9 @@ struct RootView: View {
         .sheet(isPresented: $model.showingFeedback) {
             FeedbackView(model: model)
         }
+        .sheet(isPresented: $model.showingAbout) {
+            AboutView(model: model)
+        }
         .onChange(of: model.requestedTab) { _, requested in
             guard let requested else { return }
             select(requested)
@@ -158,6 +161,17 @@ struct RootView: View {
                     .transition(.scale(scale: 0.6).combined(with: .opacity))
             }
             StatusPill(text: .verbatim(statusText), color: statusColor)
+            Button {
+                model.showingAbout = true
+            } label: {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 15, weight: .medium))
+                    .frame(width: 30, height: 30)
+                    .contentShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .glassEffect(.regular.interactive(), in: .circle)
+            .help("About & Help")
             Toggle("", isOn: $model.config.enabled)
                 .toggleStyle(.switch)
                 .labelsHidden()

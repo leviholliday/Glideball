@@ -45,6 +45,10 @@ struct OverviewView: View {
                           subtitle: "Quick access to pause, precision and updates. Glideball keeps running either way — reopen it from the Dock.",
                           symbol: "menubar.rectangle", isOn: $model.menuBarIcon)
                 Divider().opacity(0.4)
+                ToggleRow(title: "Show in Dock and app switcher",
+                          subtitle: "Turn off to run purely in the background. Open Glideball again from its menu-bar icon (which then stays on).",
+                          symbol: "dock.rectangle", isOn: $model.showInDock)
+                Divider().opacity(0.4)
                 LanguageRow()
                 Divider().opacity(0.4)
                 PerformanceRow(model: model)

@@ -1472,3 +1472,23 @@
 "The window animates at full rate. Uses the most CPU while it's open." = "Das Fenster animiert mit voller Bildrate. Das braucht am meisten CPU, solange es geöffnet ist.";
 "Easy on your CPU: the window animates less when it isn't in front, and holds still when nothing moves." = "Schont deine CPU: Das Fenster animiert weniger, wenn es nicht im Vordergrund ist, und steht still, wenn sich nichts bewegt.";
 "The window updates only a few times a second and its background holds still. Scrolling and buttons are never affected." = "Das Fenster aktualisiert sich nur wenige Male pro Sekunde, und sein Hintergrund steht still. Scrollen und Tasten sind nie betroffen.";
+
+/* ---- About & Help, Show in Dock ---- */
+"About & Help" = "Info & Hilfe";
+"About & Help…" = "Info & Hilfe …";
+"Copied" = "Kopiert";
+"Handy to include when you report something." = "Praktisch, wenn du ein Problem meldest.";
+"Links" = "Links";
+"Made for the Kensington Expert Mouse. Glideball is an independent project and isn’t affiliated with Kensington." = "Gemacht für die Kensington Expert Mouse. Glideball ist ein unabhängiges Projekt und nicht mit Kensington verbunden.";
+"Show in Dock and app switcher" = "Im Dock und App-Umschalter anzeigen";
+"Support info" = "Support-Infos";
+"Turn off to run purely in the background. Open Glideball again from its menu-bar icon (which then stays on)." = "Ausschalten, um nur im Hintergrund zu laufen. Öffne Glideball dann über das Symbol in der Menüleiste (das dann eingeschaltet bleibt).";
+"Version %@ (%@)" = "Version %@ (%@)";
+"Send feedback" = "Feedback senden";
+"Ideas, bugs and questions go straight to the developer." = "Ideen, Fehler und Fragen gehen direkt an den Entwickler.";
+"Welcome tour" = "Willkommenstour";
+"A quick walk through what Glideball can do." = "Ein kurzer Rundgang durch alles, was Glideball kann.";
+"Website" = "Website";
+"What’s new in each version" = "Neuigkeiten zu jeder Version";
+"Report a problem on GitHub" = "Problem auf GitHub melden";
+"Source code (free and open)" = "Quellcode (frei und offen)";

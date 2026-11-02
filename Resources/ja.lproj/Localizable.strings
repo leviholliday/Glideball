@@ -1472,3 +1472,23 @@
 "The window animates at full rate. Uses the most CPU while it's open." = "ウィンドウを最大のフレームレートでアニメーションします。開いている間はCPUを最も多く使います。";
 "Easy on your CPU: the window animates less when it isn't in front, and holds still when nothing moves." = "CPUに優しい設定です。ウィンドウが手前にないときはアニメーションを減らし、動きがないときは静止します。";
 "The window updates only a few times a second and its background holds still. Scrolling and buttons are never affected." = "ウィンドウの更新は1秒に数回だけで、背景も静止します。スクロールやボタンには影響しません。";
+
+/* ---- About & Help, Show in Dock ---- */
+"About & Help" = "情報とヘルプ";
+"About & Help…" = "情報とヘルプ…";
+"Copied" = "コピーしました";
+"Handy to include when you report something." = "問題を報告するときに添えると便利です。";
+"Links" = "リンク";
+"Made for the Kensington Expert Mouse. Glideball is an independent project and isn’t affiliated with Kensington." = "Kensington Expert Mouse のために作られました。Glideball は独立したプロジェクトで、Kensington とは提携していません。";
+"Show in Dock and app switcher" = "Dock とアプリスイッチャーに表示";
+"Support info" = "サポート情報";
+"Turn off to run purely in the background. Open Glideball again from its menu-bar icon (which then stays on)." = "オフにするとバックグラウンドだけで動作します。メニューバーのアイコン（そのままオンになります）から Glideball を開き直せます。";
+"Version %@ (%@)" = "バージョン %@（%@）";
+"Send feedback" = "フィードバックを送信";
+"Ideas, bugs and questions go straight to the developer." = "アイデア、不具合、質問は開発者に直接届きます。";
+"Welcome tour" = "ウェルカムツアー";
+"A quick walk through what Glideball can do." = "Glideball でできることをざっと紹介します。";
+"Website" = "Webサイト";
+"What’s new in each version" = "各バージョンの新機能";
+"Report a problem on GitHub" = "GitHubで問題を報告";
+"Source code (free and open)" = "ソースコード（無料・オープン）";

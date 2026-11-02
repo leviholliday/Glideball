@@ -1472,3 +1472,23 @@
 "The window animates at full rate. Uses the most CPU while it's open." = "A janela se anima na taxa máxima. É o que mais usa a CPU enquanto está aberta.";
 "Easy on your CPU: the window animates less when it isn't in front, and holds still when nothing moves." = "Poupa a CPU: a janela se anima menos quando não está na frente e fica parada quando nada se move.";
 "The window updates only a few times a second and its background holds still. Scrolling and buttons are never affected." = "A janela se atualiza só algumas vezes por segundo e o fundo fica parado. A rolagem e os botões nunca são afetados.";
+
+/* ---- About & Help, Show in Dock ---- */
+"About & Help" = "Sobre e ajuda";
+"About & Help…" = "Sobre e ajuda…";
+"Copied" = "Copiado";
+"Handy to include when you report something." = "Útil para incluir ao relatar um problema.";
+"Links" = "Links";
+"Made for the Kensington Expert Mouse. Glideball is an independent project and isn’t affiliated with Kensington." = "Feito para o Kensington Expert Mouse. O Glideball é um projeto independente e não é afiliado à Kensington.";
+"Show in Dock and app switcher" = "Mostrar no Dock e no seletor de apps";
+"Support info" = "Informações de suporte";
+"Turn off to run purely in the background. Open Glideball again from its menu-bar icon (which then stays on)." = "Desative para rodar só em segundo plano. Abra o Glideball de novo pelo ícone na barra de menus (que então continua ativo).";
+"Version %@ (%@)" = "Versão %@ (%@)";
+"Send feedback" = "Enviar feedback";
+"Ideas, bugs and questions go straight to the developer." = "Ideias, bugs e perguntas vão direto para o desenvolvedor.";
+"Welcome tour" = "Tour de boas-vindas";
+"A quick walk through what Glideball can do." = "Um passeio rápido pelo que o Glideball pode fazer.";
+"Website" = "Site";
+"What’s new in each version" = "Novidades de cada versão";
+"Report a problem on GitHub" = "Relatar um problema no GitHub";
+"Source code (free and open)" = "Código-fonte (livre e aberto)";

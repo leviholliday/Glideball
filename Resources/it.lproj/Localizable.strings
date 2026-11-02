@@ -1472,3 +1472,23 @@
 "The window animates at full rate. Uses the most CPU while it's open." = "La finestra si anima alla massima frequenza. È la scelta che usa più CPU mentre è aperta.";
 "Easy on your CPU: the window animates less when it isn't in front, and holds still when nothing moves." = "Leggero per la CPU: la finestra si anima meno quando non è in primo piano e resta ferma quando nulla si muove.";
 "The window updates only a few times a second and its background holds still. Scrolling and buttons are never affected." = "La finestra si aggiorna solo poche volte al secondo e lo sfondo resta fermo. Scorrimento e pulsanti non ne risentono mai.";
+
+/* ---- About & Help, Show in Dock ---- */
+"About & Help" = "Info e aiuto";
+"About & Help…" = "Info e aiuto…";
+"Copied" = "Copiato";
+"Handy to include when you report something." = "Utile da includere quando segnali un problema.";
+"Links" = "Link";
+"Made for the Kensington Expert Mouse. Glideball is an independent project and isn’t affiliated with Kensington." = "Creato per il Kensington Expert Mouse. Glideball è un progetto indipendente e non è affiliato a Kensington.";
+"Show in Dock and app switcher" = "Mostra nel Dock e nel selettore app";
+"Support info" = "Info per l’assistenza";
+"Turn off to run purely in the background. Open Glideball again from its menu-bar icon (which then stays on)." = "Disattiva per usarlo solo in background. Riapri Glideball dall’icona nella barra dei menu (che resta attiva).";
+"Version %@ (%@)" = "Versione %@ (%@)";
+"Send feedback" = "Invia feedback";
+"Ideas, bugs and questions go straight to the developer." = "Idee, bug e domande arrivano direttamente allo sviluppatore.";
+"Welcome tour" = "Tour di benvenuto";
+"A quick walk through what Glideball can do." = "Una breve panoramica di ciò che sa fare Glideball.";
+"Website" = "Sito web";
+"What’s new in each version" = "Novità di ogni versione";
+"Report a problem on GitHub" = "Segnala un problema su GitHub";
+"Source code (free and open)" = "Codice sorgente (libero e aperto)";

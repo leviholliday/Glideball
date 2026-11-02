@@ -1472,3 +1472,23 @@
 "The window animates at full rate. Uses the most CPU while it's open." = "La fenêtre s’anime à pleine cadence. C’est ce qui sollicite le plus le processeur quand elle est ouverte.";
 "Easy on your CPU: the window animates less when it isn't in front, and holds still when nothing moves." = "Ménage votre processeur : la fenêtre s’anime moins quand elle n’est pas au premier plan et reste immobile quand rien ne bouge.";
 "The window updates only a few times a second and its background holds still. Scrolling and buttons are never affected." = "La fenêtre ne se met à jour que quelques fois par seconde et son arrière-plan reste immobile. Le défilement et les boutons ne sont jamais affectés.";
+
+/* ---- About & Help, Show in Dock ---- */
+"About & Help" = "À propos et aide";
+"About & Help…" = "À propos et aide…";
+"Copied" = "Copié";
+"Handy to include when you report something." = "Utile à joindre quand vous signalez un problème.";
+"Links" = "Liens";
+"Made for the Kensington Expert Mouse. Glideball is an independent project and isn’t affiliated with Kensington." = "Conçu pour le Kensington Expert Mouse. Glideball est un projet indépendant, sans lien avec Kensington.";
+"Show in Dock and app switcher" = "Afficher dans le Dock et le sélecteur d’apps";
+"Support info" = "Informations d’assistance";
+"Turn off to run purely in the background. Open Glideball again from its menu-bar icon (which then stays on)." = "Désactivez pour qu’il tourne uniquement en arrière-plan. Rouvrez Glideball depuis son icône de la barre des menus (qui reste alors activée).";
+"Version %@ (%@)" = "Version %@ (%@)";
+"Send feedback" = "Envoyer un commentaire";
+"Ideas, bugs and questions go straight to the developer." = "Idées, bugs et questions arrivent directement au développeur.";
+"Welcome tour" = "Visite de bienvenue";
+"A quick walk through what Glideball can do." = "Un petit tour de ce que Glideball sait faire.";
+"Website" = "Site web";
+"What’s new in each version" = "Nouveautés de chaque version";
+"Report a problem on GitHub" = "Signaler un problème sur GitHub";
+"Source code (free and open)" = "Code source (libre et ouvert)";
