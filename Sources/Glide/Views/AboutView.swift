@@ -13,6 +13,7 @@ struct AboutView: View {
     private static let issues = URL(string: "https://github.com/leviholliday/glideball/issues")!
     private static let source = URL(string: "https://github.com/leviholliday/glideball")!
     static let contactEmail = "glideball@proton.me"
+    private static let gravatar = URL(string: "https://gravatar.com/optimistic1bba948d22")!
 
     var body: some View {
         ZStack {
@@ -42,6 +43,8 @@ struct AboutView: View {
                             linkRow("exclamationmark.bubble", "Report a problem on GitHub", Self.issues)
                             Divider().opacity(0.4)
                             linkRow("chevron.left.forwardslash.chevron.right", "Source code (free and open)", Self.source)
+                            Divider().opacity(0.4)
+                            linkRow("person.crop.circle", "Gravatar profile", Self.gravatar)
                         }
                         GlassCard(title: "Support info", symbol: "info.circle") {
                             Text(supportInfo)

@@ -1496,3 +1496,5 @@
 /* ---- Contact email ---- */
 "Email" = "电子邮件";
 "Opens a new email with your version info already filled in" = "打开一封已填好版本信息的新邮件";
+
+"Gravatar profile" = "Gravatar 个人资料";

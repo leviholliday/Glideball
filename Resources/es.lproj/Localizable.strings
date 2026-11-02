@@ -1496,3 +1496,5 @@
 /* ---- Contact email ---- */
 "Email" = "Correo";
 "Opens a new email with your version info already filled in" = "Abre un correo nuevo con la información de tu versión ya incluida";
+
+"Gravatar profile" = "Perfil de Gravatar";

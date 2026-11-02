@@ -1496,3 +1496,5 @@
 /* ---- Contact email ---- */
 "Email" = "メール";
 "Opens a new email with your version info already filled in" = "バージョン情報を入力済みの新規メールを開きます";
+
+"Gravatar profile" = "Gravatar プロフィール";

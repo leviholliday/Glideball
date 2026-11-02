@@ -1496,3 +1496,5 @@
 /* ---- Contact email ---- */
 "Email" = "이메일";
 "Opens a new email with your version info already filled in" = "버전 정보가 미리 채워진 새 이메일을 열어요";
+
+"Gravatar profile" = "Gravatar 프로필";
