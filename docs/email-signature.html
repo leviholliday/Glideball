@@ -5,19 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Glideball Email Signature</title>
 <style>
-  /* This page only — the signatures below use inline styles, which is what mail apps keep. */
-  :root { color-scheme: light dark; }
+  /* This page only. The signature itself lives in the <template> below and uses inline
+     styles, which is what mail apps keep. */
   body { margin: 0; padding: 40px 20px 60px; background: #f4f3f8; color: #1b1736;
          font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-  main { max-width: 640px; margin: 0 auto; }
+  main { max-width: 760px; margin: 0 auto; }
   h1 { font-size: 24px; margin: 0 0 6px; }
-  h2 { font-size: 15px; margin: 34px 0 12px; text-transform: uppercase; letter-spacing: .06em; color: #6b6590; }
+  h2 { font-size: 14px; margin: 34px 0 12px; text-transform: uppercase; letter-spacing: .06em; color: #6b6590; }
   p.lead { margin: 0 0 8px; color: #57527a; }
-  .stage { padding: 28px 24px; border-radius: 14px; }
-  .stage.dark { background: #05040d; }
-  .stage.light { background: #ffffff; border: 1px solid #e4e1ef; }
-  .row { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
-  button { font: 600 14px/1 inherit; font-family: inherit; padding: 10px 16px; border-radius: 10px; border: 0;
+  /* A pretend email, so the line can show off its full width. */
+  .mail { background: #fff; border: 1px solid #e4e1ef; border-radius: 12px; padding: 22px 24px 28px; }
+  .mail .body { color: #3a3650; font-size: 14px; margin: 0 0 14px; }
+  .row { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+  button { font: 600 14px/1 inherit; font-family: inherit; padding: 11px 18px; border-radius: 10px; border: 0;
            background: #5b3fd1; color: #fff; cursor: pointer; }
   button:hover { background: #4b31bd; }
   .done { color: #2f9e62; font-weight: 600; font-size: 14px; opacity: 0; transition: opacity .2s; }
@@ -26,147 +26,96 @@
   li { margin: 6px 0; }
   code { font: 13px ui-monospace, Menlo, monospace; background: #e9e6f5; padding: 1px 6px; border-radius: 6px; }
   pre { background: #e9e6f5; padding: 14px 16px; border-radius: 10px; font: 13px/1.6 ui-monospace, Menlo, monospace; white-space: pre-wrap; }
-  @media (prefers-color-scheme: dark) {
-    body { background: #12101f; color: #ece9ff; }
-    p.lead, ol { color: #b9b3dc; }
-    h2 { color: #9a93c4; }
-    .stage.light { border-color: #2a2546; }
-    code, pre { background: #221d3c; }
-  }
 </style>
 </head>
 <body>
 <main>
   <h1>Glideball email signature</h1>
-  <p class="lead">Two versions of the same card. Dark matches your mock-up; Light is easier on the eyes for people who read mail in light mode (most of them). Pick one, press Copy, and paste it into Proton Mail.</p>
+  <p class="lead">Laid out like your Gravatar signature: a thin line across the whole email, then a light card with a gradient bar along its bottom edge.</p>
 
-  <!-- ======================= DARK ======================= -->
-  <h2>Dark</h2>
-  <div class="stage dark">
-    <div id="sig-dark">
-<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="width:100%;border-collapse:collapse;">
-  <tr>
-    <td height="2" bgcolor="#8b5cf6" style="height:2px;line-height:2px;font-size:2px;padding:0;background-color:#8b5cf6;background-image:linear-gradient(90deg,#22d3ee 0%,#8b5cf6 50%,#ec4899 100%);">&nbsp;</td>
-  </tr>
-  <tr>
-    <td height="18" style="height:18px;line-height:18px;font-size:18px;padding:0;">&nbsp;</td>
-  </tr>
-</table>
-<table cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:separate;width:100%;max-width:480px;background-color:#0d0b1f;border:1px solid #2a2550;border-radius:18px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-  <tr>
-    <td style="padding:22px 24px 18px 24px;">
-      <table cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;">
-        <tr>
-          <td valign="middle" width="76" style="width:76px;padding:0 18px 0 0;">
-            <a href="https://glideball.netlify.app" style="text-decoration:none;"><img src="https://glideball.netlify.app/assets/icon-256.png" width="76" height="76" alt="Glideball" style="display:block;width:76px;height:76px;border:0;border-radius:17px;"></a>
-          </td>
-          <td valign="middle" style="padding:0;">
-            <div style="font-size:21px;line-height:26px;font-weight:700;color:#f7f5ff;letter-spacing:-0.2px;">Levi Holliday</div>
-            <div style="font-size:14px;line-height:20px;font-weight:600;color:#b9a8ff;padding-top:2px;">Developer of Glideball</div>
-            <div style="font-size:13px;line-height:19px;color:#9b96bd;padding-top:5px;">Making the Kensington Expert Mouse even better.</div>
-          </td>
-        </tr>
-      </table>
-    </td>
-  </tr>
-  <tr>
-    <td style="padding:0 24px;"><div style="height:1px;line-height:1px;font-size:1px;background-color:#2a2550;">&nbsp;</div></td>
-  </tr>
-  <tr>
-    <td style="padding:14px 24px 18px 24px;font-size:13px;line-height:18px;">
-      <a href="mailto:glideball@proton.me" style="color:#8be9f7;text-decoration:none;font-weight:600;">glideball@proton.me</a><span style="color:#4a4478;">&nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;</span><a href="https://glideball.netlify.app" style="color:#8be9f7;text-decoration:none;font-weight:600;">Website</a><span style="color:#4a4478;">&nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;</span><a href="https://github.com/leviholliday/glideball" style="color:#8be9f7;text-decoration:none;font-weight:600;">GitHub</a>
-    </td>
-  </tr>
-  <tr>
-    <td height="5" bgcolor="#8b5cf6" style="padding:0;height:5px;line-height:5px;font-size:5px;border-radius:0 0 17px 17px;background-color:#8b5cf6;background-image:linear-gradient(90deg,#22d3ee 0%,#8b5cf6 50%,#ec4899 100%);">&nbsp;</td>
-  </tr>
-</table>
-    </div>
+  <h2>Preview in an email</h2>
+  <div class="mail">
+    <p class="body">Hi Rob,<br><br>Thanks for the suggestion…<br><br>Levi</p>
+    <div id="preview"></div>
   </div>
-  <div class="row"><button data-copy="sig-dark">Copy dark signature</button><span class="done" id="done-sig-dark">Copied — now paste it into Proton</span></div>
+  <div class="row"><button id="copy">Copy signature</button><span class="done" id="done">Copied. Now paste it into Proton</span></div>
 
-  <!-- ======================= LIGHT ======================= -->
-  <h2>Light</h2>
-  <div class="stage light">
-    <div id="sig-light">
-<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="width:100%;border-collapse:collapse;">
-  <tr>
-    <td height="2" bgcolor="#8b5cf6" style="height:2px;line-height:2px;font-size:2px;padding:0;background-color:#8b5cf6;background-image:linear-gradient(90deg,#22d3ee 0%,#8b5cf6 50%,#ec4899 100%);">&nbsp;</td>
-  </tr>
-  <tr>
-    <td height="18" style="height:18px;line-height:18px;font-size:18px;padding:0;">&nbsp;</td>
-  </tr>
-</table>
-<table cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:separate;width:100%;max-width:480px;background-color:#ffffff;border:1px solid #e6e2f3;border-radius:18px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-  <tr>
-    <td style="padding:22px 24px 18px 24px;">
-      <table cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;">
-        <tr>
-          <td valign="middle" width="76" style="width:76px;padding:0 18px 0 0;">
-            <a href="https://glideball.netlify.app" style="text-decoration:none;"><img src="https://glideball.netlify.app/assets/icon-256.png" width="76" height="76" alt="Glideball" style="display:block;width:76px;height:76px;border:0;border-radius:17px;"></a>
-          </td>
-          <td valign="middle" style="padding:0;">
-            <div style="font-size:21px;line-height:26px;font-weight:700;color:#15112e;letter-spacing:-0.2px;">Levi Holliday</div>
-            <div style="font-size:14px;line-height:20px;font-weight:600;color:#5b3fd1;padding-top:2px;">Developer of Glideball</div>
-            <div style="font-size:13px;line-height:19px;color:#615c80;padding-top:5px;">Making the Kensington Expert Mouse even better.</div>
-          </td>
-        </tr>
-      </table>
-    </td>
-  </tr>
-  <tr>
-    <td style="padding:0 24px;"><div style="height:1px;line-height:1px;font-size:1px;background-color:#ece9f6;">&nbsp;</div></td>
-  </tr>
-  <tr>
-    <td style="padding:14px 24px 18px 24px;font-size:13px;line-height:18px;">
-      <a href="mailto:glideball@proton.me" style="color:#5b3fd1;text-decoration:none;font-weight:600;">glideball@proton.me</a><span style="color:#c9c3e0;">&nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;</span><a href="https://glideball.netlify.app" style="color:#5b3fd1;text-decoration:none;font-weight:600;">Website</a><span style="color:#c9c3e0;">&nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;</span><a href="https://github.com/leviholliday/glideball" style="color:#5b3fd1;text-decoration:none;font-weight:600;">GitHub</a>
-    </td>
-  </tr>
-  <tr>
-    <td height="5" bgcolor="#8b5cf6" style="padding:0;height:5px;line-height:5px;font-size:5px;border-radius:0 0 17px 17px;background-color:#8b5cf6;background-image:linear-gradient(90deg,#22d3ee 0%,#8b5cf6 50%,#ec4899 100%);">&nbsp;</td>
-  </tr>
-</table>
-    </div>
-  </div>
-  <div class="row"><button data-copy="sig-light">Copy light signature</button><span class="done" id="done-sig-light">Copied — now paste it into Proton</span></div>
-
-  <!-- ======================= HOW TO ======================= -->
   <h2>Putting it in Proton Mail</h2>
   <ol>
-    <li>Press <b>Copy</b> under the version you like.</li>
-    <li>In Proton Mail on the web, open <b>Settings → Identity and addresses</b> (or <b>Accounts and addresses</b>), and pick <code>glideball@proton.me</code>.</li>
-    <li>Click into the <b>Signature</b> box, delete what's there, and paste (⌘V). Save.</li>
-    <li>Send yourself a test email to check it.</li>
+    <li>Press <b>Copy signature</b>.</li>
+    <li>In Proton Mail on the web, open <b>Settings → Identity and addresses</b> and pick <code>glideball@proton.me</code>.</li>
+    <li>Click in the <b>Signature</b> box, select everything that's there (⌘A) and delete it, then paste (⌘V). Save.</li>
+    <li>Start a new email to check it: the line should run across the whole message.</li>
   </ol>
-  <p class="lead">The icon is loaded from the Glideball website, so it always matches the current app icon. Some mail apps (Proton included) hold back pictures until the reader allows them; the text and links still show either way.</p>
+  <p class="lead">The icon loads from the Glideball website. Some mail apps hold back pictures until the reader allows them; the text and links show either way.</p>
 
   <h2>Plain-text version</h2>
-  <p class="lead">For apps that only allow plain text (like the Proton mobile signature):</p>
+  <p class="lead">For places that only allow plain text, like the Proton phone app:</p>
 <pre>Levi Holliday
-Developer of Glideball — making the Kensington Expert Mouse even better.
+Developer of Glideball · making the Kensington Expert Mouse even better
 glideball@proton.me · glideball.netlify.app · github.com/leviholliday/glideball</pre>
 </main>
 
+<!-- The signature, exactly as it's copied. -->
+<template id="signature"><table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="width:100%;border-collapse:collapse;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <tr>
+    <td height="2" bgcolor="#8b5cf6" style="height:2px;line-height:2px;font-size:2px;padding:0;background-color:#8b5cf6;background-image:linear-gradient(90deg,#22d3ee 0%,#8b5cf6 50%,#ec4899 100%);">&#8203;</td>
+  </tr>
+  <tr>
+    <td height="20" style="height:20px;line-height:20px;font-size:20px;padding:0;">&#8203;</td>
+  </tr>
+  <tr>
+    <td style="padding:0;">
+      <table cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:separate;width:340px;background-color:#ffffff;border:1px solid #e7e5ee;border-radius:10px;box-shadow:0 1px 4px rgba(20,16,46,0.08);">
+        <tr>
+          <td style="padding:20px 20px 18px 20px;">
+            <table cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;">
+              <tr>
+                <td valign="top" width="64" style="width:64px;padding:0 16px 0 0;">
+                  <a href="https://glideball.netlify.app" style="text-decoration:none;"><img src="https://glideball.netlify.app/assets/icon-256.png" width="64" height="64" alt="Glideball" style="display:block;width:64px;height:64px;border:0;border-radius:14px;"></a>
+                </td>
+                <td valign="top" style="padding:2px 0 0 0;">
+                  <div style="font-size:18px;line-height:22px;font-weight:700;color:#1d1a2e;">Levi Holliday</div>
+                  <div style="font-size:13px;line-height:19px;font-weight:600;color:#6d4fd8;padding-top:3px;">Developer of Glideball</div>
+                  <div style="font-size:12px;line-height:17px;color:#77738c;padding-top:3px;">Making the Kensington Expert Mouse even better.</div>
+                  <div style="font-size:12px;line-height:17px;padding-top:9px;">
+                    <a href="mailto:glideball@proton.me" style="color:#5b3fd1;text-decoration:none;">glideball@proton.me</a><span style="color:#c6c1db;">&nbsp;&nbsp;·&nbsp;&nbsp;</span><a href="https://glideball.netlify.app" style="color:#5b3fd1;text-decoration:none;">Website</a><span style="color:#c6c1db;">&nbsp;&nbsp;·&nbsp;&nbsp;</span><a href="https://github.com/leviholliday/glideball" style="color:#5b3fd1;text-decoration:none;">GitHub</a>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td height="4" bgcolor="#8b5cf6" style="height:4px;line-height:4px;font-size:4px;padding:0;border-radius:0 0 9px 9px;background-color:#8b5cf6;background-image:linear-gradient(90deg,#22d3ee 0%,#8b5cf6 50%,#ec4899 100%);">&#8203;</td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table></template>
+
 <script>
-  // Copies the signature as rich content (what a mail app's signature box expects),
-  // by selecting it on the page and using the system copy.
-  document.querySelectorAll("button[data-copy]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const id = button.dataset.copy;
-      const node = document.getElementById(id);
-      const range = document.createRange();
-      range.selectNode(node);
-      const selection = window.getSelection();
-      selection.removeAllRanges();
-      selection.addRange(range);
-      let ok = false;
-      try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
-      selection.removeAllRanges();
-      const done = document.getElementById("done-" + id);
-      done.textContent = ok ? "Copied — now paste it into Proton" : "Select the card above and press ⌘C instead";
-      done.classList.add("on");
-      setTimeout(() => done.classList.remove("on"), 4000);
-    });
+  const html = document.getElementById("signature").innerHTML;
+  document.getElementById("preview").innerHTML = html;
+  const text = "Levi Holliday\nDeveloper of Glideball · making the Kensington Expert Mouse even better\n" +
+               "glideball@proton.me · glideball.netlify.app · github.com/leviholliday/glideball";
+
+  // Put exactly the signature's HTML on the clipboard — not the page around it, whose
+  // backgrounds and widths a normal copy would drag along.
+  document.getElementById("copy").addEventListener("click", () => {
+    const onCopy = (e) => {
+      e.clipboardData.setData("text/html", html);
+      e.clipboardData.setData("text/plain", text);
+      e.preventDefault();
+    };
+    document.addEventListener("copy", onCopy, { once: true });
+    let ok = false;
+    try { ok = document.execCommand("copy"); } catch (_) { ok = false; }
+    document.removeEventListener("copy", onCopy);
+    const done = document.getElementById("done");
+    done.textContent = ok ? "Copied. Now paste it into Proton" : "Couldn't copy here. Open this page in Safari or Chrome and try again";
+    done.classList.add("on");
+    setTimeout(() => done.classList.remove("on"), 4000);
   });
 </script>
 </body>
