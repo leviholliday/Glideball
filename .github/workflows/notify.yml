@@ -1,0 +1,79 @@
+# Sends a notification to Levi's phone (through ntfy) when someone opens an issue, comments on
+# one, opens a pull request or starts a discussion on this repo. The ntfy topic is a repository
+# secret (NTFY_TOPIC) so it isn't public. Everything from the issue is passed in through
+# environment variables and built into JSON with jq — never pasted into the shell script —
+# so a hostile title or comment can't run anything.
+name: Notify
+
+on:
+  issues:
+    types: [opened, reopened]
+  issue_comment:
+    types: [created]
+  pull_request_target:
+    types: [opened, reopened]
+  discussion:
+    types: [created]
+  discussion_comment:
+    types: [created]
+  workflow_dispatch:          # "Run workflow" sends a test notification
+
+permissions: {}
+
+jobs:
+  ntfy:
+    # Not for your own activity or bots (but always for a manual test run).
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.actor != github.repository_owner && !endsWith(github.actor, '[bot]'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send the notification
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          EVENT: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
+          ACTOR: ${{ github.actor }}
+          REPO: ${{ github.repository }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          IS_PR_COMMENT: ${{ github.event.issue.pull_request != null }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          DISC_TITLE: ${{ github.event.discussion.title }}
+          DISC_URL: ${{ github.event.discussion.html_url }}
+          DISC_BODY: ${{ github.event.discussion.body }}
+          COMMENT_URL: ${{ github.event.comment.html_url }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          if [ -z "$NTFY_TOPIC" ]; then echo "NTFY_TOPIC secret isn't set"; exit 1; fi
+
+          case "$EVENT" in
+            issues)
+              title="New issue #$ISSUE_NUMBER: $ISSUE_TITLE"; url="$ISSUE_URL"; body="$ISSUE_BODY"; tag="speech_balloon" ;;
+            issue_comment)
+              kind="issue"; [ "$IS_PR_COMMENT" = "true" ] && kind="pull request"
+              title="$ACTOR commented on $kind #$ISSUE_NUMBER: $ISSUE_TITLE"; url="$COMMENT_URL"; body="$COMMENT_BODY"; tag="speech_balloon" ;;
+            pull_request_target)
+              title="New pull request #$PR_NUMBER: $PR_TITLE"; url="$PR_URL"; body="$PR_BODY"; tag="gear" ;;
+            discussion)
+              title="New discussion: $DISC_TITLE"; url="$DISC_URL"; body="$DISC_BODY"; tag="thought_balloon" ;;
+            discussion_comment)
+              title="$ACTOR replied in a discussion: $DISC_TITLE"; url="$COMMENT_URL"; body="$COMMENT_BODY"; tag="thought_balloon" ;;
+            *)
+              title="Test: GitHub notifications for Glideball work"; url="https://github.com/$REPO/issues"; body="This is a test from the Notify workflow."; tag="white_check_mark" ;;
+          esac
+
+          jq -n \
+            --arg topic "$NTFY_TOPIC" \
+            --arg title "${title:0:200}" \
+            --arg message "$(printf 'by %s\n\n%s' "$ACTOR" "${body:0:400}")" \
+            --arg click "$url" \
+            --arg tag "$tag" \
+            '{topic: $topic, title: $title, message: $message, click: $click, tags: [$tag, "github"], priority: 3}' \
+            | curl -fsS --max-time 20 -H "Content-Type: application/json" -d @- https://ntfy.sh >/dev/null
+          echo "Sent."
