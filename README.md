@@ -216,6 +216,12 @@ That builds a universal app, signs it, publishes the GitHub release, redeploys t
 - iCloud Drive sync is off until you turn it on. When it's on, your settings go to **your own** iCloud Drive. Glideball has no server.
 - Activity totals and the scroll diagnostics log (`~/Library/Logs/Glide/scroll.log`) stay on your Mac.
 
+## Contact
+
+- **Feedback, bugs and ideas:** Help › Send Feedback… (or the ⓘ button) in the app, or the website's [feedback page](https://glideball.netlify.app/feedback/). It goes straight to the developer.
+- **Email:** [glideball@proton.me](mailto:glideball@proton.me)
+- **Feature requests and bug reports in public:** [GitHub issues](https://github.com/leviholliday/glideball/issues)
+
 ## Disclaimer
 
 Glideball is an independent project. It is not affiliated with, endorsed by, or sponsored by Kensington. Kensington, Expert Mouse and KensingtonWorks are trademarks of their respective owners, and every other trademark belongs to its owner.

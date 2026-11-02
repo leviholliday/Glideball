@@ -1492,3 +1492,7 @@
 "What’s new in each version" = "버전별 새로운 기능";
 "Report a problem on GitHub" = "GitHub에서 문제 신고";
 "Source code (free and open)" = "소스 코드(무료, 오픈 소스)";
+
+/* ---- Contact email ---- */
+"Email" = "이메일";
+"Opens a new email with your version info already filled in" = "버전 정보가 미리 채워진 새 이메일을 열어요";

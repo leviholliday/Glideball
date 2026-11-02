@@ -12,6 +12,7 @@ struct AboutView: View {
     private static let releases = URL(string: "https://github.com/leviholliday/glideball/releases")!
     private static let issues = URL(string: "https://github.com/leviholliday/glideball/issues")!
     private static let source = URL(string: "https://github.com/leviholliday/glideball")!
+    static let contactEmail = "glideball@proton.me"
 
     var body: some View {
         ZStack {
@@ -32,6 +33,8 @@ struct AboutView: View {
                             }
                         }
                         GlassCard(title: "Links", symbol: "link") {
+                            emailRow
+                            Divider().opacity(0.4)
                             linkRow("globe", "Website", Self.website)
                             Divider().opacity(0.4)
                             linkRow("doc.text", "What’s new in each version", Self.releases)
@@ -130,6 +133,29 @@ struct AboutView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+
+    /// "Email  glideball@proton.me ↗" — opens a new message with the support info already in it.
+    private var emailRow: some View {
+        Button {
+            var c = URLComponents()
+            c.scheme = "mailto"
+            c.path = Self.contactEmail
+            c.queryItems = [URLQueryItem(name: "subject", value: "Glideball"),
+                            URLQueryItem(name: "body", value: "\n\n—\n" + supportInfo)]
+            if let url = c.url { NSWorkspace.shared.open(url) }
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "envelope").font(.system(size: 14, weight: .medium)).frame(width: 22)
+                Text("Email").font(.system(size: 14, weight: .medium))
+                Spacer()
+                Text(verbatim: Self.contactEmail).font(.system(size: 13)).foregroundStyle(.secondary)
+                Image(systemName: "arrow.up.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(.tertiary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help("Opens a new email with your version info already filled in")
     }
 
     /// Closes this sheet, then does `next` once it's gone (a sheet can't open another at the same time).

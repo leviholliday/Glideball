@@ -1492,3 +1492,7 @@
 "What’s new in each version" = "各版本的新内容";
 "Report a problem on GitHub" = "在 GitHub 上报告问题";
 "Source code (free and open)" = "源代码（免费开源）";
+
+/* ---- Contact email ---- */
+"Email" = "电子邮件";
+"Opens a new email with your version info already filled in" = "打开一封已填好版本信息的新邮件";

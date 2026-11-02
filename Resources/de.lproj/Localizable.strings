@@ -1492,3 +1492,7 @@
 "What’s new in each version" = "Neuigkeiten zu jeder Version";
 "Report a problem on GitHub" = "Problem auf GitHub melden";
 "Source code (free and open)" = "Quellcode (frei und offen)";
+
+/* ---- Contact email ---- */
+"Email" = "E-Mail";
+"Opens a new email with your version info already filled in" = "Öffnet eine neue E-Mail mit deinen Versionsinfos schon eingetragen";
