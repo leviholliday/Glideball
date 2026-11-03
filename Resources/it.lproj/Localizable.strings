@@ -1498,3 +1498,25 @@
 "Opens a new email with your version info already filled in" = "Apre una nuova email con le info sulla versione già inserite";
 
 "Gravatar profile" = "Profilo Gravatar";
+
+/* ---- Software Update window ---- */
+"A Beta program build. It may have bugs." = "Una versione del programma beta. Potrebbe avere bug.";
+"Asking GitHub for the newest version of Glideball." = "Chiedo a GitHub la versione più recente di Glideball.";
+"Checked %@" = "Controllato %@";
+"Details…" = "Dettagli…";
+"Glideball %@ is the newest version, including beta releases." = "Glideball %@ è la versione più recente, beta incluse.";
+"Glideball %@ is the newest version." = "Glideball %@ è la versione più recente.";
+"Glideball couldn’t reach GitHub. Check your internet connection and try again." = "Glideball non è riuscito a raggiungere GitHub. Controlla la connessione a Internet e riprova.";
+"Glideball will reopen in a moment." = "Glideball si riaprirà tra un attimo.";
+"Install & Relaunch" = "Installa e riavvia";
+"Later" = "Più tardi";
+"OK" = "OK";
+"Release Notes" = "Note di rilascio";
+"Software Update" = "Aggiornamento software";
+"You have %@. Your settings and permissions carry over." = "Hai la %@. Impostazioni e permessi restano invariati.";
+"Checking for updates…" = "Ricerca aggiornamenti…";
+"You’re up to date!" = "Sei aggiornato!";
+"Couldn’t check for updates" = "Impossibile cercare aggiornamenti";
+"Downloading Glideball %@…" = "Download di Glideball %@…";
+"Installing…" = "Installazione…";
+"Glideball %@ is available" = "Glideball %@ è disponibile";

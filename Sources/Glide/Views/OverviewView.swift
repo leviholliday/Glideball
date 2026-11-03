@@ -408,7 +408,8 @@ struct UpdatesRow: View {
                     .tint(.cyan)
             } else {
                 Button {
-                    updates.checkNow()
+                    // The Software Update window shows the result clearly (and checks).
+                    if let app = NSApp.delegate as? AppDelegate { app.showUpdatePanel() } else { updates.checkNow() }
                 } label: {
                     if updates.manualCheck == .checking {
                         ProgressView().controlSize(.small).frame(width: 110)

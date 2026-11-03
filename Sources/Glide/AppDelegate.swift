@@ -216,8 +216,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     @objc private func quitGlide(_ sender: Any?) { quitNow() }
 
     @objc private func checkForUpdates(_ sender: Any?) {
-        showWindow()
-        AppModel.shared.updates.checkNow()
+        showUpdatePanel()
+    }
+
+    private var updateWindow: NSWindow?
+
+    /// The Software Update window: checks GitHub (unless `check` is false) and shows,
+    /// big and clear, what it found — up to date, an update to install, or couldn't check.
+    func showUpdatePanel(check: Bool = true) {
+        let updates = AppModel.shared.updates
+        let busy: Bool = {
+            switch updates.installState {
+            case .downloading, .installing: return true
+            case .idle, .failed: return false
+            }
+        }()
+        if check && !busy { updates.checkNow() }
+        if updateWindow == nil {
+            let controller = NSHostingController(rootView: UpdatePanelView(updates: updates) { [weak self] in
+                self?.updateWindow?.close()
+            })
+            controller.sizingOptions = [.preferredContentSize]   // the window follows its content's height
+            let w = NSWindow(contentViewController: controller)
+            w.styleMask = [.titled, .closable, .fullSizeContentView]
+            w.titlebarAppearsTransparent = true
+            w.titleVisibility = .hidden
+            w.title = String(localized: "Software Update")
+            w.isReleasedWhenClosed = false
+            w.isMovableByWindowBackground = true
+            w.center()
+            updateWindow = w
+        }
+        updateWindow?.makeKeyAndOrderFront(nil)
+        NSApp.activate()
     }
 
     /// Glide's global shortcuts. Pause (⌃⌥⌘G unless changed) is the escape

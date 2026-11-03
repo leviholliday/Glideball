@@ -1498,3 +1498,25 @@
 "Opens a new email with your version info already filled in" = "バージョン情報を入力済みの新規メールを開きます";
 
 "Gravatar profile" = "Gravatar プロフィール";
+
+/* ---- Software Update window ---- */
+"A Beta program build. It may have bugs." = "ベータプログラムのビルドです。不具合がある場合があります。";
+"Asking GitHub for the newest version of Glideball." = "GitHubに最新バージョンのGlideballを確認しています。";
+"Checked %@" = "%@に確認";
+"Details…" = "詳細…";
+"Glideball %@ is the newest version, including beta releases." = "Glideball %@ は最新バージョンです（ベータ版を含む）。";
+"Glideball %@ is the newest version." = "Glideball %@ は最新バージョンです。";
+"Glideball couldn’t reach GitHub. Check your internet connection and try again." = "GlideballはGitHubに接続できませんでした。インターネット接続を確認してもう一度お試しください。";
+"Glideball will reopen in a moment." = "まもなくGlideballが再び開きます。";
+"Install & Relaunch" = "インストールして再起動";
+"Later" = "あとで";
+"OK" = "OK";
+"Release Notes" = "リリースノート";
+"Software Update" = "ソフトウェアアップデート";
+"You have %@. Your settings and permissions carry over." = "現在は %@ です。設定と権限は引き継がれます。";
+"Checking for updates…" = "アップデートを確認中…";
+"You’re up to date!" = "最新の状態です！";
+"Couldn’t check for updates" = "アップデートを確認できませんでした";
+"Downloading Glideball %@…" = "Glideball %@ をダウンロード中…";
+"Installing…" = "インストール中…";
+"Glideball %@ is available" = "Glideball %@ を利用できます";

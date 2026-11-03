@@ -1498,3 +1498,25 @@
 "Opens a new email with your version info already filled in" = "버전 정보가 미리 채워진 새 이메일을 열어요";
 
 "Gravatar profile" = "Gravatar 프로필";
+
+/* ---- Software Update window ---- */
+"A Beta program build. It may have bugs." = "베타 프로그램 빌드예요. 버그가 있을 수 있어요.";
+"Asking GitHub for the newest version of Glideball." = "GitHub에서 최신 Glideball 버전을 확인하는 중이에요.";
+"Checked %@" = "%@ 확인함";
+"Details…" = "세부사항…";
+"Glideball %@ is the newest version, including beta releases." = "Glideball %@이(가) 최신 버전이에요(베타 포함).";
+"Glideball %@ is the newest version." = "Glideball %@이(가) 최신 버전이에요.";
+"Glideball couldn’t reach GitHub. Check your internet connection and try again." = "Glideball이 GitHub에 연결하지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요.";
+"Glideball will reopen in a moment." = "Glideball이 곧 다시 열려요.";
+"Install & Relaunch" = "설치 후 다시 시작";
+"Later" = "나중에";
+"OK" = "확인";
+"Release Notes" = "릴리스 노트";
+"Software Update" = "소프트웨어 업데이트";
+"You have %@. Your settings and permissions carry over." = "현재 %@을(를) 사용 중이에요. 설정과 권한은 그대로 유지돼요.";
+"Checking for updates…" = "업데이트 확인 중…";
+"You’re up to date!" = "최신 버전이에요!";
+"Couldn’t check for updates" = "업데이트를 확인할 수 없어요";
+"Downloading Glideball %@…" = "Glideball %@ 다운로드 중…";
+"Installing…" = "설치 중…";
+"Glideball %@ is available" = "Glideball %@을(를) 사용할 수 있어요";

@@ -58,6 +58,8 @@ final class UpdateChecker {
     /// What a "Check for Updates" the user asked for found — shown next to the button.
     enum ManualCheck: Equatable { case idle, checking, upToDate, failed }
     private(set) var manualCheck: ManualCheck = .idle
+    /// When GitHub last answered a check (automatic or asked for).
+    private(set) var lastChecked: Date?
 
     /// A check the user asked for: reports back even when there's nothing new.
     func checkNow() {
@@ -84,6 +86,7 @@ final class UpdateChecker {
                 // The Beta program switch changed while this was in flight: a fresh check is coming.
                 guard prereleases == self.includePrereleases else { completion?(true); return }
                 self.available = newer ? newest : nil
+                self.lastChecked = Date()
                 completion?(true)
             }
         }.resume()

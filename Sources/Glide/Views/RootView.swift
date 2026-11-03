@@ -363,6 +363,7 @@ struct UpdateButton: View {
         case .idle, .failed:
             Menu {
                 Button("Install \(update.displayVersion) & Relaunch") { updates.install() }
+                Button("Details…") { (NSApp.delegate as? AppDelegate)?.showUpdatePanel(check: false) }
                 Button("What’s New in \(update.displayVersion)…") { NSWorkspace.shared.open(update.page) }
                 if update.isPrerelease {
                     Divider()

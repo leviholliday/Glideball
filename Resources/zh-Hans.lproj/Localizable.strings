@@ -1498,3 +1498,25 @@
 "Opens a new email with your version info already filled in" = "打开一封已填好版本信息的新邮件";
 
 "Gravatar profile" = "Gravatar 个人资料";
+
+/* ---- Software Update window ---- */
+"A Beta program build. It may have bugs." = "这是 Beta 版计划的版本，可能有错误。";
+"Asking GitHub for the newest version of Glideball." = "正在向 GitHub 查询最新版本的 Glideball。";
+"Checked %@" = "检查于%@";
+"Details…" = "详细信息…";
+"Glideball %@ is the newest version, including beta releases." = "Glideball %@ 是最新版本（包括测试版）。";
+"Glideball %@ is the newest version." = "Glideball %@ 是最新版本。";
+"Glideball couldn’t reach GitHub. Check your internet connection and try again." = "Glideball 无法连接 GitHub。请检查网络连接后重试。";
+"Glideball will reopen in a moment." = "Glideball 马上会重新打开。";
+"Install & Relaunch" = "安装并重新启动";
+"Later" = "以后";
+"OK" = "好";
+"Release Notes" = "发行说明";
+"Software Update" = "软件更新";
+"You have %@. Your settings and permissions carry over." = "你当前使用的是 %@。你的设置和权限会保留。";
+"Checking for updates…" = "正在检查更新…";
+"You’re up to date!" = "已是最新版本！";
+"Couldn’t check for updates" = "无法检查更新";
+"Downloading Glideball %@…" = "正在下载 Glideball %@…";
+"Installing…" = "正在安装…";
+"Glideball %@ is available" = "Glideball %@ 现已推出";
