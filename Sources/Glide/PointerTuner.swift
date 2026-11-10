@@ -111,18 +111,21 @@ final class PointerTuner {
         applied = nil
     }
 
-    /// The service's own speeds from before Glide wrote to it, or failing that
-    /// System Settings' (the same curve keys `apply` writes — never the sensor resolution).
+    /// Puts back System Settings' speeds (the same curve keys `apply` writes — never
+    /// the sensor resolution). Those are what "normal" means to the user, and they're
+    /// the same whether Glide pauses or quits. The values captured before Glide's first
+    /// write are only a fallback: right after an update they can be a speed an earlier
+    /// Glide left behind, which made pause and quit hand back different speeds.
     private func restoreSpeeds(_ id: UInt64, _ s: IOHIDServiceClient) {
         func systemValue(_ key: String) -> Int? {
             // Unclamped: -1 (acceleration off) must stay -1.
             (CFPreferencesCopyAppValue(key as CFString, kCFPreferencesAnyApplication) as? NSNumber).map { Int($0.doubleValue * 65536) }
         }
-        if let tracking = original[id]?.tracking ?? systemValue("com.apple.mouse.scaling") {
+        if let tracking = systemValue("com.apple.mouse.scaling") ?? original[id]?.tracking {
             IOHIDServiceClientSetProperty(s, accelerationKey(s) as CFString, tracking as CFNumber)
         }
         // Scrolling only if Glide changed it (Native mode).
-        if original[id]?.wroteScroll ?? true, let scroll = original[id]?.scroll ?? systemValue("com.apple.scrollwheel.scaling") {
+        if original[id]?.wroteScroll ?? true, let scroll = systemValue("com.apple.scrollwheel.scaling") ?? original[id]?.scroll {
             IOHIDServiceClientSetProperty(s, "HIDMouseScrollAcceleration" as CFString, scroll as CFNumber)
         }
     }
