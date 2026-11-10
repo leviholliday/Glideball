@@ -31,6 +31,15 @@
 "Close Window" = "Cerrar ventana";
 
 /* Menu bar title */
+"Edit" = "Edición";
+
+"Redo" = "Rehacer";
+
+"Cut" = "Cortar";
+
+"Select All" = "Seleccionar todo";
+
+/* Menu bar title */
 "Window" = "Ventana";
 
 "Minimize" = "Minimizar";

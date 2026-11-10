@@ -31,6 +31,15 @@
 "Close Window" = "Fechar Janela";
 
 /* Menu bar title */
+"Edit" = "Editar";
+
+"Redo" = "Refazer";
+
+"Cut" = "Recortar";
+
+"Select All" = "Selecionar Tudo";
+
+/* Menu bar title */
 "Window" = "Janela";
 
 "Minimize" = "Minimizar";

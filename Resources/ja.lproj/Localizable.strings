@@ -31,6 +31,15 @@
 "Close Window" = "ウインドウを閉じる";
 
 /* Menu bar title */
+"Edit" = "編集";
+
+"Redo" = "やり直す";
+
+"Cut" = "カット";
+
+"Select All" = "すべてを選択";
+
+/* Menu bar title */
 "Window" = "ウインドウ";
 
 "Minimize" = "しまう";

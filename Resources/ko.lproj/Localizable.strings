@@ -31,6 +31,15 @@
 "Close Window" = "윈도우 닫기";
 
 /* Menu bar title */
+"Edit" = "편집";
+
+"Redo" = "실행 복귀";
+
+"Cut" = "오려두기";
+
+"Select All" = "모두 선택";
+
+/* Menu bar title */
 "Window" = "윈도우";
 
 "Minimize" = "최소화";

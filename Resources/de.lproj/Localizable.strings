@@ -31,6 +31,15 @@
 "Close Window" = "Fenster schließen";
 
 /* Menu bar title */
+"Edit" = "Bearbeiten";
+
+"Redo" = "Wiederholen";
+
+"Cut" = "Ausschneiden";
+
+"Select All" = "Alles auswählen";
+
+/* Menu bar title */
 "Window" = "Fenster";
 
 "Minimize" = "Im Dock ablegen";

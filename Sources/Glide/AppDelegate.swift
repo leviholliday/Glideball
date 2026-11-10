@@ -346,6 +346,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         fileItem.submenu = fileMenu
         main.addItem(fileItem)
 
+        // Text fields get ⌘Z, ⌘X, ⌘C, ⌘V and ⌘A from these items: no target,
+        // so each goes to whatever is focused (and greys out when nothing can).
+        let editItem = NSMenuItem()
+        let editMenu = NSMenu(title: String(localized: "Edit", comment: "Menu bar title"))
+        editMenu.addItem(withTitle: String(localized: "Undo"), action: Selector(("undo:")), keyEquivalent: "z")
+        editMenu.addItem(withTitle: String(localized: "Redo"), action: Selector(("redo:")), keyEquivalent: "z")
+            .keyEquivalentModifierMask = [.command, .shift]
+        editMenu.addItem(.separator())
+        editMenu.addItem(withTitle: String(localized: "Cut"), action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        editMenu.addItem(withTitle: String(localized: "Copy"), action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        editMenu.addItem(withTitle: String(localized: "Paste"), action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        editMenu.addItem(withTitle: String(localized: "Select All"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        editItem.submenu = editMenu
+        main.addItem(editItem)
+
         let windowItem = NSMenuItem()
         let windowMenu = NSMenu(title: String(localized: "Window", comment: "Menu bar title"))
         windowMenu.addItem(withTitle: String(localized: "Minimize"), action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")

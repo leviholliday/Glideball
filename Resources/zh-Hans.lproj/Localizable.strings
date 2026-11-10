@@ -31,6 +31,15 @@
 "Close Window" = "关闭窗口";
 
 /* Menu bar title */
+"Edit" = "编辑";
+
+"Redo" = "重做";
+
+"Cut" = "剪切";
+
+"Select All" = "全选";
+
+/* Menu bar title */
 "Window" = "窗口";
 
 "Minimize" = "最小化";
