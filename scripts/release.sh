@@ -37,6 +37,9 @@ ROOT=${0:A:h:h}
 cd "$ROOT"
 
 BUNDLE_ID=com.leviholliday.glide
+# The requirement every installed copy pins when it checks an update (UpdateChecker.swift):
+# this identifier and this certificate leaf (the "Glide Local Signing" certificate).
+RELEASE_REQ='=identifier "com.leviholliday.glide" and certificate leaf = H"a729ea121c1117802453b860d127d1b07804ac32"'
 SIGN_NAME="Glide Local Signing"
 PLIST=Resources/Info.plist
 ICON=Resources/AppIcon.icns
@@ -106,6 +109,7 @@ fi
 
 VERSION=${positional[1]#v}
 NOTES=${positional[2]}
+FULL_NOTES=$NOTES   # NOTES plus the download footer, built once the zip exists
 TAG="v$VERSION"
 
 [[ $VERSION =~ '^[0-9]+(\.[0-9]+){1,2}(-(beta|rc)\.[1-9][0-9]*)?$' ]] \
@@ -131,7 +135,7 @@ STAGE=preflight    # how far the irreversible part has got
 REMOTE='' MERGE_REF=''
 
 gh_command() {
-  print -r -- "gh release create $TAG $ZIP $LEGACY_ZIP --title ${(qq):-Glideball $DISPLAY_VERSION} --notes ${(qq)NOTES} --verify-tag${PRERELEASE_FLAG:+ $PRERELEASE_FLAG}"
+  print -r -- "gh release create $TAG $ZIP $LEGACY_ZIP --title ${(qq):-Glideball $DISPLAY_VERSION} --notes ${(qq)FULL_NOTES} --verify-tag${PRERELEASE_FLAG:+ $PRERELEASE_FLAG}"
 }
 PRERELEASE_FLAG=''
 (( PRERELEASE )) && PRERELEASE_FLAG=--prerelease
@@ -311,12 +315,26 @@ if [[ -n $IDENTITY ]]; then
   info "Signing with \"$SIGN_NAME\" ($IDENTITY)"
   codesign --force --sign "$IDENTITY" --identifier "$BUNDLE_ID" "$APP" \
     || die "codesign failed" "If macOS asked for keychain access, choose Always Allow and rerun."
-else
-  warn "'$SIGN_NAME' certificate not found; using an ad-hoc signature" \
-       "Users will have to re-grant Accessibility and Input Monitoring after updating."
+elif (( DRY_RUN )); then
+  warn "'$SIGN_NAME' certificate not found; this dry run uses an ad-hoc signature" \
+       "A real release stops here: an ad-hoc build can't be updated to by any installed copy."
   codesign --force --sign - --identifier "$BUNDLE_ID" "$APP" || die "ad-hoc codesign failed"
+else
+  die "'$SIGN_NAME' certificate not found in the keychain" \
+      "An ad-hoc signed build can't be installed over any existing copy: the updater pins this certificate." \
+      "Restore the signing identity (e.g. from the .p12 backup) and rerun."
 fi
 codesign --verify --strict "$APP" || die "the signature on $APP does not verify"
+if codesign --verify --strict -R "$RELEASE_REQ" "$APP" 2>/dev/null; then
+  info "Signature satisfies the pinned update requirement"
+elif (( DRY_RUN )); then
+  warn "$APP does not satisfy the pinned update requirement (identifier $BUNDLE_ID, certificate leaf A729EA12…AC32)" \
+       "Fine for a dry run without the signing certificate; a real release would stop here."
+else
+  die "$APP does not satisfy the pinned update requirement" \
+      "Required: identifier $BUNDLE_ID and certificate leaf A729EA121C1117802453B860D127D1B07804AC32." \
+      "Installed copies would refuse this update. Check the signing identity in the keychain."
+fi
 
 built=$($PLISTBUDDY -c "Print :CFBundleShortVersionString" "$APP/Contents/Info.plist")
 [[ $built == "$VERSION" ]] || die "$APP reports version $built, expected $VERSION"
@@ -332,6 +350,13 @@ ditto -c -k --sequesterRsrc --keepParent "$OUT/legacy/Glide.app" "$LEGACY_ZIP" |
 rm -rf "$OUT/legacy"
 info "Size:     $SIZE"
 info "SHA-256:  $SHA"
+
+FULL_NOTES="$NOTES
+
+---
+**Download \`Glideball.zip\`.** (\`Glide.zip\` is only for Glide 2.7.1 and older.)
+First launch: https://glideball.netlify.app/#install
+Glideball.zip SHA-256: \`$SHA\`"
 
 if (( DRY_RUN )); then
   git checkout -- "$PLIST" || die "could not restore $PLIST" "Run: git checkout -- $PLIST"
@@ -366,7 +391,7 @@ STAGE=pushed
 step "Creating GitHub release $TAG"
 typeset -a gh_flags
 (( PRERELEASE )) && gh_flags=(--prerelease)
-gh release create "$TAG" "$ZIP" "$LEGACY_ZIP" --title "Glideball $DISPLAY_VERSION" --notes "$NOTES" --verify-tag "${gh_flags[@]}" \
+gh release create "$TAG" "$ZIP" "$LEGACY_ZIP" --title "Glideball $DISPLAY_VERSION" --notes "$FULL_NOTES" --verify-tag "${gh_flags[@]}" \
   || die "gh release create failed"
 STAGE=done
 
