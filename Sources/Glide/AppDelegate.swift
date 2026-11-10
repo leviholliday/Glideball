@@ -101,6 +101,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         AppModel.shared.engine.releaseHeldKeys()
         AppModel.shared.engine.releaseAll()
+        AppModel.shared.engine.handBackPointer()   // after releaseAll, which re-applies Glide's speed
         AppModel.shared.saveTotals()
     }
 

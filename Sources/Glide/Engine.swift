@@ -89,6 +89,7 @@ final class Engine {
     private var ballScrollLatched = false      // switched on from the keyboard, until switched off
     private var ballSign: Double = 1           // raw ball counts → macOS scroll sign
     private var dragLocked = false
+    private var handedBack = false             // quitting: the pointer is macOS's again
     private var dragLockManual = false         // grabbed from the keyboard
     private var modifierWait: Timer?           // a keyboard Drag lock waiting for its keys to lift
     private var modifierWaitDone: ((Bool?) -> Void)?
@@ -139,6 +140,7 @@ final class Engine {
         perform {
             let wasEnabled = self.config.enabled
             let pointerChanged = config.trackingSpeed != self.config.trackingSpeed
+                || config.enabled != self.config.enabled   // paused: macOS's speed; resumed: Glide's
                 || config.precisionSpeed != self.config.precisionSpeed
                 || config.scrollMode != self.config.scrollMode
                 || config.nativeScrollSpeed != self.config.nativeScrollSpeed
@@ -197,6 +199,19 @@ final class Engine {
         _ = done.wait(timeout: .now() + 0.5)
         // Even if the input thread were stuck, never leave the cursor frozen.
         _ = CGAssociateMouseAndMouseCursorPosition(1)
+    }
+
+    /// Quit: gives the trackball macOS's own pointer and scroll speed back.
+    /// Call after `releaseAll`, which re-applies Glide's speed; from then on
+    /// nothing (the 2 s upkeep, a replug) writes Glide's speed again.
+    func handBackPointer() {
+        let done = DispatchSemaphore(value: 0)
+        perform {
+            self.handedBack = true
+            self.pointer.restoreAll()
+            done.signal()
+        }
+        _ = done.wait(timeout: .now() + 0.5)
     }
 
     /// Glide's modes a keyboard shortcut (or the menu bar) can switch.
@@ -323,6 +338,9 @@ final class Engine {
     }
 
     private func applyPointer() {
+        guard !handedBack else { return }
+        // Paused: the trackball gets macOS's own speeds back (cheap once done).
+        guard config.enabled else { return pointer.restoreAll() }
         pointer.apply(.init(trackingSpeed: precisionActive ? config.precisionSpeed : config.trackingSpeed,
                             scrollSpeed: config.scrollMode == .native ? config.nativeScrollSpeed : nil,
                             betaProgram: betaProgram))

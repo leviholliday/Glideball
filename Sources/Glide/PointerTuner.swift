@@ -18,6 +18,10 @@ final class PointerTuner {
     /// Every service Glide has written to, so one that stops being supported
     /// (the Beta program switched off) is handed back to macOS's own speeds.
     private var tuned = Set<UInt64>()
+    /// Each service's own values from just before Glide's first write to it
+    /// (raw 16.16 fixed point, so -1 = acceleration off comes back exactly).
+    private struct Original { var tracking: Int?; var scroll: Int?; var wroteScroll = false }
+    private var original: [UInt64: Original] = [:]
 
     /// Call when the trackball (re)connects: a long-lived client keeps a stale
     /// service list, so settings would silently stop applying after a replug
@@ -73,6 +77,13 @@ final class PointerTuner {
             return
         }
         for p in services {
+            var saved = original[p.id] ?? Original()
+            if !tuned.contains(p.id) { saved.tracking = currentAcceleration(p.service) }
+            if settings.scrollSpeed != nil && !saved.wroteScroll {
+                saved.scroll = currentScrollAcceleration(p.service)
+                saved.wroteScroll = true
+            }
+            original[p.id] = saved
             // Only the curve value — never the sensor resolution: writing
             // HIDPointerResolution crashed the system's HID server with this driver.
             IOHIDServiceClientSetProperty(p.service, accelerationKey(p.service) as CFString, fixed(settings.trackingSpeed) as CFNumber)
@@ -81,25 +92,38 @@ final class PointerTuner {
             }
             tuned.insert(p.id)
         }
-        // A device Glide tuned but no longer supports goes back to System Settings' speeds.
+        // A device Glide tuned but no longer supports goes back to its own speeds.
         for p in all where tuned.contains(p.id) && !ids.contains(p.id) {
-            restoreSystemSpeeds(p.service)
+            restoreSpeeds(p.id, p.service)
             tuned.remove(p.id)
+            original[p.id] = nil
         }
         applied = (settings, ids)
     }
 
-    /// The tracking and scrolling speeds from System Settings (the same curve
-    /// keys `apply` writes — never the sensor resolution).
-    private func restoreSystemSpeeds(_ s: IOHIDServiceClient) {
-        func systemValue(_ key: String) -> Double? {
-            (CFPreferencesCopyAppValue(key as CFString, kCFPreferencesAnyApplication) as? NSNumber)?.doubleValue
+    /// Hands every tuned trackball back to macOS (pause, quit). Does nothing
+    /// when nothing is tuned, so the 2 s upkeep stays cheap while paused.
+    func restoreAll() {
+        guard !tuned.isEmpty else { return }
+        for p in kensingtonPointers() where tuned.contains(p.id) { restoreSpeeds(p.id, p.service) }
+        tuned.removeAll()
+        original.removeAll()
+        applied = nil
+    }
+
+    /// The service's own speeds from before Glide wrote to it, or failing that
+    /// System Settings' (the same curve keys `apply` writes — never the sensor resolution).
+    private func restoreSpeeds(_ id: UInt64, _ s: IOHIDServiceClient) {
+        func systemValue(_ key: String) -> Int? {
+            // Unclamped: -1 (acceleration off) must stay -1.
+            (CFPreferencesCopyAppValue(key as CFString, kCFPreferencesAnyApplication) as? NSNumber).map { Int($0.doubleValue * 65536) }
         }
-        if let tracking = systemValue("com.apple.mouse.scaling") {
-            IOHIDServiceClientSetProperty(s, accelerationKey(s) as CFString, fixed(tracking) as CFNumber)
+        if let tracking = original[id]?.tracking ?? systemValue("com.apple.mouse.scaling") {
+            IOHIDServiceClientSetProperty(s, accelerationKey(s) as CFString, tracking as CFNumber)
         }
-        if let scroll = systemValue("com.apple.scrollwheel.scaling") {
-            IOHIDServiceClientSetProperty(s, "HIDMouseScrollAcceleration" as CFString, fixed(scroll) as CFNumber)
+        // Scrolling only if Glide changed it (Native mode).
+        if original[id]?.wroteScroll ?? true, let scroll = original[id]?.scroll ?? systemValue("com.apple.scrollwheel.scaling") {
+            IOHIDServiceClientSetProperty(s, "HIDMouseScrollAcceleration" as CFString, scroll as CFNumber)
         }
     }
 
@@ -113,6 +137,10 @@ final class PointerTuner {
 
     private func currentAcceleration(_ s: IOHIDServiceClient) -> Int? {
         IOHIDServiceClientCopyProperty(s, accelerationKey(s) as CFString) as? Int
+    }
+
+    private func currentScrollAcceleration(_ s: IOHIDServiceClient) -> Int? {
+        IOHIDServiceClientCopyProperty(s, "HIDMouseScrollAcceleration" as CFString) as? Int
     }
 
     /// Every Kensington pointer service, supported or not.
