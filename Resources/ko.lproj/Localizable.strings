@@ -31,6 +31,15 @@
 "Close Window" = "윈도우 닫기";
 
 /* Menu bar title */
+"Edit" = "편집";
+
+"Redo" = "실행 복귀";
+
+"Cut" = "오려두기";
+
+"Select All" = "모두 선택";
+
+/* Menu bar title */
 "Window" = "윈도우";
 
 "Minimize" = "최소화";
@@ -87,6 +96,9 @@
 "Imported “%@”" = "“%@” 가져옴";
 
 "Restored your previous settings" = "이전 설정을 복원했어요";
+
+/* Toast; the name of a button preset */
+"Applied “Spaces + Wispr Flow”" = "“스페이스 + Wispr Flow” 적용함";
 
 /* ---- AppProfile.swift ---- */
 
@@ -671,6 +683,17 @@
 /* ---- ButtonsView.swift ---- */
 
 "Press a button on your trackball — its row lights up." = "트랙볼의 버튼을 누르면 해당 행이 빛나요.";
+
+/* Button preset name */
+"Spaces + Wispr Flow" = "스페이스 + Wispr Flow";
+
+"Top buttons switch Spaces; bottom left + both top buttons hold ⌃Space for Wispr Flow." = "위쪽 버튼으로 스페이스를 전환하고, 왼쪽 아래 + 위쪽 두 버튼으로 Wispr Flow용 ⌃Space를 누르고 있어요.";
+
+/* Button preset: apply it */
+"Apply" = "적용";
+
+/* Button preset: already in use */
+"Applied" = "적용됨";
 
 "Normally: %@" = "원래 기능: %@";
 

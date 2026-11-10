@@ -12,13 +12,16 @@ struct ButtonsView: View {
         VStack(spacing: 18) {
         AssignPanel(model: model)
         HStack(alignment: .top, spacing: 18) {
-            GlassCard {
-                TrackballView(feed: model.live, pressed: model.pressed)
-                Text("Press a button on your trackball — its row lights up.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity)
+            VStack(spacing: 18) {
+                GlassCard {
+                    TrackballView(feed: model.live, pressed: model.pressed)
+                    Text("Press a button on your trackball — its row lights up.")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                }
+                ButtonPresetCard(model: model)
             }
             .frame(width: 270)
 
@@ -33,6 +36,38 @@ struct ButtonsView: View {
                 CombosCard(model: model)
             }
         }
+        }
+    }
+}
+
+/// One-click button setups. Applying one changes only its own buttons and
+/// combo; each can be changed back with the rows and Combos card as usual.
+struct ButtonPresetCard: View {
+    let model: AppModel
+
+    var body: some View {
+        let applied = model.config.hasSpacesAndWisprFlow
+        GlassCard(title: "Presets", symbol: "wand.and.stars") {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Spaces + Wispr Flow").font(.system(size: 14, weight: .semibold))
+                Text("Top buttons switch Spaces; bottom left + both top buttons hold ⌃Space for Wispr Flow.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            let button = Button {
+                withAnimation(.smooth) { model.applySpacesAndWisprFlow() }
+            } label: {
+                Label(applied ? "Applied" : "Apply", systemImage: applied ? "checkmark" : "wand.and.stars")
+                    .frame(maxWidth: .infinity)
+            }
+            .disabled(applied)
+            .accessibilityAddTraits(applied ? .isSelected : [])
+            if applied {
+                button.buttonStyle(.glassProminent).tint(.cyan.opacity(0.7))
+            } else {
+                button.buttonStyle(.glass)
+            }
         }
     }
 }

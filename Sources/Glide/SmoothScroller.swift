@@ -131,6 +131,9 @@ final class SmoothScroller: NSObject {
             flywheelTick(dir: dir, count: count, horizontal: isHorizontal, turned: turned, now: now)
             return
         }
+        // Flywheel moves the page without the ring's target (after a switch from
+        // Flywheel, in settings or by an app setup): start Follow from where the page is.
+        if mode == .flying { halt() } else if mode == .idle { target = position }
 
         if mode == .coasting {
             if turned {

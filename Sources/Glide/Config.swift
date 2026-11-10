@@ -295,13 +295,10 @@ struct GlideConfig: Codable, Equatable {
     var ballScrollSpeed: Double = 1.0
 
     // Buttons, keyed by macOS button number (0 = primary/bottom-left).
-    var buttons: [Int: ButtonAction] = [
-        2: .shortcut(.previousSpace),
-        3: .shortcut(.nextSpace),
-    ]
-    var chords: [Chord] = [
-        Chord(buttons: [0, 2, 3], action: .holdShortcut(.wisprFlow)),
-    ]
+    // Out of the box every button does its normal click and there are no
+    // combos; "Spaces + Wispr Flow" (below) is the setup that used to be the default.
+    var buttons: [Int: ButtonAction] = [:]
+    var chords: [Chord] = []
 
     // Per-app setups: used instead of the above while that app is in front.
     var appProfiles: [AppProfile] = []
@@ -340,15 +337,67 @@ struct GlideConfig: Codable, Equatable {
     }
 
     private static let key = "GlideConfig"
+    /// Set on the first launch of a version whose defaults are stock buttons.
+    private static let stockDefaultsKey = "GlideStockButtonDefaults"
 
     static func load() -> GlideConfig {
-        guard let data = UserDefaults.standard.data(forKey: key),
-              let saved = try? JSONDecoder().decode(GlideConfig.self, from: data) else { return GlideConfig() }
+        let defaults = UserDefaults.standard
+        let data = defaults.data(forKey: key)
+        if !defaults.bool(forKey: stockDefaultsKey) {
+            defaults.set(true, forKey: stockDefaultsKey)
+            // Settings are saved only once something changes, so someone who used
+            // an earlier Glideball without changing anything has nothing saved and
+            // ran on the old defaults. Keep those buttons and combo for them, once.
+            if data == nil && usedBefore(defaults) {
+                var old = GlideConfig()
+                old.applySpacesAndWisprFlow()
+                old.save()
+                return old
+            }
+        }
+        guard let data, let saved = try? JSONDecoder().decode(GlideConfig.self, from: data) else { return GlideConfig() }
         return saved
+    }
+
+    /// An earlier Glideball ran here: the Welcome Tour was finished or skipped
+    /// ("GlideOnboardingDone", see WelcomeTour), or daily totals were saved
+    /// (at every quit and window close).
+    private static func usedBefore(_ defaults: UserDefaults) -> Bool {
+        defaults.bool(forKey: "GlideOnboardingDone")
+            || defaults.dictionaryRepresentation().keys.contains { $0.hasPrefix("GlideTotals-") }
     }
 
     func save() {
         if let data = try? JSONEncoder().encode(self) { UserDefaults.standard.set(data, forKey: Self.key) }
+    }
+}
+
+// MARK: - Button presets
+
+extension GlideConfig {
+    /// "Spaces + Wispr Flow" (the defaults before 2.10): the top buttons switch
+    /// Spaces, and bottom left + both top buttons hold ⌃Space, Wispr Flow's
+    /// push-to-talk. The primary button alone stays a left click.
+    static let spacesAndWisprFlowButtons: [Int: ButtonAction] = [
+        2: .shortcut(.previousSpace),
+        3: .shortcut(.nextSpace),
+    ]
+    static let spacesAndWisprFlowChord = Chord(buttons: [0, 2, 3], action: .holdShortcut(.wisprFlow))
+
+    /// Sets the preset's buttons and combo, leaving every other one as it is.
+    mutating func applySpacesAndWisprFlow() {
+        for (b, action) in Self.spacesAndWisprFlowButtons { buttons[b] = action }
+        let chord = Self.spacesAndWisprFlowChord
+        if let i = chords.firstIndex(where: { $0.buttons == chord.buttons }) {
+            chords[i].action = chord.action
+        } else {
+            chords.append(Chord(buttons: chord.buttons, action: chord.action))   // a fresh id
+        }
+    }
+
+    var hasSpacesAndWisprFlow: Bool {
+        Self.spacesAndWisprFlowButtons.allSatisfy { buttons[$0.key] == $0.value }
+            && chords.contains { $0.buttons == Self.spacesAndWisprFlowChord.buttons && $0.action == Self.spacesAndWisprFlowChord.action }
     }
 }
 

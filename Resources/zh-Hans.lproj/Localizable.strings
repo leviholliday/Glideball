@@ -31,6 +31,15 @@
 "Close Window" = "关闭窗口";
 
 /* Menu bar title */
+"Edit" = "编辑";
+
+"Redo" = "重做";
+
+"Cut" = "剪切";
+
+"Select All" = "全选";
+
+/* Menu bar title */
 "Window" = "窗口";
 
 "Minimize" = "最小化";
@@ -87,6 +96,9 @@
 "Imported “%@”" = "已导入“%@”";
 
 "Restored your previous settings" = "已恢复你之前的设置";
+
+/* Toast; the name of a button preset */
+"Applied “Spaces + Wispr Flow”" = "已应用“空间 + Wispr Flow”";
 
 /* ---- AppProfile.swift ---- */
 
@@ -671,6 +683,17 @@
 /* ---- ButtonsView.swift ---- */
 
 "Press a button on your trackball — its row lights up." = "按下轨迹球上的按钮，对应的行会亮起。";
+
+/* Button preset name */
+"Spaces + Wispr Flow" = "空间 + Wispr Flow";
+
+"Top buttons switch Spaces; bottom left + both top buttons hold ⌃Space for Wispr Flow." = "上方按钮切换空间；左下 + 两个上方按钮按住 ⌃Space 来使用 Wispr Flow。";
+
+/* Button preset: apply it */
+"Apply" = "应用";
+
+/* Button preset: already in use */
+"Applied" = "已应用";
 
 "Normally: %@" = "原本：%@";
 

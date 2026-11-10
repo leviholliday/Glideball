@@ -31,6 +31,15 @@
 "Close Window" = "Fenster schließen";
 
 /* Menu bar title */
+"Edit" = "Bearbeiten";
+
+"Redo" = "Wiederholen";
+
+"Cut" = "Ausschneiden";
+
+"Select All" = "Alles auswählen";
+
+/* Menu bar title */
 "Window" = "Fenster";
 
 "Minimize" = "Im Dock ablegen";
@@ -87,6 +96,9 @@
 "Imported “%@”" = "„%@“ importiert";
 
 "Restored your previous settings" = "Vorherige Einstellungen wiederhergestellt";
+
+/* Toast; the name of a button preset */
+"Applied “Spaces + Wispr Flow”" = "„Spaces + Wispr Flow“ angewendet";
 
 /* ---- AppProfile.swift ---- */
 
@@ -671,6 +683,17 @@
 /* ---- ButtonsView.swift ---- */
 
 "Press a button on your trackball — its row lights up." = "Drück eine Taste an deinem Trackball — ihre Zeile leuchtet auf.";
+
+/* Button preset name */
+"Spaces + Wispr Flow" = "Spaces + Wispr Flow";
+
+"Top buttons switch Spaces; bottom left + both top buttons hold ⌃Space for Wispr Flow." = "Die oberen Tasten wechseln zwischen Spaces; unten links + beide oberen Tasten halten ⌃Space für Wispr Flow.";
+
+/* Button preset: apply it */
+"Apply" = "Anwenden";
+
+/* Button preset: already in use */
+"Applied" = "Angewendet";
 
 "Normally: %@" = "Standard: %@";
 

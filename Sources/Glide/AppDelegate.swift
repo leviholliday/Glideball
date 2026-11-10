@@ -8,6 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var statusItem: NSStatusItem?
     private var precisionItem: NSMenuItem?
     private var isExplicitlyQuitting = false
+    private var terminateSignal: DispatchSourceSignal?
 
     func applicationWillFinishLaunching(_ notification: Notification) {
         // Hidden from the Dock (and ⌘-Tab) if the user chose that; it's reopened from the menu-bar icon.
@@ -26,6 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let firstLaunch = WelcomeTour.shouldShowAtLaunch()   // before AppModel loads settings
         _ = AppLanguage.atLaunch   // the language on screen, before anyone can change it
         buildMenu()
+        handleTerminateSignal()
         setUpStatusItem()
         _ = AppModel.shared   // starts the engine
         watchModes()
@@ -41,11 +43,42 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
 
     /// Some window-management utilities ask an app to quit once it has no
-    /// windows. Glide is an input utility, so keep it alive until its own menu
-    /// explicitly requests a quit.
+    /// windows. Glide is an input utility, so keep it alive unless the quit
+    /// really comes from the user: its own menu, macOS, or the command line.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        if isExplicitlyQuitting || Self.systemIsEndingSession() { return .terminateNow }
+        if isExplicitlyQuitting || Self.systemIsEndingSession() || Self.quitIsFromUser() { return .terminateNow }
         return .terminateCancel
+    }
+
+    /// Quits sent by macOS itself (the Dock, System Settings' "Quit & Reopen",
+    /// Activity Monitor, loginwindow) or by a command-line tool with no bundle
+    /// ID (osascript, Homebrew) are the user asking. Another app's quit isn't.
+    private static func quitIsFromUser() -> Bool {
+        guard let event = NSAppleEventManager.shared().currentAppleEvent,
+              event.eventClass == kCoreEventClass, event.eventID == kAEQuitApplication,
+              let pid = event.attributeDescriptor(forKeyword: keySenderPIDAttr)?.int32Value, pid > 0 else { return false }
+        guard let id = NSRunningApplication(processIdentifier: pid)?.bundleIdentifier else { return true }
+        return id.hasPrefix("com.apple.")
+    }
+
+    /// `killall Glideball`, Homebrew's signal and logout's last resort send
+    /// SIGTERM: quit properly, so held keys and modes are released and totals saved.
+    private func handleTerminateSignal() {
+        signal(SIGTERM, SIG_IGN)   // the source below handles it instead
+        let source = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .global(qos: .userInitiated))
+        source.setEventHandler { [weak self] in
+            // On the main run loop, not inside a main-queue block: quitting from
+            // there can deadlock against anything else waiting on the main queue.
+            RunLoop.main.perform(inModes: [.common]) { self?.quitNow() }
+            CFRunLoopWakeUp(CFRunLoopGetMain())
+            // If the main thread is stuck, still die like a plain SIGTERM would.
+            DispatchQueue.global().asyncAfter(deadline: .now() + 5) {
+                signal(SIGTERM, SIG_DFL)
+                raise(SIGTERM)
+            }
+        }
+        source.resume()
+        terminateSignal = source
     }
 
     /// Logging out, restarting and shutting down send a quit with a reason;
@@ -101,6 +134,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         AppModel.shared.engine.releaseHeldKeys()
         AppModel.shared.engine.releaseAll()
+        AppModel.shared.engine.handBackPointer()   // after releaseAll, which re-applies Glide's speed
         AppModel.shared.saveTotals()
     }
 
@@ -311,6 +345,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         fileMenu.addItem(withTitle: String(localized: "Close Window"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
         fileItem.submenu = fileMenu
         main.addItem(fileItem)
+
+        // Text fields get ⌘Z, ⌘X, ⌘C, ⌘V and ⌘A from these items: no target,
+        // so each goes to whatever is focused (and greys out when nothing can).
+        let editItem = NSMenuItem()
+        let editMenu = NSMenu(title: String(localized: "Edit", comment: "Menu bar title"))
+        editMenu.addItem(withTitle: String(localized: "Undo"), action: Selector(("undo:")), keyEquivalent: "z")
+        editMenu.addItem(withTitle: String(localized: "Redo"), action: Selector(("redo:")), keyEquivalent: "z")
+            .keyEquivalentModifierMask = [.command, .shift]
+        editMenu.addItem(.separator())
+        editMenu.addItem(withTitle: String(localized: "Cut"), action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        editMenu.addItem(withTitle: String(localized: "Copy"), action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        editMenu.addItem(withTitle: String(localized: "Paste"), action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        editMenu.addItem(withTitle: String(localized: "Select All"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        editItem.submenu = editMenu
+        main.addItem(editItem)
 
         let windowItem = NSMenuItem()
         let windowMenu = NSMenu(title: String(localized: "Window", comment: "Menu bar title"))
