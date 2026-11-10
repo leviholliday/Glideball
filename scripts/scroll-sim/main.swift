@@ -8,7 +8,10 @@ enum Engine { static let syntheticTag: Int64 = 0 }
 
 struct Frame { let t: Double; let delta: Double }
 
-func simulate(_ name: String, ticks: [Double], until end: Double, config: GlideConfig = GlideConfig(), verbose: Bool = false,
+/// The Follow defaults (the app's default mode is Flywheel, so Follow scenarios must ask for it).
+let followConfig: GlideConfig = { var c = GlideConfig(); c.scrollMode = .follow; return c }()
+
+func simulate(_ name: String, ticks: [Double], until end: Double, config: GlideConfig = followConfig, verbose: Bool = false,
               directions: [Double]? = nil) {
     let s = SmoothScroller()
     s.config = config
@@ -68,7 +71,7 @@ func spin(rate: Double, count: Int, start: Double = 0.05, jitter: Double = 0) ->
     return out
 }
 
-let cfg = GlideConfig()
+let cfg = followConfig
 print("Config: \(cfg.scrollDistance) pt/tick, follow \(cfg.scrollSmoothness), accel \(cfg.scrollAcceleration), throw \(cfg.throwEnabled) \(cfg.throwAmount)\n")
 simulate("One tick", ticks: [0.05], until: 0.6, verbose: true)
 simulate("Two quick ticks (a nudge)", ticks: spin(rate: 40, count: 2), until: 0.6, verbose: true)
@@ -85,7 +88,7 @@ simulate("Scroll down, then reverse up", ticks: spin(rate: 20, count: 8) + spin(
          verbose: true, directions: Array(repeating: 1, count: 8) + Array(repeating: -1, count: 4))
 simulate("Flick but slow down before letting go (aiming)", ticks: [0.05, 0.074, 0.098, 0.122, 0.146, 0.17, 0.202, 0.25, 0.322], until: 1.5)
 
-var yourCfg = GlideConfig()
+var yourCfg = followConfig
 yourCfg.scrollDistance = 5; yourCfg.scrollSmoothness = 0.15; yourCfg.scrollAcceleration = 0.25; yourCfg.throwAmount = 0.3
 print("\n--- with your current settings (5 pt, follow 0.15, accel 0.25, throw 0.3) ---")
 simulate("Typical flick, 10 ticks @ 41 t/s", ticks: spin(rate: 41, count: 10), until: 2.0, config: yourCfg)
@@ -103,6 +106,66 @@ simulate("Big flick, 25 ticks @ 62 t/s", ticks: spin(rate: 62, count: 25), until
 simulate("Short fast flick, 4 ticks @ 62 t/s", ticks: spin(rate: 62, count: 4), until: 1.5, config: fly)
 simulate("Flick, then catch it with one tick back", ticks: flick + [flick.last! + 0.12], until: 2.0, config: fly,
          directions: Array(repeating: 1, count: 10) + [-1])
+
+/// Keeps one scroller across a switch from Flywheel to Follow (in settings, or an app
+/// setup with its own mode) and checks the Follow ticks move about what they should:
+/// no jump by everything Flywheel scrolled, and no dead ring with the frame loop stuck.
+func simulateSwitch(_ name: String, flywheel: [(t: Double, dir: Double)], follow: [(t: Double, dir: Double)], until end: Double,
+                     switchAfter: Double = 1.5) -> Bool {
+    let s = SmoothScroller()
+    var config = GlideConfig()
+    config.scrollMode = .flywheel
+    s.config = config
+    var now = 0.0
+    s.clock = { now }
+    var events: [Frame] = []
+    s.output = { d in events.append(Frame(t: now, delta: d)) }
+
+    let switchAt = (flywheel.last?.t ?? 0) + switchAfter   // 1.5 s: the Flywheel coast has landed
+    let ticks = flywheel + follow.map { (t: $0.t + switchAt, dir: $0.dir) }
+    var nextTick = 0
+    var switched = false
+    var t = 0.0
+    while t <= switchAt + end {
+        if !switched && t >= switchAt {
+            config.scrollMode = .follow
+            s.config = config
+            switched = true
+        }
+        while nextTick < ticks.count && ticks[nextTick].t <= t {
+            now = ticks[nextTick].t
+            s.addTicks(ticks[nextTick].dir, flags: [])
+            nextTick += 1
+        }
+        now = t
+        s.frame(at: t)
+        t += 1.0 / 120
+    }
+    let firstFollow = switchAt + (follow.first?.t ?? 0)
+    let flown = events.filter { $0.t < firstFollow }.reduce(0) { $0 + $1.delta }
+    let followed = events.filter { $0.t >= firstFollow }.reduce(0) { $0 + $1.delta }
+    let lastOut = events.last?.t ?? 0
+    // Follow at 14 pt/tick with no boost for slow ticks: each tick is worth ~14 pt.
+    let net = follow.reduce(0) { $0 + $1.dir } * config.scrollDistance
+    let ok = followed * net > 0 && abs(followed) <= abs(net) * 3 + 1 && abs(followed) >= abs(net) * 0.5
+        && lastOut < switchAt + (follow.last?.t ?? 0) + 0.5
+    print(String(format: "%@\n  Flywheel %.0f pt, then Follow %.0f pt (expected ≈ %.0f)  last output %.0f ms after the last tick  %@",
+                 name, flown, followed, net, (lastOut - switchAt - (follow.last?.t ?? 0)) * 1000, ok ? "OK" : "FAIL"))
+    return ok
+}
+
+print("\n--- Switching from Flywheel to Follow keeps one scroller ---")
+let flyDown = spin(rate: 60, count: 30).map { (t: $0, dir: 1.0) }
+let flyUpThenDown = spin(rate: 60, count: 40).map { (t: $0, dir: -1.0) } + spin(rate: 60, count: 15, start: 1.2).map { (t: $0, dir: 1.0) }
+let slowDown = spin(rate: 5, count: 3, start: 0.1).map { (t: $0, dir: 1.0) }
+let slowUp = spin(rate: 5, count: 3, start: 0.1).map { (t: $0, dir: -1.0) }
+var switchOK = true
+switchOK = simulateSwitch("Flywheel down, then Follow down (the ring used to go dead)", flywheel: flyDown, follow: slowDown, until: 2.0) && switchOK
+switchOK = simulateSwitch("Flywheel up then down, then Follow down (the page used to jump)", flywheel: flyUpThenDown, follow: slowDown, until: 2.0) && switchOK
+switchOK = simulateSwitch("Flywheel down, then Follow up", flywheel: flyDown, follow: slowUp, until: 2.0) && switchOK
+switchOK = simulateSwitch("Switch while the page is still flying", flywheel: flyDown, follow: [(t: 0.01, dir: 1)], until: 2.0,
+                                 switchAfter: 0.05) && switchOK
+if !switchOK { print("Mode switch: FAILED"); exit(1) }
 
 // How far hard spins go (real spins on the Expert Mouse reach 70–130+ ticks/s).
 print("\n--- Fast-spin reach: the same spin with the old hard limit (reach 0) and the new default (reach 0.5) ---")
