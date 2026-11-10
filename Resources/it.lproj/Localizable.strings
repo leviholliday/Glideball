@@ -97,6 +97,9 @@
 
 "Restored your previous settings" = "Impostazioni precedenti ripristinate";
 
+/* Toast; the name of a button preset */
+"Applied “Spaces + Wispr Flow”" = "Applicato “Spazi + Wispr Flow”";
+
 /* ---- AppProfile.swift ---- */
 
 /* Pointer speed in an app setup */
@@ -680,6 +683,17 @@
 /* ---- ButtonsView.swift ---- */
 
 "Press a button on your trackball — its row lights up." = "Premi un pulsante della trackball: la sua riga si illumina.";
+
+/* Button preset name */
+"Spaces + Wispr Flow" = "Spazi + Wispr Flow";
+
+"Top buttons switch Spaces; bottom left + both top buttons hold ⌃Space for Wispr Flow." = "I tasti in alto cambiano spazio; in basso a sinistra + entrambi i tasti in alto tengono premuto ⌃Space per Wispr Flow.";
+
+/* Button preset: apply it */
+"Apply" = "Applica";
+
+/* Button preset: already in use */
+"Applied" = "Applicato";
 
 "Normally: %@" = "Di solito: %@";
 

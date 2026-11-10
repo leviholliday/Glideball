@@ -457,6 +457,18 @@ final class AppModel {
         show(.init(symbol: "arrow.down.doc.fill", text: String(localized: "Imported “\(pending.fileName)”"), action: .undoImport))
     }
 
+    /// The Buttons tab's "Spaces + Wispr Flow" preset: one click, and Undo in
+    /// the toast (like an import) puts back what was there.
+    func applySpacesAndWisprFlow() {
+        var updated = config
+        updated.applySpacesAndWisprFlow()
+        guard updated != config else { return }
+        configBeforeImport = config
+        config = updated
+        show(.init(symbol: "wand.and.stars", text: String(localized: "Applied “Spaces + Wispr Flow”", comment: "Toast; the name of a button preset"),
+                   action: .undoImport))
+    }
+
     func undoImport() {
         guard let previous = configBeforeImport else { return }
         config = previous
