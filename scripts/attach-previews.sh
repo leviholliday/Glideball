@@ -10,15 +10,32 @@ REPO=leviholliday/glideball
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 
-# CI only runs when linux/ or windows/ change, so use each workflow's newest run
-# on main (waiting for it if it's still going); it must have passed.
+# CI only runs when linux/ or windows/ change, so use each workflow's newest
+# successful run on main whose artifacts still exist (waiting for the newest run
+# if it's still going; if that one failed, stop). GitHub deletes artifacts after
+# 90 days; this script never triggers CI itself.
+expired=()
 for wf in linux.yml windows.yml; do
   print "==> Newest $wf build on main"
-  id=$(gh run list --repo $REPO --workflow $wf --branch main --event push --limit 1 --json databaseId -q '.[0].databaseId')
-  [[ -n $id ]] || { print -u2 "error: no $wf runs on main yet"; exit 1; }
-  gh run watch "$id" --repo $REPO --exit-status >/dev/null || { print -u2 "error: $wf run $id failed — not attaching"; exit 1; }
+  latest=$(gh run list --repo $REPO --workflow $wf --branch main --limit 1 --json databaseId -q '.[0].databaseId')
+  [[ -n $latest ]] || { print -u2 "error: no $wf runs on main yet"; exit 1; }
+  gh run watch "$latest" --repo $REPO --exit-status >/dev/null || { print -u2 "error: $wf run $latest failed — not attaching"; exit 1; }
+  id=''
+  for cand in ${(f)"$(gh run list --repo $REPO --workflow $wf --branch main --status success --limit 20 --json databaseId -q '.[].databaseId')"}; do
+    live=$(gh api "repos/$REPO/actions/runs/$cand/artifacts" -q '[.artifacts[] | select(.expired == false)] | length')
+    if (( live > 0 )); then id=$cand; break; fi
+  done
+  if [[ -z $id ]]; then expired+=($wf); continue; fi
   gh run download "$id" --repo $REPO --dir "$WORK/$wf"
 done
+if (( ${#expired} )); then
+  print -u2 "error: no successful ${(j: or :)expired} run on main still has its artifacts (GitHub deletes them after 90 days)."
+  print -u2 "       Re-run the workflow(s), wait for them to finish, then run this script again:"
+  for wf in $expired; do print -u2 "         gh workflow run $wf --repo $REPO --ref main"; done
+  print -u2 "       (i.e. gh workflow run linux.yml / gh workflow run windows.yml)"
+  print -u2 "       then: scripts/attach-previews.sh $TAG"
+  exit 1
+fi
 
 typeset -A names=(
   'glideball-linux-*.tar.gz'   Glideball-Linux-Preview.tar.gz
