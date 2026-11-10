@@ -1,8 +1,10 @@
 #!/bin/zsh
 # Ships a Glideball update end to end:
 #   1. scripts/release.sh  — universal build, sign, zip, tag, GitHub release
-#   2. Netlify             — redeploy the website (its download links always
-#                            point at the newest release)
+#   2. Netlify             — redeploy the website, but only if website/ changed
+#                            since the last final release (the download links
+#                            follow the newest release without a redeploy);
+#                            --no-site skips it
 #   3. Installs the new build on this Mac
 #
 # Usage: scripts/ship.sh 2.1 "What's new in this version"
@@ -15,13 +17,15 @@ cd "$(dirname "$0")/.."
 
 NETLIFY_SITE="749c72a7-7049-463e-8555-48263ed392ec"   # glideball.netlify.app
 
-usage() { print -u2 "usage: scripts/ship.sh <version> \"<release notes>\" [--beta]"; exit 64; }
+usage() { print -u2 "usage: scripts/ship.sh <version> \"<release notes>\" [--beta] [--no-site]"; exit 64; }
 
 BETA=0
+NO_SITE=0
 typeset -a positional
 for arg in "$@"; do
   case $arg in
     --beta|--prerelease) BETA=1 ;;
+    --no-site)           NO_SITE=1 ;;
     -*)                  print -u2 "error: unknown option: $arg"; usage ;;
     *)                   positional+=("$arg") ;;
   esac
@@ -37,15 +41,31 @@ if (( BETA )) && [[ ${VERSION#v} != *-* ]]; then
   print -u2 "error: --beta needs a prerelease version, e.g. ${VERSION#v}-beta.1"; exit 64
 fi
 
+# Last FINAL release tag (no "-"): promoting 2.10-beta.N to 2.10 compares against
+# the previous final release, not the beta, and the site only cares about finals.
+last_final=$(git describe --tags --abbrev=0 --exclude='*-*' 2>/dev/null || true)
+
+SITE_DEPLOY=0
 if (( ! BETA )); then
-  command -v netlify >/dev/null || { print -u2 "error: the Netlify CLI isn't installed (brew install netlify-cli)"; exit 1; }
+  if (( NO_SITE )); then
+    print "note: --no-site given; the website will not be deployed"
+  elif [[ -z $last_final ]] || ! git diff --quiet "$last_final" HEAD -- website; then
+    SITE_DEPLOY=1
+  fi
+fi
+if (( SITE_DEPLOY )); then
+  command -v netlify >/dev/null || { print -u2 "error: the Netlify CLI isn't installed (brew install netlify-cli); or pass --no-site"; exit 1; }
   # (`netlify status` fails in folders not linked to a site, so ask the API instead.)
-  netlify api getCurrentUser >/dev/null 2>&1 || { print -u2 "error: not logged in to Netlify — run: netlify login"; exit 1; }
+  netlify api getCurrentUser >/dev/null 2>&1 || { print -u2 "error: not logged in to Netlify — run: netlify login (or pass --no-site)"; exit 1; }
 fi
 [[ $NOTES != "What's new in this version" && $NOTES != "What's new in this beta" ]] \
   || { print -u2 "error: write real release notes — people see them in the update menu"; exit 64; }
 
-last_tag=$(git describe --tags --abbrev=0 2>/dev/null || true)
+if (( BETA )); then
+  last_tag=$(git describe --tags --abbrev=0 2>/dev/null || true)
+else
+  last_tag=$last_final
+fi
 if [[ -n $last_tag ]] && [[ -z $(git log --oneline "$last_tag"..HEAD -- Sources Resources Package.swift) ]]; then
   print -u2 "error: nothing in the app has changed since $last_tag — commit your changes first"
   print -u2 "       (website-only changes: scripts/deploy-site.sh)"
@@ -59,8 +79,15 @@ else
   scripts/release.sh "$VERSION" "$NOTES"
   print "\n==> Updating the Homebrew cask"
   scripts/update-cask.sh "$VERSION" || print -u2 "warning: cask not updated — rerun: scripts/update-cask.sh $VERSION"
-  print "\n==> Deploying the website"
-  scripts/deploy-site.sh "Glideball $VERSION"
+  if (( SITE_DEPLOY )); then
+    print "\n==> Deploying the website"
+    scripts/deploy-site.sh "Glideball $VERSION" \
+      || print -u2 "warning: website not deployed — rerun: scripts/deploy-site.sh \"Glideball $VERSION\""
+  elif (( NO_SITE )); then
+    print "\n==> Skipping the website (--no-site)"
+  else
+    print "\n==> Skipping the website (website/ hasn't changed since $last_final)"
+  fi
 fi
 
 print "\n==> Attaching the Linux & Windows previews (waits for CI)"
@@ -75,5 +102,5 @@ if (( BETA )); then
 else
   print "\n✓ Glideball $VERSION is out:"
   print "  Release:  https://github.com/leviholliday/glideball/releases/tag/v${VERSION#v}"
-  print "  Website:  https://glideball.netlify.app"
+  if (( SITE_DEPLOY )); then print "  Website:  https://glideball.netlify.app"; fi
 fi
