@@ -11,7 +11,7 @@
   --bg-2: #160f3f;
   --ink: #f6f4ff;
   --ink-2: rgba(236, 232, 255, 0.76);
-  --ink-3: rgba(221, 214, 254, 0.56);
+  --ink-3: rgba(221, 214, 254, 0.60);
   --line: rgba(255, 255, 255, 0.10);
   --line-2: rgba(255, 255, 255, 0.16);
 
@@ -33,7 +33,7 @@
   --pink: #f472b6;
   --accent-ink: #c4b5fd;
   --grad-text: linear-gradient(115deg, #ffffff 8%, #ddd3ff 42%, #9ef0f2 92%);
-  --grad-btn: linear-gradient(135deg, #8b5cf6 0%, #6366f1 48%, #0ea5e9 100%);
+  --grad-btn: linear-gradient(135deg, #7c3aed 0%, #4f46e5 48%, #0369a1 100%);
   --btn-glow: 0 10px 34px -8px rgba(124, 92, 255, 0.75);
 
   /* Blobs */
@@ -61,7 +61,7 @@
     --bg-2: #e9f3ff;
     --ink: #1a1342;
     --ink-2: rgba(26, 19, 66, 0.74);
-    --ink-3: rgba(26, 19, 66, 0.54);
+    --ink-3: rgba(26, 19, 66, 0.68);
     --line: rgba(64, 44, 150, 0.12);
     --line-2: rgba(64, 44, 150, 0.18);
 
@@ -80,7 +80,7 @@
     --pink: #db2777;
     --accent-ink: #6d28d9;
     --grad-text: linear-gradient(115deg, #24145f 10%, #6d28d9 52%, #0e7490 96%);
-    --grad-btn: linear-gradient(135deg, #8b5cf6 0%, #6366f1 48%, #0ea5e9 100%);
+    --grad-btn: linear-gradient(135deg, #7c3aed 0%, #4f46e5 48%, #0369a1 100%);
     --btn-glow: 0 10px 30px -10px rgba(99, 70, 230, 0.6);
 
     --blob-1: rgba(196, 181, 253, 0.85);
@@ -726,7 +726,7 @@ h3 { font-size: 19px; font-weight: 750; letter-spacing: -0.015em; line-height: 1
 .seg {
   position: relative;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   margin: 0;
   padding: 4px;
   border: 1px solid var(--inset-border);
@@ -855,7 +855,8 @@ h3 { font-size: 19px; font-weight: 750; letter-spacing: -0.015em; line-height: 1
 @media (max-width: 480px) {
   .demo { padding: 12px; border-radius: var(--r-lg); }
   .demo-bar { flex-direction: column; align-items: stretch; }
-  .seg label { padding: 9px 10px; font-size: 14.5px; }
+  .seg label { padding: 9px 6px; font-size: 14px; gap: 5px; }
+  .seg label .icon { display: none; }
   .demo-bar .btn { width: 100%; }
 }
 
@@ -1460,3 +1461,32 @@ h3 { font-size: 19px; font-weight: 750; letter-spacing: -0.015em; line-height: 1
 .privacy-body a { color: var(--accent-ink); text-underline-offset: 3px; }
 .footer-links #cg-analytics-settings { display: inline; min-height: 0; padding: 0; font: inherit; font-weight: 600; font-size: 15px; color: var(--ink-2); text-decoration: none; }
 .footer-links #cg-analytics-settings:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+
+/* Demo list on touch screens: the page scrolls past it until a tap arms it. */
+@media (pointer: coarse) {
+  .fw-viewport { touch-action: pan-y; }
+  .fw-viewport.armed { touch-action: none; }
+}
+
+/* Linux & Windows heading and cards */
+#linux-windows { margin-top: 56px; }
+.step.step-plain { padding-left: 26px; }
+
+/* Copy button beside the Homebrew command */
+.step code:has(+ .copy-btn) { display: inline-block; max-width: 100%; overflow-x: auto; white-space: nowrap; vertical-align: middle; }
+.copy-btn {
+  margin-left: 8px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line-2);
+  background: var(--inset);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.copy-btn:hover { border-color: var(--accent-ink); }
+.copy-btn:focus-visible { outline: 2.5px solid var(--cyan); outline-offset: 2px; }
+.copy-btn.copied { color: var(--accent-ink); border-color: var(--accent-ink); }

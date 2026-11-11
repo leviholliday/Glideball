@@ -75,7 +75,7 @@ function gate(setup) {
   app.innerHTML = `
     <div class="gate"><div class="card glass">
       <img src="${ICON}" alt="">
-      <h1>Glide Feedback</h1>
+      <h1>Glideball Feedback</h1>
       <p>${setup ? "Choose the password for this page. You'll need the setup code once." : "Sign in to read what people have sent."}</p>
       <form id="gate">
         ${setup ? `<label for="code">Setup code</label><input class="field" id="code" autocomplete="one-time-code" required>` : ""}
@@ -303,7 +303,7 @@ function renderDetail(it) {
       </div>
       <div class="d-meta">
         <span class="prio ${esc(it.priority)}">${cap(it.priority)} priority</span>
-        <span>${it.platform === "web" ? "From the website" : `${esc(PLATFORM[it.platform] ?? it.platform)} · ${esc(it.app?.name ?? "Glide")} ${esc(it.app?.version ?? "")}${it.app?.build ? ` (build ${esc(it.app.build)})` : ""}`}</span>
+        <span>${it.platform === "web" ? "From the website" : `${esc(PLATFORM[it.platform] ?? it.platform)} · ${esc(it.app?.name ?? "Glideball")} ${esc(it.app?.version ?? "")}${it.app?.build ? ` (build ${esc(it.app.build)})` : ""}`}</span>
         <span title="${esc(when(it.createdAt))}">${esc(when(it.createdAt))}</span>
         ${it.status === "uploading" ? `<span>${unfinished(it)}</span>` : ""}
       </div>
@@ -324,7 +324,7 @@ function renderDetail(it) {
         <div class="from">
           <span class="who">${esc(it.name || "Someone who didn't say")}</span>
           ${!it.email ? "" : /^[^\s@?&#%/]+@[^\s@?&#%/]+$/.test(it.email)
-            ? `<a href="mailto:${esc(it.email)}?subject=${encodeURIComponent(`Your Glide feedback: ${it.title}`)}">${esc(it.email)}</a>`
+            ? `<a href="mailto:${esc(it.email)}?subject=${encodeURIComponent(`Your Glideball feedback: ${it.title}`)}">${esc(it.email)}</a>`
             : `<span>${esc(it.email)}</span>`}
           ${it.contactOK ? `<span class="ok">Happy to be contacted</span>` : it.email ? `<span>(didn't ask to be contacted)</span>` : ""}
         </div>
