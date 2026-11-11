@@ -31,7 +31,7 @@ The full plan and the audit behind it are in `.claude/plans/` (git-ignored).
 - If blocked for about ten minutes, message Levi on ntfy and stop.
 - Use subagents on the cheapest model that can do the job (Sonnet for mechanical work, Opus for
   hard code). One CI fix per push; never let agents poll CI.
-- Wording: Levi is a single student developer. Plain, personal, real; never corporate.
+- Wording: Levi is a single student developer. Follow `.claude/plans/voice-guide.md` (his voice guide) for every word the public sees.
 
 ## Build and release
 
