@@ -1058,7 +1058,6 @@
 
 "Feel" = "Gefühl";
 
-"System Settings tops out at 3. Glideball lets the Expert Mouse go far past it." = "Die Systemeinstellungen enden bei 3. Glideball bringt die Expert Mouse weit darüber hinaus.";
 
 "Presets" = "Vorgaben";
 
@@ -1174,13 +1173,11 @@
 
 "macOS scrolling" = "macOS-Scrollen";
 
-"Glideball steps aside and lets macOS scroll the ring itself — the same system Kensington's driver handed its ticks to. Only the speed is adjustable." = "Glideball tritt zur Seite und lässt macOS den Ring selbst scrollen — dasselbe System, an das Kensingtons Treiber seine Rasten übergab. Nur das Tempo ist einstellbar.";
 
 "Scroll speed" = "Scrolltempo";
 
 "System Settings' scroll-speed slider goes up to 1.7. This only affects the Expert Mouse." = "Der Scrolltempo-Regler in den Systemeinstellungen geht bis 1,7. Dies betrifft nur die Expert Mouse.";
 
-"Every tick gives the page a push; friction slows it down. Gentle turns barely coast, hard spins fly — one rule, no mode switching. Tuned from Kensington's own scrolling, at twice its frame rate." = "Jede Raste gibt der Seite einen Stoß; Reibung bremst sie ab. Sanftes Drehen gleitet kaum, kräftiges Drehen fliegt — eine Regel, kein Moduswechsel. Abgestimmt auf Kensingtons eigenes Scrollen, mit doppelter Bildrate.";
 
 "Slow-turn distance" = "Weg bei langsamem Drehen";
 
@@ -1252,11 +1249,8 @@
 
 "Shift scrolls sideways" = "⇧ scrollt seitwärts";
 
-"macOS does the scrolling" = "macOS übernimmt das Scrollen";
 
-"Push and glide — Kensington's feel" = "Anstoßen und gleiten — Kensingtons Gefühl";
 
-"Page tracks the ring exactly" = "Seite folgt dem Ring exakt";
 
 "Push per tick" = "Stoß pro Raste";
 
@@ -1268,7 +1262,6 @@
 
 "Points per tick" = "Punkte pro Raste";
 
-"Each push coasts for about %@ s before it fades out. Turn the ring the other way to stop it." = "Jeder Stoß gleitet etwa %@ s nach, bevor er ausläuft. Dreh den Ring in die Gegenrichtung, um ihn zu stoppen.";
 
 "After a flick" = "Nach einem Schwung";
 
@@ -1276,7 +1269,6 @@
 
 "ms" = "ms";
 
-"A typical flick coasts about %lld pt and lands after %lld ms — then stops dead. Slow down before letting go and it doesn't coast at all. Turn the ring back to catch it." = "Ein typischer Schwung gleitet etwa %lld pt weit und landet nach %lld ms — dann stoppt er abrupt. Bremst du vor dem Loslassen ab, gleitet nichts nach. Dreh den Ring zurück, um ihn abzufangen.";
 
 "Throw is off — the page stops the moment the ring stops." = "Wurf ist aus — die Seite stoppt, sobald der Ring stoppt.";
 
@@ -1664,3 +1656,33 @@
 "Your settings as a file" = "Deine Einstellungen als Datei";
 
 "iCloud Drive" = "iCloud Drive";
+/* The redesign (stage 2): Pointer and Scrolling, with a line under each slider about what it does now */
+"%@ of System Settings’ fastest scroll speed." = "%@ der schnellsten Scrollgeschwindigkeit in den Systemeinstellungen.";
+"%@ of System Settings’ fastest speed." = "%@ der höchsten Zeigergeschwindigkeit in den Systemeinstellungen.";
+"%@× System Settings’ fastest scroll speed." = "%@× so schnell wie die schnellste Scrollgeschwindigkeit in den Systemeinstellungen.";
+"%@× System Settings’ fastest speed." = "%@× so schnell wie die höchste Zeigergeschwindigkeit in den Systemeinstellungen.";
+"The same as System Settings’ fastest scroll speed." = "Genau die schnellste Scrollgeschwindigkeit der Systemeinstellungen.";
+"The same as System Settings’ fastest speed." = "Genau die höchste Zeigergeschwindigkeit der Systemeinstellungen.";
+"A hard spin moves each notch %@× as far: about %lld pt." = "Ein kräftiger Dreh bewegt jede Raste %@× so weit: etwa %lld pt.";
+"A slow notch moves the page %lld pt." = "Eine langsame Raste bewegt die Seite um %lld pt.";
+"A slow tick moves the page %lld pt, so ten ticks move it %lld pt." = "Eine langsame Raste bewegt die Seite um %lld pt, zehn Rasten also um %lld pt.";
+"A typical flick coasts about %lld pt and lands after %lld ms." = "Ein typischer Schwung gleitet etwa %lld pt weit und landet nach %lld ms.";
+"A very hard spin (70 ticks a second) coasts about %@× farther than with reach turned off." = "Ein sehr kräftiger Dreh (70 Rasten pro Sekunde) gleitet etwa %@× weiter als bei ausgeschalteter Reichweite.";
+"As fast as your normal speed right now, so Precision won’t slow the cursor down." = "Gerade so schnell wie dein normales Tempo, deshalb bremst Präzision den Zeiger nicht.";
+"At 40 ticks a second, each tick pushes the page about %lld pt." = "Bei 40 Rasten pro Sekunde schiebt jede Raste die Seite um etwa %lld pt an.";
+"At your spin power even a very hard spin goes no farther than with reach turned off." = "Bei deiner Drehkraft kommt selbst ein sehr kräftiger Dreh nicht weiter als bei ausgeschalteter Reichweite.";
+"Each push coasts for about %@ s before it fades out." = "Jeder Stoß gleitet etwa %@ s nach, bevor er ausläuft.";
+"Every notch moves the page the same distance, however fast you spin." = "Jede Raste bewegt die Seite gleich weit, egal wie schnell du drehst.";
+"Every tick pushes the page and friction slows it down: gentle turns barely coast, hard spins fly." = "Jede Raste stößt die Seite an, Reibung bremst sie ab: Sanftes Drehen gleitet kaum, kräftiges Drehen fliegt.";
+"Fast spins push no harder than slow ones: %lld pt a tick." = "Schnelles Drehen stößt nicht stärker an als langsames: %lld pt pro Raste.";
+"Glideball steps aside and macOS scrolls the ring itself. Only the speed is adjustable." = "Glideball tritt zur Seite und macOS scrollt den Ring selbst. Nur das Tempo ist einstellbar.";
+"Put the pointer over the list and spin the ring." = "Bewege den Zeiger über die Liste und dreh den Ring.";
+"Reach is off: every spin stops speeding up at Kensington’s top speed." = "Reichweite ist aus: Jeder Dreh wird bei Kensingtons Höchsttempo nicht mehr schneller.";
+"Rolling the ball one inch scrolls the page about %lld pt." = "Rollst du die Kugel einen Zoll, scrollt die Seite etwa %lld pt.";
+"Sets distance, power and glide to what Kensington’s own driver measured." = "Stellt Weg, Kraft und Gleiten auf das ein, was Kensingtons eigener Treiber gemessen hat.";
+"Slow down before letting go and it doesn't coast at all. Turn the ring back to catch it." = "Bremst du vor dem Loslassen ab, gleitet nichts nach. Dreh den Ring zurück, um ihn abzufangen.";
+"Smooth scrolling is off, so the page moves in plain steps." = "Weiches Scrollen ist aus, deshalb bewegt sich die Seite in einfachen Schritten.";
+"The page catches up with the ring in about %lld ms." = "Die Seite holt den Ring in etwa %lld ms ein.";
+"The page follows the ring exactly and stops when you stop. A hard flick can still throw it." = "Die Seite folgt dem Ring exakt und stoppt, wenn du stoppst. Ein kräftiger Schwung kann sie trotzdem werfen.";
+"Turn the ring the other way to stop it." = "Dreh den Ring in die Gegenrichtung, um ihn zu stoppen.";
+"While Precision is on, tracking drops to %@ of your normal speed." = "Solange Präzision an ist, sinkt das Zeigertempo auf %@ deines normalen Tempos.";

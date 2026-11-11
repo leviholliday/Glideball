@@ -69,6 +69,7 @@ COMPONENTS: dict[str, set] = {
     "PageHeader": {"title", "subtitle"},
     "SectionBlock": {"title", "caption"},
     "SectionTitle": {"title", "caption"},
+    "PlainSection": {"title", "caption"},
     "SettingRow": {"title", "hint"},
     "InlineStat": {"label"},
     "IconButton": {"help"},

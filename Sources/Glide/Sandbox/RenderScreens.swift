@@ -36,6 +36,15 @@ extension RenderUI {
             }
         }
 
+        // The Scrolling tab in its other two modes (the plain "scrolling" shows Flywheel).
+        for (mode, name) in [(ScrollMode.native, "scrolling-native"), (.follow, "scrolling-follow")] {
+            add("\(name)-page", "Whole tabs (scrolled)", "Scrolling in \(mode.rawValue) mode, whole page",
+                prepare: { model.config.scrollMode = mode },
+                cleanup: { model.config.scrollMode = .flywheel }) { dark, scale in
+                fullPage(page(.scroll, model), dark: dark, scale: scale)
+            }
+        }
+
         // States of the main window.
         add("permissions-needed", "States", "Permissions needed",
             prepare: { model.hasAccessibility = false; model.hasInputMonitoring = false }) { dark, scale in
