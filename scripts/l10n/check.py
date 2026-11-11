@@ -80,8 +80,7 @@ COMPONENTS: dict[str, set] = {
     "labeled": {0},                      # FeedbackView
     "sendButton": {"title"},             # FeedbackView
     "permissionButton": {"on", "off"},   # RootView
-    "header": {1, 2},                    # WelcomeTourView
-    "feature": {1},                      # WelcomeTourView
+    "header": {0, 1},                    # WelcomeTourView
     "permissionRow": {0, "detail"},      # WelcomeTourView
     "option": {"detail"},                # ShareDataViews (SmallFavourCard)
 }

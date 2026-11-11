@@ -100,17 +100,21 @@ enum SelfTest {
             } else {
                 try check(launch.show == .intro, "a first launch should play the intro, got \(String(describing: launch.show))")
             }
+            if case .splash? = launch.show {
+                try check(launch.revealAt + 0.35 <= 1.2, "the short animation takes \(launch.revealAt + 0.35) s (1.2 s at most)")
+            }
             var drawn = 0
-            for t in [0.3, 4.2] {
+            for t in [0.3, 1.4, 3.0, 4.2, 5.6] {
                 try draw(IntroScene(t: t, calm: false), "intro at \(t) s", size: RenderUI.windowSize, allowBlank: t < 1); drawn += 1
             }
             try draw(IntroScene(t: 1.0, calm: true), "intro, Reduce Motion", size: RenderUI.windowSize); drawn += 1
             for variant in SplashVariant.allCases {
-                for t in [0.4, 1.05] {
+                for t in [0.2, 0.8] {
                     // Early frames may be almost empty by design; the last must show something.
-                    try draw(SplashScene(variant: variant, t: t, calm: false), "splash \(variant) at \(t) s", size: RenderUI.windowSize, allowBlank: t < 1); drawn += 1
+                    try draw(SplashScene(variant: variant, t: t, calm: false), "splash \(variant) at \(t) s", size: RenderUI.windowSize, allowBlank: t < 0.5); drawn += 1
                 }
             }
+            try draw(SplashScene(variant: .ringSpin, t: 0.3, calm: true), "quick fade", size: RenderUI.windowSize); drawn += 1
             return "\(launch.show == .intro ? "intro" : "short animation") chosen; \(drawn) frames drawn"
         }
 
@@ -144,7 +148,8 @@ enum SelfTest {
             for s in WelcomeTourView.Step.allCases {
                 try draw(WelcomeTourView(model: model, step: s), "tour step \(s.rawValue + 1)", size: RenderUI.windowSize)
             }
-            return "\(WelcomeTourView.Step.allCases.count) steps drawn"
+            try draw(WelcomeTourView(model: model, step: .buttons, found: [0, 2]), "tour, two buttons found", size: RenderUI.windowSize)
+            return "\(WelcomeTourView.Step.allCases.count) steps drawn, and a step part-done"
         }
 
         step("sheets and panels") {
@@ -154,6 +159,76 @@ enum SelfTest {
             try draw(UpdatePanelView(updates: model.updates) {}, "Software Update")
             try draw(BackupHistoryCard(model: model, store: model.backups).frame(width: 900), "Backups")
             return "About, Feedback, A small favor, Software Update, Backups drawn"
+        }
+
+        step("what's new") {
+            // The table: at most five items a version, each with words in it.
+            for e in WhatsNew.entries {
+                try check(!e.items.isEmpty && e.items.count <= 5, "What's New \(e.version) has \(e.items.count) items (1–5)")
+                try check(e.items.allSatisfy { !$0.title.isEmpty && !$0.text.isEmpty }, "What's New \(e.version) has an empty item")
+                try check(Set(e.items.map(\.id)).count == e.items.count, "What's New \(e.version) repeats an item id")
+            }
+            // When it's due: once per major.minor, never without an entry.
+            try check(WhatsNew.majorMinor("2.10-beta.7") == "2.10" && WhatsNew.majorMinor("2.10.1") == "2.10"
+                      && WhatsNew.majorMinor("3") == "3", "majorMinor reads versions wrong")
+            try check(WhatsNew.isDue(seen: nil, version: "2.10-beta.7"), "2.10 isn't due for someone who's never seen one")
+            try check(WhatsNew.isDue(seen: "2.9", version: "2.10"), "2.10 isn't due after 2.9")
+            try check(!WhatsNew.isDue(seen: "2.10", version: "2.10.1"), "2.10 is due twice")
+            try check(!WhatsNew.isDue(seen: nil, version: "0.1"), "a version with no entry is due")
+            // What this launch decided.
+            let hasEntry = WhatsNew.entry(for: WhatsNew.currentVersion) != nil
+            if returning {
+                try check(WhatsNew.isPending == hasEntry, "after an update, What's New should\(hasEntry ? "" : "n't") be waiting")
+            } else {
+                try check(!WhatsNew.isPending, "a fresh install should never get What's New")
+            }
+            try draw(WhatsNewView(model: model), "What's New", size: RenderUI.windowSize)
+            return returning ? (hasEntry ? "waiting after an update; drawn" : "no entry for this version; drawn")
+                             : "not shown on a fresh install; drawn"
+        }
+
+        step("one thing at a time") {
+            let launch = LaunchExperience.shared
+            // Never over the launch animation (the short one may already have
+            // played out while the tabs were drawn; the intro is still going)…
+            var shown: [String] = []
+            if launch.show != nil {
+                try check(model.presentNextPrompt(ignoringWindow: true) == nil, "a prompt showed over the launch animation")
+                // …which ends on a click (the real path: reveal, then finish).
+                launch.skip()
+                let until = Date().addingTimeInterval(1.5)
+                while launch.show != nil && Date() < until { RunLoop.main.run(until: Date().addingTimeInterval(0.05)) }
+                try check(launch.show == nil, "the launch animation didn't end after a skip")
+            }
+            if returning {
+                let first = model.presentNextPrompt(ignoringWindow: true)
+                if WhatsNew.entry(for: WhatsNew.currentVersion) != nil {
+                    try check(first == .whatsNew && model.showingWhatsNew, "What's New didn't come first after an update")
+                    try check(!WhatsNew.isPending, "What's New wasn't marked seen")
+                    try check(model.presentNextPrompt(ignoringWindow: true) == nil, "something showed on top of What's New")
+                    model.closeWhatsNew()
+                    shown.append("What's New")
+                }
+                try check(!model.showingWhatsNew, "What's New didn't close")
+                try check(model.presentNextPrompt(ignoringWindow: true) == (ShareData.shared.shouldAsk ? .smallFavor : nil),
+                          "the wrong thing came next")
+            } else {
+                // A fresh install: the tour first, and nothing on top of it.
+                model.showWelcomeTour()
+                try check(model.presentNextPrompt(ignoringWindow: true) == nil, "a prompt showed over the Welcome Tour")
+                shown.append("the tour")
+                model.closeWelcomeTour()
+                let next = model.presentNextPrompt(ignoringWindow: true)
+                try check(next == (ShareData.shared.shouldAsk ? .smallFavor : nil), "after the tour came \(String(describing: next))")
+                try check(next != .whatsNew, "What's New showed on a fresh install")
+                if next == .smallFavor {
+                    try check(model.presentNextPrompt(ignoringWindow: true) == nil, "two prompts at once")
+                    shown.append("the small favor")
+                }
+            }
+            model.showingSmallFavor = false
+            model.showingWhatsNew = false
+            return (shown.isEmpty ? "nothing due" : shown.joined(separator: ", then ") + ", one at a time") + "; never over the launch"
         }
 
         step("nothing live") {

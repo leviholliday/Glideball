@@ -988,7 +988,6 @@
 
 "Click or press Escape to skip" = "点按或按下 Esc 键跳过";
 
-"Make your Expert Mouse feel amazing" = "让你的 Expert Mouse 手感超棒";
 
 "Click to skip" = "点按以跳过";
 
@@ -1325,11 +1324,9 @@
 
 /* ---- WelcomeTourView.swift ---- */
 
-"Welcome Tour" = "欢迎导览";
 
 "Close the tour (esc) — reopen it from Help › Show Welcome Tour…" = "关闭导览（esc）— 可从“帮助 › 显示欢迎导览…”重新打开";
 
-"Close tour" = "关闭导览";
 
 "Skip for now" = "暂时跳过";
 
@@ -1345,15 +1342,10 @@
 
 "Welcome to Glideball" = "欢迎使用 Glideball";
 
-"Your Kensington trackball, tuned exactly the way you like it." = "你的 Kensington 轨迹球，完全按你喜欢的方式调校。";
 
-"A faster pointer" = "更快的指针";
 
-"A silky scroll ring" = "丝滑的滚动环";
 
-"Buttons that do more" = "更能干的按钮";
 
-"About a minute. Use Return or the arrow keys to move along." = "大约一分钟。使用 Return 键或方向键继续。";
 
 "Glideball needs these to read your trackball and change what it does. Until both are on, your trackball works normally and Glideball stays out of the way." = "Glideball 需要这些权限来读取轨迹球并改变它的功能。两项都开启前，轨迹球照常工作，Glideball 不会干扰。";
 
@@ -1391,35 +1383,23 @@
 
 "%lld of 4 found. Shortcuts are paused while you try them, so nothing happens by surprise." = "已找到 %lld/4 个。试按期间快捷键会暂停，不会有意外发生。";
 
-"Choose your scrolling" = "选择滚动方式";
 
-"How the scroll ring moves the page. Try one, spin the ring, and switch whenever you like." = "滚动环如何移动页面。挑一种，转转滚动环，随时可以切换。";
 
 "How far the cursor travels when you roll the ball. macOS stops at its own setting; Glideball goes past it." = "滚动轨迹球时指针移动的距离。macOS 有自己的上限，Glideball 可以超越它。";
 
 "Fine-tune both later in the Pointer and Scrolling tabs." = "稍后可在“指针”和“滚动”标签页中微调。";
 
-"You're always in control" = "一切尽在掌控";
 
-"Two promises that keep your Mac usable, whatever you set up." = "两项承诺，无论你如何设置，Mac 都始终可用。";
 
-"Pause instantly" = "一键暂停";
 
-"Press ⌃⌥⌘G anywhere and Glideball pauses — your trackball goes straight back to plain macOS. Press it again to resume." = "在任意位置按下 ⌃⌥⌘G，Glideball 就会暂停，轨迹球立即恢复为原本的 macOS 行为。再按一次即可恢复。";
 
-"Glideball is on — try it" = "Glideball 已开启 — 试试看";
 
 "Glideball is paused" = "Glideball 已暂停";
 
-"Main click stays a left click" = "主点按始终是左键点按";
 
-"The bottom-left button is always a left click, whatever else you remap — so Glideball can never lock you out." = "无论你如何重新映射，左下按钮始终是左键点按，因此 Glideball 永远不会让你失去控制。";
 
-"Quitting Glideball also puts your trackball back to normal." = "退出 Glideball 也会让轨迹球恢复正常。";
 
-"You're all set" = "一切就绪";
 
-"Glideball keeps running when you close its window — click Glideball in the Dock to come back." = "关闭窗口后 Glideball 仍会继续运行 — 点按程序坞中的 Glideball 即可回来。";
 
 "Turn On" = "开启";
 
@@ -1627,3 +1607,37 @@
 "Your trackball, live" = "你的轨迹球，实时";
 "No trackball connected" = "未连接轨迹球";
 "Default: %@" = "默认：%@";
+
+/* The redesign (stage 2): launch, Welcome Tour, What’s New */
+"A new look" = "全新外观";
+"A ruler to try scrolling on" = "用来试试滚动的标尺";
+"Closing the window keeps Glideball running" = "关闭窗口后 Glideball 仍会继续运行";
+"Crash reports, only if you want" = "崩溃报告，仅在你愿意时发送";
+"Every version, on the Glideball website" = "所有版本，见 Glideball 网站";
+"For your Kensington trackball" = "为你的 Kensington 轨迹球而做";
+"Full changelog" = "完整更新记录";
+"Give it a flick over the ruler and watch how far it glides." = "在标尺上用力拨一下滚动环，看看它能滑多远。";
+"Glideball › Settings (⌘,) has everything that used to sit at the bottom of Overview, plus a new set of soft sounds you can turn off with one switch." = "Glideball › 设置（⌘,）里有以前放在“概览”底部的所有内容，还有一组新的轻柔音效，一个开关就能全部关掉。";
+"Here’s what changed since 2.9.1. Most of it is how Glideball looks and sounds; your settings are all still here." = "这是 2.9.1 以来的变化。大多是 Glideball 的外观和声音；你的设置都还在。";
+"How Glideball uses these, on the Glideball website" = "Glideball 为什么需要这些（Glideball 网站）";
+"It works. %lld of 4 found." = "成功了。已找到 %lld 个，共 4 个。";
+"Let’s set up your trackball. It takes about a minute." = "来设置你的轨迹球吧，大约需要一分钟。";
+"Open Settings › %@" = "打开“设置” › %@";
+"Open it again from the Dock or the menu bar." = "可从程序坞或菜单栏再次打开。";
+"Pause any time with %@" = "随时按 %@ 暂停";
+"Pausing puts your speed back" = "暂停会恢复你的速度";
+"Pick a pointer speed" = "选择指针速度";
+"Press Return to go on, or use the arrow keys." = "按 Return 键继续，或使用方向键。";
+"Raycast and scripts" = "Raycast 和脚本";
+"Roll the ball after each one to feel the difference." = "每选一个都滚动一下球，感受区别。";
+"Settings get their own window" = "设置有了自己的窗口";
+"Show Me" = "显示";
+"Skip Tour" = "跳过导览";
+"Spin the scroll ring" = "转动滚动环";
+"There’s a sidebar now, with your trackball at the top. Roll the ball, turn the ring or press a button and it moves with you. Glideball has a new icon too." = "现在有了边栏，你的轨迹球就在最上方。滚动球、转动滚动环或按下按钮，它都会跟着动。Glideball 也有了新图标。";
+"Turn on Allow Raycast and scripts and you can pause Glideball, switch Precision or change the scroll mode from Raycast or a glideball:// link." = "开启“允许 Raycast 和脚本”后，你可以通过 Raycast 或 glideball:// 链接暂停 Glideball、切换精准模式或更改滚动模式。";
+"What’s new in Glideball %@" = "Glideball %@ 的新功能";
+"When you pause or quit Glideball, your trackball goes back to exactly the tracking speed in System Settings, so it always feels the same." = "暂停或退出 Glideball 时，你的轨迹球会准确恢复到“系统设置”里的跟踪速度，手感始终如一。";
+"You can let Glideball send me crash reports, and a few anonymous settings stats if you like. It’s off unless you pick it." = "你可以让 Glideball 向我发送崩溃报告，愿意的话再加上一些匿名的设置统计。除非你选择，否则保持关闭。";
+"Your trackball goes straight back to plain macOS. Press it again to resume." = "你的轨迹球会立刻恢复为普通 macOS 的样子。再按一次即可继续。";
+"You’re all set" = "一切就绪";

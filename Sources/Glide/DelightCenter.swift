@@ -56,7 +56,8 @@ final class DelightCenter {
 
     struct Burst: Identifiable, Equatable {
         let id = UUID()
-        let hues: [Double]
+        /// The part that was celebrated: most of the confetti is its color, the rest the other two parts'.
+        let lead: Metric?
     }
 
     // MARK: Plumbing
@@ -211,6 +212,7 @@ final class DelightCenter {
         let more = events.count - 1
 
         var toast = AppModel.Toast(symbol: symbol(for: top), text: title(for: top), celebration: true)
+        toast.part = part(for: top)
         var detail = self.detail(for: top)
         if more > 0 {
             detail = [detail, String(localized: "+\(more) more on Overview", comment: "More celebrations to see on the Overview tab")]
@@ -223,9 +225,9 @@ final class DelightCenter {
         // Never stack bursts: one every few seconds at most.
         if top.isBig, now.timeIntervalSince(lastCelebration) > 4 {
             lastCelebration = now
-            let b = Burst(hues: hues(for: top))
+            let b = Burst(lead: part(for: top))
             burst = b
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) { [weak self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + ConfettiBurst.life + 0.25) { [weak self] in
                 if self?.burst?.id == b.id { self?.burst = nil }
             }
             if !Sandbox.isActive { NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now) }
@@ -282,21 +284,13 @@ final class DelightCenter {
         }
     }
 
-    /// Confetti colors, roughly matching what was celebrated.
-    private func hues(for e: DelightEvent) -> [Double] {
+    /// The part a celebration is about (its toast icon and most of its confetti take that part's color).
+    private func part(for e: DelightEvent) -> Metric? {
         switch e {
-        case .milestone(let m): Self.hues(for: m.metric)
-        case .dayRecord(let m, _): Self.hues(for: m)
-        default: [0.52, 0.78, 0.9, 0.14]
-        }
-    }
-
-    static func hues(for m: Metric) -> [Double] {
-        switch m {
-        // The part's own color (ring pink, ball blue, buttons amber), with a little gold.
-        case .scroll: [0.92, 0.94, 0.9, 0.14]
-        case .ball: [0.58, 0.6, 0.55, 0.14]
-        case .clicks: [0.1, 0.09, 0.11, 0.14]
+        case .milestone(let m): m.metric
+        case .dayRecord(let m, _): m
+        case .record(let k, _): k == .roll ? .ball : .scroll
+        default: nil
         }
     }
 }

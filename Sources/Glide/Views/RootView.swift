@@ -81,10 +81,17 @@ struct RootView: View {
                     .transition(.opacity.combined(with: .scale(scale: 1.02)))
             }
         }
+        .overlay {
+            if model.showingWhatsNew {
+                WhatsNewView(model: model)
+                    .transition(.opacity.combined(with: .scale(scale: 1.02)))
+            }
+        }
         // The launch animation, over everything until it hands over.
         .overlay { LaunchOverlay() }
         .animation(.smooth(duration: 0.35), value: model.showingWelcomeTour)
         .animation(.smooth(duration: 0.35), value: model.showingSmallFavor)
+        .animation(.smooth(duration: 0.3), value: model.showingWhatsNew)
         .sheet(isPresented: $model.showingFeedback) {
             FeedbackView(model: model)
         }
@@ -139,6 +146,7 @@ struct RootView: View {
         .overlay(alignment: .bottom) {
             if let toast = model.toast {
                 ToastView(toast: toast, model: model)
+                    .environment(\.celebrationPart, toast.part)
                     .padding(.bottom, 20)
                     .padding(.horizontal, 24)
                     .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))

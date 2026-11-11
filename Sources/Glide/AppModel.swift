@@ -52,8 +52,10 @@ final class AppModel {
     var showingAbout = false
     /// The Welcome Tour over the main window (see WelcomeTour.swift).
     var showingWelcomeTour = false
-    /// The "A small favor" card over the main window (see `offerSmallFavor()`).
+    /// The "A small favor" card over the main window (see `showNextPrompt()`).
     var showingSmallFavor = false
+    /// What's New over the main window (see WhatsNew.swift).
+    var showingWhatsNew = false
     /// Work with Kensington's other trackballs. Per-Mac, never synced — see
     /// `OtherTrackballs`. Takes effect immediately.
     var otherTrackballs = OtherTrackballs.isEnabled {
@@ -247,7 +249,7 @@ final class AppModel {
         engine.onModes = { [weak self] m in self?.modes = m }
         delight.reloadHistory(currentKey: totalsDay)
         delight.present = { [weak self] in self?.show($0) }
-        delight.canCelebrate = { [weak self] in self?.showingWelcomeTour == false }
+        delight.canCelebrate = { [weak self] in self?.showingWelcomeTour == false && self?.showingWhatsNew == false }
         backups.currentConfig = { AppModel.shared.config }
         // `--render-ui` and `--self-test`: a model with nothing live — no engine,
         // timers, observers, sync or update checks (see Sandbox.swift).
@@ -396,6 +398,8 @@ final class AppModel {
         var detail: String? = nil
         /// A milestone, record or finished step — drawn a little more festive.
         var celebration = false
+        /// The part a celebration is about: its icon takes that part's color.
+        var part: Metric? = nil
     }
 
     struct PendingImport: Identifiable {
@@ -407,19 +411,7 @@ final class AppModel {
     @ObservationIgnored private var configBeforeImport: GlideConfig?
     @ObservationIgnored private var toastDismissal: DispatchWorkItem?
 
-    /// Shows the "A small favor" card (opt-in crash reports and stats) if it
-    /// hasn't been answered, once the window is open and nothing else is over
-    /// it: never on top of the launch animation, the Welcome Tour or a sheet.
-    /// If something's in the way it waits for the next time the window opens.
-    func offerSmallFavor(after delay: Double = 0.8) {
-        guard ShareData.shared.shouldAsk else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-            guard let self, ShareData.shared.shouldAsk, !self.showingSmallFavor, !self.showingWelcomeTour,
-                  !self.showingFeedback, !self.showingAbout, self.pendingImport == nil,
-                  LaunchExperience.shared.show == nil, self.windowVisible else { return }
-            self.showingSmallFavor = true
-        }
-    }
+    // What's New and the "A small favor" card take turns: see `showNextPrompt()` in WhatsNew.swift.
 
     func show(_ toast: Toast) {
         self.toast = toast

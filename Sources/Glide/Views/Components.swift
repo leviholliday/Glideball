@@ -548,13 +548,6 @@ struct GlassCard<Content: View>: View {
 
 /// The plain window background (no gradient, no mesh).
 struct GlideBackground: View {
-    /// The colors the launch animations bloom through (their own world, not the window's).
-    static let darkColors: [Color] = [
-        Color(red: 0.06, green: 0.07, blue: 0.20), Color(red: 0.18, green: 0.10, blue: 0.42), Color(red: 0.05, green: 0.16, blue: 0.30),
-        Color(red: 0.10, green: 0.30, blue: 0.55), Color(red: 0.38, green: 0.18, blue: 0.62), Color(red: 0.05, green: 0.38, blue: 0.48),
-        Color(red: 0.08, green: 0.10, blue: 0.24), Color(red: 0.55, green: 0.20, blue: 0.48), Color(red: 0.06, green: 0.14, blue: 0.28),
-    ]
-
     var body: some View {
         Theme.windowBackground.ignoresSafeArea()
     }
