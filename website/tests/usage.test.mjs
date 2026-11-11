@@ -404,3 +404,61 @@ test("the hourly cleanup drops old rate counters and never touches the data", as
   assert.deepEqual(S().keys(), before);
   assert.equal(stores["glide-feedback-misc"].keys().filter((k) => k.startsWith("rate/")).length, 0);
 });
+
+// ---------------------------------------------------------------- security review, 2026-11-11
+
+test("a version named like an object's own methods counts as a number", async () => {
+  fresh();
+  const cookie = await signIn();
+  await ping(1, { version: "constructor" });
+  await ping(2, { version: "toString" });
+  await ping(3, { version: "constructor" });
+  await crash(1, { version: "constructor" });
+  const d = await (await A("usage", {}, cookie)).json();
+  assert.deepEqual(d.breakdowns.version, { constructor: 2, toString: 1 });
+  assert.deepEqual(d.crashes[0].versions, { constructor: 1 });
+});
+
+test("scrub() can't be got round with invisible characters, case or a drive name with spaces", () => {
+  const ZWSP = String.fromCodePoint(0x200b), RLO = String.fromCodePoint(0x202e), LRI = String.fromCodePoint(0x2066);
+  assert.equal(scrub("/Us\u0001ers/jane/x", 200), "/Users/~/x");
+  assert.equal(scrub(`/Users/ja${ZWSP}ne/x`, 200), "/Users/~/x");
+  assert.equal(scrub("/users/jane/x", 200), "/users/~/x");
+  assert.equal(scrub("on /Volumes/Jane Doe's Passport/z", 200), "on /Volumes/~/z");
+  assert.equal(scrub(`j${ZWSP}ane@exa\u0002mple.com`, 200), "(email)");
+  assert.equal(scrub(`a${RLO}b${LRI}c`, 200), "abc");
+  assert.equal(scrub("line one\nline two\ttab", 200), "line one\nline two\ttab");
+});
+
+test("Delete my data: at most 500 a day from everywhere (each one reads every key)", async () => {
+  fresh();
+  const del = (ip) => call(usageFn, "/api/usage", { method: "DELETE", body: JSON.stringify({ installId: ID(1) }) }, ip);
+  const codes = [];
+  for (let i = 0; i < 501; i++) codes.push((await del(`203.0.${Math.floor(i / 20)}.${(i % 20) + 1}`)).status);
+  assert.equal(codes.filter((c) => c === 200).length, 500);
+  assert.equal(codes.at(-1), 429);
+  clock += DAY;
+  assert.equal((await del("203.0.113.200")).status, 200, "the next day");
+});
+
+test("feedback: at most 200 items a day from everywhere, however many addresses", async () => {
+  fresh();
+  const { default: feedbackFn } = await import("../netlify/functions/feedback.mjs");
+  const send = (ip) => call(feedbackFn, "/api/feedback", { method: "POST", body: JSON.stringify({ title: "Hi", platform: "web" }) }, ip);
+  const codes = [];
+  for (let i = 0; i < 201; i++) codes.push((await send(`198.18.${Math.floor(i / 12)}.${(i % 12) + 1}`)).status);
+  assert.equal(codes.filter((c) => c === 201).length, 200);
+  assert.equal(codes.at(-1), 429);
+  clock += DAY;
+  assert.equal((await send("198.18.200.1")).status, 201, "the next day");
+});
+
+test("the admin pages get a policy of their own, with no outside scripts", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const toml = await readFile(new URL("../netlify.toml", import.meta.url), "utf8");
+  const block = /for = "\/admin\/\*"\s*\[headers\.values\]([\s\S]*?)(?=\n\[\[|$)/.exec(toml)?.[1] ?? "";
+  const csp = /Content-Security-Policy = "([^"]+)"/.exec(block)?.[1] ?? "";
+  assert.match(csp, /script-src 'self';/);
+  assert.match(csp, /connect-src 'self';/);
+  assert.ok(!/https?:|sha256-|unsafe/.test(csp), csp);
+});

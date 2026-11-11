@@ -59,6 +59,8 @@ async function route(req, context) {
 async function create(req, context) {
   const ip = clientIP(req, context);
   if (!(await allow(`create/${ip}`, 12, 3600))) return fail(429, "That's a lot of feedback at once. Try again in a while.");
+  // However many addresses it comes from: each item may bring up to 80 MB.
+  if (!(await allow("create/everyone", 200, 86400))) return fail(429, "That's a lot of feedback today. Try again tomorrow.");
   const text = await req.text();
   if (text.length > 256 * 1024) return fail(413, "That's too long to send.");
   let b;
