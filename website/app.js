@@ -501,6 +501,8 @@
     vp.addEventListener('wheel', (e) => {
       if (e.ctrlKey) return; // let pinch-zoom through
       if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+      // At either end of the list, let the page scroll instead of trapping the wheel.
+      if ((e.deltaY < 0 && pos <= 0 && v <= 0) || (e.deltaY > 0 && pos >= maxPos && v >= 0)) return;
       e.preventDefault();
       let d = e.deltaY;
       if (e.deltaMode === 1) d *= 40;
@@ -513,8 +515,25 @@
     let startY = 0;
     let startPos = 0;
     let trail = [];
+    // On touch screens the list only captures swipes after a tap arms it, so the page can still scroll.
+    const coarse = window.matchMedia('(pointer: coarse)');
+    let armed = false;
+    let tapX = 0;
+    let tapY = 0;
+    const disarm = () => { armed = false; vp.classList.remove('armed'); };
+    document.addEventListener('pointerdown', (e) => { if (armed && !vp.contains(e.target)) disarm(); });
+    vp.addEventListener('blur', disarm);
+    vp.addEventListener('pointerup', (e) => {
+      if (coarse.matches && !armed && Math.hypot(e.clientX - tapX, e.clientY - tapY) < 10) {
+        armed = true;
+        vp.classList.add('armed');
+      }
+    });
     vp.addEventListener('pointerdown', (e) => {
       if (e.button !== 0) return;
+      tapX = e.clientX;
+      tapY = e.clientY;
+      if (coarse.matches && !armed) return;
       dragging = true;
       dragId = e.pointerId;
       startY = e.clientY;
@@ -800,7 +819,7 @@
     const links = document.querySelectorAll('a[href$="/releases/latest/download/Glideball.zip"]');
     if (!links.length) return;
     let toast = null;
-    let hideTimer = 0;
+    let hideTimer = 0; // kept for hide(); the toast now stays until dismissed
     let lastBurst = 0;
 
     const hide = () => {
@@ -815,7 +834,7 @@
     };
 
     const show = () => {
-      if (toast) { clearTimeout(hideTimer); hideTimer = setTimeout(hide, 9000); return; }
+      if (toast) return;
       const svgNS = 'http://www.w3.org/2000/svg';
       toast = document.createElement('div');
       toast.className = 'dl-toast glass';
@@ -834,14 +853,24 @@
       const text = document.createElement('div');
       text.className = 'dl-text';
       const title = document.createElement('strong');
-      title.textContent = 'Glideball is on its way';
       const next = document.createElement('span');
-      next.append('Unzip it and drag Glideball to Applications. ');
-      const steps = document.createElement('a');
-      steps.href = '#install';
-      steps.textContent = 'First-launch tips';
-      steps.addEventListener('click', hide);
-      next.append(steps);
+      if (window.matchMedia('(pointer: coarse)').matches) {
+        title.textContent = 'Glideball is a Mac app';
+        next.append('Open this page on your Mac to install it.');
+      } else {
+        title.textContent = 'Glideball is on its way';
+        next.append('Unzip it and drag Glideball to Applications. The first time you open it, macOS will say \u201CGlideball\u201D Not Opened. Click ');
+        const done = document.createElement('b');
+        done.textContent = 'Done';
+        const anyway = document.createElement('b');
+        anyway.textContent = 'Open Anyway';
+        next.append(done, ', then ', anyway, ' in System Settings \u203A Privacy & Security. ');
+        const steps = document.createElement('a');
+        steps.href = '#install';
+        steps.textContent = 'Install steps';
+        steps.addEventListener('click', hide);
+        next.append(steps);
+      }
       text.append(title, next);
 
       const close = document.createElement('button');
@@ -853,7 +882,6 @@
 
       toast.append(check, text, close);
       document.body.append(toast);
-      hideTimer = setTimeout(hide, 9000);
     };
 
     links.forEach((a) => a.addEventListener('click', () => {
@@ -866,6 +894,35 @@
       }
       show();
     }));
+  }
+
+  /* ------------------------------------------------------------ Copy buttons */
+  function initCopy() {
+    document.querySelectorAll('.copy-btn[data-copy]').forEach((btn) => {
+      const label = btn.textContent;
+      let timer = 0;
+      btn.addEventListener('click', async () => {
+        const text = btn.dataset.copy;
+        let ok = false;
+        try {
+          await navigator.clipboard.writeText(text);
+          ok = true;
+        } catch (_) {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.setAttribute('readonly', '');
+          ta.className = 'sr-only';
+          document.body.append(ta);
+          ta.select();
+          try { ok = document.execCommand('copy'); } catch (__) { ok = false; }
+          ta.remove();
+        }
+        btn.textContent = ok ? 'Copied' : 'Copy failed';
+        btn.classList.toggle('copied', ok);
+        clearTimeout(timer);
+        timer = setTimeout(() => { btn.textContent = label; btn.classList.remove('copied'); }, 2000);
+      });
+    });
   }
 
   /* ------------------------------------------------------------ Magnetic buttons */
@@ -940,6 +997,7 @@
     initDemo();
     initDash();
     initDownload();
+    initCopy();
     initMagnetic();
     initGlow();
   };
@@ -959,64 +1017,4 @@
       el.hidden = false;
     })
     .catch(() => {});
-})();
-
-/* Footer privacy: the analytics snippet (added in Netlify) drops a raw privacy notice and a
-   "Privacy settings" link at the very end of the page. Tidy them into the footer: a collapsed
-   notice card, plus "Privacy" and "Privacy settings" links beside the other footer links. */
-(() => {
-  const ID = "cg-website-privacy";
-  const GLANCE = [
-    "Google Analytics: only if you accept",
-    "Cloudflare analytics: no cookies",
-    "No advertising features",
-    "The apps are separate",
-  ];
-  function tidy() {
-    const nav = document.querySelector(".footer-links");
-    const inner = document.querySelector(".footer-inner");
-    const section = document.getElementById(ID);
-    if (!nav || !inner) return;
-    const settings = document.getElementById("cg-analytics-settings");
-    if (settings && settings.parentElement !== nav) nav.appendChild(settings);
-    if (!section || section.dataset.tidy) return;
-    section.dataset.tidy = "1";
-
-    const title = section.querySelector("h2");
-    const paragraphs = [...section.querySelectorAll(":scope > p")];
-    const details = document.createElement("details");
-    details.className = "privacy-details";
-    const summary = document.createElement("summary");
-    summary.id = "cg-website-privacy-title";
-    summary.textContent = (title && title.textContent) || "Website privacy and analytics";
-    const body = document.createElement("div");
-    body.className = "privacy-body";
-    const glance = document.createElement("ul");
-    glance.className = "privacy-glance";
-    for (const text of GLANCE) {
-      const li = document.createElement("li");
-      li.textContent = text;
-      glance.appendChild(li);
-    }
-    body.append(glance, ...paragraphs);
-    details.append(summary, body);
-    section.replaceChildren(details);
-    section.classList.add("privacy-block");
-    inner.appendChild(section);
-
-    const link = document.createElement("a");
-    link.href = "#" + ID;
-    link.textContent = "Privacy";
-    nav.insertBefore(link, settings && settings.parentElement === nav ? settings : null);
-
-    const reveal = () => { if (location.hash === "#" + ID) details.open = true; };
-    window.addEventListener("hashchange", reveal);
-    document.addEventListener("click", (e) => {
-      if (e.target.closest && e.target.closest('a[href="#' + ID + '"]')) details.open = true;
-    });
-    reveal();
-  }
-  // The snippet runs around DOMContentLoaded; try again shortly in case it's late.
-  document.addEventListener("DOMContentLoaded", tidy);
-  window.addEventListener("load", () => { tidy(); setTimeout(tidy, 800); });
 })();

@@ -290,7 +290,7 @@
   function finish() {
     doneText.textContent = contactEl.checked
       ? "It's on its way to the developer. If there's anything to follow up on, you'll hear back by email."
-      : "It's on its way to the developer. Thanks for helping make Glide better.";
+      : "It's on its way to the developer. Thanks for helping make Glideball better.";
     setBusy(false);
     progress.hidden = true;
     form.hidden = true;
