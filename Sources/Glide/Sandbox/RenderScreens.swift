@@ -22,6 +22,13 @@ extension RenderUI {
             }
         }
 
+        // The smallest the window goes (860 × 580): nothing may clip or wrap mid-word.
+        for (tab, name) in tabs {
+            add("min-size-\(name)", "Smallest window", "\(tab.rawValue) tab at the minimum size") { dark, scale in
+                mainWindow(model, tab: tab, dark: dark, scale: scale, size: AppDelegate.mainWindowMinSize)
+            }
+        }
+
         // Whole tabs, top to bottom: everything scrolling would reveal.
         for (tab, name) in tabs {
             add("\(name)-page", "Whole tabs (scrolled)", "\(tab.rawValue), whole page") { dark, scale in

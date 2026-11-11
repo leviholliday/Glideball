@@ -20,11 +20,10 @@ struct BackupView: View {
     @Bindable var model: AppModel
 
     var body: some View {
-        VStack(spacing: 18) {
-            HStack(alignment: .top, spacing: 18) {
-                ExportCard(model: model)
-                ImportCard(model: model)
-            }
+        // One column, as the redesigned pages are (this page's own redesign comes later).
+        VStack(spacing: Theme.Space.section) {
+            ExportCard(model: model)
+            ImportCard(model: model)
             SyncCard(model: model, sync: model.sync)
             BackupHistoryCard(model: model, store: model.backups)
             Text(versionLine)

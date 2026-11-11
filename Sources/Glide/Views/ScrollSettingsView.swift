@@ -5,16 +5,16 @@ struct ScrollSettingsView: View {
     @Bindable var model: AppModel
 
     var body: some View {
-        VStack(spacing: 18) {
+        // One column, as the redesigned pages are (this page's own redesign comes later).
+        VStack(spacing: Theme.Space.section) {
             ModePicker(mode: $model.config.scrollMode)
-            HStack(alignment: .top, spacing: 18) {
-                VStack(spacing: 18) {
+            VStack(spacing: Theme.Space.section) {
+                VStack(spacing: Theme.Space.section) {
                     ScrollControls(config: $model.config)
                     ballScrollCard
                 }
-                .frame(width: 340)
 
-                VStack(spacing: 18) {
+                VStack(spacing: Theme.Space.section) {
                     switch model.config.scrollMode {
                     case .native:
                         EmptyView()
@@ -194,8 +194,6 @@ struct ScrollControls: View {
 
 struct ModePicker: View {
     @Binding var mode: ScrollMode
-    /// One above another, for a narrow column (an app setup).
-    var stacked = false
     @Namespace private var ns
 
     private func info(_ m: ScrollMode) -> (String, String, String) {
@@ -208,13 +206,7 @@ struct ModePicker: View {
 
     var body: some View {
         GlassEffectContainer(spacing: 8) {
-            Group {
-                if stacked {
-                    VStack(spacing: 4) { options() }
-                } else {
-                    HStack(spacing: 8) { options() }
-                }
-            }
+            HStack(spacing: 8) { options() }
             .padding(6)
             .glassEffect(.regular, in: .rect(cornerRadius: 22))
         }

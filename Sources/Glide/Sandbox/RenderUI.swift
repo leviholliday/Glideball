@@ -208,6 +208,7 @@ enum RenderUI {
 
     /// The main window on `tab`, as it opens, with `overlay` on top (the tour, say).
     static func mainWindow<O: View>(_ model: AppModel, tab: GlideTab, dark: Bool, scale: CGFloat,
+                                    size: NSSize? = nil,
                                     @ViewBuilder overlay: () -> O) -> NSBitmapImageRep? {
         UserDefaults.standard.set(tab.rawValue, forKey: "GlideInitialTab")
         defer { UserDefaults.standard.removeObject(forKey: "GlideInitialTab") }
@@ -215,11 +216,12 @@ enum RenderUI {
             RootView(model: model)
             overlay()
         }
-        return Offscreen.render(view, size: windowSize, chrome: .mainWindow, appearance: appearance(dark), scale: scale)
+        return Offscreen.render(view, size: size ?? windowSize, chrome: .mainWindow, appearance: appearance(dark), scale: scale)
     }
 
-    static func mainWindow(_ model: AppModel, tab: GlideTab, dark: Bool, scale: CGFloat) -> NSBitmapImageRep? {
-        mainWindow(model, tab: tab, dark: dark, scale: scale) { EmptyView() }
+    static func mainWindow(_ model: AppModel, tab: GlideTab, dark: Bool, scale: CGFloat,
+                           size: NSSize? = nil) -> NSBitmapImageRep? {
+        mainWindow(model, tab: tab, dark: dark, scale: scale, size: size) { EmptyView() }
     }
 
     /// A whole tab, top to bottom (what scrolling would show), without the sidebar: the content column at its full width.

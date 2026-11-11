@@ -13,16 +13,16 @@ struct AppsView: View {
             if profiles.isEmpty {
                 emptyState
             } else {
-                HStack(alignment: .top, spacing: 18) {
-                    VStack(spacing: 18) {
+                // One column, as the redesigned pages are (this page's own redesign comes later).
+                VStack(alignment: .leading, spacing: Theme.Space.section) {
+                    VStack(alignment: .leading, spacing: 10) {
                         listCard
                         Text("When one of these apps is in front, Glideball switches to its setup. Anything left on “Main setup” follows your main settings.")
                             .font(.system(size: 12))
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
-                            .padding(.horizontal, 6)
+                            .padding(.horizontal, 2)
                     }
-                    .frame(width: 220)
 
                     if let id = model.selectedProfileID, profiles.contains(where: { $0.id == id }) {
                         ProfileEditor(model: model, profileID: id)
@@ -219,7 +219,7 @@ private struct ProfileEditor: View {
                             mainSummary: main.scrollMode.title,
                             isCustom: customizing(\.scroll) { model.config.scrollSettings }) {
                 let scroll = scrollConfig
-                ModePicker(mode: scroll.scrollMode, stacked: true)
+                ModePicker(mode: scroll.scrollMode)
                 ScrollControls(config: scroll)
             }
 
