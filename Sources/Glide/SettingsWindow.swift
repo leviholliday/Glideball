@@ -62,6 +62,8 @@ final class SettingsWindowController: NSWindowController, NSToolbarDelegate {
     private var heights: [SettingsPane: CGFloat] = [:]
     private let container = FlippedView()
     private var switching = false
+    /// Bumped with every switch, so a slower one never finishes over a newer one.
+    private var generation = 0
 
     init() {
         current = UserDefaults.standard.string(forKey: Self.lastPaneKey).flatMap(SettingsPane.init(rawValue:)) ?? .general
@@ -164,9 +166,12 @@ final class SettingsWindowController: NSWindowController, NSToolbarDelegate {
     }
 
     /// Shows `pane`. Animated: the old tab goes, the window eases to the new one's
-    /// height, then the new tab fades in with a 6 pt rise (a plain fade with Reduce Motion).
+    /// height, then the new tab fades in with a 6 pt rise (a plain fade with Reduce
+    /// Motion). Another click part-way through simply takes over.
     func select(_ pane: SettingsPane, animated: Bool) {
-        guard let w = window, !(switching && animated) else { return }
+        guard let w = window else { return }
+        generation += 1
+        let mine = generation
         current = pane
         UserDefaults.standard.set(pane.rawValue, forKey: Self.lastPaneKey)
         w.title = pane.title
@@ -175,19 +180,20 @@ final class SettingsWindowController: NSWindowController, NSToolbarDelegate {
         let h = height(of: pane)
         guard let target = frame(forContentHeight: h) else { return }
         container.subviews.forEach { $0.removeFromSuperview() }
-        let reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
-        let rise: CGFloat = reduceMotion ? 0 : Theme.Motion.tabRise
-        view.frame = NSRect(x: 0, y: 0, width: Self.width, height: h)
         view.autoresizingMask = [.width, .height]
+        view.alphaValue = 1
 
         guard animated, w.isVisible else {
+            switching = false
             w.setFrame(target, display: true)
             view.frame = container.bounds
             container.addSubview(view)
             return
         }
         switching = true
-        let fadeIn = {
+        let rise: CGFloat = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion ? 0 : Theme.Motion.tabRise
+        let fadeIn = { [weak self] in
+            guard let self, self.generation == mine else { return }
             view.frame = self.container.bounds.offsetBy(dx: 0, dy: rise)
             view.alphaValue = 0
             self.container.addSubview(view)
@@ -196,7 +202,15 @@ final class SettingsWindowController: NSWindowController, NSToolbarDelegate {
                 ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
                 view.animator().alphaValue = 1
                 view.animator().frame = self.container.bounds
-            }, completionHandler: { self.switching = false })
+            }, completionHandler: { [weak self] in
+                guard let self, self.generation == mine else { return }
+                self.switching = false
+                // It may have changed height while it was on its way in.
+                if let h = self.heights[pane], let target = self.frame(forContentHeight: h),
+                   abs(target.height - w.frame.height) > 0.5 {
+                    w.animator().setFrame(target, display: true)
+                }
+            })
         }
         if abs(target.height - w.frame.height) < 0.5 {
             fadeIn()

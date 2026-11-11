@@ -248,12 +248,10 @@ struct LookSettingsPane: View {
 
     var body: some View {
         SettingsPage {
-            SectionBlock(title: "App icon", dividerInset: SettingsLayout.symbolInset) {
-                SettingsRow(title: "Icon", hint: iconHint, symbol: "app.badge") {
+            SectionBlock(title: "Look", dividerInset: SettingsLayout.symbolInset) {
+                SettingsRow(title: "App icon", hint: iconHint, symbol: "app.badge") {
                     AppIconPicker()
                 }
-            }
-            SectionBlock(title: "Motion", dividerInset: SettingsLayout.symbolInset) {
                 SettingsRow(title: "When Glideball opens", hint: launchHint, symbol: "play.circle") {
                     RowPicker(title: "When Glideball opens", selection: $launch.style) {
                         ForEach(LaunchExperience.Style.allCases) { style in
@@ -306,8 +304,10 @@ private struct SoundPreviewRow: View {
     @State private var playing: Sound?
 
     private let sounds: [(Sound, LocalizedStringKey)] = [
-        (.resume, "Resume"), (.pause, "Pause"), (.modeOn, "Mode on"), (.modeOff, "Mode off"),
-        (.tick, "Saved"), (.milestone, "Milestone"), (.milestoneBig, "Big milestone"),
+        (.resume, LocalizedStringKey("Resume")), (.pause, LocalizedStringKey("Pause")),
+        (.modeOn, LocalizedStringKey("Mode on")), (.modeOff, LocalizedStringKey("Mode off")),
+        (.tick, LocalizedStringKey("Saved")), (.milestone, LocalizedStringKey("Milestone")),
+        (.milestoneBig, LocalizedStringKey("Big milestone")),
     ]
 
     var body: some View {
