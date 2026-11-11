@@ -37,8 +37,17 @@ The full plan and the audit behind it are in `.claude/plans/` (git-ignored).
 
 - `swift build -c release` to compile. `./build.sh` also replaces /Applications/Glideball.app
   and relaunches it.
-- Checks before shipping: `scripts/scroll-sim/run.sh`, `scripts/backup-sim/run.sh`,
-  `python3 scripts/l10n/check.py` (8 translations must be complete).
+- Checks before shipping: `scripts/check.sh` (about a minute). It builds and runs the scroll and
+  backup simulators, the translation check (complete, no repeated keys), the website's tests, the
+  site build and link check, the self-test and a render of every screen. `ship.sh` and `release.sh`
+  run it first and stop on any failure (`--skip-checks` overrides, loudly); after publishing,
+  `release.sh` downloads the release from GitHub and verifies its signature, pinned requirement and
+  version (`scripts/release.sh --verify vX.Y` re-checks one any time).
+- Never run the real app to look at or test something: `scripts/render-ui.sh` draws every screen
+  to PNGs (with demo data, `build/screens/index.html`), and `scripts/self-test.sh` proves a build
+  launches. Both run a sandboxed copy with nothing live (no engine, event tap, network, sync,
+  hot keys or real settings), so they're safe while the installed Glideball runs. Details:
+  `docs/DEVELOPING.md`, "Pictures of every screen" and "The self-test".
 - Signing: the self-signed "Glide Local Signing" certificate. Installed copies only accept
   updates signed with it. Levi has a .p12 backup.
 - The bundle ID, executable and data folders are still named "Glide" on purpose.

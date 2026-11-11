@@ -109,6 +109,62 @@ rm glide-signing.cnf glide-signing.key glide-signing.crt glide-signing.p12
 - **`scripts/scroll-sim/run.sh`** compiles the real `SmoothScroller.swift` together with a test harness and feeds it synthetic tick patterns shaped like real Expert Mouse logs: single ticks, slow turns, flicks, catches and reversals, snapped to 8 ms USB polling. For every mode it reports distance, latency, settle time, stalled frames and how steady the speed is.
 - **`scripts/backup-sim/run.sh`** runs a year and a half of simulated use through the real `BackupStore` and checks the retention rules.
 
+## All the checks: `scripts/check.sh`
+
+One command runs everything that should pass before a release, prints a line per step and a summary, and exits non-zero if anything failed (each step's output is in `build/check/<step>.log`; `-v` shows it as it runs):
+
+| Step | What |
+| --- | --- |
+| build | `swift build -c release` |
+| scroll-sim, backup-sim | the two simulators above |
+| l10n | `scripts/l10n/check.py`: every language complete, format specifiers match, no key written twice in a `.strings` file |
+| website | `npm run test:usage` and any other `website/tests/*.test.mjs` (runs `npm ci` first if `node_modules` is missing) |
+| site | `build_pages.py` and `check_site.py` in a temporary copy of `website/`, so the check never changes committed files. If the fresh build differs from what's committed (usually a new release in the changelog) that's a note, not a failure. |
+| self-test | `scripts/self-test.sh` (below) |
+| render-ui | every screen drawn once (dark, 1x): all pictures made, none blank |
+
+`ship.sh` and `release.sh` run it first and stop if it fails. `--skip-checks` releases anyway, with a loud warning.
+
+## The sandbox: render-ui and self-test
+
+Two command-line modes run Glideball's real code with nothing live, so they're safe while the installed Glideball is running and owns the trackball (`Sources/Glide/Sandbox/`):
+
+- No `Engine.start()`: no event tap, no IOHIDManager, no input thread, no `PointerTuner` writes. `AppModel`'s init stops before its timers, observers, sync and update checks; an engine that was never started ignores every call.
+- `UserDefaults.standard` is swapped for an in-memory store before anything reads it, so the real settings are never read or written. Backups, the iCloud Drive sync folder and the scroll log go to a temp folder that's deleted at exit.
+- Every `URLSession.shared` request is answered inside the process (the update check and download); the mode proves that at start and stops if it isn't so. ShareData and Send Feedback never send.
+- No global hot keys, no menu-bar icon, no sounds or haptics, no login-item changes, no AppRename. The activation policy is `.prohibited` (no Dock icon, never in front) and no window is ever ordered front.
+- They refuse to run as the real app (bundle ID `com.leviholliday.glide`). The scripts run a copy, `build/sandbox/Glideball Sandbox.app` (`scripts/sandbox-app.sh`), with its own bundle ID, an executable called `GlideSandbox`, no document types, and the real translations, icon and sounds.
+
+Every guard is a `Sandbox.isActive` check, so `grep -rn Sandbox.isActive Sources` lists them.
+
+### Pictures of every screen: `scripts/render-ui.sh`
+
+```sh
+scripts/render-ui.sh                                  # build/screens/, light and dark, 2x
+scripts/render-ui.sh build/screens-de --lang de       # any translation, to check long strings
+scripts/render-ui.sh build/s --only 'settings-*,tour-*' --appearance dark --scale 1
+```
+
+It builds, then draws each screen offscreen with demo data (a connected Kensington Expert Mouse, a month of stats, milestones part-way, three app setups, two combos, sync on with three Macs, a backup history) to `<screen>.<light|dark>.png`, plus `index.html` (a contact sheet: open it in a browser) and `manifest.json`. `--only` takes names, a name's variants (`overview` also matches `overview-page`) or globs. Options: `--appearance light|dark|both`, `--scale 1|2`, `--lang <code>`, `--no-build`. About a minute for everything.
+
+Screens: the six tabs as the window opens (`overview`, `pointer`, `scrolling`, `buttons`, `apps`, `sync`) and each whole tab top to bottom (`*-page`); states (`permissions-needed`, `permissions-half`, `paused`, `no-trackball`, `other-kensington`, `modes-on`, `app-setup-active`, `celebration-toast`, `toast-import`, `import-preview`, `quick-assign`, `small-favor`); the Welcome Tour (`tour-1-welcome` … `tour-6-done`); `about`, `feedback`, `feedback-idea`, `feedback-sending`, `feedback-sent`, `backup-history`; Settings (`settings-general`, `-updates`, `-privacy`, `-shortcuts`, through the real Settings window with its toolbar); one frame of each launch animation (`launch-intro`, `launch-splash-1` … `6`); Software Update (`update-checking`, `-failed`, `-up-to-date`, `-available`, `-in-header`, `-downloading`, `-install-failed`, reached by answering the update check and download with canned replies).
+
+How it draws: each view is hosted in a window that's never ordered front, given a moment to settle (onAppear, async work), and its layer tree is drawn by Core Animation's own renderer (`CARenderer`) into a Metal texture: the renderer that draws windows on screen, so Liquid Glass, materials and vibrancy come out as they do in the app. AppKit's `cacheDisplay` (try `GLIDE_RENDER_ENGINE=appkit`) leaves glass empty and text in it black; `ImageRenderer` can't draw AppKit controls or scroll views. The window claims to be key, so controls, switches and traffic lights draw in their active colors. Animations are switched off, so everything is drawn where its animation would end.
+
+What isn't faithful:
+
+- The glass is drawn by the same renderer, but against what's inside the window only, and I couldn't compare it with a real screenshot (that needs screen capture). There's no window shadow or desktop behind the window.
+- Anything that's a separate window isn't drawn: menus and pop-up menus opened, tooltips, the menu-bar icon's menu, the share sheet, open and save panels. Sheets (About, Feedback) are drawn on their own, not over the dimmed window.
+- No hover or pressed states, no focus rings, no text cursor.
+- Things that move all the time are one moment of their motion: the live graphs show a fixed eight seconds of demo input, launch animations one chosen frame each, repeating effects (the syncing pulse, Quick assign's pulse) their first frame.
+- The Software Update panel's "Installing…" state isn't drawn: it only follows a verified download, which a render can't (and mustn't) produce.
+- Sync's "This Mac" row shows the real Mac's name, and app setups show icons of apps installed on the Mac that renders (a generic icon if one isn't).
+- `Context leak detected, CoreAnalytics returned false` in the output is macOS noise from the renderer, not an error.
+
+### The self-test: `scripts/self-test.sh`
+
+Proves a build launches without launching it. `--self-test` runs `AppDelegate`'s real launch path (menus, model, hot keys, the launch animation choice, the main window, built but never shown), then draws every tab, the Settings window's four tabs, each Welcome Tour step, the sheets and panels and frames of every launch animation, checks that nothing went live (no engine, no visible window, not the active app), and runs the quit path. One line per step; exit 0 if all pass, 1 on a failure, a crash (the step is named) or a timeout (10 s). The script runs it twice: as a brand-new Mac (first-launch intro) and with `--returning` (a returning user's settings, short animation). It takes about six seconds each.
+
 ## Translations
 
 Glideball ships in nine languages. How to add or change a string, and how to check every language, is in [`scripts/l10n/README.md`](../scripts/l10n/README.md). Run `scripts/l10n/check.py` before committing anything that adds UI text.
@@ -122,7 +178,8 @@ scripts/ship.sh 2.11-beta.1 "What's new in this beta" --beta
 
 `ship.sh` does the whole release:
 
-1. `scripts/release.sh` bumps the version, builds a universal (Apple silicon + Intel) app, signs it, zips it, commits, tags, pushes and publishes the GitHub release.
+0. `scripts/check.sh` (above) must pass; `--skip-checks` overrides it, with a loud warning.
+1. `scripts/release.sh` bumps the version, builds a universal (Apple silicon + Intel) app, signs it, zips it, commits, tags, pushes and publishes the GitHub release. Then it downloads `Glideball.zip` and `Glide.zip` back from GitHub into a temp folder and checks each app: `codesign --verify --deep --strict`, the pinned requirement installed copies check updates against (identifier and certificate leaf), the bundle ID, that the version matches the tag, and that `Glideball.zip` is the file it uploaded. If anything's wrong it says so loudly and exits 1, with the command to pull the release (`gh release edit <tag> --draft`). `scripts/release.sh --verify v2.11` re-runs just that check on any published release.
 2. For a full release, `scripts/update-cask.sh` points the [Homebrew cask](https://github.com/leviholliday/homebrew-tap) at it, and `scripts/deploy-site.sh` redeploys the website if `website/` changed since the last full release (`--no-site` skips it).
 3. `scripts/attach-previews.sh` waits for CI and attaches the Linux and Windows previews.
 
@@ -132,7 +189,7 @@ With `--beta`, the release is a GitHub prerelease: only people in the Beta progr
 
 Everyone else sees a button with the new version number at the top of the window within a day. **Install & Relaunch** downloads the zip, checks that the new app satisfies the running app's own designated requirement (same certificate and bundle ID, `UpdateChecker.swift`), refuses it otherwise, swaps the app and relaunches. Permissions carry over because the signature matches.
 
-`scripts/release.sh` on its own does just the GitHub half and has `--dry-run` (stop after building the zip) and `--prerelease`.
+`scripts/release.sh` on its own does just the GitHub half (checks included) and has `--dry-run` (stop after building the zip), `--prerelease`, `--skip-checks` and `--verify <tag>`.
 
 ## Feedback backend
 

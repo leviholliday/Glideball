@@ -5,10 +5,13 @@ import QuartzCore
 /// ~/Library/Logs/Glide/scroll.log. Used only on the engine's input thread;
 /// flushed from the engine's maintenance timer so logging never blocks input.
 final class Diagnostics {
+    /// Where the log goes. `--render-ui` and `--self-test` point this at their
+    /// temp folder before anything logs (Sandbox.swift), so the real log is never touched.
+    static var folder = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/Glide")
+
     static let url: URL = {
-        let dir = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/Glide")
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir.appendingPathComponent("scroll.log")
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        return folder.appendingPathComponent("scroll.log")
     }()
 
     private var lines: [String] = []

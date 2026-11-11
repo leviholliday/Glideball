@@ -12,11 +12,17 @@ struct WelcomeTourView: View {
         var id: Int { rawValue }
     }
 
-    @State private var step: Step = .welcome
+    @State private var step: Step
     @State private var forward = true
     @State private var found: Set<Int> = []
     @FocusState private var focused: Bool
     @Environment(\.appearsActive) private var appearsActive
+
+    /// `step` other than `.welcome` is for `--render-ui` and `--self-test`, which draw every step.
+    init(model: AppModel, step: Step = .welcome) {
+        self.model = model
+        _step = State(initialValue: step)
+    }
 
     private static let buttons: [(index: Int, name: String, normally: String)] = (0..<4).map {
         ($0, AppModel.buttonName($0), AppModel.buttonDefault($0))

@@ -4,9 +4,13 @@
 #   scripts/release.sh 1.1 "Release notes text"
 #   scripts/release.sh --dry-run 1.1 "Release notes text"
 #   scripts/release.sh --prerelease 2.4-beta.1 "Release notes text"
+#   scripts/release.sh --verify v2.4-beta.1        only check an already-published release
 #
 # What it does, in order:
 #   1. Preflight: clean git tree, on a branch, tag unused, gh logged in.
+#      Then scripts/check.sh (build, simulators, translations, website tests,
+#      the sandboxed self-test and render-ui): any failure stops the release.
+#      --skip-checks skips it, with a loud warning.
 #   2. Version:   CFBundleShortVersionString = <version>, CFBundleVersion + 1
 #                 in Resources/Info.plist.
 #   3. Build:     swift build -c release for Apple silicon and Intel, merge
@@ -16,6 +20,12 @@
 #   4. Package:   release/Glide.zip via ditto, and print its SHA-256.
 #   5. Publish:   commit "Release v<version>", tag v<version>, push both, and
 #                 create the GitHub release with Glide.zip attached.
+#   6. Verify:    download the published Glideball.zip and Glide.zip from
+#                 GitHub into a temp folder; each app must pass
+#                 codesign --verify --deep --strict, satisfy the pinned
+#                 requirement installed copies check updates against
+#                 (RELEASE_REQ below), and carry the tagged version. If not, it
+#                 says so loudly and exits 1 (the release is already public).
 #
 # Prereleases (--prerelease, or --beta) go only to people in Glide's Beta
 # program: the GitHub release is marked as a prerelease, which the website's
@@ -83,20 +93,94 @@ Options:
                     no commit, tag, push, or GitHub release. Info.plist is put back.
   -p, --prerelease  Publish as a GitHub prerelease: only Beta program members are
       --beta        offered it. Required for, and only for, -beta.N / -rc.N versions.
+      --skip-checks Don't run scripts/check.sh first (prints a loud warning)
+      --verify      Only verify an already-published release: scripts/release.sh --verify v2.4
   -h, --help        Show this help
 EOF
+}
+
+# ---------------------------------------------------------------- verifying a release
+
+# verify_release <tag> [local zip] [expected SHA-256 of Glideball.zip]: step 6.
+# Downloads the release's zips (or checks just the given zip, as Glideball.zip,
+# for testing) into a temp folder.
+verify_release() {
+  local tag=$1 local_zip=${2:-} want_sha=${3:-} version=${1#v} tmp failures=0
+  tmp=$(mktemp -d "${TMPDIR:-/tmp}/glideball-verify.XXXXXX")
+  local -a assets
+  if [[ -n $local_zip ]]; then
+    cp "$local_zip" "$tmp/Glideball.zip"
+    assets=(Glideball.zip:Glideball.app)
+  else
+    assets=(Glideball.zip:Glideball.app Glide.zip:Glide.app)
+    local attempt
+    for attempt in 1 2 3 4 5; do   # a fresh release can take a moment to be downloadable
+      gh release download "$tag" --pattern Glideball.zip --pattern Glide.zip --dir "$tmp" --clobber 2>/dev/null && break
+      info "Not downloadable yet; trying again in 5 s ($attempt/5)"
+      sleep 5
+    done
+  fi
+  verdict() {   # verdict <ok?> <text>
+    if (( $1 == 0 )); then printf '    %s✓%s %s\n' "$GREEN" "$RESET" "$2"
+    else printf '    %s✗ %s%s\n' "$RED" "$2" "$RESET"; failures=$(( failures + 1 )); fi
+  }
+  local pair zip name dir app got ok
+  for pair in $assets; do
+    zip=${pair%%:*} name=${pair#*:} dir="$tmp/${zip%.zip}"
+    info "$zip"
+    if [[ ! -s $tmp/$zip ]]; then verdict 1 "$zip couldn't be downloaded from release $tag"; continue; fi
+    if [[ $zip == Glideball.zip && -n $want_sha ]]; then
+      got=$(shasum -a 256 "$tmp/$zip" | awk '{print $1}')
+      if [[ $got == "$want_sha" ]]; then ok=0; else ok=1; fi
+      verdict $ok "the same bytes that were uploaded (SHA-256 ${got[1,12]}…)"
+    fi
+    mkdir -p "$dir"
+    if ! ditto -x -k "$tmp/$zip" "$dir" 2>/dev/null; then verdict 1 "$zip doesn't unzip"; continue; fi
+    app="$dir/$name"
+    if [[ ! -d $app ]]; then verdict 1 "$zip has no $name inside"; continue; fi
+    # (Each test is an `if` so a failure is reported, not an exit under set -e.)
+    if codesign --verify --deep --strict "$app" 2>/dev/null; then ok=0; else ok=1; fi
+    verdict $ok "codesign --verify --deep --strict"
+    if codesign --verify --strict -R "$RELEASE_REQ" "$app" 2>/dev/null; then ok=0; else ok=1; fi
+    verdict $ok "satisfies the pinned requirement (identifier $BUNDLE_ID, certificate leaf A729EA12…AC32)"
+    got=$($PLISTBUDDY -c "Print :CFBundleIdentifier" "$app/Contents/Info.plist" 2>/dev/null || true)
+    if [[ $got == "$BUNDLE_ID" ]]; then ok=0; else ok=1; fi
+    verdict $ok "bundle identifier is $BUNDLE_ID (got ${got:-nothing})"
+    got=$($PLISTBUDDY -c "Print :CFBundleShortVersionString" "$app/Contents/Info.plist" 2>/dev/null || true)
+    if [[ $got == "$version" ]]; then ok=0; else ok=1; fi
+    verdict $ok "version is $version, matching tag $tag (got ${got:-nothing})"
+  done
+  rm -rf "$tmp"
+  if (( failures )); then
+    printf '\n%s%s' "$RED" "$BOLD"
+    printf '  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
+    printf '  !!  RELEASE %s FAILED VERIFICATION (%d problem(s) above)\n' "$tag" "$failures"
+    printf '  !!  Installed copies would refuse it, or it is broken. Pull it now:\n'
+    printf '  !!      gh release edit %s --draft\n' "$tag"
+    printf '  !!  then fix the problem and release again.\n'
+    printf '  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
+    printf '%s\n' "$RESET"
+    return 1
+  fi
+  info "${GREEN}Verified: what GitHub serves for $tag is signed, pinned, and version $version.${RESET}"
 }
 
 # ---------------------------------------------------------------- arguments
 
 DRY_RUN=0
 PRERELEASE=0
+SKIP_CHECKS=0
+VERIFY_ONLY=0
+VERIFY_ZIP=''   # testing the verifier: --verify-zip=FILE checks a local zip instead of downloading
 typeset -a positional
 only_positional=0
 for arg in "$@"; do
   if (( only_positional )); then positional+=("$arg"); continue; fi
   case $arg in
     -n|--dry-run) DRY_RUN=1 ;;
+    --skip-checks) SKIP_CHECKS=1 ;;
+    --verify)     VERIFY_ONLY=1 ;;
+    --verify-zip=*) VERIFY_ONLY=1; VERIFY_ZIP=${arg#--verify-zip=} ;;
     -p|--prerelease|--beta) PRERELEASE=1 ;;
     -h|--help)    usage; exit 0 ;;
     --)           only_positional=1 ;;
@@ -104,6 +188,13 @@ for arg in "$@"; do
     *)            positional+=("$arg") ;;
   esac
 done
+
+if (( VERIFY_ONLY )); then
+  (( ${#positional} == 1 )) || die "--verify takes one tag, e.g. scripts/release.sh --verify v2.4-beta.1"
+  [[ -n $VERIFY_ZIP ]] || command -v gh >/dev/null || die "gh (GitHub CLI) is not installed"
+  step "Verifying release ${positional[1]}"
+  if verify_release "v${positional[1]#v}" "$VERIFY_ZIP"; then exit 0; else exit 1; fi
+fi
 
 if (( ${#positional} != 2 )); then
   usage >&2
@@ -278,6 +369,25 @@ info "Tag:      $TAG"
 (( PRERELEASE )) && info "Kind:     prerelease (Beta program only)"
 (( DRY_RUN )) && info "Mode:     dry run (no commit, tag, push, or release)"
 
+# ---------------------------------------------------------------- 1b. checks
+
+if (( SKIP_CHECKS )); then
+  printf '\n%s%s' "$YELLOW" "$BOLD" >&2
+  printf '  ######################################################################\n' >&2
+  printf '  ##  --skip-checks: scripts/check.sh was NOT run.                    ##\n' >&2
+  printf '  ##  Nothing proves this build launches, renders, or passes its      ##\n' >&2
+  printf '  ##  simulators and translation checks. Releasing anyway.            ##\n' >&2
+  printf '  ######################################################################\n' >&2
+  printf '%s\n' "$RESET" >&2
+elif [[ ${GLIDEBALL_CHECKED_COMMIT:-} == "$(git rev-parse HEAD)" ]]; then
+  step "Checks already passed for this commit (scripts/ship.sh ran scripts/check.sh)"
+else
+  step "Running scripts/check.sh (build, simulators, translations, website, self-test, render-ui)"
+  scripts/check.sh || die "scripts/check.sh failed, so nothing was released" \
+    "Each step's log is in build/check/. Fix the problem and rerun;" \
+    "--skip-checks releases without them (don't, unless you know why they fail)."
+fi
+
 # ---------------------------------------------------------------- 2. version
 
 step "Setting version $VERSION ($NEW_BUILD) in $PLIST"
@@ -403,3 +513,8 @@ STAGE=done
 step "${GREEN}Released Glideball $DISPLAY_VERSION ($NEW_BUILD)${RESET}${PRERELEASE_FLAG:+ as a prerelease}"
 info "Asset:    $ZIP ($SIZE)" \
      "SHA-256:  $SHA"
+
+# ---------------------------------------------------------------- 6. verify
+
+step "Verifying what GitHub now serves for $TAG"
+verify_release "$TAG" "" "$SHA" || exit 1

@@ -228,7 +228,7 @@ final class DelightCenter {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) { [weak self] in
                 if self?.burst?.id == b.id { self?.burst = nil }
             }
-            NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)
+            if !Sandbox.isActive { NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now) }
         }
         play(top.isBig ? .big : .step)
     }
@@ -236,7 +236,7 @@ final class DelightCenter {
     private enum Chime { case big, step }
 
     private func play(_ chime: Chime) {
-        guard soundsOn else { return }
+        guard soundsOn, !Sandbox.isActive else { return }
         let sound = NSSound(named: chime == .big ? "Glass" : "Pop")
         sound?.volume = chime == .big ? 0.35 : 0.25
         sound?.play()

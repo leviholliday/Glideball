@@ -70,6 +70,8 @@ final class GlobalHotKeys {
 
     private func register() {
         unregisterAll()
+        // `--render-ui` / `--self-test`: system-wide shortcuts belong to the real Glideball.
+        guard !Sandbox.isActive else { return }
         var failed = Set<GlobalShortcuts.Action>()
         for action in GlobalShortcuts.Action.allCases {
             guard let s = shortcuts[action] else { continue }

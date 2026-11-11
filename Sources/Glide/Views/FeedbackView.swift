@@ -352,7 +352,7 @@ final class FeedbackDraft {
     // MARK: Sending
 
     func send(_ model: AppModel) {
-        guard canSend else { return }
+        guard canSend, !Sandbox.isActive else { return }   // a render or self-test never sends
         if emailLooksWrong { phase = .failed(String(localized: "That email address doesn’t look right.")); return }
         var attachments = files.map { FeedbackClient.Attachment(name: $0.name, type: $0.type, source: .file($0.url)) }
         if includeSettings, let data = Self.settingsJSON(model) {
