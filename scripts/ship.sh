@@ -1,6 +1,10 @@
 #!/bin/zsh
 # Ships a Glideball update end to end:
-#   1. scripts/release.sh  — universal build, sign, zip, tag, GitHub release
+#   0. scripts/check.sh    — every check (build, simulators, translations, website
+#                            tests, the sandboxed self-test and render-ui); any
+#                            failure stops here. --skip-checks skips it, loudly.
+#   1. scripts/release.sh  — universal build, sign, zip, tag, GitHub release, then
+#                            downloads what GitHub serves and verifies it
 #   2. Netlify             — redeploy the website, but only if website/ changed
 #                            since the last final release (the download links
 #                            follow the newest release without a redeploy);
@@ -17,15 +21,17 @@ cd "$(dirname "$0")/.."
 
 NETLIFY_SITE="749c72a7-7049-463e-8555-48263ed392ec"   # glideball.netlify.app
 
-usage() { print -u2 "usage: scripts/ship.sh <version> \"<release notes>\" [--beta] [--no-site]"; exit 64; }
+usage() { print -u2 "usage: scripts/ship.sh <version> \"<release notes>\" [--beta] [--no-site] [--skip-checks]"; exit 64; }
 
 BETA=0
 NO_SITE=0
+SKIP_CHECKS=0
 typeset -a positional
 for arg in "$@"; do
   case $arg in
     --beta|--prerelease) BETA=1 ;;
     --no-site)           NO_SITE=1 ;;
+    --skip-checks)       SKIP_CHECKS=1 ;;
     -*)                  print -u2 "error: unknown option: $arg"; usage ;;
     *)                   positional+=("$arg") ;;
   esac
@@ -72,11 +78,23 @@ if [[ -n $last_tag ]] && [[ -z $(git log --oneline "$last_tag"..HEAD -- Sources 
   exit 1
 fi
 
+# The checks, before anything is built for real. release.sh runs them too
+# unless told this commit already passed (or --skip-checks is passed on).
+typeset -a release_flags
+if (( SKIP_CHECKS )); then
+  release_flags+=(--skip-checks)   # release.sh prints the loud warning
+else
+  [[ -z $(git status --porcelain) ]] || { print -u2 "error: the working tree is not clean — commit first (release.sh would refuse)"; exit 1; }
+  print "==> Running scripts/check.sh"
+  scripts/check.sh || { print -u2 "\nerror: scripts/check.sh failed, so nothing was shipped (logs: build/check/; --skip-checks to override)"; exit 1; }
+  export GLIDEBALL_CHECKED_COMMIT=$(git rev-parse HEAD)
+fi
+
 if (( BETA )); then
-  scripts/release.sh --prerelease "$VERSION" "$NOTES"
+  scripts/release.sh "${release_flags[@]}" --prerelease "$VERSION" "$NOTES"
   print "\n==> Skipping the website (it offers the newest full release, not betas)"
 else
-  scripts/release.sh "$VERSION" "$NOTES"
+  scripts/release.sh "${release_flags[@]}" "$VERSION" "$NOTES"
   print "\n==> Updating the Homebrew cask"
   scripts/update-cask.sh "$VERSION" || print -u2 "warning: cask not updated — rerun: scripts/update-cask.sh $VERSION"
   if (( SITE_DEPLOY )); then

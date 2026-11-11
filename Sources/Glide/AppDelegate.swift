@@ -3,7 +3,7 @@ import Carbon.HIToolbox
 import SwiftUI
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
-    private var window: NSWindow?
+    private(set) var window: NSWindow?
     private var launchedAtLogin = false
     private var statusItem: NSStatusItem?
     private var precisionItem: NSMenuItem?
@@ -11,6 +11,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var terminateSignal: DispatchSourceSignal?
 
     func applicationWillFinishLaunching(_ notification: Notification) {
+        // `--self-test` keeps the activation policy main.swift gave it (.prohibited): no Dock icon, never in front.
+        guard !Sandbox.isActive else { return }
         // Hidden from the Dock (and ⌘-Tab) if the user chose that; it's reopened from the menu-bar icon.
         if !AppModel.showInDockSaved { NSApp.setActivationPolicy(.accessory) }
         // Launched by "Open at Login"? Then start quietly with no window.
@@ -22,8 +24,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        if AppRename.moveIfNeeded() { exit(0) }   // relaunches as Glideball.app before touching anything
-        AppRename.finishLoginItem()
+        if !Sandbox.isActive {   // `--self-test` never moves the app or touches login items
+            if AppRename.moveIfNeeded() { exit(0) }   // relaunches as Glideball.app before touching anything
+            AppRename.finishLoginItem()
+        }
         let firstLaunch = WelcomeTour.shouldShowAtLaunch()   // before AppModel loads settings
         _ = AppLanguage.atLaunch   // the language on screen, before anyone can change it
         buildMenu()
@@ -37,6 +41,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let introPlays = LaunchExperience.shared.prepare(firstLaunch: firstLaunch, showsWindow: showsWindow)
         if firstLaunch && !introPlays { AppModel.shared.showWelcomeTour() }
         if showsWindow { showWindow() }
+        if Sandbox.mode == .selfTest { return SelfTest.launched(self) }   // checks the rest, then exits
         ShareData.shared.start()   // opt-in crash reports and stats; does nothing unless chosen
     }
 
@@ -140,6 +145,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func showWindow() {
+        makeWindow()
+        guard !Sandbox.isActive else { return }   // `--self-test` builds the window but never shows it
+        window?.makeKeyAndOrderFront(nil)
+        NSApp.activate()
+        reportWindowState()
+        // With no launch animation playing (a reopened window, a launch at
+        // login opened later), the card can come straight away; otherwise
+        // the animation offers it when it ends.
+        if LaunchExperience.shared.show == nil { AppModel.shared.offerSmallFavor() }
+    }
+
+    /// The main window and its contents, made once.
+    private func makeWindow() {
         if window == nil {
             let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1040, height: 700),
                              styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
@@ -158,13 +176,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             if !w.setFrameUsingName("GlideMain") { w.center() }
             window = w
         }
-        window?.makeKeyAndOrderFront(nil)
-        NSApp.activate()
-        reportWindowState()
-        // With no launch animation playing (a reopened window, a launch at
-        // login opened later), the card can come straight away; otherwise
-        // the animation offers it when it ends.
-        if LaunchExperience.shared.show == nil { AppModel.shared.offerSmallFavor() }
     }
 
     /// Tells the model what the window's doing, so it animates only while someone can see it.
@@ -203,10 +214,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private func setUpStatusItem() {
         guard AppModel.showMenuBarIcon else { return }
+        let menu = makeStatusMenu()
+        // `--self-test` builds the menu but puts nothing in the menu bar.
+        guard !Sandbox.isActive else { return }
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         item.button?.image = NSImage(systemSymbolName: "cursorarrow.click", accessibilityDescription: "Glideball")
         item.button?.image?.isTemplate = true
+        item.menu = menu
+        statusItem = item
+    }
 
+    /// The menu-bar icon's menu.
+    private(set) var statusMenu: NSMenu?
+
+    private func makeStatusMenu() -> NSMenu {
         let menu = NSMenu()
         menu.addItem(withTitle: String(localized: "Show Glideball"), action: #selector(showGlide), keyEquivalent: "")
         menu.addItem(withTitle: String(localized: "Pause / Resume Glideball"), action: #selector(toggleGlide), keyEquivalent: "")
@@ -220,8 +241,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         menu.addItem(.separator())
         menu.addItem(withTitle: String(localized: "Quit Glideball"), action: #selector(quitGlide), keyEquivalent: "q")
         menu.items.forEach { $0.target = self }
-        item.menu = menu
-        statusItem = item
+        statusMenu = menu
+        return menu
     }
 
     /// The menu-bar icon shows Precision and Drag lock, even with the window closed.

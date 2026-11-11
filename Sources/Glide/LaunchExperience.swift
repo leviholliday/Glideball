@@ -191,7 +191,7 @@ final class LaunchExperience {
     // MARK: Sound
 
     private func preparePlayer(_ name: String, volume: Float) {
-        guard soundsOn, let url = Bundle.main.url(forResource: name, withExtension: "m4a"),
+        guard soundsOn, !Sandbox.isActive, let url = Bundle.main.url(forResource: name, withExtension: "m4a"),
               let p = try? AVAudioPlayer(contentsOf: url) else { return }
         p.volume = volume
         p.prepareToPlay()

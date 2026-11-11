@@ -299,6 +299,7 @@ final class ShareData {
     /// (turned down: don't send that again), nil for no answer or a 5xx.
     /// Called on a background queue.
     private static func send(_ path: String, method: String, body: Data, done: @escaping (Bool?, Int) -> Void) {
+        guard !Sandbox.isActive else { return done(nil, 0) }   // a render or self-test never sends
         var c = URLComponents(url: FeedbackClient.server, resolvingAgainstBaseURL: false) ?? URLComponents()
         c.path = (c.path.hasSuffix("/") ? String(c.path.dropLast()) : c.path) + path
         guard let url = c.url else { return done(nil, 0) }

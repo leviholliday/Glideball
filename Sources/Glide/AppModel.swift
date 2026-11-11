@@ -72,9 +72,10 @@ final class AppModel {
         }
     }
     /// Shares settings with the user's other Macs through iCloud Drive.
-    let sync = SettingsSync(onRemoteConfig: { AppModel.shared.applyRemoteConfig($0) })
+    /// (`--render-ui` and `--self-test` give it a temp folder instead: Sandbox.swift.)
+    let sync = SettingsSync(onRemoteConfig: { AppModel.shared.applyRemoteConfig($0) }, folder: Sandbox.syncFolder)
     /// Daily snapshots of the settings, kept two weeks, then monthly for a year.
-    let backups = BackupStore()
+    let backups = BackupStore(folder: Sandbox.backupsFolder)
 
     /// The menu-bar icon (on unless turned off in Settings › General). Per-Mac.
     static var showMenuBarIcon: Bool {
@@ -231,6 +232,13 @@ final class AppModel {
         delight = DelightCenter(config: cfg)
         engine.onStatus = { [weak self] s in self?.status = s }
         engine.onModes = { [weak self] m in self?.modes = m }
+        delight.reloadHistory(currentKey: totalsDay)
+        delight.present = { [weak self] in self?.show($0) }
+        delight.canCelebrate = { [weak self] in self?.showingWelcomeTour == false }
+        backups.currentConfig = { AppModel.shared.config }
+        // `--render-ui` and `--self-test`: a model with nothing live — no engine,
+        // timers, observers, sync or update checks (see Sandbox.swift).
+        guard !Sandbox.isActive else { return }
         engine.start()
 
         permissionTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
@@ -244,11 +252,7 @@ final class AppModel {
                                                           object: nil, queue: .main) { [weak self] note in
             self?.frontmostChanged(note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication)
         }
-        delight.reloadHistory(currentKey: totalsDay)
-        delight.present = { [weak self] in self?.show($0) }
-        delight.canCelebrate = { [weak self] in self?.showingWelcomeTour == false }
         updateSampling()   // the slow housekeeping tick, until the window opens
-        backups.currentConfig = { AppModel.shared.config }
         backups.start(current: cfg)   // before sync, so today's backup is this Mac's own settings
         sync.syncNow(current: cfg)   // pick up changes made on other Macs while Glide was closed
         updates.start()
@@ -340,6 +344,7 @@ final class AppModel {
     }
 
     func setLaunchAtLogin(_ on: Bool) {
+        guard !Sandbox.isActive else { return }   // never a login-item change from a render or self-test
         do {
             if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
         } catch {

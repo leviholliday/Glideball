@@ -85,7 +85,9 @@ final class Engine {
     private static var naturalScrolling: Bool {
         (CFPreferencesCopyAppValue("com.apple.swipescrolldirection" as CFString, kCFPreferencesAnyApplication) as? Bool) ?? true
     }
-    private let pointer = PointerTuner()
+    /// Made on first use, on the input thread — so an engine that's never started
+    /// (`--render-ui`, `--self-test`) never opens an HID event-system client.
+    private lazy var pointer = PointerTuner()
     private let keyQueue = DispatchQueue(label: "glide.keys", qos: .userInteractive)
 
     // Precision, Scroll with ball, and Drag lock. Input thread only.
@@ -184,6 +186,7 @@ final class Engine {
     /// Lets go of any shortcut a button is holding down (pause, quit), so a
     /// key can never stay stuck.
     func releaseHeldKeys() {
+        guard isRunning else { return }
         let done = DispatchSemaphore(value: 0)
         perform {
             for (b, o) in self.overrides {
@@ -200,6 +203,7 @@ final class Engine {
     /// Ends Precision, Scroll with ball, and Drag lock (pause, ⌃⌥⌘G, quit), so
     /// Glide can never leave the cursor slowed, frozen, or the left button down.
     func releaseAll() {
+        guard isRunning else { return }
         let done = DispatchSemaphore(value: 0)
         perform {
             self.releaseModes()
@@ -214,6 +218,7 @@ final class Engine {
     /// Call after `releaseAll`, which re-applies Glide's speed; from then on
     /// nothing (the 2 s upkeep, a replug) writes Glide's speed again.
     func handBackPointer() {
+        guard isRunning else { return }
         let done = DispatchSemaphore(value: 0)
         perform {
             self.handedBack = true
@@ -321,7 +326,11 @@ final class Engine {
         if !silently { done?(nil) }
     }
 
+    /// Whether `start()` has run: the input thread exists. Never, in `--render-ui` and `--self-test`.
+    var isRunning: Bool { runLoop != nil }
+
     private func perform(_ block: @escaping () -> Void) {
+        guard let runLoop else { return }   // never started: there's nothing to change
         CFRunLoopPerformBlock(runLoop, CFRunLoopMode.commonModes.rawValue, block)
         CFRunLoopWakeUp(runLoop)
     }

@@ -24,7 +24,8 @@ name in INT_NAMES. Keep Int interpolations in one of those shapes (or add the
 name), and format Doubles to a String first (they should be locale-formatted
 anyway).
 
-Problems that fail the check: a key missing from a language, a translation
+Problems that fail the check: a key missing from a language, a key written
+twice in one .strings file (only the last would count), a translation
 whose format specifiers don't match the key's (count, types and order — a
 translation may reorder them with %1$@, %2$lld…), and files that don't parse.
 Unused translations are reported but don't fail it.
@@ -474,6 +475,56 @@ def stringsdict_problems(key: str, entry: dict) -> list[str]:
     return problems
 
 
+def strings_keys(path: Path) -> list[str]:
+    """Every key in a .strings file, in order and with repeats (plutil keeps only
+    the last of a repeated key, silently, so repeats are found here)."""
+    text = path.read_bytes().decode("utf-16" if path.read_bytes()[:2] in (b"\xff\xfe", b"\xfe\xff") else "utf-8-sig")
+    keys, tokens, i, n = [], [], 0, len(text)
+    while i < n:
+        c = text[i]
+        if c.isspace():
+            i += 1
+        elif text.startswith("/*", i):
+            end = text.find("*/", i + 2)
+            i = n if end < 0 else end + 2
+        elif text.startswith("//", i):
+            end = text.find("\n", i)
+            i = n if end < 0 else end + 1
+        elif c == '"':
+            j, buf = i + 1, []
+            while j < n and text[j] != '"':
+                if text[j] == "\\" and j + 1 < n:
+                    buf.append(text[j:j + 2])
+                    j += 2
+                else:
+                    buf.append(text[j])
+                    j += 1
+            tokens.append("".join(buf))
+            i = j + 1
+        elif c in "=;":
+            tokens.append(c)
+            i += 1
+        else:   # an unquoted word
+            j = i
+            while j < n and not text[j].isspace() and text[j] not in '=;"':
+                j += 1
+            tokens.append(text[i:j])
+            i = j
+    for k in range(len(tokens) - 1):
+        if tokens[k + 1] == "=" and tokens[k] not in ("=", ";"):
+            keys.append(tokens[k])
+    return keys
+
+
+def duplicates(path: Path) -> list[str]:
+    seen, dupes = set(), []
+    for k in strings_keys(path):
+        if k in seen and k not in dupes:
+            dupes.append(k)
+        seen.add(k)
+    return dupes
+
+
 def check_language(lang: str, keys: dict, plural_keys: set) -> tuple[int, list[str]]:
     lproj = RESOURCES / f"{lang}.lproj"
     report, failures = [], 0
@@ -487,6 +538,11 @@ def check_language(lang: str, keys: dict, plural_keys: set) -> tuple[int, list[s
             if err:
                 failures += 1
                 report.append(f"  ✗ {p.relative_to(ROOT)} doesn't parse: {err}")
+    # A key written twice: only the last one counts, so the other is a mistake.
+    for p in sorted(lproj.glob("*.strings")):
+        for k in duplicates(p):
+            failures += 1
+            report.append(f"  ✗ duplicate: {k!r} appears more than once in {p.relative_to(ROOT)}")
     if strings_path.exists():
         try:
             table = load_strings(strings_path)

@@ -508,7 +508,7 @@ private struct BloomingMesh: View {
 /// gathering into orbit (1.95–3.9), then the big moment at 3.9 s: a flash,
 /// "Glideball" writes in with a shimmer, the tagline (4.8), and at 6.4 the glass
 /// opens onto the window.
-private struct IntroScene: View {
+struct IntroScene: View {   // internal: drawn by --render-ui and --self-test too
     let t: Double
     let calm: Bool
 
@@ -667,7 +667,7 @@ private struct IntroScene: View {
 
 /// About 1.1 s of animation, then the reveal (0.5 s). Each variant ends on
 /// the same settled mark in the middle, so the hand-off always looks alike.
-private struct SplashScene: View {
+struct SplashScene: View {   // internal: drawn by --render-ui and --self-test too
     let variant: SplashVariant
     let t: Double
     let calm: Bool
