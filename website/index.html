@@ -293,7 +293,6 @@
         <p class="eyebrow hero-eyebrow"><span class="eyebrow-tick" aria-hidden="true"></span>A free, open-source KensingtonWorks alternative</p>
         <p class="display"><span class="display-1">Spin it.</span> <span class="display-2">Feel it glide.</span></p>
         <h1 class="hero-h" id="hero-h">A smoother scroll ring and a faster pointer for your Kensington&nbsp;trackball.</h1>
-        <p class="lede">Glideball is a free Mac app for Kensington trackballs. It lets the pointer go faster than macOS allows, makes the scroll ring scroll smoothly, and lets you choose what each button does. There's no driver to install and no account to make.</p>
         <div class="cta-row">
           <a class="btn btn-primary btn-lg" href="/download/">
             <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
@@ -334,16 +333,12 @@
                 <linearGradient id="tb-ps" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".2"/><stop offset="1" stop-color="#fff" stop-opacity=".04"/></linearGradient>
                 <linearGradient id="tb-pa" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd27e"/><stop offset="1" stop-color="#ffaa2e"/></linearGradient>
                 <filter id="tb-pb" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.6"/></filter>
-                <mask id="tb-hole" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100"><rect width="100" height="100" fill="#fff"/><circle cx="50" cy="50" r="42.7" fill="#000"/></mask>
-                <path id="tb-p-tl" d="M21.8 3.8H43.6A4.5 4.5 0 0 1 48.1 8.3V43.6A4.5 4.5 0 0 1 43.6 48.1H8.3A4.5 4.5 0 0 1 3.8 43.6V21.8A18 18 0 0 1 21.8 3.8Z"/>
-                <path id="tb-p-tr" d="M56.4 3.8H78.2A18 18 0 0 1 96.2 21.8V43.6A4.5 4.5 0 0 1 91.7 48.1H56.4A4.5 4.5 0 0 1 51.9 43.6V8.3A4.5 4.5 0 0 1 56.4 3.8Z"/>
-                <path id="tb-p-bl" d="M8.3 51.9H43.6A4.5 4.5 0 0 1 48.1 56.4V91.7A4.5 4.5 0 0 1 43.6 96.2H21.8A18 18 0 0 1 3.8 78.2V56.4A4.5 4.5 0 0 1 8.3 51.9Z"/>
-                <path id="tb-p-br" d="M56.4 51.9H91.7A4.5 4.5 0 0 1 96.2 56.4V78.2A18 18 0 0 1 78.2 96.2H56.4A4.5 4.5 0 0 1 51.9 91.7V56.4A4.5 4.5 0 0 1 56.4 51.9Z"/>
+                <mask id="tb-hole-tl" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100"><rect width="100" height="100" fill="#fff"/><circle cx="50" cy="50" r="42.7" fill="#000"/></mask><mask id="tb-hole-tr" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100"><rect width="100" height="100" fill="#fff"/><circle cx="50" cy="50" r="42.7" fill="#000"/></mask><mask id="tb-hole-bl" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100"><rect width="100" height="100" fill="#fff"/><circle cx="50" cy="50" r="42.7" fill="#000"/></mask><mask id="tb-hole-br" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100"><rect width="100" height="100" fill="#fff"/><circle cx="50" cy="50" r="42.7" fill="#000"/></mask>
               </defs>
-              <g class="tb-pad" data-pad-art="tl"><use class="tb-pad-glow" href="#tb-p-tl" filter="url(#tb-pb)"/><g mask="url(#tb-hole)"><use class="tb-pad-base" href="#tb-p-tl"/><use class="tb-pad-on" href="#tb-p-tl"/></g></g>
-              <g class="tb-pad" data-pad-art="tr"><use class="tb-pad-glow" href="#tb-p-tr" filter="url(#tb-pb)"/><g mask="url(#tb-hole)"><use class="tb-pad-base" href="#tb-p-tr"/><use class="tb-pad-on" href="#tb-p-tr"/></g></g>
-              <g class="tb-pad" data-pad-art="bl"><use class="tb-pad-glow" href="#tb-p-bl" filter="url(#tb-pb)"/><g mask="url(#tb-hole)"><use class="tb-pad-base" href="#tb-p-bl"/><use class="tb-pad-on" href="#tb-p-bl"/></g></g>
-              <g class="tb-pad" data-pad-art="br"><use class="tb-pad-glow" href="#tb-p-br" filter="url(#tb-pb)"/><g mask="url(#tb-hole)"><use class="tb-pad-base" href="#tb-p-br"/><use class="tb-pad-on" href="#tb-p-br"/></g></g>
+              <g class="tb-pad" data-pad-art="tl"><path class="tb-pad-glow" d="M21.8 3.8H43.6A4.5 4.5 0 0 1 48.1 8.3V43.6A4.5 4.5 0 0 1 43.6 48.1H8.3A4.5 4.5 0 0 1 3.8 43.6V21.8A18 18 0 0 1 21.8 3.8Z" filter="url(#tb-pb)"/><g mask="url(#tb-hole-tl)"><path class="tb-pad-base" d="M21.8 3.8H43.6A4.5 4.5 0 0 1 48.1 8.3V43.6A4.5 4.5 0 0 1 43.6 48.1H8.3A4.5 4.5 0 0 1 3.8 43.6V21.8A18 18 0 0 1 21.8 3.8Z"/><path class="tb-pad-on" d="M21.8 3.8H43.6A4.5 4.5 0 0 1 48.1 8.3V43.6A4.5 4.5 0 0 1 43.6 48.1H8.3A4.5 4.5 0 0 1 3.8 43.6V21.8A18 18 0 0 1 21.8 3.8Z"/></g></g>
+              <g class="tb-pad" data-pad-art="tr"><path class="tb-pad-glow" d="M56.4 3.8H78.2A18 18 0 0 1 96.2 21.8V43.6A4.5 4.5 0 0 1 91.7 48.1H56.4A4.5 4.5 0 0 1 51.9 43.6V8.3A4.5 4.5 0 0 1 56.4 3.8Z" filter="url(#tb-pb)"/><g mask="url(#tb-hole-tr)"><path class="tb-pad-base" d="M56.4 3.8H78.2A18 18 0 0 1 96.2 21.8V43.6A4.5 4.5 0 0 1 91.7 48.1H56.4A4.5 4.5 0 0 1 51.9 43.6V8.3A4.5 4.5 0 0 1 56.4 3.8Z"/><path class="tb-pad-on" d="M56.4 3.8H78.2A18 18 0 0 1 96.2 21.8V43.6A4.5 4.5 0 0 1 91.7 48.1H56.4A4.5 4.5 0 0 1 51.9 43.6V8.3A4.5 4.5 0 0 1 56.4 3.8Z"/></g></g>
+              <g class="tb-pad" data-pad-art="bl"><path class="tb-pad-glow" d="M8.3 51.9H43.6A4.5 4.5 0 0 1 48.1 56.4V91.7A4.5 4.5 0 0 1 43.6 96.2H21.8A18 18 0 0 1 3.8 78.2V56.4A4.5 4.5 0 0 1 8.3 51.9Z" filter="url(#tb-pb)"/><g mask="url(#tb-hole-bl)"><path class="tb-pad-base" d="M8.3 51.9H43.6A4.5 4.5 0 0 1 48.1 56.4V91.7A4.5 4.5 0 0 1 43.6 96.2H21.8A18 18 0 0 1 3.8 78.2V56.4A4.5 4.5 0 0 1 8.3 51.9Z"/><path class="tb-pad-on" d="M8.3 51.9H43.6A4.5 4.5 0 0 1 48.1 56.4V91.7A4.5 4.5 0 0 1 43.6 96.2H21.8A18 18 0 0 1 3.8 78.2V56.4A4.5 4.5 0 0 1 8.3 51.9Z"/></g></g>
+              <g class="tb-pad" data-pad-art="br"><path class="tb-pad-glow" d="M56.4 51.9H91.7A4.5 4.5 0 0 1 96.2 56.4V78.2A18 18 0 0 1 78.2 96.2H56.4A4.5 4.5 0 0 1 51.9 91.7V56.4A4.5 4.5 0 0 1 56.4 51.9Z" filter="url(#tb-pb)"/><g mask="url(#tb-hole-br)"><path class="tb-pad-base" d="M56.4 51.9H91.7A4.5 4.5 0 0 1 96.2 56.4V78.2A18 18 0 0 1 78.2 96.2H56.4A4.5 4.5 0 0 1 51.9 91.7V56.4A4.5 4.5 0 0 1 56.4 51.9Z"/><path class="tb-pad-on" d="M56.4 51.9H91.7A4.5 4.5 0 0 1 96.2 56.4V78.2A18 18 0 0 1 78.2 96.2H56.4A4.5 4.5 0 0 1 51.9 91.7V56.4A4.5 4.5 0 0 1 56.4 51.9Z"/></g></g>
             </svg>
             <div class="tb-well"></div>
             <svg class="tb-edge" viewBox="0 0 100 100" focusable="false" aria-hidden="true">
@@ -414,6 +409,7 @@
 
       <!-- Honest numbers -->
       <div class="wrap">
+        <p class="lede hero-intro">Glideball is a free Mac app for Kensington trackballs. It lets the pointer go faster than macOS allows, makes the scroll ring scroll smoothly, and lets you choose what each button does. There's no driver to install and no account to make.</p>
         <ul class="stats" aria-label="Glideball in numbers">
           <li class="stat card lit reveal">
             <span class="stat-n" data-odo>0</span>
@@ -692,11 +688,59 @@
           <h2 id="dash-h">See what your trackball is doing, live.</h2>
           <p>The Overview tab graphs ball speed and scroll-ring activity as they happen, lights up each button as you press it, and keeps a tally of your day: clicks, distance rolled, distance scrolled.</p>
         </header>
-        <figure class="shot shot-wide reveal" data-tilt>
-          <picture>
-            <source type="image/webp" srcset="assets/screens/overview-960.webp?v=365ab2ce 960w, assets/screens/overview-1600.webp?v=365ab2ce 1600w" sizes="(min-width: 1120px) 1040px, 92vw">
-            <img src="assets/screens/overview-1200.png?v=365ab2ce" width="1960" height="1360" loading="lazy" decoding="async" alt="Glideball's Overview tab, with the live trackball in the sidebar: today's clicks, distance rolled and distance scrolled, and the Live activity graph of ball speed and scroll ring.">
-          </picture>
+        <figure class="win win-live reveal" data-tilt data-live>
+          <div class="win-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+          <div class="win-body">
+            <div class="win-side" aria-hidden="true">
+              <img src="/assets/icon-256.webp?v=3" width="72" height="72" alt="" loading="lazy" decoding="async">
+              <p class="win-dev">Kensington Expert Mouse</p>
+              <ul><li class="on">Overview</li><li>Pointer</li><li>Scrolling</li><li>Buttons</li><li>Apps</li><li>Sync</li></ul>
+            </div>
+            <div class="win-main">
+              <p class="win-title">Overview</p>
+              <p class="win-sub">How your trackball’s doing today, and everything it’s done so far.</p>
+              <div class="lv">
+                <div class="lv-dial" aria-hidden="true">
+                  <span class="lv-glow lv-glow-ball"></span>
+                  <span class="lv-glow lv-glow-ring"></span>
+                  <span class="lv-glow lv-glow-amber"></span>
+                  <svg viewBox="0 0 240 240" focusable="false">
+                    <g class="lv-g lv-g-buttons" data-lv-gauge="clicks">
+                      <circle class="lv-track" cx="120" cy="120" r="113" pathLength="100"/>
+                      <circle class="lv-arc" cx="120" cy="120" r="113" pathLength="100" data-lv-arc/>
+                      <circle class="lv-best" cx="120" cy="120" r="113" pathLength="100"/>
+                    </g>
+                    <g class="lv-g lv-g-ball" data-lv-gauge="ball">
+                      <circle class="lv-track" cx="120" cy="120" r="101" pathLength="100"/>
+                      <circle class="lv-arc" cx="120" cy="120" r="101" pathLength="100" data-lv-arc/>
+                      <circle class="lv-best" cx="120" cy="120" r="101" pathLength="100"/>
+                    </g>
+                    <g class="lv-g lv-g-ring" data-lv-gauge="scrolled">
+                      <circle class="lv-track" cx="120" cy="120" r="89" pathLength="100"/>
+                      <circle class="lv-arc" cx="120" cy="120" r="89" pathLength="100" data-lv-arc/>
+                      <circle class="lv-best" cx="120" cy="120" r="89" pathLength="100"/>
+                    </g>
+                    <circle class="lv-well" cx="120" cy="120" r="78"/>
+                    <circle class="lv-ringline" cx="120" cy="120" r="69"/>
+                    <g class="lv-ticks" transform="translate(30 30) scale(1.8)"><g data-lv-ticks><use href="#tb-minor"/><use href="#tb-major"/></g></g>
+                  </svg>
+                  <span class="lv-ball"><span class="lv-spec"></span></span>
+                </div>
+                <dl class="lv-stats">
+                  <div class="lv-stat lv-s-buttons"><dt><span class="dot dot-buttons" aria-hidden="true"></span>Clicks today</dt><dd><output data-lv-out="clicks">2,140</output></dd><dd class="lv-bestline">Best <span data-lv-bestout="clicks">3,780</span><b class="lv-new" data-lv-new="clicks">New best</b></dd></div>
+                  <div class="lv-stat lv-s-ball"><dt><span class="dot dot-ball" aria-hidden="true"></span>Ball rolled</dt><dd><output data-lv-out="ball">41.0</output> <small>m</small></dd><dd class="lv-bestline">Best <span data-lv-bestout="ball">66.7</span> m<b class="lv-new" data-lv-new="ball">New best</b></dd></div>
+                  <div class="lv-stat lv-s-ring"><dt><span class="dot dot-ring" aria-hidden="true"></span>Scrolled</dt><dd><output data-lv-out="scrolled">63.0</output> <small>m</small></dd><dd class="lv-bestline">Best <span data-lv-bestout="scrolled">118</span> m<b class="lv-new" data-lv-new="scrolled">New best</b></dd></div>
+                </dl>
+              </div>
+              <div class="lv-head">
+                <p class="win-label">Live activity</p>
+                <p class="lv-legend"><span class="dot dot-ball" aria-hidden="true"></span>Ball speed <b data-lv-bs>0.0 in/s</b><span class="dot dot-ring" aria-hidden="true"></span>Scroll ring <b data-lv-rs>0 notches/s</b></p>
+              </div>
+              <div class="lv-chart"><canvas data-lv-chart aria-hidden="true"></canvas></div>
+              <p class="win-hint">This starts from an example day. Move the pointer, scroll and click anywhere on this page to add to it.</p>
+            </div>
+          </div>
+          <figcaption class="sr-only">A working copy of Glideball's Overview tab: three gauges around the trackball for clicks, distance rolled and distance scrolled today, each filling toward your best, and a live chart of ball speed and scroll-ring activity. It starts from an example day and counts your pointer, scrolling and clicks on this page.</figcaption>
         </figure>
         <p class="earned-intro reveal">It also keeps your records and lifetime totals, and gives you a badge when you pass a real milestone, like these. Make it yours ticks off each thing you set up, and none of it nags.</p>
         <ul class="badges">

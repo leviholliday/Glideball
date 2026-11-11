@@ -14,6 +14,15 @@
   const fmt = (n) => Math.round(n).toLocaleString('en-US');
   const $ = (sel, el = document) => el.querySelector(sel);
   const $$ = (sel, el = document) => Array.from(el.querySelectorAll(sel));
+  // Scroll right now, whatever html's scroll-behavior says. ("instant" as a behavior is
+  // newer than some Safari versions, so smooth scrolling is turned off for this one call.)
+  const jumpTo = (top) => {
+    const st = document.documentElement.style;
+    st.scrollBehavior = 'auto';
+    window.scrollTo(0, top);
+    st.scrollBehavior = '';
+  };
+  const glideTo = (top) => { if (reduce.matches) jumpTo(top); else window.scrollTo({ top, behavior: 'smooth' }); };
   const params = new URLSearchParams(location.search);
   const demo = params.get('demo') || ''; // screenshot states, e.g. ?demo=roll (harmless otherwise)
 
@@ -92,7 +101,16 @@
       if (sweep) sweep.classList.toggle('rev', sweepDir < 0);
     }
     if (dock) dock.style.setProperty('--dv', dockV.toFixed(3));
+    if (liveEl && liveVisible) {
+      const s = liveEl.style;
+      s.setProperty('--l-ball', light.ball.toFixed(3));
+      s.setProperty('--l-ring', light.ring.toFixed(3));
+      s.setProperty('--l-amber', light.amber.toFixed(3));
+    }
   }
+  // The Overview cluster further down shares these lights while it's on screen.
+  const liveEl = $('[data-live]');
+  let liveVisible = false;
 
   function frame(t) {
     const dt = clamp(t - lastT, 1, 64);
@@ -114,7 +132,7 @@
       const d = pageV * PAGE_TAU * (1 - k);
       pageV *= k;
       const before = window.scrollY;
-      window.scrollBy({ top: d, behavior: 'instant' });
+      jumpTo(window.scrollY + d);
       if (Math.abs(pageV) < 0.01 || window.scrollY === before) pageV = 0;
       else active = true;
     }
@@ -324,7 +342,7 @@
       const deg = d * 180 / Math.PI;
       angle += deg; acc += deg;
       sweepDir = deg >= 0 ? 1 : -1;
-      window.scrollBy({ top: deg / K, behavior: 'instant' });
+      jumpTo(window.scrollY + deg / K);
       trail.push({ t: e.timeStamp, a: acc });
       while (trail.length > 2 && e.timeStamp - trail[0].t > 100) trail.shift();
       const w = (acc - trail[0].a) / Math.max(8, e.timeStamp - trail[0].t); // degrees per ms
@@ -521,14 +539,14 @@
     else target = [...tops].reverse().find((t) => t < y - 20);
     if (target === undefined) target = dir > 0 ? tops[tops.length - 1] : 0;
     target = Math.max(0, target);
-    const go = () => window.scrollTo({ top: target, behavior: 'instant' });
+    const go = () => jumpTo(target);
     if (document.startViewTransition && !reduce.matches) {
       const cls = dir > 0 ? 'vt-next' : 'vt-prev';
       document.documentElement.classList.add(cls);
       const vt = document.startViewTransition(go);
       vt.finished.finally(() => document.documentElement.classList.remove(cls));
     } else {
-      window.scrollTo({ top: target, behavior: reduce.matches ? 'instant' : 'smooth' });
+      glideTo(target);
     }
   }
 
@@ -563,7 +581,7 @@
         e.preventDefault();
         closeMC(false);
         const top = s.el.getBoundingClientRect().top + window.scrollY - 84;
-        window.scrollTo({ top, behavior: reduce.matches ? 'instant' : 'smooth' });
+        glideTo(top);
         const h = $('h2', s.el);
         if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
       });
@@ -668,7 +686,7 @@
     $$('main > section, .parts > section').forEach((s) => io.observe(s));
     dock.addEventListener('click', (e) => {
       e.preventDefault();
-      window.scrollTo({ top: 0, behavior: reduce.matches ? 'instant' : 'smooth' });
+      glideTo(0);
       const brand = $('.brand');
       if (brand) brand.focus({ preventScroll: true });
     });
@@ -1333,7 +1351,168 @@
     if (demo === 'feel') { visible = true; spinBtn.click(); }
   }
 
+  /* ============================================================ Overview: the instrument cluster
+     Starts from an example day (the app's own sample numbers) and adds what you do on
+     this page: pointer travel to "Ball rolled", page scrolling to "Scrolled", clicks to
+     "Clicks today". Gauges fill toward each best; passing one is a new best, once. */
+  function initLive() {
+    if (!liveEl) return;
+    const PX_PER_M = 3780; // CSS pixels in a metre (96 per inch)
+    const stats = {
+      clicks: { v: 2140, best: 3780, fmt: (n) => fmt(n) },
+      ball: { v: 41.0, best: 66.7, fmt: (n) => n.toFixed(1) },
+      scrolled: { v: 63.0, best: 118, fmt: (n) => n.toFixed(1) },
+    };
+    Object.entries(stats).forEach(([k, st]) => {
+      st.out = $(`[data-lv-out="${k}"]`, liveEl);
+      st.arc = $(`[data-lv-gauge="${k}"] [data-lv-arc]`, liveEl);
+      st.g = $(`[data-lv-gauge="${k}"]`, liveEl);
+      st.badge = $(`[data-lv-new="${k}"]`, liveEl);
+      st.shown = -1;
+      st.celebrated = false;
+    });
+    const ticks = $('[data-lv-ticks]', liveEl);
+    const ballEl2 = $('.lv-ball', liveEl);
+    const bsOut = $('[data-lv-bs]', liveEl);
+    const rsOut = $('[data-lv-rs]', liveEl);
+    const canvas = $('[data-lv-chart]', liveEl);
+    const ctx = canvas.getContext('2d');
+    let started = false;
+    let intro = 0; // 0 → 1 while the numbers count up the first time
+    let shownIntro = 0;
+    let introT0 = 0;
+
+    const paint = (k) => {
+      const st = stats[k];
+      const v = st.v * shownIntro;
+      const text = st.fmt(v);
+      if (text !== st.shown) { st.out.textContent = text; st.shown = text; }
+      const f = clamp(v / st.best, 0, 1);
+      st.arc.style.strokeDasharray = `${(f * 75).toFixed(2)} 100`;
+      if (st.v > st.best && !st.celebrated && shownIntro >= 1) {
+        st.celebrated = true;
+        st.g.classList.add('best');
+        st.badge.classList.add('show');
+        $(`[data-lv-bestout="${k}"]`, liveEl).textContent = st.fmt(st.v);
+      }
+    };
+
+    // Rates, smoothed, for the chart and the legend.
+    let ballPx = 0; let ringPx = 0; // pixels since the last frame
+    let ballRate = 0; let ringRate = 0; // in/s of ball, notches/s
+    const hist = []; // [t, ball, ring]
+    let raf3 = 0; let last = 0; let quiet = 0; let ringAngle = 0; let lvx = 0;
+    let w = 0; let h = 0;
+    const resize = () => {
+      const r = canvas.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      w = Math.max(1, Math.round(r.width)); h = Math.max(1, Math.round(r.height));
+      canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    const W = 6000;
+    const draw = (now) => {
+      ctx.clearRect(0, 0, w, h);
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let i = 1; i <= 3; i++) { const y = Math.round((h * i) / 4) + 0.5; ctx.moveTo(0, y); ctx.lineTo(w, y); }
+      ctx.stroke();
+      const trace = (idx, color, rgb, floor) => {
+        let max = floor;
+        hist.forEach((p) => { if (p[idx] > max) max = p[idx]; });
+        const X = (t) => w - ((now - t) / W) * w;
+        const Y = (v) => h - 3 - Math.min(1, v / max) * (h - 12);
+        ctx.beginPath();
+        ctx.moveTo(0, h - 3);
+        if (hist.length) ctx.lineTo(Math.max(0, X(hist[0][0])), h - 3);
+        hist.forEach((p) => ctx.lineTo(X(p[0]), Y(p[idx])));
+        ctx.lineTo(w, hist.length ? Y(hist[hist.length - 1][idx]) : h - 3);
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = `rgba(${rgb},0.3)`; ctx.lineWidth = 6; ctx.stroke();
+        ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
+        ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
+        const g = ctx.createLinearGradient(0, 0, 0, h);
+        g.addColorStop(0, `rgba(${rgb},0.18)`); g.addColorStop(1, `rgba(${rgb},0)`);
+        ctx.fillStyle = g; ctx.fill();
+      };
+      trace(1, '#4da8ff', PART_RGB.ball, 2);
+      trace(2, '#ff5ca8', PART_RGB.ring, 8);
+    };
+    const loop = (t) => {
+      const dt = clamp(t - last, 1, 64);
+      last = t;
+      if (started && intro < 1) intro = reduce.matches ? 1 : Math.min(1, (t - introT0) / 1400);
+      shownIntro = started ? 1 - Math.pow(1 - intro, 3) : 0;
+      const k = 1 - Math.exp(-dt / 160);
+      ballRate += ((ballPx / 96 / speedRatio) / (dt / 1000) - ballRate) * k;
+      ringRate += ((ringPx / 30) / (dt / 1000) - ringRate) * k;
+      ringAngle += ringPx * K;
+      lvx += ballPx * 0.4;
+      ballPx = 0; ringPx = 0;
+      if (ballRate < 0.01) ballRate = 0;
+      if (ringRate < 0.05) ringRate = 0;
+      hist.push([t, ballRate, ringRate]);
+      while (hist.length > 2 && t - hist[0][0] > W + 200) hist.shift();
+      Object.keys(stats).forEach(paint);
+      bsOut.textContent = `${ballRate.toFixed(1)} in/s`;
+      rsOut.textContent = `${Math.round(ringRate)} notches/s`;
+      ticks.style.setProperty('--lv-ring', `${ringAngle.toFixed(1)}deg`);
+      ballEl2.style.setProperty('--lv-x', `${lvx.toFixed(1)}px`);
+      draw(t);
+      quiet = (ballRate === 0 && ringRate === 0 && intro >= 1) ? quiet + dt : 0;
+      raf3 = (quiet > W + 300 || !liveVisible) ? 0 : requestAnimationFrame(loop);
+    };
+    const wake3 = () => { quiet = 0; if (!raf3 && liveVisible) { last = performance.now(); raf3 = requestAnimationFrame(loop); } };
+
+    window.addEventListener('pointermove', (e) => {
+      if (!liveVisible || e.pointerType !== 'mouse') return;
+      const d = Math.hypot(e.movementX || 0, e.movementY || 0);
+      if (!d) return;
+      ballPx += d;
+      stats.ball.v += d / PX_PER_M;
+      bump('ball', Math.min(0.6, d / 60));
+      wake3();
+    }, { passive: true });
+    let ly2 = window.scrollY;
+    window.addEventListener('scroll', () => {
+      const dy = Math.abs(window.scrollY - ly2);
+      ly2 = window.scrollY;
+      if (!liveVisible || !dy) return;
+      ringPx += dy;
+      stats.scrolled.v += dy / PX_PER_M;
+      bump('ring', Math.min(0.8, dy / 60));
+      wake3();
+    }, { passive: true });
+    window.addEventListener('mousedown', () => {
+      if (!liveVisible) return;
+      stats.clicks.v += 1;
+      bump('amber', 0.9);
+      wake3();
+    }, { passive: true });
+
+    resize();
+    if ('ResizeObserver' in window) new ResizeObserver(() => { resize(); draw(performance.now()); }).observe(canvas);
+    Object.keys(stats).forEach(paint);
+    draw(performance.now());
+    const begin = () => {
+      if (started) return;
+      started = true;
+      introT0 = performance.now();
+      wake3();
+    };
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(([e]) => {
+        liveVisible = e.isIntersecting;
+        if (liveVisible) { begin(); wake3(); }
+      }, { threshold: 0.15 }).observe(liveEl);
+    } else { liveVisible = true; begin(); }
+    if (demo) { liveVisible = true; begin(); intro = 1; shownIntro = 1; Object.keys(stats).forEach(paint); }
+  }
+
   /* ============================================================ Boot */
+  requestAnimationFrame(() => requestAnimationFrame(() => hx.classList.add('ready')));
+  initLive();
   initOdometers();
   initPointer();
   initRing();
