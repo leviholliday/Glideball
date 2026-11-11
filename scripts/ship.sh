@@ -93,8 +93,9 @@ fi
 print "\n==> Attaching the Linux & Windows previews (waits for CI)"
 scripts/attach-previews.sh "v${VERSION#v}" || print -u2 "warning: previews not attached — rerun: scripts/attach-previews.sh v${VERSION#v}"
 
-print "\n==> Installing Glideball $VERSION on this Mac"
-./build.sh | tail -1
+# Not installed here on purpose: Levi updates his own copy from inside the app,
+# which also tests the update path every release.
+print "\n==> Skipping local install (update from inside Glideball: Check for Updates…)"
 
 if (( BETA )); then
   print "\n✓ Glideball $VERSION is out to the Beta program:"
