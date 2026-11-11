@@ -84,6 +84,12 @@ COMPONENTS: dict[str, set] = {
     "feature": {1},                      # WelcomeTourView
     "permissionRow": {0, "detail"},      # WelcomeTourView
     "option": {"detail"},                # ShareDataViews (SmallFavourCard)
+    "SettingsRow": {"title"},            # SettingsViews
+    "SettingsToggle": {"title"},
+    "RowPicker": {"title"},
+    "ActionRow": {"title", "hint"},      # SheetComponents
+    "icon": {"label"},                   # AppIconChoice (IconChoicePrompt)
+    "link": {1},                         # AboutView
 }
 
 # Interpolations that are Int (→ %lld). Everything else is %@ unless it has

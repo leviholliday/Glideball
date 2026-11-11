@@ -168,7 +168,7 @@ Proves a build launches without launching it. `--self-test` runs `AppDelegate`'s
 
 ## Controlling Glideball from other apps
 
-Raycast, Shortcuts, Stream Deck, Alfred and shell scripts can control Glideball through a `glideball://` URL scheme, and read what it's doing from a status file. Both are off until **Allow Raycast and scripts** is on (per Mac, never synced, UserDefaults key `GlideAllowExternalControl`, `AppModel.allowExternalControl`; the switch in Settings › General isn't drawn yet).
+Raycast, Shortcuts, Stream Deck, Alfred and shell scripts can control Glideball through a `glideball://` URL scheme, and read what it's doing from a status file. Both are off until **Allow Raycast and scripts** is on (per Mac, never synced, UserDefaults key `GlideAllowExternalControl`, `AppModel.allowExternalControl`, the switch in Settings › General).
 
 Everything goes through one list of commands, `Commands.swift`: the menu-bar menu, the global hot keys and the URLs all call the same entries, so they behave the same. `ExternalControl.swift` turns URLs into commands, `StatusFile.swift` writes the status file, and `ExternalControlApp.swift` connects them to the app.
 
@@ -184,7 +184,7 @@ Open them with `open -g "glideball://…"` (the `-g` keeps Glideball in the back
 | `glideball://pointer-speed?value=<number>` | The main setup's pointer speed. Plain decimals only (`4`, `4.5`); rounded to the slider's 0.5 steps and clamped to 0.5…80. |
 | `glideball://app-setup?name=<name or bundle ID>` | Uses that app setup whatever app is in front (names ignore case). `name=automatic` goes back to following the app in front, and so does pausing or quitting. Not saved. |
 | `glideball://open?tab=overview\|pointer\|scrolling\|buttons\|apps\|sync` | Shows the window, on that tab if given. Works with the switch off. |
-| `glideball://settings?tab=general\|updates\|privacy\|shortcuts` | Opens Settings, on that tab if given. Works with the switch off. |
+| `glideball://settings?tab=general\|look\|updates\|privacy\|shortcuts` | Opens Settings, on that tab if given. Works with the switch off. |
 | `glideball://check-for-updates` | Opens Software Update and checks. |
 
 Commands and values ignore case. Unknown parameters are ignored; an unknown command, a bad or repeated value, or a missing required one means the whole URL is ignored, silently (the scroll log, `~/Library/Logs/Glide/scroll.log`, says `url ignored: <why>`). With the switch off, a URL that would change something does nothing and brings up one short explanation, once per launch. A URL that launches Glideball starts it quietly, like Open at Login (no window unless it's the first launch or a permission is missing).

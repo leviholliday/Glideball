@@ -126,18 +126,18 @@ enum SelfTest {
         step("settings window") {
             let controller = SettingsWindowController()
             let window = try unwrap(controller.window, "no Settings window")
-            let tabs = try unwrap(window.contentViewController as? NSTabViewController, "Settings has no tabs")
-            try check(tabs.tabViewItems.count == SettingsPane.allCases.count, "\(tabs.tabViewItems.count) Settings tabs")
+            let items = window.toolbar?.items.count ?? 0
+            try check(items == SettingsPane.allCases.count, "\(items) Settings tabs in the toolbar")
             let content = try unwrap(window.contentView, "Settings has no content")
-            for i in tabs.tabViewItems.indices {
-                tabs.selectedTabViewItemIndex = i
+            for pane in SettingsPane.allCases {
+                controller.select(pane, animated: false)
                 Offscreen.settleDown(content, seconds: 0.05)
-                let rep = try unwrap(Offscreen.draw(window, content: content, chrome: .titled, scale: 1), "Settings tab \(i) didn't draw")
-                try check(!Offscreen.isBlank(rep), "Settings tab \(i) is blank")
+                let rep = try unwrap(Offscreen.draw(window, content: content, chrome: .titled, scale: 1), "Settings › \(pane.rawValue) didn't draw")
+                try check(!Offscreen.isBlank(rep), "Settings › \(pane.rawValue) is blank")
             }
             try check(!window.isVisible, "the Settings window is on screen")
             window.close()
-            return "\(tabs.tabViewItems.count) tabs drawn, never shown"
+            return "\(SettingsPane.allCases.count) tabs drawn, never shown"
         }
 
         step("welcome tour") {
@@ -154,6 +154,32 @@ enum SelfTest {
             try draw(UpdatePanelView(updates: model.updates) {}, "Software Update")
             try draw(BackupHistoryCard(model: model, store: model.backups).frame(width: 900), "Backups")
             return "About, Feedback, A small favor, Software Update, Backups drawn"
+        }
+
+        step("crash report scrubbing") {
+            // The same cases as the server's (website/tests/usage.test.mjs), so neither can be got round.
+            let cases: [(String, String)] = [
+                ("/Users/jane.doe/Desktop/x and /home/bob/y", "/Users/~/Desktop/x and /home/~/y"),
+                ("on /Volumes/Backup/z", "on /Volumes/~/z"),
+                ("/Users/o'brien/x", "/Users/~/x"),
+                ("write to a.b@c.org now", "write to (email) now"),
+                ("/Us\u{1}ers/jane/x", "/Users/~/x"),
+                ("/Users/ja\u{200B}ne/x", "/Users/~/x"),
+                ("/users/jane/x", "/users/~/x"),
+                ("/USERS/Jane/x", "/USERS/~/x"),
+                ("on /Volumes/Jane Doe's Passport/z", "on /Volumes/~/z"),
+                ("on /volumes/My Drive/z", "on /Volumes/~/z"),
+                ("j\u{200B}ane@exa\u{2}mple.com", "(email)"),
+                ("JANE@EXAMPLE.COM", "(email)"),
+                ("a\u{202E}b\u{2066}c\u{FEFF}", "abc"),
+                ("line one\nline two", "line one line two"),
+            ]
+            for (input, expected) in cases {
+                let got = CrashReports.scrub(input, max: 200)
+                try check(got == expected, "scrub(\(input.debugDescription)) gave \(got.debugDescription), not \(expected.debugDescription)")
+            }
+            try check(CrashReports.scrub(String(repeating: "x", count: 50), max: 10).count == 10, "scrub doesn't stop at max")
+            return "\(cases.count + 1) cases: invisible characters, any case, drive names with spaces"
         }
 
         step("nothing live") {

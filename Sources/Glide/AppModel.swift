@@ -54,6 +54,8 @@ final class AppModel {
     var showingWelcomeTour = false
     /// The "A small favor" card over the main window (see `offerSmallFavor()`).
     var showingSmallFavor = false
+    /// "Glideball has a new look" over the main window (see `AppIconChoice`).
+    var showingIconChoice = false
     /// Work with Kensington's other trackballs. Per-Mac, never synced — see
     /// `OtherTrackballs`. Takes effect immediately.
     var otherTrackballs = OtherTrackballs.isEnabled {
@@ -165,6 +167,7 @@ final class AppModel {
         }
         assignStep = .idle
         assignProfileID = nil
+        Sounds.shared.play(.tick)
     }
 
     /// Returns true when it made or changed a combo.
@@ -248,6 +251,11 @@ final class AppModel {
         delight.reloadHistory(currentKey: totalsDay)
         delight.present = { [weak self] in self?.show($0) }
         delight.canCelebrate = { [weak self] in self?.showingWelcomeTour == false }
+        // A soft tick with the "Saved" pill, only while someone's looking at the window
+        // (not for a pointer speed set from Raycast), and never over a sound that just played.
+        delight.onSaved = { [weak self] in
+            if self?.windowVisible == true { Sounds.shared.play(.tick, quietAfter: 1.5) }
+        }
         backups.currentConfig = { AppModel.shared.config }
         // `--render-ui` and `--self-test`: a model with nothing live — no engine,
         // timers, observers, sync or update checks (see Sandbox.swift).
@@ -408,16 +416,22 @@ final class AppModel {
     @ObservationIgnored private var toastDismissal: DispatchWorkItem?
 
     /// Shows the "A small favor" card (opt-in crash reports and stats) if it
-    /// hasn't been answered, once the window is open and nothing else is over
-    /// it: never on top of the launch animation, the Welcome Tour or a sheet.
-    /// If something's in the way it waits for the next time the window opens.
+    /// hasn't been answered, or else "Glideball has a new look" (the icon
+    /// choice, after an update from the classic icon), once the window is open
+    /// and nothing else is over it: never on top of the launch animation, the
+    /// Welcome Tour, a sheet or each other. One at a time; answering one offers
+    /// the next. If something's in the way it waits for the next time the window opens.
     func offerSmallFavor(after delay: Double = 0.8) {
-        guard ShareData.shared.shouldAsk else { return }
+        guard ShareData.shared.shouldAsk || AppIconChoice.shared.promptDue else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-            guard let self, ShareData.shared.shouldAsk, !self.showingSmallFavor, !self.showingWelcomeTour,
+            guard let self, !self.showingSmallFavor, !self.showingIconChoice, !self.showingWelcomeTour,
                   !self.showingFeedback, !self.showingAbout, self.pendingImport == nil,
                   LaunchExperience.shared.show == nil, self.windowVisible else { return }
-            self.showingSmallFavor = true
+            if ShareData.shared.shouldAsk {
+                self.showingSmallFavor = true
+            } else if AppIconChoice.shared.promptDue {
+                self.showingIconChoice = true
+            }
         }
     }
 

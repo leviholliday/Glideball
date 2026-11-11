@@ -2,8 +2,8 @@ import AppKit
 import Observation
 
 /// Runs milestones, personal records and the "Make it yours" checklist, and
-/// stages their celebrations: a glass toast, a short confetti burst, and —
-/// only if you turn it on — a soft sound.
+/// stages their celebrations: a toast, a short confetti burst, and a short
+/// rising tone (unless Settings › Look & Sound › Sounds is off).
 ///
 /// It does no work of its own between ticks: `AppModel` calls `tick` about
 /// once a second while the window is on screen, and not at all when it's
@@ -13,19 +13,11 @@ final class DelightCenter {
     // MARK: Settings (per Mac)
 
     static let celebrationsKey = "GlideCelebrations"
-    static let soundsKey = "GlideCelebrationSounds"
     static let ledgerKey = "GlideDelightLedger"
 
     /// Toasts and confetti for milestones and records. On by default.
     var celebrationsOn: Bool {
         didSet { defaults.set(celebrationsOn, forKey: Self.celebrationsKey) }
-    }
-    /// A soft chime with celebrations. Off by default.
-    var soundsOn: Bool {
-        didSet {
-            defaults.set(soundsOn, forKey: Self.soundsKey)
-            if soundsOn && !oldValue { play(.step) }   // a preview of how quiet it is
-        }
     }
 
     // MARK: What the UI reads
@@ -71,6 +63,8 @@ final class DelightCenter {
     @ObservationIgnored var present: ((AppModel.Toast) -> Void)?
     /// Whether a moment is a good time to celebrate (not mid-tour).
     @ObservationIgnored var canCelebrate: () -> Bool = { true }
+    /// The "Saved" pill just showed (AppModel plays the soft tick).
+    @ObservationIgnored var onSaved: (() -> Void)?
 
     static let totalsPrefix = "GlideTotals-"
 
@@ -90,7 +84,6 @@ final class DelightCenter {
     init(defaults: UserDefaults = .standard, config: GlideConfig) {
         self.defaults = defaults
         celebrationsOn = defaults.object(forKey: Self.celebrationsKey) as? Bool ?? true
-        soundsOn = defaults.bool(forKey: Self.soundsKey)
         if let data = defaults.data(forKey: Self.ledgerKey),
            let saved = try? JSONDecoder().decode(DelightLedger.self, from: data) {
             ledger = saved
@@ -190,6 +183,7 @@ final class DelightCenter {
         let work = DispatchWorkItem { [weak self] in
             guard let self else { return }
             self.showSaved = true
+            self.onSaved?()
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { [weak self] in self?.showSaved = false }
         }
         savedWork = work
@@ -235,11 +229,10 @@ final class DelightCenter {
 
     private enum Chime { case big, step }
 
+    /// The three-note rise, or the fuller bloom for a big one (Sounds.swift
+    /// keeps it quiet when Sounds is off, the Mac is muted, or in a sandbox run).
     private func play(_ chime: Chime) {
-        guard soundsOn, !Sandbox.isActive else { return }
-        let sound = NSSound(named: chime == .big ? "Glass" : "Pop")
-        sound?.volume = chime == .big ? 0.35 : 0.25
-        sound?.play()
+        Sounds.shared.play(chime == .big ? .milestoneBig : .milestone)
     }
 
     private func title(for e: DelightEvent) -> String {
