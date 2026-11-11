@@ -5,7 +5,7 @@
 #                            since the last final release (the download links
 #                            follow the newest release without a redeploy);
 #                            --no-site skips it
-#   3. Installs the new build on this Mac
+#   3. Does not install it here: update from inside Glideball (Check for Updates…)
 #
 # Usage: scripts/ship.sh 2.1 "What's new in this version"
 #        scripts/ship.sh 2.4-beta.1 "What's new in this beta" --beta
