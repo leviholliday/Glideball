@@ -628,7 +628,7 @@ private struct BadgeView: View {
                 .foregroundStyle(.tertiary)
                 .lineLimit(1)
         }
-        .opacity(earned == nil && progress == nil ? 0.55 : 1)
+        .opacity(earned == nil && progress == nil ? 0.75 : 1)
         .onHover { h in withAnimation(Theme.Motion.spring) { hovering = h } }
         .help(earned.map { String(localized: "\(m.detail), earned \($0.formatted(date: .abbreviated, time: .omitted))",
                                   comment: "Badge tooltip: what earns it, then the date") }
