@@ -2,9 +2,11 @@
 // page was closed, the connection dropped, a piece was refused). Once the
 // sender's time to send them is over, the ones that did arrive are kept,
 // the pieces of the rest are deleted, and the item goes to the inbox with a
-// notification, so what was said still reaches Levi.
+// notification, so what was said still reaches Levi. Also: rate counters
+// whose time is over go, and feedback that came in past the push budget
+// gets one push saying how much.
 
-import { UPLOAD_WINDOW, items, files, misc, changeItem, whole, notify } from "../lib/common.mjs";
+import { UPLOAD_WINDOW, items, files, misc, changeItem, whole, notify, pushDigest, rateExpired } from "../lib/common.mjs";
 
 export const config = { schedule: "@hourly" };
 
@@ -41,7 +43,14 @@ export default async () => {
     if (item && gaveUp) await notify(item);
   }
 
-  // Rate counters from before there was one per key (rate/<key>/<window>): long over.
-  const { blobs: old } = await misc().list({ prefix: "rate/" });
-  await Promise.all(old.filter((b) => b.key.split("/").length > 2).map((b) => misc().delete(b.key)));
+  // Rate counters whose window is over (their names say when it ends), and
+  // the older kinds that never ended.
+  const { blobs: rates } = await misc().list({ prefix: "rate/" });
+  const over = rates.filter((b) => rateExpired(b.key));
+  for (let i = 0; i < over.length; i += 50) {
+    await Promise.all(over.slice(i, i + 50).map((b) => misc().delete(b.key)));
+  }
+
+  // Feedback that came in past the hour's push budget: one push for all of it.
+  await pushDigest();
 };
