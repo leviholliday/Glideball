@@ -222,6 +222,19 @@ Commands and values ignore case. Unknown parameters are ignored; an unknown comm
 
 Nothing else is in it: no app names besides the active setup's, no history, nothing typed.
 
+### The Raycast extension
+
+`raycast-extension/` is a Raycast extension (TypeScript) that uses the URLs and status.json above: Toggle, Pause and Resume Glideball, Toggle Precision Mode, Set Scroll Mode, Set Pointer Speed, Glideball Status, Open Glideball Settings and Check for Glideball Updates. It sends `open -g "glideball://…"` through `execFile` (no shell), reads status.json to confirm each change, and explains what's missing (not installed, not running, or the switch off) instead of failing silently. Its README is the user-facing description.
+
+```sh
+cd raycast-extension
+npm install
+npm run dev      # opens Raycast's develop mode; the commands show up in Raycast
+npm run build    # also: npm run lint
+```
+
+If a URL or a status.json field changes, update `src/lib/glideball.ts` (the only file that knows them) and the README. `npm run lint` checks `author` against a real Raycast username, so it needs the author's own account. To submit to the store: `npm run publish`, after adding screenshots to `metadata/` (see `metadata/SCREENSHOTS.md`). Not submitted yet.
+
 ### App Intents (Shortcuts, Spotlight): not yet
 
 I checked on 2026-11-11 whether a SwiftPM-built, hand-assembled app can offer App Intents without Xcode. The answer for now is no:

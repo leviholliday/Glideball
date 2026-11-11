@@ -1,0 +1,133 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "glideball",
+  "title": "Glideball",
+  "description": "Control Glideball, the Mac app for Kensington trackballs.",
+  "icon": "extension-icon.png",
+  "author": "leviholliday",
+  "platforms": [
+    "macOS"
+  ],
+  "categories": [
+    "System"
+  ],
+  "keywords": [
+    "trackball",
+    "kensington",
+    "expert mouse",
+    "scroll",
+    "pointer",
+    "mouse"
+  ],
+  "license": "MIT",
+  "commands": [
+    {
+      "name": "toggle-glideball",
+      "title": "Toggle Glideball",
+      "description": "Pause Glideball if it is running, or resume it if it is paused.",
+      "mode": "no-view",
+      "keywords": [
+        "pause",
+        "resume",
+        "on",
+        "off"
+      ]
+    },
+    {
+      "name": "pause-glideball",
+      "title": "Pause Glideball",
+      "description": "Pause Glideball. The trackball works like an ordinary mouse until you resume.",
+      "mode": "no-view"
+    },
+    {
+      "name": "resume-glideball",
+      "title": "Resume Glideball",
+      "description": "Resume Glideball after a pause.",
+      "mode": "no-view"
+    },
+    {
+      "name": "toggle-precision-mode",
+      "title": "Toggle Precision Mode",
+      "description": "Switch Glideball's Precision mode on or off. It slows the pointer for fine work.",
+      "mode": "no-view",
+      "keywords": [
+        "slow",
+        "fine"
+      ]
+    },
+    {
+      "name": "set-scroll-mode",
+      "title": "Set Scroll Mode",
+      "description": "Choose how the scroll ring feels: Native, Flywheel or Follow.",
+      "mode": "view",
+      "keywords": [
+        "flywheel",
+        "follow",
+        "native",
+        "ring"
+      ]
+    },
+    {
+      "name": "set-pointer-speed",
+      "title": "Set Pointer Speed",
+      "description": "Set how fast the trackball moves the pointer, from 0.5 to 80.",
+      "mode": "view",
+      "keywords": [
+        "tracking",
+        "speed",
+        "fast",
+        "slow"
+      ],
+      "arguments": [
+        {
+          "name": "value",
+          "type": "text",
+          "placeholder": "Speed, 0.5 to 80",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "glideball-status",
+      "title": "Glideball Status",
+      "description": "See whether Glideball is on, what it is set to, and today's clicks and distances.",
+      "mode": "view",
+      "keywords": [
+        "stats",
+        "today",
+        "clicks"
+      ]
+    },
+    {
+      "name": "open-glideball-settings",
+      "title": "Open Glideball Settings",
+      "description": "Open Glideball's Settings window.",
+      "mode": "no-view"
+    },
+    {
+      "name": "check-for-glideball-updates",
+      "title": "Check for Glideball Updates",
+      "description": "Open Glideball's software update window and check for a new version.",
+      "mode": "no-view"
+    }
+  ],
+  "dependencies": {
+    "@raycast/api": "^2.11.1"
+  },
+  "devDependencies": {
+    "@raycast/eslint-config": "^2.2.0",
+    "@types/node": "26.6.5",
+    "@types/react": "19.3.0",
+    "eslint": "^9.39.0",
+    "prettier": "^3.9.0",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "build": "ray build",
+    "dev": "ray develop",
+    "fix-lint": "ray lint --fix",
+    "lint": "ray lint",
+    "prepublishOnly": "echo \"\\n\\nIt seems like you are trying to publish the Raycast extension to npm.\\n\\nIf you did intend to publish it to npm, remove the \\`prepublishOnly\\` script and rerun \\`npm publish\\` again.\\nIf you wanted to publish it to the Raycast Store instead, use \\`npm run publish\\` instead.\\n\\n\\n\" && exit 1",
+    "publish": "npx @raycast/api@latest publish"
+  }
+}
