@@ -44,10 +44,45 @@ function session(rec) {
 }
 const cookieHeader = (value, maxAge) =>
   `${COOKIE}=${value}; Path=/api/admin; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAge}`;
-function readCookie(req) {
-  const m = (req.headers.get("cookie") ?? "").match(new RegExp(`(?:^|;\\s*)${COOKIE}=([^;]+)`));
+function readCookie(req, name = COOKIE) {
+  const m = (req.headers.get("cookie") ?? "").match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`));
   return m ? m[1] : null;
 }
+// A known device: a browser the owner has signed in from. Its cookie lets a
+// sign-in from it skip the limit on wrong passwords from everywhere (so
+// guesses spread over many addresses can't lock the owner out). It still
+// counts against its address's limit, still needs the password, and is
+// never a session: signedIn() reads only glide_admin, and the device cookie
+// is sent only to /api/admin/login. It's signed with its own label, so it
+// can't pass for a session nor a session for it, and tied to the password's
+// v, so changing the password forgets every device (but the browser that
+// changed it). Every sign-in brings a new one (new nonce, new expiry);
+// signing out leaves it. Wrong passwords sent with one have a budget of
+// their own, so a stolen one is no way round the limit either.
+const DEVICE = "glide_device";
+const DEVICE_DAYS = 180;
+const DEVICE_WRONG = 10;   // wrong passwords an hour with one device cookie
+const signDevice = (p) => sign(`device:${p}`);
+function deviceToken(rec) {
+  const p = `${Date.now() + DEVICE_DAYS * 86400e3}.${rec.v}.${randomToken(12)}`;
+  return `${p}.${signDevice(p)}`;
+}
+const deviceCookie = (rec) =>
+  `${DEVICE}=${deviceToken(rec)}; Path=/api/admin/login; HttpOnly; Secure; SameSite=Strict; Max-Age=${DEVICE_DAYS * 86400}`;
+/** The nonce of this request's device cookie, if this site signed it, for
+ * the current password, and it hasn't expired; otherwise null. */
+function knownDevice(req, rec) {
+  const c = readCookie(req, DEVICE);
+  if (!c || !rec) return null;
+  const parts = c.split(".");
+  if (parts.length !== 4) return null;
+  const [exp, v, nonce, sig] = parts;
+  if (!/^\d{1,16}$/.test(exp) || !v || !/^[A-Za-z0-9_-]{16}$/.test(nonce)) return null;
+  if (!sameSecret(sig, signDevice(`${exp}.${v}.${nonce}`))) return null;
+  if (Number(exp) <= Date.now() || v !== rec.v) return null;
+  return nonce;
+}
+
 async function signedIn(req) {
   const c = readCookie(req);
   if (!c || !secret()) return false;
@@ -129,25 +164,30 @@ async function setup(req, context) {
   if (typeof password !== "string" || password.length < 10) return fail(400, "Use at least 10 characters.");
   const rec = hashPassword(password);
   await misc().setJSON("admin/password", rec);
-  return json({ ok: true }, 200, { "set-cookie": cookieHeader(session(rec), DAYS * 86400) });
+  return signedInReply(rec);
 }
 
 // Wrong passwords: at most 8 every 15 minutes from one address (or IPv6
 // /64), and 60 an hour from everywhere at once, for guessing spread over
-// many addresses. Only wrong ones count: each try is counted before the
+// many addresses (which a known device skips, with a budget of its own:
+// see knownDevice()). Only wrong ones count: each try is counted before the
 // password is checked (so tries sent all at once can't slip past the
 // limits) and given back if it was right, so signing in never uses up
 // either limit, and the many-addresses limit fills only with real guesses.
 async function login(req, context) {
   const mine = await take(`login/${clientIP(req, context)}`, 8, 900);
   if (!mine) return fail(429, "Too many tries. Wait a few minutes.");
-  const everyone = await take("login/everyone", 60, 3600);
-  if (!everyone) {
+  const rec = await passwordRecord();
+  const device = knownDevice(req, rec);
+  // A known device's own budget, or (without one, or once that's used up)
+  // the limit for everyone.
+  const wide = (device && await take(`login/device/${device}`, DEVICE_WRONG, 3600)) ||
+    await take("login/everyone", 60, 3600);
+  if (!wide) {
     await giveBack(mine);
     return fail(429, "Too many tries. Wait a while.");
   }
-  const notCounted = () => Promise.all([giveBack(mine), giveBack(everyone)]);
-  const rec = await passwordRecord();
+  const notCounted = () => Promise.all([giveBack(mine), giveBack(wide)]);
   if (!rec) {
     await notCounted();
     return fail(409, "Set a password first.");
@@ -155,7 +195,15 @@ async function login(req, context) {
   const { password } = await body(req);
   if (!checkPassword(password, rec)) return fail(401, "That's not the password.");
   await notCounted();
-  return json({ ok: true }, 200, { "set-cookie": cookieHeader(session(rec), DAYS * 86400) });
+  return signedInReply(rec);
+}
+
+/** Signed in: a session, and a fresh known-device cookie. */
+function signedInReply(rec) {
+  const headers = new Headers({ "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+  headers.append("set-cookie", cookieHeader(session(rec), DAYS * 86400));
+  headers.append("set-cookie", deviceCookie(rec));
+  return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
 }
 
 async function changePassword(req) {
@@ -165,7 +213,7 @@ async function changePassword(req) {
   if (typeof next !== "string" || next.length < 10) return fail(400, "Use at least 10 characters.");
   const fresh = hashPassword(next);
   await misc().setJSON("admin/password", fresh);
-  return json({ ok: true }, 200, { "set-cookie": cookieHeader(session(fresh), DAYS * 86400) });
+  return signedInReply(fresh);
 }
 
 /** What the list shows of an item, and what its search box looks through.
