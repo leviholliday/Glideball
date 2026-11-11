@@ -8,6 +8,7 @@
 //   store.stats()          // { reads, writes, deletes, lists } since creation / clearStats()
 //   store.entries()        // [{ key, etag, bytes }], sorted
 //   store.peek(key)        // the text, without counting a read
+//   store.setPageSize(n)   // keys per page of list({ paginate: true }); default 1000
 
 const te = new TextEncoder();
 const td = new TextDecoder();
@@ -38,6 +39,7 @@ function validateKey(key) {
 export function createMemoryStore() {
   const map = new Map();   // key -> { bytes, etag }
   let counter = 0;
+  let pageSize = 1000;
   let counts = { reads: 0, writes: 0, deletes: 0, lists: 0 };
   const tick = () => Promise.resolve();
 
@@ -78,15 +80,25 @@ export function createMemoryStore() {
       counts.deletes++;
       map.delete(key);
     },
-    async list(options = {}) {
-      await tick();
-      counts.lists++;
-      const keys = [...map.keys()].filter((k) => !options.prefix || k.startsWith(options.prefix)).sort();
-      return { blobs: keys.map((key) => ({ key, etag: map.get(key).etag })), directories: [] };
+    // Without paginate: every blob in one reply. With it: an async iterable of
+    // pages, as the real library gives.
+    list(options = {}) {
+      const all = async () => {
+        await tick();
+        counts.lists++;
+        const keys = [...map.keys()].filter((k) => !options.prefix || k.startsWith(options.prefix)).sort();
+        return keys.map((key) => ({ key, etag: map.get(key).etag }));
+      };
+      if (!options.paginate) return all().then((blobs) => ({ blobs, directories: [] }));
+      return (async function* () {
+        const blobs = await all();
+        for (let i = 0; i < Math.max(blobs.length, 1); i += pageSize) yield { blobs: blobs.slice(i, i + pageSize), directories: [] };
+      })();
     },
 
     // ---- tests only ----
     stats: () => ({ ...counts }),
+    setPageSize(n) { pageSize = n; },
     clearStats() { counts = { reads: 0, writes: 0, deletes: 0, lists: 0 }; },
     entries() { return [...map].sort(([a], [b]) => (a < b ? -1 : 1)).map(([key, v]) => ({ key, etag: v.etag, bytes: v.bytes.length })); },
     keys() { return [...map.keys()].sort(); },

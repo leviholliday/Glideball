@@ -58,6 +58,7 @@ function shell() {
         ${PERIODS.map(([d, label]) => `<option value="${d}" ${d === state.days ? "selected" : ""}>${label}</option>`).join("")}
       </select>
       <button class="icon-btn" id="refresh">Refresh</button>
+      <a class="icon-btn" href="/admin/stats/">Statistics</a>
       <a class="icon-btn" href="/admin/feedback/">Feedback</a>
     </header>
     <main class="usage" id="body"><div class="placeholder">Loading…</div></main>`;

@@ -80,11 +80,8 @@ website_tests() (   # a subshell: the cd stays in here
     print "website/node_modules is missing; running npm ci"
     npm ci --no-audit --no-fund || return 1
   fi
-  npm run -s test:usage || return 1
-  # Any other test files there too (npm test runs tests/*.test.mjs).
-  local others=(tests/*.test.mjs(N))
-  others=(${others:#tests/usage.test.mjs})
-  if (( ${#others} )); then npm run -s test || return 1; fi
+  # Every tests/*.test.mjs (usage, stats, and any added later), each in its own process.
+  npm run -s test || return 1
 )
 if command -v npm >/dev/null; then
   run website "website function tests (npm)" website_tests

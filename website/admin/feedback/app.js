@@ -119,6 +119,7 @@ async function main() {
       <span class="spacer"></span>
       <button class="icon-btn" id="refresh" title="Refresh">Refresh</button>
       <a class="icon-btn" href="/admin/usage/">Usage</a>
+      <a class="icon-btn" href="/admin/stats/">Statistics</a>
       <div class="menu" id="menu">
         <button class="icon-btn" id="menu-btn" aria-haspopup="true" aria-label="More">•••</button>
         <div class="menu-list glass">
