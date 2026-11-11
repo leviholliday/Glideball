@@ -48,6 +48,13 @@
   status = 404
   force = true
 
+# The page sources scripts/build_pages.py builds from (the built pages are what's served).
+[[redirects]]
+  from = "/_pages/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
 [[redirects]]
   from = "/node_modules/*"
   to = "/404.html"

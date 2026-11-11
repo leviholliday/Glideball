@@ -1,0 +1,56 @@
+<!--
+title: How to Uninstall KensingtonWorks · Glideball
+description: How to uninstall KensingtonWorks and its driver on a Mac before you switch to Glideball: use Kensington's uninstaller, restart, and check nothing is left.
+path: /help/uninstall-kensingtonworks/
+crumb: Uninstall KensingtonWorks
+parent: /help/
+nav: help
+kicker: Help
+h1: How to uninstall KensingtonWorks
+lede: To uninstall KensingtonWorks, run the uninstaller Kensington provides, then restart your Mac. Do this before you install Glideball, because KensingtonWorks's driver and Glideball both try to handle your trackball's buttons.
+updated: 2026-11-10
+-->
+      <section class="pg-section">
+        <div class="callout callout-warn glass">
+          <svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg>
+          <div>
+            <p><strong>A note before you start.</strong> I'm not Kensington, and I haven't checked every KensingtonWorks version. Where its uninstaller lives and what it's called may differ on your Mac. If Kensington's own instructions say something different, follow theirs.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="pg-section" aria-labelledby="steps-h">
+        <h2 id="steps-h">Uninstall it</h2>
+        <ol class="howto">
+          <li class="glass">
+            <h3>Quit KensingtonWorks</h3>
+            <p>If it has a menu bar icon or a window open, quit it.</p>
+          </li>
+          <li class="glass">
+            <h3>Run the KensingtonWorks uninstaller</h3>
+            <p>Look in your Applications folder for an app named something like <strong>KensingtonWorks Uninstaller</strong> (sometimes inside a KensingtonWorks folder). Open it and follow its steps. Older setups may call it TrackballWorks.</p>
+            <p>Can't find one? The KensingtonWorks installer you downloaded from <a href="https://www.kensington.com/software/kensingtonworks/">kensington.com</a> may include it. Just dragging the app to the Trash can leave the driver behind.</p>
+          </li>
+          <li class="glass">
+            <h3>Restart your Mac</h3>
+            <p>This is the step people skip. The driver can keep running until you restart.</p>
+          </li>
+          <li class="glass">
+            <h3>Check nothing is left</h3>
+            <p>Open <strong>System Settings › General › Login Items &amp; Extensions</strong> and look for anything from Kensington. Then check <strong>Privacy &amp; Security › Accessibility</strong> and <strong>Input Monitoring</strong>, and remove KensingtonWorks from those lists if it's still there.</p>
+          </li>
+        </ol>
+      </section>
+
+      <section class="pg-section" aria-labelledby="how-h">
+        <h2 id="how-h">How to tell it worked</h2>
+        <p>After the restart, your trackball should act like a plain mouse: the ball moves the pointer, the scroll ring scrolls, and each button does one ordinary thing. That's the right starting point for Glideball.</p>
+        <p>If a button does two things at once after you install Glideball, part of KensingtonWorks is probably still running. Go through the steps above again, and restart once more.</p>
+      </section>
+
+      <section class="pg-section" aria-labelledby="next-h">
+        <h2 id="next-h">Next</h2>
+        <p><a href="https://github.com/leviholliday/glideball/releases/latest/download/Glideball.zip">Download Glideball</a>, drag it into Applications, and <a href="/help/open-anyway/">open it with Open Anyway</a>. Your KensingtonWorks settings don't carry over, but Quick assign on the Buttons tab gets you set up fast.</p>
+      </section>
+
+<!-- still-stuck -->

@@ -1,0 +1,54 @@
+<!--
+title: Uninstall Glideball Completely · Glideball
+description: How to uninstall Glideball from your Mac: quit it, delete the app, remove its two permissions, and optionally delete its settings, logs and backups.
+path: /help/uninstall-glideball/
+crumb: Uninstall Glideball
+parent: /help/
+nav: help
+kicker: Help
+h1: Uninstall Glideball completely
+lede: To uninstall Glideball, quit it, drag it to the Trash, and remove it from Accessibility and Input Monitoring. To remove every setting too, delete two folders and run one Terminal command.
+updated: 2026-11-10
+-->
+      <section class="pg-section" aria-labelledby="steps-h">
+        <h2 id="steps-h">Remove the app</h2>
+        <ol class="howto">
+          <li class="glass">
+            <h3>Turn off Open at login, then quit</h3>
+            <p>Turn off Overview › General › Open at login. Then press <kbd>⌘Q</kbd>, or use the menu bar icon › Quit Glideball. Your trackball goes back to normal right away.</p>
+          </li>
+          <li class="glass">
+            <h3>Drag Glideball to the Trash</h3>
+            <p>From your Applications folder.</p>
+          </li>
+          <li class="glass">
+            <h3>Remove its permissions</h3>
+            <p>In System Settings › Privacy &amp; Security, select Glideball in <strong>Accessibility</strong> and in <strong>Input Monitoring</strong>, and click the minus button in each.</p>
+          </li>
+        </ol>
+      </section>
+
+      <section class="pg-section prose" aria-labelledby="settings-h">
+        <h2 id="settings-h">Remove your settings too (optional)</h2>
+        <p>Glideball was called Glide until 2.8, and its folders kept that name. In Finder, choose Go › Go to Folder… and delete these:</p>
+        <ul>
+          <li><code>~/Library/Application Support/Glide</code> (automatic backups)</li>
+          <li><code>~/Library/Logs/Glide</code></li>
+          <li>iCloud Drive › <code>Glide</code>, if you turned on sync</li>
+        </ul>
+        <p>Then run this in Terminal to clear your settings:</p>
+        <pre><code>defaults delete com.leviholliday.glide</code></pre>
+        <p>If you might come back later, keep a copy first with File › Export Settings… (<kbd>⌘E</kbd>).</p>
+      </section>
+
+      <section class="pg-section" aria-labelledby="brew-h">
+        <h2 id="brew-h">Installed with Homebrew?</h2>
+        <p>Quit Glideball first, then run:</p>
+        <pre><code>brew uninstall --zap --cask glideball</code></pre>
+        <p>The <code>--zap</code> part removes its settings, backups and logs as well. It leaves the iCloud Drive › <code>Glide</code> folder, so delete that yourself if you used sync.</p>
+      </section>
+
+      <section class="pg-section" aria-labelledby="back-h">
+        <h2 id="back-h">Going back to KensingtonWorks?</h2>
+        <p>Uninstall Glideball first, then install KensingtonWorks from <a href="https://www.kensington.com/software/kensingtonworks/">kensington.com</a>. If you have a minute, I'd love to hear what didn't work for you on the <a href="/feedback/">feedback page</a>.</p>
+      </section>

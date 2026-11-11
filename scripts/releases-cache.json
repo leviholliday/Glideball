@@ -1,0 +1,138 @@
+[
+ {
+  "body": "Beta 4: pausing and quitting now both give your trackball exactly your System Settings tracking speed, so they always feel the same.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `40d5b0d4ca4dfa3525f7b3c1a1e24754c9510098c26a516da9b88925f4654fdf`",
+  "date": "2026-11-11T01:53:47Z",
+  "name": "Glideball 2.10 beta 4",
+  "prerelease": true,
+  "tag": "v2.10-beta.4",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.4"
+ },
+ {
+  "body": "Beta 3: bug fixes. Pausing or quitting now gives your trackball its normal speed back. Quit from the Dock works. Switching from Flywheel to Follow no longer makes the page jump. Copy and paste work in the feedback form (new Edit menu). New installs start with normal buttons, and the Spaces + Wispr Flow setup is now a one-click preset on the Buttons tab; your current buttons are kept. Check for Updates opens a clear Software Update window.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `fb1acdc2d24b1a768a286fb2e06acf2d72047e83d6c6b8b9094d451d4aa40bdd`",
+  "date": "2026-11-10T18:09:05Z",
+  "name": "Glideball 2.10 beta 3",
+  "prerelease": true,
+  "tag": "v2.10-beta.3",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.3"
+ },
+ {
+  "body": "Beta: you can now email the developer at glideball@proton.me. Find it in About & Help (the info button at the top of the window); the email opens with your version info already filled in. Includes everything from beta 1: About & Help and the option to hide Glideball from the Dock.",
+  "date": "2026-11-02T21:12:27Z",
+  "name": "Glideball 2.10 beta 2",
+  "prerelease": true,
+  "tag": "v2.10-beta.2",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.2"
+ },
+ {
+  "body": "Beta: two new things. (1) About & Help: a new info button at the top of the window (and Glideball › About) opens a sheet with your version, update check, feedback, the welcome tour, helpful links and copyable support info. (2) Show in Dock and app switcher: turn it off in Overview › General to run Glideball purely in the background and reopen it from the menu-bar icon. Tell us how both work for you.",
+  "date": "2026-11-02T20:03:48Z",
+  "name": "Glideball 2.10 beta 1",
+  "prerelease": true,
+  "tag": "v2.10-beta.1",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.1"
+ },
+ {
+  "body": "Much lighter on your CPU: Glideball now idles at a few percent instead of 30–50%. The window only animates when something is moving and it's actually visible, and with no trackball connected it stays quiet. New Performance setting (Overview › General): Smoothest, Efficient or Minimal.",
+  "date": "2026-10-20T23:06:25Z",
+  "name": "Glideball 2.9.1",
+  "prerelease": false,
+  "tag": "v2.9.1",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.9.1"
+ },
+ {
+  "body": "Spin the scroll ring harder and the page now goes farther. Glideball used to hit a speed limit at moderate spins, so a very fast spin went no farther than a fast one. A new Fast-spin reach slider (Scrolling tab, Flywheel mode) sets how far the hardest spins fly; turn it to 0% for the old behavior.",
+  "date": "2026-10-06T21:46:16Z",
+  "name": "Glideball 2.9",
+  "prerelease": false,
+  "tag": "v2.9",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.9"
+ },
+ {
+  "body": "Fixes a trackpad two-finger click being treated as the trackball's right button (it could open Mission Control). Also: Linux and Windows previews are now available on the website.",
+  "date": "2026-10-04T23:43:53Z",
+  "name": "Glideball 2.8.1",
+  "prerelease": false,
+  "tag": "v2.8.1",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.8.1"
+ },
+ {
+  "body": "Glide is now Glideball! Same app, same settings, a name that's easier to find. It renames itself on your Mac automatically — nothing to redo.",
+  "date": "2026-10-04T22:04:20Z",
+  "name": "Glideball 2.8",
+  "prerelease": false,
+  "tag": "v2.8",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.8"
+ },
+ {
+  "body": "Glide's website has a new, easier address: glideball.netlify.app. The old address keeps working.",
+  "date": "2026-10-04T21:50:19Z",
+  "name": "Glide 2.7.1",
+  "prerelease": false,
+  "tag": "v2.7.1",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.7.1"
+ },
+ {
+  "body": "Automatic backups: Glide now saves a tiny snapshot of your settings every day — kept for two weeks, then monthly for a year — with a timeline on the Sync tab and one-click restore (with Undo). Glide now speaks nine languages: English, Español, Français, Deutsch, Italiano, Português (Brasil), 日本語, 한국어 and 简体中文 — pick one in Overview › General › Language.",
+  "date": "2026-10-04T21:10:02Z",
+  "name": "Glide 2.7",
+  "prerelease": false,
+  "tag": "v2.7",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.7"
+ },
+ {
+  "body": "A grand entrance.\n\n- New launch animations: every time you start Glide you get one of six short animations, never the same twice in a row. First-time users get a longer intro with original music, leading into the Welcome Tour. Turn sounds off with 'Launch sounds' in Overview > General.\n- Pages now slide between tabs, cards rise in, and today's counters count up.\n- Check for Updates: a button in Overview > General, plus 'Check for Updates…' in the Glide menu and the menu-bar menu.\n- Choose whether Glide shows its menu-bar icon (Overview > General).\n- Fixes: installing an update relaunches properly again, and Glide never holds up logging out, restarting or shutting down.\n\nIf an update from 2.3-2.5 seems stuck on 'Restarting…', choose Quit Glide and it will finish installing.",
+  "date": "2026-10-04T19:46:25Z",
+  "name": "Glide 2.6",
+  "prerelease": false,
+  "tag": "v2.6",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.6"
+ },
+ {
+  "body": "Combos, shortcuts and a little celebration.\n\n- Three-button combos are easier: tick buttons in the new 'New combo' row (Buttons tab), and pressing three buttons together is more forgiving.\n- Keyboard shortcuts (Overview): toggle Precision, Scroll with ball and Drag lock from the keyboard, and change the pause shortcut (Control-Option-Command-G by default). All optional.\n- Your trackball: lifetime totals with real-world comparisons, a 7-day chart, personal records and 17 badges to earn, celebrated once with a little confetti.\n- 'Make it yours' checklist to set Glide up your way.\n- Button ripples and a ring trail on the live trackball, and a 'Saved' check when settings apply.\n- Celebrations and sounds can be turned off in Overview > General (sounds are off by default).",
+  "date": "2026-10-04T19:06:41Z",
+  "name": "Glide 2.5",
+  "prerelease": false,
+  "tag": "v2.5",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.5"
+ },
+ {
+  "body": "Six new features.\n\n- Precision mode: hold (or toggle) a button to slow the cursor for pixel-perfect aim. Set the precision speed on the Pointer tab.\n- Scroll with the ball: hold a button and roll the ball to scroll in any direction while the cursor stays put; let go mid-roll and it glides.\n- Drag lock: press once to grab, roll to drag, press again (or click) to drop. No more holding a button while dragging.\n- App setups: give any app its own pointer speed, scrolling, buttons and combos. Glide switches the moment that app comes to the front.\n- Welcome Tour for new users (Help > Show Welcome Tour).\n- Beta program (Overview > General): try Glide with other Kensington trackballs and get early test builds. Off by default.\n\nSafety: pausing (Control-Option-Command-G), quitting or unplugging always undoes precision, ball scrolling and drag lock.",
+  "date": "2026-10-04T18:17:15Z",
+  "name": "Glide 2.4",
+  "prerelease": false,
+  "tag": "v2.4",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.4"
+ },
+ {
+  "body": "Send feedback right from Glide.\n\n- Help › Send Feedback… (also in the menu bar menu and on the Overview tab): report a bug, suggest an idea or ask a question, attach screenshots or recordings, and optionally include your Glide settings and scroll log. You see everything that's sent first.\n- Or use the website: glide-trackball.netlify.app/feedback\n- Bug reports sent after a relaunch now include the previous session's scroll log.",
+  "date": "2026-10-04T17:42:11Z",
+  "name": "Glide 2.3",
+  "prerelease": false,
+  "tag": "v2.3",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.3"
+ },
+ {
+  "body": "Polish for one-click updates.\n\n- Glide always checks GitHub fresh, so new versions show up right away.\n- The update button is a compact pill that never crowds the top bar.",
+  "date": "2026-10-04T02:25:21Z",
+  "name": "Glide 2.2",
+  "prerelease": false,
+  "tag": "v2.2",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.2"
+ },
+ {
+  "body": "One-click updates.\n\n- The Update button now installs new versions in place: it downloads the release, checks it's signed by Glide's developer (tampered downloads are refused), swaps the app and relaunches. Your permissions carry over.\n- Lighter on CPU: the Overview graphs use a fraction of the power.\n- New Sync tab: nicer export and import with previews and Undo, double-click settings files to open them, and iCloud Drive sync across your Macs.",
+  "date": "2026-10-04T02:18:05Z",
+  "name": "Glide 2.1",
+  "prerelease": false,
+  "tag": "v2.1",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.1"
+ },
+ {
+  "body": "First public release of Glide for the Kensington Expert Mouse.\n\n- Pointer speed past macOS's limit, applied only to the Expert Mouse\n- Three scroll modes: Native, Flywheel (tuned from Kensington's own driver), Follow\n- Remap buttons, two- and three-button combos, quick assign, hold-to-talk shortcuts\n- Live dashboard with graphs and an animated trackball\n- Backup & Sync: export/import settings files and sync across Macs through iCloud Drive\n- Safety: the main click is always a left click; Control-Option-Command-G pauses Glide instantly\n\nInstall: unzip, move Glide to Applications, then open it. Because Glide isn't notarized, macOS may ask you to allow it in System Settings > Privacy & Security (Open Anyway). Grant Accessibility and Input Monitoring when asked. Universal: Apple silicon and Intel, macOS 26 or later.",
+  "date": "2026-10-04T02:07:33Z",
+  "name": "Glide 2.0",
+  "prerelease": false,
+  "tag": "v2.0",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.0"
+ }
+]
