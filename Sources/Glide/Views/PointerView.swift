@@ -5,8 +5,9 @@ struct PointerView: View {
     @Bindable var model: AppModel
 
     var body: some View {
-        HStack(alignment: .top, spacing: 18) {
-            VStack(spacing: 18) {
+        // One column, as the redesigned pages are (this page's own redesign comes later).
+        VStack(alignment: .leading, spacing: Theme.Space.section) {
+            VStack(spacing: Theme.Space.section) {
                 GlassCard(title: "Feel", symbol: "slider.horizontal.3") {
                     TuningSlider(title: "Tracking speed", symbol: "gauge.with.dots.needle.67percent",
                                  value: $model.config.trackingSpeed, range: 0.5...80, step: 0.5,
@@ -35,7 +36,6 @@ struct PointerView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, 6)
             }
-            .frame(width: 340)
 
             ResponseCurveCard(model: model)
         }
@@ -102,7 +102,7 @@ struct ResponseCurveCard: View {
             .chartYAxisLabel("How fast the cursor moves")
             .chartXAxis { AxisMarks(values: .automatic(desiredCount: 4)) { _ in AxisGridLine().foregroundStyle(.white.opacity(0.08)) } }
             .chartYAxis { AxisMarks(values: .automatic(desiredCount: 4)) { _ in AxisGridLine().foregroundStyle(.white.opacity(0.08)) } }
-            .frame(height: 330)
+            .frame(height: 260)
             .animation(.smooth(duration: 0.25), value: speed)
 
             HStack(spacing: 14) {

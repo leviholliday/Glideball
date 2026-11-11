@@ -226,6 +226,9 @@ final class AppModel {
     @ObservationIgnored private var lastTotalsPublish = 0.0
     @ObservationIgnored private var smoothedBall = 0.0
     @ObservationIgnored private var smoothedNotch = 0.0
+    @ObservationIgnored private var smoothedRollX = 0.0
+    @ObservationIgnored private var smoothedRollY = 0.0
+    @ObservationIgnored private var smoothedRing = 0.0
     @ObservationIgnored private var applyingRemoteConfig = false
 
     private init() {
@@ -308,6 +311,15 @@ final class AppModel {
         let id = app?.bundleIdentifier
         if glideIsFrontmost != isGlide { glideIsFrontmost = isGlide }
         if frontmostBundleID != id { frontmostBundleID = id }
+        pushToEngine()
+    }
+
+    /// `--render-ui` only: says who's in front (Glideball itself, or another app), as the
+    /// workspace notification would in the real app.
+    func sandboxFrontmost(glide: Bool, bundleID: String? = nil) {
+        guard Sandbox.isActive else { return }
+        glideIsFrontmost = glide
+        frontmostBundleID = bundleID
         pushToEngine()
     }
 
@@ -599,7 +611,7 @@ final class AppModel {
         t.tolerance = wanted * 0.15   // lets macOS coalesce wakeups
         RunLoop.main.add(t, forMode: .common)
         sampler = t
-        if !windowVisible { live.reset(); smoothedBall = 0; smoothedNotch = 0 }
+        if !windowVisible { live.reset(); smoothedBall = 0; smoothedNotch = 0; smoothedRollX = 0; smoothedRollY = 0; smoothedRing = 0 }
     }
 
     private func sample() {
@@ -616,9 +628,14 @@ final class AppModel {
         let kBall = pow(0.6, dt * 30), kNotch = pow(0.7, dt * 30)
         smoothedBall = smoothedBall * kBall + (s.ballSpeed / Self.countsPerInch) * (1 - kBall)
         smoothedNotch = smoothedNotch * kNotch + s.notchRate * (1 - kNotch)
-        if smoothedBall < 0.01 { smoothedBall = 0 }
-        if smoothedNotch < 0.05 { smoothedNotch = 0 }
-        live.push(ball: smoothedBall, notch: smoothedNotch, dt: dt, interval: samplerInterval)
+        smoothedRollX = smoothedRollX * kBall + (s.ballVX / Self.countsPerInch) * (1 - kBall)
+        smoothedRollY = smoothedRollY * kBall + (s.ballVY / Self.countsPerInch) * (1 - kBall)
+        smoothedRing = smoothedRing * kNotch + s.notchVelocity * (1 - kNotch)
+        if smoothedBall < 0.01 { smoothedBall = 0; smoothedRollX = 0; smoothedRollY = 0 }
+        if smoothedNotch < 0.05 { smoothedNotch = 0; smoothedRing = 0 }
+        // HID wheel values are + for scrolling up, which is turning the ring anticlockwise.
+        live.push(ball: smoothedBall, notch: smoothedNotch, rollX: smoothedRollX, rollY: smoothedRollY,
+                  ringVelocity: -smoothedRing, dt: dt, interval: samplerInterval)
 
         if s.pressed != pressed { pressed = s.pressed }
         // Totals tick up with every click and scroll; the tiles don't need more than a few updates a second.

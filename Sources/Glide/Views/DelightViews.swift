@@ -2,27 +2,10 @@ import Charts
 import SwiftUI
 
 // The visible side of milestones and records: confetti, the "Make it yours"
-// checklist, and the "Your trackball" card on Overview. Everything animates
-// only for a moment, only while on screen, and holds still with Reduce Motion.
-
-extension Metric {
-    var color: Color {
-        switch self {
-        case .scroll: .pink
-        case .ball: .cyan
-        case .clicks: .purple
-        }
-    }
-
-    var gradient: LinearGradient {
-        let second: Color = switch self {
-        case .scroll: .orange
-        case .ball: .blue
-        case .clicks: .indigo
-        }
-        return LinearGradient(colors: [color, second], startPoint: .topLeading, endPoint: .bottomTrailing)
-    }
-}
+// checklist, and "Your trackball" on Overview. Everything animates only for a
+// moment, only while on screen, and holds still with Reduce Motion. Color here
+// always means a part: clicks are the buttons' amber, rolling the ball's blue,
+// scrolling the ring's pink.
 
 // MARK: - Confetti
 
@@ -109,7 +92,7 @@ private struct SplitMix {
     }
 }
 
-/// The toast's icon for celebrations: a gradient coin that bounces in.
+/// The celebration toast's icon: the milestone's symbol, which bounces once as it lands.
 struct CelebrationToastIcon: View {
     let symbol: String
     @State private var bounce = 0
@@ -117,132 +100,68 @@ struct CelebrationToastIcon: View {
 
     var body: some View {
         Image(systemName: symbol)
-            .font(.system(size: 13, weight: .bold))
-            .foregroundStyle(.white)
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(.primary)
             .frame(width: 28, height: 28)
-            .background(Circle().fill(LinearGradient(colors: [.purple, .pink, .orange],
-                                                     startPoint: .topLeading, endPoint: .bottomTrailing)))
-            .shadow(color: .pink.opacity(0.6), radius: 8)
+            .background(Circle().fill(Theme.hoverFill))
+            .overlay(Circle().strokeBorder(Theme.groupBorder, lineWidth: 0.5))
             .symbolEffect(.bounce, value: bounce)
             .onAppear { if !reduceMotion { bounce += 1 } }
     }
 }
 
-/// "✓ Saved" — pops in next to the status pill after settings settle.
+/// "Saved" — floats in at the top of the content after settings settle.
 struct SavedPill: View {
-    @State private var pop = 0
-
     var body: some View {
         Label("Saved", systemImage: "checkmark.circle.fill")
-            .font(.system(size: 12, weight: .semibold))
+            .font(.system(size: 12, weight: .medium))
             .symbolRenderingMode(.hierarchical)
-            .foregroundStyle(.green)
-            .symbolEffect(.bounce, value: pop)
+            .foregroundStyle(.secondary)
             .padding(.horizontal, 11)
             .padding(.vertical, 6)
             .glassEffect(.regular, in: .capsule)
-            .onAppear { pop += 1 }
             .help("Your settings are saved and already in effect")
             .accessibilityLabel("Settings saved")
     }
 }
 
-// MARK: - Progress ring
-
-struct ProgressRing<Label: View>: View {
-    let progress: Double
-    var lineWidth: CGFloat = 9
-    var colors: [Color] = [.cyan, .purple, .pink, .cyan]
-    @ViewBuilder var label: Label
-
-    var body: some View {
-        ZStack {
-            Circle().stroke(.white.opacity(0.1), lineWidth: lineWidth)
-            Circle()
-                .trim(from: 0, to: max(0.001, min(progress, 1)))
-                .stroke(AngularGradient(colors: colors, center: .center),
-                        style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
-                .rotationEffect(.degrees(-90))
-                .shadow(color: .purple.opacity(progress >= 1 ? 0.7 : 0.3), radius: progress >= 1 ? 10 : 4)
-            label
-        }
-    }
-}
-
 // MARK: - Make it yours
 
+/// The setup checklist, while it has steps left: one row per step, each
+/// opening the page where it's done.
 struct MakeItYoursCard: View {
     let delight: DelightCenter
     /// Opens the tab where a step is done.
     let open: (GlideTab) -> Void
-    @State private var hovered: ChecklistItem?
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var done: Set<ChecklistItem> { delight.ledger.checklist }
     private var allDone: Bool { done.count == ChecklistItem.allCases.count }
 
     var body: some View {
-        GlassCard(title: "Make it yours", symbol: "wand.and.stars") {
-            HStack(alignment: .center, spacing: 24) {
-                ProgressRing(progress: Double(done.count) / Double(ChecklistItem.allCases.count)) {
-                    VStack(spacing: 0) {
-                        if allDone {
-                            Image(systemName: "sparkles")
-                                .font(.system(size: 26, weight: .semibold))
-                                .foregroundStyle(LinearGradient(colors: [.cyan, .pink], startPoint: .top, endPoint: .bottom))
-                                .symbolEffect(.bounce, value: allDone)
-                        } else {
-                            Text(verbatim: "\(done.count)")
-                                .font(.system(size: 26, weight: .bold, design: .rounded))
-                                .contentTransition(.numericText(value: Double(done.count)))
-                            Text("of \(ChecklistItem.allCases.count)")
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-                .frame(width: 86, height: 86)
-                .animation(reduceMotion ? nil : .spring(response: 0.6, dampingFraction: 0.7), value: done.count)
-
-                if allDone {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("You’ve made Glideball yours.")
-                            .font(.system(size: 18, weight: .semibold, design: .rounded))
-                        Text("Speed, scrolling, buttons, a combo and an app setup — all tuned to you. Change anything, any time.")
-                            .font(.system(size: 12))
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                        Button("Hide This Card") { withAnimation(.smooth) { delight.dismissChecklist() } }
-                            .buttonStyle(.glass)
-                            .controlSize(.small)
-                            .padding(.top, 4)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                } else {
-                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)],
-                              alignment: .leading, spacing: 8) {
-                        ForEach(ChecklistItem.allCases) { item in row(item) }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.trailing, 24)   // clear of the close button
-                }
-            }
-        }
-        .overlay(alignment: .topTrailing) {
+        SectionBlock(title: "Make it yours",
+                     caption: allDone ? nil : "\(done.count) of \(ChecklistItem.allCases.count)",
+                     dividerInset: Theme.Space.rowHorizontal + Theme.Space.symbolColumn + Theme.Space.symbolGap) {
             if !allDone {
                 Button {
-                    withAnimation(.smooth) { delight.dismissChecklist() }
+                    withAnimation(Theme.Motion.spring) { delight.dismissChecklist() }
                 } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 24, height: 24)
-                        .contentShape(Circle())
+                    Text("Hide").font(Theme.Font.hint.weight(.medium)).padding(.horizontal, 6).padding(.vertical, 2)
                 }
-                .buttonStyle(.plain)
-                .padding(14)
+                .buttonStyle(HoverButtonStyle(radius: 5))
+                .foregroundStyle(.secondary)
                 .help("Hide this checklist — it won’t come back")
                 .accessibilityLabel("Hide checklist")
+            }
+        } content: {
+            if allDone {
+                SettingRow(title: "You’ve made Glideball yours.",
+                           hint: "Speed, scrolling, buttons, a combo and an app setup — all tuned to you. Change anything, any time.",
+                           symbol: "checkmark.circle.fill", tint: Theme.ok) {
+                    Button("Hide This Card") { withAnimation(Theme.Motion.spring) { delight.dismissChecklist() } }
+                        .controlSize(.small)
+                }
+            } else {
+                ForEach(ChecklistItem.allCases) { item in row(item) }
             }
         }
     }
@@ -252,42 +171,33 @@ struct MakeItYoursCard: View {
         return Button {
             open(tab(for: item))
         } label: {
-            HStack(spacing: 10) {
+            HStack(spacing: Theme.Space.symbolGap) {
                 Image(systemName: isDone ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundStyle(isDone ? AnyShapeStyle(.green) : AnyShapeStyle(.tertiary))
+                    .font(.system(size: 15))
+                    .foregroundStyle(isDone ? AnyShapeStyle(Theme.ok) : AnyShapeStyle(.tertiary))
                     .contentTransition(.symbolEffect(.replace))
-                    .symbolEffect(.bounce, value: isDone)
-                VStack(alignment: .leading, spacing: 1) {
+                    .frame(width: Theme.Space.symbolColumn)
+                VStack(alignment: .leading, spacing: 2) {
                     Text(item.title)
-                        .font(.system(size: 13, weight: .medium))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.85)
-                        .strikethrough(isDone, color: .secondary)
+                        .font(Theme.Font.body)
                         .foregroundStyle(isDone ? .secondary : .primary)
                     Text(item.hint)
-                        .font(.system(size: 11))
+                        .font(Theme.Font.hint)
                         .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.85)
                 }
-                Spacer(minLength: 4)
-                Image(systemName: "arrow.right")
+                .lineLimit(1)
+                .minimumScaleFactor(0.9)
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                    .opacity(hovered == item ? 1 : 0)
-                    .offset(x: hovered == item ? 0 : -4)
+                    .foregroundStyle(.tertiary)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
-            .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(.white.opacity(hovered == item ? 0.1 : 0)))
+            .padding(.horizontal, Theme.Space.rowHorizontal)
+            .padding(.vertical, Theme.Space.rowVertical - 2)
+            .frame(minHeight: Theme.Space.rowMinHeight)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .onHover { inside in
-            withAnimation(.snappy(duration: 0.18)) { hovered = inside ? item : (hovered == item ? nil : hovered) }
-        }
+        .buttonStyle(HoverButtonStyle(radius: 0))
         .help(isDone ? String(localized: "Done — open to change it")
                      : String(localized: "Open the \(tab(for: item).title) tab", comment: "%@ is a tab name"))
     }
@@ -304,39 +214,29 @@ struct MakeItYoursCard: View {
 
 // MARK: - Your trackball
 
+/// Lifetime numbers, this week, personal bests and badges.
 struct YourTrackballCard: View {
     let delight: DelightCenter
     @State private var metric: Metric = .scroll
 
     var body: some View {
-        GlassCard(title: "Your trackball", symbol: "trophy") {
-            HStack(spacing: 12) {
-                ForEach(Metric.allCases) { m in LifetimeTile(metric: m, delight: delight) }
-            }
-
-            HStack(alignment: .top, spacing: 18) {
-                WeekChart(delight: delight, metric: $metric)
-                    .frame(maxWidth: .infinity)
-                PersonalBests(delight: delight)
-                    .frame(width: 300)
-            }
-
-            Divider().opacity(0.4)
-
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Text("Badges").font(.system(size: 13, weight: .semibold))
-                    Text("\(delight.ledger.earned.count) of \(Milestone.all.count)")
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
-                        .monospacedDigit()
-                        .foregroundStyle(.secondary)
-                        .contentTransition(.numericText(value: Double(delight.ledger.earned.count)))
-                    Spacer()
-                    Text(footnote)
-                        .font(.system(size: 11))
-                        .foregroundStyle(.tertiary)
+        VStack(alignment: .leading, spacing: Theme.Space.section) {
+            VStack(alignment: .leading, spacing: 10) {
+                SectionTitle(title: "Your trackball", caption: .verbatim(footnote))
+                HStack(alignment: .top, spacing: 0) {
+                    ForEach(Array(Metric.lifetimeOrder.enumerated()), id: \.element) { i, m in
+                        if i > 0 { Hairline(vertical: true).padding(.horizontal, 20) }
+                        LifetimeStat(metric: m, delight: delight)
+                    }
                 }
-                ForEach(Metric.allCases) { m in BadgeRow(metric: m, delight: delight) }
+                .fixedSize(horizontal: false, vertical: true)
+            }
+
+            WeekChart(delight: delight, metric: $metric)
+            PersonalBests(delight: delight)
+
+            SectionBlock(title: "Badges", caption: "\(delight.ledger.earned.count) of \(Milestone.all.count)") {
+                ForEach(Metric.lifetimeOrder) { m in BadgeRow(metric: m, delight: delight) }
             }
         }
     }
@@ -348,37 +248,19 @@ struct YourTrackballCard: View {
     }
 }
 
-private struct LifetimeTile: View {
+extension Metric {
+    /// The order the parts are shown in: buttons, ball, ring (as Today reads).
+    static let lifetimeOrder: [Metric] = [.clicks, .ball, .scroll]
+}
+
+private struct LifetimeStat: View {
     let metric: Metric
     let delight: DelightCenter
 
     var body: some View {
         let value = delight.lifetime.value(metric)
-        VStack(alignment: .leading, spacing: 5) {
-            HStack(spacing: 6) {
-                Image(systemName: metric.symbol)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(metric.gradient)
-                Text(title)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-            }
-            Text(metric.format(value))
-                .font(.system(size: 26, weight: .bold, design: .rounded))
-                .monospacedDigit()
-                .contentTransition(.numericText(value: value))
-                .animation(.smooth(duration: 0.4), value: value)
-            Text(comparison)
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(.regular, in: .rect(cornerRadius: 20))
+        InlineStat(value: metric.format(value), label: .verbatim(title), color: metric.color, size: 22, detail: comparison)
+            .animation(.smooth(duration: 0.4), value: value)
     }
 
     private var title: String {
@@ -413,27 +295,27 @@ private struct WeekChart: View {
         let average = active.isEmpty ? 0 : active.reduce(0, +) / Double(active.count)
 
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("This week").font(.system(size: 13, weight: .semibold))
-                Spacer()
+            SectionTitle(title: "This week") {
                 Picker("Show", selection: $metric) {
-                    ForEach(Metric.allCases) { m in Text(m == .clicks ? "Clicks" : m == .ball ? "Rolled" : "Scrolled").tag(m) }
+                    ForEach(Metric.lifetimeOrder) { m in Text(m == .clicks ? "Clicks" : m == .ball ? "Rolled" : "Scrolled").tag(m) }
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
+                .controlSize(.small)
                 .fixedSize()
             }
             Chart {
                 ForEach(points) { day in
                     BarMark(x: .value("Day", day.date, unit: .day),
-                            y: .value(metric.title, grown ? day.tally.value(metric) : 0))
-                        .foregroundStyle(day.isToday ? AnyShapeStyle(metric.gradient) : AnyShapeStyle(metric.color.opacity(0.4)))
-                        .cornerRadius(6)
+                            y: .value(metric.title, grown ? day.tally.value(metric) : 0),
+                            width: .ratio(0.5))
+                        .foregroundStyle(metric.color.opacity(day.isToday ? 1 : 0.45))
+                        .cornerRadius(3)
                 }
                 if average > 0 {
                     RuleMark(y: .value("Average", average))
-                        .foregroundStyle(.white.opacity(0.35))
-                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 4]))
+                        .foregroundStyle(Color.secondary.opacity(0.6))
+                        .lineStyle(StrokeStyle(lineWidth: 0.5, dash: [3, 3]))
                         .annotation(position: .top, alignment: .leading) {
                             Text("avg \(metric.format(average))")
                                 .font(.system(size: 9, weight: .medium))
@@ -448,17 +330,17 @@ private struct WeekChart: View {
             }
             .chartYAxis {
                 AxisMarks(position: .trailing, values: .automatic(desiredCount: 3)) { v in
-                    AxisGridLine().foregroundStyle(.white.opacity(0.08))
+                    AxisGridLine().foregroundStyle(Theme.gridLine)
                     AxisValueLabel {
                         if let d = v.as(Double.self) {
-                            Text(metric == .clicks ? Int(d).formatted() : Tally.shortDistance(d)).font(.system(size: 9))
+                            Text(metric == .clicks ? Int(d).formatted() : Tally.shortDistance(d)).font(.system(size: 9)).monospacedDigit()
                         }
                     }
                 }
             }
-            .frame(height: 150)
-            .animation(reduceMotion ? nil : .spring(response: 0.55, dampingFraction: 0.8), value: metric)
-            .animation(reduceMotion ? nil : .spring(response: 0.7, dampingFraction: 0.75), value: grown)
+            .frame(height: 140)
+            .animation(reduceMotion ? nil : Theme.Motion.spring, value: metric)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.35), value: grown)
             .accessibilityLabel(accessibilityTitle)
         }
         .onAppear {
@@ -480,9 +362,9 @@ private struct PersonalBests: View {
     let delight: DelightCenter
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Personal bests").font(.system(size: 13, weight: .semibold))
-            ForEach(Metric.allCases) { m in
+        SectionBlock(title: "Personal bests",
+                     dividerInset: Theme.Space.rowHorizontal + Theme.Space.symbolColumn + Theme.Space.symbolGap) {
+            ForEach(Metric.lifetimeOrder) { m in
                 let best = max(delight.pastBest.value(m), delight.today.value(m))
                 let isToday = delight.today.value(m) > delight.pastBest.value(m) && delight.historyDays > 0
                 row(symbol: m.symbol, color: m.color,
@@ -493,7 +375,7 @@ private struct PersonalBests: View {
             }
             ForEach(RecordKind.allCases) { k in
                 let v = delight.ledger.record(k)
-                row(symbol: k.symbol, color: .orange, title: k.title,
+                row(symbol: k.symbol, color: k == .roll ? Theme.ball : Theme.ring, title: k.title,
                     value: v > 0 ? k.format(v) : "—",
                     date: delight.ledger.recordDates[k.rawValue].map(short))
             }
@@ -507,28 +389,23 @@ private struct PersonalBests: View {
     }
 
     private func row(symbol: String, color: Color, title: String, value: String, date: String?) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: symbol)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(color)
-                .frame(width: 18)
-            Text(title).font(.system(size: 12)).lineLimit(1).minimumScaleFactor(0.8)
-            Spacer(minLength: 4)
+        HStack(spacing: Theme.Space.symbolGap) {
+            RowSymbol(symbol: symbol, tint: color)
+            Text(title).font(Theme.Font.body).lineLimit(1).minimumScaleFactor(0.85)
+            Spacer(minLength: 8)
             Text(value)
-                .font(.system(size: 12, weight: .semibold, design: .rounded))
-                .monospacedDigit()
+                .font(Theme.Font.value)
                 .contentTransition(.numericText())
-            if let date {
-                Text(date)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(date == Self.today ? AnyShapeStyle(.orange) : AnyShapeStyle(.tertiary))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                    .frame(width: 44, alignment: .trailing)
-            } else {
-                Color.clear.frame(width: 44, height: 1)
-            }
+            Text(date ?? "")
+                .font(Theme.Font.hint)
+                .foregroundStyle(date == Self.today ? AnyShapeStyle(color) : AnyShapeStyle(.tertiary))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .frame(width: 52, alignment: .trailing)
         }
+        .padding(.horizontal, Theme.Space.rowHorizontal)
+        .frame(minHeight: 36)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -539,7 +416,7 @@ private struct BadgeRow: View {
     var body: some View {
         let list = Milestone.all.filter { $0.metric == metric }
         let next = list.first { delight.ledger.earned[$0.id] == nil }
-        HStack(spacing: 0) {
+        HStack(alignment: .top, spacing: 0) {
             ForEach(list) { m in
                 BadgeView(milestone: m, earned: delight.ledger.earned[m.id],
                           progress: m.id == next?.id ? delight.lifetime.value(metric) / m.threshold : nil)
@@ -548,6 +425,8 @@ private struct BadgeRow: View {
             // Keep the columns lined up between rows of different lengths.
             ForEach(list.count..<Self.columns, id: \.self) { _ in Color.clear.frame(maxWidth: .infinity, maxHeight: 1) }
         }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 14)
     }
 
     static let columns = Metric.allCases.map { m in Milestone.all.filter { $0.metric == m }.count }.max() ?? 6
@@ -563,40 +442,39 @@ private struct BadgeView: View {
 
     var body: some View {
         let m = milestone
+        let color = m.metric.color
         VStack(spacing: 5) {
             ZStack {
                 if earned != nil {
-                    Circle().fill(m.metric.gradient)
-                        .shadow(color: m.metric.color.opacity(hovering ? 0.8 : 0.45), radius: hovering ? 12 : 6)
-                    Circle().strokeBorder(.white.opacity(0.35), lineWidth: 1)
+                    Circle().fill(color)
                 } else {
-                    Circle().fill(.white.opacity(0.05))
-                    Circle().strokeBorder(.white.opacity(0.12), lineWidth: 1)
+                    Circle().strokeBorder(Theme.hairline, lineWidth: 1)
                     if let progress {
                         Circle()
                             .trim(from: 0, to: max(0.02, min(progress, 1)))
-                            .stroke(m.metric.color.opacity(0.85), style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                            .stroke(color, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
                             .rotationEffect(.degrees(-90))
-                            .padding(1.5)
+                            .padding(1.25)
                     }
                 }
                 Image(systemName: m.symbol)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(earned != nil ? AnyShapeStyle(.white) : AnyShapeStyle(.tertiary))
                     .symbolEffect(.bounce, value: earned != nil)
             }
-            .frame(width: 48, height: 48)
+            .frame(width: 40, height: 40)
             .overlay(alignment: .topTrailing) {
                 if let earned, Date().timeIntervalSince(earned) < 24 * 3600 {
-                    Text("NEW")
-                        .font(.system(size: 8, weight: .heavy, design: .rounded))
-                        .padding(.horizontal, 4).padding(.vertical, 1.5)
-                        .background(Capsule().fill(.orange))
-                        .foregroundStyle(.white)
-                        .offset(x: 8, y: -3)
+                    Text("New", comment: "On a badge earned in the last day")
+                        .font(.system(size: 9, weight: .semibold))
+                        .padding(.horizontal, 4).padding(.vertical, 1)
+                        .background(Capsule().fill(Theme.windowBackground))
+                        .overlay(Capsule().strokeBorder(color, lineWidth: 0.5))
+                        .foregroundStyle(color)
+                        .offset(x: 10, y: -4)
                 }
             }
-            .scaleEffect(hovering && !reduceMotion ? 1.08 : 1)
+            .scaleEffect(hovering && !reduceMotion ? 1.06 : 1)
 
             Text(m.title)
                 .font(.system(size: 11, weight: .medium))
@@ -604,13 +482,13 @@ private struct BadgeView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
             Text(caption)
-                .font(.system(size: 10, weight: .medium, design: .rounded))
+                .font(.system(size: 10, weight: .medium))
                 .monospacedDigit()
                 .foregroundStyle(.tertiary)
                 .lineLimit(1)
         }
-        .opacity(earned == nil && progress == nil ? 0.6 : 1)
-        .onHover { h in withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) { hovering = h } }
+        .opacity(earned == nil && progress == nil ? 0.55 : 1)
+        .onHover { h in withAnimation(Theme.Motion.spring) { hovering = h } }
         .help(earned.map { String(localized: "\(m.detail) — earned \($0.formatted(date: .abbreviated, time: .omitted))",
                                   comment: "Badge tooltip: what earns it, then the date") }
               ?? String(localized: "Goal: \(m.detail)", comment: "Badge tooltip: what earns it"))

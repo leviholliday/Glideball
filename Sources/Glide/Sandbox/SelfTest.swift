@@ -89,7 +89,7 @@ enum SelfTest {
             try check(!window.isVisible, "the main window is on screen")
             let content = try unwrap(window.contentView, "the main window has no content")
             Offscreen.settleDown(content, seconds: 0.15)
-            let rep = try unwrap(Offscreen.draw(window, content: content, chrome: .window, scale: 1), "the main window didn't draw")
+            let rep = try unwrap(Offscreen.draw(window, content: content, chrome: .mainWindow, scale: 1), "the main window didn't draw")
             return "built offscreen, never shown; drew \(Int(rep.size.width))×\(Int(rep.size.height))"
         }
 
@@ -117,7 +117,7 @@ enum SelfTest {
         step("tabs") {
             for tab in GlideTab.allCases {
                 UserDefaults.standard.set(tab.rawValue, forKey: "GlideInitialTab")
-                try draw(RootView(model: model), tab.rawValue, size: RenderUI.windowSize, chrome: .window)
+                try draw(RootView(model: model), tab.rawValue, size: RenderUI.windowSize, chrome: .mainWindow)
             }
             UserDefaults.standard.removeObject(forKey: "GlideInitialTab")
             return "\(GlideTab.allCases.count) tabs drawn"

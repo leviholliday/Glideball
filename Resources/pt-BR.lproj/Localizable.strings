@@ -707,7 +707,6 @@
 
 /* ---- Components.swift ---- */
 
-"BETA" = "BETA";
 
 "Precise" = "Preciso";
 
@@ -727,7 +726,6 @@
 
 "Make it yours" = "Deixe com a sua cara";
 
-"of %lld" = "de %lld";
 
 "You’ve made Glideball yours." = "O Glideball está com a sua cara.";
 
@@ -797,7 +795,6 @@
 /* When a personal best was set; short (about 6 letters fit) */
 "today" = "hoje";
 
-"NEW" = "NOVO";
 
 /* Badge tooltip: what earns it, then the date */
 "%@ — earned %@" = "%@ — conquistada em %@";
@@ -1023,9 +1020,7 @@
 
 "Waiting for permissions…" = "Aguardando permissões…";
 
-"Kensington Expert Mouse" = "Kensington Expert Mouse";
 
-"Roll, spin, or click — it's live." = "Role, gire ou clique — é ao vivo.";
 
 "Plug in your Expert Mouse." = "Conecte seu Expert Mouse.";
 
@@ -1611,3 +1606,24 @@
 
 /* “Allow Raycast and scripts” is a switch in Settings › General */
 "Turn on “Allow Raycast and scripts” in Settings to let it." = "Ative “Permitir Raycast e scripts” nos Ajustes para permitir.";
+
+/* The redesign (stage 1): sidebar, page headers, Overview and Buttons */
+"How your trackball’s doing today, and everything it’s done so far." = "Como está o seu trackball hoje, e tudo o que ele já fez.";
+"How fast the cursor moves when you roll the ball." = "A velocidade do ponteiro quando você rola a bola.";
+"How the page moves when you turn the scroll ring." = "Como a página se move quando você gira o anel de rolagem.";
+"What each button does, and combos you press together." = "O que cada botão faz, e combos que você pressiona juntos.";
+"Different settings for the apps you choose." = "Ajustes diferentes para os apps que você escolher.";
+"Keep your settings the same on all your Macs, and back them up." = "Mantenha seus ajustes iguais em todos os seus Macs e faça backup deles.";
+"%@ (⌘%lld)" = "%1$@ (⌘%2$lld)";
+"Glideball is on" = "O Glideball está ativado";
+"Resume" = "Retomar";
+"Your trackball works like a plain mouse until you turn Glideball back on." = "Seu trackball funciona como um mouse comum até você ativar o Glideball de novo.";
+"Glideball starts working as soon as it’s connected." = "O Glideball começa a funcionar assim que ele é conectado.";
+"Roll or spin to see it move" = "Role ou gire para ver o movimento";
+"Best %@" = "Recorde: %@";
+"Your buttons" = "Seus botões";
+"Hide" = "Ocultar";
+"New" = "Novo";
+"Your trackball, live" = "Seu trackball, ao vivo";
+"No trackball connected" = "Nenhum trackball conectado";
+"Default: %@" = "Padrão: %@";

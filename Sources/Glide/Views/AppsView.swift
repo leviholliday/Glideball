@@ -13,16 +13,16 @@ struct AppsView: View {
             if profiles.isEmpty {
                 emptyState
             } else {
-                HStack(alignment: .top, spacing: 18) {
-                    VStack(spacing: 18) {
+                // One column, as the redesigned pages are (this page's own redesign comes later).
+                VStack(alignment: .leading, spacing: Theme.Space.section) {
+                    VStack(alignment: .leading, spacing: 10) {
                         listCard
                         Text("When one of these apps is in front, Glideball switches to its setup. Anything left on “Main setup” follows your main settings.")
                             .font(.system(size: 12))
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
-                            .padding(.horizontal, 6)
+                            .padding(.horizontal, 2)
                     }
-                    .frame(width: 280)
 
                     if let id = model.selectedProfileID, profiles.contains(where: { $0.id == id }) {
                         ProfileEditor(model: model, profileID: id)
@@ -228,7 +228,7 @@ private struct ProfileEditor: View {
             OverrideSection(title: "Buttons", symbol: "button.programmable",
                             mainSummary: Self.remapped(main.buttons),
                             isCustom: customizing(\.buttons) { model.config.buttons }) {
-                VStack(spacing: 12) {
+                RowGroup(dividerInset: ButtonRow.dividerInset) {
                     ForEach(Self.buttonRows, id: \.index) { b in
                         ButtonRow(index: b.index, name: AppModel.buttonName(b.index), normally: b.normally,
                                   isPressed: model.pressed.contains(b.index),
@@ -242,7 +242,7 @@ private struct ProfileEditor: View {
                                                              : String(localized: "\(main.chords.count) combos"),
                             isCustom: customizing(\.chords) { model.config.chords }) {
                 CombosCard(chords: Binding(get: { profile.wrappedValue.chords ?? model.config.chords },
-                                           set: { profile.wrappedValue.chords = $0 }))
+                                           set: { profile.wrappedValue.chords = $0 }), title: nil)
             }
         }
         .confirmationDialog("Delete the \(p.name) setup?", isPresented: $confirmingDelete) {

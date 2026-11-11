@@ -13,12 +13,19 @@ extension RenderUI {
                                cleanup: { cleanup(); baseline(model) }))
         }
 
-        // The main window, one per tab, as it opens (1040 × 700).
+        // The main window, one per tab, as it opens (980 × 680).
         let tabs: [(GlideTab, String)] = [(.overview, "overview"), (.pointer, "pointer"), (.scroll, "scrolling"),
                                           (.buttons, "buttons"), (.apps, "apps"), (.backup, "sync")]
         for (tab, name) in tabs {
             add(name, "Main window", "\(tab.rawValue) tab") { dark, scale in
                 mainWindow(model, tab: tab, dark: dark, scale: scale)
+            }
+        }
+
+        // The smallest the window goes (860 × 580): nothing may clip or wrap mid-word.
+        for (tab, name) in tabs {
+            add("min-size-\(name)", "Smallest window", "\(tab.rawValue) tab at the minimum size") { dark, scale in
+                mainWindow(model, tab: tab, dark: dark, scale: scale, size: AppDelegate.mainWindowMinSize)
             }
         }
 
@@ -56,15 +63,19 @@ extension RenderUI {
             }) { dark, scale in
             mainWindow(model, tab: .overview, dark: dark, scale: scale)
         }
-        add("modes-on", "States", "Precision and Drag lock on (header pills)",
+        add("modes-on", "States", "Precision and Drag lock on (sidebar chips), top left held",
             prepare: {
                 model.modes = Engine.Modes(precision: true, ballScrolling: false, dragLocked: true)
                 model.pressed = [2]
             }) { dark, scale in
             mainWindow(model, tab: .buttons, dark: dark, scale: scale)
         }
-        add("app-setup-active", "States", "An app setup in effect (header badge)",
-            prepare: { model.isEditingProfiles = true; model.selectedProfileID = "com.apple.Safari" }) { dark, scale in
+        add("app-setup-active", "States", "An app setup in effect (sidebar badge)",
+            prepare: {
+                model.sandboxFrontmost(glide: true)
+                model.isEditingProfiles = true
+                model.selectedProfileID = "com.apple.Safari"
+            }) { dark, scale in
             // Glideball is in front with the Apps tab open, so Safari's setup is previewed.
             mainWindow(model, tab: .apps, dark: dark, scale: scale)
         }
@@ -101,6 +112,11 @@ extension RenderUI {
         add("small-favor", "States", "“A small favor” card",
             prepare: { model.showingSmallFavor = true }) { dark, scale in
             mainWindow(model, tab: .overview, dark: dark, scale: scale)
+        }
+
+        // The trackball hero in every state, at the sidebar's size and large (the tour's).
+        add("trackball-states", "Trackball", "The trackball in each state") { dark, scale in
+            card(TrackballStates(), width: 1000, dark: dark, scale: scale)
         }
 
         // The Welcome Tour, every step, over the window.
@@ -207,7 +223,7 @@ extension RenderUI {
         add("update-available", "Software Update", "An update is available", prepare: findUpdate) { dark, scale in
             updatePanel(model, dark: dark, scale: scale)
         }
-        add("update-in-header", "Software Update", "Update button in the window header", prepare: findUpdate) { dark, scale in
+        add("update-in-header", "Software Update", "Update pill in the sidebar", prepare: findUpdate) { dark, scale in
             mainWindow(model, tab: .overview, dark: dark, scale: scale)
         }
         add("update-downloading", "Software Update", "Downloading", prepare: download) { dark, scale in
@@ -224,14 +240,49 @@ extension RenderUI {
         return list
     }
 
-    @ViewBuilder static func page(_ tab: GlideTab, _ model: AppModel) -> some View {
-        switch tab {
-        case .overview: OverviewView(model: model)
-        case .pointer: PointerView(model: model)
-        case .scroll: ScrollSettingsView(model: model)
-        case .buttons: ButtonsView(model: model)
-        case .apps: AppsView(model: model)
-        case .backup: BackupView(model: model)
+    static func page(_ tab: GlideTab, _ model: AppModel) -> some View {
+        TabPage(tab: tab, model: model)
+    }
+
+    /// The seven looks from the design guide's table, each on the sidebar's stage, plus two large.
+    struct TrackballStates: View {
+        private struct Item: Identifiable {
+            let id: String
+            let look: TrackballLook
+            let feed: LiveFeed
+            var pressed: Set<Int> = []
+        }
+
+        private let items: [Item] = [
+            .init(id: "Connected, idle", look: .connected, feed: LiveFeed()),
+            .init(id: "Rolling (right and away)", look: .connected, feed: DemoData.movingFeed(roll: CGVector(dx: 2.6, dy: -1.6))),
+            .init(id: "Ring turning", look: .connected, feed: DemoData.movingFeed(ring: 18)),
+            .init(id: "Button down (top left)", look: .connected, feed: LiveFeed(), pressed: [2]),
+            .init(id: "Paused", look: .paused, feed: LiveFeed()),
+            .init(id: "Not connected", look: .notConnected, feed: LiveFeed()),
+            .init(id: "Needs permission", look: .needsPermission, feed: LiveFeed()),
+        ]
+
+        var body: some View {
+            VStack(alignment: .leading, spacing: 24) {
+                LazyVGrid(columns: Array(repeating: GridItem(.fixed(196), spacing: 18), count: 4), alignment: .leading, spacing: 18) {
+                    ForEach(items) { item in
+                        VStack(spacing: 8) {
+                            TrackballView(feed: item.feed, pressed: item.pressed, look: item.look)
+                                .frame(width: 150, height: 150)
+                                .padding(.vertical, 10)
+                                .frame(maxWidth: .infinity)
+                                .background(RoundedRectangle(cornerRadius: Theme.Radius.stage, style: .continuous).fill(Theme.stage))
+                            Text(verbatim: item.id).font(.system(size: 11)).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                HStack(alignment: .bottom, spacing: 24) {
+                    TrackballView(feed: LiveFeed(), pressed: [], look: .connected).frame(width: 300, height: 300)
+                    TrackballView(feed: DemoData.movingFeed(roll: CGVector(dx: -1.5, dy: 2), ring: -12), pressed: [1], look: .connected)
+                        .frame(width: 230, height: 230)
+                }
+            }
         }
     }
 
@@ -262,6 +313,7 @@ extension RenderUI {
         model.pendingImport = nil
         model.assignStep = .idle
         model.isEditingProfiles = false
+        model.sandboxFrontmost(glide: false)
         model.selectedProfileID = "com.apple.Safari"
         DemoData.feedLiveGraphs(model.live)
     }

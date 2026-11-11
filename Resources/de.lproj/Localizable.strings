@@ -707,7 +707,6 @@
 
 /* ---- Components.swift ---- */
 
-"BETA" = "BETA";
 
 "Precise" = "Präzise";
 
@@ -727,7 +726,6 @@
 
 "Make it yours" = "Mach ihn zu deinem";
 
-"of %lld" = "von %lld";
 
 "You’ve made Glideball yours." = "Glideball ist jetzt ganz deins.";
 
@@ -797,7 +795,6 @@
 /* When a personal best was set; short (about 6 letters fit) */
 "today" = "heute";
 
-"NEW" = "NEU";
 
 /* Badge tooltip: what earns it, then the date */
 "%@ — earned %@" = "%@ — erhalten am %@";
@@ -1023,9 +1020,7 @@
 
 "Waiting for permissions…" = "Warte auf Berechtigungen …";
 
-"Kensington Expert Mouse" = "Kensington Expert Mouse";
 
-"Roll, spin, or click — it's live." = "Rollen, drehen oder klicken — alles live.";
 
 "Plug in your Expert Mouse." = "Schließ deine Expert Mouse an.";
 
@@ -1611,3 +1606,24 @@
 
 /* “Allow Raycast and scripts” is a switch in Settings › General */
 "Turn on “Allow Raycast and scripts” in Settings to let it." = "Schalte in den Einstellungen „Raycast und Skripte erlauben“ ein, damit das geht.";
+
+/* The redesign (stage 1): sidebar, page headers, Overview and Buttons */
+"How your trackball’s doing today, and everything it’s done so far." = "Wie es deinem Trackball heute geht, und alles, was er bisher geschafft hat.";
+"How fast the cursor moves when you roll the ball." = "Wie schnell sich der Zeiger bewegt, wenn du die Kugel rollst.";
+"How the page moves when you turn the scroll ring." = "Wie sich die Seite bewegt, wenn du den Scrollring drehst.";
+"What each button does, and combos you press together." = "Was jede Taste macht, und Kombis, die du zusammen drückst.";
+"Different settings for the apps you choose." = "Eigene Einstellungen für die Apps, die du auswählst.";
+"Keep your settings the same on all your Macs, and back them up." = "Halte deine Einstellungen auf all deinen Macs gleich und sichere sie.";
+"%@ (⌘%lld)" = "%1$@ (⌘%2$lld)";
+"Glideball is on" = "Glideball ist an";
+"Resume" = "Fortsetzen";
+"Your trackball works like a plain mouse until you turn Glideball back on." = "Dein Trackball funktioniert wie eine normale Maus, bis du Glideball wieder einschaltest.";
+"Glideball starts working as soon as it’s connected." = "Glideball legt los, sobald er angeschlossen ist.";
+"Roll or spin to see it move" = "Roll oder dreh, um es in Bewegung zu sehen";
+"Best %@" = "Bestwert %@";
+"Your buttons" = "Deine Tasten";
+"Hide" = "Ausblenden";
+"New" = "Neu";
+"Your trackball, live" = "Dein Trackball, live";
+"No trackball connected" = "Kein Trackball verbunden";
+"Default: %@" = "Standard: %@";

@@ -31,16 +31,12 @@ enum PerformanceMode: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Redraws per second for the slowly drifting background; 0 holds it still.
-    /// (Measured: 1–2 a second is free, but around 6 a second costs a third of a CPU core,
-    /// because every redraw re-renders the glass on top — so Efficient stays at 2.)
-    func backgroundFPS(windowIsKey: Bool, deviceConnected: Bool) -> Double {
-        guard deviceConnected else { return 0 }
-        return switch self {
-        case .smooth: 20
-        case .efficient: windowIsKey ? 2 : 0
-        case .minimal: 0
-        }
+    /// Redraws per second for the idle trackball's slow drift of inner light; 0 holds it still.
+    /// Only Smoothest drifts at all (a few frames a second is plenty for something that slow),
+    /// and only while the window is the one in use with a trackball connected.
+    func idleDriftFPS(windowIsKey: Bool, deviceConnected: Bool) -> Double {
+        guard deviceConnected, windowIsKey else { return 0 }
+        return self == .smooth ? 12 : 0
     }
 }
 
@@ -59,8 +55,13 @@ final class LiveFeed {
 
     @ObservationIgnored private(set) var ballSpeed = 0.0        // inches / second
     @ObservationIgnored private(set) var notchRate = 0.0        // ring notches / second
+    /// Which way the ball is rolling (inches / second; + = right, + = toward you).
+    @ObservationIgnored private(set) var rollX = 0.0
+    @ObservationIgnored private(set) var rollY = 0.0
+    /// The ring's turn, signed (notches / second; + = clockwise as you look down at it).
+    @ObservationIgnored private(set) var ringVelocity = 0.0
     @ObservationIgnored private var angle = 0.0                  // ring rotation, degrees
-    @ObservationIgnored private var phase = 0.0                  // ball highlight drift
+    @ObservationIgnored private var phase = 0.0                  // ball's inner light, radians
     @ObservationIgnored private var stamp = CACurrentMediaTime()
     @ObservationIgnored private var history: [(ball: Double, notch: Double)]
     @ObservationIgnored private var head = 0                     // oldest entry
@@ -75,7 +76,8 @@ final class LiveFeed {
     }
 
     /// Records one sample. `dt` is the time since the last one.
-    func push(ball: Double, notch: Double, dt: Double, interval newInterval: Double) {
+    func push(ball: Double, notch: Double, rollX: Double = 0, rollY: Double = 0, ringVelocity: Double? = nil,
+              dt: Double, interval newInterval: Double) {
         let capacity = max(Int(Self.historySeconds / newInterval), 16)
         if capacity != history.count { resize(to: capacity) }
         if interval != newInterval { interval = newInterval }
@@ -88,8 +90,11 @@ final class LiveFeed {
 
         ballSpeed = ball
         notchRate = notch
-        angle += notch * 9 * dt
-        phase += ball * 1.4 * dt
+        self.rollX = rollX
+        self.rollY = rollY
+        self.ringVelocity = ringVelocity ?? notch
+        angle += self.ringVelocity * 9 * dt
+        phase += ball * 0.9 * dt
         stamp = CACurrentMediaTime()
 
         // Stay active until the trace has left the graphs, plus a couple of ticks so the
@@ -102,11 +107,11 @@ final class LiveFeed {
     /// Ring angle (degrees) now, carried on from the last sample so motion looks smooth
     /// between samples.
     func ringAngle(at now: CFTimeInterval = CACurrentMediaTime()) -> Double {
-        angle + notchRate * 9 * min(max(now - stamp, 0), 0.25)
+        angle + ringVelocity * 9 * min(max(now - stamp, 0), 0.25)
     }
 
     func ballPhase(at now: CFTimeInterval = CACurrentMediaTime()) -> Double {
-        phase + ballSpeed * 1.4 * min(max(now - stamp, 0), 0.25)
+        phase + ballSpeed * 0.9 * min(max(now - stamp, 0), 0.25)
     }
 
     /// Oldest first, for the graphs.
@@ -135,6 +140,9 @@ final class LiveFeed {
         nonZero = 0
         ballSpeed = 0
         notchRate = 0
+        rollX = 0
+        rollY = 0
+        ringVelocity = 0
         if isActive { isActive = false }
     }
 }

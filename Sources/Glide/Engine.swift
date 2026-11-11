@@ -511,7 +511,7 @@ final class Engine {
             telemetry.addBall(dx: 0, dy: v)
             if ballScrolling { scroller.addBallDelta(dx: 0, dy: Double(v) * ballSign) }
         case (kHIDPage_GenericDesktop, kHIDUsage_GD_Wheel) where v != 0:
-            telemetry.addNotch()
+            telemetry.addNotch(direction: v)
             hidWheel(v)
         case (kHIDPage_Button, let b) where b >= 1:
             telemetry.button(b - 1, down: v != 0)

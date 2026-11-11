@@ -33,7 +33,7 @@ $PB -c "Set :CFBundleIdentifier com.leviholliday.glide.sandbox" \
     -c "Delete :CFBundleURLTypes" \
     -c "Add :LSUIElement bool true" \
     "$APP/Contents/Info.plist" >/dev/null
-cp "$ROOT/Resources/AppIcon.icns" "$ROOT/Resources/IntroMusic.m4a" "$ROOT/Resources/LaunchChime.m4a" "$APP/Contents/Resources/"
+cp "$ROOT/Resources/AppIcon.icns" "$ROOT/Resources/AppIconClassic.icns" "$ROOT/Resources/IntroMusic.m4a" "$ROOT/Resources/LaunchChime.m4a" "$APP/Contents/Resources/"
 cp -R "$ROOT"/Resources/*.lproj(N) "$APP/Contents/Resources/"
 # Ad hoc, never the release identity: this copy must never satisfy the updater's requirement.
 codesign --force --sign - --identifier com.leviholliday.glide.sandbox "$APP" 2>/dev/null

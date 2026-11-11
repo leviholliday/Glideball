@@ -707,7 +707,6 @@
 
 /* ---- Components.swift ---- */
 
-"BETA" = "ベータ";
 
 "Precise" = "精密";
 
@@ -727,7 +726,6 @@
 
 "Make it yours" = "自分仕様にしよう";
 
-"of %lld" = "/%lld";
 
 "You’ve made Glideball yours." = "Glideをすっかり自分仕様にしました。";
 
@@ -797,7 +795,6 @@
 /* When a personal best was set; short (about 6 letters fit) */
 "today" = "今日";
 
-"NEW" = "NEW";
 
 /* Badge tooltip: what earns it, then the date */
 "%@ — earned %@" = "%1$@ — %2$@に獲得";
@@ -1023,9 +1020,7 @@
 
 "Waiting for permissions…" = "許可を待っています…";
 
-"Kensington Expert Mouse" = "Kensington Expert Mouse";
 
-"Roll, spin, or click — it's live." = "転がす、回す、クリック — リアルタイムで表示されます。";
 
 "Plug in your Expert Mouse." = "Expert Mouseを接続してください。";
 
@@ -1611,3 +1606,24 @@
 
 /* “Allow Raycast and scripts” is a switch in Settings › General */
 "Turn on “Allow Raycast and scripts” in Settings to let it." = "許可するには、設定で「Raycastとスクリプトを許可」をオンにしてください。";
+
+/* The redesign (stage 1): sidebar, page headers, Overview and Buttons */
+"How your trackball’s doing today, and everything it’s done so far." = "今日のトラックボールの様子と、これまでの記録。";
+"How fast the cursor moves when you roll the ball." = "ボールを転がしたときのポインタの速さ。";
+"How the page moves when you turn the scroll ring." = "スクロールリングを回したときのページの動き。";
+"What each button does, and combos you press together." = "各ボタンの動作と、同時に押すコンボ。";
+"Different settings for the apps you choose." = "選んだAppごとの設定。";
+"Keep your settings the same on all your Macs, and back them up." = "すべてのMacで設定をそろえて、バックアップします。";
+"%@ (⌘%lld)" = "%1$@（⌘%2$lld）";
+"Glideball is on" = "Glideballはオン";
+"Resume" = "再開";
+"Your trackball works like a plain mouse until you turn Glideball back on." = "Glideballをもう一度オンにするまで、トラックボールは普通のマウスとして動作します。";
+"Glideball starts working as soon as it’s connected." = "接続するとすぐにGlideballが動き始めます。";
+"Roll or spin to see it move" = "転がすか回すと動きが見られます";
+"Best %@" = "最高 %@";
+"Your buttons" = "ボタン一覧";
+"Hide" = "非表示";
+"New" = "新規";
+"Your trackball, live" = "トラックボールのライブ表示";
+"No trackball connected" = "トラックボールが接続されていません";
+"Default: %@" = "デフォルト：%@";

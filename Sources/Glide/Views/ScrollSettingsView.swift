@@ -5,16 +5,16 @@ struct ScrollSettingsView: View {
     @Bindable var model: AppModel
 
     var body: some View {
-        VStack(spacing: 18) {
+        // One column, as the redesigned pages are (this page's own redesign comes later).
+        VStack(spacing: Theme.Space.section) {
             ModePicker(mode: $model.config.scrollMode)
-            HStack(alignment: .top, spacing: 18) {
-                VStack(spacing: 18) {
+            VStack(spacing: Theme.Space.section) {
+                VStack(spacing: Theme.Space.section) {
                     ScrollControls(config: $model.config)
                     ballScrollCard
                 }
-                .frame(width: 340)
 
-                VStack(spacing: 18) {
+                VStack(spacing: Theme.Space.section) {
                     switch model.config.scrollMode {
                     case .native:
                         EmptyView()
@@ -206,36 +206,38 @@ struct ModePicker: View {
 
     var body: some View {
         GlassEffectContainer(spacing: 8) {
-            HStack(spacing: 8) {
-                ForEach(ScrollMode.allCases) { m in
-                    let (title, symbol, subtitle) = info(m)
-                    Button {
-                        withAnimation(.smooth(duration: 0.25)) { mode = m }
-                    } label: {
-                        HStack(spacing: 10) {
-                            Image(systemName: symbol).font(.system(size: 18))
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(title).font(.system(size: 14, weight: .semibold))
-                                Text(subtitle).font(.system(size: 11)).foregroundStyle(.secondary)
-                            }
-                            Spacer(minLength: 0)
-                        }
-                        .foregroundStyle(.primary)
-                        .padding(.horizontal, 14).padding(.vertical, 10)
-                        .frame(maxWidth: .infinity)
-                        .background {
-                            if mode == m {
-                                RoundedRectangle(cornerRadius: 16).fill(.white.opacity(0.16))
-                                    .matchedGeometryEffect(id: "mode", in: ns)
-                            }
-                        }
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
+            HStack(spacing: 8) { options() }
             .padding(6)
             .glassEffect(.regular, in: .rect(cornerRadius: 22))
+        }
+    }
+
+    @ViewBuilder private func options() -> some View {
+        ForEach(ScrollMode.allCases) { m in
+            let (title, symbol, subtitle) = info(m)
+            Button {
+                withAnimation(.smooth(duration: 0.25)) { mode = m }
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: symbol).font(.system(size: 18)).frame(width: 22)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(title).font(.system(size: 14, weight: .semibold))
+                        Text(subtitle).font(.system(size: 11)).foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .foregroundStyle(.primary)
+                .padding(.horizontal, 14).padding(.vertical, 10)
+                .frame(maxWidth: .infinity)
+                .background {
+                    if mode == m {
+                        RoundedRectangle(cornerRadius: 16).fill(.white.opacity(0.16))
+                            .matchedGeometryEffect(id: "mode", in: ns)
+                    }
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
         }
     }
 }
