@@ -988,9 +988,7 @@
 
 "Plug in your Expert Mouse." = "Expert Mouseを接続してください。";
 
-"Best day" = "最高の日";
 
-"Your best day so far: %@" = "これまでの最高の日：%@";
 
 "Live activity" = "ライブアクティビティ";
 
@@ -1482,7 +1480,6 @@
 "Your trackball works like a plain mouse until you turn Glideball back on." = "Glideballをもう一度オンにするまで、トラックボールは普通のマウスとして動作します。";
 "Glideball starts working as soon as it’s connected." = "接続するとすぐにGlideballが動き始めます。";
 "Roll or spin to see it move" = "転がすか回すと動きが見られます";
-"Best %@" = "最高 %@";
 "Your buttons" = "ボタン一覧";
 "Hide" = "非表示";
 "New" = "新規";
@@ -1705,3 +1702,16 @@
 "Milestone" = "マイルストーン";
 "Big milestone" = "大きなマイルストーン";
 "Look" = "外観";
+
+/* Design version 2: Overview's instrument cluster and Make it yours */
+"%@ of your best, %@" = "ベストの%1$@（%2$@）";
+"%lld of %lld done. Each one takes a few seconds." = "%2$lld個中%1$lld個完了。どれも数秒で終わります。";
+"%lld of %lld steps done" = "%2$lld個中%1$lld個完了";
+"%lld steps to go" = "あと%lldステップ";
+"Glideball is talking to your trackball." = "Glideballはトラックボールとつながっています。";
+"One step to go" = "あと1ステップ";
+"Plug in your trackball and this ticks itself." = "トラックボールをつなぐと自動でチェックされます。";
+"Trackball found" = "トラックボールを検出";
+"Your best day shows here after a few days" = "数日たつと、ここにベストの日が表示されます";
+"Your best day yet" = "これまでのベストの日";
+"against your best day" = "ベストの日と比べて";

@@ -988,9 +988,7 @@
 
 "Plug in your Expert Mouse." = "插入你的 Expert Mouse。";
 
-"Best day" = "最佳一天";
 
-"Your best day so far: %@" = "你迄今最佳的一天：%@";
 
 "Live activity" = "实时活动";
 
@@ -1482,7 +1480,6 @@
 "Your trackball works like a plain mouse until you turn Glideball back on." = "在你重新开启 Glideball 之前，轨迹球会像普通鼠标一样工作。";
 "Glideball starts working as soon as it’s connected." = "一接上，Glideball 就开始工作。";
 "Roll or spin to see it move" = "滚动滚球或转动滚动环即可看到变化";
-"Best %@" = "最佳 %@";
 "Your buttons" = "你的按钮";
 "Hide" = "隐藏";
 "New" = "新";
@@ -1705,3 +1702,16 @@
 "Milestone" = "里程碑";
 "Big milestone" = "大里程碑";
 "Look" = "外观";
+
+/* Design version 2: Overview's instrument cluster and Make it yours */
+"%@ of your best, %@" = "你最佳纪录的 %1$@，%2$@";
+"%lld of %lld done. Each one takes a few seconds." = "已完成 %1$lld/%2$lld 项。每项只需几秒钟。";
+"%lld of %lld steps done" = "已完成 %1$lld/%2$lld 步";
+"%lld steps to go" = "还剩 %lld 步";
+"Glideball is talking to your trackball." = "Glideball 已连接你的轨迹球。";
+"One step to go" = "还剩一步";
+"Plug in your trackball and this ticks itself." = "插上轨迹球，这一项会自动勾选。";
+"Trackball found" = "已找到轨迹球";
+"Your best day shows here after a few days" = "几天后，这里会显示你最好的一天";
+"Your best day yet" = "你迄今最好的一天";
+"against your best day" = "与你最好的一天相比";

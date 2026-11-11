@@ -988,9 +988,7 @@
 
 "Plug in your Expert Mouse." = "Branchez votre Expert Mouse.";
 
-"Best day" = "Meilleur jour";
 
-"Your best day so far: %@" = "Votre meilleur jour à ce jour : %@";
 
 "Live activity" = "Activité en direct";
 
@@ -1482,7 +1480,6 @@
 "Your trackball works like a plain mouse until you turn Glideball back on." = "Votre trackball fonctionne comme une souris ordinaire jusqu’à ce que vous réactiviez Glideball.";
 "Glideball starts working as soon as it’s connected." = "Glideball se met au travail dès que le trackball est branché.";
 "Roll or spin to see it move" = "Faites rouler ou tourner pour le voir bouger";
-"Best %@" = "Record : %@";
 "Your buttons" = "Vos boutons";
 "Hide" = "Masquer";
 "New" = "Nouveau";
@@ -1705,3 +1702,16 @@
 "Milestone" = "Étape franchie";
 "Big milestone" = "Grande étape";
 "Look" = "Apparence";
+
+/* Design version 2: Overview's instrument cluster and Make it yours */
+"%@ of your best, %@" = "%1$@ de ton record, %2$@";
+"%lld of %lld done. Each one takes a few seconds." = "%1$lld sur %2$lld faits. Chaque étape prend quelques secondes.";
+"%lld of %lld steps done" = "%1$lld étapes sur %2$lld faites";
+"%lld steps to go" = "Encore %lld étapes";
+"Glideball is talking to your trackball." = "Glideball communique avec ton trackball.";
+"One step to go" = "Plus qu’une étape";
+"Plug in your trackball and this ticks itself." = "Branche ton trackball et cette étape se coche toute seule.";
+"Trackball found" = "Trackball détecté";
+"Your best day shows here after a few days" = "Ta meilleure journée s’affichera ici d’ici quelques jours";
+"Your best day yet" = "Ta meilleure journée jusqu’ici";
+"against your best day" = "par rapport à ta meilleure journée";

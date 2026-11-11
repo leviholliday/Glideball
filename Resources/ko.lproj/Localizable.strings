@@ -988,9 +988,7 @@
 
 "Plug in your Expert Mouse." = "Expert Mouse를 연결하세요.";
 
-"Best day" = "최고의 날";
 
-"Your best day so far: %@" = "지금까지 최고의 날: %@";
 
 "Live activity" = "실시간 활동";
 
@@ -1482,7 +1480,6 @@
 "Your trackball works like a plain mouse until you turn Glideball back on." = "Glideball을 다시 켤 때까지 트랙볼은 일반 마우스처럼 작동해요.";
 "Glideball starts working as soon as it’s connected." = "연결하는 즉시 Glideball이 작동을 시작해요.";
 "Roll or spin to see it move" = "굴리거나 돌리면 움직임이 보여요";
-"Best %@" = "최고 %@";
 "Your buttons" = "내 버튼";
 "Hide" = "가리기";
 "New" = "새로움";
@@ -1705,3 +1702,16 @@
 "Milestone" = "마일스톤";
 "Big milestone" = "큰 마일스톤";
 "Look" = "모양";
+
+/* Design version 2: Overview's instrument cluster and Make it yours */
+"%@ of your best, %@" = "최고 기록의 %1$@, %2$@";
+"%lld of %lld done. Each one takes a few seconds." = "%2$lld개 중 %1$lld개 완료. 각각 몇 초면 됩니다.";
+"%lld of %lld steps done" = "%2$lld단계 중 %1$lld단계 완료";
+"%lld steps to go" = "%lld단계 남음";
+"Glideball is talking to your trackball." = "Glideball이 트랙볼과 연결되어 있습니다.";
+"One step to go" = "한 단계 남음";
+"Plug in your trackball and this ticks itself." = "트랙볼을 연결하면 자동으로 체크됩니다.";
+"Trackball found" = "트랙볼 찾음";
+"Your best day shows here after a few days" = "며칠 지나면 여기에 최고의 날이 표시됩니다";
+"Your best day yet" = "지금까지 최고의 날";
+"against your best day" = "최고의 날과 비교";
