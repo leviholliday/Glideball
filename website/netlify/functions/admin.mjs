@@ -14,7 +14,7 @@
 
 import crypto from "node:crypto";
 import {
-  STATUSES, UPLOAD_WINDOW, items, files, misc, env, json, fail, sameSecret, randomToken, clientIP, allow, forAdmin, changeItem, whole,
+  STATUSES, UPLOAD_WINDOW, items, files, misc, env, json, fail, sameSecret, randomToken, clientIP, allow, take, giveBack, forAdmin, changeItem, whole,
 } from "../lib/common.mjs";
 
 export const config = { path: "/api/admin/*" };
@@ -132,14 +132,29 @@ async function setup(req, context) {
   return json({ ok: true }, 200, { "set-cookie": cookieHeader(session(rec), DAYS * 86400) });
 }
 
+// Wrong passwords: at most 8 every 15 minutes from one address (or IPv6
+// /64), and 60 an hour from everywhere at once, for guessing spread over
+// many addresses. Only wrong ones count: each try is counted before the
+// password is checked (so tries sent all at once can't slip past the
+// limits) and given back if it was right, so signing in never uses up
+// either limit, and the many-addresses limit fills only with real guesses.
 async function login(req, context) {
-  if (!(await allow(`login/${clientIP(req, context)}`, 8, 900))) return fail(429, "Too many tries. Wait a few minutes.");
-  // And from everywhere at once, for guessing spread over many addresses.
-  if (!(await allow("login/everyone", 60, 3600))) return fail(429, "Too many tries. Wait a while.");
+  const mine = await take(`login/${clientIP(req, context)}`, 8, 900);
+  if (!mine) return fail(429, "Too many tries. Wait a few minutes.");
+  const everyone = await take("login/everyone", 60, 3600);
+  if (!everyone) {
+    await giveBack(mine);
+    return fail(429, "Too many tries. Wait a while.");
+  }
+  const notCounted = () => Promise.all([giveBack(mine), giveBack(everyone)]);
   const rec = await passwordRecord();
-  if (!rec) return fail(409, "Set a password first.");
+  if (!rec) {
+    await notCounted();
+    return fail(409, "Set a password first.");
+  }
   const { password } = await body(req);
   if (!checkPassword(password, rec)) return fail(401, "That's not the password.");
+  await notCounted();
   return json({ ok: true }, 200, { "set-cookie": cookieHeader(session(rec), DAYS * 86400) });
 }
 

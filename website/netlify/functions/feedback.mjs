@@ -10,7 +10,7 @@
 // file to some routers.)
 
 import {
-  CHUNK, MAX_CHUNK, TYPES, PRIORITIES, PLATFORMS, UPLOAD_WINDOW,
+  CHUNK, MAX_CHUNK, TYPES, WEB_TYPES, WEB_MAX_FILES, PRIORITIES, PLATFORMS, UPLOAD_WINDOW,
   items, files, env, json, fail, sha256, sameSecret, randomToken, newID, clientIP, allow, notify, later, changeItem, whole,
 } from "../lib/common.mjs";
 
@@ -71,17 +71,21 @@ async function create(req, context) {
   // (Nothing that would mean something else in a mailto: link, like ?bcc=.)
   if (email && !/^[^\s@?&#%/]+@[^\s@?&#%/]+\.[^\s@?&#%/]+$/.test(email)) return fail(400, "That email address doesn't look right.");
 
+  const platform = PLATFORMS.includes(b.platform) ? b.platform : "macos";
+  const web = platform === "web";
+  // The site's page sends only what it offers: a few pictures.
+  const types = web ? WEB_TYPES : TYPES;
   const list = Array.isArray(b.attachments) ? b.attachments : [];
-  if (list.length > 6) return fail(400, "That's too many attachments.");
+  if (list.length > (web ? WEB_MAX_FILES : 6)) return fail(400, "That's too many attachments.");
   const meta = [];
   let total = 0;
   for (const a of list) {
     // (Own keys only: "constructor" and the like are in every object.)
-    if (!safeName(a?.name) || typeof a.type !== "string" || !Object.hasOwn(TYPES, a.type)) {
+    if (!safeName(a?.name) || typeof a.type !== "string" || !Object.hasOwn(types, a.type)) {
       return fail(400, `An attachment can't be sent (${String(a?.name).slice(0, 40)}).`);
     }
     const size = Number(a.size);
-    if (!Number.isFinite(size) || size <= 0 || size > TYPES[a.type]) return fail(413, `${a.name} is too big to send.`);
+    if (!Number.isFinite(size) || size <= 0 || size > types[a.type]) return fail(413, `${a.name} is too big to send.`);
     if (meta.some((f) => f.name === a.name)) return fail(400, "Two attachments have the same name.");
     total += size;
     meta.push({ name: a.name, type: a.type, size, ...(Number(a.duration) > 0 ? { duration: Number(a.duration) } : {}), chunks: [], done: false });
@@ -98,17 +102,18 @@ async function create(req, context) {
     details: str(b.details, 20000),
     tags: strList(b.tags, 12, 40),
     autoTags: strList(b.autoTags, 12, 40),
-    priority: PRIORITIES.includes(b.priority) ? b.priority : "normal",
+    // The site's page has no priority to pick (it always sends normal), so
+    // nothing sent as from the site can be urgent.
+    priority: !web && PRIORITIES.includes(b.priority) ? b.priority : "normal",
     name: str(b.name, 100),
     email,
     contactOK: !!b.contactOK && !!email,
-    platform: PLATFORMS.includes(b.platform) ? b.platform : "macos",
+    platform,
     app: small(b.app, 2000),
     system: small(b.system, 8000),
     context: small(b.context, 8000),
     files: meta,
     uploadTokenHash: sha256(uploadToken).toString("hex"),
-    ipHash: sha256(`${ip}/${env("SESSION_SECRET") ?? ""}`).toString("hex").slice(0, 16),
   };
   // What the hourly cleanup (cleanup.mjs) looks for, if the rest never comes.
   if (meta.length) await items().setJSON(`uploading/${id}`, {});
