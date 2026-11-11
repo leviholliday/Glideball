@@ -13,12 +13,13 @@
   <a href="https://github.com/leviholliday/glideball/releases/latest/download/Glideball.zip"><b>Download for Mac</b></a>
   &nbsp;·&nbsp; <a href="#install">How to install</a>
   &nbsp;·&nbsp; <a href="https://glideball.netlify.app">Website</a>
+  &nbsp;·&nbsp; <a href="https://glideball.netlify.app/help/">Help</a>
   &nbsp;·&nbsp; <a href="https://glideball.netlify.app/feedback/">Feedback</a>
   <br>
   <sub>macOS 26 Tahoe or later · Apple silicon &amp; Intel · <a href="#linux--windows-preview">Linux &amp; Windows preview</a></sub>
 </p>
 
-I'm Levi, a student, and Glideball is my one-person project (not my only one). I built it after I got a Kensington trackball, installed Kensington's app and driver, and found it barely did anything I wanted and was hard to find my way around. With it you can push the pointer past the speed limit in System Settings, pick how the scroll ring should feel, and turn the buttons into clicks, shortcuts or multi-button combos. Your trackpad and other mice keep their own settings, and if you pause or quit Glideball, the trackball is an ordinary mouse again.
+I'm Levi, a student, and I make Glideball on my own. I built it after I got a Kensington trackball and installed Kensington's app and driver; it didn't do most of what I wanted, and I had a hard time finding my way around it. With Glideball you can push the pointer past the speed limit in System Settings, pick how the scroll ring should feel, and turn the buttons into clicks, shortcuts or multi-button combos. Your trackpad and other mice keep their own settings, and if you pause or quit Glideball, the trackball is an ordinary mouse again. If you're coming from KensingtonWorks, there's a [side-by-side comparison](https://glideball.netlify.app/kensingtonworks-alternative/) with SteerMouse and LinearMouse too.
 
 <p align="center">
   <img src="docs/screenshots/overview.png" width="860" alt="Glideball's Overview tab with a live trackball diagram, ball speed and scroll ring graphs, and today's clicks and distances">
@@ -27,12 +28,12 @@ I'm Levi, a student, and Glideball is my one-person project (not my only one). I
 ## What you need
 
 - A Mac with **macOS 26 Tahoe or later**, Apple silicon or Intel.
-- A **Kensington trackball**:
+- A **Kensington trackball** ([full list](https://glideball.netlify.app/trackballs/)):
   - **Expert Mouse (wired, USB):** fully supported. This is the one Glideball is built and tested on.
   - **Other Kensington trackballs** (SlimBlade, Orbit and others): Glideball shows them as **Beta only**. Click **Turn On Beta**, or turn on **Overview › General › Beta program**, to try yours. The wireless Expert Mouse may show up either way, depending on the name it reports.
-- KensingtonWorks **uninstalled** (see [Install](#install)). Your trackpad and other mice are never touched.
+- KensingtonWorks **uninstalled** (see [Install](#install) or [how to uninstall KensingtonWorks](https://glideball.netlify.app/help/uninstall-kensingtonworks/)). Your trackpad and other mice are never touched.
 
-The current release is **2.9.1**. A **2.10 beta** is out for people in the Beta program; where things differ, this page says so.
+The current release is **2.9.1**. A **2.10 beta** is out for people in the Beta program; where things differ, this page says so. Release notes for every version are on the [What's new](https://glideball.netlify.app/changelog/) page.
 
 ## Features
 
@@ -86,7 +87,7 @@ Also: a menu bar icon, a welcome tour (Help › Show Welcome Tour…), and badge
 ## Install
 
 > [!IMPORTANT]
-> **Have KensingtonWorks installed?** Uninstall it first, then restart your Mac. Its driver conflicts with Glideball.
+> **Have KensingtonWorks installed?** Uninstall it first, then restart your Mac. Its driver conflicts with Glideball. [Here's how](https://glideball.netlify.app/help/uninstall-kensingtonworks/).
 
 1. **Download** [Glideball.zip](https://github.com/leviholliday/glideball/releases/latest/download/Glideball.zip), unzip it, and drag **Glideball** into **Applications**. (On the [Releases page](https://github.com/leviholliday/glideball/releases), pick `Glideball.zip`; `Glide.zip` is only for Glide 2.7.1 and older.)
 
@@ -94,12 +95,12 @@ Also: a menu bar icon, a welcome tour (Help › Show Welcome Tour…), and badge
    ```sh
    brew install --cask leviholliday/tap/glideball
    ```
-2. **Open it, then approve it once.** macOS will say Apple could not verify Glideball is free of malware. That's expected: Glideball is free and made by one developer without a paid Apple developer account, so Apple hasn't notarized it, and all of its code is public here. Click **Done** (not Move to Trash), open **System Settings › Privacy & Security**, scroll to the message about Glideball, click **Open Anyway** and enter your Mac password if asked. You only do this once; updates don't ask again.
+2. **Open it, then approve it once.** macOS will say Apple could not verify Glideball is free of malware. That's expected: Glideball is free and made by one developer without a paid Apple developer account, so Apple hasn't notarized it, and all of its code is public here. Click **Done** (not Move to Trash), open **System Settings › Privacy & Security**, scroll to the message about Glideball, click **Open Anyway** and enter your Mac password if asked. You only do this once; updates don't ask again. ([Step by step, with more detail](https://glideball.netlify.app/help/open-anyway/).)
 3. **Grant two permissions.** Glideball's window has buttons for both:
    - **Accessibility** lets Glideball change button and scroll events.
    - **Input Monitoring** lets Glideball tell your trackball apart from your other devices and read the scroll ring.
 
-   Until both are on, the trackball works normally and Glideball does nothing.
+   Until both are on, the trackball works normally and Glideball does nothing. [What these permissions let Glideball see](https://glideball.netlify.app/help/permissions/).
 
 ## Using Glideball
 
@@ -116,9 +117,11 @@ Also: a menu bar icon, a welcome tour (Help › Show Welcome Tour…), and badge
 3. In System Settings › Privacy & Security, remove it from Accessibility and Input Monitoring.
 4. Optional, to remove your settings too: delete `~/Library/Application Support/Glide` and `~/Library/Logs/Glide` (Finder › Go › Go to Folder…), delete the iCloud Drive › Glide folder if you used sync, and run `defaults delete com.leviholliday.glide` in Terminal.
 
-With Homebrew: quit first, then run `brew uninstall --zap --cask glideball`.
+With Homebrew: quit first, then run `brew uninstall --zap --cask glideball`. More detail is on the [uninstall page](https://glideball.netlify.app/help/uninstall-glideball/).
 
 ## FAQ and troubleshooting
+
+There's more on the website's [troubleshooting page](https://glideball.netlify.app/help/troubleshooting/) and [FAQ](https://glideball.netlify.app/#faq).
 
 - **"Apple could not verify Glideball." Is it safe?** Yes. It means I don't pay for Apple's notarization, not that anything is wrong. Follow [step 2](#install), and read [Is it safe?](#is-it-safe) if you'd like to know more.
 - **Buttons do two things at once.** KensingtonWorks is probably still installed. Uninstall it and restart.
@@ -147,7 +150,7 @@ Both act only on the Expert Mouse (other Kensington trackballs only with the Bet
 - **Email:** [glideball@proton.me](mailto:glideball@proton.me)
 - **In public:** [GitHub issues](https://github.com/leviholliday/glideball/issues)
 
-Glideball is made by one student developer. I read everything, but replies can take a few days.
+Glideball is made by one student developer, so replies can take a few days.
 
 ## Contributing
 

@@ -17,7 +17,7 @@ Made by Levi Holliday, a student developer. Contact: glideball@proton.me.
 - [Supported trackballs](https://glideball.netlify.app/trackballs/): Which Kensington models are fully supported and which work in the Beta program
 - [What's new](https://glideball.netlify.app/changelog/): Release notes for every version, built from GitHub releases
 - [Privacy](https://glideball.netlify.app/privacy/): What the app sends (update checks and feedback you choose to send) and what the website measures
-- [Send feedback](https://glideball.netlify.app/feedback/): Bug reports and ideas, straight to the developer
+- [Send feedback](https://glideball.netlify.app/feedback/): Bug reports and ideas, sent straight to Levi
 
 ## Help
 
@@ -35,4 +35,4 @@ Made by Levi Holliday, a student developer. Contact: glideball@proton.me.
 
 ## Optional
 
-- [Linux and Windows previews](https://glideball.netlify.app/#linux-windows): Early ports, not yet tried with a real Expert Mouse
+- [Linux and Windows previews](https://glideball.netlify.app/#linux-windows): Early ports, not yet tested on a real trackball
