@@ -13,7 +13,20 @@ Made by Levi Holliday, a student developer. Contact: glideball@proton.me.
 - [Glideball home](https://glideball.netlify.app/): Features, live scroll demo, install steps and FAQ
 - [Install steps](https://glideball.netlify.app/#install): Download, Open Anyway, permissions
 - [FAQ](https://glideball.netlify.app/#faq): Supported trackballs, safety, privacy, uninstalling
+- [KensingtonWorks alternative](https://glideball.netlify.app/kensingtonworks-alternative/): Dated comparison of Glideball, KensingtonWorks, SteerMouse and LinearMouse, and how to switch
+- [Supported trackballs](https://glideball.netlify.app/trackballs/): Which Kensington models are fully supported and which work in the Beta program
+- [What's new](https://glideball.netlify.app/changelog/): Release notes for every version, built from GitHub releases
+- [Privacy](https://glideball.netlify.app/privacy/): What the app sends (update checks and feedback you choose to send) and what the website measures
 - [Send feedback](https://glideball.netlify.app/feedback/): Bug reports and ideas, straight to the developer
+
+## Help
+
+- [Help](https://glideball.netlify.app/help/): All help pages
+- [First launch and Open Anyway](https://glideball.netlify.app/help/open-anyway/): Why macOS says it can't verify Glideball, and how to open it
+- [Uninstall KensingtonWorks](https://glideball.netlify.app/help/uninstall-kensingtonworks/): Remove KensingtonWorks and its driver before installing Glideball
+- [Accessibility and Input Monitoring](https://glideball.netlify.app/help/permissions/): What the two permissions let Glideball see (mouse buttons, scrolling, pointer movement, held modifier keys; never typing)
+- [Troubleshooting](https://glideball.netlify.app/help/troubleshooting/): Double actions, permissions that don't take, a missing window, a trackball not detected
+- [Uninstall Glideball](https://glideball.netlify.app/help/uninstall-glideball/): Remove the app, its permissions, and optionally its settings
 
 ## Source and releases
 

@@ -41,10 +41,13 @@
     section.classList.add("privacy-block");
     inner.appendChild(section);
 
-    const link = document.createElement("a");
-    link.href = "#" + ID;
-    link.textContent = "Privacy";
-    nav.insertBefore(link, settings && settings.parentElement === nav ? settings : null);
+    // The footer links to the /privacy/ page; only add a link to the notice when it doesn't.
+    if (!nav.querySelector('a[href="/privacy/"]')) {
+      const link = document.createElement("a");
+      link.href = "#" + ID;
+      link.textContent = "Privacy";
+      nav.insertBefore(link, settings && settings.parentElement === nav ? settings : null);
+    }
 
     const reveal = () => { if (location.hash === "#" + ID) details.open = true; };
     window.addEventListener("hashchange", reveal);

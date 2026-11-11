@@ -1,0 +1,65 @@
+<!--
+title: Troubleshooting · Glideball
+description: Fixes for common Glideball problems on Mac: buttons doing two things, permissions on but nothing changing, a missing window, a trackball not detected.
+path: /help/troubleshooting/
+crumb: Troubleshooting
+parent: /help/
+nav: help
+kicker: Help
+h1: Troubleshooting
+lede: Need your normal trackball back right now? Press <kbd>⌃⌥⌘G</kbd> (Control-Option-Command-G) anywhere to pause Glideball, or quit it. Then find your problem below.
+updated: 2026-11-10
+-->
+      <section class="pg-section" aria-labelledby="faq-h">
+        <h2 id="faq-h">Common problems</h2>
+        <div class="faq">
+          <details class="glass" data-faq id="double">
+            <summary>My buttons do two things at once<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <p>KensingtonWorks is probably still installed. Its driver and Glideball both act on the same click. <a href="/help/uninstall-kensingtonworks/">Uninstall KensingtonWorks</a> and restart your Mac.</p>
+          </details>
+          <details class="glass" data-faq id="nothing">
+            <summary>The permissions are on, but nothing changes<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <p>In System Settings › Privacy &amp; Security, remove Glideball from Accessibility and Input Monitoring, add it back, and restart Glideball. Or run this in Terminal, then restart Glideball and allow both again:</p>
+            <pre><code>tccutil reset All com.leviholliday.glide</code></pre>
+          </details>
+          <details class="glass" data-faq id="not-detected">
+            <summary>Glideball doesn't see my trackball<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <p>The wired Expert Mouse is always picked up. Other Kensington trackballs (and the wireless Expert Mouse, depending on the name it reports) need the Beta program: click <strong>Turn On Beta</strong> when Glideball offers it, or turn on Overview › General › Beta program. Trackballs from other brands aren't supported. See <a href="/trackballs/">supported trackballs</a>.</p>
+          </details>
+          <details class="glass" data-faq id="window">
+            <summary>Where did the window go?<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <p>Closing the window keeps Glideball running. Click Glideball in the Dock, or use the menu bar icon › Show Glideball.</p>
+          </details>
+          <details class="glass" data-faq id="quit">
+            <summary>How do I quit it?<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <p>Press <kbd>⌘Q</kbd> in Glideball's window, or use the menu bar icon › Quit Glideball. In 2.9.1, Quit in the Dock is ignored on purpose. The 2.10 beta makes it work.</p>
+          </details>
+          <details class="glass" data-faq id="scroll">
+            <summary>Scrolling feels wrong<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <p>Try another mode on the Scrolling tab. Flywheel coasts after each tick, Follow stops when you stop, and Native leaves it to macOS. In Flywheel, the <strong>Kensington feel</strong> button puts back values measured from Kensington's own driver.</p>
+          </details>
+          <details class="glass" data-faq id="buttons-default">
+            <summary>A button does something I didn't set<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <p>In 2.9.1, the top buttons switch Spaces out of the box, and pressing bottom-left plus both top buttons holds ⌃Space for dictation apps. Set any button back to <strong>Default</strong> on the Buttons tab, or delete the combo. In the 2.10 beta, new installs start with normal buttons.</p>
+          </details>
+          <details class="glass" data-faq id="update">
+            <summary>An update seems stuck<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <p>Quit Glideball and open it again. If that doesn't help, download the latest <a href="https://github.com/leviholliday/glideball/releases/latest/download/Glideball.zip">Glideball.zip</a> and replace the copy in Applications. Your settings stay.</p>
+          </details>
+          <details class="glass" data-faq id="cpu">
+            <summary>Does it use much CPU or battery?<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <p>Very little since 2.9.1. To use even less, set Overview › General › Performance to Efficient or Minimal.</p>
+          </details>
+          <details class="glass" data-faq id="glide">
+            <summary>Why do some files say “Glide”?<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <p>That was the app's name until 2.8. Its settings and folders kept the old name.</p>
+          </details>
+        </div>
+      </section>
+
+      <section class="pg-section" aria-labelledby="report-h">
+        <h2 id="report-h">Sending a good bug report</h2>
+        <p>Help › Send Feedback… in the app is the best way. You can attach your settings and a scroll log (scroll and button timings, no keystrokes), each with its own switch, and you see everything before it's sent. Say what you did, what you expected, and what happened instead.</p>
+      </section>
+
+<!-- still-stuck -->

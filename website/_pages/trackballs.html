@@ -1,0 +1,47 @@
+<!--
+title: Supported Trackballs · Glideball
+description: Which Kensington trackballs work with Glideball on Mac. The wired Expert Mouse is fully supported; SlimBlade, Orbit and others work in the Beta program.
+path: /trackballs/
+crumb: Supported trackballs
+nav: trackballs
+kicker: Devices
+h1: Supported trackballs
+lede: Glideball fully supports the wired Kensington Expert Mouse. Other Kensington trackballs work when you turn on the Beta program. Your trackpad and mice from other brands are never changed.
+updated: 2026-11-10
+-->
+      <section class="pg-section" aria-labelledby="models-h">
+        <h2 id="models-h">Models</h2>
+        <div class="table-wrap glass" tabindex="0" role="region" aria-label="Supported trackballs table">
+          <table class="pg-table">
+            <thead><tr><th scope="col">Trackball</th><th scope="col">Status</th><th scope="col">Notes</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Kensington Expert Mouse, wired (USB)</th><td><span class="status status-full">Full</span></td><td>The one Glideball is built and tested on. Everything works: pointer speed, all three scroll-ring modes, all four buttons and combos.</td></tr>
+              <tr><th scope="row">Kensington Expert Mouse Wireless</th><td><span class="status status-beta">Beta</span></td><td>It may show up as fully supported, depending on the name it reports. If Glideball says Beta, turn on the Beta program.</td></tr>
+              <tr><th scope="row">Kensington SlimBlade</th><td><span class="status status-beta">Beta</span></td><td>Not tuned yet. The top buttons aren't supported yet.</td></tr>
+              <tr><th scope="row">Kensington Orbit trackballs</th><td><span class="status status-beta">Beta</span></td><td>Not tuned yet.</td></tr>
+              <tr><th scope="row">Other Kensington trackballs and mice</th><td><span class="status status-beta">Beta</span></td><td>Glideball treats any Kensington pointing device as a Beta device.</td></tr>
+              <tr><th scope="row">Other brands, the trackpad, the Magic Mouse</th><td><span class="status">Not supported</span></td><td>Never touched. They keep their System Settings.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="pg-section prose" aria-labelledby="beta-h">
+        <h2 id="beta-h">What Beta means here</h2>
+        <p>Glideball is built and tested on the wired Expert Mouse, so that's the one I can vouch for. Glideball still knows the other Kensington trackballs, but it won't change them unless you ask. When it sees one, it offers <strong>Turn On Beta</strong>. You can also turn on <strong>Overview › General › Beta program</strong>.</p>
+        <p>The Beta program does two things: it lets Glideball work with Kensington's other trackballs, and it gets you early builds of the app. It's set on each Mac separately and never syncs.</p>
+        <p>If you try Glideball on one of these, please <a href="/feedback/">tell me how it went</a>, good or bad. That's how a model moves to Full.</p>
+      </section>
+
+      <section class="pg-section prose" aria-labelledby="other-h">
+        <h2 id="other-h">Other brands</h2>
+        <p>Glideball is only for Kensington trackballs today. Support for other brands may come later, but I'm not promising any yet. Until then, Glideball ignores them completely.</p>
+      </section>
+
+      <section class="pg-section prose" aria-labelledby="tech-h">
+        <h2 id="tech-h">How Glideball decides</h2>
+        <p>It goes by the USB vendor ID. Kensington is <code>047D</code>. A device with product ID <code>1020</code>, or with “Expert Mouse” in its name, counts as the Expert Mouse. Any other Kensington pointing device is a Beta device. Everything else is left alone. The rule is in <a href="https://github.com/leviholliday/glideball/blob/main/Sources/Glide/DeviceSupport.swift">DeviceSupport.swift</a>.</p>
+        <p>The <a href="/#linux-windows">Linux and Windows previews</a> follow the same rule.</p>
+      </section>
+
+<!-- cta -->

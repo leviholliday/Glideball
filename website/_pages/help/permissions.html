@@ -1,0 +1,65 @@
+<!--
+title: Accessibility and Input Monitoring · Glideball
+description: Why Glideball asks for Accessibility and Input Monitoring on a Mac, what each lets it see, and what it never sees: no typing, only mouse and modifier keys.
+path: /help/permissions/
+crumb: Permissions
+parent: /help/
+nav: help
+kicker: Help
+h1: Accessibility and Input Monitoring
+lede: Glideball needs two macOS permissions to work: <strong>Accessibility</strong>, to change what your buttons and scroll ring do, and <strong>Input Monitoring</strong>, to tell your trackball apart from your other devices. It never sees what you type.
+updated: 2026-11-10
+-->
+      <section class="pg-section" aria-labelledby="what-h">
+        <h2 id="what-h">What each one is for</h2>
+        <div class="table-wrap glass">
+          <table class="pg-table">
+            <thead><tr><th scope="col">Permission</th><th scope="col">What Glideball uses it for</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Accessibility</th><td>Changing mouse button and scroll events on their way to your apps: turning a button into a shortcut, a combo or a click, and scrolling the page the way your scroll mode says. It also lets Glideball send the shortcut you picked for a button.</td></tr>
+              <tr><th scope="row">Input Monitoring</th><td>Reading your trackball directly, so Glideball knows which device a click or scroll came from and can read the scroll ring's ticks. That's how it changes only the trackball and leaves your trackpad and other mice alone.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="table-note">Until both are on, your trackball works normally and Glideball does nothing.</p>
+      </section>
+
+      <section class="pg-section prose" aria-labelledby="see-h">
+        <h2 id="see-h">What Glideball can and can't see</h2>
+        <p>macOS names these permissions broadly, so they sound like more than they are. Here's exactly what Glideball looks at:</p>
+        <ul>
+          <li><strong>Mouse buttons</strong>: presses, releases and drags.</li>
+          <li><strong>Scrolling</strong>: the scroll ring, and scroll events, so it can pass your trackpad's straight through.</li>
+          <li><strong>Pointer movement from pointing devices</strong>: for the speed graphs on the Overview tab. Plain pointer moves only pass through Glideball while Drag lock is on.</li>
+          <li><strong>Which modifier keys are held</strong>: Shift, Control, Option and Command (⇧⌃⌥⌘). For example, Command plus scroll keeps its normal meaning, like zooming.</li>
+        </ul>
+        <p>It does <strong>not</strong> see what you type. It never listens to letter, number or other keys, only whether a modifier key is down. It only opens mice and other pointing devices, never your keyboard. The one keyboard shortcut it watches for, <kbd>⌃⌥⌘G</kbd> to pause, is registered with macOS the normal way and needs no permission at all.</p>
+        <p>None of this leaves your Mac. The one exception is a scroll log (scroll and button timings, no keystrokes), and only if you leave it attached to a feedback report you send. The daily totals on the Overview tab stay on your Mac. The code that does all this is in <a href="https://github.com/leviholliday/glideball/blob/main/Sources/Glide/Engine.swift">Engine.swift</a> if you want to check.</p>
+      </section>
+
+      <section class="pg-section" aria-labelledby="grant-h">
+        <h2 id="grant-h">How to turn them on</h2>
+        <ol class="howto">
+          <li class="glass">
+            <h3>Click the buttons in Glideball's window</h3>
+            <p><strong>Allow Accessibility…</strong> and <strong>Allow Input Monitoring…</strong> each open the right page of System Settings.</p>
+          </li>
+          <li class="glass">
+            <h3>Switch Glideball on in each list</h3>
+            <p>In System Settings › Privacy &amp; Security › Accessibility, and then Input Monitoring. macOS may ask for your password.</p>
+          </li>
+          <li class="glass">
+            <h3>Come back to Glideball</h3>
+            <p>The checkmarks update by themselves.</p>
+          </li>
+        </ol>
+      </section>
+
+      <section class="pg-section" aria-labelledby="stuck-h">
+        <h2 id="stuck-h">They're on, but nothing changes</h2>
+        <p>Remove Glideball from both lists with the minus button, add it back, and restart Glideball. Or reset both at once in Terminal, then restart Glideball and allow them again:</p>
+        <pre><code>tccutil reset All com.leviholliday.glide</code></pre>
+        <p>Updates keep your permissions, because macOS ties them to Glideball's signature and every update is signed the same way.</p>
+      </section>
+
+<!-- still-stuck -->

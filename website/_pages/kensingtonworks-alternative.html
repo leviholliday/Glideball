@@ -1,0 +1,114 @@
+<!--
+title: KensingtonWorks Alternative: Free, Open Source · Glideball
+description: Glideball is a free, open-source KensingtonWorks alternative for Kensington trackballs on Mac. An honest, dated comparison, and how to switch in five minutes.
+path: /kensingtonworks-alternative/
+crumb: KensingtonWorks alternative
+nav:
+kicker: Compare
+h1: A free KensingtonWorks alternative
+lede: Glideball is a free, open-source Mac app for Kensington trackballs. It does the job KensingtonWorks does for the pointer, the scroll ring and the buttons, without a driver. Here's how they compare, what's different, and how to switch.
+updated: 2026-11-10
+-->
+      <section class="pg-section prose" aria-labelledby="why-h">
+        <h2 id="why-h">Why I made it</h2>
+        <p>I got a Kensington Expert Mouse and installed Kensington's app and driver. It didn't do most of what I wanted, and I had a hard time finding my way around it. So I wrote my own app. That's my experience, not a review. Plenty of people use KensingtonWorks and are happy with it.</p>
+        <p>Glideball does three things well: it lets the pointer go faster than System Settings allows, it makes the scroll ring feel the way you want, and it turns the buttons into clicks, shortcuts or two- and three-button combos. It only changes your Kensington trackball. Your trackpad and other mice keep their own settings.</p>
+      </section>
+
+      <section class="pg-section" aria-labelledby="tahoe-h">
+        <h2 id="tahoe-h">KensingtonWorks on macOS Tahoe</h2>
+        <p>As of November 10, 2026, <a href="https://www.kensington.com/software/kensingtonworks/">Kensington's KensingtonWorks page</a> offers Mac version 3.1.18 and lists macOS 10.14 Mojave through macOS 15 Sequoia. macOS 26 Tahoe isn't on that list. The same page says KensingtonWorks is moving to a new app, Kensington Konnect, which you can try as a beta.</p>
+        <p>I haven't tested KensingtonWorks or Konnect on Tahoe myself, so I can't tell you whether they work there. Glideball needs macOS 26 Tahoe or later, and that's what I test it on.</p>
+      </section>
+
+      <section class="pg-section" aria-labelledby="cmp-h">
+        <h2 id="cmp-h">Side by side</h2>
+        <p>What each app's own website says, checked on November 10, 2026. "Not stated" means I couldn't find it on that site, not that the app can't do it.</p>
+        <p class="table-hint" aria-hidden="true">Swipe the table sideways to see all four apps.</p>
+        <div class="table-wrap glass" tabindex="0" role="region" aria-label="Comparison table, scrolls sideways">
+          <table class="pg-table cmp">
+            <thead>
+              <tr><th scope="col"></th><th scope="col">Glideball</th><th scope="col">KensingtonWorks</th><th scope="col">SteerMouse</th><th scope="col">LinearMouse</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Price</th><td class="us">Free</td><td>Free download</td><td>US$19.99, 30-day free trial</td><td>Free</td></tr>
+              <tr><th scope="row">Source code</th><td class="us">Open (MIT)</td><td>Not published</td><td>Not published</td><td>Open (MIT)</td></tr>
+              <tr><th scope="row">Made for</th><td class="us">Kensington trackballs only</td><td>Kensington trackballs, mice and presenters</td><td>USB and Bluetooth mice (not Magic Mouse or Magic Trackpad)</td><td>Mice and trackpads</td></tr>
+              <tr><th scope="row">macOS</th><td class="us">26 Tahoe or later</td><td>10.14 to 15 listed</td><td>Not stated</td><td>Not stated</td></tr>
+              <tr><th scope="row">Pointer speed</th><td class="us">Past macOS's limit, trackball only, with presets and a live curve</td><td>Speed and acceleration, slow mode, lock to one axis</td><td>Sensitivity on top of macOS's tracking speed</td><td>Speed and acceleration, or acceleration off</td></tr>
+              <tr><th scope="row">Scrolling</th><td class="us">Three scroll-ring modes: Flywheel, Follow and Native</td><td>Speed, direction and inertial scrolling</td><td>Scroll speed and acceleration, smoother scrolling, auto scroll</td><td>Direction and speed per device</td></tr>
+              <tr><th scope="row">Buttons</th><td class="us">Clicks, shortcuts, Spaces, Mission Control and more; two- and three-button combos</td><td>Many action types; two-button chords</td><td>Clicks, shortcuts and more; button combinations</td><td>Shortcuts, media keys, Mission Control and more</td></tr>
+              <tr><th scope="row">Per-app settings</th><td class="us">Yes</td><td>Not stated</td><td>Yes</td><td>Yes</td></tr>
+              <tr><th scope="row">Driver</th><td class="us">None. A regular app, no system extension</td><td>Installs a driver</td><td>Not stated</td><td>Not stated</td></tr>
+              <tr><th scope="row">Settings sync</th><td class="us">Optional, through your own iCloud Drive</td><td>Optional, through OneDrive</td><td>Not stated</td><td>Not stated</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="table-note">Sources: <a href="https://www.kensington.com/software/kensingtonworks/">kensington.com</a>, <a href="https://plentycom.jp/en/steermouse/">plentycom.jp</a>, <a href="https://linearmouse.app/">linearmouse.app</a> and <a href="https://github.com/linearmouse/linearmouse">LinearMouse on GitHub</a>, all checked November 10, 2026. "Installs a driver" is from installing KensingtonWorks myself. Prices and features change, so check their sites before you pick.</p>
+      </section>
+
+      <section class="pg-section prose" aria-labelledby="diff-h">
+        <h2 id="diff-h">What's different about Glideball</h2>
+        <ul>
+          <li><strong>It's only for Kensington trackballs.</strong> SteerMouse and LinearMouse are good general mouse tools. Glideball is narrower on purpose: it knows the Expert Mouse's scroll ring and four buttons, and leaves every other device alone.</li>
+          <li><strong>The scroll ring has three feels.</strong> Flywheel (the default) pushes the page with each tick and lets friction slow it down. Follow tracks the ring exactly. Native lets macOS do it, with a faster wheel speed for the trackball only.</li>
+          <li><strong>No driver.</strong> Glideball never takes the trackball away from macOS. If you pause or quit it, the trackball is an ordinary mouse again. <kbd>⌃⌥⌘G</kbd> pauses it from anywhere, so a bad mapping can't lock you out.</li>
+          <li><strong>You can read all of it.</strong> The code is on <a href="https://github.com/leviholliday/glideball">GitHub</a> under the MIT license. The app has no analytics. See <a href="/privacy/">Privacy</a>.</li>
+        </ul>
+        <p>What it doesn't do: it can't import your KensingtonWorks settings, it isn't notarized by Apple (so the first launch needs one extra click), and only the wired Expert Mouse is fully supported today. Other Kensington trackballs work through the Beta program. See <a href="/trackballs/">supported trackballs</a>.</p>
+      </section>
+
+      <section class="pg-section" aria-labelledby="switch-h">
+        <h2 id="switch-h">Switch in five minutes</h2>
+        <ol class="howto">
+          <li class="glass">
+            <h3>Uninstall KensingtonWorks and restart</h3>
+            <p>Its driver and Glideball both try to handle the buttons, so you'd get double actions. <a href="/help/uninstall-kensingtonworks/">How to uninstall KensingtonWorks</a>.</p>
+          </li>
+          <li class="glass">
+            <h3>Download Glideball</h3>
+            <p>Unzip <a href="https://github.com/leviholliday/glideball/releases/latest/download/Glideball.zip">Glideball.zip</a> and drag Glideball into Applications. Or use Homebrew:</p>
+            <pre><code>brew install --cask leviholliday/tap/glideball</code></pre>
+          </li>
+          <li class="glass">
+            <h3>Open it once with Open Anyway</h3>
+            <p>macOS will say it couldn't verify Glideball. Click Done, then System Settings › Privacy &amp; Security › Open Anyway. <a href="/help/open-anyway/">Step by step</a>.</p>
+          </li>
+          <li class="glass">
+            <h3>Allow two permissions</h3>
+            <p>Accessibility and Input Monitoring. Glideball's window has a button for each. <a href="/help/permissions/">What they let it see</a>.</p>
+          </li>
+          <li class="glass">
+            <h3>Set up your buttons</h3>
+            <p>On the Buttons tab, use Quick assign: press the buttons, then the shortcut. Then try the scroll modes on the Scrolling tab.</p>
+          </li>
+        </ol>
+      </section>
+
+      <section class="pg-section" aria-labelledby="faq-h">
+        <h2 id="faq-h">Questions</h2>
+        <div class="faq">
+          <details class="glass" data-faq>
+            <summary>Is there a free alternative to KensingtonWorks for Mac?<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <p>Yes. Glideball is free and open source (MIT). It works with Kensington trackballs on macOS 26 Tahoe or later. LinearMouse is another free, open-source option for mice in general.</p>
+          </details>
+          <details class="glass" data-faq>
+            <summary>Can I keep KensingtonWorks installed too?<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <p>No. Uninstall it and restart first. With both running, buttons can do two things at once.</p>
+          </details>
+          <details class="glass" data-faq>
+            <summary>Can Glideball import my KensingtonWorks settings?<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <p>No. Quick assign on the Buttons tab makes setting things up again fast: press the buttons, then the shortcut you want.</p>
+          </details>
+          <details class="glass" data-faq>
+            <summary>Does it work with the SlimBlade or the Orbit?<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <p>Through the Beta program, yes, but I haven't tuned Glideball on them. The wired Expert Mouse is the one that's fully supported. See supported trackballs.</p>
+          </details>
+          <details class="glass" data-faq>
+            <summary>Who makes Glideball?<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <p>I do. I'm Levi Holliday, a student. Glideball is an independent project and isn't connected to Kensington.</p>
+          </details>
+        </div>
+      </section>
+
+<!-- cta -->
