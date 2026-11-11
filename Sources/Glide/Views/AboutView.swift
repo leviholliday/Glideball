@@ -13,6 +13,7 @@ struct AboutView: View {
     private static let issues = URL(string: "https://github.com/leviholliday/glideball/issues")!
     private static let source = URL(string: "https://github.com/leviholliday/glideball")!
     static let contactEmail = "glideball@proton.me"
+    private static let support = URL(string: "https://venmo.com/code?user_id=3866596929963831322&created=1793653243")!
     private static let gravatar = URL(string: "https://gravatar.com/optimistic1bba948d22")!
 
     var body: some View {
@@ -45,6 +46,8 @@ struct AboutView: View {
                             linkRow("chevron.left.forwardslash.chevron.right", "Source code (free and open)", Self.source)
                             Divider().opacity(0.4)
                             linkRow("person.crop.circle", "Gravatar profile", Self.gravatar)
+                            Divider().opacity(0.4)
+                            linkRow("heart", "Support Glideball", Self.support)
                         }
                         GlassCard(title: "Support info", symbol: "info.circle") {
                             Text(supportInfo)
@@ -68,7 +71,7 @@ struct AboutView: View {
                                 .contentTransition(.symbolEffect(.replace))
                             }
                         }
-                        Text("Made for the Kensington Expert Mouse. Glideball is an independent project and isn’t affiliated with Kensington.")
+                        Text("Made for Kensington trackballs. Glideball is an independent project and isn’t affiliated with Kensington.")
                             .font(.system(size: 11)).foregroundStyle(.tertiary)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 20)
@@ -176,7 +179,8 @@ struct AboutView: View {
             "Trackball: " + (model.status.deviceConnected ? (model.status.deviceName ?? "connected") : "not connected"),
             "Scrolling: \(model.config.scrollMode.rawValue)",
         ]
-        if model.betaProgram { lines.append("Beta program: on") }
+        if model.otherTrackballs { lines.append("Other Kensington trackballs: on") }
+        if model.earlyUpdates { lines.append("Early updates: on") }
         return lines.joined(separator: "\n")
     }
 }

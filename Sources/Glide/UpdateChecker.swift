@@ -5,7 +5,7 @@ import Security
 
 /// Checks GitHub once a day for a newer Glide release and installs it in place.
 /// This and iCloud Drive sync are the only times Glide touches the network.
-/// Everyone gets full releases; members of the Beta program also get
+/// Everyone gets full releases; people who turn on Early updates also get
 /// prereleases (tagged like v2.4-beta.1).
 ///
 /// Installing: download the release zip, unpack it, and only accept it if it's
@@ -43,8 +43,8 @@ final class UpdateChecker {
     static let legacyAssetName = "Glide.zip"
     @ObservationIgnored private var timer: Timer?
     @ObservationIgnored private var progressObservation: NSKeyValueObservation?
-    /// Offer prereleases too — the Beta program. Call `check()` after changing it.
-    @ObservationIgnored var includePrereleases = BetaProgram.isEnabled
+    /// Offer prereleases too — Early updates. Call `check()` after changing it.
+    @ObservationIgnored var includePrereleases = EarlyUpdates.isEnabled
 
     var currentVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
@@ -83,7 +83,7 @@ final class UpdateChecker {
             let newest = Self.newest(in: data, includePrereleases: prereleases)
             let newer = newest.map { Self.isNewer($0.version, than: self.currentVersion) } ?? false
             DispatchQueue.main.async {
-                // The Beta program switch changed while this was in flight: a fresh check is coming.
+                // The Early updates switch changed while this was in flight: a fresh check is coming.
                 guard prereleases == self.includePrereleases else { completion?(true); return }
                 self.available = newer ? newest : nil
                 self.lastChecked = Date()
@@ -93,7 +93,7 @@ final class UpdateChecker {
     }
 
     /// The highest-versioned release in a GitHub release list. Drafts never
-    /// count; prereleases only for the Beta program. A tag that reads like a
+    /// count; prereleases only with Early updates. A tag that reads like a
     /// prerelease ("2.4-beta.1") counts as one even if GitHub isn't told so.
     static func newest(in data: Data, includePrereleases: Bool) -> Update? {
         guard let list = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else { return nil }

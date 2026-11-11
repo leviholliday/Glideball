@@ -709,8 +709,6 @@
 
 "BETA" = "BETA";
 
-"Supported through the Beta program — you may hit bugs" = "Compatible a través del programa beta: puede que encuentres errores";
-
 "Precise" = "Preciso";
 
 "macOS" = "macOS";
@@ -881,8 +879,6 @@
 /* Status pill */
 "Not connected" = "No conectado";
 
-"Beta program" = "Programa beta";
-
 /* Switched on */
 "On" = "Activado";
 
@@ -1013,8 +1009,6 @@
 
 "Quick access to pause, precision and updates. Glideball keeps running either way — reopen it from the Dock." = "Acceso rápido a pausa, precisión y actualizaciones. Glideball sigue funcionando igualmente: vuelve a abrirlo desde el Dock.";
 
-"Try features before they're finished — like support for other Kensington trackballs and early updates. You may hit bugs." = "Prueba funciones antes de que estén terminadas, como la compatibilidad con otros trackballs de Kensington y actualizaciones anticipadas. Puede que encuentres errores.";
-
 "Celebrations" = "Celebraciones";
 
 "A toast and a little confetti when you reach a milestone or set a personal best. Badges are kept either way." = "Un aviso y algo de confeti cuando alcanzas un hito o un récord personal. Las insignias se guardan igualmente.";
@@ -1038,10 +1032,6 @@
 "Kensington Expert Mouse" = "Kensington Expert Mouse";
 
 "Roll, spin, or click — it's live." = "Rueda, gira o haz clic: es en directo.";
-
-"Turn on the Beta program to try Glideball with your %@." = "Activa el programa beta para probar Glideball con tu %@.";
-
-"Turn On Beta" = "Activar beta";
 
 "Plug in your Expert Mouse." = "Conecta tu Expert Mouse.";
 
@@ -1146,7 +1136,7 @@
 /* Status pill */
 "Paused" = "En pausa";
 
-/* Status pill: a Kensington device that needs the Beta program */
+/* Status pill: a Kensington device that needs Other Kensington trackballs turned on */
 "Beta only" = "Solo beta";
 
 /* Status pill */
@@ -1180,8 +1170,6 @@
 "Install %@ & Relaunch" = "Instalar %@ y reabrir";
 
 "What’s New in %@…" = "Novedades de %@…";
-
-"A Beta program build — it may have bugs" = "Una versión del programa beta: puede tener errores";
 
 "Last try failed: %@" = "El último intento ha fallado: %@";
 
@@ -1409,8 +1397,6 @@
 
 "Glideball can't see your buttons until both permissions are on. You can come back to this tour from Help." = "Glideball no puede ver tus botones hasta que ambos permisos estén activados. Puedes volver a este recorrido desde Ayuda.";
 
-"Your %@ works with Glideball through the Beta program — you can turn it on at the end of the tour." = "Tu %@ funciona con Glideball a través del programa beta: puedes activarlo al final del recorrido.";
-
 "Plug in your Expert Mouse to try this." = "Conecta tu Expert Mouse para probarlo.";
 
 "All four found. Change what they do any time in the Buttons tab." = "Los cuatro encontrados. Cambia lo que hacen cuando quieras en la pestaña Botones.";
@@ -1502,7 +1488,6 @@
 "Copied" = "Copiado";
 "Handy to include when you report something." = "Útil para incluir cuando informes de un problema.";
 "Links" = "Enlaces";
-"Made for the Kensington Expert Mouse. Glideball is an independent project and isn’t affiliated with Kensington." = "Hecho para el Kensington Expert Mouse. Glideball es un proyecto independiente y no está afiliado con Kensington.";
 "Show in Dock and app switcher" = "Mostrar en el Dock y en el selector de apps";
 "Support info" = "Información de soporte";
 "Turn off to run purely in the background. Open Glideball again from its menu-bar icon (which then stays on)." = "Desactívalo para que funcione solo en segundo plano. Vuelve a abrir Glideball desde su icono de la barra de menús (que entonces se queda activo).";
@@ -1523,7 +1508,6 @@
 "Gravatar profile" = "Perfil de Gravatar";
 
 /* ---- Software Update window ---- */
-"A Beta program build. It may have bugs." = "Una versión del programa beta. Puede tener errores.";
 "Asking GitHub for the newest version of Glideball." = "Consultando a GitHub la versión más reciente de Glideball.";
 "Checked %@" = "Comprobado %@";
 "Details…" = "Detalles…";
@@ -1543,3 +1527,16 @@
 "Downloading Glideball %@…" = "Descargando Glideball %@…";
 "Installing…" = "Instalando…";
 "Glideball %@ is available" = "Glideball %@ está disponible";
+
+/* ---- Split of the Beta program switch; support link ---- */
+"An early update — it may have bugs" = "Una actualización anticipada — puede tener errores";
+"An early update. It may have bugs." = "Una actualización anticipada. Puede tener errores.";
+"Early updates" = "Actualizaciones anticipadas";
+"Get new versions before they go out to everyone. They've had less testing, so you may hit bugs." = "Recibe las versiones nuevas antes de que salgan para todos. Se han probado menos, así que puedes encontrar errores.";
+"Let Glideball work with Kensington trackballs besides the Expert Mouse. I haven't tuned it on them yet, so you may hit bugs." = "Deja que Glideball funcione con otros trackballs de Kensington además del Expert Mouse. Todavía no lo he ajustado para ellos, así que puedes encontrar errores.";
+"Made for Kensington trackballs. Glideball is an independent project and isn’t affiliated with Kensington." = "Hecho para trackballs de Kensington. Glideball es un proyecto independiente y no está afiliado con Kensington.";
+"Not fully tested yet — you may hit bugs" = "Aún no está probado del todo — puedes encontrar errores";
+"Other Kensington trackballs" = "Otros trackballs de Kensington";
+"Turn on Other Kensington trackballs to try Glideball with your %@." = "Activa «Otros trackballs de Kensington» para probar Glideball con tu %@.";
+"Your %@ can work with Glideball if you turn on Other Kensington trackballs. You can do that at the end of the tour." = "Tu %@ puede funcionar con Glideball si activas «Otros trackballs de Kensington». Puedes hacerlo al final del recorrido.";
+"Support Glideball" = "Apoyar Glideball";

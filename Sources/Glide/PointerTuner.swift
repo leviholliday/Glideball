@@ -16,7 +16,7 @@ final class PointerTuner {
     private var applied: (settings: Settings, services: [UInt64])?
     private var client = IOHIDEventSystemClientCreateSimpleClient(kCFAllocatorDefault)
     /// Every service Glide has written to, so one that stops being supported
-    /// (the Beta program switched off) is handed back to macOS's own speeds.
+    /// ("Other Kensington trackballs" switched off) is handed back to macOS's own speeds.
     private var tuned = Set<UInt64>()
     /// Each service's own values from just before Glide's first write to it
     /// (raw 16.16 fixed point, so -1 = acceleration off comes back exactly).

@@ -709,8 +709,6 @@
 
 "BETA" = "베타";
 
-"Supported through the Beta program — you may hit bugs" = "베타 프로그램을 통해 지원돼요 — 버그가 있을 수 있어요";
-
 "Precise" = "정밀";
 
 "macOS" = "macOS";
@@ -881,8 +879,6 @@
 /* Status pill */
 "Not connected" = "연결 안 됨";
 
-"Beta program" = "베타 프로그램";
-
 /* Switched on */
 "On" = "켬";
 
@@ -1013,8 +1009,6 @@
 
 "Quick access to pause, precision and updates. Glideball keeps running either way — reopen it from the Dock." = "일시 정지, 정밀 모드, 업데이트에 빠르게 접근할 수 있어요. 어느 쪽이든 Glide는 계속 실행돼요 — Dock에서 다시 열 수 있어요.";
 
-"Try features before they're finished — like support for other Kensington trackballs and early updates. You may hit bugs." = "완성 전 기능을 먼저 사용해 보세요 — 다른 Kensington 트랙볼 지원이나 미리 받는 업데이트 등. 버그가 있을 수 있어요.";
-
 "Celebrations" = "축하 효과";
 
 "A toast and a little confetti when you reach a milestone or set a personal best. Badges are kept either way." = "마일스톤에 도달하거나 개인 최고 기록을 세우면 알림과 함께 색종이가 살짝 터져요. 배지는 어느 쪽이든 보관돼요.";
@@ -1038,10 +1032,6 @@
 "Kensington Expert Mouse" = "Kensington Expert Mouse";
 
 "Roll, spin, or click — it's live." = "굴리고, 돌리고, 클릭해 보세요 — 실시간이에요.";
-
-"Turn on the Beta program to try Glideball with your %@." = "베타 프로그램을 켜면 %@에서 Glide를 사용해 볼 수 있어요.";
-
-"Turn On Beta" = "베타 켜기";
 
 "Plug in your Expert Mouse." = "Expert Mouse를 연결하세요.";
 
@@ -1146,7 +1136,7 @@
 /* Status pill */
 "Paused" = "일시 정지됨";
 
-/* Status pill: a Kensington device that needs the Beta program */
+/* Status pill: a Kensington device that needs Other Kensington trackballs turned on */
 "Beta only" = "베타 전용";
 
 /* Status pill */
@@ -1180,8 +1170,6 @@
 "Install %@ & Relaunch" = "%@ 설치 및 재실행";
 
 "What’s New in %@…" = "%@의 새로운 기능…";
-
-"A Beta program build — it may have bugs" = "베타 프로그램 빌드 — 버그가 있을 수 있어요";
 
 "Last try failed: %@" = "마지막 시도 실패: %@";
 
@@ -1409,8 +1397,6 @@
 
 "Glideball can't see your buttons until both permissions are on. You can come back to this tour from Help." = "두 권한이 모두 켜지기 전에는 Glide가 버튼을 인식할 수 없어요. 도움말에서 이 투어로 다시 돌아올 수 있어요.";
 
-"Your %@ works with Glideball through the Beta program — you can turn it on at the end of the tour." = "%@은(는) 베타 프로그램을 통해 Glide와 함께 작동해요 — 투어 마지막에 켤 수 있어요.";
-
 "Plug in your Expert Mouse to try this." = "이 기능을 사용하려면 Expert Mouse를 연결하세요.";
 
 "All four found. Change what they do any time in the Buttons tab." = "4개 모두 찾았어요. 버튼 탭에서 언제든지 기능을 바꿀 수 있어요.";
@@ -1502,7 +1488,6 @@
 "Copied" = "복사했어요";
 "Handy to include when you report something." = "문제를 보고할 때 함께 알려 주면 좋아요.";
 "Links" = "링크";
-"Made for the Kensington Expert Mouse. Glideball is an independent project and isn’t affiliated with Kensington." = "Kensington Expert Mouse를 위해 만들었어요. Glideball은 독립 프로젝트이며 Kensington과 관련이 없어요.";
 "Show in Dock and app switcher" = "Dock과 앱 전환기에 표시";
 "Support info" = "지원 정보";
 "Turn off to run purely in the background. Open Glideball again from its menu-bar icon (which then stays on)." = "끄면 백그라운드에서만 실행돼요. 메뉴 막대 아이콘(그대로 켜져 있어요)으로 Glideball을 다시 열 수 있어요.";
@@ -1523,7 +1508,6 @@
 "Gravatar profile" = "Gravatar 프로필";
 
 /* ---- Software Update window ---- */
-"A Beta program build. It may have bugs." = "베타 프로그램 빌드예요. 버그가 있을 수 있어요.";
 "Asking GitHub for the newest version of Glideball." = "GitHub에서 최신 Glideball 버전을 확인하는 중이에요.";
 "Checked %@" = "%@ 확인함";
 "Details…" = "세부사항…";
@@ -1543,3 +1527,16 @@
 "Downloading Glideball %@…" = "Glideball %@ 다운로드 중…";
 "Installing…" = "설치 중…";
 "Glideball %@ is available" = "Glideball %@을(를) 사용할 수 있어요";
+
+/* ---- Split of the Beta program switch; support link ---- */
+"An early update — it may have bugs" = "얼리 업데이트예요. 버그가 있을 수 있어요";
+"An early update. It may have bugs." = "얼리 업데이트예요. 버그가 있을 수 있어요.";
+"Early updates" = "얼리 업데이트";
+"Get new versions before they go out to everyone. They've had less testing, so you may hit bugs." = "모두에게 공개되기 전에 새 버전을 받아요. 테스트를 덜 거쳐서 버그가 있을 수 있어요.";
+"Let Glideball work with Kensington trackballs besides the Expert Mouse. I haven't tuned it on them yet, so you may hit bugs." = "Expert Mouse 외의 Kensington 트랙볼에서도 Glideball이 작동하게 해요. 아직 맞춰 보지 못해서 버그가 있을 수 있어요.";
+"Made for Kensington trackballs. Glideball is an independent project and isn’t affiliated with Kensington." = "Kensington 트랙볼을 위해 만들었어요. Glideball은 독립 프로젝트이며 Kensington과 관련이 없어요.";
+"Not fully tested yet — you may hit bugs" = "아직 충분히 테스트하지 못했어요. 버그가 있을 수 있어요";
+"Other Kensington trackballs" = "다른 Kensington 트랙볼";
+"Turn on Other Kensington trackballs to try Glideball with your %@." = "‘다른 Kensington 트랙볼’을 켜면 %@에서 Glideball을 사용해 볼 수 있어요.";
+"Your %@ can work with Glideball if you turn on Other Kensington trackballs. You can do that at the end of the tour." = "‘다른 Kensington 트랙볼’을 켜면 %@에서 Glideball을 사용할 수 있어요. 투어 마지막에 켤 수 있어요.";
+"Support Glideball" = "Glideball 후원하기";

@@ -265,7 +265,7 @@ struct ModePill: View {
 
 // MARK: - Beta badge
 
-/// A small "BETA" capsule for devices supported through the Beta program.
+/// A small "BETA" capsule for devices supported through "Other Kensington trackballs".
 struct BetaBadge: View {
     var body: some View {
         Text("BETA")
@@ -275,7 +275,7 @@ struct BetaBadge: View {
             .padding(.vertical, 2)
             .foregroundStyle(.white)
             .background(Capsule().fill(LinearGradient(colors: [.purple, .pink], startPoint: .leading, endPoint: .trailing)))
-            .help("Supported through the Beta program — you may hit bugs")
+            .help("Not fully tested yet — you may hit bugs")
     }
 }
 

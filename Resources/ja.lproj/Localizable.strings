@@ -709,8 +709,6 @@
 
 "BETA" = "ベータ";
 
-"Supported through the Beta program — you may hit bugs" = "ベータプログラムでサポート — バグがあるかもしれません";
-
 "Precise" = "精密";
 
 "macOS" = "macOS";
@@ -881,8 +879,6 @@
 /* Status pill */
 "Not connected" = "未接続";
 
-"Beta program" = "ベータプログラム";
-
 /* Switched on */
 "On" = "オン";
 
@@ -1013,8 +1009,6 @@
 
 "Quick access to pause, precision and updates. Glideball keeps running either way — reopen it from the Dock." = "一時停止、精密モード、アップデートにすばやくアクセスできます。どちらの場合もGlideは動作し続けます — Dockから再び開けます。";
 
-"Try features before they're finished — like support for other Kensington trackballs and early updates. You may hit bugs." = "完成前の機能を試せます — ほかのKensingtonトラックボールのサポートや先行アップデートなど。バグがあるかもしれません。";
-
 "Celebrations" = "お祝い";
 
 "A toast and a little confetti when you reach a milestone or set a personal best. Badges are kept either way." = "マイルストーンに到達したり自己ベストを更新したりすると、通知と紙吹雪でお祝いします。バッジはどちらの場合も保存されます。";
@@ -1038,10 +1032,6 @@
 "Kensington Expert Mouse" = "Kensington Expert Mouse";
 
 "Roll, spin, or click — it's live." = "転がす、回す、クリック — リアルタイムで表示されます。";
-
-"Turn on the Beta program to try Glideball with your %@." = "ベータプログラムをオンにすると、%@でGlideを試せます。";
-
-"Turn On Beta" = "ベータをオンにする";
 
 "Plug in your Expert Mouse." = "Expert Mouseを接続してください。";
 
@@ -1146,7 +1136,7 @@
 /* Status pill */
 "Paused" = "一時停止中";
 
-/* Status pill: a Kensington device that needs the Beta program */
+/* Status pill: a Kensington device that needs Other Kensington trackballs turned on */
 "Beta only" = "ベータのみ";
 
 /* Status pill */
@@ -1180,8 +1170,6 @@
 "Install %@ & Relaunch" = "%@をインストールして再起動";
 
 "What’s New in %@…" = "%@の新機能…";
-
-"A Beta program build — it may have bugs" = "ベータプログラムのビルド — バグがあるかもしれません";
 
 "Last try failed: %@" = "前回の試行に失敗：%@";
 
@@ -1409,8 +1397,6 @@
 
 "Glideball can't see your buttons until both permissions are on. You can come back to this tour from Help." = "両方の許可がオンになるまで、Glideはボタンを認識できません。このツアーには「ヘルプ」からいつでも戻れます。";
 
-"Your %@ works with Glideball through the Beta program — you can turn it on at the end of the tour." = "お使いの%@はベータプログラムを通じてGlideで使えます — ツアーの最後にオンにできます。";
-
 "Plug in your Expert Mouse to try this." = "これを試すにはExpert Mouseを接続してください。";
 
 "All four found. Change what they do any time in the Buttons tab." = "4つすべて見つかりました。動作は「ボタン」タブでいつでも変更できます。";
@@ -1502,7 +1488,6 @@
 "Copied" = "コピーしました";
 "Handy to include when you report something." = "問題を報告するときに添えると便利です。";
 "Links" = "リンク";
-"Made for the Kensington Expert Mouse. Glideball is an independent project and isn’t affiliated with Kensington." = "Kensington Expert Mouse のために作られました。Glideball は独立したプロジェクトで、Kensington とは提携していません。";
 "Show in Dock and app switcher" = "Dock とアプリスイッチャーに表示";
 "Support info" = "サポート情報";
 "Turn off to run purely in the background. Open Glideball again from its menu-bar icon (which then stays on)." = "オフにするとバックグラウンドだけで動作します。メニューバーのアイコン（そのままオンになります）から Glideball を開き直せます。";
@@ -1523,7 +1508,6 @@
 "Gravatar profile" = "Gravatar プロフィール";
 
 /* ---- Software Update window ---- */
-"A Beta program build. It may have bugs." = "ベータプログラムのビルドです。不具合がある場合があります。";
 "Asking GitHub for the newest version of Glideball." = "GitHubに最新バージョンのGlideballを確認しています。";
 "Checked %@" = "%@に確認";
 "Details…" = "詳細…";
@@ -1543,3 +1527,16 @@
 "Downloading Glideball %@…" = "Glideball %@ をダウンロード中…";
 "Installing…" = "インストール中…";
 "Glideball %@ is available" = "Glideball %@ を利用できます";
+
+/* ---- Split of the Beta program switch; support link ---- */
+"An early update — it may have bugs" = "先行アップデートです。不具合があるかもしれません";
+"An early update. It may have bugs." = "先行アップデートです。不具合があるかもしれません。";
+"Early updates" = "先行アップデート";
+"Get new versions before they go out to everyone. They've had less testing, so you may hit bugs." = "みなさんに公開される前の新しいバージョンを受け取れます。テストが少ないため、不具合が出るかもしれません。";
+"Let Glideball work with Kensington trackballs besides the Expert Mouse. I haven't tuned it on them yet, so you may hit bugs." = "Expert Mouse 以外の Kensington トラックボールでも Glideball を使えるようにします。まだ調整していないので、不具合が出るかもしれません。";
+"Made for Kensington trackballs. Glideball is an independent project and isn’t affiliated with Kensington." = "Kensington のトラックボール向けに作られました。Glideball は独立したプロジェクトで、Kensington とは提携していません。";
+"Not fully tested yet — you may hit bugs" = "まだ十分にテストされていません。不具合が出るかもしれません";
+"Other Kensington trackballs" = "ほかの Kensington トラックボール";
+"Turn on Other Kensington trackballs to try Glideball with your %@." = "「ほかの Kensington トラックボール」をオンにすると、%@で Glideball を試せます。";
+"Your %@ can work with Glideball if you turn on Other Kensington trackballs. You can do that at the end of the tour." = "「ほかの Kensington トラックボール」をオンにすると、%@で Glideball を使えるようになります。ツアーの最後にオンにできます。";
+"Support Glideball" = "Glideball を応援する";

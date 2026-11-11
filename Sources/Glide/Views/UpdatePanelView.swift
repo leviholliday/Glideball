@@ -61,7 +61,7 @@ struct UpdatePanelView: View {
             VStack(spacing: 14) {
                 badge("checkmark.seal.fill", color: .green)
                 title("You’re up to date!")
-                subtitle(BetaProgram.isEnabled
+                subtitle(EarlyUpdates.isEnabled
                          ? String(localized: "Glideball \(current) is the newest version, including beta releases.")
                          : String(localized: "Glideball \(current) is the newest version."))
                 if let checked = updates.lastChecked {
@@ -127,7 +127,7 @@ struct UpdatePanelView: View {
             title("Glideball \(update.displayVersion) is available")
             subtitle(String(localized: "You have \(current). Your settings and permissions carry over."))
             if update.isPrerelease {
-                Label("A Beta program build. It may have bugs.", systemImage: "flask")
+                Label("An early update. It may have bugs.", systemImage: "flask")
                     .font(.system(size: 11, weight: .medium)).foregroundStyle(.orange)
             }
             if !update.notes.isEmpty {

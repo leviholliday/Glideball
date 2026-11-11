@@ -152,6 +152,10 @@ Both act only on the Expert Mouse (other Kensington trackballs only with the Bet
 
 Glideball is made by one student developer, so replies can take a few days.
 
+## Supporting Glideball
+
+Glideball is free whether or not you give anything. If you'd like to help me out, you can [send a little through Venmo](https://venmo.com/code?user_id=3866596929963831322&created=1793653243). It's completely optional, and the app never asks.
+
 ## Contributing
 
 Bug reports and ideas are very welcome. Translations go through [scripts/l10n/README.md](scripts/l10n/README.md). If you'd like to send code, please open an issue first so we can talk it over. Want to build Glideball or see how it works? See [docs/DEVELOPING.md](docs/DEVELOPING.md).

@@ -55,9 +55,13 @@ struct OverviewView: View {
                 Divider().opacity(0.4)
                 UpdatesRow(updates: model.updates)
                 Divider().opacity(0.4)
-                ToggleRow(title: "Beta program",
-                          subtitle: "Try features before they're finished — like support for other Kensington trackballs and early updates. You may hit bugs.",
-                          symbol: "flask", isOn: $model.betaProgram)
+                ToggleRow(title: "Other Kensington trackballs",
+                          subtitle: "Let Glideball work with Kensington trackballs besides the Expert Mouse. I haven't tuned it on them yet, so you may hit bugs.",
+                          symbol: "computermouse", isOn: $model.otherTrackballs)
+                Divider().opacity(0.4)
+                ToggleRow(title: "Early updates",
+                          subtitle: "Get new versions before they go out to everyone. They've had less testing, so you may hit bugs.",
+                          symbol: "flask", isOn: $model.earlyUpdates)
                 Divider().opacity(0.4)
                 ToggleRow(title: "Celebrations",
                           subtitle: "A toast and a little confetti when you reach a milestone or set a personal best. Badges are kept either way.",
@@ -114,15 +118,15 @@ struct OverviewView: View {
                 caption("Roll, spin, or click — it's live.")
             }
         } else if let name = status.unsupportedDeviceName {
-            // A Kensington Glide only supports in the Beta program: a gentle nudge, not an error.
+            // A Kensington device Glideball only supports with "Other Kensington trackballs" on: a gentle nudge, not an error.
             VStack(spacing: 8) {
-                caption("Turn on the Beta program to try Glideball with your \(name).")
+                caption("Turn on Other Kensington trackballs to try Glideball with your \(name).")
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
                 Button {
-                    model.betaProgram = true
+                    model.otherTrackballs = true
                 } label: {
-                    Label("Turn On Beta", systemImage: "flask")
+                    Label("Turn On", systemImage: "computermouse")
                 }
                 .buttonStyle(.glass)
                 .controlSize(.small)

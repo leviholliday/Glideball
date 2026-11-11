@@ -363,7 +363,7 @@ struct WelcomeTourView: View {
                 .foregroundStyle(.orange)
         } else if !model.status.deviceConnected {
             if let name = model.status.unsupportedDeviceName {
-                Label("Your \(name) works with Glideball through the Beta program — you can turn it on at the end of the tour.",
+                Label("Your \(name) can work with Glideball if you turn on Other Kensington trackballs. You can do that at the end of the tour.",
                       systemImage: "flask")
                     .foregroundStyle(.secondary)
             } else {
@@ -490,12 +490,12 @@ struct WelcomeTourView: View {
             .buttonStyle(.glass)
             .controlSize(.large)
             .padding(.top, 4)
-            if let name = model.status.unsupportedDeviceName, !model.betaProgram {
+            if let name = model.status.unsupportedDeviceName, !model.otherTrackballs {
                 HStack(spacing: 12) {
                     Image(systemName: "flask").foregroundStyle(.purple)
-                    Text("Turn on the Beta program to try Glideball with your \(name).")
+                    Text("Turn on Other Kensington trackballs to try Glideball with your \(name).")
                         .font(.system(size: 12))
-                    Button("Turn On") { model.betaProgram = true }
+                    Button("Turn On") { model.otherTrackballs = true }
                         .buttonStyle(.glass)
                 }
                 .padding(.horizontal, 14)

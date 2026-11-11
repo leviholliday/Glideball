@@ -270,7 +270,7 @@ struct RootView: View {
         if !model.permissionsOK { return String(localized: "Needs permission", comment: "Status pill") }
         if !model.config.enabled { return String(localized: "Paused", comment: "Status pill") }
         if !model.status.deviceConnected && model.status.unsupportedDeviceName != nil {
-            return String(localized: "Beta only", comment: "Status pill: a Kensington device that needs the Beta program")
+            return String(localized: "Beta only", comment: "Status pill: a Kensington device that needs Other Kensington trackballs turned on")
         }
         guard model.status.deviceConnected else { return String(localized: "Not connected", comment: "Status pill") }
         return model.status.deviceIsBeta ? String(localized: "Connected · Beta", comment: "Status pill")
@@ -367,7 +367,7 @@ struct UpdateButton: View {
                 Button("What’s New in \(update.displayVersion)…") { NSWorkspace.shared.open(update.page) }
                 if update.isPrerelease {
                     Divider()
-                    Text("A Beta program build — it may have bugs")
+                    Text("An early update — it may have bugs")
                 }
                 if case .failed(let message) = updates.installState {
                     Divider()

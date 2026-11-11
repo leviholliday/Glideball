@@ -709,8 +709,6 @@
 
 "BETA" = "BETA";
 
-"Supported through the Beta program — you may hit bugs" = "通过 Beta 计划支持，可能会遇到错误";
-
 "Precise" = "精细";
 
 "macOS" = "macOS";
@@ -881,8 +879,6 @@
 /* Status pill */
 "Not connected" = "未连接";
 
-"Beta program" = "Beta 计划";
-
 /* Switched on */
 "On" = "开";
 
@@ -1013,8 +1009,6 @@
 
 "Quick access to pause, precision and updates. Glideball keeps running either way — reopen it from the Dock." = "快速暂停、切换精准模式和检查更新。无论如何 Glideball 都会继续运行，可从程序坞重新打开。";
 
-"Try features before they're finished — like support for other Kensington trackballs and early updates. You may hit bugs." = "抢先试用尚未完成的功能，例如支持其他 Kensington 轨迹球以及提前获取更新。可能会遇到错误。";
-
 "Celebrations" = "庆祝";
 
 "A toast and a little confetti when you reach a milestone or set a personal best. Badges are kept either way." = "达成里程碑或刷新个人最佳时，弹出提示并撒点彩纸。无论是否开启，徽章都会保留。";
@@ -1038,10 +1032,6 @@
 "Kensington Expert Mouse" = "Kensington Expert Mouse";
 
 "Roll, spin, or click — it's live." = "滚一滚、转一转或点一点 — 实时显示。";
-
-"Turn on the Beta program to try Glideball with your %@." = "开启 Beta 计划，即可在 Glideball 中使用你的 %@。";
-
-"Turn On Beta" = "开启 Beta";
 
 "Plug in your Expert Mouse." = "插入你的 Expert Mouse。";
 
@@ -1146,7 +1136,7 @@
 /* Status pill */
 "Paused" = "已暂停";
 
-/* Status pill: a Kensington device that needs the Beta program */
+/* Status pill: a Kensington device that needs Other Kensington trackballs turned on */
 "Beta only" = "仅限 Beta";
 
 /* Status pill */
@@ -1180,8 +1170,6 @@
 "Install %@ & Relaunch" = "安装 %@ 并重新启动";
 
 "What’s New in %@…" = "%@ 的新功能…";
-
-"A Beta program build — it may have bugs" = "Beta 计划版本 — 可能存在错误";
 
 "Last try failed: %@" = "上次尝试失败：%@";
 
@@ -1409,8 +1397,6 @@
 
 "Glideball can't see your buttons until both permissions are on. You can come back to this tour from Help." = "两项权限都开启前，Glideball 无法识别你的按钮。你可以从“帮助”菜单回到此导览。";
 
-"Your %@ works with Glideball through the Beta program — you can turn it on at the end of the tour." = "你的 %@ 可通过 Beta 计划配合 Glideball 使用 — 你可以在导览结束时开启。";
-
 "Plug in your Expert Mouse to try this." = "插入你的 Expert Mouse 来试试。";
 
 "All four found. Change what they do any time in the Buttons tab." = "四个都找到了。随时可以在“按钮”标签页中更改它们的功能。";
@@ -1502,7 +1488,6 @@
 "Copied" = "已拷贝";
 "Handy to include when you report something." = "报告问题时附上会很有帮助。";
 "Links" = "链接";
-"Made for the Kensington Expert Mouse. Glideball is an independent project and isn’t affiliated with Kensington." = "专为 Kensington Expert Mouse 打造。Glideball 是独立项目，与 Kensington 没有关联。";
 "Show in Dock and app switcher" = "在 Dock 和应用切换器中显示";
 "Support info" = "支持信息";
 "Turn off to run purely in the background. Open Glideball again from its menu-bar icon (which then stays on)." = "关闭后只在后台运行。可通过菜单栏图标（此时会保持开启）重新打开 Glideball。";
@@ -1523,7 +1508,6 @@
 "Gravatar profile" = "Gravatar 个人资料";
 
 /* ---- Software Update window ---- */
-"A Beta program build. It may have bugs." = "这是 Beta 版计划的版本，可能有错误。";
 "Asking GitHub for the newest version of Glideball." = "正在向 GitHub 查询最新版本的 Glideball。";
 "Checked %@" = "检查于%@";
 "Details…" = "详细信息…";
@@ -1543,3 +1527,16 @@
 "Downloading Glideball %@…" = "正在下载 Glideball %@…";
 "Installing…" = "正在安装…";
 "Glideball %@ is available" = "Glideball %@ 现已推出";
+
+/* ---- Split of the Beta program switch; support link ---- */
+"An early update — it may have bugs" = "这是抢先更新，可能有 bug";
+"An early update. It may have bugs." = "这是抢先更新，可能有 bug。";
+"Early updates" = "抢先更新";
+"Get new versions before they go out to everyone. They've had less testing, so you may hit bugs." = "在新版本向所有人发布之前先收到它。它经过的测试较少，所以可能会遇到 bug。";
+"Let Glideball work with Kensington trackballs besides the Expert Mouse. I haven't tuned it on them yet, so you may hit bugs." = "让 Glideball 也能用于 Expert Mouse 以外的 Kensington 轨迹球。我还没有针对它们调校过，所以可能会遇到 bug。";
+"Made for Kensington trackballs. Glideball is an independent project and isn’t affiliated with Kensington." = "为 Kensington 轨迹球而做。Glideball 是独立项目，与 Kensington 没有关联。";
+"Not fully tested yet — you may hit bugs" = "还没有经过充分测试，可能会遇到 bug";
+"Other Kensington trackballs" = "其他 Kensington 轨迹球";
+"Turn on Other Kensington trackballs to try Glideball with your %@." = "开启“其他 Kensington 轨迹球”，即可在 Glideball 中使用你的 %@。";
+"Your %@ can work with Glideball if you turn on Other Kensington trackballs. You can do that at the end of the tour." = "开启“其他 Kensington 轨迹球”后，你的 %@ 就能配合 Glideball 使用。你可以在导览结尾开启。";
+"Support Glideball" = "支持 Glideball";

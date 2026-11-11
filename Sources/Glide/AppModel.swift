@@ -51,14 +51,21 @@ final class AppModel {
     var showingAbout = false
     /// The Welcome Tour over the main window (see WelcomeTour.swift).
     var showingWelcomeTour = false
-    /// Try Kensington's other trackballs and prerelease updates. Per-Mac,
-    /// never synced — see `BetaProgram`. Takes effect immediately.
-    var betaProgram = BetaProgram.isEnabled {
+    /// Work with Kensington's other trackballs. Per-Mac, never synced — see
+    /// `OtherTrackballs`. Takes effect immediately.
+    var otherTrackballs = OtherTrackballs.isEnabled {
         didSet {
-            guard betaProgram != oldValue else { return }
-            UserDefaults.standard.set(betaProgram, forKey: BetaProgram.defaultsKey)
-            engine.setBetaProgram(betaProgram)
-            updates.includePrereleases = betaProgram
+            guard otherTrackballs != oldValue else { return }
+            UserDefaults.standard.set(otherTrackballs, forKey: OtherTrackballs.defaultsKey)
+            engine.setBetaProgram(otherTrackballs)
+        }
+    }
+    /// Offer prerelease updates. Per-Mac, never synced — see `EarlyUpdates`.
+    var earlyUpdates = EarlyUpdates.isEnabled {
+        didSet {
+            guard earlyUpdates != oldValue else { return }
+            UserDefaults.standard.set(earlyUpdates, forKey: EarlyUpdates.defaultsKey)
+            updates.includePrereleases = earlyUpdates
             updates.check()
         }
     }

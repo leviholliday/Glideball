@@ -18,9 +18,9 @@ final class Engine {
         var listening = false
         /// The supported device in use (the Expert Mouse if several), e.g. "Kensington Expert Mouse".
         var deviceName: String?
-        /// That device is a Kensington Glide only supports in the Beta program.
+        /// That device is a Kensington Glide only supports when "Other Kensington trackballs" is on.
         var deviceIsBeta = false
-        /// A connected Kensington pointing device Glide leaves alone unless the Beta program is on.
+        /// A connected Kensington pointing device Glide leaves alone unless "Other Kensington trackballs" is on.
         var unsupportedDeviceName: String?
     }
 
@@ -42,7 +42,7 @@ final class Engine {
     private var hid: IOHIDManager?
     private var devices: [Int: DeviceIdentity] = [:]   // connected pointing devices
     private var deviceSupported: [Int: Bool] = [:]     // …that Glide works with (see DeviceIdentity)
-    private var betaProgram = BetaProgram.isEnabled
+    private var betaProgram = OtherTrackballs.isEnabled
     private var lastActiveIsKensington = false
     private var lastValueStamp: [Int: UInt64] = [:]
     private var status = Status()
@@ -157,7 +157,7 @@ final class Engine {
 
     func reapplyPointer() { perform { self.applyPointer() } }
 
-    /// The Beta program adds Kensington's other pointing devices. Takes effect
+    /// "Other Kensington trackballs" adds Kensington's other pointing devices. Takes effect
     /// immediately: devices are re-sorted and pointer speeds re-applied.
     func setBetaProgram(_ on: Bool) {
         perform {

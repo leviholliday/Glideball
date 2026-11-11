@@ -276,7 +276,8 @@ final class FeedbackDraft {
         ]
         if model.sync.isEnabled { out["iCloudSync"] = "on" }
         if let device = model.status.deviceName { out["device"] = device }
-        if model.betaProgram { out["betaProgram"] = "on" }
+        if model.otherTrackballs { out["otherTrackballs"] = "on" }
+        if model.earlyUpdates { out["earlyUpdates"] = "on" }
         return out
     }
 
@@ -293,7 +294,8 @@ final class FeedbackDraft {
                  value: model.status.deviceName.map { model.status.deviceIsBeta ? String(localized: "\($0) (beta)") : $0 }
                      ?? String(localized: "Not connected", comment: "Status pill")),
         ]
-        if model.betaProgram { out.append(Fact(label: String(localized: "Beta program"), value: String(localized: "On", comment: "Switched on"))) }
+        if model.otherTrackballs { out.append(Fact(label: String(localized: "Other Kensington trackballs"), value: String(localized: "On", comment: "Switched on"))) }
+        if model.earlyUpdates { out.append(Fact(label: String(localized: "Early updates"), value: String(localized: "On", comment: "Switched on"))) }
         if !topics.isEmpty { out.append(Fact(label: String(localized: "Topics", comment: "Areas of Glideball the report mentions"), value: topics.joined(separator: ", "))) }
         return out
     }
