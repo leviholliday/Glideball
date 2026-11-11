@@ -102,7 +102,7 @@ final class GlobalHotKeys {
 
     private static var systemHotKeyCache: (at: CFAbsoluteTime, keys: [[String: Any]])?
 
-    /// macOS's own shortcut table, read at most every few seconds (the Overview asks on every redraw).
+    /// macOS's own shortcut table, read at most every few seconds (Settings › Shortcuts asks on every redraw).
     private static func systemHotKeys() -> [[String: Any]]? {
         let now = CFAbsoluteTimeGetCurrent()
         if let cache = systemHotKeyCache, now - cache.at < 5 { return cache.keys }

@@ -1021,9 +1021,7 @@
 
 "Launch sounds" = "실행 사운드";
 
-"Feedback" = "피드백";
 
-"Found a bug or have an idea? It goes straight to the developer." = "버그를 발견했거나 아이디어가 있나요? 개발자에게 바로 전달돼요.";
 
 "Closing this window keeps Glideball running. Click Glideball in the Dock to bring it back, or press ⌘Q to quit — your trackball then goes back to normal." = "이 윈도우를 닫아도 Glide는 계속 실행돼요. Dock에서 Glide를 클릭하면 다시 열리고, ⌘Q를 눌러 종료하면 트랙볼이 원래대로 돌아가요.";
 
@@ -1310,7 +1308,6 @@
 
 /* ---- ShortcutsCard.swift ---- */
 
-"Keyboard shortcuts" = "키보드 단축키";
 
 "They work in every app, even with this window closed. Click a shortcut to record a new one; Esc cancels." = "이 윈도우를 닫아도 모든 앱에서 작동해요. 단축키를 클릭하면 새로 기록할 수 있고, Esc를 누르면 취소돼요.";
 
@@ -1326,7 +1323,7 @@
 
 "Press the new shortcut, or Esc to cancel" = "새 단축키를 누르거나 Esc를 눌러 취소하세요";
 
-"No pause shortcut. You can still pause Glideball from its menu-bar icon or the switch at the top of this window." = "일시 정지 단축키가 없어요. 메뉴 막대 아이콘이나 이 윈도우 상단의 스위치로도 Glide를 일시 정지할 수 있어요.";
+"No pause shortcut. You can still pause Glideball from its menu-bar icon or the switch at the top of the main window." = "일시 정지 단축키가 없어요. 메뉴 막대 아이콘이나 메인 윈도우 상단의 스위치로도 Glide를 일시 정지할 수 있어요.";
 
 "Couldn't turn on %@ — another app already uses it. Choose a different shortcut." = "%@을(를) 켤 수 없어요 — 다른 앱에서 이미 사용 중이에요. 다른 단축키를 선택하세요.";
 
@@ -1549,7 +1546,7 @@
 "Glideball doesn't send anything, and that's fine." = "Glideball은 아무것도 보내지 않아요. 그래도 괜찮아요.";
 "If Glideball crashes, it sends me where in its code it happened and which versions of Glideball and macOS you have." = "Glideball이 충돌하면 코드의 어느 부분에서 일어났는지와 사용 중인 Glideball 및 macOS 버전을 보내요.";
 "Also, once a day: which trackball you have and a few of your settings, like the scroll mode and roughly how fast the pointer is. Never what you type, which apps you use, or your name." = "그리고 하루에 한 번: 어떤 트랙볼을 쓰는지와 스크롤 모드, 대략적인 포인터 속도 같은 몇 가지 설정을 보내요. 입력한 내용, 사용하는 앱, 이름은 절대 보내지 않아요.";
-"It isn't tied to your name, your email or your Mac. You can change this, or delete what was sent, any time in Overview › General." = "이름, 이메일, Mac과 연결되지 않아요. 개요 › 일반에서 언제든지 바꾸거나 보낸 데이터를 삭제할 수 있어요.";
+"It isn't tied to your name, your email or your Mac. You can change this, or delete what was sent, any time in Glideball › Settings › Privacy." = "이름, 이메일, Mac과 연결되지 않아요. Glideball › 설정 › 개인정보 보호에서 언제든지 바꾸거나 보낸 데이터를 삭제할 수 있어요.";
 "Thanks either way," = "어떤 선택이든 고마워요,";
 "What’s Sent" = "보내는 내용";
 "Opens the privacy page on the Glideball website" = "Glideball 웹사이트의 개인정보 보호 페이지를 열어요";
@@ -1565,3 +1562,9 @@
 "Couldn’t delete it right now. Check your connection and try again." = "지금은 삭제할 수 없어요. 연결을 확인하고 다시 시도해 주세요.";
 "Your install ID" = "설치 ID";
 "If I ever need this for support, I'll ask you for it. I can't see it otherwise." = "지원을 위해 필요하면 제가 요청할게요. 그 외에는 저도 볼 수 없어요.";
+
+/* The Settings window (Glideball › Settings…, ⌘,) and the hint on Overview */
+"Settings…" = "설정…";
+"Privacy" = "개인정보 보호";
+"Shortcuts" = "단축키";
+"Looking for Open at login, Language, Updates or Keyboard shortcuts? They've moved to Settings. Press ⌘, any time Glideball is in front." = "로그인 시 열기, 언어, 업데이트, 키보드 단축키를 찾고 있나요? 이제 설정에 있어요. Glideball이 앞에 있을 때 언제든 ⌘,를 누르세요.";

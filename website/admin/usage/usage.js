@@ -6,7 +6,7 @@
 //
 // Nothing here lists or shows install IDs (the server keeps only their
 // hashes, and never sends those either). To look at or delete one person's
-// data, they give Levi the ID from their app (Overview › General) and he
+// data, they give Levi the ID from their app (Settings › Privacy) and he
 // pastes it into "One install".
 //
 // (The site's CSP allows no inline styles or on*= attributes: bars are SVG
@@ -172,7 +172,7 @@ function render(d) {
     </div>
     ${section(`Crashes (${d.crashes.length} kind${d.crashes.length === 1 ? "" : "s"})`, crashList(d.crashes))}
     ${section("One install", `
-      <p class="hint">If someone asks to see or delete their data, they can copy their install ID from Overview › General in the app and send it to you. Paste it here. Nothing on this page lists IDs.</p>
+      <p class="hint">If someone asks to see or delete their data, they can copy their install ID from Settings › Privacy in the app and send it to you. Paste it here. Nothing on this page lists IDs.</p>
       <form class="range" id="one">
         <label class="grow">Install ID <input class="field small mono" id="one-id" autocomplete="off" spellcheck="false" placeholder="GB-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX" required></label>
         <button class="btn" type="submit">Look up</button>

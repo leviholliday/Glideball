@@ -35,7 +35,7 @@ struct SmallFavorCard: View {
                            detail: "Also, once a day: which trackball you have and a few of your settings, like the scroll mode and roughly how fast the pointer is. Never what you type, which apps you use, or your name.")
                 }
 
-                Text("It isn't tied to your name, your email or your Mac. You can change this, or delete what was sent, any time in Overview › General.")
+                Text("It isn't tied to your name, your email or your Mac. You can change this, or delete what was sent, any time in Glideball › Settings › Privacy.")
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -105,12 +105,14 @@ struct SmallFavorCard: View {
     }
 }
 
-/// Overview › General: the same choice as the card, any time, and "Delete my data".
+/// Settings › Privacy: the same choice as the card, any time, and "Delete my data".
 struct ShareDataRow: View {
-    let model: AppModel
     @Bindable private var share = ShareData.shared
     @State private var confirmingDelete = false
     @State private var copied = false
+    /// How the last Delete My Data went, shown under the buttons (the main
+    /// window, where toasts appear, may be closed).
+    @State private var deleted: Bool?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -181,6 +183,17 @@ struct ShareDataRow: View {
                     .help("Deletes the crash reports and stats this Mac has sent, and turns sharing off")
                 }
             }
+            if let deleted {
+                Label(deleted ? "Deleted. Glideball won’t send anything now." : "Couldn’t delete it right now. Check your connection and try again.",
+                      systemImage: deleted ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                    .font(.system(size: 11))
+                    .foregroundStyle(deleted ? AnyShapeStyle(.secondary) : AnyShapeStyle(.orange))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+        }
+        .onChange(of: share.choice) { _, now in
+            if now != .nothing { deleted = nil }   // sharing again: the old result no longer applies
         }
         .alert("Delete what this Mac has sent?", isPresented: $confirmingDelete) {
             Button("Delete", role: .destructive) { delete() }
@@ -199,14 +212,7 @@ struct ShareDataRow: View {
     }
 
     private func delete() {
-        share.deleteMyData { ok in
-            if ok {
-                model.show(.init(symbol: "checkmark.circle.fill", text: String(localized: "Deleted. Glideball won’t send anything now.")))
-            } else {
-                model.show(.init(symbol: "exclamationmark.triangle.fill",
-                                 text: String(localized: "Couldn’t delete it right now. Check your connection and try again."),
-                                 isError: true))
-            }
-        }
+        deleted = nil
+        share.deleteMyData { ok in deleted = ok }
     }
 }

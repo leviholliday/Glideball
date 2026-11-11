@@ -1,5 +1,5 @@
-// Opt-in crash reports and settings stats from the Mac app (Overview ›
-// General › Crash reports and stats, off unless the person says yes): what
+// Opt-in crash reports and settings stats from the Mac app (Settings ›
+// Privacy › Crash reports and stats, off unless the person says yes): what
 // /api/usage, /api/crash and the admin's Usage page share.
 //
 // Kept in one store, by key, so most questions are answered from the key

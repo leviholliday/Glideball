@@ -1021,9 +1021,7 @@
 
 "Launch sounds" = "Sons de abertura";
 
-"Feedback" = "Feedback";
 
-"Found a bug or have an idea? It goes straight to the developer." = "Achou um bug ou teve uma ideia? Vai direto para o desenvolvedor.";
 
 "Closing this window keeps Glideball running. Click Glideball in the Dock to bring it back, or press ⌘Q to quit — your trackball then goes back to normal." = "Fechar esta janela mantém o Glideball rodando. Clique no Glideball no Dock para trazê-lo de volta ou pressione ⌘Q para encerrar — seu trackball então volta ao normal.";
 
@@ -1310,7 +1308,6 @@
 
 /* ---- ShortcutsCard.swift ---- */
 
-"Keyboard shortcuts" = "Atalhos de teclado";
 
 "They work in every app, even with this window closed. Click a shortcut to record a new one; Esc cancels." = "Funcionam em qualquer app, mesmo com esta janela fechada. Clique em um atalho para gravar um novo; Esc cancela.";
 
@@ -1326,7 +1323,7 @@
 
 "Press the new shortcut, or Esc to cancel" = "Pressione o novo atalho, ou Esc para cancelar";
 
-"No pause shortcut. You can still pause Glideball from its menu-bar icon or the switch at the top of this window." = "Sem atalho para pausar. Você ainda pode pausar o Glideball pelo ícone na barra de menus ou pelo botão no topo desta janela.";
+"No pause shortcut. You can still pause Glideball from its menu-bar icon or the switch at the top of the main window." = "Sem atalho para pausar. Você ainda pode pausar o Glideball pelo ícone na barra de menus ou pelo botão no topo da janela principal.";
 
 "Couldn't turn on %@ — another app already uses it. Choose a different shortcut." = "Não foi possível ativar %@ — outro app já usa esse atalho. Escolha outro.";
 
@@ -1549,7 +1546,7 @@
 "Glideball doesn't send anything, and that's fine." = "O Glideball não envia nada, e tudo bem.";
 "If Glideball crashes, it sends me where in its code it happened and which versions of Glideball and macOS you have." = "Se o Glideball travar, ele me envia em que parte do código aconteceu e quais versões do Glideball e do macOS você tem.";
 "Also, once a day: which trackball you have and a few of your settings, like the scroll mode and roughly how fast the pointer is. Never what you type, which apps you use, or your name." = "Além disso, uma vez por dia: qual trackball você tem e alguns dos seus ajustes, como o modo de rolagem e mais ou menos a velocidade do ponteiro. Nunca o que você digita, quais apps você usa ou o seu nome.";
-"It isn't tied to your name, your email or your Mac. You can change this, or delete what was sent, any time in Overview › General." = "Nada disso fica ligado ao seu nome, ao seu e-mail ou ao seu Mac. Você pode mudar isso, ou apagar o que foi enviado, quando quiser em Visão Geral › Geral.";
+"It isn't tied to your name, your email or your Mac. You can change this, or delete what was sent, any time in Glideball › Settings › Privacy." = "Nada disso fica ligado ao seu nome, ao seu e-mail ou ao seu Mac. Você pode mudar isso, ou apagar o que foi enviado, quando quiser em Glideball › Ajustes › Privacidade.";
 "Thanks either way," = "Obrigado de qualquer forma,";
 "What’s Sent" = "O que é enviado";
 "Opens the privacy page on the Glideball website" = "Abre a página de privacidade no site do Glideball";
@@ -1565,3 +1562,9 @@
 "Couldn’t delete it right now. Check your connection and try again." = "Não foi possível apagar agora. Verifique sua conexão e tente de novo.";
 "Your install ID" = "Seu ID de instalação";
 "If I ever need this for support, I'll ask you for it. I can't see it otherwise." = "Se algum dia eu precisar dele para suporte, vou pedir para você. Fora isso, eu não consigo vê-lo.";
+
+/* The Settings window (Glideball › Settings…, ⌘,) and the hint on Overview */
+"Settings…" = "Ajustes…";
+"Privacy" = "Privacidade";
+"Shortcuts" = "Atalhos";
+"Looking for Open at login, Language, Updates or Keyboard shortcuts? They've moved to Settings. Press ⌘, any time Glideball is in front." = "Procurando “Abrir ao iniciar sessão”, “Idioma”, “Atualizações” ou “Atalhos de teclado”? Eles foram para os Ajustes. Pressione ⌘, sempre que o Glideball estiver na frente.";

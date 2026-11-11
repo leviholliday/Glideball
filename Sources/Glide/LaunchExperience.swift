@@ -45,7 +45,7 @@ final class LaunchExperience {
     private(set) var revealStart: Date?
     private(set) var revealDuration: Double = 0.45
 
-    /// "Launch sounds" in Overview › General. On by default.
+    /// "Launch sounds" in Settings › General. On by default.
     var soundsOn: Bool {
         didSet { defaults.set(soundsOn, forKey: Self.soundsKey) }
     }

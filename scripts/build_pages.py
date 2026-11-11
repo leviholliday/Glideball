@@ -489,7 +489,7 @@ def changelog_body(rels):
         for ver, bs in groups.items():
             parts.append(f"""      <section class="pg-section" aria-labelledby="beta-{attr(ver)}">
         <h2 id="beta-{attr(ver)}">In beta: {escape(ver)}</h2>
-        <p>These builds go to people who turned on the Beta program in the app (Overview › General › Beta program). They become the next release once they've had some use.</p>
+        <p>These builds go to people who turned on Early updates in the app (Glideball › Settings › Updates › Early updates). They become the next release once they've had some use.</p>
         <details class="rel-betas glass">
           <summary>{len(bs)} beta build{'s' if len(bs) != 1 else ''} of {escape(ver)}, newest first {icon('chevron')}</summary>
           <div class="rel-list">

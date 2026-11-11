@@ -1021,9 +1021,7 @@
 
 "Launch sounds" = "启动音效";
 
-"Feedback" = "反馈";
 
-"Found a bug or have an idea? It goes straight to the developer." = "发现了错误或有好点子？会直接发给开发者。";
 
 "Closing this window keeps Glideball running. Click Glideball in the Dock to bring it back, or press ⌘Q to quit — your trackball then goes back to normal." = "关闭此窗口后 Glideball 仍会继续运行。点按程序坞中的 Glideball 即可回来，或按 ⌘Q 退出，轨迹球随即恢复正常。";
 
@@ -1310,7 +1308,6 @@
 
 /* ---- ShortcutsCard.swift ---- */
 
-"Keyboard shortcuts" = "键盘快捷键";
 
 "They work in every app, even with this window closed. Click a shortcut to record a new one; Esc cancels." = "它们在所有 App 中都有效，即使关闭此窗口也一样。点按快捷键以录制新快捷键；按 Esc 取消。";
 
@@ -1326,7 +1323,7 @@
 
 "Press the new shortcut, or Esc to cancel" = "按下新快捷键，或按 Esc 取消";
 
-"No pause shortcut. You can still pause Glideball from its menu-bar icon or the switch at the top of this window." = "没有暂停快捷键。你仍可以从菜单栏图标或此窗口顶部的开关暂停 Glideball。";
+"No pause shortcut. You can still pause Glideball from its menu-bar icon or the switch at the top of the main window." = "没有暂停快捷键。你仍可以从菜单栏图标或主窗口顶部的开关暂停 Glideball。";
 
 "Couldn't turn on %@ — another app already uses it. Choose a different shortcut." = "无法开启 %@，另一个 App 已在使用它。请选择其他快捷键。";
 
@@ -1549,7 +1546,7 @@
 "Glideball doesn't send anything, and that's fine." = "Glideball 不会发送任何内容，这完全没问题。";
 "If Glideball crashes, it sends me where in its code it happened and which versions of Glideball and macOS you have." = "如果 Glideball 崩溃，它会告诉我崩溃发生在代码的哪个位置，以及你使用的 Glideball 和 macOS 版本。";
 "Also, once a day: which trackball you have and a few of your settings, like the scroll mode and roughly how fast the pointer is. Never what you type, which apps you use, or your name." = "另外每天一次：你使用的轨迹球型号，以及你的一些设置，比如滚动模式和指针的大致速度。绝不会发送你输入的内容、你使用的 App 或你的名字。";
-"It isn't tied to your name, your email or your Mac. You can change this, or delete what was sent, any time in Overview › General." = "这些都不会与你的名字、电子邮件或 Mac 关联。你可以随时在“概览”›“通用”中更改，或删除已发送的内容。";
+"It isn't tied to your name, your email or your Mac. You can change this, or delete what was sent, any time in Glideball › Settings › Privacy." = "这些都不会与你的名字、电子邮件或 Mac 关联。你可以随时在“Glideball”›“设置”›“隐私”中更改，或删除已发送的内容。";
 "Thanks either way," = "无论如何都谢谢你，";
 "What’s Sent" = "发送了什么";
 "Opens the privacy page on the Glideball website" = "打开 Glideball 网站上的隐私页面";
@@ -1565,3 +1562,9 @@
 "Couldn’t delete it right now. Check your connection and try again." = "暂时无法删除。请检查网络连接后重试。";
 "Your install ID" = "你的安装 ID";
 "If I ever need this for support, I'll ask you for it. I can't see it otherwise." = "如果我需要它来提供支持，会向你询问。除此之外我看不到它。";
+
+/* The Settings window (Glideball › Settings…, ⌘,) and the hint on Overview */
+"Settings…" = "设置…";
+"Privacy" = "隐私";
+"Shortcuts" = "快捷键";
+"Looking for Open at login, Language, Updates or Keyboard shortcuts? They've moved to Settings. Press ⌘, any time Glideball is in front." = "在找“登录时打开”“语言”“更新”或“键盘快捷键”吗？它们已移到“设置”中。只要 Glideball 在前台，随时按 ⌘, 即可打开。";

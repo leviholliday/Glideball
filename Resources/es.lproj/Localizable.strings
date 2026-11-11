@@ -1021,9 +1021,7 @@
 
 "Launch sounds" = "Sonidos de inicio";
 
-"Feedback" = "Comentarios";
 
-"Found a bug or have an idea? It goes straight to the developer." = "¿Has encontrado un error o tienes una idea? Llega directamente al desarrollador.";
 
 "Closing this window keeps Glideball running. Click Glideball in the Dock to bring it back, or press ⌘Q to quit — your trackball then goes back to normal." = "Al cerrar esta ventana, Glideball sigue funcionando. Haz clic en Glideball en el Dock para recuperarla o pulsa ⌘Q para salir: tu trackball volverá a la normalidad.";
 
@@ -1310,7 +1308,6 @@
 
 /* ---- ShortcutsCard.swift ---- */
 
-"Keyboard shortcuts" = "Funciones rápidas de teclado";
 
 "They work in every app, even with this window closed. Click a shortcut to record a new one; Esc cancels." = "Funcionan en todas las apps, incluso con esta ventana cerrada. Haz clic en una función rápida para grabar otra; Esc cancela.";
 
@@ -1326,7 +1323,7 @@
 
 "Press the new shortcut, or Esc to cancel" = "Pulsa la nueva función rápida, o Esc para cancelar";
 
-"No pause shortcut. You can still pause Glideball from its menu-bar icon or the switch at the top of this window." = "Sin función rápida de pausa. Puedes pausar Glideball desde su icono de la barra de menús o con el interruptor de la parte superior de esta ventana.";
+"No pause shortcut. You can still pause Glideball from its menu-bar icon or the switch at the top of the main window." = "Sin función rápida de pausa. Puedes pausar Glideball desde su icono de la barra de menús o con el interruptor de la parte superior de la ventana principal.";
 
 "Couldn't turn on %@ — another app already uses it. Choose a different shortcut." = "No se pudo activar %@: otra app ya la usa. Elige otra función rápida.";
 
@@ -1549,7 +1546,7 @@
 "Glideball doesn't send anything, and that's fine." = "Glideball no envía nada, y está bien así.";
 "If Glideball crashes, it sends me where in its code it happened and which versions of Glideball and macOS you have." = "Si Glideball se cuelga, me envía en qué parte de su código pasó y qué versiones de Glideball y macOS tienes.";
 "Also, once a day: which trackball you have and a few of your settings, like the scroll mode and roughly how fast the pointer is. Never what you type, which apps you use, or your name." = "Además, una vez al día: qué trackball tienes y algunos de tus ajustes, como el modo de desplazamiento y más o menos lo rápido que va el puntero. Nunca lo que escribes, qué apps usas ni tu nombre.";
-"It isn't tied to your name, your email or your Mac. You can change this, or delete what was sent, any time in Overview › General." = "No está vinculado a tu nombre, tu correo ni tu Mac. Puedes cambiarlo, o borrar lo que se envió, cuando quieras en Resumen › General.";
+"It isn't tied to your name, your email or your Mac. You can change this, or delete what was sent, any time in Glideball › Settings › Privacy." = "No está vinculado a tu nombre, tu correo ni tu Mac. Puedes cambiarlo, o borrar lo que se envió, cuando quieras en Glideball › Ajustes › Privacidad.";
 "Thanks either way," = "Gracias en cualquier caso,";
 "What’s Sent" = "Qué se envía";
 "Opens the privacy page on the Glideball website" = "Abre la página de privacidad del sitio web de Glideball";
@@ -1565,3 +1562,9 @@
 "Couldn’t delete it right now. Check your connection and try again." = "No se ha podido eliminar ahora mismo. Comprueba tu conexión y vuelve a intentarlo.";
 "Your install ID" = "Tu ID de instalación";
 "If I ever need this for support, I'll ask you for it. I can't see it otherwise." = "Si algún día lo necesito para ayudarte, te lo pediré. Si no, no puedo verlo.";
+
+/* The Settings window (Glideball › Settings…, ⌘,) and the hint on Overview */
+"Settings…" = "Ajustes…";
+"Privacy" = "Privacidad";
+"Shortcuts" = "Funciones rápidas";
+"Looking for Open at login, Language, Updates or Keyboard shortcuts? They've moved to Settings. Press ⌘, any time Glideball is in front." = "¿Buscas «Abrir al iniciar sesión», «Idioma», «Actualizaciones» o «Funciones rápidas de teclado»? Ahora están en Ajustes. Pulsa ⌘, siempre que Glideball esté delante.";

@@ -2,8 +2,8 @@ import AppKit
 import Carbon.HIToolbox
 import SwiftUI
 
-/// Overview › Keyboard shortcuts: Glide's system-wide shortcuts, recorded in place.
-struct KeyboardShortcutsCard: View {
+/// Settings › Shortcuts: Glide's system-wide shortcuts, recorded in place.
+struct ShortcutsSettingsPane: View {
     @Bindable var model: AppModel
     @State private var recording: GlobalShortcuts.Action?
     @State private var refusal: (action: GlobalShortcuts.Action, text: String)?
@@ -13,18 +13,25 @@ struct KeyboardShortcutsCard: View {
     private var shortcuts: GlobalShortcuts { model.config.globalShortcuts }
 
     var body: some View {
-        GlassCard(title: "Keyboard shortcuts", symbol: "command") {
-            ForEach(GlobalShortcuts.Action.allCases) { action in
-                if action != GlobalShortcuts.Action.allCases.first { Divider().opacity(0.4) }
-                row(action)
+        SettingsForm {
+            Section {
+                ForEach(GlobalShortcuts.Action.allCases) { action in
+                    row(action)
+                }
+            } footer: {
+                Text("They work in every app, even with this window closed. Click a shortcut to record a new one; Esc cancels.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
-            Text("They work in every app, even with this window closed. Click a shortcut to record a new one; Esc cancels.")
-                .font(.system(size: 11))
-                .foregroundStyle(.tertiary)
         }
         .onDisappear { stopRecording() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in
             stopRecording()
+        }
+        // Closing Settings only hides its window, so this view never disappears: stop there too.
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.willCloseNotification)) { _ in
+            if recording != nil { stopRecording() }
         }
     }
 
@@ -107,7 +114,7 @@ struct KeyboardShortcutsCard: View {
         guard recording != action else { return nil }
         guard let s = shortcuts[action] else {
             return action == .pause
-                ? Note(text: String(localized: "No pause shortcut. You can still pause Glideball from its menu-bar icon or the switch at the top of this window."))
+                ? Note(text: String(localized: "No pause shortcut. You can still pause Glideball from its menu-bar icon or the switch at the top of the main window."))
                 : nil
         }
         if GlobalHotKeys.shared.failed.contains(action) {

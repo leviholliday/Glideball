@@ -1,7 +1,7 @@
 import AppKit
 
 /// The languages Glide is translated into, and the per-app language choice
-/// (Overview › General › Language). The choice is the same setting as System
+/// (Glideball › Settings › General › Language). The choice is the same setting as System
 /// Settings › General › Language & Region › Applications: "AppleLanguages" in
 /// Glide's own defaults. macOS reads it at launch, so a change needs a relaunch.
 enum AppLanguage: String, CaseIterable, Identifiable {

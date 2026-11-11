@@ -30,7 +30,7 @@ I'm Levi, a student, and I make Glideball on my own. I built it after I got a Ke
 - A Mac with **macOS 26 Tahoe or later**, Apple silicon or Intel.
 - A **Kensington trackball** ([full list](https://glideball.netlify.app/trackballs/)):
   - **Expert Mouse (wired, USB):** fully supported. This is the one Glideball is built and tested on.
-  - **Other Kensington trackballs** (SlimBlade, Orbit and others): Glideball shows them as **Beta only**. Click **Turn On Beta**, or turn on **Overview › General › Beta program**, to try yours. The wireless Expert Mouse may show up either way, depending on the name it reports.
+  - **Other Kensington trackballs** (SlimBlade, Orbit and others): Glideball shows them as **Beta only**. Click **Turn On**, or turn on **Glideball › Settings › General › Other Kensington trackballs**, to try yours. The wireless Expert Mouse may show up either way, depending on the name it reports.
 - KensingtonWorks **uninstalled** (see [Install](#install) or [how to uninstall KensingtonWorks](https://glideball.netlify.app/help/uninstall-kensingtonworks/)). Your trackpad and other mice are never touched.
 
 The current release is **2.9.1**. A **2.10 beta** is out for people in the Beta program; where things differ, this page says so. Release notes for every version are on the [What's new](https://glideball.netlify.app/changelog/) page.
@@ -104,8 +104,8 @@ Also: a menu bar icon, a welcome tour (Help › Show Welcome Tour…), and badge
 
 ## Using Glideball
 
-- **Closing the window keeps Glideball running.** Bring it back from the Dock or the menu bar icon › Show Glideball. Turn on **Open at login** in Overview › General to have it start quietly.
-- **Updates:** when one is out, a button with the new version number appears at the top of the window. Choose **Install & Relaunch**; your permissions carry over. Want early builds? Turn on **Overview › General › Beta program**.
+- **Closing the window keeps Glideball running.** Bring it back from the Dock or the menu bar icon › Show Glideball. Turn on **Open at login** in Glideball › Settings (⌘,) › General to have it start quietly.
+- **Updates:** when one is out, a button with the new version number appears at the top of the window. Choose **Install & Relaunch**; your permissions carry over. Want early builds? Turn on **Glideball › Settings › Updates › Early updates**.
 - **Quit** with ⌘Q or the menu bar icon › Quit Glideball. In 2.9.1, Quit in the Dock is ignored on purpose; the 2.10 beta makes it work.
 - **New in the 2.10 beta:** an **ⓘ** button that opens About & Help (updates, feedback, the tour, links and an email row with your version info filled in); a **Show in Dock and app switcher** switch to run purely from the menu bar; a **Software Update** window for Check for Updates…; an Edit menu so copy and paste work in text fields; and pausing or quitting now puts the trackball back at its normal System Settings speed.
 - **Why do some files say "Glide"?** That was the app's name until 2.8, and its settings and folders kept it.
@@ -129,7 +129,7 @@ There's more on the website's [troubleshooting page](https://glideball.netlify.a
 - **Permissions are on, but nothing changes.** Remove Glideball from both lists in Privacy & Security and add it again, or run `tccutil reset All com.leviholliday.glide` in Terminal. Then restart Glideball.
 - **Where did the window go?** Click Glideball in the Dock or use the menu bar icon › Show Glideball.
 - **Can it import my KensingtonWorks settings?** No, but Quick assign on the Buttons tab sets things up quickly.
-- **Does it use much CPU or battery?** Very little. To use even less, set Overview › General › Performance to Efficient or Minimal.
+- **Does it use much CPU or battery?** Very little. To use even less, set Glideball › Settings › General › Performance to Efficient or Minimal.
 
 ## Linux & Windows (Preview)
 
@@ -145,7 +145,7 @@ Both act only on the Expert Mouse (other Kensington trackballs only with the Bet
 
 ## Get help
 
-- **In the app:** Help › Send Feedback…, the menu bar icon › Send Feedback…, or Overview › General › Send Feedback… (in the 2.10 beta, also the ⓘ button).
+- **In the app:** Help › Send Feedback… or the menu bar icon › Send Feedback… (in the 2.10 beta, also the ⓘ button).
 - **On the web:** the [feedback page](https://glideball.netlify.app/feedback/).
 - **Email:** [glideball@proton.me](mailto:glideball@proton.me)
 - **In public:** [GitHub issues](https://github.com/leviholliday/glideball/issues)

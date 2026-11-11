@@ -1021,9 +1021,7 @@
 
 "Launch sounds" = "Suono all’avvio";
 
-"Feedback" = "Feedback";
 
-"Found a bug or have an idea? It goes straight to the developer." = "Hai trovato un bug o hai un’idea? Arriva dritto allo sviluppatore.";
 
 "Closing this window keeps Glideball running. Click Glideball in the Dock to bring it back, or press ⌘Q to quit — your trackball then goes back to normal." = "Chiudendo questa finestra Glideball resta attivo. Fai clic su Glideball nel Dock per riaprirla, oppure premi ⌘Q per uscire: la trackball tornerà alla normalità.";
 
@@ -1310,7 +1308,6 @@
 
 /* ---- ShortcutsCard.swift ---- */
 
-"Keyboard shortcuts" = "Abbreviazioni da tastiera";
 
 "They work in every app, even with this window closed. Click a shortcut to record a new one; Esc cancels." = "Funzionano in ogni app, anche con questa finestra chiusa. Fai clic su un’abbreviazione per registrarne una nuova; Esc annulla.";
 
@@ -1326,7 +1323,7 @@
 
 "Press the new shortcut, or Esc to cancel" = "Premi la nuova abbreviazione, o Esc per annullare";
 
-"No pause shortcut. You can still pause Glideball from its menu-bar icon or the switch at the top of this window." = "Nessuna abbreviazione per la pausa. Puoi sempre mettere in pausa Glideball dall’icona nella barra dei menu o con l’interruttore in cima a questa finestra.";
+"No pause shortcut. You can still pause Glideball from its menu-bar icon or the switch at the top of the main window." = "Nessuna abbreviazione per la pausa. Puoi sempre mettere in pausa Glideball dall’icona nella barra dei menu o con l’interruttore in cima alla finestra principale.";
 
 "Couldn't turn on %@ — another app already uses it. Choose a different shortcut." = "Impossibile attivare %@: un’altra app la usa già. Scegli un’altra abbreviazione.";
 
@@ -1549,7 +1546,7 @@
 "Glideball doesn't send anything, and that's fine." = "Glideball non invia nulla, e va benissimo così.";
 "If Glideball crashes, it sends me where in its code it happened and which versions of Glideball and macOS you have." = "Se Glideball va in crash, mi invia il punto del suo codice in cui è successo e le versioni di Glideball e macOS che usi.";
 "Also, once a day: which trackball you have and a few of your settings, like the scroll mode and roughly how fast the pointer is. Never what you type, which apps you use, or your name." = "In più, una volta al giorno: quale trackball hai e alcune delle tue impostazioni, come la modalità di scorrimento e più o meno la velocità del puntatore. Mai quello che scrivi, le app che usi o il tuo nome.";
-"It isn't tied to your name, your email or your Mac. You can change this, or delete what was sent, any time in Overview › General." = "Niente di tutto questo è legato al tuo nome, alla tua email o al tuo Mac. Puoi cambiare idea, o eliminare ciò che è stato inviato, in qualsiasi momento in Panoramica › Generali.";
+"It isn't tied to your name, your email or your Mac. You can change this, or delete what was sent, any time in Glideball › Settings › Privacy." = "Niente di tutto questo è legato al tuo nome, alla tua email o al tuo Mac. Puoi cambiare idea, o eliminare ciò che è stato inviato, in qualsiasi momento in Glideball › Impostazioni › Privacy.";
 "Thanks either way," = "Grazie comunque,";
 "What’s Sent" = "Cosa viene inviato";
 "Opens the privacy page on the Glideball website" = "Apre la pagina sulla privacy del sito di Glideball";
@@ -1565,3 +1562,9 @@
 "Couldn’t delete it right now. Check your connection and try again." = "Impossibile eliminare in questo momento. Controlla la connessione e riprova.";
 "Your install ID" = "Il tuo ID di installazione";
 "If I ever need this for support, I'll ask you for it. I can't see it otherwise." = "Se mai mi servirà per l’assistenza, te lo chiederò. Altrimenti non posso vederlo.";
+
+/* The Settings window (Glideball › Settings…, ⌘,) and the hint on Overview */
+"Settings…" = "Impostazioni…";
+"Privacy" = "Privacy";
+"Shortcuts" = "Abbreviazioni";
+"Looking for Open at login, Language, Updates or Keyboard shortcuts? They've moved to Settings. Press ⌘, any time Glideball is in front." = "Cerchi «Apri al login», «Lingua», «Aggiornamenti» o «Abbreviazioni da tastiera»? Ora sono nelle Impostazioni. Premi ⌘, quando Glideball è in primo piano.";

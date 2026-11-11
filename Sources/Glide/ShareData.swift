@@ -3,8 +3,8 @@ import Observation
 
 /// What the person said Glideball may send Levi: nothing (the default), crash
 /// reports, or crash reports plus anonymous settings stats. Asked once on the
-/// "A small favor" card (`SmallFavorCard`), changed any time in Overview ›
-/// General (`ShareDataRow`).
+/// "A small favor" card (`SmallFavorCard`), changed any time in Settings ›
+/// Privacy (`ShareDataRow`).
 enum ShareChoice: String, CaseIterable, Identifiable {
     case nothing, crashes, crashesAndStats
     var id: String { rawValue }
@@ -30,7 +30,7 @@ enum ShareChoice: String, CaseIterable, Identifiable {
 ///   says yes, for this feature only, and kept only in this Mac's
 ///   preferences (never in `GlideConfig`, so it never syncs). It isn't made
 ///   from anything about the person or the Mac. The server keeps only its
-///   SHA-256, so only the person can see it (in Overview › General, to give
+///   SHA-256, so only the person can see it (in Settings › Privacy, to give
 ///   Levi if they ever want their data looked up or deleted). Delete my data
 ///   forgets it; saying yes again later makes a new one.
 /// - Crash reports: on launch, any crash of Glideball since the last look
@@ -59,7 +59,7 @@ final class ShareData {
         didSet {
             guard choice != oldValue else { return }
             defaults.set(choice.rawValue, forKey: Self.choiceKey)
-            asked = true   // chosen in Overview › General: the card needn't ask
+            asked = true   // chosen in Settings › Privacy: the card needn't ask
             if choice != .nothing && installID == nil, let id = RandomID.make() {
                 installID = id
                 defaults.set(id, forKey: Self.installIDKey)

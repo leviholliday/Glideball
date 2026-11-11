@@ -76,7 +76,7 @@ final class AppModel {
     /// Daily snapshots of the settings, kept two weeks, then monthly for a year.
     let backups = BackupStore()
 
-    /// The menu-bar icon (on unless turned off in Overview › General). Per-Mac.
+    /// The menu-bar icon (on unless turned off in Settings › General). Per-Mac.
     static var showMenuBarIcon: Bool {
         UserDefaults.standard.object(forKey: "GlideShowMenuBarIcon") as? Bool ?? true
     }

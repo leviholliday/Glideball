@@ -214,6 +214,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         // in the menu bar after choosing an item — so only Precision is offered.
         precisionItem = menu.addItem(withTitle: String(localized: "Precision"), action: #selector(togglePrecision), keyEquivalent: "")
         menu.addItem(.separator())
+        menu.addItem(withTitle: String(localized: "Settings…"), action: #selector(openSettings), keyEquivalent: ",")
         menu.addItem(withTitle: String(localized: "Check for Updates…"), action: #selector(checkForUpdates), keyEquivalent: "")
         menu.addItem(withTitle: String(localized: "Send Feedback…"), action: #selector(sendFeedback), keyEquivalent: "")
         menu.addItem(.separator())
@@ -256,6 +257,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     @objc private func checkForUpdates(_ sender: Any?) {
         showUpdatePanel()
+    }
+
+    private var settingsWindow: SettingsWindowController?
+
+    @objc private func openSettings(_ sender: Any?) { showSettings() }
+
+    /// Glideball › Settings… (⌘,): one window, brought forward if it's already
+    /// open. Works with the main window closed and with no Dock icon.
+    func showSettings(_ pane: SettingsPane? = nil) {
+        if settingsWindow == nil { settingsWindow = SettingsWindowController() }
+        settingsWindow?.show(pane)
     }
 
     private var updateWindow: NSWindow?
@@ -333,6 +345,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let appMenu = NSMenu()
         appMenu.addItem(withTitle: String(localized: "About Glideball"), action: #selector(showAbout), keyEquivalent: "").target = self
         appMenu.addItem(withTitle: String(localized: "Check for Updates…"), action: #selector(checkForUpdates), keyEquivalent: "").target = self
+        appMenu.addItem(.separator())
+        appMenu.addItem(withTitle: String(localized: "Settings…"), action: #selector(openSettings), keyEquivalent: ",").target = self
         appMenu.addItem(.separator())
         appMenu.addItem(withTitle: String(localized: "Hide Glideball"), action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
         let others = appMenu.addItem(withTitle: String(localized: "Hide Others"), action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h")

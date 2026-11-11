@@ -4,8 +4,8 @@ import Observation
 import SwiftUI
 import UniformTypeIdentifiers
 
-// Send Feedback (Help › Send Feedback…, the menu bar icon, and Overview ›
-// General): what kind it is, what happened, how much it matters, pictures of
+// Send Feedback (Help › Send Feedback…, the menu bar icon, and About &
+// Help): what kind it is, what happened, how much it matters, pictures of
 // it, Glide's settings and scroll log if you're happy to share them, and who
 // you are if you'd like a reply. The version and the Mac come along by
 // themselves. FeedbackClient sends it to the developer.
