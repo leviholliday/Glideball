@@ -26,7 +26,7 @@ The full plan and the audit behind it are in `.claude/plans/` (git-ignored).
 ## Rules for Claude sessions
 
 - Beta releases (`scripts/ship.sh X.Y-beta.N "notes" --beta`) may go out without Levi.
-- Website publishes and full releases: only with Levi present.
+- Website publishes: OK by default; Levi says when he doesn't want one. Full (non-beta) releases: ask first.
 - Public posts, emails, GitHub description changes: ask first.
 - If blocked for about ten minutes, message Levi on ntfy and stop.
 - Use subagents on the cheapest model that can do the job (Sonnet for mechanical work, Opus for
