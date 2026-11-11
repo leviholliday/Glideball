@@ -59,6 +59,8 @@ struct OverviewView: View {
                           subtitle: "Try features before they're finished — like support for other Kensington trackballs and early updates. You may hit bugs.",
                           symbol: "flask", isOn: $model.betaProgram)
                 Divider().opacity(0.4)
+                ShareDataRow(model: model)
+                Divider().opacity(0.4)
                 ToggleRow(title: "Celebrations",
                           subtitle: "A toast and a little confetti when you reach a milestone or set a personal best. Badges are kept either way.",
                           symbol: "party.popper", isOn: Bindable(model.delight).celebrationsOn)

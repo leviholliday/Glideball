@@ -11,11 +11,16 @@
 //   PATCH  /api/admin/feedback/:id  {status}
 //   DELETE /api/admin/feedback/:id
 //   GET    /api/admin/file?id&name              an attachment (Range requests too, for video)
+//   GET    /api/admin/usage?days=90             the Usage page: installs, settings, crashes
+//   POST   /api/admin/usage/lookup  {installId} one install's own data, when its owner gives Levi the ID
+//   POST   /api/admin/usage/forget  {installId} everything one install sent, likewise (IDs never go in a URL)
+//   DELETE /api/admin/usage/range?from&to       everything sent on those days (YYYY-MM-DD, both included)
 
 import crypto from "node:crypto";
 import {
   STATUSES, UPLOAD_WINDOW, items, files, misc, env, json, fail, sameSecret, randomToken, clientIP, allow, take, giveBack, forAdmin, changeItem, whole,
 } from "../lib/common.mjs";
+import { usageReport, deleteInstall, lookUpInstall, deleteDays, normalizeID, DAY } from "../lib/usage.mjs";
 
 export const config = { path: "/api/admin/*" };
 
@@ -133,6 +138,7 @@ async function route(req, context) {
     const item = await items().get(`items/${id}`, { type: "json" });
     return item ? serve(req, item, url.searchParams.get("name") ?? "") : fail(404, "No such feedback.");
   }
+  if (parts[0] === "usage") return usageRoute(req, parts, m);
   if (parts[0] === "feedback") {
     if (parts.length === 1 && m === "GET") return list();
     const id = parts[1];
@@ -144,6 +150,34 @@ async function route(req, context) {
       if (m === "PATCH") return update(req, item);
       if (m === "DELETE") return remove(item);
     }
+  }
+  return fail(404, "Not here.");
+}
+
+/** The Usage page's data, and its two ways of deleting. */
+async function usageRoute(req, parts, m) {
+  const url = new URL(req.url);
+  if (parts.length === 1 && m === "GET") {
+    const days = Number(url.searchParams.get("days") ?? 90);
+    if (!Number.isInteger(days) || days < 1 || days > 3660) return fail(400, "Pick between 1 and 3660 days.");
+    return json(await usageReport(days));
+  }
+  if ((parts[1] === "lookup" || parts[1] === "forget") && parts.length === 2 && m === "POST") {
+    // Only an ID someone gave Levi: nothing on the page lists any.
+    const id = normalizeID((await body(req)).installId);
+    if (!id) return fail(400, "That isn't a Glideball install ID (GB-, then eight groups of four).");
+    if (parts[1] === "lookup") return json(await lookUpInstall(id));
+    return json({ ok: true, deleted: await deleteInstall(id) });
+  }
+  if (parts[1] === "range" && parts.length === 2 && m === "DELETE") {
+    const from = url.searchParams.get("from") ?? "", to = url.searchParams.get("to") ?? "";
+    const real = (d) => {
+      const t = DAY.test(d) ? Date.parse(`${d}T00:00:00Z`) : NaN;
+      return Number.isFinite(t) && new Date(t).toISOString().startsWith(d);   // (not 2026-02-30)
+    };
+    if (!real(from) || !real(to)) return fail(400, "Pick both days.");
+    if (from > to) return fail(400, "The first day is after the last.");
+    return json({ ok: true, deleted: await deleteDays(from, to) });
   }
   return fail(404, "Not here.");
 }

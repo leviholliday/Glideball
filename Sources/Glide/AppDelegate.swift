@@ -37,6 +37,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let introPlays = LaunchExperience.shared.prepare(firstLaunch: firstLaunch, showsWindow: showsWindow)
         if firstLaunch && !introPlays { AppModel.shared.showWelcomeTour() }
         if showsWindow { showWindow() }
+        ShareData.shared.start()   // opt-in crash reports and stats; does nothing unless chosen
     }
 
     // Closing the window keeps Glide running so the trackball stays tuned.
@@ -160,6 +161,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         window?.makeKeyAndOrderFront(nil)
         NSApp.activate()
         reportWindowState()
+        // With no launch animation playing (a reopened window, a launch at
+        // login opened later), the card can come straight away; otherwise
+        // the animation offers it when it ends.
+        if LaunchExperience.shared.show == nil { AppModel.shared.offerSmallFavour() }
     }
 
     /// Tells the model what the window's doing, so it animates only while someone can see it.

@@ -1543,3 +1543,29 @@
 "Downloading Glideball %@…" = "Descargando Glideball %@…";
 "Installing…" = "Instalando…";
 "Glideball %@ is available" = "Glideball %@ está disponible";
+
+/* Opt-in crash reports and stats: the “A small favour” card and Overview › General */
+"A small favour" = "Un pequeño favor";
+"Hi, I'm Levi. I make Glideball on my own, and when it crashes on someone's Mac, I usually never hear about it. If you're okay with it, Glideball can send me a little anonymous information, so I can fix crashes and see which settings people actually use. It's off unless you pick something here." = "Hola, soy Levi. Hago Glideball yo solo, y cuando se cuelga en el Mac de alguien, casi nunca me entero. Si te parece bien, Glideball puede enviarme un poco de información anónima para que pueda arreglar los fallos y ver qué ajustes usa la gente de verdad. Está desactivado a menos que elijas algo aquí.";
+"Nothing" = "Nada";
+"Crash reports only" = "Solo informes de fallos";
+"Crash reports and settings stats" = "Informes de fallos y estadísticas de ajustes";
+"Glideball doesn't send anything, and that's fine." = "Glideball no envía nada, y está bien así.";
+"If Glideball crashes, it sends me where in its code it happened and which versions of Glideball and macOS you have." = "Si Glideball se cuelga, me envía en qué parte de su código pasó y qué versiones de Glideball y macOS tienes.";
+"Also, once a day: which trackball you have and a few of your settings, like the scroll mode and roughly how fast the pointer is. Never what you type, which apps you use, or your name." = "Además, una vez al día: qué trackball tienes y algunos de tus ajustes, como el modo de desplazamiento y más o menos lo rápido que va el puntero. Nunca lo que escribes, qué apps usas ni tu nombre.";
+"It isn't tied to your name, your email or your Mac. You can change this, or delete what was sent, any time in Overview › General." = "No está vinculado a tu nombre, tu correo ni tu Mac. Puedes cambiarlo, o borrar lo que se envió, cuando quieras en Resumen › General.";
+"Thanks either way," = "Gracias en cualquier caso,";
+"What’s Sent" = "Qué se envía";
+"Opens the privacy page on the Glideball website" = "Abre la página de privacidad del sitio web de Glideball";
+"Crash reports and stats" = "Informes de fallos y estadísticas";
+"Off. Glideball doesn't send anything." = "Desactivado. Glideball no envía nada.";
+"Sends a crash report if Glideball crashes. Nothing else." = "Envía un informe si Glideball se cuelga. Nada más.";
+"Sends crash reports, plus anonymous settings stats once a day." = "Envía informes de fallos y, una vez al día, estadísticas anónimas de ajustes.";
+"Delete My Data…" = "Eliminar mis datos…";
+"Deletes the crash reports and stats this Mac has sent, and turns sharing off" = "Elimina los informes de fallos y las estadísticas que ha enviado este Mac, y desactiva el envío";
+"Delete what this Mac has sent?" = "¿Eliminar lo que ha enviado este Mac?";
+"This deletes the crash reports and stats this Mac has sent to the Glideball server, and turns sharing off. It can't be undone." = "Se eliminarán los informes de fallos y las estadísticas que este Mac ha enviado al servidor de Glideball, y se desactivará el envío. No se puede deshacer.";
+"Deleted. Glideball won’t send anything now." = "Eliminado. Glideball ya no enviará nada.";
+"Couldn’t delete it right now. Check your connection and try again." = "No se ha podido eliminar ahora mismo. Comprueba tu conexión y vuelve a intentarlo.";
+"Your install ID" = "Tu ID de instalación";
+"If I ever need this for support, I'll ask you for it. I can't see it otherwise." = "Si algún día lo necesito para ayudarte, te lo pediré. Si no, no puedo verlo.";

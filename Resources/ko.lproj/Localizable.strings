@@ -1543,3 +1543,29 @@
 "Downloading Glideball %@…" = "Glideball %@ 다운로드 중…";
 "Installing…" = "설치 중…";
 "Glideball %@ is available" = "Glideball %@을(를) 사용할 수 있어요";
+
+/* Opt-in crash reports and stats: the “A small favour” card and Overview › General */
+"A small favour" = "작은 부탁";
+"Hi, I'm Levi. I make Glideball on my own, and when it crashes on someone's Mac, I usually never hear about it. If you're okay with it, Glideball can send me a little anonymous information, so I can fix crashes and see which settings people actually use. It's off unless you pick something here." = "안녕하세요, Levi입니다. Glideball은 혼자 만들고 있어서, 누군가의 Mac에서 충돌이 나도 대부분 알 수가 없어요. 괜찮으시다면 Glideball이 익명 정보를 조금 보내 줄 수 있어요. 그러면 충돌을 고치고 사람들이 실제로 어떤 설정을 쓰는지 알 수 있어요. 여기서 무언가를 고르지 않으면 꺼진 상태로 있어요.";
+"Nothing" = "보내지 않음";
+"Crash reports only" = "충돌 보고서만";
+"Crash reports and settings stats" = "충돌 보고서와 설정 통계";
+"Glideball doesn't send anything, and that's fine." = "Glideball은 아무것도 보내지 않아요. 그래도 괜찮아요.";
+"If Glideball crashes, it sends me where in its code it happened and which versions of Glideball and macOS you have." = "Glideball이 충돌하면 코드의 어느 부분에서 일어났는지와 사용 중인 Glideball 및 macOS 버전을 보내요.";
+"Also, once a day: which trackball you have and a few of your settings, like the scroll mode and roughly how fast the pointer is. Never what you type, which apps you use, or your name." = "그리고 하루에 한 번: 어떤 트랙볼을 쓰는지와 스크롤 모드, 대략적인 포인터 속도 같은 몇 가지 설정을 보내요. 입력한 내용, 사용하는 앱, 이름은 절대 보내지 않아요.";
+"It isn't tied to your name, your email or your Mac. You can change this, or delete what was sent, any time in Overview › General." = "이름, 이메일, Mac과 연결되지 않아요. 개요 › 일반에서 언제든지 바꾸거나 보낸 데이터를 삭제할 수 있어요.";
+"Thanks either way," = "어떤 선택이든 고마워요,";
+"What’s Sent" = "보내는 내용";
+"Opens the privacy page on the Glideball website" = "Glideball 웹사이트의 개인정보 보호 페이지를 열어요";
+"Crash reports and stats" = "충돌 보고서와 통계";
+"Off. Glideball doesn't send anything." = "꺼짐. Glideball은 아무것도 보내지 않아요.";
+"Sends a crash report if Glideball crashes. Nothing else." = "Glideball이 충돌하면 충돌 보고서를 보내요. 그 외에는 보내지 않아요.";
+"Sends crash reports, plus anonymous settings stats once a day." = "충돌 보고서와 함께 하루에 한 번 익명 설정 통계를 보내요.";
+"Delete My Data…" = "내 데이터 삭제…";
+"Deletes the crash reports and stats this Mac has sent, and turns sharing off" = "이 Mac이 보낸 충돌 보고서와 통계를 삭제하고 보내기를 꺼요";
+"Delete what this Mac has sent?" = "이 Mac이 보낸 데이터를 삭제할까요?";
+"This deletes the crash reports and stats this Mac has sent to the Glideball server, and turns sharing off. It can't be undone." = "이 Mac이 Glideball 서버로 보낸 충돌 보고서와 통계를 삭제하고 보내기를 꺼요. 되돌릴 수 없어요.";
+"Deleted. Glideball won’t send anything now." = "삭제했어요. 이제 Glideball은 아무것도 보내지 않아요.";
+"Couldn’t delete it right now. Check your connection and try again." = "지금은 삭제할 수 없어요. 연결을 확인하고 다시 시도해 주세요.";
+"Your install ID" = "설치 ID";
+"If I ever need this for support, I'll ask you for it. I can't see it otherwise." = "지원을 위해 필요하면 제가 요청할게요. 그 외에는 저도 볼 수 없어요.";

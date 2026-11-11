@@ -1543,3 +1543,29 @@
 "Downloading Glideball %@…" = "正在下载 Glideball %@…";
 "Installing…" = "正在安装…";
 "Glideball %@ is available" = "Glideball %@ 现已推出";
+
+/* Opt-in crash reports and stats: the “A small favour” card and Overview › General */
+"A small favour" = "一个小请求";
+"Hi, I'm Levi. I make Glideball on my own, and when it crashes on someone's Mac, I usually never hear about it. If you're okay with it, Glideball can send me a little anonymous information, so I can fix crashes and see which settings people actually use. It's off unless you pick something here." = "你好，我是 Levi。Glideball 是我一个人做的，所以当它在别人的 Mac 上崩溃时，我通常根本不知道。如果你愿意，Glideball 可以给我发送一点匿名信息，这样我就能修复崩溃，也能了解大家实际在用哪些设置。除非你在这里选择，否则它是关闭的。";
+"Nothing" = "不发送";
+"Crash reports only" = "仅崩溃报告";
+"Crash reports and settings stats" = "崩溃报告和设置统计";
+"Glideball doesn't send anything, and that's fine." = "Glideball 不会发送任何内容，这完全没问题。";
+"If Glideball crashes, it sends me where in its code it happened and which versions of Glideball and macOS you have." = "如果 Glideball 崩溃，它会告诉我崩溃发生在代码的哪个位置，以及你使用的 Glideball 和 macOS 版本。";
+"Also, once a day: which trackball you have and a few of your settings, like the scroll mode and roughly how fast the pointer is. Never what you type, which apps you use, or your name." = "另外每天一次：你使用的轨迹球型号，以及你的一些设置，比如滚动模式和指针的大致速度。绝不会发送你输入的内容、你使用的 App 或你的名字。";
+"It isn't tied to your name, your email or your Mac. You can change this, or delete what was sent, any time in Overview › General." = "这些都不会与你的名字、电子邮件或 Mac 关联。你可以随时在“概览”›“通用”中更改，或删除已发送的内容。";
+"Thanks either way," = "无论如何都谢谢你，";
+"What’s Sent" = "发送了什么";
+"Opens the privacy page on the Glideball website" = "打开 Glideball 网站上的隐私页面";
+"Crash reports and stats" = "崩溃报告和统计";
+"Off. Glideball doesn't send anything." = "关闭。Glideball 不会发送任何内容。";
+"Sends a crash report if Glideball crashes. Nothing else." = "Glideball 崩溃时发送崩溃报告。不发送其他内容。";
+"Sends crash reports, plus anonymous settings stats once a day." = "发送崩溃报告，并每天发送一次匿名设置统计。";
+"Delete My Data…" = "删除我的数据…";
+"Deletes the crash reports and stats this Mac has sent, and turns sharing off" = "删除这台 Mac 已发送的崩溃报告和统计，并关闭发送";
+"Delete what this Mac has sent?" = "要删除这台 Mac 已发送的内容吗？";
+"This deletes the crash reports and stats this Mac has sent to the Glideball server, and turns sharing off. It can't be undone." = "这会删除这台 Mac 发送到 Glideball 服务器的崩溃报告和统计，并关闭发送。此操作无法撤销。";
+"Deleted. Glideball won’t send anything now." = "已删除。Glideball 现在不会再发送任何内容。";
+"Couldn’t delete it right now. Check your connection and try again." = "暂时无法删除。请检查网络连接后重试。";
+"Your install ID" = "你的安装 ID";
+"If I ever need this for support, I'll ask you for it. I can't see it otherwise." = "如果我需要它来提供支持，会向你询问。除此之外我看不到它。";

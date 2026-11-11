@@ -1,12 +1,12 @@
 <!--
 title: Privacy · Glideball
-description: Glideball's privacy in plain words: the Mac app has no analytics and only goes online for update checks, iCloud sync you turn on, and feedback you send.
+description: Glideball's privacy in plain words: the Mac app has no tracking, sends crash reports or settings stats only if you say yes, and you can delete them any time.
 path: /privacy/
 crumb: Privacy
 nav:
 kicker: Privacy
 h1: Privacy
-lede: The Glideball app has no analytics, telemetry or tracking. It only goes online to check for updates, to sync through your own iCloud Drive if you turn that on, and to send feedback when you press Send. This website is separate, and is covered further down.
+lede: The Glideball app has no tracking and no account. It sends crash reports or anonymous settings stats only if you say yes. Otherwise it only goes online to check for updates, to sync through your own iCloud Drive if you turn that on, and to send feedback when you press Send. This website is separate, and is covered further down.
 updated: 2026-11-10
 -->
       <section class="pg-section prose" aria-labelledby="app-h">
@@ -16,9 +16,22 @@ updated: 2026-11-10
           <li><strong>Update checks.</strong> At launch and then once a day, it asks GitHub whether there's a newer version. GitHub sees that request like any other web request.</li>
           <li><strong>Downloading an update</strong>, from GitHub, when you choose Install.</li>
           <li><strong>iCloud sync</strong>, only if you turn it on. Your settings go to <em>your own</em> iCloud Drive. Sync never goes through a Glideball server.</li>
+          <li><strong>Crash reports and settings stats</strong>, only if you choose them. <a href="#app-data">What they include</a> is right below.</li>
           <li><strong>Feedback</strong>, only when you press Send. You can review it first. Your settings and the scroll log (scroll and button timings, no keystrokes) are attached only if you leave their switches on.</li>
         </ul>
         <p>That's all. Your activity totals (clicks, distances, personal bests) stay on your Mac. Glideball doesn't see what you type; <a href="/help/permissions/">the permissions page</a> explains exactly what it does see.</p>
+      </section>
+
+      <section class="pg-section prose" id="app-data" aria-labelledby="data-h">
+        <h2 id="data-h">Crash reports and settings stats (optional)</h2>
+        <p>When something goes wrong on someone's Mac, I usually never hear about it, so Glideball asks once whether it can send me some anonymous information. It asks after the welcome tour on a new Mac, or the first time you open it after updating. There are three choices, and it's off until you pick one:</p>
+        <ul>
+          <li><strong>Nothing.</strong> This is the default. Glideball doesn't send anything.</li>
+          <li><strong>Crash reports only.</strong> When Glideball crashes, macOS writes a crash report on your Mac. On the next launch, Glideball sends me a small part of it: the kind of crash, the message it left (if there is one), and the list of functions it was in when it crashed, plus your Glideball and macOS versions and whether your Mac has Apple silicon or Intel. Anything that looks like a file path, your user name or an email address is taken out first. Only crashes from after you said yes are sent.</li>
+          <li><strong>Crash reports and settings stats.</strong> The same, plus once a day: your Glideball and macOS versions, the language Glideball is in, Apple silicon or Intel, which Kensington trackballs are connected (their product name and ID), your scroll mode and Performance setting, roughly how fast your pointer is (a range like "4 to 8", not the exact number), whether the Beta program is on, how many app setups and button combos you have, and how many buttons are set to each kind of action (like "keyboard shortcut" or "right click", never which keys).</li>
+        </ul>
+        <p>Neither one ever includes what you type, which apps you use or have setups for, window titles, your name or email, or your Mac's serial number. To tell one install from another, each Mac that says yes gets a random ID made just for this. It isn't made from anything about you or your Mac, it isn't used for anything else, and it isn't synced to your other Macs. The server only keeps a scrambled version of it (a SHA-256 hash), so I can't see anyone's ID, and it doesn't keep IP addresses. You can see your own ID in Overview › General. If you ever want me to look up or delete what your Mac sent, you can send it to me; otherwise I have no way to tell which data is yours.</p>
+        <p>You can change your choice any time in <strong>Overview › General › Crash reports and stats</strong>. <strong>Delete My Data</strong>, in the same place, deletes everything that Mac has sent and turns sharing off. If you say yes again later, it gets a new ID. It's all stored privately on Netlify, like feedback, and only I can see it. I keep it until I delete it, so I can see how things change from one version to the next.</p>
       </section>
 
       <section class="pg-section prose" aria-labelledby="fb-h">

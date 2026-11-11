@@ -1543,3 +1543,29 @@
 "Downloading Glideball %@…" = "Glideball %@ をダウンロード中…";
 "Installing…" = "インストール中…";
 "Glideball %@ is available" = "Glideball %@ を利用できます";
+
+/* Opt-in crash reports and stats: the “A small favour” card and Overview › General */
+"A small favour" = "ちょっとしたお願い";
+"Hi, I'm Levi. I make Glideball on my own, and when it crashes on someone's Mac, I usually never hear about it. If you're okay with it, Glideball can send me a little anonymous information, so I can fix crashes and see which settings people actually use. It's off unless you pick something here." = "こんにちは、Leviです。Glideballはひとりで作っているので、誰かのMacでクラッシュしても、ほとんど知ることができません。もしよければ、Glideballから少しだけ匿名の情報を送ってもらえると、クラッシュを直したり、実際にどの設定が使われているかを知ったりできます。ここで何か選ばない限り、オフのままです。";
+"Nothing" = "何も送らない";
+"Crash reports only" = "クラッシュレポートのみ";
+"Crash reports and settings stats" = "クラッシュレポートと設定の統計";
+"Glideball doesn't send anything, and that's fine." = "Glideballは何も送信しません。それでまったく問題ありません。";
+"If Glideball crashes, it sends me where in its code it happened and which versions of Glideball and macOS you have." = "Glideballがクラッシュしたときに、コードのどこで起きたかと、お使いのGlideballとmacOSのバージョンを送信します。";
+"Also, once a day: which trackball you have and a few of your settings, like the scroll mode and roughly how fast the pointer is. Never what you type, which apps you use, or your name." = "さらに1日1回：お使いのトラックボールと、スクロールモードやポインタのおおよその速さなど、いくつかの設定を送信します。入力した内容、使っているApp、名前は決して送信しません。";
+"It isn't tied to your name, your email or your Mac. You can change this, or delete what was sent, any time in Overview › General." = "どれも名前、メールアドレス、Macとは結びつきません。「概要」›「一般」でいつでも変更したり、送信済みのデータを削除したりできます。";
+"Thanks either way," = "どちらを選んでもありがとうございます。";
+"What’s Sent" = "送信される内容";
+"Opens the privacy page on the Glideball website" = "GlideballのWebサイトのプライバシーページを開きます";
+"Crash reports and stats" = "クラッシュレポートと統計";
+"Off. Glideball doesn't send anything." = "オフ。Glideballは何も送信しません。";
+"Sends a crash report if Glideball crashes. Nothing else." = "Glideballがクラッシュしたときにレポートを送信します。それ以外は送信しません。";
+"Sends crash reports, plus anonymous settings stats once a day." = "クラッシュレポートと、1日1回匿名の設定統計を送信します。";
+"Delete My Data…" = "自分のデータを削除…";
+"Deletes the crash reports and stats this Mac has sent, and turns sharing off" = "このMacが送信したクラッシュレポートと統計を削除し、送信をオフにします";
+"Delete what this Mac has sent?" = "このMacが送信したデータを削除しますか？";
+"This deletes the crash reports and stats this Mac has sent to the Glideball server, and turns sharing off. It can't be undone." = "このMacがGlideballのサーバに送信したクラッシュレポートと統計を削除し、送信をオフにします。この操作は取り消せません。";
+"Deleted. Glideball won’t send anything now." = "削除しました。Glideballは今後何も送信しません。";
+"Couldn’t delete it right now. Check your connection and try again." = "今は削除できませんでした。接続を確認して、もう一度お試しください。";
+"Your install ID" = "インストールID";
+"If I ever need this for support, I'll ask you for it. I can't see it otherwise." = "サポートで必要になったときは、こちらからお尋ねします。それ以外では、私には見えません。";

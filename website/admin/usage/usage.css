@@ -1,0 +1,68 @@
+/* Glide Usage: what the Usage page adds to the Feedback page's look
+   (../feedback/app.css). One column on a phone. */
+
+a.icon-btn, a.link-btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.top select.field { width: auto; }
+
+.usage { max-width: 1180px; margin: 0 auto; padding: 18px 16px 60px; }
+.intro, .hint, .none { color: var(--dim); font-size: 13.5px; margin: 0 0 14px; }
+.none { color: var(--faint); margin: 0; }
+
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 14px; }
+.tile { border-radius: var(--radius); padding: 14px 16px; display: grid; gap: 2px; }
+.tile b { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.tile span { color: var(--dim); font-size: 12.5px; font-weight: 650; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 0 14px; }
+
+.cols { display: block; width: 100%; height: 140px; }
+.cols rect { fill: var(--accent); }
+.cols rect.zero { fill: var(--line-2); }
+.cols rect:hover { fill: var(--cyan); }
+.axis { display: flex; justify-content: space-between; color: var(--faint); font-size: 12px; margin-top: 6px; }
+
+.bars { display: grid; gap: 7px; }
+.bar-row { display: grid; grid-template-columns: minmax(0, 11em) 1fr auto; gap: 10px; align-items: center; font-size: 13.5px; }
+.bar-row .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-row .n { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; min-width: 3.5em; }
+.bar-row .pct { color: var(--faint); font-weight: 600; font-size: 12px; }
+.bar { display: block; width: 100%; height: 10px; border-radius: 3px; background: var(--panel-2); }
+.bar rect { fill: var(--accent); }
+
+.tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.tbl th { text-align: left; color: var(--faint); font-weight: 700; font-size: 12px; padding: 4px 8px 6px 0; border-bottom: 1px solid var(--line); }
+.tbl td { padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.tbl tr:last-child td { border-bottom: 0; }
+code { font-family: var(--mono); font-size: 12.5px; }
+
+.crash { border-top: 1px solid var(--line); padding: 10px 0; }
+.crash:first-of-type { border-top: 0; padding-top: 0; }
+.crash summary { cursor: pointer; display: grid; gap: 2px; list-style: none; }
+.crash summary::-webkit-details-marker { display: none; }
+.crash summary .t { font-weight: 750; overflow-wrap: anywhere; }
+.crash summary .m { color: var(--faint); font-size: 12.5px; font-weight: 600; }
+.crash .kv { margin: 12px 0; }
+.frames {
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.55;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin: 0;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.range { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: end; }
+.range label { display: grid; gap: 4px; font-size: 12.5px; font-weight: 700; color: var(--dim); }
+.range label.grow { flex: 1 1 360px; }
+.mono { font-family: var(--mono); }
+.kv.one { margin: 14px 0 8px; }
+
+@media (max-width: 860px) {
+  .grid { grid-template-columns: 1fr; }
+  .bar-row { grid-template-columns: minmax(0, 8em) 1fr auto; }
+  .top { flex-wrap: wrap; }
+}
