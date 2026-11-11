@@ -22,13 +22,19 @@ final class Telemetry: @unchecked Sendable {
     struct Sample {
         var ballSpeed: Double     // counts / second
         var notchRate: Double     // notches / second
+        /// Which way the ball rolled (counts / second, + = right / toward you), for the trackball picture.
+        var ballVX = 0.0, ballVY = 0.0
+        /// Which way the ring turned (notches / second, + = the way that scrolls up).
+        var notchVelocity = 0.0
         var pressed: Set<Int>
         var totals: Totals
     }
 
     private struct State {
         var ball = 0.0
+        var ballX = 0.0, ballY = 0.0
         var notches = 0.0
+        var notchSum = 0.0
         var pressed = Set<Int>()
         var tapped = Set<Int>()   // pressed since the last sample, even if already let go
         var totals = Totals()
@@ -51,6 +57,8 @@ final class Telemetry: @unchecked Sendable {
         let now = CACurrentMediaTime()
         state.withLock { s in
             s.ball += d
+            s.ballX += Double(dx)
+            s.ballY += Double(dy)
             s.totals.ballCounts += d
             if now - s.ballBinStart >= Self.ballWindow {
                 s.peaks.rollRate = max(s.peaks.rollRate, s.ballBin / Self.ballWindow)
@@ -61,10 +69,12 @@ final class Telemetry: @unchecked Sendable {
         }
     }
 
-    func addNotch() {
+    /// One ring detent; `direction` is the wheel value's sign (only the picture uses it).
+    func addNotch(direction: Int = 1) {
         let now = CACurrentMediaTime()
         state.withLock { s in
             s.notches += 1
+            s.notchSum += direction < 0 ? -1 : 1
             if now - s.notchBinStart >= Self.notchWindow {
                 s.peaks.spinRate = max(s.peaks.spinRate, s.notchBin / Self.notchWindow)
                 s.notchBinStart = now
@@ -117,10 +127,14 @@ final class Telemetry: @unchecked Sendable {
             s.lastSample = now
             // A click shorter than one sample still shows for a frame.
             let out = Sample(ballSpeed: s.ball / dt, notchRate: s.notches / dt,
+                             ballVX: s.ballX / dt, ballVY: s.ballY / dt, notchVelocity: s.notchSum / dt,
                              pressed: s.pressed.union(s.tapped), totals: s.totals)
             s.tapped = []
             s.ball = 0
+            s.ballX = 0
+            s.ballY = 0
             s.notches = 0
+            s.notchSum = 0
             return out
         }
     }

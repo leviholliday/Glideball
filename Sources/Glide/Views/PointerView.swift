@@ -1,51 +1,71 @@
 import Charts
 import SwiftUI
 
+/// Pointer: how fast the cursor moves for a roll of the ball. Everything here
+/// is about the ball, so every slider fill and the chart's line are ball blue.
 struct PointerView: View {
     @Bindable var model: AppModel
+    private static let defaults = GlideConfig()
 
     var body: some View {
-        HStack(alignment: .top, spacing: 18) {
-            VStack(spacing: 18) {
-                GlassCard(title: "Feel", symbol: "slider.horizontal.3") {
-                    TuningSlider(title: "Tracking speed", symbol: "gauge.with.dots.needle.67percent",
-                                 value: $model.config.trackingSpeed, range: 0.5...80, step: 0.5,
-                                 format: { $0.twoDigits },
-                                 lowLabel: "Slow", highLabel: "Ludicrous")
-                    Text("System Settings tops out at 3. Glideball lets the Expert Mouse go far past it.")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
-                }
-                GlassCard(title: "Presets", symbol: "wand.and.stars") {
-                    PointerPresetRow(speed: $model.config.trackingSpeed)
-                }
-                GlassCard(title: "Precision mode", symbol: "scope") {
-                    TuningSlider(title: "Precision speed", symbol: "tortoise",
-                                 value: $model.config.precisionSpeed, range: 0.25...3, step: 0.05,
-                                 format: { $0.twoDigits },
-                                 lowLabel: "Pixel-exact", highLabel: "macOS default")
-                    Text("Set a button to Precision in Buttons. Hold it (or toggle it on) and the cursor slows to this speed for fine work, then snaps back.")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Text("Applies only to the Expert Mouse — your other mice and trackpad keep their own settings. macOS still moves the cursor itself, so there's zero added lag.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 6)
+        VStack(alignment: .leading, spacing: Theme.Space.section) {
+            SectionBlock(title: "Feel",
+                         caption: "Applies only to the Expert Mouse; your other mice and trackpad keep their own settings. macOS still moves the cursor itself, so there's no added lag.") {
+                TuningSlider(title: "Tracking speed", symbol: "gauge.with.dots.needle.67percent",
+                             value: $model.config.trackingSpeed, range: 0.5...80, step: 0.5,
+                             format: { $0.twoDigits },
+                             lowLabel: "Slow", highLabel: "Ludicrous",
+                             hint: .verbatim(PointerHints.tracking(model.config.trackingSpeed)),
+                             tint: Theme.ball, defaultValue: Self.defaults.trackingSpeed)
             }
-            .frame(width: 340)
 
-            ResponseCurveCard(model: model)
+            PlainSection(title: "Presets") {
+                PointerPresetRow(speed: $model.config.trackingSpeed)
+            }
+
+            ResponseCurve(model: model)
+
+            SectionBlock(title: "Precision mode",
+                         caption: "Set a button to Precision in Buttons. Hold it (or toggle it on) and the cursor slows to this speed for fine work, then snaps back.") {
+                TuningSlider(title: "Precision speed", symbol: "tortoise",
+                             value: $model.config.precisionSpeed, range: 0.25...3, step: 0.05,
+                             format: { $0.twoDigits },
+                             lowLabel: "Pixel-exact", highLabel: "macOS default",
+                             hint: .verbatim(PointerHints.precision(model.config.precisionSpeed, tracking: model.config.trackingSpeed)),
+                             tint: Theme.ball, defaultValue: Self.defaults.precisionSpeed)
+            }
         }
     }
 }
 
-/// Shape of the speed curve (an approximation of macOS's acceleration),
-/// with a dot that follows the ball as you roll it.
-struct ResponseCurveCard: View {
+/// The one line under each Pointer slider: what its value does right now, from
+/// the same numbers the engine writes (`PointerTuner` sets the tracking value as is).
+enum PointerHints {
+    /// System Settings' own pointer-speed slider stops here.
+    static let systemMaximum = 3.0
+
+    static func tracking(_ speed: Double) -> String {
+        let ratio = speed / systemMaximum
+        if abs(ratio - 1) < 0.02 { return String(localized: "The same as System Settings’ fastest speed.", comment: "Hint under the tracking speed slider") }
+        if ratio < 1 { return String(localized: "\(ratio.wholePercent) of System Settings’ fastest speed.", comment: "Hint under the tracking speed slider; %@ is a percentage, like 50%") }
+        return String(localized: "\(ratio.decimals(1))× System Settings’ fastest speed.", comment: "Hint under the tracking speed slider; %@ is a multiple, like 1.7")
+    }
+
+    /// While Precision is on the engine uses this value in place of the tracking speed.
+    static func precision(_ precision: Double, tracking: Double) -> String {
+        guard precision < tracking else {
+            return String(localized: "As fast as your normal speed right now, so Precision won’t slow the cursor down.", comment: "Hint under the precision speed slider")
+        }
+        return String(localized: "While Precision is on, tracking drops to \((precision / tracking).wholePercent) of your normal speed.", comment: "Hint under the precision speed slider; %@ is a percentage, like 25%")
+    }
+}
+
+/// The shape of the speed curve (an approximation of macOS's acceleration), with
+/// a dot that follows the ball as you roll it. No card: a title, one trace in the
+/// ball's blue over hairline guides, and plain-word axes.
+struct ResponseCurve: View {
     let model: AppModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private struct P: Identifiable { let id: Int; let x: Double; let y: Double; let series: String }
 
@@ -57,12 +77,25 @@ struct ResponseCurveCard: View {
 
     var body: some View {
         // The live dot follows the ball on its own timeline; nothing else on the page is redrawn for it.
-        LiveTimeline(feed: model.live, maxFPS: 20) { feed, _ in
-            card(liveBall: feed.ballSpeed)
+        VStack(alignment: .leading, spacing: 10) {
+            SectionTitle(title: "Response curve")
+            LiveTimeline(feed: model.live, maxFPS: 20) { feed, _ in
+                chart(liveBall: feed.ballSpeed)
+            }
+            HStack(spacing: 14) {
+                legend(color: Theme.ball, text: "Your curve")
+                legend(color: Color.secondary.opacity(0.7), text: "No acceleration", dashed: true)
+                Spacer(minLength: 8)
+                Text("Roll the ball to see where you are")
+                    .font(Theme.Font.hint)
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+            }
         }
     }
 
-    private func card(liveBall: Double) -> some View {
+    private func chart(liveBall: Double) -> some View {
         let speed = model.config.trackingSpeed
         let xs = stride(from: 0.0, through: 6.0, by: 0.1).map { $0 }
         let curve = xs.enumerated().map { P(id: $0, x: $1, y: Self.cursorSpeed(ball: $1, tracking: speed), series: "Glideball") }
@@ -72,54 +105,83 @@ struct ResponseCurveCard: View {
         // Fixed scale so a faster setting visibly bends the curve higher.
         let yMax = Self.cursorSpeed(ball: 6, tracking: 6)
 
-        return GlassCard(title: "Response curve", symbol: "point.topleft.down.to.point.bottomright.curvepath") {
-            Chart {
-                ForEach(linear) { p in
-                    LineMark(x: .value("Ball", p.x), y: .value("Cursor", p.y), series: .value("Series", p.series))
-                        .foregroundStyle(.white.opacity(0.35))
-                        .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
-                }
-                ForEach(curve) { p in
-                    AreaMark(x: .value("Ball", p.x), y: .value("Cursor", p.y), series: .value("Series", p.series))
-                        .foregroundStyle(LinearGradient(colors: [.purple.opacity(0.45), .cyan.opacity(0.03)], startPoint: .top, endPoint: .bottom))
-                        .interpolationMethod(.monotone)
-                    LineMark(x: .value("Ball", p.x), y: .value("Cursor", p.y), series: .value("Series", p.series))
-                        .foregroundStyle(LinearGradient(colors: [.cyan, .purple], startPoint: .leading, endPoint: .trailing))
-                        .lineStyle(StrokeStyle(lineWidth: 3, lineCap: .round))
-                        .interpolationMethod(.monotone)
-                }
-                if liveBall > 0.02 {
-                    PointMark(x: .value("Ball", liveX), y: .value("Cursor", liveY))
-                        .symbolSize(180)
-                        .foregroundStyle(.white)
-                        .shadow(color: .cyan, radius: 8)
-                }
+        return Chart {
+            ForEach(linear) { p in
+                LineMark(x: .value("Ball", p.x), y: .value("Cursor", p.y), series: .value("Series", p.series))
+                    .foregroundStyle(Color.secondary.opacity(0.7))
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
             }
-            .chartXScale(domain: 0...6)
-            .chartYScale(domain: 0...yMax)
-            .chartPlotStyle { $0.clipped() }
-            .chartXAxisLabel("How fast you roll the ball")
-            .chartYAxisLabel("How fast the cursor moves")
-            .chartXAxis { AxisMarks(values: .automatic(desiredCount: 4)) { _ in AxisGridLine().foregroundStyle(.white.opacity(0.08)) } }
-            .chartYAxis { AxisMarks(values: .automatic(desiredCount: 4)) { _ in AxisGridLine().foregroundStyle(.white.opacity(0.08)) } }
-            .frame(height: 330)
-            .animation(.smooth(duration: 0.25), value: speed)
-
-            HStack(spacing: 14) {
-                legend(color: .cyan, text: "Your curve")
-                legend(color: .white.opacity(0.5), text: "No acceleration")
-                Spacer()
-                Text("Roll the ball to see where you are")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.tertiary)
+            ForEach(curve) { p in
+                AreaMark(x: .value("Ball", p.x), y: .value("Cursor", p.y), series: .value("Series", p.series))
+                    .foregroundStyle(LinearGradient(colors: [Theme.ball.opacity(0.16), Theme.ball.opacity(0)], startPoint: .top, endPoint: .bottom))
+                    .interpolationMethod(.monotone)
+                LineMark(x: .value("Ball", p.x), y: .value("Cursor", p.y), series: .value("Series", p.series))
+                    .foregroundStyle(Theme.ball)
+                    .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round))
+                    .interpolationMethod(.monotone)
+            }
+            if liveBall > 0.02 {
+                PointMark(x: .value("Ball", liveX), y: .value("Cursor", liveY))
+                    .symbol { LiveDot(color: Theme.ball) }
             }
         }
+        .chartXScale(domain: 0...6)
+        .chartYScale(domain: 0...yMax)
+        .chartPlotStyle { $0.clipped() }
+        .chartXAxisLabel(position: .bottom, alignment: .leading) {
+            Text("How fast you roll the ball").font(Theme.Font.hint).foregroundStyle(ChartGrid.text)
+        }
+        .chartYAxisLabel(position: .top, alignment: .leading) {
+            Text("How fast the cursor moves").font(Theme.Font.hint).foregroundStyle(ChartGrid.text)
+        }
+        .chartXAxis { AxisMarks(values: .automatic(desiredCount: 4)) { _ in ChartGrid.line } }
+        .chartYAxis { AxisMarks(values: .automatic(desiredCount: 4)) { _ in ChartGrid.line } }
+        .frame(height: 230)
+        .animation(reduceMotion ? nil : Theme.Motion.spring, value: speed)
     }
 
-    private func legend(color: Color, text: LocalizedStringKey) -> some View {
+    private func legend(color: Color, text: LocalizedStringKey, dashed: Bool = false) -> some View {
         HStack(spacing: 6) {
-            Capsule().fill(color).frame(width: 14, height: 4)
-            Text(text).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+            Group {
+                if dashed {
+                    Path { p in
+                        p.move(to: CGPoint(x: 0, y: 1))
+                        p.addLine(to: CGPoint(x: 16, y: 1))
+                    }
+                    .stroke(color, style: StrokeStyle(lineWidth: 1, dash: [3.5, 2.5]))
+                    .frame(height: 2)
+                } else {
+                    Capsule().fill(color).frame(height: 2)
+                }
+            }
+            .frame(width: 16)
+            Text(text).font(Theme.Font.hint.weight(.medium)).foregroundStyle(.secondary)
         }
+        .fixedSize()
+    }
+}
+
+// MARK: - Chart pieces
+
+/// Hairline guides for a chart: faint, half a point.
+enum ChartGrid {
+    /// Axis titles and numbers: the system's secondary text color (a chart's own `.secondary` comes out too faint).
+    static let text = Color(nsColor: .secondaryLabelColor)
+
+    static var line: some AxisMark {
+        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(Theme.gridLine)
+    }
+}
+
+/// Where you are right now on a chart: a plain dot in the part's color with a
+/// thin ring of the window's color so it reads over the trace. Never glows.
+struct LiveDot: View {
+    let color: Color
+
+    var body: some View {
+        Circle()
+            .fill(color)
+            .frame(width: 9, height: 9)
+            .overlay(Circle().strokeBorder(Theme.windowBackground, lineWidth: 1.5))
     }
 }

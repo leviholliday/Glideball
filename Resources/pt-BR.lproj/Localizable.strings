@@ -102,11 +102,6 @@
 
 /* ---- AppProfile.swift ---- */
 
-/* Pointer speed in an app setup */
-"Speed %@" = "Velocidade %@";
-
-"Default buttons" = "Botões padrão";
-
 "No combos" = "Sem combos";
 
 "Uses your main setup" = "Usa sua configuração principal";
@@ -202,7 +197,7 @@
 
 "Grabs what's under the pointer once you let go of the keys. Press again, or click, to drop." = "Pega o que está sob o ponteiro quando você solta as teclas. Pressione de novo, ou clique, para soltar.";
 
-"Include ⌘, ⌃, or ⌥ — %@ on its own would stop working everywhere else." = "Inclua ⌘, ⌃ ou ⌥ — %@ sozinho pararia de funcionar em todo o resto.";
+"Include ⌘, ⌃, or ⌥. %@ on its own would stop working everywhere else." = "Inclua ⌘, ⌃ ou ⌥. %@ sozinho pararia de funcionar em todo o resto.";
 
 /* First %@ is a keyboard shortcut like ⌃⌥⌘G; second is a mode name like “Precision” */
 "%@ is already the shortcut for %@." = "%@ já é o atalho de %@.";
@@ -246,7 +241,7 @@
 /* “Make it yours” is the setup checklist on Overview */
 "%lld of %lld on Make it yours" = "%lld de %lld em “Deixe com a sua cara”";
 
-"Every part of your trackball, set up your way." = "Cada parte do seu trackball, configurada do seu jeito.";
+"Every part of your trackball is set up." = "Cada parte do seu trackball está configurada.";
 
 "See them on Overview" = "Veja na Visão Geral";
 
@@ -487,15 +482,15 @@
 
 "Done: add an app setup" = "Feito: adicionar uma configuração de app";
 
-"Pointer tab — try a preset" = "Aba Ponteiro — experimente uma predefinição";
+"Pointer tab: try a preset" = "Aba Ponteiro: experimente uma predefinição";
 
-"Scrolling tab — Flywheel, Follow or Native" = "Aba Rolagem — Inércia, Seguir ou Nativo";
+"Scrolling tab: Flywheel, Follow or Native" = "Aba Rolagem: Inércia, Seguir ou Nativo";
 
-"Buttons tab — Quick assign takes two presses" = "Aba Botões — a Atribuição rápida leva dois toques";
+"Buttons tab: Quick assign takes two presses" = "Aba Botões: a Atribuição rápida leva dois toques";
 
-"Buttons tab — press two buttons together" = "Aba Botões — pressione dois botões juntos";
+"Buttons tab: press two buttons together" = "Aba Botões: pressione dois botões juntos";
 
-"Apps tab — a different feel per app" = "Aba Apps — uma sensação diferente para cada app";
+"Apps tab: a different feel per app" = "Aba Apps: uma sensação diferente para cada app";
 
 /* ---- SettingsSync.swift ---- */
 
@@ -529,8 +524,6 @@
 "When one of these apps is in front, Glideball switches to its setup. Anything left on “Main setup” follows your main settings." = "Quando um destes apps está em primeiro plano, o Glideball muda para a configuração dele. O que ficar em “Configuração principal” segue seus ajustes principais.";
 
 "Give an app its own setup" = "Dê a um app sua própria configuração";
-
-"Faster tracking in a design app, different buttons in your browser — Glideball switches the moment that app comes to the front, and back again when you leave. Pick only the parts you want to change; everything else follows your main setup." = "Rastreamento mais rápido em um app de design, outros botões no navegador — o Glideball troca no instante em que o app vem para a frente, e volta quando você sai. Escolha só as partes que quer mudar; o resto segue sua configuração principal.";
 
 "Open apps" = "Apps abertos";
 
@@ -581,7 +574,7 @@
 /* After “Following your main setup ·” */
 "default buttons" = "botões padrão";
 
-"Custom for this app — starts as a copy of your main setup" = "Personalizado para este app — começa como cópia da sua configuração principal";
+"Custom for this app · starts as a copy of your main setup" = "Personalizado para este app · começa como cópia da sua configuração principal";
 
 "Following your main setup · %@" = "Seguindo sua configuração principal · %@";
 
@@ -593,7 +586,7 @@
 
 "Quick assign" = "Atribuição rápida";
 
-"Press a trackball button — or hold two or three together for a combo — then press the keyboard shortcut it should send." = "Pressione um botão do trackball — ou segure dois ou três juntos para um combo — e depois o atalho de teclado que ele deve enviar.";
+"Press a trackball button, or hold two or three together for a combo, then press the keyboard shortcut it should send." = "Pressione um botão do trackball, ou segure dois ou três juntos para um combo, e depois o atalho de teclado que ele deve enviar.";
 
 "Assign" = "Atribuir";
 
@@ -627,8 +620,6 @@
 "Export" = "Exportar";
 
 "Drag to Finder, Messages, Mail…" = "Arraste para o Finder, Mensagens, Mail…";
-
-"Drag the file anywhere, or:" = "Arraste o arquivo para qualquer lugar ou:";
 
 "Save to File…" = "Salvar em Arquivo…";
 
@@ -669,9 +660,9 @@
 
 "This Mac" = "Este Mac";
 
-"Your settings live in iCloud Drive › Glide, so every Mac signed in to your Apple Account stays in step — no extra account. The pause switch stays per-Mac." = "Seus ajustes ficam em iCloud Drive › Glide, então todo Mac conectado à sua Conta Apple fica em sintonia — sem conta extra. O botão de pausa vale por Mac.";
+"Your settings live in iCloud Drive › Glide, so every Mac signed in to your Apple Account stays in step. No extra account. The pause switch stays per-Mac." = "Seus ajustes ficam em iCloud Drive › Glide, então todo Mac conectado à sua Conta Apple fica em sintonia. Sem conta extra. O botão de pausa vale por Mac.";
 
-"Off — settings stay on this Mac" = "Desativado — os ajustes ficam neste Mac";
+"Off: settings stay on this Mac" = "Desativado: os ajustes ficam neste Mac";
 
 "Syncing…" = "Sincronizando…";
 
@@ -682,7 +673,7 @@
 
 /* ---- ButtonsView.swift ---- */
 
-"Press a button on your trackball — its row lights up." = "Pressione um botão do trackball — a linha dele acende.";
+"Press a button on your trackball: its row lights up." = "Pressione um botão do trackball: a linha dele acende.";
 
 /* Button preset name */
 "Spaces + Wispr Flow" = "Espaços + Wispr Flow";
@@ -707,8 +698,6 @@
 
 /* ---- Components.swift ---- */
 
-"BETA" = "BETA";
-
 "Precise" = "Preciso";
 
 "macOS" = "macOS";
@@ -727,19 +716,17 @@
 
 "Make it yours" = "Deixe com a sua cara";
 
-"of %lld" = "de %lld";
-
 "You’ve made Glideball yours." = "O Glideball está com a sua cara.";
 
-"Speed, scrolling, buttons, a combo and an app setup — all tuned to you. Change anything, any time." = "Velocidade, rolagem, botões, um combo e uma configuração de app — tudo do seu jeito. Mude o que quiser, quando quiser.";
+"Speed, scrolling, buttons, a combo and an app setup are all done. Change anything, any time." = "Velocidade, rolagem, botões, um combo e uma configuração de app: tudo pronto. Mude o que quiser, quando quiser.";
 
 "Hide This Card" = "Ocultar Este Cartão";
 
-"Hide this checklist — it won’t come back" = "Ocultar esta lista — ela não volta";
+"Hide this checklist. It won’t come back" = "Ocultar esta lista. Ela não volta";
 
 "Hide checklist" = "Ocultar lista";
 
-"Done — open to change it" = "Feito — abra para mudar";
+"Done: open to change it" = "Feito: abra para mudar";
 
 /* %@ is a tab name */
 "Open the %@ tab" = "Abrir a aba %@";
@@ -797,10 +784,8 @@
 /* When a personal best was set; short (about 6 letters fit) */
 "today" = "hoje";
 
-"NEW" = "NOVO";
-
 /* Badge tooltip: what earns it, then the date */
-"%@ — earned %@" = "%@ — conquistada em %@";
+"%@, earned %@" = "%@, conquistada em %@";
 
 /* Badge tooltip: what earns it */
 "Goal: %@" = "Meta: %@";
@@ -830,7 +815,7 @@
 
 "What happened, what you expected, and how to make it happen again (if you know)." = "O que aconteceu, o que você esperava e como fazer acontecer de novo (se souber).";
 
-"Tell me more — how would it work, and what would it help with?" = "Conte mais — como funcionaria e no que ajudaria?";
+"Tell me more: how would it work, and what would it help with?" = "Conte mais: como funcionaria e no que ajudaria?";
 
 "Any details that help me answer." = "Qualquer detalhe que me ajude a responder.";
 
@@ -887,17 +872,17 @@
 
 "That email address doesn’t look right." = "Esse endereço de e-mail não parece certo.";
 
-"Your feedback didn’t send — open Send Feedback to try again." = "Seu feedback não foi enviado — abra Enviar Feedback para tentar de novo.";
+"Your feedback didn’t send. Open Send Feedback to try again." = "Seu feedback não foi enviado. Abra Enviar Feedback para tentar de novo.";
 
-"Feedback sent — thank you!" = "Feedback enviado — obrigado!";
+"Feedback sent. Thank you!" = "Feedback enviado. Obrigado!";
 
 "Send Feedback" = "Enviar Feedback";
 
-"Bugs, ideas, questions — it goes straight to the developer." = "Bugs, ideias, perguntas — vai direto para o desenvolvedor.";
+"Bugs, ideas and questions go straight to me." = "Bugs, ideias e perguntas vão direto para mim.";
 
 "Close" = "Fechar";
 
-"Hide — it keeps sending in the background" = "Ocultar — o envio continua em segundo plano";
+"Hide. It keeps sending in the background" = "Ocultar. O envio continua em segundo plano";
 
 "Attachments" = "Anexos";
 
@@ -907,9 +892,9 @@
 
 "Include the scroll log" = "Incluir o registro de rolagem";
 
-"The last %@ lines of timings from the scroll ring (scroll-log.txt) — no keystrokes or window contents." = "As últimas %@ linhas de tempos do anel de rolagem (scroll-log.txt) — sem teclas digitadas nem conteúdo de janelas.";
+"The last %@ lines of timings from the scroll ring (scroll-log.txt). No keystrokes or window contents." = "As últimas %@ linhas de tempos do anel de rolagem (scroll-log.txt). Sem teclas digitadas nem conteúdo de janelas.";
 
-"There’s no scroll log yet — scroll with the ring and it will have something to send." = "Ainda não há registro de rolagem — role com o anel e ele terá algo para enviar.";
+"There’s no scroll log yet. Scroll with the ring and it will have something to send." = "Ainda não há registro de rolagem. Role com o anel e ele terá algo para enviar.";
 
 "Drop screenshots or screen recordings here" = "Solte capturas ou gravações de tela aqui";
 
@@ -926,13 +911,13 @@
 /* Open panel button */
 "Attach" = "Anexar";
 
-"About you — optional" = "Sobre você — opcional";
+"About you (optional)" = "Sobre você (opcional)";
 
 "Name" = "Nome";
 
 "Your name" = "Seu nome";
 
-"Email — that doesn’t look right" = "E-mail — isso não parece certo";
+"Email: that doesn’t look right" = "E-mail: isso não parece certo";
 
 "Email, if you’d like a reply" = "E-mail, se quiser uma resposta";
 
@@ -973,25 +958,15 @@
 
 "Done" = "OK";
 
-"Reference %@" = "Referência %@";
-
-"Thanks — it went straight to the developer." = "Obrigado — foi direto para o desenvolvedor.";
-
 /* %@ is the sender's first name */
-"Thanks, %@ — it went straight to the developer." = "Obrigado, %@ — foi direto para o desenvolvedor.";
 
 /* %@ is an email address */
-"If there’s a question, the reply goes to %@." = "Se houver alguma pergunta, a resposta vai para %@.";
-
-"Every report is read. Add an email next time if you’d like a reply." = "Todo relato é lido. Inclua um e-mail da próxima vez se quiser uma resposta.";
 
 /* ---- LaunchViews.swift ---- */
 
 "Glideball is starting" = "O Glideball está iniciando";
 
 "Click or press Escape to skip" = "Clique ou pressione Esc para pular";
-
-"Make your Expert Mouse feel amazing" = "Deixe seu Expert Mouse incrível";
 
 "Click to skip" = "Clique para pular";
 
@@ -1003,29 +978,13 @@
 
 "Open at login" = "Abrir ao iniciar sessão";
 
-"Starts quietly in the background so your trackball is always tuned." = "Inicia discretamente em segundo plano para seu trackball estar sempre ajustado.";
-
 "Menu bar icon" = "Ícone na barra de menus";
-
-"Quick access to pause, precision and updates. Glideball keeps running either way — reopen it from the Dock." = "Acesso rápido a pausa, precisão e atualizações. O Glideball continua rodando de qualquer forma — reabra pelo Dock.";
 
 "Celebrations" = "Comemorações";
 
-"A toast and a little confetti when you reach a milestone or set a personal best. Badges are kept either way." = "Um aviso e um pouco de confete quando você atinge um marco ou bate um recorde pessoal. As medalhas ficam guardadas de qualquer jeito.";
-
-"A soft chime to go with them." = "Um som suave para acompanhar.";
-
-"Celebration sounds" = "Sons de comemoração";
-
-
-
-"Closing this window keeps Glideball running. Click Glideball in the Dock to bring it back, or press ⌘Q to quit — your trackball then goes back to normal." = "Fechar esta janela mantém o Glideball rodando. Clique no Glideball no Dock para trazê-lo de volta ou pressione ⌘Q para encerrar — seu trackball então volta ao normal.";
+"Closing this window keeps Glideball running. Click Glideball in the Dock to bring it back, or press ⌘Q to quit. Your trackball then goes back to normal." = "Fechar esta janela mantém o Glideball rodando. Clique no Glideball no Dock para trazê-lo de volta ou pressione ⌘Q para encerrar. Seu trackball então volta ao normal.";
 
 "Waiting for permissions…" = "Aguardando permissões…";
-
-"Kensington Expert Mouse" = "Kensington Expert Mouse";
-
-"Roll, spin, or click — it's live." = "Role, gire ou clique — é ao vivo.";
 
 "Plug in your Expert Mouse." = "Conecte seu Expert Mouse.";
 
@@ -1041,38 +1000,25 @@
 
 "Language" = "Idioma";
 
-"Glideball can speak a different language from the rest of your Mac." = "O Glideball pode falar um idioma diferente do resto do seu Mac.";
-
 "Relaunch to Apply" = "Reabrir para Aplicar";
 
-"System Default" = "Padrão do Sistema";
-
 "Updates" = "Atualizações";
-
-"Install %@" = "Instalar %@";
 
 "Check for Updates" = "Verificar Atualizações";
 
 /* Glideball 2.6 · 2.7 is ready to install */
-"%@ · %@ is ready to install" = "%@ · %@ pronto para instalar";
 
 /* %@ is “Glideball 2.6” */
-"%@ · You’re up to date ✓" = "%@ · Tudo atualizado ✓";
 
 /* %@ is “Glideball 2.6” */
-"%@ · Couldn’t reach GitHub — try again later" = "%@ · Não foi possível acessar o GitHub — tente mais tarde";
 
 /* %@ is “Glideball 2.6” */
-"%@ · Checking…" = "%@ · Verificando…";
 
 /* %@ is “Glideball 2.6” */
-"%@ · Checks automatically once a day" = "%@ · Verifica automaticamente uma vez por dia";
 
 /* ---- PointerView.swift ---- */
 
 "Feel" = "Sensação";
-
-"System Settings tops out at 3. Glideball lets the Expert Mouse go far past it." = "Os Ajustes do Sistema vão só até 3. O Glideball deixa o Expert Mouse ir muito além.";
 
 "Presets" = "Predefinições";
 
@@ -1086,7 +1032,7 @@
 
 "Set a button to Precision in Buttons. Hold it (or toggle it on) and the cursor slows to this speed for fine work, then snaps back." = "Defina um botão como Precisão em Botões. Segure-o (ou ative-o) e o cursor desacelera para esta velocidade em trabalhos finos, depois volta ao normal.";
 
-"Applies only to the Expert Mouse — your other mice and trackpad keep their own settings. macOS still moves the cursor itself, so there's zero added lag." = "Vale só para o Expert Mouse — seus outros mouses e o trackpad mantêm os próprios ajustes. O macOS continua movendo o cursor, então não há nenhum atraso extra.";
+"Applies only to the Expert Mouse; your other mice and trackpad keep their own settings. macOS still moves the cursor itself, so there's no added lag." = "Vale só para o Expert Mouse; seus outros mouses e o trackpad mantêm os próprios ajustes. O macOS continua movendo o cursor, então não há nenhum atraso extra.";
 
 "Response curve" = "Curva de resposta";
 
@@ -1114,13 +1060,13 @@
 /* Tab name */
 "Apps" = "Apps";
 
-"A Precision button is slowing the cursor — press it again (or pause Glideball) to stop" = "Um botão de Precisão está deixando o cursor mais lento — pressione de novo (ou pause o Glideball) para parar";
+"A Precision button is slowing the cursor. Press it again (or pause Glideball) to stop" = "Um botão de Precisão está deixando o cursor mais lento. Pressione de novo (ou pause o Glideball) para parar";
 
-"The left button is held by Drag lock — click, or press the Drag lock button again, to let go" = "O botão esquerdo está preso pela Trava de arrasto — clique, ou pressione o botão de Trava de arrasto de novo, para soltar";
+"The left button is held by Drag lock. Click, or press the Drag lock button again, to let go" = "O botão esquerdo está preso pela Trava de arrasto. Clique, ou pressione o botão de Trava de arrasto de novo, para soltar";
 
 "Ball scroll" = "Rolagem com a bola";
 
-"Pause or resume Glideball — also %@ from anywhere" = "Pausar ou retomar o Glideball — também com %@ de qualquer lugar";
+"Pause or resume Glideball (also %@ from anywhere)" = "Pausar ou retomar o Glideball (também com %@ de qualquer lugar)";
 
 "Pause or resume Glideball" = "Pausar ou retomar o Glideball";
 
@@ -1149,13 +1095,13 @@
 
 "Glideball needs these to read your trackball and adjust its buttons and scrolling. Until both are on, your trackball works normally and Glideball stays out of the way." = "O Glideball precisa delas para ler seu trackball e ajustar os botões e a rolagem. Até as duas estarem ativadas, seu trackball funciona normalmente e o Glideball fica fora do caminho.";
 
-"Accessibility — on" = "Acessibilidade — ativada";
+"Accessibility: on" = "Acessibilidade: ativada";
 
 "Allow Accessibility…" = "Permitir Acessibilidade…";
 
 "Allow Input Monitoring…" = "Permitir Monitoramento de Entrada…";
 
-"Input Monitoring — on" = "Monitoramento de Entrada — ativado";
+"Input Monitoring: on" = "Monitoramento de Entrada: ativado";
 
 "Downloading %lld%%" = "Baixando %lld%%";
 
@@ -1170,7 +1116,7 @@
 /* Update button after a failed install */
 "Retry" = "Tentar de Novo";
 
-"Glideball %@ is available — install it or see what's new" = "Glideball %@ disponível — instale ou veja as novidades";
+"Glideball %@ is available. Install it or see what's new" = "Glideball %@ disponível. Instale ou veja as novidades";
 
 /* ---- ScrollSettingsView.swift ---- */
 
@@ -1188,13 +1134,9 @@
 
 "macOS scrolling" = "Rolagem do macOS";
 
-"Glideball steps aside and lets macOS scroll the ring itself — the same system Kensington's driver handed its ticks to. Only the speed is adjustable." = "O Glideball sai de cena e deixa o próprio macOS rolar com o anel — o mesmo sistema para o qual o driver da Kensington mandava os passos. Só a velocidade é ajustável.";
-
 "Scroll speed" = "Velocidade de rolagem";
 
 "System Settings' scroll-speed slider goes up to 1.7. This only affects the Expert Mouse." = "O controle de velocidade de rolagem dos Ajustes do Sistema vai até 1,7. Isto só afeta o Expert Mouse.";
-
-"Every tick gives the page a push; friction slows it down. Gentle turns barely coast, hard spins fly — one rule, no mode switching. Tuned from Kensington's own scrolling, at twice its frame rate." = "Cada passo dá um empurrão na página; o atrito a desacelera. Giros leves mal deslizam, giros fortes voam — uma regra só, sem trocar de modo. Ajustado a partir da rolagem da própria Kensington, com o dobro da taxa de quadros.";
 
 "Slow-turn distance" = "Distância em giro lento";
 
@@ -1243,7 +1185,7 @@
 
 "Throw" = "Arremesso";
 
-"Spin fast and let go — the page glides and lands" = "Gire rápido e solte — a página desliza e pousa";
+"Spin fast and let go. The page glides and lands" = "Gire rápido e solte. A página desliza e pousa";
 
 "Throw to coast" = "Arremessar e deslizar";
 
@@ -1266,12 +1208,6 @@
 
 "Shift scrolls sideways" = "Shift rola para os lados";
 
-"macOS does the scrolling" = "O macOS cuida da rolagem";
-
-"Push and glide — Kensington's feel" = "Empurra e desliza — a sensação Kensington";
-
-"Page tracks the ring exactly" = "A página acompanha o anel exatamente";
-
 "Push per tick" = "Empurrão por passo";
 
 "Spin" = "Giro";
@@ -1282,17 +1218,13 @@
 
 "Points per tick" = "Pontos por passo";
 
-"Each push coasts for about %@ s before it fades out. Turn the ring the other way to stop it." = "Cada empurrão desliza por cerca de %@ s antes de sumir. Gire o anel no sentido oposto para pará-lo.";
-
 "After a flick" = "Depois de um peteleco";
 
 "Speed" = "Velocidade";
 
 "ms" = "ms";
 
-"A typical flick coasts about %lld pt and lands after %lld ms — then stops dead. Slow down before letting go and it doesn't coast at all. Turn the ring back to catch it." = "Um peteleco típico desliza uns %lld pt e pousa após %lld ms — e para de vez. Se desacelerar antes de soltar, ele nem desliza. Gire o anel para trás para segurar.";
-
-"Throw is off — the page stops the moment the ring stops." = "Arremesso desativado — a página para assim que o anel para.";
+"Throw is off. The page stops the moment the ring stops." = "Arremesso desativado. A página para assim que o anel para.";
 
 "×" = "×";
 
@@ -1304,37 +1236,21 @@
 
 /* ---- ShortcutsCard.swift ---- */
 
-
-"They work in every app, even with this window closed. Click a shortcut to record a new one; Esc cancels." = "Funcionam em qualquer app, mesmo com esta janela fechada. Clique em um atalho para gravar um novo; Esc cancela.";
-
-"Go back to %@" = "Voltar para %@";
-
-"Remove this shortcut" = "Remover este atalho";
-
-"Type shortcut…" = "Digite o atalho…";
-
-"Record Shortcut" = "Gravar Atalho";
-
 "Click, then press a new shortcut" = "Clique e pressione um novo atalho";
-
-"Press the new shortcut, or Esc to cancel" = "Pressione o novo atalho, ou Esc para cancelar";
-
-"No pause shortcut. You can still pause Glideball from its menu-bar icon or the switch at the top of the main window." = "Sem atalho para pausar. Você ainda pode pausar o Glideball pelo ícone na barra de menus ou pelo botão no topo da janela principal.";
-
-"Couldn't turn on %@ — another app already uses it. Choose a different shortcut." = "Não foi possível ativar %@ — outro app já usa esse atalho. Escolha outro.";
 
 /* Use the names System Settings shows in this language */
 "macOS uses %@ for one of its own shortcuts (System Settings › Keyboard › Keyboard Shortcuts), so it may never reach Glideball." = "O macOS usa %@ em um dos próprios atalhos (Ajustes do Sistema › Teclado › Atalhos de Teclado), então ele pode nunca chegar ao Glideball.";
 
-"Apps use ⌘ shortcuts like %@ too — while it's set, Glideball takes it from every app." = "Apps também usam atalhos com ⌘ como %@ — enquanto ele estiver definido, o Glideball o toma de todos os apps.";
-
 /* ---- WelcomeTourView.swift ---- */
 
-"Welcome Tour" = "Tour de Boas-vindas";
+/* Welcome Tour, spin-the-ring step: what the chosen scroll mode does */
+"macOS does the scrolling" = "O macOS cuida da rolagem";
 
-"Close the tour (esc) — reopen it from Help › Show Welcome Tour…" = "Fechar o tour (esc) — reabra em Ajuda › Mostrar Tour de Boas-vindas…";
+"Push and glide (Kensington's feel)" = "Empurra e desliza (a sensação Kensington)";
 
-"Close tour" = "Fechar tour";
+"Page tracks the ring exactly" = "A página acompanha o anel exatamente";
+
+"Close the tour (esc). Reopen it from Help › Show Welcome Tour…" = "Fechar o tour (esc). Reabra em Ajuda › Mostrar Tour de Boas-vindas…";
 
 "Skip for now" = "Pular por enquanto";
 
@@ -1350,16 +1266,6 @@
 
 "Welcome to Glideball" = "Boas-vindas ao Glideball";
 
-"Your Kensington trackball, tuned exactly the way you like it." = "Seu trackball Kensington, ajustado exatamente do jeito que você gosta.";
-
-"A faster pointer" = "Um ponteiro mais rápido";
-
-"A silky scroll ring" = "Um anel de rolagem sedoso";
-
-"Buttons that do more" = "Botões que fazem mais";
-
-"About a minute. Use Return or the arrow keys to move along." = "Cerca de um minuto. Use Return ou as setas para avançar.";
-
 "Glideball needs these to read your trackball and change what it does. Until both are on, your trackball works normally and Glideball stays out of the way." = "O Glideball precisa delas para ler seu trackball e mudar o que ele faz. Até as duas estarem ativadas, seu trackball funciona normalmente e o Glideball fica fora do caminho.";
 
 "Accessibility" = "Acessibilidade";
@@ -1370,9 +1276,9 @@
 
 "Lets Glideball tell your trackball apart from your other mice and trackpad." = "Permite que o Glideball diferencie seu trackball dos outros mouses e do trackpad.";
 
-"All set — Glideball can see your trackball." = "Tudo pronto — o Glideball já enxerga seu trackball.";
+"All set. Glideball can see your trackball." = "Tudo pronto. O Glideball já enxerga seu trackball.";
 
-"Switch Glideball on in each list in System Settings, then come back — the checkmarks update by themselves." = "Ative o Glideball em cada lista nos Ajustes do Sistema e volte — as marcas de seleção se atualizam sozinhas.";
+"Switch Glideball on in each list in System Settings, then come back. The checkmarks update by themselves." = "Ative o Glideball em cada lista nos Ajustes do Sistema e volte. As marcas de seleção se atualizam sozinhas.";
 
 "Allow…" = "Permitir…";
 
@@ -1380,7 +1286,7 @@
 
 "Press each button on your trackball." = "Pressione cada botão do seu trackball.";
 
-"Left click — always" = "Clique esquerdo — sempre";
+"Left click, always" = "Clique esquerdo, sempre";
 
 "Does: %@" = "Faz: %@";
 
@@ -1396,35 +1302,11 @@
 
 "%lld of 4 found. Shortcuts are paused while you try them, so nothing happens by surprise." = "%lld de 4 encontrados. Os atalhos ficam pausados enquanto você testa, então nada acontece de surpresa.";
 
-"Choose your scrolling" = "Escolha sua rolagem";
-
-"How the scroll ring moves the page. Try one, spin the ring, and switch whenever you like." = "Como o anel de rolagem move a página. Escolha um, gire o anel e troque quando quiser.";
-
 "How far the cursor travels when you roll the ball. macOS stops at its own setting; Glideball goes past it." = "Quanto o cursor anda quando você rola a bola. O macOS para no próprio limite; o Glideball vai além.";
 
 "Fine-tune both later in the Pointer and Scrolling tabs." = "Ajuste os dois depois nas abas Ponteiro e Rolagem.";
 
-"You're always in control" = "Você sempre está no controle";
-
-"Two promises that keep your Mac usable, whatever you set up." = "Duas promessas que mantêm seu Mac utilizável, não importa o que você configure.";
-
-"Pause instantly" = "Pause na hora";
-
-"Press ⌃⌥⌘G anywhere and Glideball pauses — your trackball goes straight back to plain macOS. Press it again to resume." = "Pressione ⌃⌥⌘G em qualquer lugar e o Glideball pausa — seu trackball volta direto ao macOS puro. Pressione de novo para retomar.";
-
-"Glideball is on — try it" = "O Glideball está ativo — experimente";
-
 "Glideball is paused" = "O Glideball está pausado";
-
-"Main click stays a left click" = "O clique principal continua sendo clique esquerdo";
-
-"The bottom-left button is always a left click, whatever else you remap — so Glideball can never lock you out." = "O botão inferior esquerdo é sempre um clique esquerdo, não importa o que você remapear — assim o Glideball nunca te deixa sem controle.";
-
-"Quitting Glideball also puts your trackball back to normal." = "Encerrar o Glideball também devolve seu trackball ao normal.";
-
-"You're all set" = "Tudo pronto";
-
-"Glideball keeps running when you close its window — click Glideball in the Dock to come back." = "O Glideball continua rodando quando você fecha a janela — clique no Glideball no Dock para voltar.";
 
 "Turn On" = "Ativar";
 
@@ -1445,7 +1327,7 @@
 "Every day of the last two weeks, then one a month for a year. Each backup is about a kilobyte, and only made when something changed." = "Todos os dias das últimas duas semanas e, depois, um por mês durante um ano. Cada backup tem cerca de um kilobyte e só é feito quando algo muda.";
 "Monthly" = "Mensais";
 "Off · %@ · %@" = "Desativados · %@ · %@";
-"On — nothing backed up yet" = "Ativados — nenhum backup ainda";
+"On, nothing backed up yet" = "Ativados, nenhum backup ainda";
 "Only fine-tuning differs (a value inside a mode or app setup)." = "Só diferem ajustes finos (um valor dentro de um modo ou configuração de app).";
 "Restore" = "Restaurar";
 "Restored the backup from %@" = "Backup de %@ restaurado";
@@ -1483,10 +1365,8 @@
 "Links" = "Links";
 "Show in Dock and app switcher" = "Mostrar no Dock e no seletor de apps";
 "Support info" = "Informações de suporte";
-"Turn off to run purely in the background. Open Glideball again from its menu-bar icon (which then stays on)." = "Desative para rodar só em segundo plano. Abra o Glideball de novo pelo ícone na barra de menus (que então continua ativo).";
 "Version %@ (%@)" = "Versão %@ (%@)";
 "Send feedback" = "Enviar feedback";
-"Ideas, bugs and questions go straight to the developer." = "Ideias, bugs e perguntas vão direto para o desenvolvedor.";
 "Welcome tour" = "Tour de boas-vindas";
 "A quick walk through what Glideball can do." = "Um passeio rápido pelo que o Glideball pode fazer.";
 "Website" = "Site";
@@ -1514,21 +1394,13 @@
 "Release Notes" = "Notas da Versão";
 "Software Update" = "Atualização de Software";
 "You have %@. Your settings and permissions carry over." = "Você tem a %@. Seus ajustes e permissões são mantidos.";
-"Checking for updates…" = "Procurando atualizações…";
-"You’re up to date!" = "Você está atualizado!";
-"Couldn’t check for updates" = "Não foi possível procurar atualizações";
-"Downloading Glideball %@…" = "Baixando o Glideball %@…";
-"Installing…" = "Instalando…";
-"Glideball %@ is available" = "Glideball %@ está disponível";
 
 /* ---- Split of the Beta program switch; support link ---- */
-"An early update — it may have bugs" = "Uma atualização antecipada — pode ter erros";
+"An early update. It may have bugs" = "Uma atualização antecipada. Pode ter erros";
 "An early update. It may have bugs." = "Uma atualização antecipada. Ela pode ter erros.";
 "Early updates" = "Atualizações antecipadas";
-"Get new versions before they go out to everyone. They've had less testing, so you may hit bugs." = "Receba as versões novas antes de chegarem a todo mundo. Elas foram menos testadas, então você pode encontrar erros.";
-"Let Glideball work with Kensington trackballs besides the Expert Mouse. I haven't tuned it on them yet, so you may hit bugs." = "Deixe o Glideball funcionar com outros trackballs da Kensington além do Expert Mouse. Ainda não ajustei para eles, então você pode encontrar erros.";
 "Made for Kensington trackballs. Glideball is an independent project and isn’t affiliated with Kensington." = "Feito para trackballs da Kensington. O Glideball é um projeto independente e não é afiliado à Kensington.";
-"Not fully tested yet — you may hit bugs" = "Ainda não foi totalmente testado — você pode encontrar erros";
+"Not fully tested yet. You may hit bugs" = "Ainda não foi totalmente testado. Você pode encontrar erros";
 "Other Kensington trackballs" = "Outros trackballs da Kensington";
 "Turn on Other Kensington trackballs to try Glideball with your %@." = "Ative “Outros trackballs da Kensington” para testar o Glideball com seu %@.";
 "Your %@ can work with Glideball if you turn on Other Kensington trackballs. You can do that at the end of the tour." = "Seu %@ pode funcionar com o Glideball se você ativar “Outros trackballs da Kensington”. Você pode fazer isso no fim do tour.";
@@ -1547,9 +1419,6 @@
 "What’s Sent" = "O que é enviado";
 "Opens the privacy page on the Glideball website" = "Abre a página de privacidade no site do Glideball";
 "Crash reports and stats" = "Relatórios de travamento e estatísticas";
-"Off. Glideball doesn't send anything." = "Desativado. O Glideball não envia nada.";
-"Sends a crash report if Glideball crashes. Nothing else." = "Envia um relatório se o Glideball travar. Nada mais.";
-"Sends crash reports, plus anonymous settings stats once a day." = "Envia relatórios de travamento e, uma vez por dia, estatísticas anônimas de ajustes.";
 "Delete My Data…" = "Apagar Meus Dados…";
 "Deletes the crash reports and stats this Mac has sent, and turns sharing off" = "Apaga os relatórios de travamento e as estatísticas que este Mac enviou, e desativa o envio";
 "Delete what this Mac has sent?" = "Apagar o que este Mac enviou?";
@@ -1557,7 +1426,6 @@
 "Deleted. Glideball won’t send anything now." = "Apagado. O Glideball não vai enviar mais nada.";
 "Couldn’t delete it right now. Check your connection and try again." = "Não foi possível apagar agora. Verifique sua conexão e tente de novo.";
 "Your install ID" = "Seu ID de instalação";
-"If I ever need this for support, I'll ask you for it. I can't see it otherwise." = "Se algum dia eu precisar dele para suporte, vou pedir para você. Fora isso, eu não consigo vê-lo.";
 
 /* The Settings window (Glideball › Settings…, ⌘,) and the hint on Overview */
 "Settings…" = "Ajustes…";
@@ -1573,15 +1441,7 @@
 
 "When Glideball opens" = "Quando o Glideball abre";
 
-"A short animation over the window. You can click or press Esc to skip it." = "Uma animação curta sobre a janela. Clique ou pressione Esc para pular.";
-
 "The Glideball mark shows for a moment, then the window fades in." = "A marca do Glideball aparece por um instante e depois a janela surge com um esmaecimento.";
-
-"The window opens with no animation at all." = "A janela abre sem nenhuma animação.";
-
-"Launch sound" = "Som de abertura";
-
-"A soft chime the first time Glideball opens after an update. Never when your Mac is muted." = "Um som suave na primeira vez que o Glideball abre depois de uma atualização. Nunca com o Mac sem som.";
 
 "View" = "Visualizar";
 
@@ -1595,3 +1455,253 @@
 
 "Why?" = "Por quê?";
 
+/* ---- Commands.swift ---- */
+
+"Pause Glideball" = "Pausar Glideball";
+
+"Resume Glideball" = "Retomar Glideball";
+
+"Use an app setup" = "Usar uma configuração de app";
+
+"Open Glideball" = "Abrir Glideball";
+
+/* ---- ExternalControlApp.swift ---- */
+
+/* “Allow Raycast and scripts” is a switch in Settings › General */
+
+/* The redesign (stage 1): sidebar, page headers, Overview and Buttons */
+"How your trackball’s doing today, and everything it’s done so far." = "Como está o seu trackball hoje, e tudo o que ele já fez.";
+"How fast the cursor moves when you roll the ball." = "A velocidade do ponteiro quando você rola a bola.";
+"How the page moves when you turn the scroll ring." = "Como a página se move quando você gira o anel de rolagem.";
+"What each button does, and combos you press together." = "O que cada botão faz, e combos que você pressiona juntos.";
+"Different settings for the apps you choose." = "Ajustes diferentes para os apps que você escolher.";
+"Keep your settings the same on all your Macs, and back them up." = "Mantenha seus ajustes iguais em todos os seus Macs e faça backup deles.";
+"%@ (⌘%lld)" = "%1$@ (⌘%2$lld)";
+"Glideball is on" = "O Glideball está ativado";
+"Resume" = "Retomar";
+"Your trackball works like a plain mouse until you turn Glideball back on." = "Seu trackball funciona como um mouse comum até você ativar o Glideball de novo.";
+"Glideball starts working as soon as it’s connected." = "O Glideball começa a funcionar assim que ele é conectado.";
+"Roll or spin to see it move" = "Role ou gire para ver o movimento";
+"Best %@" = "Recorde: %@";
+"Your buttons" = "Seus botões";
+"Hide" = "Ocultar";
+"New" = "Novo";
+"Your trackball, live" = "Seu trackball, ao vivo";
+"No trackball connected" = "Nenhum trackball conectado";
+"Default: %@" = "Padrão: %@";
+
+/* ---- Apps and Sync pages (redesign) ---- */
+
+"Active now" = "Ativa agora";
+
+"Backed up" = "Backup feito";
+
+"Checks iCloud Drive for changes from your other Macs and sends this Mac’s." = "Verifica o iCloud Drive em busca de mudanças dos seus outros Macs e envia as deste Mac.";
+
+"Drag the file anywhere, or save or share it." = "Arraste o arquivo para qualquer lugar, ou salve ou compartilhe.";
+
+"Glideball saves your current settings first, and you can undo right after." = "O Glideball salva primeiro seus ajustes atuais, e você pode desfazer logo depois.";
+
+"Glideball switches to it whenever that app is in front, and back when you leave." = "O Glideball passa para ela sempre que esse app estiver em primeiro plano e volta quando você sai.";
+
+"Hide older backups" = "Ocultar backups mais antigos";
+
+"Pointer %@" = "Ponteiro %@";
+
+"Restore the backup from %@?" = "Restaurar o backup de %@?";
+
+"Restore…" = "Restaurar…";
+
+"Show older backups" = "Mostrar backups mais antigos";
+
+"Shows what this backup would change" = "Mostra o que este backup mudaria";
+
+"Sync now" = "Sincronizar agora";
+
+"This deletes what you changed for %@: %@. It will follow your main setup again." = "Isso apaga o que você mudou para %@: %@. Ele voltará a seguir sua configuração principal.";
+
+"This replaces your current settings with that backup. Each line goes from what you have now to what the backup holds:" = "Isso substitui seus ajustes atuais pelos desse backup. Cada linha vai do que você tem agora para o que o backup contém:";
+
+"This replaces your current settings with that backup. Only fine-tuning values inside a mode or app setup differ." = "Isso substitui seus ajustes atuais pelos desse backup. Só diferem valores de ajuste fino dentro de um modo ou configuração de app.";
+
+"This replaces your current settings with the ones in this file. Glideball saves a backup first, and you can undo right after." = "Isso substitui seus ajustes atuais pelos deste arquivo. O Glideball faz um backup antes, e você pode desfazer logo depois.";
+
+"This setup is in effect right now." = "Esta configuração está em uso agora.";
+
+"Up to date" = "Atualizado";
+
+"What’s in the file" = "O que há no arquivo";
+
+"Your settings as a file" = "Seus ajustes como arquivo";
+
+"iCloud Drive" = "iCloud Drive";
+/* The redesign (stage 2): Pointer and Scrolling, with a line under each slider about what it does now */
+"%@ of System Settings’ fastest scroll speed." = "%@ da velocidade de rolagem mais rápida dos Ajustes do Sistema.";
+"%@ of System Settings’ fastest speed." = "%@ da velocidade mais rápida dos Ajustes do Sistema.";
+"%@× System Settings’ fastest scroll speed." = "%@× a velocidade de rolagem mais rápida dos Ajustes do Sistema.";
+"%@× System Settings’ fastest speed." = "%@× a velocidade mais rápida dos Ajustes do Sistema.";
+"The same as System Settings’ fastest scroll speed." = "Igual à velocidade de rolagem mais rápida dos Ajustes do Sistema.";
+"The same as System Settings’ fastest speed." = "Igual à velocidade mais rápida dos Ajustes do Sistema.";
+"A hard spin moves each notch %@× as far: about %lld pt." = "Um giro forte move cada passo %@× mais longe: cerca de %lld pt.";
+"A slow notch moves the page %lld pt." = "Um passo lento move a página %lld pt.";
+"A slow tick moves the page %lld pt, so ten ticks move it %lld pt." = "Um passo lento move a página %lld pt, então dez passos movem %lld pt.";
+"A typical flick coasts about %lld pt and lands after %lld ms." = "Um peteleco típico desliza uns %lld pt e pousa após %lld ms.";
+"A very hard spin (70 ticks a second) coasts about %@× farther than with reach turned off." = "Um giro muito forte (70 passos por segundo) desliza cerca de %@× mais longe do que com o alcance desativado.";
+"As fast as your normal speed right now, so Precision won’t slow the cursor down." = "No momento é tão rápida quanto a sua velocidade normal, então a precisão não deixará o cursor mais lento.";
+"At 40 ticks a second, each tick pushes the page about %lld pt." = "A 40 passos por segundo, cada passo empurra a página cerca de %lld pt.";
+"At your spin power even a very hard spin goes no farther than with reach turned off." = "Com a sua força do giro, nem um giro muito forte vai mais longe do que com o alcance desativado.";
+"Each push coasts for about %@ s before it fades out." = "Cada empurrão desliza por cerca de %@ s antes de sumir.";
+"Every notch moves the page the same distance, however fast you spin." = "Cada passo move a página a mesma distância, não importa a velocidade do giro.";
+"Every tick pushes the page and friction slows it down: gentle turns barely coast, hard spins fly." = "Cada passo empurra a página e o atrito a desacelera: giros leves mal deslizam, giros fortes voam.";
+"Fast spins push no harder than slow ones: %lld pt a tick." = "Giros rápidos não empurram mais do que os lentos: %lld pt por passo.";
+"Glideball steps aside and macOS scrolls the ring itself. Only the speed is adjustable." = "O Glideball sai de cena e o próprio macOS rola com o anel. Só a velocidade é ajustável.";
+"Put the pointer over the list and spin the ring." = "Coloque o ponteiro sobre a lista e gire o anel.";
+"Reach is off: every spin stops speeding up at Kensington’s top speed." = "O alcance está desativado: todo giro deixa de acelerar na velocidade máxima da Kensington.";
+"Rolling the ball one inch scrolls the page about %lld pt." = "Rolar a bola uma polegada rola a página cerca de %lld pt.";
+"Sets distance, power and glide to what Kensington’s own driver measured." = "Ajusta distância, força e deslize para o que o driver da própria Kensington mediu.";
+"Slow down before letting go and it doesn't coast at all. Turn the ring back to catch it." = "Se desacelerar antes de soltar, ele nem desliza. Gire o anel para trás para segurar.";
+"Smooth scrolling is off, so the page moves in plain steps." = "A rolagem suave está desativada, então a página se move em passos simples.";
+"The page catches up with the ring in about %lld ms." = "A página alcança o anel em cerca de %lld ms.";
+"The page follows the ring exactly and stops when you stop. A hard flick can still throw it." = "A página acompanha o anel exatamente e para quando você para. Um peteleco forte ainda pode arremessá-la.";
+"Turn the ring the other way to stop it." = "Gire o anel no sentido oposto para pará-lo.";
+"While Precision is on, tracking drops to %@ of your normal speed." = "Enquanto a precisão está ativada, a velocidade cai para %@ da sua velocidade normal.";
+/* The redesign (stage 2): launch, Welcome Tour, What’s New */
+"A new look" = "Um visual novo";
+"A ruler to try scrolling on" = "Uma régua para testar a rolagem";
+"Closing the window keeps Glideball running" = "Fechar a janela mantém o Glideball funcionando";
+"Crash reports, only if you want" = "Relatórios de falhas, só se você quiser";
+"Every version, on the Glideball website" = "Todas as versões, no site do Glideball";
+"For your Kensington trackball" = "Para o seu trackball Kensington";
+"Full changelog" = "Todas as novidades";
+"Give it a flick over the ruler and watch how far it glides." = "Gire o anel com um impulso sobre a régua e veja até onde ele desliza.";
+"Glideball › Settings (⌘,) has everything that used to sit at the bottom of Overview, plus a new set of soft sounds you can turn off with one switch." = "Glideball › Ajustes (⌘,) tem tudo o que ficava no fim da Visão Geral, além de novos sons suaves que você desliga com um só botão.";
+"Here’s what changed since 2.9.1. Most of it is how Glideball looks and sounds; your settings are all still here." = "Veja o que mudou desde a 2.9.1. Quase tudo é a aparência e o som do Glideball; seus ajustes continuam todos aí.";
+"How Glideball uses these, on the Glideball website" = "Para que o Glideball usa isso, no site do Glideball";
+"It works. %lld of 4 found." = "Funciona. %lld de 4 encontrados.";
+"Let’s set up your trackball. It takes about a minute." = "Vamos configurar o seu trackball. Leva cerca de um minuto.";
+"Open Settings › %@" = "Abrir Ajustes › %@";
+"Open it again from the Dock or the menu bar." = "Abra de novo pelo Dock ou pela barra de menus.";
+"Pause any time with %@" = "Pause quando quiser com %@";
+"Pausing puts your speed back" = "Pausar devolve a sua velocidade";
+"Pick a pointer speed" = "Escolha uma velocidade do ponteiro";
+"Press Return to go on, or use the arrow keys." = "Pressione Return para seguir ou use as setas.";
+"Raycast and scripts" = "Raycast e scripts";
+"Roll the ball after each one to feel the difference." = "Role a bola depois de cada uma para sentir a diferença.";
+"Settings get their own window" = "Os ajustes ganharam uma janela própria";
+"Show Me" = "Mostrar";
+"Skip Tour" = "Pular tour";
+"Spin the scroll ring" = "Gire o anel de rolagem";
+"There’s a sidebar now, with your trackball at the top. Roll the ball, turn the ring or press a button and it moves with you. Glideball has a new icon too." = "Agora há uma barra lateral com o seu trackball no topo. Role a bola, gire o anel ou aperte um botão e ele se move com você. O Glideball também tem um ícone novo.";
+"Turn on Allow Raycast and scripts and you can pause Glideball, switch Precision or change the scroll mode from Raycast or a glideball:// link." = "Ative “Permitir Raycast e scripts” para pausar o Glideball, alternar a Precisão ou mudar o modo de rolagem pelo Raycast ou por um link glideball://.";
+"What’s new in Glideball %@" = "Novidades do Glideball %@";
+"When you pause or quit Glideball, your trackball goes back to exactly the tracking speed in System Settings, so it always feels the same." = "Quando você pausa ou fecha o Glideball, seu trackball volta exatamente à velocidade de rastreamento dos Ajustes do Sistema, então ele sempre parece igual.";
+"You can let Glideball send me crash reports, and a few anonymous settings stats if you like. It’s off unless you pick it." = "Você pode deixar o Glideball me enviar relatórios de falhas e, se quiser, algumas estatísticas anônimas dos seus ajustes. Fica desligado a menos que você escolha.";
+"Your trackball goes straight back to plain macOS. Press it again to resume." = "Seu trackball volta na hora a funcionar como no macOS normal. Pressione de novo para retomar.";
+"You’re all set" = "Tudo pronto";
+/* Stage 2: the Settings window, the sheets, sounds and the app icon */
+"%@ is also “%@” in Glideball’s window. While it’s set here, it does this instead." = "%1$@ também é “%2$@” na janela do Glideball. Enquanto estiver definido aqui, ele faz isto no lugar.";
+"%@ is ready to install. Your settings and permissions carry over." = "A versão %@ está pronta para instalar. Seus ajustes e permissões continuam como estão.";
+"%@ was the shortcut for %@. That one has no shortcut now." = "%1$@ era o atalho de %2$@. Agora esse está sem atalho.";
+"A short animation over the window, a different one each time. Click or press Esc to skip it." = "Uma animação curta sobre a janela, diferente a cada vez. Clique ou pressione Esc para pular.";
+"A toast and a little confetti when you reach a milestone or set a personal best." = "Um aviso e um pouco de confete quando você alcança um marco ou bate um recorde pessoal.";
+"Allow Raycast and scripts" = "Permitir Raycast e scripts";
+"An app, a script or a web page opened a glideball:// link to change something. Glideball ignored it, because “Allow Raycast and scripts” is off." = "Um app, um script ou uma página da web abriu um link glideball:// para mudar algo. O Glideball ignorou, porque “Permitir Raycast e scripts” está desativado.";
+"Anywhere on your Mac" = "Em qualquer lugar do Mac";
+"App icon" = "Ícone do app";
+"Back to %@" = "Voltar para %@";
+"Back to no shortcut" = "Voltar para sem atalho";
+"Back to the defaults: %@ pauses Glideball, and the modes have no shortcut." = "Voltou ao padrão: %@ pausa o Glideball e os modos ficam sem atalho.";
+"Checking GitHub for a newer version…" = "Procurando uma versão mais nova no GitHub…";
+"Classic" = "Clássico";
+"Clear Search" = "Limpar Busca";
+"Close the window (Glideball keeps running)" = "Fechar a janela (o Glideball continua rodando)";
+"Copy the install ID" = "Copiar o ID de instalação";
+"Copy the reference, to quote if you write about this report" = "Copiar a referência, para citar se você escrever sobre este relato";
+"Copy the support info" = "Copiar as informações de suporte";
+"Couldn’t reach GitHub just now. Glideball tries again by itself once a day." = "Não foi possível acessar o GitHub agora. O Glideball tenta de novo sozinho uma vez por dia.";
+"Couldn’t turn on %@: another app already uses it. Choose a different one." = "Não foi possível ativar %@: outro app já o usa. Escolha outro.";
+"Crash reports, plus once a day your trackball and a few settings, like the scroll mode." = "Relatórios de travamento e, uma vez por dia, seu trackball e alguns ajustes, como o modo de rolagem.";
+"Delete my data" = "Apagar meus dados";
+"Deletes the crash reports and stats this Mac has sent, and turns sharing off." = "Apaga os relatórios de travamento e as estatísticas que este Mac enviou, e desativa o envio.";
+"Deleting…" = "Apagando…";
+"Each one plays once, even with Sounds off." = "Cada um toca uma vez, mesmo com os Sons desativados.";
+"Getting updates" = "Receber atualizações";
+"Glideball also works with Kensington’s other trackballs. I haven’t tuned it on them yet, so you may hit bugs." = "O Glideball também funciona com os outros trackballs da Kensington. Ainda não os ajustei neles, então você pode encontrar bugs.";
+"Glideball checks for updates by itself once a day." = "O Glideball procura atualizações sozinho uma vez por dia.";
+"Glideball doesn’t send anything." = "O Glideball não envia nada.";
+"Glideball follows your Mac’s language. Pick one here to use a different one just for Glideball." = "O Glideball segue o idioma do seu Mac. Escolha um aqui para usar outro só no Glideball.";
+"Glideball has a new look" = "O Glideball tem um visual novo";
+"Glideball runs in the background. Open it from its menu-bar icon, which stays on while this is off." = "O Glideball roda em segundo plano. Abra-o pelo ícone na barra de menus, que continua ativo com isto desativado.";
+"Glideball shows in the Dock and in ⌘-Tab like any other app." = "O Glideball aparece no Dock e no ⌘-Tab como qualquer outro app.";
+"Glideball starts quietly when you log in, so your trackball is ready straight away." = "O Glideball abre sem alarde quando você inicia sessão, e seu trackball já fica pronto de imediato.";
+"Glideball stays silent, including the chime after an update." = "O Glideball fica em silêncio, inclusive sem o sinal depois de uma atualização.";
+"Glideball switches the next time it opens." = "O Glideball troca na próxima vez que for aberto.";
+"Glideball uses %@, whatever language your Mac is in." = "O Glideball usa %@, qualquer que seja o idioma do seu Mac.";
+"Hear them" = "Ouvir";
+"How much does it get in the way?" = "O quanto isso atrapalha?";
+"I read every report myself. Add your email next time if you’d like a reply." = "Eu leio todos os relatos pessoalmente. Da próxima vez, informe seu e-mail se quiser uma resposta.";
+"I read every report myself. If I have a question, I’ll write to %@." = "Eu leio todos os relatos pessoalmente. Se eu tiver uma dúvida, escrevo para %@.";
+"Ideas, bugs and questions come straight to me." = "Ideias, bugs e dúvidas chegam direto até mim.";
+"If Glideball crashes, it sends where in its code it happened and your versions. Nothing else." = "Se o Glideball travar, ele envia em que parte do código aconteceu e suas versões. Mais nada.";
+"If I ever need it for support, I’ll ask you for it. I can’t tell whose it is otherwise." = "Se eu precisar dele para suporte, vou pedir a você. Sem isso, não tenho como saber de quem é.";
+"If that was you (from Raycast, say), turn it on in Settings › General." = "Se foi você (pelo Raycast, por exemplo), ative em Ajustes › Geral.";
+"In Glideball’s window" = "Na janela do Glideball";
+"Install %@…" = "Instalar %@…";
+"Just the Expert Mouse for now. Turn this on to try Glideball with Kensington’s other trackballs." = "Por enquanto, só o Expert Mouse. Ative isto para testar o Glideball com os outros trackballs da Kensington.";
+"Keep the classic one" = "Manter o clássico";
+"Language and performance" = "Idioma e desempenho";
+"Learn more" = "Saiba mais";
+"Lets Raycast and scripts pause Glideball, switch modes and change the pointer speed. It stays off unless you turn it on." = "Permite que Raycast e scripts pausem o Glideball, troquem de modo e mudem a velocidade do ponteiro. Fica desativado, a menos que você ative.";
+"Look & Sound" = "Aparência e som";
+"No icon in the menu bar. Open Glideball from the Dock to change things." = "Sem ícone na barra de menus. Abra o Glideball pelo Dock para mudar as coisas.";
+"No pause shortcut. You can still pause Glideball from its menu-bar icon or the switch in the sidebar." = "Sem atalho de pausa. Você ainda pode pausar o Glideball pelo ícone na barra de menus ou pelo botão na barra lateral.";
+"No shortcuts match “%@”." = "Nenhum atalho corresponde a “%@”.";
+"No toasts or confetti. Your badges and records are still kept on the Overview page." = "Sem avisos nem confete. Suas medalhas e recordes continuam na página Visão Geral.";
+"Not Now" = "Agora Não";
+"Off unless you pick something. Never your name, what you type or which apps you use." = "Desativado, a menos que você escolha algo. Nunca seu nome, o que você digita ou quais apps você usa.";
+"Open Settings" = "Abrir Ajustes";
+"Opening Glideball" = "Abrindo o Glideball";
+"Opens in your browser" = "Abre no seu navegador";
+"Opens this version’s notes on the Glideball website" = "Abre as notas desta versão no site do Glideball";
+"Orb" = "Orb";
+"Pause goes back to %@; the others to no shortcut" = "Pausar volta para %@; os outros ficam sem atalho";
+"Pause, Precision and Settings are one click away in the menu bar." = "Pausar, Precisão e Ajustes ficam a um clique na barra de menus.";
+"Pick the one you’d like in your Dock. You can change it any time in Settings › Look & Sound." = "Escolha o que você prefere no Dock. Você pode mudar quando quiser em Ajustes › Aparência e som.";
+"Play this sound" = "Tocar este som";
+"Press keys…" = "Pressione as teclas…";
+"Press the new keys now. Include ⌘, ⌃ or ⌥." = "Pressione as novas teclas agora. Inclua ⌘, ⌃ ou ⌥.";
+"Press the new shortcut. Delete clears it; Esc keeps the old one." = "Pressione o novo atalho. Delete apaga; Esc mantém o antigo.";
+"Raycast and scripts can pause Glideball, switch modes and change the pointer speed with glideball:// links." = "Raycast e scripts podem pausar o Glideball, trocar de modo e mudar a velocidade do ponteiro com links glideball://.";
+"Reference" = "Referência";
+"Restore Defaults" = "Restaurar Padrões";
+"Same as your Mac" = "Igual ao seu Mac";
+"Search shortcuts" = "Buscar atalhos";
+"Sent. Thank you!" = "Enviado. Obrigado!";
+"Sent. Thanks, %@!" = "Enviado. Obrigado, %@!";
+"Soft tones when you pause, switch a mode, save a change or reach a milestone, and a chime after an update. Never when your Mac is muted." = "Sons suaves quando você pausa, troca de modo, salva uma mudança ou alcança um marco, e um sinal depois de uma atualização. Nunca com o Mac sem som.";
+"Something tried to control Glideball" = "Algo tentou controlar o Glideball";
+"Sound" = "Som";
+"Sounds" = "Sons";
+"Switch pages" = "Alternar páginas";
+"The Dock and the app switcher show the Orb, the same as Finder." = "O Dock e o seletor de apps mostram o Orb, igual ao Finder.";
+"The Dock and the app switcher show the classic icon while Glideball runs. Finder shows the Orb either way." = "O Dock e o seletor de apps mostram o ícone clássico enquanto o Glideball roda. O Finder mostra o Orb de qualquer forma.";
+"The privacy page lists everything Glideball can send, with an example." = "A página de privacidade lista tudo o que o Glideball pode enviar, com um exemplo.";
+"The release notes for %@ on the Glideball website." = "As notas da versão %@ no site do Glideball.";
+"The window opens straight away, with no animation." = "A janela abre na hora, sem animação.";
+"These work in every app, even with Glideball’s window closed. Click one, then press the new keys. Delete clears it; Esc keeps it." = "Estes funcionam em qualquer app, mesmo com a janela do Glideball fechada. Clique em um e pressione as novas teclas. Delete apaga; Esc mantém.";
+"Use the new icon" = "Usar o novo ícone";
+"What’s been sent" = "O que foi enviado";
+"What’s new in this version" = "Novidades desta versão";
+"What’s sent" = "O que é enviado";
+"Works with" = "Funciona com";
+"You get new versions as soon as they’re out, before everyone else. They’ve had less testing, so you may hit bugs." = "Você recebe as versões novas assim que saem, antes de todo mundo. Elas tiveram menos testes, então você pode encontrar bugs.";
+"You get new versions once they’ve settled. Turn this on to try them early, while I’m still testing." = "Você recebe as versões novas depois que se estabilizam. Ative para testá-las antes, enquanto ainda estou testando.";
+"Your version" = "Sua versão";
+"You’ll open Glideball yourself after logging in. Until then, your trackball works like plain macOS." = "Você abrirá o Glideball por conta própria depois de iniciar sessão. Até lá, seu trackball funciona como no macOS puro.";
+"You’re up to date. Last checked %@." = "Tudo em dia. Última verificação: %@.";
+"Pause" = "Pausa";
+"Mode on" = "Modo ligado";
+"Mode off" = "Modo desligado";
+"Milestone" = "Marco";
+"Big milestone" = "Grande marco";
+"Look" = "Aparência";

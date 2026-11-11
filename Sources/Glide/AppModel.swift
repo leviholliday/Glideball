@@ -17,6 +17,7 @@ final class AppModel {
             if !config.enabled && oldValue.enabled {
                 engine.releaseHeldKeys()
                 engine.releaseAll()
+                pinnedProfileID = nil   // a pause hands app setups back to the app in front
             }
             pushToEngine()
             if config.globalShortcuts != oldValue.globalShortcuts { GlobalHotKeys.shared.apply(config.globalShortcuts) }
@@ -51,8 +52,12 @@ final class AppModel {
     var showingAbout = false
     /// The Welcome Tour over the main window (see WelcomeTour.swift).
     var showingWelcomeTour = false
-    /// The "A small favor" card over the main window (see `offerSmallFavor()`).
+    /// The "A small favor" card over the main window (see `showNextPrompt()`).
     var showingSmallFavor = false
+    /// What's New over the main window (see WhatsNew.swift).
+    var showingWhatsNew = false
+    /// "Glideball has a new look" over the main window (see `AppIconChoice`).
+    var showingIconChoice = false
     /// Work with Kensington's other trackballs. Per-Mac, never synced — see
     /// `OtherTrackballs`. Takes effect immediately.
     var otherTrackballs = OtherTrackballs.isEnabled {
@@ -60,6 +65,15 @@ final class AppModel {
             guard otherTrackballs != oldValue else { return }
             UserDefaults.standard.set(otherTrackballs, forKey: OtherTrackballs.defaultsKey)
             engine.setBetaProgram(otherTrackballs)
+        }
+    }
+    /// "Allow Raycast and scripts": glideball:// URLs may change things, and
+    /// status.json is kept. Per-Mac, never synced, off by default — see ExternalControl.swift.
+    var allowExternalControl = ExternalControlSetting.isEnabled {
+        didSet {
+            guard allowExternalControl != oldValue else { return }
+            UserDefaults.standard.set(allowExternalControl, forKey: ExternalControlSetting.defaultsKey)
+            ExternalControlCenter.shared.settingChanged()
         }
     }
     /// Offer prerelease updates. Per-Mac, never synced — see `EarlyUpdates`.
@@ -155,6 +169,7 @@ final class AppModel {
         }
         assignStep = .idle
         assignProfileID = nil
+        Sounds.shared.play(.tick)
     }
 
     /// Returns true when it made or changed a combo.
@@ -216,6 +231,9 @@ final class AppModel {
     @ObservationIgnored private var lastTotalsPublish = 0.0
     @ObservationIgnored private var smoothedBall = 0.0
     @ObservationIgnored private var smoothedNotch = 0.0
+    @ObservationIgnored private var smoothedRollX = 0.0
+    @ObservationIgnored private var smoothedRollY = 0.0
+    @ObservationIgnored private var smoothedRing = 0.0
     @ObservationIgnored private var applyingRemoteConfig = false
 
     private init() {
@@ -234,7 +252,14 @@ final class AppModel {
         engine.onModes = { [weak self] m in self?.modes = m }
         delight.reloadHistory(currentKey: totalsDay)
         delight.present = { [weak self] in self?.show($0) }
-        delight.canCelebrate = { [weak self] in self?.showingWelcomeTour == false }
+        delight.canCelebrate = { [weak self] in
+            self?.showingWelcomeTour == false && self?.showingWhatsNew == false && self?.showingIconChoice == false
+        }
+        // A soft tick with the "Saved" pill, only while someone's looking at the window
+        // (not for a pointer speed set from Raycast), and never over a sound that just played.
+        delight.onSaved = { [weak self] in
+            if self?.windowVisible == true { Sounds.shared.play(.tick, quietAfter: 1.5) }
+        }
         backups.currentConfig = { AppModel.shared.config }
         // `--render-ui` and `--self-test`: a model with nothing live — no engine,
         // timers, observers, sync or update checks (see Sandbox.swift).
@@ -273,13 +298,21 @@ final class AppModel {
         didSet { if isEditingProfiles != oldValue { pushToEngine() } }
     }
     @ObservationIgnored private var pushedConfig = GlideConfig()
+    /// An app setup chosen with glideball://app-setup: it's used whatever app is
+    /// in front, until "automatic", a pause or a quit. Never saved.
+    var pinnedProfileID: String? {
+        didSet { if pinnedProfileID != oldValue { pushToEngine() } }
+    }
     /// While the Welcome Tour asks you to press each button, run without remaps or combos.
     @ObservationIgnored var mappingsSuspended = false
 
     /// Whose setup the engine should run: the frontmost app's, or — while
     /// Glide itself is in front — the one open on the Apps tab, else the main setup.
+    /// A pinned setup (`pinnedProfileID`) wins over the app in front, not over the Apps tab.
     private var profileTarget: String? {
-        glideIsFrontmost ? (isEditingProfiles ? selectedProfileID : nil) : frontmostBundleID
+        if glideIsFrontmost && isEditingProfiles { return selectedProfileID }
+        if let pinned = pinnedProfileID, config.profile(for: pinned) != nil { return pinned }
+        return glideIsFrontmost ? nil : frontmostBundleID
     }
 
     /// The app setup in effect right now, if any.
@@ -290,6 +323,15 @@ final class AppModel {
         let id = app?.bundleIdentifier
         if glideIsFrontmost != isGlide { glideIsFrontmost = isGlide }
         if frontmostBundleID != id { frontmostBundleID = id }
+        pushToEngine()
+    }
+
+    /// `--render-ui` only: says who's in front (Glideball itself, or another app), as the
+    /// workspace notification would in the real app.
+    func sandboxFrontmost(glide: Bool, bundleID: String? = nil) {
+        guard Sandbox.isActive else { return }
+        glideIsFrontmost = glide
+        frontmostBundleID = bundleID
         pushToEngine()
     }
 
@@ -366,6 +408,8 @@ final class AppModel {
         var detail: String? = nil
         /// A milestone, record or finished step — drawn a little more festive.
         var celebration = false
+        /// The part a celebration is about: its icon takes that part's color.
+        var part: Metric? = nil
     }
 
     struct PendingImport: Identifiable {
@@ -377,19 +421,8 @@ final class AppModel {
     @ObservationIgnored private var configBeforeImport: GlideConfig?
     @ObservationIgnored private var toastDismissal: DispatchWorkItem?
 
-    /// Shows the "A small favor" card (opt-in crash reports and stats) if it
-    /// hasn't been answered, once the window is open and nothing else is over
-    /// it: never on top of the launch animation, the Welcome Tour or a sheet.
-    /// If something's in the way it waits for the next time the window opens.
-    func offerSmallFavor(after delay: Double = 0.8) {
-        guard ShareData.shared.shouldAsk else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-            guard let self, ShareData.shared.shouldAsk, !self.showingSmallFavor, !self.showingWelcomeTour,
-                  !self.showingFeedback, !self.showingAbout, self.pendingImport == nil,
-                  LaunchExperience.shared.show == nil, self.windowVisible else { return }
-            self.showingSmallFavor = true
-        }
-    }
+    // What's New, "Glideball has a new look" and the "A small favor" card take
+    // turns: see `showNextPrompt()` in WhatsNew.swift.
 
     func show(_ toast: Toast) {
         self.toast = toast
@@ -581,7 +614,7 @@ final class AppModel {
         t.tolerance = wanted * 0.15   // lets macOS coalesce wakeups
         RunLoop.main.add(t, forMode: .common)
         sampler = t
-        if !windowVisible { live.reset(); smoothedBall = 0; smoothedNotch = 0 }
+        if !windowVisible { live.reset(); smoothedBall = 0; smoothedNotch = 0; smoothedRollX = 0; smoothedRollY = 0; smoothedRing = 0 }
     }
 
     private func sample() {
@@ -598,9 +631,14 @@ final class AppModel {
         let kBall = pow(0.6, dt * 30), kNotch = pow(0.7, dt * 30)
         smoothedBall = smoothedBall * kBall + (s.ballSpeed / Self.countsPerInch) * (1 - kBall)
         smoothedNotch = smoothedNotch * kNotch + s.notchRate * (1 - kNotch)
-        if smoothedBall < 0.01 { smoothedBall = 0 }
-        if smoothedNotch < 0.05 { smoothedNotch = 0 }
-        live.push(ball: smoothedBall, notch: smoothedNotch, dt: dt, interval: samplerInterval)
+        smoothedRollX = smoothedRollX * kBall + (s.ballVX / Self.countsPerInch) * (1 - kBall)
+        smoothedRollY = smoothedRollY * kBall + (s.ballVY / Self.countsPerInch) * (1 - kBall)
+        smoothedRing = smoothedRing * kNotch + s.notchVelocity * (1 - kNotch)
+        if smoothedBall < 0.01 { smoothedBall = 0; smoothedRollX = 0; smoothedRollY = 0 }
+        if smoothedNotch < 0.05 { smoothedNotch = 0; smoothedRing = 0 }
+        // HID wheel values are + for scrolling up, which is turning the ring anticlockwise.
+        live.push(ball: smoothedBall, notch: smoothedNotch, rollX: smoothedRollX, rollY: smoothedRollY,
+                  ringVelocity: -smoothedRing, dt: dt, interval: samplerInterval)
 
         if s.pressed != pressed { pressed = s.pressed }
         // Totals tick up with every click and scroll; the tiles don't need more than a few updates a second.

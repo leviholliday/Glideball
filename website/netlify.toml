@@ -1,7 +1,9 @@
 # Netlify config for the Glide website (static, no build step), plus the
 # feedback functions: /api/feedback (from the Mac app and /feedback/),
-# /api/admin/* (the admin pages at /admin/feedback/ and /admin/usage/), the app's
-# opt-in stats and crash reports (/api/usage, /api/crash), and an hourly cleanup.
+# /api/admin/* (the admin pages at /admin/feedback/, /admin/usage/ and
+# /admin/stats/), the app's opt-in stats and crash reports (/api/usage,
+# /api/crash), an hourly cleanup, and the download snapshot that fills the
+# Statistics page (netlify/functions/stats-snapshot.mjs, scheduled in its own file).
 
 [build]
   publish = "."
@@ -103,7 +105,8 @@
 # the feedback on screen and could call /api/admin/* as the signed-in admin.
 # This second policy allows only the site's own files. (The page also gets
 # the "/*" one above; when two policies apply, a browser enforces both, so
-# whatever either forbids stays forbidden.)
+# whatever either forbids stays forbidden.) Covers /admin/stats/ too: its
+# bars are SVG with plain attributes and every handler is added in its script.
 [[headers]]
   for = "/admin/*"
   [headers.values]

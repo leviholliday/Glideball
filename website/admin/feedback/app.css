@@ -370,7 +370,7 @@ a.icon-btn { display: inline-flex; align-items: center; text-decoration: none; }
   .d-head { flex-direction: column; gap: 12px; }
   .d-head h2 { font-size: 22px; }
   .files { grid-template-columns: 1fr; }
-  .top { padding-left: 14px; padding-right: 14px; }
+  .top { padding-left: 14px; padding-right: 14px; flex-wrap: wrap; }
   .top h1 { font-size: 17px; }
   .kv { grid-template-columns: minmax(0, 40%) 1fr; }
 }

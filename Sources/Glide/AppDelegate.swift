@@ -5,6 +5,8 @@ import SwiftUI
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private(set) var window: NSWindow?
     private var launchedAtLogin = false
+    /// Launched to open a glideball:// URL: start quietly, like at login.
+    private var launchedForURL = false
     private var statusItem: NSStatusItem?
     private var precisionItem: NSMenuItem?
     private var isExplicitlyQuitting = false
@@ -21,6 +23,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
            event.paramDescriptor(forKeyword: keyAEPropData)?.enumCodeValue == keyAELaunchedAsLogInItem {
             launchedAtLogin = true
         }
+        if let event = NSAppleEventManager.shared().currentAppleEvent,
+           event.eventClass == AEEventClass(kInternetEventClass), event.eventID == AEEventID(kAEGetURL),
+           event.paramDescriptor(forKeyword: keyDirectObject)?.stringValue?.lowercased()
+               .hasPrefix(ExternalControl.scheme + ":") == true {
+            launchedForURL = true
+        }
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -29,14 +37,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             AppRename.finishLoginItem()
         }
         let firstLaunch = WelcomeTour.shouldShowAtLaunch()   // before AppModel loads settings
+        // The trackball picture's layers (about 70 ms of shading, once), off the main thread
+        // so they're ready by the time the window shows.
+        DispatchQueue.global(qos: .userInitiated).async { _ = OrbArt.layers }
         _ = AppLanguage.atLaunch   // the language on screen, before anyone can change it
+        _ = Sounds.shared.enabled   // settles "Sounds" (the launch reads it) before anything plays
+        AppIconChoice.shared.setUp(firstLaunch: firstLaunch)   // the Dock icon: the Orb, or the classic one
         buildMenu()
         handleTerminateSignal()
         setUpStatusItem()
         _ = AppModel.shared   // starts the engine
         watchModes()
         startHotKeys()
-        let showsWindow = firstLaunch || !launchedAtLogin || !AppModel.shared.permissionsOK
+        ExternalControlCenter.shared.start()   // status.json, if "Allow Raycast and scripts" is on
+        let quietLaunch = launchedAtLogin || launchedForURL
+        let showsWindow = firstLaunch || !quietLaunch || !AppModel.shared.permissionsOK
         // The launch animation; the first-launch intro opens the tour itself when it ends.
         let introPlays = LaunchExperience.shared.prepare(firstLaunch: firstLaunch, showsWindow: showsWindow)
         if firstLaunch && !introPlays { AppModel.shared.showWelcomeTour() }
@@ -108,16 +123,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         return true
     }
 
+    /// glideball:// URLs go to ExternalControlCenter (Raycast, scripts).
     /// Double-clicking a .glide-settings file: open the window and preview it.
     func application(_ application: NSApplication, open urls: [URL]) {
-        guard let url = urls.first else { return }
+        let isLink = { (url: URL) in url.scheme?.lowercased() == ExternalControl.scheme }
+        urls.filter(isLink).forEach { ExternalControlCenter.shared.handle($0) }
+        guard let url = urls.first(where: { !isLink($0) }) else { return }
         showWindow()
         AppModel.shared.previewImport(url)
     }
 
     @objc private func sendFeedback(_ sender: Any?) {
-        showWindow()
-        AppModel.shared.showingFeedback = true
+        Commands.run("feedback", on: AppCommandTarget.shared)
     }
 
     @objc private func showAbout(_ sender: Any?) {
@@ -137,9 +154,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     @objc private func openHelp(_ sender: Any?) { NSWorkspace.shared.open(SiteLinks.help) }
     @objc private func openTroubleshooting(_ sender: Any?) { NSWorkspace.shared.open(SiteLinks.troubleshooting) }
 
+    /// Help › What's New: this version's What's New, over the window.
     @objc private func openWhatsNew(_ sender: Any?) {
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
-        NSWorkspace.shared.open(SiteLinks.whatsNew(in: version))
+        showWindow()
+        AppModel.shared.showWhatsNew()
     }
 
     /// Help › Play the Intro: the first-launch intro again, with its music.
@@ -159,6 +177,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     @objc private func importSettings() { showWindow(); AppModel.shared.importSettings() }
 
     func applicationWillTerminate(_ notification: Notification) {
+        ExternalControlCenter.shared.stop()   // status.json goes with the app
         AppModel.shared.engine.releaseHeldKeys()
         AppModel.shared.engine.releaseAll()
         AppModel.shared.engine.handBackPointer()   // after releaseAll, which re-applies Glide's speed
@@ -168,35 +187,69 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func showWindow() {
         makeWindow()
         guard !Sandbox.isActive else { return }   // `--self-test` builds the window but never shows it
+        let opening = window?.isVisible != true
         window?.makeKeyAndOrderFront(nil)
         NSApp.activate()
         reportWindowState()
-        // With no launch animation playing (a reopened window, a launch at
-        // login opened later), the card can come straight away; otherwise
-        // the animation offers it when it ends.
-        if LaunchExperience.shared.show == nil { AppModel.shared.offerSmallFavor() }
+        // Opening the window with no launch animation playing (a reopened
+        // window, a launch at login opened later): What's New or the small
+        // favor can come straight away; otherwise the animation offers it when it ends.
+        if opening && LaunchExperience.shared.show == nil { AppModel.shared.showNextPrompt() }
     }
 
     /// The main window and its contents, made once.
     private func makeWindow() {
         if window == nil {
-            let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1040, height: 700),
+            let w = NSWindow(contentRect: NSRect(origin: .zero, size: Self.mainWindowSize),
                              styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
                              backing: .buffered, defer: false)
-            w.titlebarAppearsTransparent = true
-            w.titleVisibility = .hidden
+            Self.styleMainWindow(w)
             w.isMovableByWindowBackground = false   // dragging a slider must never move the window
-            w.minSize = NSSize(width: 960, height: 620)
+            w.contentMinSize = Self.mainWindowMinSize
             let hosting = NSHostingView(rootView: RootView(model: AppModel.shared))
             hosting.sizingOptions = []   // the window decides its size, not the content
             w.contentView = hosting
-            w.setContentSize(NSSize(width: 1040, height: 700))
+            w.setContentSize(Self.mainWindowSize)
             w.isReleasedWhenClosed = false
             w.delegate = self
             w.setFrameAutosaveName("GlideMain")
-            if !w.setFrameUsingName("GlideMain") { w.center() }
+            if w.setFrameUsingName("GlideMain") {
+                Self.keepSensible(w)
+            } else {
+                w.center()
+            }
             window = w
         }
+    }
+
+    /// Transparent title bar with the traffic lights over the sidebar, and no custom header.
+    /// The empty toolbar is what lets the sidebar's glass run the window's full height,
+    /// under the traffic lights, as in Finder or Notes. (Shared with --render-ui.)
+    static func styleMainWindow(_ w: NSWindow) {
+        w.titlebarAppearsTransparent = true
+        w.titleVisibility = .hidden
+        w.title = "Glideball"
+        let toolbar = NSToolbar(identifier: "GlideMain")
+        toolbar.allowsUserCustomization = false
+        w.toolbar = toolbar
+        w.toolbarStyle = .unified
+    }
+
+    static let mainWindowSize = NSSize(width: 980, height: 680)
+    static let mainWindowMinSize = NSSize(width: 860, height: 580)
+
+    /// A saved frame from an older layout (or another display arrangement) is
+    /// kept where it can be: never below the minimum, never bigger than the
+    /// screen it's on, and pulled fully onto that screen.
+    private static func keepSensible(_ w: NSWindow) {
+        guard let visible = (w.screen ?? NSScreen.main)?.visibleFrame else { return }
+        var frame = w.frame
+        let minFrame = w.frameRect(forContentRect: NSRect(origin: .zero, size: mainWindowMinSize)).size
+        frame.size.width = min(max(frame.width, minFrame.width), visible.width)
+        frame.size.height = min(max(frame.height, minFrame.height), visible.height)
+        frame.origin.x = min(max(frame.minX, visible.minX), visible.maxX - frame.width)
+        frame.origin.y = min(max(frame.minY, visible.minY), visible.maxY - frame.height)
+        if frame != w.frame { w.setFrame(frame, display: false) }
     }
 
     /// Tells the model what the window's doing, so it animates only while someone can see it.
@@ -288,7 +341,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     @objc private func toggleGlide(_ sender: Any?) {
-        AppModel.shared.config.enabled.toggle()
+        Commands.run("toggle", on: AppCommandTarget.shared)
     }
 
     @objc private func togglePrecision(_ sender: Any?) {
@@ -298,18 +351,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     @objc private func quitGlide(_ sender: Any?) { quitNow() }
 
     @objc private func checkForUpdates(_ sender: Any?) {
-        showUpdatePanel()
+        Commands.run("check-for-updates", on: AppCommandTarget.shared)
     }
 
     private var settingsWindow: SettingsWindowController?
 
-    @objc private func openSettings(_ sender: Any?) { showSettings() }
+    @objc private func openSettings(_ sender: Any?) { Commands.run("settings", on: AppCommandTarget.shared) }
 
     /// Glideball › Settings… (⌘,): one window, brought forward if it's already
     /// open. Works with the main window closed and with no Dock icon.
-    func showSettings(_ pane: SettingsPane? = nil) {
+    func showSettings(_ pane: SettingsPane? = nil, spotlight: String? = nil) {
         if settingsWindow == nil { settingsWindow = SettingsWindowController() }
-        settingsWindow?.show(pane)
+        settingsWindow?.show(pane, spotlight: spotlight)
     }
 
     private var updateWindow: NSWindow?
@@ -351,9 +404,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         GlobalHotKeys.shared.start(AppModel.shared.config.globalShortcuts) { [weak self] action in
             switch action {
             case .pause:
-                let model = AppModel.shared
-                model.config.enabled.toggle()
-                NSSound(named: model.config.enabled ? "Pop" : "Funk")?.play()
+                Commands.run("toggle", on: AppCommandTarget.shared) { running in
+                    Sounds.shared.play(running == true ? .resume : .pause)
+                }
             case .precision: self?.toggleMode(.precision)
             case .ballScroll: self?.toggleMode(.ballScroll)
             case .dragLock: self?.toggleMode(.dragLock)
@@ -371,12 +424,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                                                             object: nil, queue: .main, using: end)
     }
 
-    /// A quiet sound says which way it went; a beep means nothing changed
+    /// A high or low tick says which way it went; a beep means nothing changed
     /// (Glide is paused, or the trackball isn't there to scroll with).
-    private func toggleMode(_ mode: Engine.ToggleMode) {
-        AppModel.shared.engine.toggleMode(mode) { on in
+    private func toggleMode(_ mode: GlideMode) {
+        Commands.run(mode.rawValue, .toggle, on: AppCommandTarget.shared) { on in
             guard let on else { return NSSound.beep() }
-            NSSound(named: on ? "Tink" : "Purr")?.play()
+            Sounds.shared.play(on ? .modeOn : .modeOff)
         }
     }
 

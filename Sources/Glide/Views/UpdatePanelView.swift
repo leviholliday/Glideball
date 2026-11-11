@@ -9,18 +9,14 @@ struct UpdatePanelView: View {
     let close: () -> Void
 
     var body: some View {
-        ZStack {
-            GlideBackground()
-            VStack(spacing: 0) {
-                content
-                    .padding(.horizontal, 30)
-                    .padding(.top, 34)
-                    .padding(.bottom, 24)
-            }
-        }
-        .frame(width: 440)
-        .fixedSize(horizontal: false, vertical: true)
-        .animation(.smooth(duration: 0.3), value: phase)
+        content
+            .padding(.horizontal, 30)
+            .padding(.top, 34)
+            .padding(.bottom, 24)
+            .frame(width: 440)
+            .fixedSize(horizontal: false, vertical: true)
+            .background(Theme.windowBackground)
+            .animation(Theme.Motion.spring, value: phase)
     }
 
     // MARK: State
@@ -59,39 +55,40 @@ struct UpdatePanelView: View {
 
         case .upToDate:
             VStack(spacing: 14) {
-                badge("checkmark.seal.fill", color: .green)
+                badge("checkmark.seal.fill", color: Theme.ok)
                 title("You’re up to date!")
                 subtitle(EarlyUpdates.isEnabled
                          ? String(localized: "Glideball \(current) is the newest version, including beta releases.")
                          : String(localized: "Glideball \(current) is the newest version."))
                 if let checked = updates.lastChecked {
                     Text("Checked \(checked.formatted(.relative(presentation: .named)))")
-                        .font(.system(size: 11)).foregroundStyle(.tertiary)
+                        .font(Theme.Font.hint).foregroundStyle(.tertiary)
                 }
                 buttons {
                     Button("OK", action: close)
-                        .buttonStyle(.glassProminent).tint(.cyan)
+                        .buttonStyle(.borderedProminent).tint(Theme.ball)
                         .keyboardShortcut(.defaultAction)
                 }
             }
             .frame(maxWidth: .infinity)
-            .transition(.opacity.combined(with: .scale(scale: 0.96)))
+            .transition(.opacity)
 
         case .available, .installFailed:
             if let update = updates.available {
                 availableView(update)
-                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                    .transition(.opacity)
             }
 
         case .failed:
             VStack(spacing: 14) {
-                badge("exclamationmark.triangle.fill", color: .orange)
+                badge("exclamationmark.triangle.fill", color: Theme.warn)
                 title("Couldn’t check for updates")
                 subtitle(String(localized: "Glideball couldn’t reach GitHub. Check your internet connection and try again."))
                 buttons {
-                    Button("OK", action: close).buttonStyle(.glass)
+                    Button("OK", action: close)
+                        .keyboardShortcut(.cancelAction)
                     Button("Try Again") { updates.checkNow() }
-                        .buttonStyle(.glassProminent).tint(.cyan)
+                        .buttonStyle(.borderedProminent).tint(Theme.ball)
                         .keyboardShortcut(.defaultAction)
                 }
             }
@@ -100,16 +97,17 @@ struct UpdatePanelView: View {
 
         case .downloading, .installing:
             VStack(spacing: 14) {
-                badge("arrow.down.circle.fill", color: .cyan)
+                badge("arrow.down.circle.fill", color: Theme.ball)
                 if case .downloading(let progress) = updates.installState {
                     title("Downloading Glideball \(updates.available?.displayVersion ?? "")…")
                     ProgressView(value: progress)
                         .progressViewStyle(.linear)
-                        .tint(.cyan)
+                        .tint(Theme.ball)
                         .frame(maxWidth: 300)
                     Text(verbatim: "\(Int(progress * 100))%")
-                        .font(.system(size: 12, weight: .semibold, design: .rounded))
-                        .monospacedDigit().foregroundStyle(.secondary)
+                        .font(Theme.Font.value)
+                        .foregroundStyle(.secondary)
+                        .contentTransition(.numericText(value: progress))
                 } else {
                     title("Installing…")
                     subtitle(String(localized: "Glideball will reopen in a moment."))
@@ -123,12 +121,12 @@ struct UpdatePanelView: View {
 
     private func availableView(_ update: UpdateChecker.Update) -> some View {
         VStack(spacing: 14) {
-            badge("arrow.down.circle.fill", color: .cyan)
+            badge("arrow.down.circle.fill", color: Theme.ball)
             title("Glideball \(update.displayVersion) is available")
             subtitle(String(localized: "You have \(current). Your settings and permissions carry over."))
             if update.isPrerelease {
                 Label("An early update. It may have bugs.", systemImage: "flask")
-                    .font(.system(size: 11, weight: .medium)).foregroundStyle(.orange)
+                    .font(Theme.Font.hint.weight(.medium)).foregroundStyle(.secondary)
             }
             if !update.notes.isEmpty {
                 ScrollView {
@@ -137,24 +135,29 @@ struct UpdatePanelView: View {
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .textSelection(.enabled)
-                        .padding(12)
+                        .padding(14)
                 }
-                .frame(maxHeight: 150)
-                .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(.white.opacity(0.06)))
+                .frame(maxHeight: 160)
+                .groupBackground()
             }
             if case .failed(let message) = updates.installState {
-                Label(message, systemImage: "exclamationmark.triangle.fill")
-                    .font(.system(size: 11)).foregroundStyle(.orange)
-                    .fixedSize(horizontal: false, vertical: true)
+                Label {
+                    Text(verbatim: message).foregroundStyle(.primary)
+                } icon: {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Theme.warn)
+                }
+                .font(Theme.Font.hint)
+                .fixedSize(horizontal: false, vertical: true)
             }
             buttons {
                 Button("Release Notes") { NSWorkspace.shared.open(update.notesPage) }
-                    .buttonStyle(.glass)
+                    .help("Opens this version’s notes on the Glideball website")
                 Spacer(minLength: 0)
-                Button("Later", action: close).buttonStyle(.glass)
+                Button("Later", action: close)
+                    .keyboardShortcut(.cancelAction)
                 Button(updates.installState == .idle ? String(localized: "Install & Relaunch")
                                                      : String(localized: "Try Again")) { updates.install() }
-                    .buttonStyle(.glassProminent).tint(.cyan)
+                    .buttonStyle(.borderedProminent).tint(Theme.ball)
                     .keyboardShortcut(.defaultAction)
             }
         }
@@ -165,23 +168,23 @@ struct UpdatePanelView: View {
 
     private func badge(_ symbol: String, color: Color) -> some View {
         Image(systemName: symbol)
-            .font(.system(size: 44, weight: .medium))
+            .font(.system(size: 40, weight: .regular))
+            .symbolRenderingMode(.hierarchical)
             .foregroundStyle(color)
-            .shadow(color: color.opacity(0.5), radius: 14)
-            .frame(height: 56)
-            .symbolEffect(.bounce, value: phase)
+            .frame(height: 52)
+            .accessibilityHidden(true)
     }
 
     private func title(_ text: LocalizedStringKey) -> some View {
         Text(text)
-            .font(.system(size: 20, weight: .bold, design: .rounded))
+            .font(.system(size: 20, weight: .semibold))
             .multilineTextAlignment(.center)
             .fixedSize(horizontal: false, vertical: true)
     }
 
     private func subtitle(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 13))
+            .font(Theme.Font.body)
             .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)
             .fixedSize(horizontal: false, vertical: true)

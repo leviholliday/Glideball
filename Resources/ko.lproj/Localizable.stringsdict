@@ -16,7 +16,7 @@
 			<string>백업 %lld개</string>
 		</dict>
 	</dict>
-	<key>%lld buttons</key>
+	<key>%lld buttons changed</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
 		<string>%#@count@</string>
@@ -27,7 +27,7 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>lld</string>
 			<key>other</key>
-			<string>버튼 %lld개</string>
+			<string>버튼 %lld개 변경됨</string>
 		</dict>
 	</dict>
 	<key>%lld combos</key>
@@ -100,7 +100,7 @@
 			<string>개요에서 +%lld개 더 보기</string>
 		</dict>
 	</dict>
-	<key>Glideball now keeps your records — %lld badges already earned</key>
+	<key>Glideball now keeps your records: %lld badges already earned</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
 		<string>%#@count@</string>
@@ -111,7 +111,7 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>lld</string>
 			<key>other</key>
-			<string>이제 Glide가 기록을 보관해요 — 이미 배지 %lld개 획득</string>
+			<string>이제 Glide가 기록을 보관해요: 이미 배지 %lld개 획득</string>
 		</dict>
 	</dict>
 </dict>

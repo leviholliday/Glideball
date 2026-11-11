@@ -23,8 +23,10 @@ import SwiftUI
 @MainActor
 enum Offscreen {
     enum Chrome {
-        /// The main window: title bar and traffic lights over the content.
+        /// A window with its title bar and traffic lights over the content.
         case window
+        /// Glideball's main window, styled as AppDelegate styles it (the sidebar runs under the traffic lights).
+        case mainWindow
         /// A titled window whose title bar (and toolbar) is drawn too.
         case titled
         /// Just the content (sheets, cards).
@@ -37,6 +39,8 @@ enum Offscreen {
         override var isMainWindow: Bool { true }
         override var canBecomeKey: Bool { false }
         override var canBecomeMain: Bool { false }
+        /// Lay out (and rasterize text) at the scale being rendered, so a 1x picture is a real 1x layout.
+        override var backingScaleFactor: CGFloat { Offscreen.layoutScale ?? super.backingScaleFactor }
         // AppKit asks these (not isKeyWindow) when choosing active or inactive
         // colors for controls and the traffic lights.
         @objc(_hasActiveAppearance) func hasActiveAppearance() -> Bool { true }
@@ -55,12 +59,15 @@ enum Offscreen {
         if window.responds(to: refresh) { window.perform(refresh) }
     }
 
+    /// The pixel density windows report while rendering (nil: the Mac's own).
+    static var layoutScale: CGFloat?
+
     static var useAppKit: Bool { ProcessInfo.processInfo.environment["GLIDE_RENDER_ENGINE"] == "appkit" }
 
     /// A window that's never ordered front.
     static func makeWindow(size: NSSize, chrome: Chrome, appearance: NSAppearance?) -> NSWindow {
         let style: NSWindow.StyleMask = switch chrome {
-        case .window: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
+        case .window, .mainWindow: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
         case .titled: [.titled, .closable, .fullSizeContentView]
         case .plain: [.borderless]
         }
@@ -68,7 +75,9 @@ enum Offscreen {
                                     backing: .buffered, defer: false)
         w.isReleasedWhenClosed = false
         w.appearance = appearance
-        if chrome != .plain {
+        if chrome == .mainWindow {
+            AppDelegate.styleMainWindow(w)
+        } else if chrome != .plain {
             w.titlebarAppearsTransparent = true
             w.titleVisibility = .hidden
         }

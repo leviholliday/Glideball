@@ -65,18 +65,31 @@ COMPONENTS: dict[str, set] = {
     "TuningSlider": {"title", "lowLabel", "highLabel"},
     "ToggleRow": {"title", "subtitle"},
     "StatusPill": {"text"},
-    "ModePill": {"text"},
-    "StatTile": {"title"},
+    "ModeChip": {"text"},
+    "PageHeader": {"title", "subtitle"},
+    "SectionBlock": {"title", "caption"},
+    "SectionTitle": {"title", "caption"},
+    "PlainSection": {"title", "caption"},
+    "SettingRow": {"title", "hint"},
+    "InlineStat": {"label"},
+    "IconButton": {"help"},
+    "NoticeBanner": {"title", "message"},
+    "CombosCard": {"title"},
+    "stat": {"label"},                   # OverviewView (Today)
     "OverrideSection": {"title"},
-    "caption": {0},                      # OverviewView
     "legend": {0, "text"},               # OverviewView, PointerView
     "labeled": {0},                      # FeedbackView
     "sendButton": {"title"},             # FeedbackView
     "permissionButton": {"on", "off"},   # RootView
-    "header": {1, 2},                    # WelcomeTourView
-    "feature": {1},                      # WelcomeTourView
+    "header": {0, 1},                    # WelcomeTourView
     "permissionRow": {0, "detail"},      # WelcomeTourView
     "option": {"detail"},                # ShareDataViews (SmallFavourCard)
+    "SettingsRow": {"title"},            # SettingsViews
+    "SettingsToggle": {"title"},
+    "RowPicker": {"title"},
+    "ActionRow": {"title", "hint"},      # SheetComponents
+    "icon": {"label"},                   # AppIconChoice (IconChoicePrompt)
+    "link": {1},                         # AboutView
 }
 
 # Interpolations that are Int (→ %lld). Everything else is %@ unless it has

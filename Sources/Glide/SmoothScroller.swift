@@ -245,9 +245,12 @@ final class SmoothScroller: NSObject {
 
     /// The pushes added up before the speed limit softens them.
     private var flyRaw = 0.0
-    private var flyRawMax: Double {
-        let room = min(max(config.flyReach, 0), 1) * Self.flyHeadroom
-        return room > 0 ? Self.flyKnee + 4 * room : Self.flyKnee
+    private var flyRawMax: Double { Self.flyRawLimit(reach: config.flyReach) }
+
+    /// The most the pushes can add up to at `reach` (the settings page uses it to describe a hard spin).
+    static func flyRawLimit(reach: Double) -> Double {
+        let room = min(max(reach, 0), 1) * flyHeadroom
+        return room > 0 ? flyKnee + 4 * room : flyKnee
     }
 
     private var flyTicks: [CFTimeInterval] = []

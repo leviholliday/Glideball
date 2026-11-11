@@ -89,7 +89,7 @@ enum SelfTest {
             try check(!window.isVisible, "the main window is on screen")
             let content = try unwrap(window.contentView, "the main window has no content")
             Offscreen.settleDown(content, seconds: 0.15)
-            let rep = try unwrap(Offscreen.draw(window, content: content, chrome: .window, scale: 1), "the main window didn't draw")
+            let rep = try unwrap(Offscreen.draw(window, content: content, chrome: .mainWindow, scale: 1), "the main window didn't draw")
             return "built offscreen, never shown; drew \(Int(rep.size.width))×\(Int(rep.size.height))"
         }
 
@@ -100,24 +100,28 @@ enum SelfTest {
             } else {
                 try check(launch.show == .intro, "a first launch should play the intro, got \(String(describing: launch.show))")
             }
+            if case .splash? = launch.show {
+                try check(launch.revealAt + 0.35 <= 1.2, "the short animation takes \(launch.revealAt + 0.35) s (1.2 s at most)")
+            }
             var drawn = 0
-            for t in [0.3, 4.2] {
+            for t in [0.3, 1.4, 3.0, 4.2, 5.6] {
                 try draw(IntroScene(t: t, calm: false), "intro at \(t) s", size: RenderUI.windowSize, allowBlank: t < 1); drawn += 1
             }
             try draw(IntroScene(t: 1.0, calm: true), "intro, Reduce Motion", size: RenderUI.windowSize); drawn += 1
             for variant in SplashVariant.allCases {
-                for t in [0.4, 1.05] {
+                for t in [0.2, 0.8] {
                     // Early frames may be almost empty by design; the last must show something.
-                    try draw(SplashScene(variant: variant, t: t, calm: false), "splash \(variant) at \(t) s", size: RenderUI.windowSize, allowBlank: t < 1); drawn += 1
+                    try draw(SplashScene(variant: variant, t: t, calm: false), "splash \(variant) at \(t) s", size: RenderUI.windowSize, allowBlank: t < 0.5); drawn += 1
                 }
             }
+            try draw(SplashScene(variant: .ringSpin, t: 0.3, calm: true), "quick fade", size: RenderUI.windowSize); drawn += 1
             return "\(launch.show == .intro ? "intro" : "short animation") chosen; \(drawn) frames drawn"
         }
 
         step("tabs") {
             for tab in GlideTab.allCases {
                 UserDefaults.standard.set(tab.rawValue, forKey: "GlideInitialTab")
-                try draw(RootView(model: model), tab.rawValue, size: RenderUI.windowSize, chrome: .window)
+                try draw(RootView(model: model), tab.rawValue, size: RenderUI.windowSize, chrome: .mainWindow)
             }
             UserDefaults.standard.removeObject(forKey: "GlideInitialTab")
             return "\(GlideTab.allCases.count) tabs drawn"
@@ -126,25 +130,26 @@ enum SelfTest {
         step("settings window") {
             let controller = SettingsWindowController()
             let window = try unwrap(controller.window, "no Settings window")
-            let tabs = try unwrap(window.contentViewController as? NSTabViewController, "Settings has no tabs")
-            try check(tabs.tabViewItems.count == SettingsPane.allCases.count, "\(tabs.tabViewItems.count) Settings tabs")
+            let items = window.toolbar?.items.count ?? 0
+            try check(items == SettingsPane.allCases.count, "\(items) Settings tabs in the toolbar")
             let content = try unwrap(window.contentView, "Settings has no content")
-            for i in tabs.tabViewItems.indices {
-                tabs.selectedTabViewItemIndex = i
+            for pane in SettingsPane.allCases {
+                controller.select(pane, animated: false)
                 Offscreen.settleDown(content, seconds: 0.05)
-                let rep = try unwrap(Offscreen.draw(window, content: content, chrome: .titled, scale: 1), "Settings tab \(i) didn't draw")
-                try check(!Offscreen.isBlank(rep), "Settings tab \(i) is blank")
+                let rep = try unwrap(Offscreen.draw(window, content: content, chrome: .titled, scale: 1), "Settings › \(pane.rawValue) didn't draw")
+                try check(!Offscreen.isBlank(rep), "Settings › \(pane.rawValue) is blank")
             }
             try check(!window.isVisible, "the Settings window is on screen")
             window.close()
-            return "\(tabs.tabViewItems.count) tabs drawn, never shown"
+            return "\(SettingsPane.allCases.count) tabs drawn, never shown"
         }
 
         step("welcome tour") {
             for s in WelcomeTourView.Step.allCases {
                 try draw(WelcomeTourView(model: model, step: s), "tour step \(s.rawValue + 1)", size: RenderUI.windowSize)
             }
-            return "\(WelcomeTourView.Step.allCases.count) steps drawn"
+            try draw(WelcomeTourView(model: model, step: .buttons, found: [0, 2]), "tour, two buttons found", size: RenderUI.windowSize)
+            return "\(WelcomeTourView.Step.allCases.count) steps drawn, and a step part-done"
         }
 
         step("sheets and panels") {
@@ -152,8 +157,143 @@ enum SelfTest {
             try draw(FeedbackView(model: model), "Send Feedback")
             try draw(SmallFavorCard(model: model), "A small favor", size: RenderUI.windowSize)
             try draw(UpdatePanelView(updates: model.updates) {}, "Software Update")
-            try draw(BackupHistoryCard(model: model, store: model.backups).frame(width: 900), "Backups")
+            try draw(BackupHistorySection(model: model, store: model.backups).frame(width: 900), "Backups")
             return "About, Feedback, A small favor, Software Update, Backups drawn"
+        }
+
+        step("what's new") {
+            // The table: at most five items a version, each with words in it.
+            for e in WhatsNew.entries {
+                try check(!e.items.isEmpty && e.items.count <= 5, "What's New \(e.version) has \(e.items.count) items (1–5)")
+                try check(e.items.allSatisfy { !$0.title.isEmpty && !$0.text.isEmpty }, "What's New \(e.version) has an empty item")
+                try check(Set(e.items.map(\.id)).count == e.items.count, "What's New \(e.version) repeats an item id")
+            }
+            // When it's due: once per major.minor, never without an entry.
+            try check(WhatsNew.majorMinor("2.10-beta.7") == "2.10" && WhatsNew.majorMinor("2.10.1") == "2.10"
+                      && WhatsNew.majorMinor("3") == "3", "majorMinor reads versions wrong")
+            try check(WhatsNew.isDue(seen: nil, version: "2.10-beta.7"), "2.10 isn't due for someone who's never seen one")
+            try check(WhatsNew.isDue(seen: "2.9", version: "2.10"), "2.10 isn't due after 2.9")
+            try check(!WhatsNew.isDue(seen: "2.10", version: "2.10.1"), "2.10 is due twice")
+            try check(!WhatsNew.isDue(seen: nil, version: "0.1"), "a version with no entry is due")
+            // What this launch decided.
+            let hasEntry = WhatsNew.entry(for: WhatsNew.currentVersion) != nil
+            if returning {
+                try check(WhatsNew.isPending == hasEntry, "after an update, What's New should\(hasEntry ? "" : "n't") be waiting")
+            } else {
+                try check(!WhatsNew.isPending, "a fresh install should never get What's New")
+            }
+            try draw(WhatsNewView(model: model), "What's New", size: RenderUI.windowSize)
+            try draw(IconChoicePrompt(model: model), "Glideball has a new look", size: RenderUI.windowSize)
+            return (returning ? (hasEntry ? "waiting after an update" : "no entry for this version")
+                              : "not shown on a fresh install") + "; drawn, with the icon question"
+        }
+
+        step("one thing at a time") {
+            let launch = LaunchExperience.shared
+            // Never over the launch animation (the short one may already have
+            // played out while the tabs were drawn; the intro is still going)…
+            var shown: [String] = []
+            if launch.show != nil {
+                try check(model.presentNextPrompt(ignoringWindow: true) == nil, "a prompt showed over the launch animation")
+                // …which ends on a click (the real path: reveal, then finish).
+                launch.skip()
+                let until = Date().addingTimeInterval(1.5)
+                while launch.show != nil && Date() < until { RunLoop.main.run(until: Date().addingTimeInterval(0.05)) }
+                try check(launch.show == nil, "the launch animation didn't end after a skip")
+            }
+            let icons = AppIconChoice.shared
+            if returning {
+                // After an update from the classic icon: What's New, then "Glideball has
+                // a new look", then the small favor, each on its own (here each one is
+                // answered before the next is asked for; in the app the next waits for
+                // the next time the window opens).
+                // The demo settings answered the small favor long ago; unanswered here, as on
+                // a Mac updating from before it existed, so all three take their turns.
+                let share = ShareData.shared
+                let answered = (share.choice, share.asked)
+                share.choice = .nothing
+                share.asked = false
+                defer { share.choice = answered.0; share.asked = answered.1 }
+                try check(icons.promptDue && icons.style == .classic,
+                          "an update from the classic icon should keep it and ask (style \(icons.style), asked \(!icons.promptDue))")
+                let first = model.presentNextPrompt(ignoringWindow: true)
+                if WhatsNew.entry(for: WhatsNew.currentVersion) != nil {
+                    try check(first == .whatsNew && model.showingWhatsNew, "What's New didn't come first after an update")
+                    try check(!WhatsNew.isPending, "What's New wasn't marked seen")
+                    try check(model.presentNextPrompt(ignoringWindow: true) == nil, "something showed on top of What's New")
+                    model.closeWhatsNew()
+                    shown.append("What's New")
+                } else {
+                    try check(first != .whatsNew, "What's New showed for a version without one")
+                }
+                try check(!model.showingWhatsNew, "What's New didn't close")
+                let second = WhatsNew.entry(for: WhatsNew.currentVersion) != nil
+                    ? model.presentNextPrompt(ignoringWindow: true) : first
+                try check(second == .iconChoice && model.showingIconChoice, "the icon question didn't come after What's New (got \(String(describing: second)))")
+                try check(model.presentNextPrompt(ignoringWindow: true) == nil, "something showed on top of the icon question")
+                // Help › What's New while it's up: the question steps aside and stays due.
+                model.showWhatsNew()
+                try check(!model.showingIconChoice && icons.promptDue, "What's New by hand didn't put the icon question aside")
+                model.closeWhatsNew()
+                try check(model.presentNextPrompt(ignoringWindow: true) == .iconChoice, "the icon question didn't come back")
+                icons.choose(.classic)   // "Keep the classic one"
+                model.showingIconChoice = false
+                try check(!icons.promptDue, "the icon question is still due after an answer")
+                shown.append("the icon question")
+                // Not over a sheet.
+                model.showingAbout = true
+                try check(model.presentNextPrompt(ignoringWindow: true) == nil, "a prompt showed over a sheet")
+                model.showingAbout = false
+                let third = model.presentNextPrompt(ignoringWindow: true)
+                try check(third == .smallFavor && model.showingSmallFavor, "after the icon question came \(String(describing: third))")
+                try check(model.presentNextPrompt(ignoringWindow: true) == nil, "two prompts at once")
+                shown.append("the small favor")
+            } else {
+                // A fresh install: the Orb, no icon question, the tour first and nothing on top of it.
+                try check(icons.style == .orb && !icons.promptDue, "a fresh install should get the Orb and no icon question")
+                model.showWelcomeTour()
+                try check(model.presentNextPrompt(ignoringWindow: true) == nil, "a prompt showed over the Welcome Tour")
+                shown.append("the tour")
+                model.closeWelcomeTour()
+                let next = model.presentNextPrompt(ignoringWindow: true)
+                try check(next == (ShareData.shared.shouldAsk ? .smallFavor : nil), "after the tour came \(String(describing: next))")
+                try check(next != .whatsNew, "What's New showed on a fresh install")
+                try check(next != .iconChoice, "the icon question showed on a fresh install")
+                if next == .smallFavor {
+                    try check(model.presentNextPrompt(ignoringWindow: true) == nil, "two prompts at once")
+                    shown.append("the small favor")
+                }
+            }
+            model.showingSmallFavor = false
+            model.showingWhatsNew = false
+            model.showingIconChoice = false
+            return (shown.isEmpty ? "nothing due" : shown.joined(separator: ", then ") + ", one at a time") + "; never over the launch"
+        }
+
+        step("crash report scrubbing") {
+            // The same cases as the server's (website/tests/usage.test.mjs), so neither can be got round.
+            let cases: [(String, String)] = [
+                ("/Users/jane.doe/Desktop/x and /home/bob/y", "/Users/~/Desktop/x and /home/~/y"),
+                ("on /Volumes/Backup/z", "on /Volumes/~/z"),
+                ("/Users/o'brien/x", "/Users/~/x"),
+                ("write to a.b@c.org now", "write to (email) now"),
+                ("/Us\u{1}ers/jane/x", "/Users/~/x"),
+                ("/Users/ja\u{200B}ne/x", "/Users/~/x"),
+                ("/users/jane/x", "/users/~/x"),
+                ("/USERS/Jane/x", "/USERS/~/x"),
+                ("on /Volumes/Jane Doe's Passport/z", "on /Volumes/~/z"),
+                ("on /volumes/My Drive/z", "on /Volumes/~/z"),
+                ("j\u{200B}ane@exa\u{2}mple.com", "(email)"),
+                ("JANE@EXAMPLE.COM", "(email)"),
+                ("a\u{202E}b\u{2066}c\u{FEFF}", "abc"),
+                ("line one\nline two", "line one line two"),
+            ]
+            for (input, expected) in cases {
+                let got = CrashReports.scrub(input, max: 200)
+                try check(got == expected, "scrub(\(input.debugDescription)) gave \(got.debugDescription), not \(expected.debugDescription)")
+            }
+            try check(CrashReports.scrub(String(repeating: "x", count: 50), max: 10).count == 10, "scrub doesn't stop at max")
+            return "\(cases.count + 1) cases: invisible characters, any case, drive names with spaces"
         }
 
         step("nothing live") {

@@ -49,7 +49,7 @@ You need macOS 26 and a Swift 6.2 toolchain (Xcode 26 or its Command Line Tools)
 git clone https://github.com/leviholliday/glideball.git
 cd glideball
 ./build.sh           # build, install to /Applications/Glideball.app, and launch
-./build.sh --icon    # also re-render the app icon first
+./build.sh --icon    # also re-render the app icons first (Orb and classic)
 ```
 
 > [!WARNING]
@@ -108,6 +108,7 @@ rm glide-signing.cnf glide-signing.key glide-signing.crt glide-signing.p12
 
 - **`scripts/scroll-sim/run.sh`** compiles the real `SmoothScroller.swift` together with a test harness and feeds it synthetic tick patterns shaped like real Expert Mouse logs: single ticks, slow turns, flicks, catches and reversals, snapped to 8 ms USB polling. For every mode it reports distance, latency, settle time, stalled frames and how steady the speed is.
 - **`scripts/backup-sim/run.sh`** runs a year and a half of simulated use through the real `BackupStore` and checks the retention rules.
+- **`scripts/command-sim/run.sh`** compiles the real command registry, `glideball://` parser and status.json writer with a fake app, then throws URLs at them: every good one, the switch off, about sixty malformed and hostile ones (100 KB strings, path traversal, percent-encoding tricks, NUL and newline, format strings, shell syntax, unknown and app-only commands) and a burst of 1,000. It checks nothing changed that shouldn't have, the log never repeats URL text, and the rate limit holds.
 
 ## All the checks: `scripts/check.sh`
 
@@ -116,7 +117,7 @@ One command runs everything that should pass before a release, prints a line per
 | Step | What |
 | --- | --- |
 | build | `swift build -c release` |
-| scroll-sim, backup-sim | the two simulators above |
+| scroll-sim, backup-sim, command-sim | the three simulators above |
 | l10n | `scripts/l10n/check.py`: every language complete, format specifiers match, no key written twice in a `.strings` file |
 | website | `npm run test:usage` and any other `website/tests/*.test.mjs` (runs `npm ci` first if `node_modules` is missing) |
 | site | `build_pages.py` and `check_site.py` in a temporary copy of `website/`, so the check never changes committed files. If the fresh build differs from what's committed (usually a new release in the changelog) that's a note, not a failure. |
@@ -149,7 +150,7 @@ It builds, then draws each screen offscreen with demo data (a connected Kensingt
 
 The website's screenshots come from the same pictures: `scripts/site-screens.sh [--no-build]` renders `overview`, `pointer`, `scrolling` and `buttons` (dark, 2x), writes `website/assets/screens/<screen>-960.webp`, `-1600.webp` and `-1200.png`, and updates the homepage's `?v=` and image sizes so browsers fetch the new ones. `scripts/site-icons.py` does the same for the site's icons, favicon and `og.png`, from `brand/icon-candidates/orb-b.png` (bump `ASSET_V` in `build_pages.py` and the `?v=` in the hand-written pages after).
 
-Screens: the six tabs as the window opens (`overview`, `pointer`, `scrolling`, `buttons`, `apps`, `sync`) and each whole tab top to bottom (`*-page`); states (`permissions-needed`, `permissions-half`, `paused`, `no-trackball`, `other-kensington`, `modes-on`, `app-setup-active`, `celebration-toast`, `toast-import`, `import-preview`, `quick-assign`, `small-favor`); the Welcome Tour (`tour-1-welcome` … `tour-6-done`); `about`, `feedback`, `feedback-idea`, `feedback-sending`, `feedback-sent`, `backup-history`; Settings (`settings-general`, `-updates`, `-privacy`, `-shortcuts`, through the real Settings window with its toolbar); one frame of each launch animation (`launch-intro`, `launch-splash-1` … `6`); Software Update (`update-checking`, `-failed`, `-up-to-date`, `-available`, `-in-header`, `-downloading`, `-install-failed`, reached by answering the update check and download with canned replies).
+Screens: the six tabs as the window opens (`overview`, `pointer`, `scrolling`, `buttons`, `apps`, `sync`) and each whole tab top to bottom (`*-page`, the content column without the sidebar); the sidebar's trackball in each of its looks, at its own size and large (`trackball-states`); states (`permissions-needed`, `permissions-half`, `paused`, `no-trackball`, `other-kensington`, `modes-on`, `app-setup-active`, `celebration-toast`, `celebration-confetti`, `toast-import`, `import-preview`, `quick-assign`, `small-favor`, `icon-prompt`); the Welcome Tour (`tour-1-welcome` … `tour-5-done`, plus `tour-3-buttons-found`); What's New (`whats-new`, and `min-size-whats-new` with the tour's busiest steps at the smallest window); `about`, `feedback`, `feedback-idea`, `feedback-sending`, `feedback-sent`, `backup-history`; Settings (`settings-general`, `-look`, `-updates`, `-privacy`, `-shortcuts`, through the real Settings window with its toolbar, plus `settings-general-spotlight`, `settings-look-classic`, `settings-privacy-deleted`, `settings-shortcuts-search`, `-no-match` and `-conflict`) and `external-control-notice`; frames of the launch animations (`launch-intro-rolling-in`, `-ring-spinning-up`, `-finished`; `launch-ring-spin` and `launch-roll-in`, each also `-start`; `launch-fade`); Software Update (`update-checking`, `-failed`, `-up-to-date`, `-available`, `-in-header`, `-downloading`, `-install-failed`, reached by answering the update check and download with canned replies).
 
 How it draws: each view is hosted in a window that's never ordered front, given a moment to settle (onAppear, async work), and its layer tree is drawn by Core Animation's own renderer (`CARenderer`) into a Metal texture: the renderer that draws windows on screen, so Liquid Glass, materials and vibrancy come out as they do in the app. AppKit's `cacheDisplay` (try `GLIDE_RENDER_ENGINE=appkit`) leaves glass empty and text in it black; `ImageRenderer` can't draw AppKit controls or scroll views. The window claims to be key, so controls, switches and traffic lights draw in their active colors. Animations are switched off, so everything is drawn where its animation would end.
 
@@ -165,7 +166,86 @@ What isn't faithful:
 
 ### The self-test: `scripts/self-test.sh`
 
-Proves a build launches without launching it. `--self-test` runs `AppDelegate`'s real launch path (menus, model, hot keys, the launch animation choice, the main window, built but never shown), then draws every tab, the Settings window's four tabs, each Welcome Tour step, the sheets and panels and frames of every launch animation, checks that nothing went live (no engine, no visible window, not the active app), and runs the quit path. One line per step; exit 0 if all pass, 1 on a failure, a crash (the step is named) or a timeout (10 s). The script runs it twice: as a brand-new Mac (first-launch intro) and with `--returning` (a returning user's settings, short animation). It takes about six seconds each.
+Proves a build launches without launching it. `--self-test` runs `AppDelegate`'s real launch path (menus, model, hot keys, the launch animation choice, the main window, built but never shown), then draws every tab, the Settings window's five tabs, each Welcome Tour step, the sheets and panels, What's New, "Glideball has a new look" and frames of every launch animation, checks when What's New is due (after an update, never on a fresh install), which icon a Mac starts with (the Orb on a fresh install; the classic one and the question after an update), and that only one thing ever shows over the window (never over the launch animation, the tour or a sheet; What's New, then the icon question, then the small favor), checks the crash-report scrubbing against the server's cases, checks that nothing went live (no engine, no visible window, not the active app), and runs the quit path. One line per step; exit 0 if all pass, 1 on a failure, a crash (the step is named) or a timeout (10 s). The script runs it twice: as a brand-new Mac (first-launch intro) and with `--returning` (a returning user's settings just after an update: short animation, then What's New). It takes about six seconds each.
+
+## Controlling Glideball from other apps
+
+Raycast, Stream Deck, Alfred and shell scripts can control Glideball through a `glideball://` URL scheme, and read what it's doing from a status file. Both are off until **Allow Raycast and scripts** is on (per Mac, never synced, UserDefaults key `GlideAllowExternalControl`, `AppModel.allowExternalControl`, the switch in Settings › General).
+
+Everything goes through one list of commands, `Commands.swift`: the menu-bar menu, the global hot keys and the URLs all call the same entries, so they behave the same. `ExternalControl.swift` turns URLs into commands, `StatusFile.swift` writes the status file, and `ExternalControlApp.swift` connects them to the app.
+
+### The URLs
+
+Open them with `open -g "glideball://…"` (the `-g` keeps Glideball in the background). Percent-encode values (`%20` for a space).
+
+| URL | Does |
+| --- | --- |
+| `glideball://pause`, `resume`, `toggle` | Pause, resume, or switch between them. Pausing undoes every mode and held key, like the hot key. |
+| `glideball://precision?state=on\|off\|toggle` | Precision. `state` defaults to `toggle`; `on` twice stays on. Does nothing while paused. |
+| `glideball://scroll-mode?mode=native\|flywheel\|follow` | The main setup's scroll mode. |
+| `glideball://pointer-speed?value=<number>` | The main setup's pointer speed. Plain decimals only (`4`, `4.5`); rounded to the slider's 0.5 steps and clamped to 0.5…80. |
+| `glideball://app-setup?name=<name or bundle ID>` | Uses that app setup whatever app is in front (names ignore case). `name=automatic` goes back to following the app in front, and so does pausing or quitting. Not saved. |
+| `glideball://open?tab=overview\|pointer\|scrolling\|buttons\|apps\|sync` | Shows the window, on that tab if given. Works with the switch off. |
+| `glideball://settings?tab=general\|look\|updates\|privacy\|shortcuts` | Opens Settings, on that tab if given. Works with the switch off. |
+| `glideball://check-for-updates` | Opens Software Update and checks. |
+
+Commands and values ignore case. Unknown parameters are ignored; an unknown command, a bad or repeated value, or a missing required one means the whole URL is ignored, silently (the scroll log, `~/Library/Logs/Glide/scroll.log`, says `url ignored: <why>`). With the switch off, a URL that would change something does nothing and brings up one short explanation, once per launch. A URL that launches Glideball starts it quietly, like Open at Login (no window unless it's the first launch or a permission is missing).
+
+**Why the list is this short.** Any web page can open a custom URL scheme (browsers ask "Open Glideball?" first, but only once per site), and any app or script can open one with no prompt at all. So a URL may only do things that are safe whoever asks, are undone by asking again, and leave nothing behind. Never anything that deletes, imports, exports, changes what a button does, grants a permission, sends something off the Mac or runs anything; that's why Send Feedback isn't a URL. Scroll with ball and Drag lock aren't either: they freeze the pointer or hold the left button down until switched off, which is fine from your own keyboard but not from a web page. URL text is only compared with fixed lists, parsed as a plain decimal, or matched against your own app setup names; it never reaches a shell, AppleScript, a file path, a format string or the log. At most 20 URLs a second are looked at; the rest are dropped. And the hard rules still hold: the primary button stays a left click, and pause and quit undo everything.
+
+### status.json
+
+`~/Library/Application Support/Glide/status.json` (the data folder keeps the old name). It exists only while the switch is on: turning it off or quitting deletes it, and so does the next launch with the switch off if a crash left one behind. It's written atomically (a temp file, then a rename), when something changes, at most about once a second, on a background queue; today's numbers are checked every 5 seconds. Never in `--render-ui` or `--self-test`.
+
+```json
+{
+  "activeAppSetup" : { "name" : "Safari", "pinned" : false },
+  "appVersion" : "2.10-beta.8",
+  "modes" : { "ballScroll" : false, "dragLock" : false, "precision" : true },
+  "paused" : false,
+  "pid" : 4242,
+  "pointerSpeed" : 4.5,
+  "schemaVersion" : 1,
+  "scrollMode" : "flywheel",
+  "today" : { "ballMeters" : 41.25, "clicks" : 1234, "scrollMeters" : 63.5 },
+  "trackballConnected" : true,
+  "trackballs" : [ "Kensington Expert Mouse" ],
+  "updatedAt" : "2026-11-11T18:04:05Z"
+}
+```
+
+- `schemaVersion`: 1. It goes up only if a field changes meaning or goes away; new fields can appear without it.
+- `pid`: the running Glideball's process ID. If no process has it, the file is left over from a crash: treat Glideball as not running.
+- `scrollMode`, `pointerSpeed`: the main setup's, which is what the URLs change. An app setup in effect may override them.
+- `activeAppSetup`: the setup in effect right now (`pinned` means chosen with `app-setup`), or absent when the main setup is.
+- `trackballs`: the trackball Glideball is working with (empty when none is connected).
+- `today`: since midnight, distances in meters, rounded to the centimeter.
+- `updatedAt`: ISO 8601, UTC.
+
+Nothing else is in it: no app names besides the active setup's, no history, nothing typed.
+
+### The Raycast extension
+
+`raycast-extension/` is a Raycast extension (TypeScript) that uses the URLs and status.json above: Toggle, Pause and Resume Glideball, Toggle Precision Mode, Set Scroll Mode, Set Pointer Speed, Glideball Status, Open Glideball Settings and Check for Glideball Updates. It sends `open -g "glideball://…"` through `execFile` (no shell), reads status.json to confirm each change, and explains what's missing (not installed, not running, or the switch off) instead of failing silently. Its README is the user-facing description.
+
+```sh
+cd raycast-extension
+npm install
+npm run dev      # opens Raycast's develop mode; the commands show up in Raycast
+npm run build    # also: npm run lint
+```
+
+If a URL or a status.json field changes, update `src/lib/glideball.ts` (the only file that knows them) and the README. `npm run lint` checks `author` against a real Raycast username, so it needs the author's own account. To submit to the store: `npm run publish`, after adding screenshots to `metadata/` (see `metadata/SCREENSHOTS.md`). Not submitted yet.
+
+### App Intents (Shortcuts, Spotlight): not yet
+
+I checked on 2026-11-11 whether a SwiftPM-built, hand-assembled app can offer App Intents without Xcode. The answer for now is no:
+
+- The Command Line Tools have the `AppIntents` framework in the SDK, and `swiftc` compiles an intent fine. It can also write the constant values the metadata step reads (`-emit-const-values-path` with `-Xfrontend -const-gather-protocols-file`, whole-module), and that output looked right.
+- But the step that turns those into the bundle's `Contents/Resources/Metadata.appintents` (`appintentsmetadataprocessor`) only ships inside Xcode.app. It isn't in the Command Line Tools (`xcrun --find appintentsmetadataprocessor` fails), and without that metadata macOS never finds the intents, so Shortcuts and Spotlight show nothing.
+- The metadata format isn't documented, so writing it by hand would be guesswork that could break with any macOS update.
+
+So nothing is shipped. With Xcode installed it should be possible: build with the const-values flags, run `appintentsmetadataprocessor` (copy its arguments from an Xcode build log) on the binary and those files, and copy `Metadata.appintents` into the app before signing, in `build.sh` and `scripts/release.sh`. The intents would just call `Commands`. Until then, Shortcuts can use the URLs (an Open URLs action with `glideball://…`).
 
 ## Translations
 

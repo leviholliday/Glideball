@@ -16,7 +16,7 @@
 			<string>%lld件のバックアップ</string>
 		</dict>
 	</dict>
-	<key>%lld buttons</key>
+	<key>%lld buttons changed</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
 		<string>%#@count@</string>
@@ -27,7 +27,7 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>lld</string>
 			<key>other</key>
-			<string>%lld個のボタン</string>
+			<string>%lld個のボタンを変更</string>
 		</dict>
 	</dict>
 	<key>%lld combos</key>
@@ -100,7 +100,7 @@
 			<string>ほか%lld件は概要で</string>
 		</dict>
 	</dict>
-	<key>Glideball now keeps your records — %lld badges already earned</key>
+	<key>Glideball now keeps your records: %lld badges already earned</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
 		<string>%#@count@</string>
@@ -111,7 +111,7 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>lld</string>
 			<key>other</key>
-			<string>Glideで記録を残せるようになりました — すでに%lld個のバッジを獲得済み</string>
+			<string>Glideで記録を残せるようになりました：すでに%lld個のバッジを獲得済み</string>
 		</dict>
 	</dict>
 </dict>

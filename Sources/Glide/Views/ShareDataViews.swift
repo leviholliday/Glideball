@@ -4,149 +4,141 @@ import SwiftUI
 /// "A small favor": asks once whether Glideball may send crash reports, or
 /// crash reports and settings stats (see `ShareData`). Nothing is picked
 /// unless the person picks it. Shown over the window by
-/// `AppModel.offerSmallFavor()`: after the Welcome Tour on a new Mac, or
-/// once after updating on a Mac that already used Glideball.
+/// `AppModel.showNextPrompt()`: after the Welcome Tour on a new Mac, or after
+/// an update on a Mac that already used Glideball (behind What's New and
+/// "Glideball has a new look", each on its own opening of the window).
 struct SmallFavorCard: View {
     @Bindable var model: AppModel
     @State private var pick: ShareChoice = .nothing
 
     var body: some View {
-        ZStack {
-            Rectangle().fill(.black.opacity(0.28)).ignoresSafeArea()
+        OverlayCard(width: 560) {
             VStack(alignment: .leading, spacing: 16) {
                 HStack(spacing: 12) {
-                    Image(nsImage: NSApp.applicationIconImage)
+                    Image(nsImage: AppIconChoice.shared.image)
                         .resizable()
-                        .frame(width: 46, height: 46)
+                        .interpolation(.high)
+                        .frame(width: 44, height: 44)
+                        .accessibilityHidden(true)
                     Text("A small favor")
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .font(.system(size: 20, weight: .semibold))
+                        .accessibilityAddTraits(.isHeader)
                 }
                 Text("Hi, I'm Levi. I make Glideball on my own, and when it crashes on someone's Mac, I usually never hear about it. If you're okay with it, Glideball can send me a little anonymous information, so I can fix crashes and see which settings people actually use. It's off unless you pick something here.")
-                    .font(.system(size: 13.5))
+                    .font(Theme.Font.body)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
-                VStack(spacing: 8) {
-                    option(.nothing, symbol: "hand.raised",
+                RowGroup(dividerInset: 44) {
+                    option(.nothing,
                            detail: "Glideball doesn't send anything, and that's fine.")
-                    option(.crashes, symbol: "ladybug",
+                    option(.crashes,
                            detail: "If Glideball crashes, it sends me where in its code it happened and which versions of Glideball and macOS you have.")
-                    option(.crashesAndStats, symbol: "chart.bar",
+                    option(.crashesAndStats,
                            detail: "Also, once a day: which trackball you have and a few of your settings, like the scroll mode and roughly how fast the pointer is. Never what you type, which apps you use, or your name.")
                 }
 
                 Text("It isn't tied to your name, your email or your Mac. You can change this, or delete what was sent, any time in Glideball › Settings › Privacy.")
-                    .font(.system(size: 12))
+                    .font(Theme.Font.hint)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
                 HStack(alignment: .bottom, spacing: 10) {
                     VStack(alignment: .leading, spacing: 1) {
                         Text("Thanks either way,")
-                        Text(verbatim: "Levi").font(.system(size: 14, weight: .semibold, design: .serif)).italic()
+                            .font(Theme.Font.body)
+                            .foregroundStyle(.secondary)
+                        Text(verbatim: "Levi").font(.system(size: 15, weight: .semibold, design: .serif)).italic()
                     }
-                    .font(.system(size: 13))
                     Spacer()
                     Button("What’s Sent") { NSWorkspace.shared.open(ShareData.explainer) }
-                        .buttonStyle(.glass)
-                        .controlSize(.large)
                         .help("Opens the privacy page on the Glideball website")
-                    Button {
+                    Button("Done") {
                         ShareData.shared.choice = pick
                         ShareData.shared.asked = true
                         model.showingSmallFavor = false
-                    } label: {
-                        Text("Done").font(.system(size: 13, weight: .semibold)).padding(.horizontal, 10)
                     }
-                    .buttonStyle(.glassProminent)
-                    .tint(.cyan)
-                    .controlSize(.large)
+                    .buttonStyle(.borderedProminent)
+                    .tint(Theme.ball)
                     .keyboardShortcut(.defaultAction)
                 }
+                .controlSize(.large)
             }
-            .padding(28)
-            .frame(width: 580)
-            .glassEffect(.regular, in: .rect(cornerRadius: 30))
         }
-        .contentShape(Rectangle())   // nothing underneath can be clicked
     }
 
-    private func option(_ choice: ShareChoice, symbol: String, detail: LocalizedStringKey) -> some View {
+    private func option(_ choice: ShareChoice, detail: LocalizedStringKey) -> some View {
         let on = pick == choice
         return Button {
-            withAnimation(.smooth(duration: 0.2)) { pick = choice }
+            withAnimation(Theme.Motion.fade) { pick = choice }
         } label: {
-            HStack(alignment: .top, spacing: 12) {
+            HStack(alignment: .top, spacing: 10) {
                 Image(systemName: on ? "largecircle.fill.circle" : "circle")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(on ? Color.cyan : Color.secondary)
+                    .font(.system(size: 15))
+                    .foregroundStyle(on ? AnyShapeStyle(Theme.ball) : AnyShapeStyle(.tertiary))
+                    .frame(width: 20)
                     .padding(.top, 1)
                 VStack(alignment: .leading, spacing: 2) {
-                    Label(choice.title, systemImage: symbol)
-                        .font(.system(size: 14, weight: .semibold))
+                    Text(verbatim: choice.title)
+                        .font(Theme.Font.body.weight(.medium))
                     Text(detail)
-                        .font(.system(size: 12))
+                        .font(Theme.Font.hint)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
             }
-            .padding(12)
+            .padding(.horizontal, Theme.Space.rowHorizontal)
+            .padding(.vertical, 11)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background {
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(on ? Color.cyan.opacity(0.14) : Color.primary.opacity(0.04))
-                    .strokeBorder(on ? Color.cyan.opacity(0.55) : Color.primary.opacity(0.08), lineWidth: 1)
-            }
-            .contentShape(RoundedRectangle(cornerRadius: 14))
+            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(RowHoverStyle())
         .accessibilityAddTraits(on ? .isSelected : [])
     }
 }
 
-/// Settings › Privacy: the same choice as the card, any time, and "Delete my data".
-struct ShareDataRow: View {
+/// Settings › Privacy: the same choice as the card, any time, the install ID,
+/// what's sent, and Delete My Data with its result right where you clicked.
+struct ShareDataSettings: View {
     @Bindable private var share = ShareData.shared
     @State private var confirmingDelete = false
     @State private var copied = false
-    /// How the last Delete My Data went, shown under the buttons (the main
-    /// window, where toasts appear, may be closed).
-    @State private var deleted: Bool?
+    /// How the last Delete My Data went (the main window, where toasts appear, may be closed).
+    @State private var deleted: Bool? = ShareDataSettings.sandboxDeleted
+    /// `--render-ui`: start as if a delete just finished (or failed).
+    static var sandboxDeleted: Bool?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 10) {
-                Image(systemName: "heart.text.square")
-                    .font(.system(size: 14, weight: .medium))
-                    .frame(width: 22)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("Crash reports and stats").font(.system(size: 14, weight: .medium))
-                    Text(detail).font(.system(size: 11)).foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Spacer()
-                Picker("Crash reports and stats", selection: $share.choice) {
+        SectionBlock(title: "Crash reports and stats",
+                     caption: "Off unless you pick something. Never your name, what you type or which apps you use.",
+                     dividerInset: SettingsLayout.symbolInset) {
+            SettingsRow(title: "Send", hint: choiceHint, symbol: "heart.text.square") {
+                Picker(selection: $share.choice) {
                     ForEach(ShareChoice.allCases) { choice in
                         Text(verbatim: choice.title).tag(choice)
                     }
-                }
+                } label: { Text("Send") }
                 .pickerStyle(.menu)
                 .labelsHidden()
                 .fixedSize()
             }
             if let id = share.installID {
-                HStack(spacing: 8) {
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("Your install ID").font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                HStack(alignment: .center, spacing: Theme.Space.symbolGap) {
+                    RowSymbol(symbol: "number")
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Your install ID").font(Theme.Font.body)
                         Text(verbatim: id)
-                            .font(.system(size: 11, design: .monospaced))
+                            .font(.system(size: 11.5, weight: .medium, design: .monospaced))
                             .textSelection(.enabled)
-                        Text("If I ever need this for support, I'll ask you for it. I can't see it otherwise.")
-                            .font(.system(size: 11)).foregroundStyle(.tertiary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                        Text("If I ever need it for support, I’ll ask you for it. I can’t tell whose it is otherwise.")
+                            .font(Theme.Font.hint)
+                            .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
-                    Spacer()
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     Button {
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(id, forType: .string)
@@ -154,60 +146,65 @@ struct ShareDataRow: View {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { copied = false }
                     } label: {
                         Label(copied ? "Copied" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc")
+                            .contentTransition(.symbolEffect(.replace))
                     }
-                    .buttonStyle(.glass)
-                    .controlSize(.small)
-                    .contentTransition(.symbolEffect(.replace))
+                    .buttonStyle(ChipButtonStyle())
+                    .help("Copy the install ID")
                 }
-                .padding(.leading, 32)
+                .padding(.horizontal, Theme.Space.rowHorizontal)
+                .padding(.vertical, Theme.Space.rowVertical)
             }
-            HStack(spacing: 8) {
-                Spacer()
-                Button("What’s Sent") { NSWorkspace.shared.open(ShareData.explainer) }
-                    .buttonStyle(.glass)
-                    .controlSize(.small)
-                    .help("Opens the privacy page on the Glideball website")
-                if share.installID != nil {
-                    Button {
-                        confirmingDelete = true
-                    } label: {
-                        if share.deleting {
-                            ProgressView().controlSize(.mini).frame(width: 90)
-                        } else {
-                            Text("Delete My Data…")
-                        }
-                    }
-                    .buttonStyle(.glass)
-                    .controlSize(.small)
-                    .disabled(share.deleting)
-                    .help("Deletes the crash reports and stats this Mac has sent, and turns sharing off")
-                }
-            }
-            if let deleted {
-                Label(deleted ? "Deleted. Glideball won’t send anything now." : "Couldn’t delete it right now. Check your connection and try again.",
-                      systemImage: deleted ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                    .font(.system(size: 11))
-                    .foregroundStyle(deleted ? AnyShapeStyle(.secondary) : AnyShapeStyle(.orange))
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+            ActionRow(title: "What’s sent", hint: "The privacy page lists everything Glideball can send, with an example.",
+                      symbol: "doc.text.magnifyingglass", external: true) {
+                NSWorkspace.shared.open(ShareData.explainer)
             }
         }
-        .onChange(of: share.choice) { _, now in
-            if now != .nothing { deleted = nil }   // sharing again: the old result no longer applies
-        }
-        .alert("Delete what this Mac has sent?", isPresented: $confirmingDelete) {
-            Button("Delete", role: .destructive) { delete() }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("This deletes the crash reports and stats this Mac has sent to the Glideball server, and turns sharing off. It can't be undone.")
+        if share.installID != nil || deleted != nil {
+            SectionBlock(title: "What’s been sent", dividerInset: SettingsLayout.symbolInset) {
+                SettingsRow(title: "Delete my data", hint: deleteHint, symbol: deleteSymbol) {
+                    if share.deleting {
+                        ProgressView().controlSize(.small).padding(.horizontal, 8)
+                    } else if share.installID != nil && deleted != true {
+                        Button("Delete My Data…") { confirmingDelete = true }
+                            .controlSize(.small)
+                            .help("Deletes the crash reports and stats this Mac has sent, and turns sharing off")
+                    }
+                }
+            }
+            .onChange(of: share.choice) { _, now in
+                if now != .nothing { deleted = nil }   // sharing again: the old result no longer applies
+            }
+            .alert("Delete what this Mac has sent?", isPresented: $confirmingDelete) {
+                Button("Delete", role: .destructive) { delete() }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This deletes the crash reports and stats this Mac has sent to the Glideball server, and turns sharing off. It can't be undone.")
+            }
         }
     }
 
-    private var detail: LocalizedStringKey {
+    private var choiceHint: String {
         switch share.choice {
-        case .nothing: "Off. Glideball doesn't send anything."
-        case .crashes: "Sends a crash report if Glideball crashes. Nothing else."
-        case .crashesAndStats: "Sends crash reports, plus anonymous settings stats once a day."
+        case .nothing: String(localized: "Glideball doesn’t send anything.")
+        case .crashes: String(localized: "If Glideball crashes, it sends where in its code it happened and your versions. Nothing else.")
+        case .crashesAndStats: String(localized: "Crash reports, plus once a day your trackball and a few settings, like the scroll mode.")
+        }
+    }
+
+    private var deleteSymbol: String {
+        switch deleted {
+        case true?: "checkmark.circle"
+        case false?: "exclamationmark.triangle"
+        case nil: "trash"
+        }
+    }
+
+    private var deleteHint: String {
+        if share.deleting { return String(localized: "Deleting…") }
+        switch deleted {
+        case true?: return String(localized: "Deleted. Glideball won’t send anything now.")
+        case false?: return String(localized: "Couldn’t delete it right now. Check your connection and try again.")
+        case nil: return String(localized: "Deletes the crash reports and stats this Mac has sent, and turns sharing off.")
         }
     }
 

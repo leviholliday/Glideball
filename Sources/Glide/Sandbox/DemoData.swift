@@ -116,7 +116,7 @@ enum DemoData {
         safari.scroll = scroll
         var chrome = AppProfile(bundleID: "com.google.Chrome", name: "Google Chrome")
         chrome.trackingSpeed = 7
-        chrome.buttons = [2: .back, 3: .forward]
+        chrome.buttons = c.buttons.merging([2: .back, 3: .forward]) { $1 }   // a copy of the main buttons with two changed, as customizing makes it
         var excel = AppProfile(bundleID: "com.microsoft.Excel", name: "Microsoft Excel")
         excel.trackingSpeed = 3.5
         excel.chords = [Chord(buttons: [2, 3], action: .shortcut(.copy))]
@@ -151,6 +151,17 @@ enum DemoData {
                 : t > 0.78 && t < 0.88 ? 14 * sin((t - 0.78) / 0.10 * .pi) : 0
             live.push(ball: ball, notch: max(0, spin), dt: dt, interval: dt)
         }
+    }
+
+    /// A feed caught mid-motion: the ball rolling `roll` (in/s, + = right / toward you),
+    /// the ring turning `ring` (notches/s, + = clockwise).
+    static func movingFeed(roll: CGVector = .zero, ring: Double = 0) -> LiveFeed {
+        let live = LiveFeed()
+        let ball = (roll.dx * roll.dx + roll.dy * roll.dy).squareRoot()
+        for _ in 0..<12 {
+            live.push(ball: ball, notch: abs(ring), rollX: roll.dx, rollY: roll.dy, ringVelocity: ring, dt: 0.05, interval: 0.05)
+        }
+        return live
     }
 
     /// A small deterministic random number generator.

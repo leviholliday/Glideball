@@ -2,8 +2,8 @@ import AppKit
 import Observation
 
 /// Runs milestones, personal records and the "Make it yours" checklist, and
-/// stages their celebrations: a glass toast, a short confetti burst, and —
-/// only if you turn it on — a soft sound.
+/// stages their celebrations: a toast, a short confetti burst, and a short
+/// rising tone (unless Settings › Look & Sound › Sounds is off).
 ///
 /// It does no work of its own between ticks: `AppModel` calls `tick` about
 /// once a second while the window is on screen, and not at all when it's
@@ -13,19 +13,11 @@ final class DelightCenter {
     // MARK: Settings (per Mac)
 
     static let celebrationsKey = "GlideCelebrations"
-    static let soundsKey = "GlideCelebrationSounds"
     static let ledgerKey = "GlideDelightLedger"
 
     /// Toasts and confetti for milestones and records. On by default.
     var celebrationsOn: Bool {
         didSet { defaults.set(celebrationsOn, forKey: Self.celebrationsKey) }
-    }
-    /// A soft chime with celebrations. Off by default.
-    var soundsOn: Bool {
-        didSet {
-            defaults.set(soundsOn, forKey: Self.soundsKey)
-            if soundsOn && !oldValue { play(.step) }   // a preview of how quiet it is
-        }
     }
 
     // MARK: What the UI reads
@@ -56,7 +48,8 @@ final class DelightCenter {
 
     struct Burst: Identifiable, Equatable {
         let id = UUID()
-        let hues: [Double]
+        /// The part that was celebrated: most of the confetti is its color, the rest the other two parts'.
+        let lead: Metric?
     }
 
     // MARK: Plumbing
@@ -71,6 +64,8 @@ final class DelightCenter {
     @ObservationIgnored var present: ((AppModel.Toast) -> Void)?
     /// Whether a moment is a good time to celebrate (not mid-tour).
     @ObservationIgnored var canCelebrate: () -> Bool = { true }
+    /// The "Saved" pill just showed (AppModel plays the soft tick).
+    @ObservationIgnored var onSaved: (() -> Void)?
 
     static let totalsPrefix = "GlideTotals-"
 
@@ -90,7 +85,6 @@ final class DelightCenter {
     init(defaults: UserDefaults = .standard, config: GlideConfig) {
         self.defaults = defaults
         celebrationsOn = defaults.object(forKey: Self.celebrationsKey) as? Bool ?? true
-        soundsOn = defaults.bool(forKey: Self.soundsKey)
         if let data = defaults.data(forKey: Self.ledgerKey),
            let saved = try? JSONDecoder().decode(DelightLedger.self, from: data) {
             ledger = saved
@@ -190,6 +184,7 @@ final class DelightCenter {
         let work = DispatchWorkItem { [weak self] in
             guard let self else { return }
             self.showSaved = true
+            self.onSaved?()
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { [weak self] in self?.showSaved = false }
         }
         savedWork = work
@@ -211,6 +206,7 @@ final class DelightCenter {
         let more = events.count - 1
 
         var toast = AppModel.Toast(symbol: symbol(for: top), text: title(for: top), celebration: true)
+        toast.part = part(for: top)
         var detail = self.detail(for: top)
         if more > 0 {
             detail = [detail, String(localized: "+\(more) more on Overview", comment: "More celebrations to see on the Overview tab")]
@@ -223,9 +219,9 @@ final class DelightCenter {
         // Never stack bursts: one every few seconds at most.
         if top.isBig, now.timeIntervalSince(lastCelebration) > 4 {
             lastCelebration = now
-            let b = Burst(hues: hues(for: top))
+            let b = Burst(lead: part(for: top))
             burst = b
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) { [weak self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + ConfettiBurst.life + 0.25) { [weak self] in
                 if self?.burst?.id == b.id { self?.burst = nil }
             }
             if !Sandbox.isActive { NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now) }
@@ -235,11 +231,10 @@ final class DelightCenter {
 
     private enum Chime { case big, step }
 
+    /// The three-note rise, or the fuller bloom for a big one (Sounds.swift
+    /// keeps it quiet when Sounds is off, the Mac is muted, or in a sandbox run).
     private func play(_ chime: Chime) {
-        guard soundsOn, !Sandbox.isActive else { return }
-        let sound = NSSound(named: chime == .big ? "Glass" : "Pop")
-        sound?.volume = chime == .big ? 0.35 : 0.25
-        sound?.play()
+        Sounds.shared.play(chime == .big ? .milestoneBig : .milestone)
     }
 
     private func title(for e: DelightEvent) -> String {
@@ -254,7 +249,7 @@ final class DelightCenter {
         case .record(let k, _): k.newRecordTitle
         case .checklistStep(let item): item.doneTitle
         case .checklistDone: String(localized: "Glideball is all yours")
-        case .welcome(let n): String(localized: "Glideball now keeps your records — \(n) badges already earned")
+        case .welcome(let n): String(localized: "Glideball now keeps your records: \(n) badges already earned")
         }
     }
 
@@ -266,7 +261,7 @@ final class DelightCenter {
         case .checklistStep:
             String(localized: "\(ledger.checklist.count) of \(ChecklistItem.allCases.count) on Make it yours",
                    comment: "“Make it yours” is the setup checklist on Overview")
-        case .checklistDone: String(localized: "Every part of your trackball, set up your way.")
+        case .checklistDone: String(localized: "Every part of your trackball is set up.")
         case .welcome: String(localized: "See them on Overview")
         }
     }
@@ -282,20 +277,13 @@ final class DelightCenter {
         }
     }
 
-    /// Confetti colors, roughly matching what was celebrated.
-    private func hues(for e: DelightEvent) -> [Double] {
+    /// The part a celebration is about (its toast icon and most of its confetti take that part's color).
+    private func part(for e: DelightEvent) -> Metric? {
         switch e {
-        case .milestone(let m): Self.hues(for: m.metric)
-        case .dayRecord(let m, _): Self.hues(for: m)
-        default: [0.52, 0.78, 0.9, 0.14]
-        }
-    }
-
-    static func hues(for m: Metric) -> [Double] {
-        switch m {
-        case .scroll: [0.92, 0.85, 0.78, 0.14]
-        case .ball: [0.52, 0.58, 0.72, 0.14]
-        case .clicks: [0.5, 0.42, 0.78, 0.14]
+        case .milestone(let m): m.metric
+        case .dayRecord(let m, _): m
+        case .record(let k, _): k == .roll ? .ball : .scroll
+        default: nil
         }
     }
 }

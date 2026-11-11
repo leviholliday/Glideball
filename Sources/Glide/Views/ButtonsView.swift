@@ -1,6 +1,9 @@
 import AppKit
 import SwiftUI
 
+/// Buttons: what each one does, in one group. There's no picture of the
+/// trackball here: the sidebar's is the diagram, and pressing a real button
+/// lights up both its corner there and its row here.
 struct ButtonsView: View {
     @Bindable var model: AppModel
 
@@ -9,23 +12,11 @@ struct ButtonsView: View {
     }
 
     var body: some View {
-        VStack(spacing: 18) {
-        AssignPanel(model: model)
-        HStack(alignment: .top, spacing: 18) {
-            VStack(spacing: 18) {
-                GlassCard {
-                    TrackballView(feed: model.live, pressed: model.pressed)
-                    Text("Press a button on your trackball — its row lights up.")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity)
-                }
-                ButtonPresetCard(model: model)
-            }
-            .frame(width: 270)
+        VStack(alignment: .leading, spacing: Theme.Space.section) {
+            AssignPanel(model: model)
 
-            VStack(spacing: 12) {
+            SectionBlock(title: "Your buttons", caption: "Press a button on your trackball: its row lights up.",
+                         dividerInset: ButtonRow.dividerInset) {
                 ForEach(buttons, id: \.index) { b in
                     ButtonRow(index: b.index, name: b.name, normally: b.normally,
                               isPressed: model.pressed.contains(b.index),
@@ -33,45 +24,43 @@ struct ButtonsView: View {
                                 get: { model.config.buttons[b.index] ?? .system },
                                 set: { model.config.buttons[b.index] = $0 }))
                 }
-                CombosCard(model: model)
             }
-        }
+
+            CombosCard(model: model)
+            ButtonPresetCard(model: model)
         }
     }
 }
 
 /// One-click button setups. Applying one changes only its own buttons and
-/// combo; each can be changed back with the rows and Combos card as usual.
+/// combo; each can be changed back with the rows and Combos as usual.
 struct ButtonPresetCard: View {
     let model: AppModel
 
     var body: some View {
         let applied = model.config.hasSpacesAndWisprFlow
-        GlassCard(title: "Presets", symbol: "wand.and.stars") {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Spaces + Wispr Flow").font(.system(size: 14, weight: .semibold))
-                Text("Top buttons switch Spaces; bottom left + both top buttons hold ⌃Space for Wispr Flow.")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            let button = Button {
-                withAnimation(.smooth) { model.applySpacesAndWisprFlow() }
-            } label: {
-                Label(applied ? "Applied" : "Apply", systemImage: applied ? "checkmark" : "wand.and.stars")
-                    .frame(maxWidth: .infinity)
-            }
-            .disabled(applied)
-            .accessibilityAddTraits(applied ? .isSelected : [])
-            if applied {
-                button.buttonStyle(.glassProminent).tint(.cyan.opacity(0.7))
-            } else {
-                button.buttonStyle(.glass)
+        SectionBlock(title: "Presets") {
+            SettingRow(title: "Spaces + Wispr Flow",
+                       hint: "Top buttons switch Spaces; bottom left + both top buttons hold ⌃Space for Wispr Flow.",
+                       symbol: "square.on.square.dashed") {
+                if applied {
+                    Label("Applied", systemImage: "checkmark")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.secondary)
+                        .accessibilityAddTraits(.isSelected)
+                } else {
+                    Button("Apply") {
+                        withAnimation(Theme.Motion.spring) { model.applySpacesAndWisprFlow() }
+                    }
+                    .controlSize(.small)
+                }
             }
         }
     }
 }
 
+/// A button's row: which corner it is, what it does normally, and what it does now.
+/// Lights up amber while the real button is down (80 ms in, 250 ms out).
 struct ButtonRow: View {
     let index: Int
     let name: String
@@ -82,39 +71,35 @@ struct ButtonRow: View {
     @State private var recording = false
     @State private var monitor: Any?
 
+    static let dividerInset = Theme.Space.rowHorizontal + 26 + Theme.Space.symbolGap
+
     var body: some View {
-        HStack(spacing: 14) {
-            ZStack {
-                Circle()
-                    .fill(isPressed ? Color.cyan : Color.white.opacity(0.12))
-                    .shadow(color: isPressed ? .cyan : .clear, radius: 10)
-                Text(verbatim: "\(index + 1)")
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
-                    .foregroundStyle(isPressed ? .black : .primary)
-            }
-            .frame(width: 34, height: 34)
-            .animation(.easeOut(duration: 0.12), value: isPressed)
+        HStack(spacing: Theme.Space.symbolGap) {
+            CornerGlyph(index: index, lit: isPressed)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(name).font(.system(size: 15, weight: .semibold))
-                Text("Normally: \(normally)").font(.system(size: 11)).foregroundStyle(.secondary)
+                Text(name).font(.system(size: 13, weight: .medium))
+                Text(index == 0 ? String(localized: "Your primary click stays a left click, so Glideball can never lock you out.")
+                                : String(localized: "Normally: \(normally)"))
+                    .font(Theme.Font.hint)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            Spacer()
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             if index == 0 {
-                Label("Left click · locked", systemImage: "lock.fill")
+                Label("Left click", systemImage: "lock.fill")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(.secondary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 7)
-                    .glassEffect(.regular, in: .capsule)
+                    .labelStyle(TrailingIconLabelStyle())
                     .help("Your primary click stays a left click, so Glideball can never lock you out.")
+                    .accessibilityLabel("Left click · locked")
             } else if recording {
                 Text("Type a shortcut…  esc to cancel")
                     .font(.system(size: 12, weight: .medium))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 7)
-                    .glassEffect(.regular.tint(.orange.opacity(0.35)), in: .capsule)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .overlay(Capsule().strokeBorder(Theme.buttons, lineWidth: 1))
             } else {
                 Menu {
                     ForEach(ButtonAction.presets) { p in
@@ -131,22 +116,25 @@ struct ButtonRow: View {
                         Label("Record custom shortcut…", systemImage: "record.circle")
                     }
                 } label: {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 6) {
                         Image(systemName: action.symbol)
-                        Text(action.title).font(.system(size: 13, weight: .medium))
+                        Text(action.title)
                         if let d = action.detail, action.title != d {
-                            Text(d).font(.system(size: 12, design: .rounded)).foregroundStyle(.secondary)
+                            Text(d).foregroundStyle(.secondary)
                         }
                     }
+                    .font(.system(size: 12))
                 }
                 .menuStyle(.button)
-                .buttonStyle(.glass)
+                .controlSize(.small)
                 .fixedSize()
             }
         }
-        .padding(16)
-        .glassEffect(isPressed ? .regular.tint(.cyan.opacity(0.25)) : .regular, in: .rect(cornerRadius: 22))
-        .animation(.easeOut(duration: 0.12), value: isPressed)
+        .padding(.horizontal, Theme.Space.rowHorizontal)
+        .padding(.vertical, Theme.Space.rowVertical)
+        .frame(minHeight: Theme.Space.rowMinHeight)
+        .background(Theme.buttons.opacity(isPressed ? 0.14 : 0))
+        .animation(isPressed ? Theme.Motion.pressIn : Theme.Motion.pressOut, value: isPressed)
         .onDisappear { stopRecording() }
     }
 
@@ -167,5 +155,42 @@ struct ButtonRow: View {
         if let monitor { NSEvent.removeMonitor(monitor) }
         monitor = nil
         recording = false
+    }
+}
+
+/// Which corner a button is: a little 2×2 of the trackball's pads with that
+/// one filled (amber while the real button is down).
+struct CornerGlyph: View {
+    let index: Int
+    var lit = false
+
+    var body: some View {
+        // macOS numbers them 0 bottom left, 1 bottom right, 2 top left, 3 top right.
+        let order = [2, 3, 0, 1]
+        Grid(horizontalSpacing: 2, verticalSpacing: 2) {
+            ForEach(0..<2, id: \.self) { row in
+                GridRow {
+                    ForEach(0..<2, id: \.self) { col in
+                        let b = order[row * 2 + col]
+                        RoundedRectangle(cornerRadius: 2.5, style: .continuous)
+                            .fill(b == index ? (lit ? AnyShapeStyle(Theme.buttons) : AnyShapeStyle(.secondary))
+                                             : AnyShapeStyle(Theme.hairline))
+                            .frame(width: 9, height: 9)
+                    }
+                }
+            }
+        }
+        .frame(width: 26, height: 26)
+        .accessibilityHidden(true)
+    }
+}
+
+/// Text first, then the icon (for "Left click 🔒").
+struct TrailingIconLabelStyle: LabelStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 5) {
+            configuration.title
+            configuration.icon.font(.system(size: 10))
+        }
     }
 }

@@ -307,11 +307,11 @@ enum ChecklistItem: String, CaseIterable, Identifiable, Codable {
 
     var hint: String {
         switch self {
-        case .speed: String(localized: "Pointer tab — try a preset")
-        case .scroll: String(localized: "Scrolling tab — Flywheel, Follow or Native")
-        case .button: String(localized: "Buttons tab — Quick assign takes two presses")
-        case .combo: String(localized: "Buttons tab — press two buttons together")
-        case .app: String(localized: "Apps tab — a different feel per app")
+        case .speed: String(localized: "Pointer tab: try a preset")
+        case .scroll: String(localized: "Scrolling tab: Flywheel, Follow or Native")
+        case .button: String(localized: "Buttons tab: Quick assign takes two presses")
+        case .combo: String(localized: "Buttons tab: press two buttons together")
+        case .app: String(localized: "Apps tab: a different feel per app")
         }
     }
 

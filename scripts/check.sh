@@ -10,6 +10,7 @@
 #   build        swift build -c release
 #   scroll-sim   scripts/scroll-sim/run.sh       the scroll engine, on synthetic ticks
 #   backup-sim   scripts/backup-sim/run.sh       backup retention over 18 months
+#   command-sim  scripts/command-sim/run.sh      glideball:// URLs, good and hostile, and status.json
 #   l10n         scripts/l10n/check.py           every translation complete, no repeated keys
 #   website      the website's function tests    (npm ci first if website/node_modules is missing)
 #   site         build_pages.py + check_site.py  in a copy of website/, so nothing here changes
@@ -25,7 +26,7 @@ VERBOSE=0
 for arg in "$@"; do
   case $arg in
     -v|--verbose) VERBOSE=1 ;;
-    -h|--help) sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) print -u2 "unknown option: $arg"; exit 64 ;;
   esac
 done
@@ -72,6 +73,7 @@ built=$?
 
 run scroll-sim "scroll engine simulator" scripts/scroll-sim/run.sh
 run backup-sim "backup retention simulator" scripts/backup-sim/run.sh
+run command-sim "glideball:// URLs and status.json, good and hostile" scripts/command-sim/run.sh
 run l10n "translations: complete, no repeated keys" python3 scripts/l10n/check.py
 
 website_tests() (   # a subshell: the cd stays in here
@@ -80,11 +82,8 @@ website_tests() (   # a subshell: the cd stays in here
     print "website/node_modules is missing; running npm ci"
     npm ci --no-audit --no-fund || return 1
   fi
-  npm run -s test:usage || return 1
-  # Any other test files there too (npm test runs tests/*.test.mjs).
-  local others=(tests/*.test.mjs(N))
-  others=(${others:#tests/usage.test.mjs})
-  if (( ${#others} )); then npm run -s test || return 1; fi
+  # Every tests/*.test.mjs (usage, stats, and any added later), each in its own process.
+  npm run -s test || return 1
 )
 if command -v npm >/dev/null; then
   run website "website function tests (npm)" website_tests

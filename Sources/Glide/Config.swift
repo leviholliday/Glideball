@@ -214,7 +214,7 @@ struct GlobalShortcuts: Codable, Equatable {
     /// Why `shortcut` can't be used for `action`, or nil if it can.
     func refusal(for shortcut: KeyShortcut, as action: Action) -> String? {
         if shortcut.flags.intersection([.maskCommand, .maskControl, .maskAlternate]).isEmpty {
-            return String(localized: "Include ⌘, ⌃, or ⌥ — \(shortcut.display) on its own would stop working everywhere else.")
+            return String(localized: "Include ⌘, ⌃, or ⌥. \(shortcut.display) on its own would stop working everywhere else.")
         }
         if let other = Action.allCases.first(where: { $0 != action && self[$0]?.sameKeys(as: shortcut) == true }) {
             return String(localized: "\(shortcut.display) is already the shortcut for \(other.title).",

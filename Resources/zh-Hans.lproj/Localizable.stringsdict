@@ -16,7 +16,7 @@
 			<string>%lld 份备份</string>
 		</dict>
 	</dict>
-	<key>%lld buttons</key>
+	<key>%lld buttons changed</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
 		<string>%#@count@</string>
@@ -27,7 +27,7 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>lld</string>
 			<key>other</key>
-			<string>%lld 个按钮</string>
+			<string>已更改 %lld 个按钮</string>
 		</dict>
 	</dict>
 	<key>%lld combos</key>
@@ -100,7 +100,7 @@
 			<string>概览中还有 %lld 项</string>
 		</dict>
 	</dict>
-	<key>Glideball now keeps your records — %lld badges already earned</key>
+	<key>Glideball now keeps your records: %lld badges already earned</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
 		<string>%#@count@</string>
@@ -111,7 +111,7 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>lld</string>
 			<key>other</key>
-			<string>Glideball 现在会保存你的纪录 — 已获得 %lld 枚徽章</string>
+			<string>Glideball 现在会保存你的纪录：已获得 %lld 枚徽章</string>
 		</dict>
 	</dict>
 </dict>

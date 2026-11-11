@@ -27,18 +27,29 @@ struct AppProfile: Codable, Equatable, Identifiable {
         chords = try c.decodeLenientChords(forKey: .chords)
     }
 
-    /// "Speed 6 · Flywheel scrolling · 2 buttons", for the app list.
-    var summary: String {
+    /// What this setup does differently from the main one, piece by piece:
+    /// "Pointer 6.5", "Follow scrolling", "2 buttons changed". Areas left on the
+    /// main setup, or customized but still the same as it, don't appear.
+    func changes(comparedTo main: GlideConfig) -> [String] {
         var parts: [String] = []
-        if let trackingSpeed { parts.append(String(localized: "Speed \(trackingSpeed.formatted())", comment: "Pointer speed in an app setup")) }
-        if let scroll { parts.append(scroll.scrollMode.scrollingTitle) }
-        if let buttons {
-            let n = buttons.filter { $0.key != 0 && $0.value != .system }.count
-            parts.append(n == 0 ? String(localized: "Default buttons") : String(localized: "\(n) buttons", comment: "Remapped buttons in an app setup"))
+        if let trackingSpeed, trackingSpeed != main.trackingSpeed {
+            parts.append(String(localized: "Pointer \(trackingSpeed.formatted())", comment: "Pointer speed in an app setup"))
         }
-        if let chords {
+        if let scroll, scroll != main.scrollSettings { parts.append(scroll.scrollMode.scrollingTitle) }
+        if let buttons {
+            // The primary button is never per-app, so only the other three can differ.
+            let n = (1..<4).filter { (buttons[$0] ?? .system) != (main.buttons[$0] ?? .system) }.count
+            if n > 0 { parts.append(String(localized: "\(n) buttons changed", comment: "Buttons that do something other than the main setup, in an app setup")) }
+        }
+        if let chords, chords != main.chords {
             parts.append(chords.isEmpty ? String(localized: "No combos") : String(localized: "\(chords.count) combos"))
         }
+        return parts
+    }
+
+    /// One line for the app list: "Pointer 6.5 · Follow scrolling · 2 buttons changed".
+    func summary(comparedTo main: GlideConfig) -> String {
+        let parts = changes(comparedTo: main)
         return parts.isEmpty ? String(localized: "Uses your main setup") : parts.joined(separator: " · ")
     }
 }

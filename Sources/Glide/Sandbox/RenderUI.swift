@@ -122,6 +122,7 @@ enum RenderUI {
             print("error: can't create \(o.dir.path): \(error.localizedDescription)")
             exit(2)
         }
+        Offscreen.layoutScale = o.scale
         DemoData.seed()
         let model = AppModel.shared
         DemoData.prime(model)
@@ -202,12 +203,13 @@ enum RenderUI {
 
     // MARK: Pieces
 
-    static let windowSize = NSSize(width: 1040, height: 700)
+    static let windowSize = AppDelegate.mainWindowSize
 
     private static func appearance(_ dark: Bool) -> NSAppearance? { NSAppearance(named: dark ? .darkAqua : .aqua) }
 
     /// The main window on `tab`, as it opens, with `overlay` on top (the tour, say).
     static func mainWindow<O: View>(_ model: AppModel, tab: GlideTab, dark: Bool, scale: CGFloat,
+                                    size: NSSize? = nil,
                                     @ViewBuilder overlay: () -> O) -> NSBitmapImageRep? {
         UserDefaults.standard.set(tab.rawValue, forKey: "GlideInitialTab")
         defer { UserDefaults.standard.removeObject(forKey: "GlideInitialTab") }
@@ -215,20 +217,23 @@ enum RenderUI {
             RootView(model: model)
             overlay()
         }
-        return Offscreen.render(view, size: windowSize, chrome: .window, appearance: appearance(dark), scale: scale)
+        return Offscreen.render(view, size: size ?? windowSize, chrome: .mainWindow, appearance: appearance(dark), scale: scale)
     }
 
-    static func mainWindow(_ model: AppModel, tab: GlideTab, dark: Bool, scale: CGFloat) -> NSBitmapImageRep? {
-        mainWindow(model, tab: tab, dark: dark, scale: scale) { EmptyView() }
+    static func mainWindow(_ model: AppModel, tab: GlideTab, dark: Bool, scale: CGFloat,
+                           size: NSSize? = nil) -> NSBitmapImageRep? {
+        mainWindow(model, tab: tab, dark: dark, scale: scale, size: size) { EmptyView() }
     }
 
-    /// A whole tab, top to bottom (what scrolling would show), without the window's header.
+    /// A whole tab, top to bottom (what scrolling would show), without the sidebar: the content column at its full width.
     static func fullPage<V: View>(_ page: V, dark: Bool, scale: CGFloat) -> NSBitmapImageRep? {
         let view = page
-            .padding(.horizontal, 26)
+            .frame(width: Theme.Space.contentMaxWidth, alignment: .leading)
+            .padding(.horizontal, Theme.Space.contentSide)
             .padding(.vertical, 24)
             .background(GlideBackground())
-        return Offscreen.renderTall(view, width: windowSize.width, appearance: appearance(dark), scale: scale)
+        return Offscreen.renderTall(view, width: Theme.Space.contentMaxWidth + Theme.Space.contentSide * 2,
+                                    appearance: appearance(dark), scale: scale)
     }
 
     /// A sheet's content at its own size, as macOS shows it over the window.
@@ -238,26 +243,41 @@ enum RenderUI {
 
     /// A card on its own, on the window's background.
     static func card<V: View>(_ view: V, width: CGFloat, dark: Bool, scale: CGFloat) -> NSBitmapImageRep? {
-        let v = view.padding(26).background(GlideBackground())
+        let v = view.padding(Theme.Space.contentSide).background(GlideBackground())
         return Offscreen.renderTall(v, width: width, appearance: appearance(dark), scale: scale)
     }
 
     /// Glideball › Settings…, through the real `SettingsWindowController` (toolbar tabs and all).
     static func settings(_ pane: SettingsPane, dark: Bool, scale: CGFloat) -> NSBitmapImageRep? {
-        UserDefaults.standard.set(pane.rawValue, forKey: "GlideSettingsPane")
+        UserDefaults.standard.set(pane.rawValue, forKey: SettingsWindowController.lastPaneKey)
         let controller = SettingsWindowController()
         guard let window = controller.window, let content = window.contentView else { return nil }
         window.appearance = appearance(dark)
         window.animationBehavior = .none
         Offscreen.lookActive(window)
+        // The tab reports its height once it has laid out; the window follows.
         Offscreen.settleDown(content, seconds: 0.3)
-        if let tabs = window.contentViewController as? NSTabViewController {
-            // The window fits the chosen tab's content once it has laid out.
-            tabs.tabView(tabs.tabView, didSelect: tabs.tabView.selectedTabViewItem)
-        }
         Offscreen.settleDown(content, seconds: 0.1)
         defer { window.close() }
         return Offscreen.draw(window, content: content, chrome: .titled, scale: scale)
+    }
+
+    /// A small titled panel (the external-control notice), built the way the app builds it.
+    static func panel<V: View>(_ view: V, dark: Bool, scale: CGFloat) -> NSBitmapImageRep? {
+        let controller = NSHostingController(rootView: Offscreen.withoutAnimations(view))
+        controller.sizingOptions = [.preferredContentSize]
+        let w = Offscreen.ActiveLookingWindow(contentViewController: controller)
+        w.styleMask = [.titled, .closable, .fullSizeContentView]
+        w.titlebarAppearsTransparent = true
+        w.titleVisibility = .hidden
+        w.isReleasedWhenClosed = false
+        w.appearance = appearance(dark)
+        guard let content = w.contentView else { return nil }
+        Offscreen.settleDown(content, seconds: 0.2)
+        w.setContentSize(controller.view.fittingSize)
+        Offscreen.settleDown(content, seconds: 0.05)
+        defer { w.close() }
+        return Offscreen.draw(w, content: content, chrome: .titled, scale: scale)
     }
 
     /// The Software Update window, built the way AppDelegate builds it.
