@@ -256,6 +256,9 @@ struct WelcomeTourView: View {
             permissionRow("Input Monitoring", symbol: "keyboard.badge.eye",
                           detail: "Lets Glideball tell your trackball apart from your other mice and trackpad.",
                           granted: model.hasInputMonitoring, action: model.requestInputMonitoring)
+            Link("Why?", destination: SiteLinks.permissions)
+                .font(.system(size: 12))
+                .frame(maxWidth: .infinity, alignment: .trailing)
             Spacer(minLength: 0)
             Group {
                 if model.permissionsOK {

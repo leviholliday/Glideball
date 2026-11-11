@@ -1017,10 +1017,6 @@
 
 "Celebration sounds" = "Feier-Sounds";
 
-"A soft chime as Glideball opens. Never when your Mac is muted." = "Ein sanfter Klang beim Öffnen von Glideball. Nie, wenn dein Mac stummgeschaltet ist.";
-
-"Launch sounds" = "Startklang";
-
 
 
 "Closing this window keeps Glideball running. Click Glideball in the Dock to bring it back, or press ⌘Q to quit — your trackball then goes back to normal." = "Wenn du dieses Fenster schließt, läuft Glideball weiter. Klicke im Dock auf Glideball, um es zurückzuholen, oder drücke ⌘Q zum Beenden — dein Trackball verhält sich dann wieder normal.";
@@ -1568,3 +1564,34 @@
 "Privacy" = "Datenschutz";
 "Shortcuts" = "Kurzbefehle";
 "Looking for Open at login, Language, Updates or Keyboard shortcuts? They've moved to Settings. Press ⌘, any time Glideball is in front." = "Suchst du „Beim Anmelden öffnen“, „Sprache“, „Updates“ oder „Tastaturkurzbefehle“? Das ist jetzt in den Einstellungen. Drücke ⌘, wann immer Glideball im Vordergrund ist.";
+
+/* ---- Launch setting, View and Help menus, permission links ---- */
+
+"Animation" = "Animation";
+
+"Quick fade" = "Kurzes Einblenden";
+
+"When Glideball opens" = "Beim Öffnen von Glideball";
+
+"A short animation over the window. You can click or press Esc to skip it." = "Eine kurze Animation über dem Fenster. Mit einem Klick oder Esc überspringst du sie.";
+
+"The Glideball mark shows for a moment, then the window fades in." = "Das Glideball-Zeichen erscheint kurz, dann wird das Fenster eingeblendet.";
+
+"The window opens with no animation at all." = "Das Fenster öffnet sich ganz ohne Animation.";
+
+"Launch sound" = "Startklang";
+
+"A soft chime the first time Glideball opens after an update. Never when your Mac is muted." = "Ein sanfter Klang, wenn Glideball nach einem Update zum ersten Mal geöffnet wird. Nie, wenn dein Mac stummgeschaltet ist.";
+
+"View" = "Darstellung";
+
+"Play the Intro" = "Intro abspielen";
+
+"Glideball Help" = "Glideball-Hilfe";
+
+"Troubleshooting" = "Fehlerbehebung";
+
+"What’s New" = "Neuigkeiten";
+
+"Why?" = "Warum?";
+

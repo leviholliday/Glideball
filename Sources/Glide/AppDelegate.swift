@@ -129,6 +129,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         NSWorkspace.shared.open(URL(string: "https://glideball.netlify.app")!)
     }
 
+    @objc private func openHelp(_ sender: Any?) { NSWorkspace.shared.open(SiteLinks.help) }
+    @objc private func openTroubleshooting(_ sender: Any?) { NSWorkspace.shared.open(SiteLinks.troubleshooting) }
+
+    @objc private func openWhatsNew(_ sender: Any?) {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        NSWorkspace.shared.open(SiteLinks.whatsNew(in: version))
+    }
+
+    /// Help › Play the Intro: the first-launch intro again, with its music.
+    @objc private func playIntro(_ sender: Any?) {
+        showWindow()
+        LaunchExperience.shared.replayIntro()
+    }
+
+    /// View › ⌘1…⌘6: the main window's tabs, in the order they sit in the window.
+    @objc private func selectTab(_ sender: NSMenuItem) {
+        guard GlideTab.allCases.indices.contains(sender.tag) else { return }
+        showWindow()
+        AppModel.shared.requestedTab = GlideTab.allCases[sender.tag]
+    }
+
     @objc private func exportSettings() { showWindow(); AppModel.shared.exportSettings() }
     @objc private func importSettings() { showWindow(); AppModel.shared.importSettings() }
 
@@ -380,6 +401,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         editItem.submenu = editMenu
         main.addItem(editItem)
 
+        let viewItem = NSMenuItem()
+        let viewMenu = NSMenu(title: String(localized: "View", comment: "Menu bar title"))
+        for (index, tab) in GlideTab.allCases.enumerated() {
+            let item = viewMenu.addItem(withTitle: tab.title, action: #selector(selectTab), keyEquivalent: String(index + 1))
+            item.target = self
+            item.tag = index
+        }
+        viewItem.submenu = viewMenu
+        main.addItem(viewItem)
+
         let windowItem = NSMenuItem()
         let windowMenu = NSMenu(title: String(localized: "Window", comment: "Menu bar title"))
         windowMenu.addItem(withTitle: String(localized: "Minimize"), action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
@@ -390,6 +421,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let helpMenu = NSMenu(title: String(localized: "Help", comment: "Menu bar title"))
         helpMenu.addItem(withTitle: String(localized: "About & Help…"), action: #selector(showAbout), keyEquivalent: "").target = self
         helpMenu.addItem(withTitle: String(localized: "Show Welcome Tour…"), action: #selector(showWelcomeTour), keyEquivalent: "").target = self
+        helpMenu.addItem(withTitle: String(localized: "Play the Intro"), action: #selector(playIntro), keyEquivalent: "").target = self
+        helpMenu.addItem(.separator())
+        helpMenu.addItem(withTitle: String(localized: "Glideball Help"), action: #selector(openHelp), keyEquivalent: "").target = self
+        helpMenu.addItem(withTitle: String(localized: "Troubleshooting"), action: #selector(openTroubleshooting), keyEquivalent: "").target = self
+        helpMenu.addItem(withTitle: String(localized: "What’s New"), action: #selector(openWhatsNew), keyEquivalent: "").target = self
         helpMenu.addItem(.separator())
         helpMenu.addItem(withTitle: String(localized: "Send Feedback…"), action: #selector(sendFeedback), keyEquivalent: "").target = self
         helpMenu.addItem(withTitle: String(localized: "Glideball Website"), action: #selector(openWebsite), keyEquivalent: "").target = self

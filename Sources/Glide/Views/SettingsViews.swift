@@ -50,8 +50,11 @@ struct GeneralSettingsPane: View {
                 ToggleRow(title: "Celebration sounds", subtitle: "A soft chime to go with them.",
                           symbol: "speaker.wave.2", isOn: Bindable(model.delight).soundsOn)
                     .disabled(!model.delight.celebrationsOn)
-                ToggleRow(title: "Launch sounds", subtitle: "A soft chime as Glideball opens. Never when your Mac is muted.",
+                LaunchStyleRow()
+                ToggleRow(title: "Launch sound",
+                          subtitle: "A soft chime the first time Glideball opens after an update. Never when your Mac is muted.",
                           symbol: "music.note", isOn: Bindable(LaunchExperience.shared).soundsOn)
+                    .disabled(LaunchExperience.shared.style == .none)
             }
         }
     }
@@ -115,6 +118,41 @@ struct PerformanceRow: View {
         case .smooth: "The window animates at full rate. Uses the most CPU while it's open."
         case .efficient: "Easy on your CPU: the window animates less when it isn't in front, and holds still when nothing moves."
         case .minimal: "The window updates only a few times a second and its background holds still. Scrolling and buttons are never affected."
+        }
+    }
+}
+
+/// What plays when Glideball opens: the animation, a quick fade, or nothing.
+struct LaunchStyleRow: View {
+    @Bindable private var launch = LaunchExperience.shared
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "sparkles")
+                .font(.system(size: 14, weight: .medium))
+                .frame(width: 22)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("When Glideball opens").font(.system(size: 14, weight: .medium))
+                Text(detail).font(.system(size: 11)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer()
+            Picker("When Glideball opens", selection: $launch.style) {
+                ForEach(LaunchExperience.Style.allCases) { style in
+                    Text(verbatim: style.title).tag(style)
+                }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .fixedSize()
+        }
+    }
+
+    private var detail: LocalizedStringKey {
+        switch launch.style {
+        case .animation: "A short animation over the window. You can click or press Esc to skip it."
+        case .fade: "The Glideball mark shows for a moment, then the window fades in."
+        case .none: "The window opens with no animation at all."
         }
     }
 }
