@@ -51,5 +51,5 @@ Language sets the same per-app preference from inside Glideball.
    it prints `✓ all languages complete`.
 
 Try a language without changing your Mac: run the built app with
-`Glideball.app/Contents/MacOS/Glideball -AppleLanguages '(de)'`, or pick it in Overview › General ›
+`Glideball.app/Contents/MacOS/Glide -AppleLanguages '(de)'`, or pick it in Overview › General ›
 Language and relaunch.
