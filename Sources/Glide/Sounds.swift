@@ -37,7 +37,7 @@ final class Sounds: @unchecked Sendable {
     private let queue = DispatchQueue(label: "com.leviholliday.glide.sounds", qos: .userInitiated)
     private let silentRun: Bool = {
         let args = CommandLine.arguments
-        return args.contains("--render-ui") || args.contains("--self-test")
+        return Sandbox.isActive || args.contains("--render-ui") || args.contains("--self-test")
     }()
 
     // Only touched on `queue`.
