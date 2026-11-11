@@ -39,6 +39,8 @@ enum Offscreen {
         override var isMainWindow: Bool { true }
         override var canBecomeKey: Bool { false }
         override var canBecomeMain: Bool { false }
+        /// Lay out (and rasterize text) at the scale being rendered, so a 1x picture is a real 1x layout.
+        override var backingScaleFactor: CGFloat { Offscreen.layoutScale ?? super.backingScaleFactor }
         // AppKit asks these (not isKeyWindow) when choosing active or inactive
         // colors for controls and the traffic lights.
         @objc(_hasActiveAppearance) func hasActiveAppearance() -> Bool { true }
@@ -56,6 +58,9 @@ enum Offscreen {
         let refresh = NSSelectorFromString("_sendForcedWindowChangedKeyState")
         if window.responds(to: refresh) { window.perform(refresh) }
     }
+
+    /// The pixel density windows report while rendering (nil: the Mac's own).
+    static var layoutScale: CGFloat?
 
     static var useAppKit: Bool { ProcessInfo.processInfo.environment["GLIDE_RENDER_ENGINE"] == "appkit" }
 

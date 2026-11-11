@@ -1651,7 +1651,7 @@
 "Keep the classic one" = "クラシックのままにする";
 "Language and performance" = "言語とパフォーマンス";
 "Learn more" = "詳しく見る";
-"Lets Raycast, Shortcuts and scripts pause Glideball, switch modes and change the pointer speed. It stays off unless you turn it on." = "Raycast、ショートカット、スクリプトからGlideballの一時停止、モードの切り替え、ポインタ速度の変更ができるようになります。オンにしない限りオフのままです。";
+"Lets Raycast and scripts pause Glideball, switch modes and change the pointer speed. It stays off unless you turn it on." = "RaycastとスクリプトからGlideballの一時停止、モードの切り替え、ポインタ速度の変更ができるようになります。オンにしない限りオフのままです。";
 "Look & Sound" = "外観とサウンド";
 "No icon in the menu bar. Open Glideball from the Dock to change things." = "メニューバーにアイコンは表示されません。変更するにはDockからGlideballを開いてください。";
 "No pause shortcut. You can still pause Glideball from its menu-bar icon or the switch in the sidebar." = "一時停止のショートカットはありません。メニューバーアイコンやサイドバーのスイッチから一時停止できます。";
@@ -1671,7 +1671,7 @@
 "Press keys…" = "キーを押してください…";
 "Press the new keys now. Include ⌘, ⌃ or ⌥." = "新しいキーを押してください。⌘、⌃、⌥のいずれかを含めてください。";
 "Press the new shortcut. Delete clears it; Esc keeps the old one." = "新しいショートカットを押してください。Deleteで消去、Escで元のままにします。";
-"Raycast, Shortcuts and scripts can pause Glideball, switch modes and change the pointer speed with glideball:// links." = "Raycast、ショートカット、スクリプトは、glideball://リンクでGlideballの一時停止、モードの切り替え、ポインタ速度の変更ができます。";
+"Raycast and scripts can pause Glideball, switch modes and change the pointer speed with glideball:// links." = "Raycastとスクリプトは、glideball://リンクでGlideballの一時停止、モードの切り替え、ポインタ速度の変更ができます。";
 "Reference" = "参照番号";
 "Restore Defaults" = "デフォルトに戻す";
 "Same as your Mac" = "Macと同じ";

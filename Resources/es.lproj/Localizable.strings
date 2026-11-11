@@ -1651,7 +1651,7 @@
 "Keep the classic one" = "Conservar el clásico";
 "Language and performance" = "Idioma y rendimiento";
 "Learn more" = "Más información";
-"Lets Raycast, Shortcuts and scripts pause Glideball, switch modes and change the pointer speed. It stays off unless you turn it on." = "Permite que Raycast, Atajos y los scripts pausen Glideball, cambien de modo y modifiquen la velocidad del puntero. Sigue desactivado a menos que lo actives.";
+"Lets Raycast and scripts pause Glideball, switch modes and change the pointer speed. It stays off unless you turn it on." = "Permite que Raycast y los scripts pausen Glideball, cambien de modo y modifiquen la velocidad del puntero. Sigue desactivado a menos que lo actives.";
 "Look & Sound" = "Aspecto y sonido";
 "No icon in the menu bar. Open Glideball from the Dock to change things." = "Sin icono en la barra de menús. Abre Glideball desde el Dock para cambiar cosas.";
 "No pause shortcut. You can still pause Glideball from its menu-bar icon or the switch in the sidebar." = "Sin función rápida de pausa. Aun así puedes pausar Glideball desde su icono de la barra de menús o con el interruptor de la barra lateral.";
@@ -1671,7 +1671,7 @@
 "Press keys…" = "Pulsa teclas…";
 "Press the new keys now. Include ⌘, ⌃ or ⌥." = "Pulsa ahora las teclas nuevas. Incluye ⌘, ⌃ o ⌥.";
 "Press the new shortcut. Delete clears it; Esc keeps the old one." = "Pulsa la nueva función rápida. Borrar la quita; Esc conserva la anterior.";
-"Raycast, Shortcuts and scripts can pause Glideball, switch modes and change the pointer speed with glideball:// links." = "Raycast, Atajos y los scripts pueden pausar Glideball, cambiar de modo y modificar la velocidad del puntero con enlaces glideball://.";
+"Raycast and scripts can pause Glideball, switch modes and change the pointer speed with glideball:// links." = "Raycast y los scripts pueden pausar Glideball, cambiar de modo y modificar la velocidad del puntero con enlaces glideball://.";
 "Reference" = "Referencia";
 "Restore Defaults" = "Restaurar valores por omisión";
 "Same as your Mac" = "Igual que tu Mac";

@@ -1651,7 +1651,7 @@
 "Keep the classic one" = "保留经典图标";
 "Language and performance" = "语言与性能";
 "Learn more" = "进一步了解";
-"Lets Raycast, Shortcuts and scripts pause Glideball, switch modes and change the pointer speed. It stays off unless you turn it on." = "允许 Raycast、快捷指令和脚本暂停 Glideball、切换模式以及更改指针速度。除非你开启，否则它保持关闭。";
+"Lets Raycast and scripts pause Glideball, switch modes and change the pointer speed. It stays off unless you turn it on." = "允许 Raycast 和脚本暂停 Glideball、切换模式以及更改指针速度。除非你开启，否则它保持关闭。";
 "Look & Sound" = "外观与声音";
 "No icon in the menu bar. Open Glideball from the Dock to change things." = "菜单栏中没有图标。如需更改设置，请从程序坞打开 Glideball。";
 "No pause shortcut. You can still pause Glideball from its menu-bar icon or the switch in the sidebar." = "没有暂停快捷键。你仍可通过菜单栏图标或边栏中的开关暂停 Glideball。";
@@ -1671,7 +1671,7 @@
 "Press keys…" = "按下按键…";
 "Press the new keys now. Include ⌘, ⌃ or ⌥." = "现在按下新的按键，需包含 ⌘、⌃ 或 ⌥。";
 "Press the new shortcut. Delete clears it; Esc keeps the old one." = "按下新的快捷键。按 Delete 键可清除，按 Esc 键则保留原来的快捷键。";
-"Raycast, Shortcuts and scripts can pause Glideball, switch modes and change the pointer speed with glideball:// links." = "Raycast、快捷指令和脚本可以通过 glideball:// 链接暂停 Glideball、切换模式以及更改指针速度。";
+"Raycast and scripts can pause Glideball, switch modes and change the pointer speed with glideball:// links." = "Raycast 和脚本可以通过 glideball:// 链接暂停 Glideball、切换模式以及更改指针速度。";
 "Reference" = "参考编号";
 "Restore Defaults" = "恢复默认设置";
 "Same as your Mac" = "与 Mac 相同";

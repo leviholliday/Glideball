@@ -36,13 +36,6 @@ final class FeedbackDraft {
             case .question: "questionmark.bubble.fill"
             }
         }
-        var color: Color {
-            switch self {
-            case .bug: .pink
-            case .idea: .yellow
-            case .question: .cyan
-            }
-        }
         var titlePrompt: String {
             switch self {
             case .bug: String(localized: "What went wrong? e.g. “Scrolling jumps in Safari”")
@@ -560,9 +553,9 @@ struct FeedbackView: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: 32)
                 .background {
-                    RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .fill(on ? Theme.ball.opacity(0.12) : Theme.groupFill)
-                        .strokeBorder(on ? Theme.ball.opacity(0.55) : Theme.groupBorder, lineWidth: on ? 1 : 0.5)
+                    let shape = RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    shape.fill(on ? Theme.ball.opacity(0.12) : Theme.groupFill)
+                        .pixelBorder(shape, on ? Theme.ball.opacity(0.55) : Theme.groupBorder, pixels: on ? 2 : 1)
                 }
                 .contentShape(Rectangle())
         }
@@ -584,7 +577,7 @@ struct FeedbackView: View {
             .frame(height: 26)
             .background {
                 Capsule().fill(on ? Theme.ball.opacity(0.12) : .clear)
-                    .overlay(Capsule().strokeBorder(on ? Theme.ball.opacity(0.55) : Theme.groupBorder, lineWidth: on ? 1 : 0.5))
+                    .pixelBorder(Capsule(), on ? Theme.ball.opacity(0.55) : Theme.groupBorder, pixels: on ? 2 : 1)
             }
             .contentShape(Capsule())
         }
@@ -853,8 +846,8 @@ private struct FieldBackground: View {
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: 8, style: .continuous)
         shape.fill(Theme.raised)
-            .overlay(shape.strokeBorder(warning ? Theme.warn : focused ? Theme.ball.opacity(0.6) : Theme.groupBorder,
-                                        lineWidth: warning || focused ? 1 : 0.5))
+            .pixelBorder(shape, warning ? Theme.warn : focused ? Theme.ball.opacity(0.6) : Theme.groupBorder,
+                         pixels: warning || focused ? 2 : 1)
     }
 }
 
@@ -889,7 +882,7 @@ private struct AttachmentThumb: View {
                     }
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Theme.groupBorder, lineWidth: 0.5))
+                .pixelBorder(RoundedRectangle(cornerRadius: 8, style: .continuous), Theme.groupBorder)
                 .onTapGesture { NSWorkspace.shared.open(file.url) }
                 .help("Click to open")
 

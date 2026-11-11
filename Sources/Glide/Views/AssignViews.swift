@@ -63,7 +63,7 @@ private struct ButtonChips: View {
                 .padding(.trailing, 8)
                 .padding(.vertical, 3)
                 .background(Capsule().fill(Theme.buttons.opacity(0.12)))
-                .overlay(Capsule().strokeBorder(Theme.buttons.opacity(0.35), lineWidth: 0.5))
+                .pixelBorder(Capsule(), Theme.buttons.opacity(0.35))
                 .fixedSize()
             }
         }

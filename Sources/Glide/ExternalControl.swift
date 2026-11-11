@@ -1,6 +1,6 @@
 import Foundation
 
-// glideball:// — how Raycast, Shortcuts, Stream Deck and shell scripts control
+// glideball:// — how Raycast, Stream Deck and shell scripts control
 // Glideball (`open -g "glideball://pause"`). The grammar is in docs/DEVELOPING.md,
 // "Controlling Glideball from other apps".
 //

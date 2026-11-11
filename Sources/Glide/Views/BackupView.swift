@@ -255,7 +255,7 @@ private struct SettingsFileChip: View {
                                            bottomTrailingRadius: 5, topTrailingRadius: 10, style: .continuous)
         ZStack {
             shape.fill(Theme.groupFill)
-                .overlay(shape.strokeBorder(Theme.hairline, lineWidth: 0.5))
+                .pixelBorder(shape, Theme.hairline)
             Image(nsImage: NSApp.applicationIconImage)
                 .resizable()
                 .interpolation(.high)

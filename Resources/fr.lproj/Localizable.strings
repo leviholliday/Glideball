@@ -1651,7 +1651,7 @@
 "Keep the classic one" = "Garder l’icône classique";
 "Language and performance" = "Langue et performances";
 "Learn more" = "En savoir plus";
-"Lets Raycast, Shortcuts and scripts pause Glideball, switch modes and change the pointer speed. It stays off unless you turn it on." = "Permet à Raycast, Raccourcis et aux scripts de suspendre Glideball, de changer de mode et de modifier la vitesse du pointeur. Reste désactivé tant que vous ne l’activez pas.";
+"Lets Raycast and scripts pause Glideball, switch modes and change the pointer speed. It stays off unless you turn it on." = "Permet à Raycast et aux scripts de suspendre Glideball, de changer de mode et de modifier la vitesse du pointeur. Reste désactivé tant que vous ne l’activez pas.";
 "Look & Sound" = "Apparence et son";
 "No icon in the menu bar. Open Glideball from the Dock to change things." = "Pas d’icône dans la barre des menus. Ouvrez Glideball depuis le Dock pour modifier les réglages.";
 "No pause shortcut. You can still pause Glideball from its menu-bar icon or the switch in the sidebar." = "Pas de raccourci de pause. Vous pouvez toujours suspendre Glideball depuis son icône dans la barre des menus ou avec l’interrupteur de la barre latérale.";
@@ -1671,7 +1671,7 @@
 "Press keys…" = "Appuyez sur des touches…";
 "Press the new keys now. Include ⌘, ⌃ or ⌥." = "Appuyez maintenant sur les nouvelles touches. Incluez ⌘, ⌃ ou ⌥.";
 "Press the new shortcut. Delete clears it; Esc keeps the old one." = "Tapez le nouveau raccourci. La touche Supprimer l’efface ; Échap garde l’ancien.";
-"Raycast, Shortcuts and scripts can pause Glideball, switch modes and change the pointer speed with glideball:// links." = "Raycast, Raccourcis et les scripts peuvent suspendre Glideball, changer de mode et modifier la vitesse du pointeur avec des liens glideball://.";
+"Raycast and scripts can pause Glideball, switch modes and change the pointer speed with glideball:// links." = "Raycast et les scripts peuvent suspendre Glideball, changer de mode et modifier la vitesse du pointeur avec des liens glideball://.";
 "Reference" = "Référence";
 "Restore Defaults" = "Rétablir les valeurs par défaut";
 "Same as your Mac" = "Comme votre Mac";

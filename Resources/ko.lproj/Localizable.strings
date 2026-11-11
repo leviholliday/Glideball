@@ -1651,7 +1651,7 @@
 "Keep the classic one" = "클래식 아이콘 유지";
 "Language and performance" = "언어 및 성능";
 "Learn more" = "더 알아보기";
-"Lets Raycast, Shortcuts and scripts pause Glideball, switch modes and change the pointer speed. It stays off unless you turn it on." = "Raycast, 단축어, 스크립트로 Glideball을 일시 정지하고, 모드를 바꾸고, 포인터 속도를 조절할 수 있게 해요. 직접 켜기 전에는 꺼져 있어요.";
+"Lets Raycast and scripts pause Glideball, switch modes and change the pointer speed. It stays off unless you turn it on." = "Raycast와 스크립트로 Glideball을 일시 정지하고, 모드를 바꾸고, 포인터 속도를 조절할 수 있게 해요. 직접 켜기 전에는 꺼져 있어요.";
 "Look & Sound" = "모양 및 사운드";
 "No icon in the menu bar. Open Glideball from the Dock to change things." = "메뉴 막대에 아이콘이 없어요. 설정을 바꾸려면 Dock에서 Glideball을 여세요.";
 "No pause shortcut. You can still pause Glideball from its menu-bar icon or the switch in the sidebar." = "일시 정지 단축키가 없어요. 메뉴 막대 아이콘이나 사이드바의 스위치로 Glideball을 일시 정지할 수 있어요.";
@@ -1671,7 +1671,7 @@
 "Press keys…" = "키 누르기…";
 "Press the new keys now. Include ⌘, ⌃ or ⌥." = "지금 새 키를 누르세요. ⌘, ⌃ 또는 ⌥를 포함해야 해요.";
 "Press the new shortcut. Delete clears it; Esc keeps the old one." = "새 단축키를 누르세요. Delete 키를 누르면 지워지고, Esc 키를 누르면 기존 단축키가 유지돼요.";
-"Raycast, Shortcuts and scripts can pause Glideball, switch modes and change the pointer speed with glideball:// links." = "Raycast, 단축어, 스크립트에서 glideball:// 링크로 Glideball을 일시 정지하고, 모드를 바꾸고, 포인터 속도를 조절할 수 있어요.";
+"Raycast and scripts can pause Glideball, switch modes and change the pointer speed with glideball:// links." = "Raycast와 스크립트에서 glideball:// 링크로 Glideball을 일시 정지하고, 모드를 바꾸고, 포인터 속도를 조절할 수 있어요.";
 "Reference" = "참조 번호";
 "Restore Defaults" = "기본값 복원";
 "Same as your Mac" = "Mac과 동일";

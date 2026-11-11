@@ -122,6 +122,7 @@ enum RenderUI {
             print("error: can't create \(o.dir.path): \(error.localizedDescription)")
             exit(2)
         }
+        Offscreen.layoutScale = o.scale
         DemoData.seed()
         let model = AppModel.shared
         DemoData.prime(model)

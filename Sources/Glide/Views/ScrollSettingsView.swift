@@ -20,14 +20,17 @@ struct ScrollSettingsView: View {
             switch model.config.scrollMode {
             case .native:
                 controls.nativeSection
+                TryItArea()
             case .flywheel:
                 controls.flywheelSection
+                TryItArea()
                 LiveTimeline(feed: model.live, maxFPS: 20) { feed, _ in
                     FlywheelCurve(config: model.config, liveRate: feed.notchRate)
                 }
             case .follow:
                 controls.presetsSection
                 controls.feelSection
+                TryItArea()
                 LiveTimeline(feed: model.live, maxFPS: 20) { feed, _ in
                     SpinCurve(config: model.config, liveRate: feed.notchRate)
                 }
@@ -36,8 +39,6 @@ struct ScrollSettingsView: View {
             }
 
             if model.config.scrollMode != .native { controls.directionSection }
-
-            TryItArea()
 
             SectionBlock(title: "Scroll with the ball",
                          caption: "Set a button to “Scroll with ball” in Buttons. While you hold it, rolling the ball scrolls in any direction and the cursor stays put. Let go mid-roll and the page glides briefly.") {

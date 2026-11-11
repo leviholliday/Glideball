@@ -73,7 +73,7 @@ struct WhatsNewView: View {
             // Solid, so the page underneath never shows through the words.
             let shape = RoundedRectangle(cornerRadius: 22, style: .continuous)
             shape.fill(Theme.windowBackground)
-                .overlay(shape.strokeBorder(Theme.groupBorder, lineWidth: 0.5))
+                .pixelBorder(shape, Theme.groupBorder)
                 .shadow(color: .black.opacity(0.25), radius: 30, y: 12)
         }
     }

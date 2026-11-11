@@ -149,17 +149,18 @@ struct LiveChart: View {
 
     var body: some View {
         Canvas { context, size in
-            // Faint guides at a third and two thirds, and the baseline.
+            // Faint guides at a third and two thirds, and the baseline, one pixel thick.
+            let pixel = 1 / max(context.environment.displayScale, 1)
             for f in [1.0 / 3, 2.0 / 3] {
                 var guide = Path()
                 guide.move(to: CGPoint(x: 0, y: size.height * f))
                 guide.addLine(to: CGPoint(x: size.width, y: size.height * f))
-                context.stroke(guide, with: .color(Theme.gridLine), lineWidth: 0.5)
+                context.stroke(guide, with: .color(Theme.gridLine), lineWidth: pixel)
             }
             var base = Path()
-            base.move(to: CGPoint(x: 0, y: size.height - 0.75))
-            base.addLine(to: CGPoint(x: size.width, y: size.height - 0.75))
-            context.stroke(base, with: .color(Theme.hairline), lineWidth: 0.5)
+            base.move(to: CGPoint(x: 0, y: size.height - pixel * 1.5))
+            base.addLine(to: CGPoint(x: size.width, y: size.height - pixel * 1.5))
+            context.stroke(base, with: .color(Theme.hairline), lineWidth: pixel)
 
             trace(ring, floor: 10, color: Theme.ring, in: context, size: size)
             trace(ball, floor: 4, color: Theme.ball, in: context, size: size)

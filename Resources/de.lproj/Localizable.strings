@@ -1651,7 +1651,7 @@
 "Keep the classic one" = "Beim klassischen bleiben";
 "Language and performance" = "Sprache und Leistung";
 "Learn more" = "Mehr erfahren";
-"Lets Raycast, Shortcuts and scripts pause Glideball, switch modes and change the pointer speed. It stays off unless you turn it on." = "Erlaubt Raycast, Kurzbefehlen und Skripten, Glideball zu pausieren, Modi zu wechseln und das Zeigertempo zu ändern. Bleibt aus, bis du es einschaltest.";
+"Lets Raycast and scripts pause Glideball, switch modes and change the pointer speed. It stays off unless you turn it on." = "Erlaubt Raycast und Skripten, Glideball zu pausieren, Modi zu wechseln und das Zeigertempo zu ändern. Bleibt aus, bis du es einschaltest.";
 "Look & Sound" = "Aussehen & Ton";
 "No icon in the menu bar. Open Glideball from the Dock to change things." = "Kein Symbol in der Menüleiste. Öffne Glideball über das Dock, um etwas zu ändern.";
 "No pause shortcut. You can still pause Glideball from its menu-bar icon or the switch in the sidebar." = "Kein Pause-Kurzbefehl. Du kannst Glideball weiterhin über sein Symbol in der Menüleiste oder den Schalter in der Seitenleiste pausieren.";
@@ -1671,7 +1671,7 @@
 "Press keys…" = "Tasten drücken …";
 "Press the new keys now. Include ⌘, ⌃ or ⌥." = "Drücke jetzt die neuen Tasten. Nimm ⌘, ⌃ oder ⌥ dazu.";
 "Press the new shortcut. Delete clears it; Esc keeps the old one." = "Drücke den neuen Kurzbefehl. Mit der Löschtaste entfernst du ihn, Esc behält den alten.";
-"Raycast, Shortcuts and scripts can pause Glideball, switch modes and change the pointer speed with glideball:// links." = "Raycast, Kurzbefehle und Skripte können Glideball über glideball://-Links pausieren, Modi wechseln und das Zeigertempo ändern.";
+"Raycast and scripts can pause Glideball, switch modes and change the pointer speed with glideball:// links." = "Raycast und Skripte können Glideball über glideball://-Links pausieren, Modi wechseln und das Zeigertempo ändern.";
 "Reference" = "Referenz";
 "Restore Defaults" = "Standardwerte wiederherstellen";
 "Same as your Mac" = "Wie dein Mac";

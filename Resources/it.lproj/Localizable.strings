@@ -1651,7 +1651,7 @@
 "Keep the classic one" = "Tieni la classica";
 "Language and performance" = "Lingua e prestazioni";
 "Learn more" = "Scopri di più";
-"Lets Raycast, Shortcuts and scripts pause Glideball, switch modes and change the pointer speed. It stays off unless you turn it on." = "Permette a Raycast, Comandi Rapidi e agli script di mettere in pausa Glideball, cambiare modalità e modificare la velocità del puntatore. Resta disattivato finché non lo attivi.";
+"Lets Raycast and scripts pause Glideball, switch modes and change the pointer speed. It stays off unless you turn it on." = "Permette a Raycast e agli script di mettere in pausa Glideball, cambiare modalità e modificare la velocità del puntatore. Resta disattivato finché non lo attivi.";
 "Look & Sound" = "Aspetto e suoni";
 "No icon in the menu bar. Open Glideball from the Dock to change things." = "Nessuna icona nella barra dei menu. Apri Glideball dal Dock per cambiare le cose.";
 "No pause shortcut. You can still pause Glideball from its menu-bar icon or the switch in the sidebar." = "Nessuna abbreviazione per la pausa. Puoi comunque mettere in pausa Glideball dalla sua icona nella barra dei menu o con l’interruttore nella barra laterale.";
@@ -1671,7 +1671,7 @@
 "Press keys…" = "Premi i tasti…";
 "Press the new keys now. Include ⌘, ⌃ or ⌥." = "Premi ora i nuovi tasti. Includi ⌘, ⌃ o ⌥.";
 "Press the new shortcut. Delete clears it; Esc keeps the old one." = "Premi la nuova abbreviazione. Cancella la rimuove; Esc mantiene la vecchia.";
-"Raycast, Shortcuts and scripts can pause Glideball, switch modes and change the pointer speed with glideball:// links." = "Raycast, Comandi Rapidi e gli script possono mettere in pausa Glideball, cambiare modalità e modificare la velocità del puntatore con i link glideball://.";
+"Raycast and scripts can pause Glideball, switch modes and change the pointer speed with glideball:// links." = "Raycast e gli script possono mettere in pausa Glideball, cambiare modalità e modificare la velocità del puntatore con i link glideball://.";
 "Reference" = "Riferimento";
 "Restore Defaults" = "Ripristina predefiniti";
 "Same as your Mac" = "Come il tuo Mac";

@@ -124,7 +124,7 @@ struct CelebrationToastIcon: View {
             .foregroundStyle(part == nil ? AnyShapeStyle(.primary) : AnyShapeStyle(.white))
             .frame(width: 28, height: 28)
             .background(Circle().fill(part?.color ?? Theme.hoverFill))
-            .overlay(Circle().strokeBorder(part == nil ? Theme.groupBorder : .clear, lineWidth: 0.5))
+            .pixelBorder(Circle(), part == nil ? Theme.groupBorder : .clear)
             .symbolEffect(.bounce, value: bounce)
             .onAppear { if !reduceMotion { bounce += 1 } }
     }
@@ -489,7 +489,7 @@ private struct BadgeView: View {
                         .font(.system(size: 9, weight: .semibold))
                         .padding(.horizontal, 4).padding(.vertical, 1)
                         .background(Capsule().fill(Theme.windowBackground))
-                        .overlay(Capsule().strokeBorder(color, lineWidth: 0.5))
+                        .pixelBorder(Capsule(), color)
                         .foregroundStyle(color)
                         .offset(x: 10, y: -4)
                 }

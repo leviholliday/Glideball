@@ -168,7 +168,7 @@ Proves a build launches without launching it. `--self-test` runs `AppDelegate`'s
 
 ## Controlling Glideball from other apps
 
-Raycast, Shortcuts, Stream Deck, Alfred and shell scripts can control Glideball through a `glideball://` URL scheme, and read what it's doing from a status file. Both are off until **Allow Raycast and scripts** is on (per Mac, never synced, UserDefaults key `GlideAllowExternalControl`, `AppModel.allowExternalControl`, the switch in Settings › General).
+Raycast, Stream Deck, Alfred and shell scripts can control Glideball through a `glideball://` URL scheme, and read what it's doing from a status file. Both are off until **Allow Raycast and scripts** is on (per Mac, never synced, UserDefaults key `GlideAllowExternalControl`, `AppModel.allowExternalControl`, the switch in Settings › General).
 
 Everything goes through one list of commands, `Commands.swift`: the menu-bar menu, the global hot keys and the URLs all call the same entries, so they behave the same. `ExternalControl.swift` turns URLs into commands, `StatusFile.swift` writes the status file, and `ExternalControlApp.swift` connects them to the app.
 

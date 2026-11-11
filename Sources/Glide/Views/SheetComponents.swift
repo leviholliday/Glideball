@@ -35,7 +35,7 @@ struct OverlayCard<Content: View>: View {
                 .background {
                     let shape = RoundedRectangle(cornerRadius: 18, style: .continuous)
                     shape.fill(Theme.raised)
-                        .overlay(shape.strokeBorder(Theme.groupBorder, lineWidth: 0.5))
+                        .pixelBorder(shape, Theme.groupBorder)
                         .shadow(color: .black.opacity(0.28), radius: 30, y: 12)
                 }
         }
@@ -157,7 +157,7 @@ struct KeyCap: View {
             .background {
                 let shape = RoundedRectangle(cornerRadius: 5, style: .continuous)
                 shape.fill(Theme.raised)
-                    .overlay(shape.strokeBorder(Theme.groupBorder, lineWidth: 0.5))
+                    .pixelBorder(shape, Theme.groupBorder)
                     .shadow(color: .black.opacity(0.12), radius: 0, y: 0.5)
             }
     }
@@ -220,7 +220,7 @@ struct ChipButtonStyle: ButtonStyle {
                 .padding(.vertical, 4.5)
                 .background {
                     Capsule().fill(configuration.isPressed ? Theme.pressedFill : hovering && enabled ? Theme.hoverFill : Theme.groupFill)
-                        .overlay(Capsule().strokeBorder(Theme.groupBorder, lineWidth: 0.5))
+                        .pixelBorder(Capsule(), Theme.groupBorder)
                 }
                 .contentShape(Capsule())
                 .opacity(enabled ? 1 : 0.45)

@@ -170,8 +170,8 @@ struct GeneralSettingsPane: View {
 
     private var externalHint: String {
         model.allowExternalControl
-            ? String(localized: "Raycast, Shortcuts and scripts can pause Glideball, switch modes and change the pointer speed with glideball:// links.")
-            : String(localized: "Lets Raycast, Shortcuts and scripts pause Glideball, switch modes and change the pointer speed. It stays off unless you turn it on.")
+            ? String(localized: "Raycast and scripts can pause Glideball, switch modes and change the pointer speed with glideball:// links.")
+            : String(localized: "Lets Raycast and scripts pause Glideball, switch modes and change the pointer speed. It stays off unless you turn it on.")
     }
 }
 

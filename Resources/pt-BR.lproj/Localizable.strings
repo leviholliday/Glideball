@@ -1651,7 +1651,7 @@
 "Keep the classic one" = "Manter o clássico";
 "Language and performance" = "Idioma e desempenho";
 "Learn more" = "Saiba mais";
-"Lets Raycast, Shortcuts and scripts pause Glideball, switch modes and change the pointer speed. It stays off unless you turn it on." = "Permite que Raycast, Atalhos e scripts pausem o Glideball, troquem de modo e mudem a velocidade do ponteiro. Fica desativado, a menos que você ative.";
+"Lets Raycast and scripts pause Glideball, switch modes and change the pointer speed. It stays off unless you turn it on." = "Permite que Raycast e scripts pausem o Glideball, troquem de modo e mudem a velocidade do ponteiro. Fica desativado, a menos que você ative.";
 "Look & Sound" = "Aparência e som";
 "No icon in the menu bar. Open Glideball from the Dock to change things." = "Sem ícone na barra de menus. Abra o Glideball pelo Dock para mudar as coisas.";
 "No pause shortcut. You can still pause Glideball from its menu-bar icon or the switch in the sidebar." = "Sem atalho de pausa. Você ainda pode pausar o Glideball pelo ícone na barra de menus ou pelo botão na barra lateral.";
@@ -1671,7 +1671,7 @@
 "Press keys…" = "Pressione as teclas…";
 "Press the new keys now. Include ⌘, ⌃ or ⌥." = "Pressione as novas teclas agora. Inclua ⌘, ⌃ ou ⌥.";
 "Press the new shortcut. Delete clears it; Esc keeps the old one." = "Pressione o novo atalho. Delete apaga; Esc mantém o antigo.";
-"Raycast, Shortcuts and scripts can pause Glideball, switch modes and change the pointer speed with glideball:// links." = "Raycast, Atalhos e scripts podem pausar o Glideball, trocar de modo e mudar a velocidade do ponteiro com links glideball://.";
+"Raycast and scripts can pause Glideball, switch modes and change the pointer speed with glideball:// links." = "Raycast e scripts podem pausar o Glideball, trocar de modo e mudar a velocidade do ponteiro com links glideball://.";
 "Reference" = "Referência";
 "Restore Defaults" = "Restaurar Padrões";
 "Same as your Mac" = "Igual ao seu Mac";

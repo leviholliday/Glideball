@@ -116,14 +116,15 @@ extension SectionTitle where Accessory == EmptyView {
     }
 }
 
-/// One quiet rounded group: 12 pt corners, a whisper of fill, a 0.5 pt edge,
+/// One quiet rounded group: 12 pt corners, a whisper of fill, a one-pixel edge,
 /// and an inset hairline between each pair of rows.
 struct RowGroup<Content: View>: View {
     var dividerInset: CGFloat = Theme.Space.rowHorizontal
     @ViewBuilder var content: Content
+    @Environment(\.displayScale) private var scale
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        PixelColumn(scale: scale) {
             Group(subviews: content) { rows in
                 ForEach(Array(rows.enumerated()), id: \.element.id) { i, row in
                     if i > 0 { Hairline().padding(.leading, dividerInset) }
@@ -136,25 +137,115 @@ struct RowGroup<Content: View>: View {
     }
 }
 
-/// A 0.5 pt line in the separator color (one device pixel at 2x).
+/// A column that puts every child on a whole device pixel: each one's height is
+/// rounded up to the pixel grid, so a hairline between two rows is always
+/// exactly one pixel, never straddling two (which draws it faint or not at all).
+struct PixelColumn: Layout {
+    /// Device pixels per point.
+    var scale: CGFloat
+
+    private func snapped(_ h: CGFloat) -> CGFloat {
+        let s = max(scale, 1)
+        return (h * s - 0.001).rounded(.up) / s
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let width = proposal.width
+        var w: CGFloat = 0, h: CGFloat = 0
+        for s in subviews {
+            let size = s.sizeThatFits(ProposedViewSize(width: width, height: nil))
+            w = max(w, size.width)
+            h += snapped(size.height)
+        }
+        return CGSize(width: width ?? w, height: h)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var y = bounds.minY
+        for s in subviews {
+            let h = snapped(s.sizeThatFits(ProposedViewSize(width: bounds.width, height: nil)).height)
+            s.place(at: CGPoint(x: bounds.minX, y: y), anchor: .topLeading,
+                    proposal: ProposedViewSize(width: bounds.width, height: h))
+            y += h
+        }
+    }
+}
+
+/// A line in the separator color exactly one device pixel thick, at any scale.
 struct Hairline: View {
     var vertical = false
+    @Environment(\.displayScale) private var scale
+
     var body: some View {
+        let t = 1 / max(scale, 1)
         Rectangle()
             .fill(Theme.hairline)
-            .frame(width: vertical ? 0.5 : nil, height: vertical ? nil : 0.5)
+            .frame(width: vertical ? t : nil, height: vertical ? nil : t)
     }
 }
 
 extension View {
     /// The group surface on its own (for a block that lays out its own insides).
     func groupBackground(radius: CGFloat = Theme.Radius.group) -> some View {
-        background {
-            let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
-            shape.fill(Theme.groupFill)
-                .overlay(shape.strokeBorder(Theme.groupBorder, lineWidth: 0.5))
-        }
+        modifier(GroupBackground(radius: radius))
     }
+}
+
+extension View {
+    /// An edge drawn `pixels` device pixels thick (one by default), whatever the screen's density.
+    func pixelBorder<S: InsettableShape, F: ShapeStyle>(_ shape: S, _ style: F, pixels: CGFloat = 1) -> some View {
+        modifier(PixelBorder(shape: shape, style: style, pixels: pixels))
+    }
+}
+
+private struct PixelBorder<S: InsettableShape, F: ShapeStyle>: ViewModifier {
+    let shape: S
+    let style: F
+    let pixels: CGFloat
+    @Environment(\.displayScale) private var scale
+
+    func body(content: Content) -> some View {
+        content.overlay(shape.strokeBorder(style, lineWidth: pixels / max(scale, 1)))
+    }
+}
+
+private struct GroupBackground: ViewModifier {
+    let radius: CGFloat
+    @Environment(\.displayScale) private var scale
+
+    func body(content: Content) -> some View {
+        content
+            .background {
+                let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
+                shape.fill(Theme.groupFill)
+                    .overlay(shape.strokeBorder(Theme.groupBorder, lineWidth: 1 / max(scale, 1)))
+            }
+            .pixelAligned()
+    }
+}
+
+/// Nudges a view (by less than a pixel) so its top-left corner sits on the pixel grid. Text above
+/// a group has fractional heights, so on a 1x screen a group can start half a pixel in; its edge
+/// and its hairlines would then straddle two pixels and draw faint. At 2x this does nothing much.
+private struct PixelAligned: ViewModifier {
+    @Environment(\.displayScale) private var scale
+    @State private var nudge = CGSize.zero
+
+    func body(content: Content) -> some View {
+        content
+            .offset(nudge)
+            .onGeometryChange(for: CGPoint.self) { $0.frame(in: .global).origin } action: { origin in
+                let s = max(scale, 1)
+                // `origin` already includes the current nudge.
+                let x = origin.x - nudge.width, y = origin.y - nudge.height
+                let next = CGSize(width: (x * s).rounded() / s - x, height: (y * s).rounded() / s - y)
+                if abs(next.width - nudge.width) > 0.01 || abs(next.height - nudge.height) > 0.01 { nudge = next }
+            }
+    }
+}
+
+extension View {
+    func pixelAligned() -> some View { modifier(PixelAligned()) }
 }
 
 // MARK: - Rows
@@ -213,17 +304,21 @@ extension SettingRow where Control == EmptyView {
     }
 }
 
-/// A row's leading symbol: 15 pt on a fixed column so labels line up.
+/// A row's leading symbol: 15 pt on a fixed column so labels line up. A symbol too
+/// wide for the column (the tortoise) steps down a size rather than hang out of it.
 struct RowSymbol: View {
     let symbol: String
     var tint: Color? = nil
 
     var body: some View {
-        Image(systemName: symbol)
-            .font(.system(size: 15))
-            .foregroundStyle(tint.map { AnyShapeStyle($0) } ?? AnyShapeStyle(.secondary))
-            .frame(width: Theme.Space.symbolColumn)
-            .accessibilityHidden(true)
+        ViewThatFits(in: .horizontal) {
+            Image(systemName: symbol).font(.system(size: 15)).fixedSize()
+            Image(systemName: symbol).font(.system(size: 13)).fixedSize()
+            Image(systemName: symbol).font(.system(size: 11)).fixedSize()
+        }
+        .foregroundStyle(tint.map { AnyShapeStyle($0) } ?? AnyShapeStyle(.secondary))
+        .frame(width: Theme.Space.symbolColumn)
+        .accessibilityHidden(true)
     }
 }
 
@@ -262,6 +357,7 @@ struct TuningSlider: View {
     /// Where it starts out (a mark on the track).
     var defaultValue: Double? = nil
     @Environment(\.rowPadding) private var padded
+    @State private var dragging = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -301,13 +397,28 @@ struct TuningSlider: View {
         .padding(.vertical, padded ? 12 : 0)
     }
 
+    /// The slider's value, snapped to `step` by hand. (The system's own `step:` draws a dotted tick
+    /// under the track; this keeps the snapping and leaves the track bare.)
+    private var snapping: Binding<Double> {
+        Binding(
+            get: { value },
+            set: { raw in
+                guard let step else { value = raw; return }
+                let low = range.lowerBound
+                var next = ((raw - low) / step).rounded() * step + low
+                // An arrow key or VoiceOver nudge smaller than a step still moves one step.
+                if !dragging, abs(next - value) < step * 0.01, abs(raw - value) > 1e-9 {
+                    next = value + (raw > value ? step : -step)
+                }
+                next = min(max(next, low), range.upperBound)
+                next = (next * 1e6).rounded() / 1e6
+                if next != value { value = next }
+            })
+    }
+
     @ViewBuilder private var slider: some View {
         Group {
-            if let step {
-                Slider(value: $value, in: range, step: step) { Text(title) }
-            } else {
-                Slider(value: $value, in: range) { Text(title) }
-            }
+            Slider(value: snapping, in: range, label: { Text(title) }, onEditingChanged: { dragging = $0 })
         }
         .labelsHidden()
         .controlSize(.small)
@@ -406,7 +517,7 @@ struct ModeChip: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 3.5)
         .background(Capsule().fill(tint.opacity(0.14)))
-        .overlay(Capsule().strokeBorder(tint.opacity(0.28), lineWidth: 0.5))
+        .pixelBorder(Capsule(), tint.opacity(0.28))
         .fixedSize()
         .transition(.opacity.combined(with: .scale(scale: 0.92)))
     }
@@ -425,7 +536,7 @@ struct StatusPill: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 5)
         .background(Capsule().fill(Theme.groupFill))
-        .overlay(Capsule().strokeBorder(Theme.groupBorder, lineWidth: 0.5))
+        .pixelBorder(Capsule(), Theme.groupBorder)
     }
 }
 
@@ -466,7 +577,7 @@ struct NoticeBanner<Actions: View>: View {
         .background {
             let shape = RoundedRectangle(cornerRadius: Theme.Radius.group, style: .continuous)
             shape.fill(Theme.groupFill)
-                .overlay(shape.strokeBorder(tint.opacity(0.6), lineWidth: 0.5))
+                .pixelBorder(shape, tint.opacity(0.6))
         }
         .accessibilityElement(children: .contain)
     }
@@ -582,7 +693,7 @@ struct QuietChip: View {
             .padding(.horizontal, 7)
             .padding(.vertical, 2)
             .background(Capsule().fill(Theme.hoverFill))
-            .overlay(Capsule().strokeBorder(Theme.groupBorder, lineWidth: 0.5))
+            .pixelBorder(Capsule(), Theme.groupBorder)
             .fixedSize()
     }
 }
@@ -670,8 +781,7 @@ struct ChoiceStrip<Value: Hashable>: View {
                     .background {
                         let shape = RoundedRectangle(cornerRadius: 8, style: .continuous)
                         shape.fill(selected ? tint.opacity(0.13) : Theme.groupFill)
-                            .overlay(shape.strokeBorder(selected ? tint.opacity(0.7) : Theme.groupBorder,
-                                                        lineWidth: selected ? 1 : 0.5))
+                            .pixelBorder(shape, selected ? tint.opacity(0.7) : Theme.groupBorder, pixels: selected ? 2 : 1)
                     }
                     .contentShape(Rectangle())
                 }
