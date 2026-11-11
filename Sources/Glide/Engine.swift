@@ -238,11 +238,27 @@ final class Engine {
     /// nothing changed: Glide is paused, the mode can't work right now, or a
     /// Drag lock gave up waiting for the shortcut's keys to lift.
     func toggleMode(_ mode: ToggleMode, done: ((Bool?) -> Void)? = nil) {
+        setMode(mode, on: nil, done: done)
+    }
+
+    /// Like `toggleMode`, but `on` says which way: a mode that's already
+    /// there is left alone (and `done` gets its state), so "on" twice stays on.
+    /// nil toggles. Used by `Commands` (the glideball:// URLs, the menu, hot keys).
+    func setMode(_ mode: ToggleMode, on wanted: Bool?, done: ((Bool?) -> Void)? = nil) {
         let report: (Bool?) -> Void = { on in
             if let done { DispatchQueue.main.async { done(on) } }
         }
         perform {
             guard self.config.enabled else { return report(nil) }
+            if let wanted {
+                let current: Bool
+                switch mode {
+                case .precision: current = self.precisionToggled
+                case .ballScroll: current = self.ballScrollLatched
+                case .dragLock: current = self.dragLocked
+                }
+                if current == wanted { return report(current) }
+            }
             switch mode {
             case .precision:
                 self.precisionToggled.toggle()
@@ -273,6 +289,12 @@ final class Engine {
             self.diagnostics.record("mode \(mode.rawValue) toggled from keyboard")
             self.publishModes()
         }
+    }
+
+    /// Adds a line to the diagnostics log from any thread (the log itself
+    /// belongs to the input thread). Plain ASCII facts only, never text from outside.
+    func note(_ message: String) {
+        perform { self.diagnostics.record(message) }
     }
 
     /// Ends a keyboard Scroll with ball (sleep, screen lock) so the cursor is

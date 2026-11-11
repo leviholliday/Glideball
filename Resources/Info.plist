@@ -43,6 +43,17 @@
 	<string>Glideball</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.leviholliday.glide</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>glideball</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleShortVersionString</key>
 	<string>2.10-beta.7</string>
 	<key>CFBundleVersion</key>

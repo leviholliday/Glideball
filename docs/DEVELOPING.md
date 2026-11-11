@@ -108,6 +108,7 @@ rm glide-signing.cnf glide-signing.key glide-signing.crt glide-signing.p12
 
 - **`scripts/scroll-sim/run.sh`** compiles the real `SmoothScroller.swift` together with a test harness and feeds it synthetic tick patterns shaped like real Expert Mouse logs: single ticks, slow turns, flicks, catches and reversals, snapped to 8 ms USB polling. For every mode it reports distance, latency, settle time, stalled frames and how steady the speed is.
 - **`scripts/backup-sim/run.sh`** runs a year and a half of simulated use through the real `BackupStore` and checks the retention rules.
+- **`scripts/command-sim/run.sh`** compiles the real command registry, `glideball://` parser and status.json writer with a fake app, then throws URLs at them: every good one, the switch off, about sixty malformed and hostile ones (100 KB strings, path traversal, percent-encoding tricks, NUL and newline, format strings, shell syntax, unknown and app-only commands) and a burst of 1,000. It checks nothing changed that shouldn't have, the log never repeats URL text, and the rate limit holds.
 
 ## All the checks: `scripts/check.sh`
 
@@ -116,7 +117,7 @@ One command runs everything that should pass before a release, prints a line per
 | Step | What |
 | --- | --- |
 | build | `swift build -c release` |
-| scroll-sim, backup-sim | the two simulators above |
+| scroll-sim, backup-sim, command-sim | the three simulators above |
 | l10n | `scripts/l10n/check.py`: every language complete, format specifiers match, no key written twice in a `.strings` file |
 | website | `npm run test:usage` and any other `website/tests/*.test.mjs` (runs `npm ci` first if `node_modules` is missing) |
 | site | `build_pages.py` and `check_site.py` in a temporary copy of `website/`, so the check never changes committed files. If the fresh build differs from what's committed (usually a new release in the changelog) that's a note, not a failure. |
@@ -164,6 +165,72 @@ What isn't faithful:
 ### The self-test: `scripts/self-test.sh`
 
 Proves a build launches without launching it. `--self-test` runs `AppDelegate`'s real launch path (menus, model, hot keys, the launch animation choice, the main window, built but never shown), then draws every tab, the Settings window's four tabs, each Welcome Tour step, the sheets and panels and frames of every launch animation, checks that nothing went live (no engine, no visible window, not the active app), and runs the quit path. One line per step; exit 0 if all pass, 1 on a failure, a crash (the step is named) or a timeout (10 s). The script runs it twice: as a brand-new Mac (first-launch intro) and with `--returning` (a returning user's settings, short animation). It takes about six seconds each.
+
+## Controlling Glideball from other apps
+
+Raycast, Shortcuts, Stream Deck, Alfred and shell scripts can control Glideball through a `glideball://` URL scheme, and read what it's doing from a status file. Both are off until **Allow Raycast and scripts** is on (per Mac, never synced, UserDefaults key `GlideAllowExternalControl`, `AppModel.allowExternalControl`; the switch in Settings › General isn't drawn yet).
+
+Everything goes through one list of commands, `Commands.swift`: the menu-bar menu, the global hot keys and the URLs all call the same entries, so they behave the same. `ExternalControl.swift` turns URLs into commands, `StatusFile.swift` writes the status file, and `ExternalControlApp.swift` connects them to the app.
+
+### The URLs
+
+Open them with `open -g "glideball://…"` (the `-g` keeps Glideball in the background). Percent-encode values (`%20` for a space).
+
+| URL | Does |
+| --- | --- |
+| `glideball://pause`, `resume`, `toggle` | Pause, resume, or switch between them. Pausing undoes every mode and held key, like the hot key. |
+| `glideball://precision?state=on\|off\|toggle` | Precision. `state` defaults to `toggle`; `on` twice stays on. Does nothing while paused. |
+| `glideball://scroll-mode?mode=native\|flywheel\|follow` | The main setup's scroll mode. |
+| `glideball://pointer-speed?value=<number>` | The main setup's pointer speed. Plain decimals only (`4`, `4.5`); rounded to the slider's 0.5 steps and clamped to 0.5…80. |
+| `glideball://app-setup?name=<name or bundle ID>` | Uses that app setup whatever app is in front (names ignore case). `name=automatic` goes back to following the app in front, and so does pausing or quitting. Not saved. |
+| `glideball://open?tab=overview\|pointer\|scrolling\|buttons\|apps\|sync` | Shows the window, on that tab if given. Works with the switch off. |
+| `glideball://settings?tab=general\|updates\|privacy\|shortcuts` | Opens Settings, on that tab if given. Works with the switch off. |
+| `glideball://check-for-updates` | Opens Software Update and checks. |
+
+Commands and values ignore case. Unknown parameters are ignored; an unknown command, a bad or repeated value, or a missing required one means the whole URL is ignored, silently (the scroll log, `~/Library/Logs/Glide/scroll.log`, says `url ignored: <why>`). With the switch off, a URL that would change something does nothing and brings up one short explanation, once per launch. A URL that launches Glideball starts it quietly, like Open at Login (no window unless it's the first launch or a permission is missing).
+
+**Why the list is this short.** Any web page can open a custom URL scheme (browsers ask "Open Glideball?" first, but only once per site), and any app or script can open one with no prompt at all. So a URL may only do things that are safe whoever asks, are undone by asking again, and leave nothing behind. Never anything that deletes, imports, exports, changes what a button does, grants a permission, sends something off the Mac or runs anything; that's why Send Feedback isn't a URL. Scroll with ball and Drag lock aren't either: they freeze the pointer or hold the left button down until switched off, which is fine from your own keyboard but not from a web page. URL text is only compared with fixed lists, parsed as a plain decimal, or matched against your own app setup names; it never reaches a shell, AppleScript, a file path, a format string or the log. At most 20 URLs a second are looked at; the rest are dropped. And the hard rules still hold: the primary button stays a left click, and pause and quit undo everything.
+
+### status.json
+
+`~/Library/Application Support/Glide/status.json` (the data folder keeps the old name). It exists only while the switch is on: turning it off or quitting deletes it, and so does the next launch with the switch off if a crash left one behind. It's written atomically (a temp file, then a rename), when something changes, at most about once a second, on a background queue; today's numbers are checked every 5 seconds. Never in `--render-ui` or `--self-test`.
+
+```json
+{
+  "activeAppSetup" : { "name" : "Safari", "pinned" : false },
+  "appVersion" : "2.10-beta.8",
+  "modes" : { "ballScroll" : false, "dragLock" : false, "precision" : true },
+  "paused" : false,
+  "pid" : 4242,
+  "pointerSpeed" : 4.5,
+  "schemaVersion" : 1,
+  "scrollMode" : "flywheel",
+  "today" : { "ballMeters" : 41.25, "clicks" : 1234, "scrollMeters" : 63.5 },
+  "trackballConnected" : true,
+  "trackballs" : [ "Kensington Expert Mouse" ],
+  "updatedAt" : "2026-11-11T18:04:05Z"
+}
+```
+
+- `schemaVersion`: 1. It goes up only if a field changes meaning or goes away; new fields can appear without it.
+- `pid`: the running Glideball's process ID. If no process has it, the file is left over from a crash: treat Glideball as not running.
+- `scrollMode`, `pointerSpeed`: the main setup's, which is what the URLs change. An app setup in effect may override them.
+- `activeAppSetup`: the setup in effect right now (`pinned` means chosen with `app-setup`), or absent when the main setup is.
+- `trackballs`: the trackball Glideball is working with (empty when none is connected).
+- `today`: since midnight, distances in meters, rounded to the centimeter.
+- `updatedAt`: ISO 8601, UTC.
+
+Nothing else is in it: no app names besides the active setup's, no history, nothing typed.
+
+### App Intents (Shortcuts, Spotlight): not yet
+
+I checked on 2026-11-11 whether a SwiftPM-built, hand-assembled app can offer App Intents without Xcode. The answer for now is no:
+
+- The Command Line Tools have the `AppIntents` framework in the SDK, and `swiftc` compiles an intent fine. It can also write the constant values the metadata step reads (`-emit-const-values-path` with `-Xfrontend -const-gather-protocols-file`, whole-module), and that output looked right.
+- But the step that turns those into the bundle's `Contents/Resources/Metadata.appintents` (`appintentsmetadataprocessor`) only ships inside Xcode.app. It isn't in the Command Line Tools (`xcrun --find appintentsmetadataprocessor` fails), and without that metadata macOS never finds the intents, so Shortcuts and Spotlight show nothing.
+- The metadata format isn't documented, so writing it by hand would be guesswork that could break with any macOS update.
+
+So nothing is shipped. With Xcode installed it should be possible: build with the const-values flags, run `appintentsmetadataprocessor` (copy its arguments from an Xcode build log) on the binary and those files, and copy `Metadata.appintents` into the app before signing, in `build.sh` and `scripts/release.sh`. The intents would just call `Commands`. Until then, Shortcuts can use the URLs (an Open URLs action with `glideball://…`).
 
 ## Translations
 

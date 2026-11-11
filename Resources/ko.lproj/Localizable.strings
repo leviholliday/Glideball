@@ -1595,3 +1595,19 @@
 
 "Why?" = "왜 필요한가요?";
 
+/* ---- Commands.swift ---- */
+
+"Pause Glideball" = "Glideball 일시 정지";
+
+"Resume Glideball" = "Glideball 재개";
+
+"Use an app setup" = "앱 구성 사용하기";
+
+"Open Glideball" = "Glideball 열기";
+
+/* ---- ExternalControlApp.swift ---- */
+
+"Something tried to control Glideball." = "무언가가 Glideball을 제어하려고 했어요.";
+
+/* “Allow Raycast and scripts” is a switch in Settings › General */
+"Turn on “Allow Raycast and scripts” in Settings to let it." = "허용하려면 설정에서 ‘Raycast 및 스크립트 허용’을 켜세요.";
