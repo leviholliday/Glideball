@@ -202,7 +202,7 @@ enum RenderUI {
 
     // MARK: Pieces
 
-    static let windowSize = NSSize(width: 1040, height: 700)
+    static let windowSize = AppDelegate.mainWindowSize
 
     private static func appearance(_ dark: Bool) -> NSAppearance? { NSAppearance(named: dark ? .darkAqua : .aqua) }
 
@@ -215,20 +215,22 @@ enum RenderUI {
             RootView(model: model)
             overlay()
         }
-        return Offscreen.render(view, size: windowSize, chrome: .window, appearance: appearance(dark), scale: scale)
+        return Offscreen.render(view, size: windowSize, chrome: .mainWindow, appearance: appearance(dark), scale: scale)
     }
 
     static func mainWindow(_ model: AppModel, tab: GlideTab, dark: Bool, scale: CGFloat) -> NSBitmapImageRep? {
         mainWindow(model, tab: tab, dark: dark, scale: scale) { EmptyView() }
     }
 
-    /// A whole tab, top to bottom (what scrolling would show), without the window's header.
+    /// A whole tab, top to bottom (what scrolling would show), without the sidebar: the content column at its full width.
     static func fullPage<V: View>(_ page: V, dark: Bool, scale: CGFloat) -> NSBitmapImageRep? {
         let view = page
-            .padding(.horizontal, 26)
+            .frame(width: Theme.Space.contentMaxWidth, alignment: .leading)
+            .padding(.horizontal, Theme.Space.contentSide)
             .padding(.vertical, 24)
             .background(GlideBackground())
-        return Offscreen.renderTall(view, width: windowSize.width, appearance: appearance(dark), scale: scale)
+        return Offscreen.renderTall(view, width: Theme.Space.contentMaxWidth + Theme.Space.contentSide * 2,
+                                    appearance: appearance(dark), scale: scale)
     }
 
     /// A sheet's content at its own size, as macOS shows it over the window.
@@ -238,7 +240,7 @@ enum RenderUI {
 
     /// A card on its own, on the window's background.
     static func card<V: View>(_ view: V, width: CGFloat, dark: Bool, scale: CGFloat) -> NSBitmapImageRep? {
-        let v = view.padding(26).background(GlideBackground())
+        let v = view.padding(Theme.Space.contentSide).background(GlideBackground())
         return Offscreen.renderTall(v, width: width, appearance: appearance(dark), scale: scale)
     }
 

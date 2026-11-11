@@ -1,110 +1,236 @@
 import SwiftUI
 
-// MARK: - Glass card
+// The window's building blocks, from the design guide: a page header, sections
+// (a title, a caption, one quiet group of rows), rows with a hint that talks
+// about now, and a few small pieces (status dot, mode chip, inline stat).
+// Hierarchy comes from type and spacing, not boxes: there's never a group in a group.
 
-struct GlassCard<Content: View>: View {
-    var title: LocalizedStringKey? = nil
-    var symbol: String? = nil
-    var tint: Color? = nil
+// MARK: - Page header
+
+/// A page's title (26 semibold), one line about it, and a page-level action on the right if there is one.
+struct PageHeader<Trailing: View>: View {
+    let title: LocalizedStringKey
+    var subtitle: LocalizedStringKey? = nil
+    @ViewBuilder var trailing: Trailing
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(Theme.Font.pageTitle)
+                    .accessibilityAddTraits(.isHeader)
+                if let subtitle {
+                    Text(subtitle)
+                        .font(Theme.Font.body)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            Spacer(minLength: 0)
+            trailing
+        }
+        .padding(.bottom, 4)
+    }
+}
+
+extension PageHeader where Trailing == EmptyView {
+    init(title: LocalizedStringKey, subtitle: LocalizedStringKey? = nil) {
+        self.init(title: title, subtitle: subtitle) { EmptyView() }
+    }
+}
+
+// MARK: - Sections and groups
+
+/// A section: a title (13 semibold, sentence case), an optional caption, then
+/// one group of rows. 24 pt between sections comes from the page's stack.
+struct SectionBlock<Content: View, Accessory: View>: View {
+    let title: LocalizedStringKey?
+    var caption: LocalizedStringKey? = nil
+    /// Where the hairlines between rows start (past a leading symbol, say).
+    var dividerInset: CGFloat = Theme.Space.rowHorizontal
+    @ViewBuilder var accessory: Accessory
     @ViewBuilder var content: Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            if let title {
-                HStack(spacing: 8) {
-                    if let symbol {
-                        Image(systemName: symbol)
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(.secondary)
-                    }
+        VStack(alignment: .leading, spacing: Theme.Space.titleToGroup) {
+            if title != nil || caption != nil {
+                SectionTitle(title: title, caption: caption) { accessory }
+            }
+            RowGroup(dividerInset: dividerInset) { content }
+        }
+    }
+}
+
+extension SectionBlock where Accessory == EmptyView {
+    init(title: LocalizedStringKey?, caption: LocalizedStringKey? = nil,
+         dividerInset: CGFloat = Theme.Space.rowHorizontal, @ViewBuilder content: () -> Content) {
+        self.init(title: title, caption: caption, dividerInset: dividerInset, accessory: { EmptyView() }, content: content)
+    }
+}
+
+/// A section's title and caption on their own (for a section whose body isn't a group: a chart, say).
+struct SectionTitle<Accessory: View>: View {
+    let title: LocalizedStringKey?
+    var caption: LocalizedStringKey? = nil
+    @ViewBuilder var accessory: Accessory
+
+    var body: some View {
+        HStack(alignment: .lastTextBaseline, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                if let title {
                     Text(title)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(Theme.Font.sectionTitle)
+                        .accessibilityAddTraits(.isHeader)
+                }
+                if let caption {
+                    Text(caption)
+                        .font(Theme.Font.hint)
                         .foregroundStyle(.secondary)
-                        .textCase(.uppercase)
-                        .tracking(0.6)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            content
+            Spacer(minLength: 0)
+            accessory
         }
-        .padding(20)
+    }
+}
+
+extension SectionTitle where Accessory == EmptyView {
+    init(title: LocalizedStringKey?, caption: LocalizedStringKey? = nil) {
+        self.init(title: title, caption: caption) { EmptyView() }
+    }
+}
+
+/// One quiet rounded group: 12 pt corners, a whisper of fill, a 0.5 pt edge,
+/// and an inset hairline between each pair of rows.
+struct RowGroup<Content: View>: View {
+    var dividerInset: CGFloat = Theme.Space.rowHorizontal
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Group(subviews: content) { rows in
+                ForEach(Array(rows.enumerated()), id: \.element.id) { i, row in
+                    if i > 0 { Hairline().padding(.leading, dividerInset) }
+                    row
+                }
+            }
+        }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(tint.map { .regular.tint($0) } ?? .regular, in: .rect(cornerRadius: 26))
-        .staggeredAppear()
+        .groupBackground()
     }
 }
 
-// MARK: - Staggered appearance
-
-/// The first time a tab opens, its cards rise in one after another rather
-/// than all at once. `RootView` arms it; cards ask it, as they appear, how
-/// long to wait. Anything appearing outside such a burst just shows.
-final class CardStagger {
-    /// The next burst of appearing cards staggers (set when a tab first opens).
-    var armed = true
-    private var burstStart = Date.distantPast
-    private var count = 0
-
-    static let step = 0.03
-    static let maxSteps = 5
-    static let duration = 0.24
-
-    /// How long this card should wait before rising in, or nil to just show.
-    func nextDelay() -> Double? {
-        let now = Date()
-        if now.timeIntervalSince(burstStart) < 0.3 {
-            defer { count += 1 }
-            return Double(min(count, Self.maxSteps)) * Self.step
-        }
-        guard armed else { return nil }
-        armed = false
-        burstStart = now
-        count = 1
-        return 0
-    }
-}
-
-private struct CardStaggerKey: EnvironmentKey {
-    static let defaultValue: CardStagger? = nil
-}
-
-extension EnvironmentValues {
-    var cardStagger: CardStagger? {
-        get { self[CardStaggerKey.self] }
-        set { self[CardStaggerKey.self] = newValue }
-    }
-}
-
-private struct StaggeredAppear: ViewModifier {
-    @Environment(\.cardStagger) private var stagger
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var shown = false
-
-    func body(content: Content) -> some View {
-        content
-            .opacity(shown ? 1 : 0)
-            .offset(y: shown || reduceMotion ? 0 : 14)
-            .scaleEffect(shown || reduceMotion ? 1 : 0.985, anchor: .top)
-            .onAppear {
-                guard !shown else { return }
-                if let delay = stagger?.nextDelay() {
-                    let curve: Animation = reduceMotion ? .easeOut(duration: 0.2) : .smooth(duration: CardStagger.duration)
-                    withAnimation(curve.delay(delay)) {
-                        shown = true
-                    }
-                } else {
-                    shown = true
-                }
-            }
+/// A 0.5 pt line in the separator color (one device pixel at 2x).
+struct Hairline: View {
+    var vertical = false
+    var body: some View {
+        Rectangle()
+            .fill(Theme.hairline)
+            .frame(width: vertical ? 0.5 : nil, height: vertical ? nil : 0.5)
     }
 }
 
 extension View {
-    /// Rises in with its neighbours the first time its tab opens.
-    func staggeredAppear() -> some View { modifier(StaggeredAppear()) }
+    /// The group surface on its own (for a block that lays out its own insides).
+    func groupBackground(radius: CGFloat = Theme.Radius.group) -> some View {
+        background {
+            let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
+            shape.fill(Theme.groupFill)
+                .overlay(shape.strokeBorder(Theme.groupBorder, lineWidth: 0.5))
+        }
+    }
 }
 
-// MARK: - Slider row
+// MARK: - Rows
 
+private struct RowPaddingKey: EnvironmentKey { static let defaultValue = true }
+
+extension EnvironmentValues {
+    /// Rows pad themselves inside a group; inside an old-style card (which pads its own content) they don't.
+    var rowPadding: Bool {
+        get { self[RowPaddingKey.self] }
+        set { self[RowPaddingKey.self] = newValue }
+    }
+}
+
+/// A row: optional leading symbol (15 pt, secondary or the part's color),
+/// a 13 pt label with an 11 pt hint under it, and the control trailing.
+struct SettingRow<Control: View>: View {
+    let title: LocalizedStringKey
+    var hint: LocalizedStringKey? = nil
+    var symbol: String? = nil
+    /// The part this row is about (its symbol takes the part's color).
+    var tint: Color? = nil
+    @ViewBuilder var control: Control
+    @Environment(\.rowPadding) private var padded
+
+    var body: some View {
+        HStack(alignment: .center, spacing: Theme.Space.symbolGap) {
+            if let symbol {
+                RowSymbol(symbol: symbol, tint: tint)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(Theme.Font.body)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let hint {
+                    Text(hint)
+                        .font(Theme.Font.hint)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .contentTransition(.opacity)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            control
+        }
+        .padding(.horizontal, padded ? Theme.Space.rowHorizontal : 0)
+        .padding(.vertical, padded ? Theme.Space.rowVertical : 0)
+        .frame(minHeight: padded ? Theme.Space.rowMinHeight : nil)
+        .accessibilityElement(children: .contain)
+    }
+}
+
+extension SettingRow where Control == EmptyView {
+    init(title: LocalizedStringKey, hint: LocalizedStringKey? = nil, symbol: String? = nil, tint: Color? = nil) {
+        self.init(title: title, hint: hint, symbol: symbol, tint: tint) { EmptyView() }
+    }
+}
+
+/// A row's leading symbol: 15 pt on a fixed column so labels line up.
+struct RowSymbol: View {
+    let symbol: String
+    var tint: Color? = nil
+
+    var body: some View {
+        Image(systemName: symbol)
+            .font(.system(size: 15))
+            .foregroundStyle(tint.map { AnyShapeStyle($0) } ?? AnyShapeStyle(.secondary))
+            .frame(width: Theme.Space.symbolColumn)
+            .accessibilityHidden(true)
+    }
+}
+
+struct ToggleRow: View {
+    let title: LocalizedStringKey
+    let subtitle: LocalizedStringKey?
+    let symbol: String
+    @Binding var isOn: Bool
+    var tint: Color? = nil
+
+    var body: some View {
+        SettingRow(title: title, hint: subtitle, symbol: symbol, tint: tint) {
+            Toggle(title, isOn: $isOn)
+                .toggleStyle(.switch)
+                .controlSize(.small)
+                .labelsHidden()
+        }
+    }
+}
+
+/// A slider row: label and value on top, a thin system slider filled in the
+/// part's color with a small mark at the default, and a hint about now.
 struct TuningSlider: View {
     let title: LocalizedStringKey
     let symbol: String
@@ -114,63 +240,81 @@ struct TuningSlider: View {
     let format: (Double) -> String
     var lowLabel: LocalizedStringKey? = nil
     var highLabel: LocalizedStringKey? = nil
+    /// One line about what the current value does; changes as it does.
+    var hint: LocalizedStringKey? = nil
+    /// The part the setting is about.
+    var tint: Color = Theme.ball
+    /// Where it starts out (a mark on the track).
+    var defaultValue: Double? = nil
+    @Environment(\.rowPadding) private var padded
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Label(title, systemImage: symbol)
-                    .font(.system(size: 14, weight: .medium))
-                Spacer()
+            HStack(spacing: Theme.Space.symbolGap) {
+                RowSymbol(symbol: symbol)
+                Text(title).font(Theme.Font.body)
+                Spacer(minLength: 8)
                 Text(format(value))
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
-                    .monospacedDigit()
-                    .contentTransition(.numericText())
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 3)
-                    .glassEffect(.regular, in: .capsule)
+                    .font(Theme.Font.value)
+                    .foregroundStyle(.secondary)
+                    .contentTransition(.numericText(value: value))
+                    .accessibilityHidden(true)
             }
-            Group {
-                if let step {
-                    Slider(value: $value, in: range, step: step)
-                } else {
-                    Slider(value: $value, in: range)
-                }
-            }
-            .controlSize(.large)
-            if lowLabel != nil || highLabel != nil {
-                HStack {
-                    if let lowLabel { Text(lowLabel) }
-                    Spacer()
-                    if let highLabel { Text(highLabel) }
-                }
-                .font(.system(size: 11))
-                .foregroundStyle(.tertiary)
-            }
-        }
-    }
-}
-
-struct ToggleRow: View {
-    let title: LocalizedStringKey
-    let subtitle: LocalizedStringKey?
-    let symbol: String
-    @Binding var isOn: Bool
-
-    var body: some View {
-        Toggle(isOn: $isOn) {
-            HStack(spacing: 10) {
-                Image(systemName: symbol)
-                    .font(.system(size: 14, weight: .medium))
-                    .frame(width: 22)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(title).font(.system(size: 14, weight: .medium))
-                    if let subtitle {
-                        Text(subtitle).font(.system(size: 11)).foregroundStyle(.secondary)
+            slider
+                .padding(.leading, Theme.Space.symbolColumn + Theme.Space.symbolGap)
+            if lowLabel != nil || highLabel != nil || hint != nil {
+                VStack(alignment: .leading, spacing: 3) {
+                    if lowLabel != nil || highLabel != nil {
+                        HStack {
+                            if let lowLabel { Text(lowLabel) }
+                            Spacer()
+                            if let highLabel { Text(highLabel) }
+                        }
+                        .foregroundStyle(.tertiary)
+                    }
+                    if let hint {
+                        Text(hint)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
+                .font(Theme.Font.hint)
+                .padding(.leading, Theme.Space.symbolColumn + Theme.Space.symbolGap)
             }
         }
-        .toggleStyle(.switch)
+        .padding(.horizontal, padded ? Theme.Space.rowHorizontal : 0)
+        .padding(.vertical, padded ? 12 : 0)
+    }
+
+    @ViewBuilder private var slider: some View {
+        Group {
+            if let step {
+                Slider(value: $value, in: range, step: step) { Text(title) }
+            } else {
+                Slider(value: $value, in: range) { Text(title) }
+            }
+        }
+        .labelsHidden()
+        .controlSize(.small)
+        .tint(tint)
+        .accessibilityValue(format(value))
+        .background(alignment: .bottomLeading) {
+            // The default, as a small mark under the track. (Drawn here rather than as a
+            // system tick so the slider never snaps to it.)
+            if let defaultValue, range.upperBound > range.lowerBound {
+                GeometryReader { geo in
+                    let knob: CGFloat = 5   // the small knob's half width: where the track's ends really are
+                    let f = (min(max(defaultValue, range.lowerBound), range.upperBound) - range.lowerBound)
+                        / (range.upperBound - range.lowerBound)
+                    Capsule()
+                        .fill(.tertiary)
+                        .frame(width: 1.5, height: 4)
+                        .position(x: knob + CGFloat(f) * (geo.size.width - knob * 2), y: geo.size.height + 3)
+                }
+                .help("Default: \(format(defaultValue))")
+                .accessibilityHidden(true)
+            }
+        }
     }
 }
 
@@ -181,12 +325,243 @@ extension LocalizedStringKey {
     static func verbatim(_ text: String) -> LocalizedStringKey { "\(text)" }
 }
 
+// MARK: - Small pieces
+
+/// A number as typography: a big rounded numeral over a small label with the part's dot.
+struct InlineStat: View {
+    let value: String
+    let label: LocalizedStringKey
+    var color: Color? = nil
+    var size: CGFloat = 30
+    var detail: String? = nil
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(value)
+                .font(Theme.Font.numeral(size))
+                .contentTransition(.numericText())
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+            HStack(spacing: 6) {
+                if let color { StatusDot(color: color, size: 7) }
+                Text(label)
+                    .font(Theme.Font.hint.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+            }
+            if let detail {
+                Text(detail)
+                    .font(Theme.Font.hint)
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// A plain dot: a status, or the part a number is about. Never glows.
+struct StatusDot: View {
+    let color: Color
+    var size: CGFloat = 8
+
+    var body: some View {
+        Circle().fill(color).frame(width: size, height: size).accessibilityHidden(true)
+    }
+}
+
+/// A mode that's on right now (Precision, Drag lock…): a small quiet chip with the part's symbol color.
+struct ModeChip: View {
+    let text: LocalizedStringKey
+    let symbol: String
+    let tint: Color
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: symbol)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(tint)
+            Text(text)
+                .font(.system(size: 11, weight: .medium))
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3.5)
+        .background(Capsule().fill(tint.opacity(0.14)))
+        .overlay(Capsule().strokeBorder(tint.opacity(0.28), lineWidth: 0.5))
+        .fixedSize()
+        .transition(.opacity.combined(with: .scale(scale: 0.92)))
+    }
+}
+
+/// A status line: a dot and a few words (Connected, Paused…).
+struct StatusPill: View {
+    let text: LocalizedStringKey
+    let color: Color
+
+    var body: some View {
+        HStack(spacing: 6) {
+            StatusDot(color: color, size: 7)
+            Text(text).font(.system(size: 12, weight: .medium)).lineLimit(1).fixedSize()
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(Capsule().fill(Theme.groupFill))
+        .overlay(Capsule().strokeBorder(Theme.groupBorder, lineWidth: 0.5))
+    }
+}
+
+/// "Beta" beside a device supported through Other Kensington trackballs.
+struct BetaBadge: View {
+    var body: some View {
+        Text("Beta", comment: "Badge beside a trackball that's only supported in the beta (Other Kensington trackballs)")
+            .font(.system(size: 10, weight: .semibold))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 1)
+            .overlay(Capsule().strokeBorder(.tertiary, lineWidth: 0.5))
+            .fixedSize()
+            .help("Not fully tested yet — you may hit bugs")
+    }
+}
+
+/// A notice at the top of the content: what's going on, in a sentence, and the one thing to do about it.
+struct NoticeBanner<Actions: View>: View {
+    let symbol: String
+    /// A status color (yellow for something needed, the part's or secondary for information).
+    let tint: Color
+    let title: LocalizedStringKey
+    var message: LocalizedStringKey? = nil
+    @ViewBuilder var actions: Actions
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: symbol)
+                .font(.system(size: 17, weight: .medium))
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(tint)
+                .frame(width: 22)
+                .padding(.top, 1)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title).font(Theme.Font.sectionTitle)
+                    if let message {
+                        Text(message)
+                            .font(Theme.Font.hint)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                HStack(spacing: 10) { actions }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(14)
+        .background {
+            let shape = RoundedRectangle(cornerRadius: Theme.Radius.group, style: .continuous)
+            shape.fill(Theme.groupFill)
+                .overlay(shape.strokeBorder(tint.opacity(0.6), lineWidth: 0.5))
+        }
+        .accessibilityElement(children: .contain)
+    }
+}
+
+/// An icon-only button: a hover wash, a tooltip and a spoken name, always.
+struct IconButton: View {
+    let symbol: String
+    let help: LocalizedStringKey
+    var size: CGFloat = 26
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 13, weight: .medium))
+                .frame(width: size, height: size)
+                .contentShape(Circle())
+        }
+        .buttonStyle(HoverButtonStyle(shape: .circle))
+        .foregroundStyle(.secondary)
+        .help(help)
+        .accessibilityLabel(help)
+    }
+}
+
+/// For clickable things that aren't system controls: a wash on hover, a
+/// little more while pressed, and a focus ring when tabbed to.
+struct HoverButtonStyle: ButtonStyle {
+    enum Shape { case circle, rounded }
+    var shape: Shape = .rounded
+    var radius: CGFloat = 8
+
+    func makeBody(configuration: Configuration) -> some View {
+        HoverBody(configuration: configuration, shape: shape, radius: radius)
+    }
+
+    private struct HoverBody: View {
+        let configuration: ButtonStyleConfiguration
+        let shape: Shape
+        let radius: CGFloat
+        @State private var hovering = false
+        @Environment(\.isEnabled) private var enabled
+
+        var body: some View {
+            configuration.label
+                .background {
+                    let fill = configuration.isPressed ? Theme.pressedFill : (hovering && enabled ? Theme.hoverFill : .clear)
+                    switch shape {
+                    case .circle: Circle().fill(fill)
+                    case .rounded: RoundedRectangle(cornerRadius: radius, style: .continuous).fill(fill)
+                    }
+                }
+                .opacity(enabled ? 1 : 0.45)
+                .onHover { hovering = $0 }
+                .animation(.easeOut(duration: 0.12), value: hovering)
+                .focusEffectDisabled(false)
+        }
+    }
+}
+
+// MARK: - Compatibility: the old card
+
+/// Pages not yet redesigned still build their blocks out of `GlassCard`. It now
+/// draws the new quiet group with a sentence-case title above it, so those
+/// pages already look like the rest. The symbol and tint are no longer drawn
+/// (titles don't carry icons, and color means a part).
+struct GlassCard<Content: View>: View {
+    var title: LocalizedStringKey? = nil
+    var symbol: String? = nil
+    var tint: Color? = nil
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Theme.Space.titleToGroup) {
+            if let title {
+                Text(title)
+                    .font(Theme.Font.sectionTitle)
+                    .accessibilityAddTraits(.isHeader)
+            }
+            VStack(alignment: .leading, spacing: 14) {
+                content
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .groupBackground()
+            .environment(\.rowPadding, false)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
 // MARK: - Background
 
+/// The plain window background (no gradient, no mesh).
 struct GlideBackground: View {
-    @Environment(\.colorScheme) private var scheme
-
-    /// The 3×3 mesh in dark mode (also what the launch animations bloom into).
+    /// The colors the launch animations bloom through (their own world, not the window's).
     static let darkColors: [Color] = [
         Color(red: 0.06, green: 0.07, blue: 0.20), Color(red: 0.18, green: 0.10, blue: 0.42), Color(red: 0.05, green: 0.16, blue: 0.30),
         Color(red: 0.10, green: 0.30, blue: 0.55), Color(red: 0.38, green: 0.18, blue: 0.62), Color(red: 0.05, green: 0.38, blue: 0.48),
@@ -194,88 +569,7 @@ struct GlideBackground: View {
     ]
 
     var body: some View {
-        let dark = scheme == .dark
-        let colors: [Color] = dark ? Self.darkColors : [
-            Color(red: 0.80, green: 0.86, blue: 1.00), Color(red: 0.90, green: 0.82, blue: 1.00), Color(red: 0.78, green: 0.95, blue: 0.98),
-            Color(red: 0.70, green: 0.82, blue: 1.00), Color(red: 0.95, green: 0.80, blue: 0.95), Color(red: 0.72, green: 0.94, blue: 0.90),
-            Color(red: 0.88, green: 0.90, blue: 1.00), Color(red: 1.00, green: 0.86, blue: 0.86), Color(red: 0.84, green: 0.92, blue: 1.00),
-        ]
-        // The centre point drifts slowly, so a few frames a second look the same as many,
-        // and every redraw re-renders the glass on top. How many follows the Performance
-        // setting; when the window isn't the one in use (or it's off) the drift just holds still.
-        let model = AppModel.shared
-        let fps = model.windowVisible
-            ? model.performance.backgroundFPS(windowIsKey: model.windowIsKey, deviceConnected: model.status.deviceConnected)
-            : 0
-        TimelineView(.animation(minimumInterval: 1 / max(fps, 1), paused: fps == 0)) { context in
-            let t = context.date.timeIntervalSinceReferenceDate
-            let phase = (sin(t * .pi / 9) + 1) / 2          // 0…1 and back every 18 s
-            let x = Float(0.38 + 0.24 * phase), y = Float(0.6 - 0.18 * phase)
-            MeshGradient(
-                width: 3, height: 3,
-                points: [
-                    [0, 0], [0.5, 0], [1, 0],
-                    [0, 0.5], [x, y], [1, 0.5],
-                    [0, 1], [0.5, 1], [1, 1],
-                ],
-                colors: colors
-            )
-        }
-        .ignoresSafeArea()
-    }
-}
-
-// MARK: - Status pill
-
-struct StatusPill: View {
-    let text: LocalizedStringKey
-    let color: Color
-
-    var body: some View {
-        HStack(spacing: 7) {
-            Circle()
-                .fill(color)
-                .frame(width: 8, height: 8)
-                .shadow(color: color.opacity(0.8), radius: 4)
-            Text(text).font(.system(size: 12, weight: .medium)).lineLimit(1).fixedSize()
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .glassEffect(.regular, in: .capsule)
-    }
-}
-
-/// A mode that's on right now (Precision, Drag lock…), shown in the header.
-struct ModePill: View {
-    let text: LocalizedStringKey
-    let symbol: String
-    let tint: Color
-
-    var body: some View {
-        Label(text, systemImage: symbol)
-            .font(.system(size: 12, weight: .semibold))
-            .lineLimit(1)
-            .fixedSize()
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .glassEffect(.regular.tint(tint.opacity(0.35)), in: .capsule)
-            .transition(.scale(scale: 0.8).combined(with: .opacity))
-    }
-}
-
-// MARK: - Beta badge
-
-/// A small "BETA" capsule for devices supported through "Other Kensington trackballs".
-struct BetaBadge: View {
-    var body: some View {
-        Text("BETA")
-            .font(.system(size: 9, weight: .bold, design: .rounded))
-            .tracking(0.6)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .foregroundStyle(.white)
-            .background(Capsule().fill(LinearGradient(colors: [.purple, .pink], startPoint: .leading, endPoint: .trailing)))
-            .help("Not fully tested yet — you may hit bugs")
+        Theme.windowBackground.ignoresSafeArea()
     }
 }
 
@@ -300,28 +594,28 @@ struct PointerPresetRow: View {
     ]
 
     var body: some View {
-        GlassEffectContainer(spacing: 10) {
-            HStack(spacing: 10) {
-                ForEach(presets) { p in
-                    let selected = abs(speed - p.speed) < 0.01
-                    let button = Button {
-                        withAnimation(.smooth) { speed = p.speed }
-                    } label: {
-                        VStack(spacing: 6) {
-                            Image(systemName: p.symbol).font(.system(size: 18))
-                            Text(p.name).font(.system(size: 12, weight: .medium))
-                        }
-                        .foregroundStyle(.primary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 6)
+        HStack(spacing: 8) {
+            ForEach(presets) { p in
+                let selected = abs(speed - p.speed) < 0.01
+                Button {
+                    withAnimation(Theme.Motion.spring) { speed = p.speed }
+                } label: {
+                    VStack(spacing: 5) {
+                        Image(systemName: p.symbol).font(.system(size: 16))
+                        Text(p.name).font(.system(size: 12, weight: .medium))
                     }
-                    .accessibilityAddTraits(selected ? .isSelected : [])
-                    if selected {
-                        button.buttonStyle(.glassProminent).tint(.cyan.opacity(0.7))
-                    } else {
-                        button.buttonStyle(.glass)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 9)
+                    .foregroundStyle(selected ? AnyShapeStyle(Theme.ball) : AnyShapeStyle(.primary))
+                    .background {
+                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .fill(selected ? Theme.ball.opacity(0.12) : .clear)
+                            .strokeBorder(selected ? Theme.ball.opacity(0.55) : Theme.groupBorder, lineWidth: selected ? 1 : 0.5)
                     }
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(HoverButtonStyle(radius: 9))
+                .accessibilityAddTraits(selected ? .isSelected : [])
             }
         }
     }

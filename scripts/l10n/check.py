@@ -65,10 +65,17 @@ COMPONENTS: dict[str, set] = {
     "TuningSlider": {"title", "lowLabel", "highLabel"},
     "ToggleRow": {"title", "subtitle"},
     "StatusPill": {"text"},
-    "ModePill": {"text"},
-    "StatTile": {"title"},
+    "ModeChip": {"text"},
+    "PageHeader": {"title", "subtitle"},
+    "SectionBlock": {"title", "caption"},
+    "SectionTitle": {"title", "caption"},
+    "SettingRow": {"title", "hint"},
+    "InlineStat": {"label"},
+    "IconButton": {"help"},
+    "NoticeBanner": {"title", "message"},
+    "CombosCard": {"title"},
+    "stat": {"label"},                   # OverviewView (Today)
     "OverrideSection": {"title"},
-    "caption": {0},                      # OverviewView
     "legend": {0, "text"},               # OverviewView, PointerView
     "labeled": {0},                      # FeedbackView
     "sendButton": {"title"},             # FeedbackView

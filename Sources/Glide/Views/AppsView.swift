@@ -22,7 +22,7 @@ struct AppsView: View {
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.horizontal, 6)
                     }
-                    .frame(width: 280)
+                    .frame(width: 220)
 
                     if let id = model.selectedProfileID, profiles.contains(where: { $0.id == id }) {
                         ProfileEditor(model: model, profileID: id)
@@ -219,7 +219,7 @@ private struct ProfileEditor: View {
                             mainSummary: main.scrollMode.title,
                             isCustom: customizing(\.scroll) { model.config.scrollSettings }) {
                 let scroll = scrollConfig
-                ModePicker(mode: scroll.scrollMode)
+                ModePicker(mode: scroll.scrollMode, stacked: true)
                 ScrollControls(config: scroll)
             }
 
@@ -228,7 +228,7 @@ private struct ProfileEditor: View {
             OverrideSection(title: "Buttons", symbol: "button.programmable",
                             mainSummary: Self.remapped(main.buttons),
                             isCustom: customizing(\.buttons) { model.config.buttons }) {
-                VStack(spacing: 12) {
+                RowGroup(dividerInset: ButtonRow.dividerInset) {
                     ForEach(Self.buttonRows, id: \.index) { b in
                         ButtonRow(index: b.index, name: AppModel.buttonName(b.index), normally: b.normally,
                                   isPressed: model.pressed.contains(b.index),
@@ -242,7 +242,7 @@ private struct ProfileEditor: View {
                                                              : String(localized: "\(main.chords.count) combos"),
                             isCustom: customizing(\.chords) { model.config.chords }) {
                 CombosCard(chords: Binding(get: { profile.wrappedValue.chords ?? model.config.chords },
-                                           set: { profile.wrappedValue.chords = $0 }))
+                                           set: { profile.wrappedValue.chords = $0 }), title: nil)
             }
         }
         .confirmationDialog("Delete the \(p.name) setup?", isPresented: $confirmingDelete) {

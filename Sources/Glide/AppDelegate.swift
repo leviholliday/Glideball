@@ -29,6 +29,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             AppRename.finishLoginItem()
         }
         let firstLaunch = WelcomeTour.shouldShowAtLaunch()   // before AppModel loads settings
+        // The trackball picture's layers (about 70 ms of shading, once), off the main thread
+        // so they're ready by the time the window shows.
+        DispatchQueue.global(qos: .userInitiated).async { _ = OrbArt.layers }
         _ = AppLanguage.atLaunch   // the language on screen, before anyone can change it
         buildMenu()
         handleTerminateSignal()
@@ -180,23 +183,56 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     /// The main window and its contents, made once.
     private func makeWindow() {
         if window == nil {
-            let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1040, height: 700),
+            let w = NSWindow(contentRect: NSRect(origin: .zero, size: Self.mainWindowSize),
                              styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
                              backing: .buffered, defer: false)
-            w.titlebarAppearsTransparent = true
-            w.titleVisibility = .hidden
+            Self.styleMainWindow(w)
             w.isMovableByWindowBackground = false   // dragging a slider must never move the window
-            w.minSize = NSSize(width: 960, height: 620)
+            w.contentMinSize = Self.mainWindowMinSize
             let hosting = NSHostingView(rootView: RootView(model: AppModel.shared))
             hosting.sizingOptions = []   // the window decides its size, not the content
             w.contentView = hosting
-            w.setContentSize(NSSize(width: 1040, height: 700))
+            w.setContentSize(Self.mainWindowSize)
             w.isReleasedWhenClosed = false
             w.delegate = self
             w.setFrameAutosaveName("GlideMain")
-            if !w.setFrameUsingName("GlideMain") { w.center() }
+            if w.setFrameUsingName("GlideMain") {
+                Self.keepSensible(w)
+            } else {
+                w.center()
+            }
             window = w
         }
+    }
+
+    /// Transparent title bar with the traffic lights over the sidebar, and no custom header.
+    /// The empty toolbar is what lets the sidebar's glass run the window's full height,
+    /// under the traffic lights, as in Finder or Notes. (Shared with --render-ui.)
+    static func styleMainWindow(_ w: NSWindow) {
+        w.titlebarAppearsTransparent = true
+        w.titleVisibility = .hidden
+        w.title = "Glideball"
+        let toolbar = NSToolbar(identifier: "GlideMain")
+        toolbar.allowsUserCustomization = false
+        w.toolbar = toolbar
+        w.toolbarStyle = .unified
+    }
+
+    static let mainWindowSize = NSSize(width: 980, height: 680)
+    static let mainWindowMinSize = NSSize(width: 860, height: 580)
+
+    /// A saved frame from an older layout (or another display arrangement) is
+    /// kept where it can be: never below the minimum, never bigger than the
+    /// screen it's on, and pulled fully onto that screen.
+    private static func keepSensible(_ w: NSWindow) {
+        guard let visible = (w.screen ?? NSScreen.main)?.visibleFrame else { return }
+        var frame = w.frame
+        let minFrame = w.frameRect(forContentRect: NSRect(origin: .zero, size: mainWindowMinSize)).size
+        frame.size.width = min(max(frame.width, minFrame.width), visible.width)
+        frame.size.height = min(max(frame.height, minFrame.height), visible.height)
+        frame.origin.x = min(max(frame.minX, visible.minX), visible.maxX - frame.width)
+        frame.origin.y = min(max(frame.minY, visible.minY), visible.maxY - frame.height)
+        if frame != w.frame { w.setFrame(frame, display: false) }
     }
 
     /// Tells the model what the window's doing, so it animates only while someone can see it.

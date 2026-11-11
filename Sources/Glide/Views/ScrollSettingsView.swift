@@ -194,6 +194,8 @@ struct ScrollControls: View {
 
 struct ModePicker: View {
     @Binding var mode: ScrollMode
+    /// One above another, for a narrow column (an app setup).
+    var stacked = false
     @Namespace private var ns
 
     private func info(_ m: ScrollMode) -> (String, String, String) {
@@ -206,36 +208,44 @@ struct ModePicker: View {
 
     var body: some View {
         GlassEffectContainer(spacing: 8) {
-            HStack(spacing: 8) {
-                ForEach(ScrollMode.allCases) { m in
-                    let (title, symbol, subtitle) = info(m)
-                    Button {
-                        withAnimation(.smooth(duration: 0.25)) { mode = m }
-                    } label: {
-                        HStack(spacing: 10) {
-                            Image(systemName: symbol).font(.system(size: 18))
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(title).font(.system(size: 14, weight: .semibold))
-                                Text(subtitle).font(.system(size: 11)).foregroundStyle(.secondary)
-                            }
-                            Spacer(minLength: 0)
-                        }
-                        .foregroundStyle(.primary)
-                        .padding(.horizontal, 14).padding(.vertical, 10)
-                        .frame(maxWidth: .infinity)
-                        .background {
-                            if mode == m {
-                                RoundedRectangle(cornerRadius: 16).fill(.white.opacity(0.16))
-                                    .matchedGeometryEffect(id: "mode", in: ns)
-                            }
-                        }
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
+            Group {
+                if stacked {
+                    VStack(spacing: 4) { options() }
+                } else {
+                    HStack(spacing: 8) { options() }
                 }
             }
             .padding(6)
             .glassEffect(.regular, in: .rect(cornerRadius: 22))
+        }
+    }
+
+    @ViewBuilder private func options() -> some View {
+        ForEach(ScrollMode.allCases) { m in
+            let (title, symbol, subtitle) = info(m)
+            Button {
+                withAnimation(.smooth(duration: 0.25)) { mode = m }
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: symbol).font(.system(size: 18)).frame(width: 22)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(title).font(.system(size: 14, weight: .semibold))
+                        Text(subtitle).font(.system(size: 11)).foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .foregroundStyle(.primary)
+                .padding(.horizontal, 14).padding(.vertical, 10)
+                .frame(maxWidth: .infinity)
+                .background {
+                    if mode == m {
+                        RoundedRectangle(cornerRadius: 16).fill(.white.opacity(0.16))
+                            .matchedGeometryEffect(id: "mode", in: ns)
+                    }
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
         }
     }
 }

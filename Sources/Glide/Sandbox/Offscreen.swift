@@ -23,8 +23,10 @@ import SwiftUI
 @MainActor
 enum Offscreen {
     enum Chrome {
-        /// The main window: title bar and traffic lights over the content.
+        /// A window with its title bar and traffic lights over the content.
         case window
+        /// Glideball's main window, styled as AppDelegate styles it (the sidebar runs under the traffic lights).
+        case mainWindow
         /// A titled window whose title bar (and toolbar) is drawn too.
         case titled
         /// Just the content (sheets, cards).
@@ -60,7 +62,7 @@ enum Offscreen {
     /// A window that's never ordered front.
     static func makeWindow(size: NSSize, chrome: Chrome, appearance: NSAppearance?) -> NSWindow {
         let style: NSWindow.StyleMask = switch chrome {
-        case .window: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
+        case .window, .mainWindow: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
         case .titled: [.titled, .closable, .fullSizeContentView]
         case .plain: [.borderless]
         }
@@ -68,7 +70,9 @@ enum Offscreen {
                                     backing: .buffered, defer: false)
         w.isReleasedWhenClosed = false
         w.appearance = appearance
-        if chrome != .plain {
+        if chrome == .mainWindow {
+            AppDelegate.styleMainWindow(w)
+        } else if chrome != .plain {
             w.titlebarAppearsTransparent = true
             w.titleVisibility = .hidden
         }

@@ -707,7 +707,6 @@
 
 /* ---- Components.swift ---- */
 
-"BETA" = "베타";
 
 "Precise" = "정밀";
 
@@ -727,7 +726,6 @@
 
 "Make it yours" = "나만의 Glideball 만들기";
 
-"of %lld" = "/ %lld";
 
 "You’ve made Glideball yours." = "Glide를 나만의 것으로 만들었어요.";
 
@@ -797,7 +795,6 @@
 /* When a personal best was set; short (about 6 letters fit) */
 "today" = "오늘";
 
-"NEW" = "신규";
 
 /* Badge tooltip: what earns it, then the date */
 "%@ — earned %@" = "%@ — %@에 획득";
@@ -1023,9 +1020,7 @@
 
 "Waiting for permissions…" = "권한 대기 중…";
 
-"Kensington Expert Mouse" = "Kensington Expert Mouse";
 
-"Roll, spin, or click — it's live." = "굴리고, 돌리고, 클릭해 보세요 — 실시간이에요.";
 
 "Plug in your Expert Mouse." = "Expert Mouse를 연결하세요.";
 
@@ -1595,3 +1590,25 @@
 
 "Why?" = "왜 필요한가요?";
 
+
+/* The redesign (stage 1): sidebar, page headers, Overview and Buttons */
+"How your trackball’s doing today, and everything it’s done so far." = "오늘 트랙볼의 활동과 지금까지의 기록이에요.";
+"How fast the cursor moves when you roll the ball." = "볼을 굴릴 때 포인터가 움직이는 속도예요.";
+"How the page moves when you turn the scroll ring." = "스크롤 링을 돌릴 때 페이지가 움직이는 방식이에요.";
+"What each button does, and combos you press together." = "각 버튼이 하는 일과 함께 누르는 콤보예요.";
+"Different settings for the apps you choose." = "선택한 앱마다 다른 설정이에요.";
+"Keep your settings the same on all your Macs, and back them up." = "모든 Mac에서 설정을 똑같이 유지하고 백업해요.";
+"%@ (⌘%lld)" = "%1$@(⌘%2$lld)";
+"Glideball is on" = "Glideball 켜짐";
+"Resume" = "다시 시작";
+"Your trackball works like a plain mouse until you turn Glideball back on." = "Glideball을 다시 켤 때까지 트랙볼은 일반 마우스처럼 작동해요.";
+"Glideball starts working as soon as it’s connected." = "연결하는 즉시 Glideball이 작동을 시작해요.";
+"Roll or spin to see it move" = "굴리거나 돌리면 움직임이 보여요";
+"Best %@" = "최고 %@";
+"Your buttons" = "내 버튼";
+"Hide" = "가리기";
+"Beta" = "베타";
+"New" = "새로움";
+"Your trackball, live" = "내 트랙볼, 실시간";
+"No trackball connected" = "연결된 트랙볼 없음";
+"Default: %@" = "기본값: %@";

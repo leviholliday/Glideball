@@ -707,7 +707,6 @@
 
 /* ---- Components.swift ---- */
 
-"BETA" = "BETA";
 
 "Precise" = "Preciso";
 
@@ -727,7 +726,6 @@
 
 "Make it yours" = "Fallo tuo";
 
-"of %lld" = "di %lld";
 
 "You’ve made Glideball yours." = "Hai fatto tuo Glideball.";
 
@@ -797,7 +795,6 @@
 /* When a personal best was set; short (about 6 letters fit) */
 "today" = "oggi";
 
-"NEW" = "NUOVO";
 
 /* Badge tooltip: what earns it, then the date */
 "%@ — earned %@" = "%@ — ottenuto il %@";
@@ -1023,9 +1020,7 @@
 
 "Waiting for permissions…" = "In attesa dei permessi…";
 
-"Kensington Expert Mouse" = "Kensington Expert Mouse";
 
-"Roll, spin, or click — it's live." = "Fai rotolare, gira o fai clic: è tutto in tempo reale.";
 
 "Plug in your Expert Mouse." = "Collega il tuo Expert Mouse.";
 
@@ -1595,3 +1590,25 @@
 
 "Why?" = "Perché?";
 
+
+/* The redesign (stage 1): sidebar, page headers, Overview and Buttons */
+"How your trackball’s doing today, and everything it’s done so far." = "Come va la tua trackball oggi, e tutto quello che ha fatto finora.";
+"How fast the cursor moves when you roll the ball." = "Quanto si muove veloce il puntatore quando fai rotolare la sfera.";
+"How the page moves when you turn the scroll ring." = "Come si muove la pagina quando giri la ghiera di scorrimento.";
+"What each button does, and combos you press together." = "Cosa fa ogni pulsante, e le combo da premere insieme.";
+"Different settings for the apps you choose." = "Impostazioni diverse per le app che scegli.";
+"Keep your settings the same on all your Macs, and back them up." = "Tieni le stesse impostazioni su tutti i tuoi Mac, e fanne un backup.";
+"%@ (⌘%lld)" = "%1$@ (⌘%2$lld)";
+"Glideball is on" = "Glideball è attivo";
+"Resume" = "Riprendi";
+"Your trackball works like a plain mouse until you turn Glideball back on." = "La trackball funziona come un mouse normale finché non riattivi Glideball.";
+"Glideball starts working as soon as it’s connected." = "Glideball inizia a funzionare appena è collegata.";
+"Roll or spin to see it move" = "Fai rotolare o girare per vederlo muoversi";
+"Best %@" = "Record: %@";
+"Your buttons" = "I tuoi pulsanti";
+"Hide" = "Nascondi";
+"Beta" = "Beta";
+"New" = "Nuovo";
+"Your trackball, live" = "La tua trackball, in tempo reale";
+"No trackball connected" = "Nessuna trackball collegata";
+"Default: %@" = "Predefinito: %@";

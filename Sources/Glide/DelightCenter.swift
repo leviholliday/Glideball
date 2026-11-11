@@ -293,9 +293,10 @@ final class DelightCenter {
 
     static func hues(for m: Metric) -> [Double] {
         switch m {
-        case .scroll: [0.92, 0.85, 0.78, 0.14]
-        case .ball: [0.52, 0.58, 0.72, 0.14]
-        case .clicks: [0.5, 0.42, 0.78, 0.14]
+        // The part's own color (ring pink, ball blue, buttons amber), with a little gold.
+        case .scroll: [0.92, 0.94, 0.9, 0.14]
+        case .ball: [0.58, 0.6, 0.55, 0.14]
+        case .clicks: [0.1, 0.09, 0.11, 0.14]
         }
     }
 }

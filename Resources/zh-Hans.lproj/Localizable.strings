@@ -707,7 +707,6 @@
 
 /* ---- Components.swift ---- */
 
-"BETA" = "BETA";
 
 "Precise" = "精细";
 
@@ -727,7 +726,6 @@
 
 "Make it yours" = "专属于你";
 
-"of %lld" = "共 %lld 项";
 
 "You’ve made Glideball yours." = "Glideball 已是你的专属。";
 
@@ -797,7 +795,6 @@
 /* When a personal best was set; short (about 6 letters fit) */
 "today" = "今天";
 
-"NEW" = "新";
 
 /* Badge tooltip: what earns it, then the date */
 "%@ — earned %@" = "%@ — 获得于 %@";
@@ -1023,9 +1020,7 @@
 
 "Waiting for permissions…" = "正在等待权限…";
 
-"Kensington Expert Mouse" = "Kensington Expert Mouse";
 
-"Roll, spin, or click — it's live." = "滚一滚、转一转或点一点 — 实时显示。";
 
 "Plug in your Expert Mouse." = "插入你的 Expert Mouse。";
 
@@ -1595,3 +1590,25 @@
 
 "Why?" = "为什么需要？";
 
+
+/* The redesign (stage 1): sidebar, page headers, Overview and Buttons */
+"How your trackball’s doing today, and everything it’s done so far." = "你的轨迹球今天的情况，以及它至今的全部记录。";
+"How fast the cursor moves when you roll the ball." = "滚动滚球时指针移动的速度。";
+"How the page moves when you turn the scroll ring." = "转动滚动环时页面的移动方式。";
+"What each button does, and combos you press together." = "每个按钮的作用，以及同时按下的组合键。";
+"Different settings for the apps you choose." = "为你选择的 App 使用不同的设置。";
+"Keep your settings the same on all your Macs, and back them up." = "让所有 Mac 上的设置保持一致，并进行备份。";
+"%@ (⌘%lld)" = "%1$@（⌘%2$lld）";
+"Glideball is on" = "Glideball 已开启";
+"Resume" = "恢复";
+"Your trackball works like a plain mouse until you turn Glideball back on." = "在你重新开启 Glideball 之前，轨迹球会像普通鼠标一样工作。";
+"Glideball starts working as soon as it’s connected." = "一接上，Glideball 就开始工作。";
+"Roll or spin to see it move" = "滚动滚球或转动滚动环即可看到变化";
+"Best %@" = "最佳 %@";
+"Your buttons" = "你的按钮";
+"Hide" = "隐藏";
+"Beta" = "测试版";
+"New" = "新";
+"Your trackball, live" = "你的轨迹球，实时";
+"No trackball connected" = "未连接轨迹球";
+"Default: %@" = "默认：%@";

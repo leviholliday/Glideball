@@ -368,27 +368,28 @@ struct ToastView: View {
             } else {
                 Image(systemName: toast.symbol)
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(toast.isError ? .orange : .green)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(toast.isError ? Theme.warn : Theme.ok)
                 Text(toast.text).font(.system(size: 13, weight: .medium)).lineLimit(1)
             }
             if let action = toast.action {
-                Divider().frame(height: 16).opacity(0.4)
+                Hairline(vertical: true).frame(height: 16)
                 switch action {
                 case .undoImport:
                     Button("Undo") { model.undoImport() }
-                        .buttonStyle(.plain).font(.system(size: 13, weight: .semibold)).foregroundStyle(.cyan)
+                        .buttonStyle(HoverButtonStyle(radius: 6)).font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.ball)
                 case .reveal(let url):
                     Button("Show in Finder") {
                         NSWorkspace.shared.activateFileViewerSelecting([url])
                         model.toast = nil
                     }
-                    .buttonStyle(.plain).font(.system(size: 13, weight: .semibold)).foregroundStyle(.cyan)
+                    .buttonStyle(HoverButtonStyle(radius: 6)).font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.ball)
                 }
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, toast.celebration ? 8 : 10)
-        .glassEffect(toast.celebration ? .regular.tint(.purple.opacity(0.18)) : .regular, in: .capsule)
-        .shadow(color: toast.celebration ? .purple.opacity(0.35) : .black.opacity(0.25), radius: 18, y: 8)
+        .glassEffect(.regular, in: .capsule)
+        .shadow(color: .black.opacity(0.18), radius: 14, y: 6)
     }
 }

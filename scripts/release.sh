@@ -53,6 +53,7 @@ RELEASE_REQ='=identifier "com.leviholliday.glide" and certificate leaf = H"a729e
 SIGN_NAME="Glide Local Signing"
 PLIST=Resources/Info.plist
 ICON=Resources/AppIcon.icns
+ICON_CLASSIC=Resources/AppIconClassic.icns
 BIN_ARM=.build/release/Glide
 BIN_X86=.build/x86/release/Glide
 BIN=release/Glide-universal
@@ -307,7 +308,7 @@ if [[ -n $dirty ]]; then
       "untracked files, and the release must match the commit it is tagged on."
 fi
 
-for f in "$PLIST" "$ICON" Package.swift; do
+for f in "$PLIST" "$ICON" "$ICON_CLASSIC" Package.swift; do
   [[ -f $f ]] || die "$f is missing"
 done
 
@@ -414,6 +415,7 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/Glide"
 cp "$PLIST" "$APP/Contents/Info.plist"
 cp "$ICON" "$APP/Contents/Resources/AppIcon.icns"
+cp "$ICON_CLASSIC" "$APP/Contents/Resources/AppIconClassic.icns" || die "couldn't copy $ICON_CLASSIC (./build.sh --icon makes it)"
 cp Resources/IntroMusic.m4a Resources/LaunchChime.m4a "$APP/Contents/Resources/"   # scripts/make-intro-music.py
 cp Resources/Sounds/*.caf "$APP/Contents/Resources/" || die "couldn't copy the interface sounds (scripts/make-sounds.py)"
 lprojs=(Resources/*.lproj(N))   # translations (scripts/l10n) — copied before signing so the seal covers them

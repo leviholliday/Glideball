@@ -1,13 +1,13 @@
 #!/bin/zsh
 # Builds Glideball.app, installs it to /Applications, and launches it. No Xcode needed.
 #   ./build.sh           build + install + launch
-#   ./build.sh --icon    also re-render the app icon first
+#   ./build.sh --icon    also re-render the app icons first (the Orb icon and the classic one)
 set -e
 cd "$(dirname "$0")"
 
-if [[ "$1" == "--icon" || ! -f Resources/AppIcon.icns ]]; then
-  swift scripts/make-icon.swift .
-  iconutil -c icns build/AppIcon.iconset -o Resources/AppIcon.icns
+if [[ "$1" == "--icon" || ! -f Resources/AppIcon.icns || ! -f Resources/AppIconClassic.icns ]]; then
+  swift scripts/make-icon.swift --style orb-b --icns Resources/AppIcon.icns
+  swift scripts/make-icon.swift --style classic --icns Resources/AppIconClassic.icns
 fi
 
 swift build -c release
@@ -22,7 +22,7 @@ rm -rf "$APP" /Applications/Glide.app   # the pre-2.8 name
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/Glide"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
-cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+cp Resources/AppIcon.icns Resources/AppIconClassic.icns "$APP/Contents/Resources/"   # the Orb icon, and the classic one to offer
 cp Resources/IntroMusic.m4a Resources/LaunchChime.m4a "$APP/Contents/Resources/"   # scripts/make-intro-music.py
 cp Resources/Sounds/*.caf "$APP/Contents/Resources/"   # scripts/make-sounds.py
 cp -R Resources/*.lproj(N) "$APP/Contents/Resources/"   # translations (scripts/l10n); before signing
