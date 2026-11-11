@@ -1,5 +1,6 @@
 import AppKit
 import Observation
+import SwiftUI
 
 // The app's side of Commands.swift, ExternalControl.swift and StatusFile.swift:
 // the real `CommandTarget`, and the center that takes glideball:// URLs from
@@ -205,17 +206,34 @@ final class ExternalControlCenter {
 
     // MARK: The switch is off
 
+    private var notice: NSWindow?
+
     /// Shown the first time per launch that a URL tries to change something
     /// with "Allow Raycast and scripts" off. Never again until Glideball relaunches.
+    /// Open Settings goes to Settings › General and points at the switch.
     private func explainSwitch() {
-        DispatchQueue.main.async {   // after the URL's Apple event has been answered
-            let alert = NSAlert()
-            alert.messageText = String(localized: "Something tried to control Glideball.")
-            alert.informativeText = String(localized: "Turn on “Allow Raycast and scripts” in Settings to let it.",
-                                           comment: "“Allow Raycast and scripts” is a switch in Settings › General")
-            alert.addButton(withTitle: String(localized: "OK"))
+        DispatchQueue.main.async { [weak self] in   // after the URL's Apple event has been answered
+            guard let self else { return }
+            if self.notice == nil {
+                let close: () -> Void = { [weak self] in self?.notice?.close() }
+                let view = ExternalControlNoticeView(openSettings: {
+                    close()
+                    (NSApp.delegate as? AppDelegate)?.showSettings(.general, spotlight: "external-control")
+                }, close: close)
+                let controller = NSHostingController(rootView: view)
+                controller.sizingOptions = [.preferredContentSize]
+                let w = NSWindow(contentViewController: controller)
+                w.styleMask = [.titled, .closable, .fullSizeContentView]
+                w.titlebarAppearsTransparent = true
+                w.titleVisibility = .hidden
+                w.title = String(localized: "Something tried to control Glideball")
+                w.isReleasedWhenClosed = false
+                w.collectionBehavior.insert([.fullScreenAuxiliary, .moveToActiveSpace])
+                w.center()
+                self.notice = w
+            }
             NSApp.activate()
-            alert.runModal()
+            self.notice?.makeKeyAndOrderFront(nil)
         }
     }
 }

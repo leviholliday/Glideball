@@ -36,9 +36,6 @@ final class LaunchExperience {
     static let forceIntroKey = "GlideForceIntro"
     static let forceVariantKey = "GlideForceSplashVariant"
     static let lastVariantKey = "GlideLastSplashVariant"
-    /// The old "Launch sounds" switch. Settings folds it into the one Sounds
-    /// switch (`Sounds.enabled`); the launch only ever reads that.
-    static let soundsKey = "GlideLaunchSounds"
     static let styleKey = "GlideLaunchStyle"
     static let lastVersionKey = "GlideLastLaunchedVersion"
 
@@ -69,13 +66,6 @@ final class LaunchExperience {
     /// When the window's contents started dissolving in, and over how long.
     private(set) var revealStart: Date?
     private(set) var revealDuration: Double = 0.45
-
-    /// The one Sounds switch, as the launch sees it (kept for Settings' old
-    /// "Launch sound" row until that row goes).
-    var soundsOn: Bool {
-        get { access(keyPath: \.soundsOn); return Sounds.shared.enabled }
-        set { withMutation(keyPath: \.soundsOn) { Sounds.shared.enabled = newValue } }
-    }
 
     /// "When Glideball opens" in Settings › General. Animation by default.
     var style: Style {

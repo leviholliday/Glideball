@@ -44,7 +44,8 @@ enum WhatsNew {
     /// Where "Show Me" goes.
     enum Destination: Equatable {
         case tab(GlideTab)
-        case settings(SettingsPane)
+        /// A Settings tab, with a row pointed out (`SettingsSpotlight`) if named.
+        case settings(SettingsPane, spotlight: String? = nil)
     }
 
     // MARK: The table
@@ -65,7 +66,7 @@ enum WhatsNew {
                          title: String(localized: "Settings get their own window", comment: "What's New 2.10 item title"),
                          text: String(localized: "Glideball › Settings (⌘,) has everything that used to sit at the bottom of Overview, plus a new set of soft sounds you can turn off with one switch.",
                                       comment: "What's New 2.10 item"),
-                         art: .symbol("gearshape", nil), showMe: .settings(.general)),
+                         art: .symbol("gearshape", nil), showMe: .settings(.look, spotlight: "sounds")),
                     Item(id: "speed",
                          title: String(localized: "Pausing puts your speed back", comment: "What's New 2.10 item title"),
                          text: String(localized: "When you pause or quit Glideball, your trackball goes back to exactly the tracking speed in System Settings, so it always feels the same.",
@@ -75,7 +76,7 @@ enum WhatsNew {
                          title: String(localized: "Raycast and scripts", comment: "What's New 2.10 item title"),
                          text: String(localized: "Turn on Allow Raycast and scripts and you can pause Glideball, switch Precision or change the scroll mode from Raycast or a glideball:// link.",
                                       comment: "What's New 2.10 item; “Allow Raycast and scripts” is a switch in Settings › General"),
-                         art: .symbol("command", nil), showMe: .settings(.general)),
+                         art: .symbol("command", nil), showMe: .settings(.general, spotlight: "external-control")),
                     Item(id: "privacy",
                          title: String(localized: "Crash reports, only if you want", comment: "What's New 2.10 item title"),
                          text: String(localized: "You can let Glideball send me crash reports, and a few anonymous settings stats if you like. It’s off unless you pick it.",
@@ -131,28 +132,34 @@ extension AppModel {
     /// What can show over the window by itself, in the order it's offered.
     enum Prompt: Equatable {
         case whatsNew
+        /// "Glideball has a new look" (`IconChoicePrompt`), after an update from the classic icon.
+        case iconChoice
         case smallFavor
     }
 
-    /// The next thing due, if any: What's New after an update, else the
-    /// "A small favor" card while it's unanswered.
+    /// The next thing due, if any: What's New after an update, then "Glideball
+    /// has a new look" until it's answered, then the "A small favor" card while
+    /// it's unanswered. A fresh install never gets the first two (it starts on
+    /// the Orb and this version's What's New already seen).
     var nextPrompt: Prompt? {
         if WhatsNew.isPending { return .whatsNew }
+        if AppIconChoice.shared.promptDue { return .iconChoice }
         if ShareData.shared.shouldAsk { return .smallFavor }
         return nil
     }
 
     /// Something is already over the window (or a sheet is up): nothing else may show.
     var promptShowing: Bool {
-        showingWelcomeTour || showingWhatsNew || showingSmallFavor || showingFeedback || showingAbout
-            || pendingImport != nil
+        showingWelcomeTour || showingWhatsNew || showingIconChoice || showingSmallFavor
+            || showingFeedback || showingAbout || pendingImport != nil
     }
 
     /// Shows the next thing due, once the window is open and nothing else is
     /// over it: never on top of the launch animation, the Welcome Tour, a
     /// sheet or another card. One per opening of the window: if something's
     /// in the way it waits for the next time the window opens, and closing
-    /// What's New doesn't bring the small favor straight after it.
+    /// one doesn't bring the next straight after it. (The Welcome Tour is the
+    /// exception: closing it offers the small favor.)
     func showNextPrompt(after delay: Double = 0.8) {
         guard nextPrompt != nil else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
@@ -169,20 +176,18 @@ extension AppModel {
               let next = nextPrompt else { return nil }
         switch next {
         case .whatsNew: showWhatsNew()
+        case .iconChoice: showingIconChoice = true
         case .smallFavor: showingSmallFavor = true
         }
         return next
     }
 
-    /// The old name: kept for callers that offer the card.
-    func offerSmallFavor(after delay: Double = 0.8) {
-        showNextPrompt(after: delay)
-    }
-
     /// Help › What's New, or its turn after an update.
     func showWhatsNew() {
         WhatsNew.markSeen()
-        showingSmallFavor = false   // asked for by hand: the card comes back another time
+        // Asked for by hand: a card already up steps aside and comes back another time.
+        showingSmallFavor = false
+        showingIconChoice = false
         showingWhatsNew = true
     }
 
@@ -190,7 +195,7 @@ extension AppModel {
         showingWhatsNew = false
         switch destination {
         case .tab(let tab)?: requestedTab = tab
-        case .settings(let pane)?: (NSApp.delegate as? AppDelegate)?.showSettings(pane)
+        case .settings(let pane, let spotlight)?: (NSApp.delegate as? AppDelegate)?.showSettings(pane, spotlight: spotlight)
         case nil: break
         }
     }

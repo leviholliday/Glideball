@@ -41,6 +41,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         // so they're ready by the time the window shows.
         DispatchQueue.global(qos: .userInitiated).async { _ = OrbArt.layers }
         _ = AppLanguage.atLaunch   // the language on screen, before anyone can change it
+        _ = Sounds.shared.enabled   // settles "Sounds" (the launch reads it) before anything plays
+        AppIconChoice.shared.setUp(firstLaunch: firstLaunch)   // the Dock icon: the Orb, or the classic one
         buildMenu()
         handleTerminateSignal()
         setUpStatusItem()
@@ -358,9 +360,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     /// Glideball › Settings… (⌘,): one window, brought forward if it's already
     /// open. Works with the main window closed and with no Dock icon.
-    func showSettings(_ pane: SettingsPane? = nil) {
+    func showSettings(_ pane: SettingsPane? = nil, spotlight: String? = nil) {
         if settingsWindow == nil { settingsWindow = SettingsWindowController() }
-        settingsWindow?.show(pane)
+        settingsWindow?.show(pane, spotlight: spotlight)
     }
 
     private var updateWindow: NSWindow?
@@ -403,7 +405,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             switch action {
             case .pause:
                 Commands.run("toggle", on: AppCommandTarget.shared) { running in
-                    NSSound(named: running == true ? "Pop" : "Funk")?.play()
+                    Sounds.shared.play(running == true ? .resume : .pause)
                 }
             case .precision: self?.toggleMode(.precision)
             case .ballScroll: self?.toggleMode(.ballScroll)
@@ -422,12 +424,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                                                             object: nil, queue: .main, using: end)
     }
 
-    /// A quiet sound says which way it went; a beep means nothing changed
+    /// A high or low tick says which way it went; a beep means nothing changed
     /// (Glide is paused, or the trackball isn't there to scroll with).
     private func toggleMode(_ mode: GlideMode) {
         Commands.run(mode.rawValue, .toggle, on: AppCommandTarget.shared) { on in
             guard let on else { return NSSound.beep() }
-            NSSound(named: on ? "Tink" : "Purr")?.play()
+            Sounds.shared.play(on ? .modeOn : .modeOff)
         }
     }
 

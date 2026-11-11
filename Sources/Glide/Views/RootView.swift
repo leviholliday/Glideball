@@ -87,11 +87,18 @@ struct RootView: View {
                     .transition(.opacity.combined(with: .scale(scale: 1.02)))
             }
         }
+        .overlay {
+            if model.showingIconChoice {
+                IconChoicePrompt(model: model)
+                    .transition(.opacity.combined(with: .scale(scale: 1.02)))
+            }
+        }
         // The launch animation, over everything until it hands over.
         .overlay { LaunchOverlay() }
         .animation(.smooth(duration: 0.35), value: model.showingWelcomeTour)
         .animation(.smooth(duration: 0.35), value: model.showingSmallFavor)
         .animation(.smooth(duration: 0.3), value: model.showingWhatsNew)
+        .animation(.smooth(duration: 0.35), value: model.showingIconChoice)
         .sheet(isPresented: $model.showingFeedback) {
             FeedbackView(model: model)
         }

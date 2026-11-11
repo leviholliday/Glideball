@@ -431,32 +431,31 @@ struct FeedbackView: View {
     @State private var dropTargeted = false
 
     var body: some View {
-        ZStack {
-            GlideBackground()
-            VStack(spacing: 0) {
-                header
-                if case .sent(let id) = draft.phase {
-                    SentView(draft: draft, id: id) { dismiss() }
-                        .transition(.opacity.combined(with: .scale(scale: 0.97)))
-                } else {
-                    ScrollView {
-                        VStack(spacing: 14) {
-                            messageCard
-                            attachmentsCard
-                            aboutYouCard
-                            factsDisclosure
-                        }
-                        .padding(.horizontal, 22)
-                        .padding(.vertical, 6)
-                        .disabled(draft.phase.isSending)
+        VStack(spacing: 0) {
+            header
+            if case .sent(let id) = draft.phase {
+                SentView(draft: draft, id: id) { dismiss() }
+                    .transition(.opacity)
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 22) {
+                        messageSection
+                        attachmentsSection
+                        aboutYouSection
+                        factsDisclosure
                     }
-                    .scrollIndicators(.never)
-                    footer
+                    .padding(.horizontal, 24)
+                    .padding(.top, 4)
+                    .padding(.bottom, 16)
+                    .disabled(draft.phase.isSending)
                 }
+                .scrollIndicators(.automatic)
+                footer
             }
         }
         .frame(width: 640, height: 640)
-        .animation(.smooth(duration: 0.3), value: draft.phase)
+        .background(Theme.windowBackground)
+        .animation(Theme.Motion.spring, value: draft.phase)
         .onAppear {
             draft.isPresented = true
             draft.prepareToShow()
@@ -469,82 +468,85 @@ struct FeedbackView: View {
 
     private var header: some View {
         HStack(spacing: 12) {
-            Image(nsImage: NSApp.applicationIconImage)
+            Image(nsImage: AppIconChoice.shared.image)
                 .resizable()
-                .frame(width: 40, height: 40)
+                .interpolation(.high)
+                .frame(width: 36, height: 36)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 1) {
-                Text("Send Feedback").font(.system(size: 20, weight: .bold, design: .rounded))
+                Text("Send Feedback")
+                    .font(.system(size: 20, weight: .semibold))
+                    .accessibilityAddTraits(.isHeader)
                 Text("Bugs, ideas, questions — it goes straight to the developer.")
-                    .font(.system(size: 12)).foregroundStyle(.secondary)
+                    .font(Theme.Font.hint).foregroundStyle(.secondary)
             }
             Spacer()
-            Button { dismiss() } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 12, weight: .bold))
-                    .frame(width: 28, height: 28)
+            IconButton(symbol: "xmark", help: draft.phase.isSending ? "Hide — it keeps sending in the background" : "Close") {
+                dismiss()
             }
-            .buttonStyle(.plain)
-            .glassEffect(.regular.interactive(), in: .circle)
-            .help(draft.phase.isSending ? "Hide — it keeps sending in the background" : "Close")
         }
         .padding(.horizontal, 24)
         .padding(.top, 20)
-        .padding(.bottom, 12)
+        .padding(.bottom, 14)
     }
 
     // MARK: What's up
 
-    private var messageCard: some View {
-        GlassCard {
-            GlassEffectContainer(spacing: 8) {
-                HStack(spacing: 8) {
-                    ForEach(FeedbackDraft.Kind.allCases) { kind in kindButton(kind) }
-                }
+    private var messageSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                ForEach(FeedbackDraft.Kind.allCases) { kind in kindButton(kind) }
             }
 
-            VStack(alignment: .leading, spacing: 8) {
-                TextField(draft.kind.titlePrompt, text: $draft.title)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 15, weight: .medium))
-                    .focused($titleFocused)
-                    .padding(.horizontal, 12)
-                    .frame(height: 38)
-                    .background(FieldBackground())
+            TextField(draft.kind.titlePrompt, text: $draft.title)
+                .textFieldStyle(.plain)
+                .font(.system(size: 15, weight: .medium))
+                .focused($titleFocused)
+                .padding(.horizontal, 12)
+                .frame(height: 38)
+                .background(FieldBackground(focused: titleFocused))
 
-                ZStack(alignment: .topLeading) {
-                    if draft.details.isEmpty {
-                        Text(draft.kind.detailsPrompt)
-                            .font(.system(size: 13))
-                            .foregroundStyle(.tertiary)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 9)
-                            .allowsHitTesting(false)
-                    }
-                    TextEditor(text: $draft.details)
-                        .font(.system(size: 13))
-                        .scrollContentBackground(.hidden)
-                        .scrollIndicators(.never)
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 8)
+            ZStack(alignment: .topLeading) {
+                if draft.details.isEmpty {
+                    Text(draft.kind.detailsPrompt)
+                        .font(Theme.Font.body)
+                        .foregroundStyle(.tertiary)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 9)
+                        .allowsHitTesting(false)
                 }
-                .frame(height: 110)
-                .background(FieldBackground())
+                TextEditor(text: $draft.details)
+                    .font(Theme.Font.body)
+                    .scrollContentBackground(.hidden)
+                    .scrollIndicators(.never)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 8)
             }
+            .frame(height: 110)
+            .background(FieldBackground())
 
             if draft.kind == .bug {
-                VStack(alignment: .leading, spacing: 7) {
-                    HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 6) {
+                        Text("How much does it get in the way?")
+                            .font(Theme.Font.hint)
+                            .foregroundStyle(.secondary)
+                            .layoutPriority(1)
+                        Spacer(minLength: 8)
                         ForEach(FeedbackDraft.Priority.allCases) { p in priorityButton(p) }
                     }
                     Text(draft.priority.hint)
-                        .font(.system(size: 11))
+                        .font(Theme.Font.hint)
                         .foregroundStyle(.secondary)
-                        .contentTransition(.opacity)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .id(draft.priority)
+                        .transition(.opacity)
                 }
-                .transition(.opacity.combined(with: .move(edge: .top)))
+                .transition(.opacity)
             }
         }
-        .animation(.smooth(duration: 0.25), value: draft.kind)
+        .animation(Theme.Motion.fade, value: draft.kind)
+        .animation(Theme.Motion.fade, value: draft.priority)
     }
 
     private func kindButton(_ kind: FeedbackDraft.Kind) -> some View {
@@ -554,13 +556,18 @@ struct FeedbackView: View {
         } label: {
             Label(kind.title, systemImage: kind.symbol)
                 .font(.system(size: 13, weight: on ? .semibold : .medium))
-                .foregroundStyle(on ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
+                .foregroundStyle(on ? AnyShapeStyle(Theme.ball) : AnyShapeStyle(.primary))
                 .frame(maxWidth: .infinity)
-                .frame(height: 34)
-                .contentShape(Capsule())
+                .frame(height: 32)
+                .background {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .fill(on ? Theme.ball.opacity(0.12) : Theme.groupFill)
+                        .strokeBorder(on ? Theme.ball.opacity(0.55) : Theme.groupBorder, lineWidth: on ? 1 : 0.5)
+                }
+                .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .glassEffect(on ? .regular.tint(kind.color.opacity(0.35)).interactive() : .regular.interactive(), in: .capsule)
+        .buttonStyle(HoverButtonStyle(radius: 9))
+        .accessibilityAddTraits(on ? .isSelected : [])
     }
 
     private func priorityButton(_ p: FeedbackDraft.Priority) -> some View {
@@ -568,107 +575,108 @@ struct FeedbackView: View {
         return Button {
             draft.priority = p
         } label: {
-            HStack(spacing: 6) {
-                Circle().fill(p.color).frame(width: 7, height: 7)
-                    .shadow(color: p.color.opacity(on ? 0.8 : 0), radius: 3)
+            HStack(spacing: 5) {
+                StatusDot(color: Self.color(p), size: 6)
                 Text(p.name).font(.system(size: 12, weight: on ? .semibold : .regular))
             }
             .foregroundStyle(on ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
-            .frame(maxWidth: .infinity)
-            .frame(height: 28)
+            .padding(.horizontal, 10)
+            .frame(height: 26)
             .background {
-                Capsule().fill(on ? p.color.opacity(0.22) : .white.opacity(0.05))
-                    .overlay(Capsule().strokeBorder(on ? p.color.opacity(0.7) : .white.opacity(0.14), lineWidth: on ? 1.3 : 1))
+                Capsule().fill(on ? Theme.ball.opacity(0.12) : .clear)
+                    .overlay(Capsule().strokeBorder(on ? Theme.ball.opacity(0.55) : Theme.groupBorder, lineWidth: on ? 1 : 0.5))
             }
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
+        .help(p.hint)
+        .accessibilityAddTraits(on ? .isSelected : [])
+    }
+
+    /// How bad it is, as a status: nothing to worry about, then yellow, then red.
+    private static func color(_ p: FeedbackDraft.Priority) -> Color {
+        switch p {
+        case .low: Theme.idle
+        case .normal: Color(nsColor: .secondaryLabelColor)
+        case .high: Theme.warn
+        case .blocking: Theme.bad
+        }
     }
 
     // MARK: Attachments
 
-    private var attachmentsCard: some View {
-        GlassCard(title: "Attachments", symbol: "paperclip") {
-            dropZone
+    private var attachmentsSection: some View {
+        VStack(alignment: .leading, spacing: Theme.Space.titleToGroup) {
+            SectionTitle(title: "Attachments")
+            RowGroup(dividerInset: SettingsLayout.symbolInset) {
+                dropZone
+                SettingsToggle(title: "Include my Glideball settings",
+                               hint: String(localized: "Your pointer, scrolling and button setup (settings.json) so I can reproduce it. Nothing personal is in it."),
+                               symbol: "slider.horizontal.3", isOn: $draft.includeSettings)
+                SettingsToggle(title: "Include the scroll log",
+                               hint: FeedbackDraft.hasScrollLog
+                                   ? String(localized: "The last \(FeedbackDraft.logLines.formatted()) lines of timings from the scroll ring (scroll-log.txt) — no keystrokes or window contents.")
+                                   : String(localized: "There’s no scroll log yet — scroll with the ring and it will have something to send."),
+                               symbol: "waveform.path.ecg.text", isOn: $draft.includeLog)
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: Theme.Radius.group, style: .continuous)
+                    .strokeBorder(Theme.ball, style: StrokeStyle(lineWidth: 1.5, dash: [6, 5]))
+                    .opacity(dropTargeted ? 1 : 0)
+                    .allowsHitTesting(false)
+            }
+            .animation(Theme.Motion.fade, value: dropTargeted)
+            .dropDestination(for: URL.self) { urls, _ in
+                draft.add(urls)
+                return true
+            } isTargeted: { dropTargeted = $0 }
 
             if let notice = draft.notice {
-                Label(notice, systemImage: "exclamationmark.triangle.fill")
-                    .font(.system(size: 11.5))
-                    .foregroundStyle(.orange)
-                    .transition(.opacity)
-            }
-
-            VStack(spacing: 10) {
-                ToggleRow(title: "Include my Glideball settings",
-                          subtitle: "Your pointer, scrolling and button setup (settings.json) so I can reproduce it. Nothing personal is in it.",
-                          symbol: "slider.horizontal.3", isOn: $draft.includeSettings)
-                ToggleRow(title: "Include the scroll log",
-                          subtitle: FeedbackDraft.hasScrollLog
-                              ? "The last \(FeedbackDraft.logLines.formatted()) lines of timings from the scroll ring (scroll-log.txt) — no keystrokes or window contents."
-                              : "There’s no scroll log yet — scroll with the ring and it will have something to send.",
-                          symbol: "waveform.path.ecg.text", isOn: $draft.includeLog)
+                Label {
+                    Text(verbatim: notice)
+                } icon: {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Theme.warn)
+                }
+                .font(Theme.Font.hint)
+                .transition(.opacity)
             }
         }
     }
 
     private var dropZone: some View {
-        VStack(spacing: 10) {
-            if draft.files.isEmpty {
-                HStack(spacing: 14) {
-                    Image(systemName: dropTargeted ? "photo.badge.plus.fill" : "photo.badge.plus")
-                        .font(.system(size: 26, weight: .light))
-                        .symbolEffect(.bounce, value: dropTargeted)
-                        .foregroundStyle(dropTargeted ? .cyan : .secondary)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(dropTargeted ? "Drop to attach" : "Drop screenshots or screen recordings here")
-                            .font(.system(size: 13, weight: .semibold))
-                        Text("PNG, JPEG, MOV or MP4 · ⇧⌘5 records the screen")
-                            .font(.system(size: 11)).foregroundStyle(.secondary)
-                    }
-                    Spacer(minLength: 8)
-                    addButton
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: Theme.Space.symbolGap) {
+                RowSymbol(symbol: dropTargeted ? "photo.badge.plus.fill" : "photo.badge.plus", tint: dropTargeted ? Theme.ball : nil)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(dropTargeted ? "Drop to attach" : "Drop screenshots or screen recordings here")
+                        .font(Theme.Font.body)
+                    Text("PNG, JPEG, MOV or MP4 · ⇧⌘5 records the screen")
+                        .font(Theme.Font.hint).foregroundStyle(.secondary)
                 }
-                .padding(.vertical, 6)
-            } else {
+                .frame(maxWidth: .infinity, alignment: .leading)
+                if draft.files.count < FeedbackDraft.maxUserFiles {
+                    Button(action: pickFiles) { Text("Add Screenshot…") }
+                        .controlSize(.small)
+                }
+            }
+            if !draft.files.isEmpty {
                 ScrollView(.horizontal) {
                     HStack(spacing: 10) {
                         ForEach(draft.files) { file in
                             AttachmentThumb(file: file) { draft.remove(file) }
-                                .transition(.scale(scale: 0.8).combined(with: .opacity))
-                        }
-                        if draft.files.count < FeedbackDraft.maxUserFiles {
-                            addButton.padding(.leading, 4)
+                                .transition(.opacity)
                         }
                     }
-                    .padding(.vertical, 4)
                     .padding(.top, 6)
+                    .padding(.bottom, 2)
+                    .padding(.leading, Theme.Space.symbolColumn + Theme.Space.symbolGap)
                 }
                 .scrollIndicators(.never)
             }
         }
-        .padding(12)
-        .frame(maxWidth: .infinity)
-        .background {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [6, 6]))
-                .foregroundStyle(dropTargeted ? Color.cyan : Color.white.opacity(0.25))
-                .background(RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(dropTargeted ? Color.cyan.opacity(0.12) : Color.clear))
-        }
-        .scaleEffect(dropTargeted ? 1.01 : 1)
-        .animation(.spring(response: 0.3, dampingFraction: 0.75), value: dropTargeted)
-        .dropDestination(for: URL.self) { urls, _ in
-            draft.add(urls)
-            return true
-        } isTargeted: { dropTargeted = $0 }
-    }
-
-    private var addButton: some View {
-        Button(action: pickFiles) {
-            Label("Add Screenshot…", systemImage: "plus")
-        }
-        .buttonStyle(.glass)
-        .disabled(draft.files.count >= FeedbackDraft.maxUserFiles)
+        .padding(.horizontal, Theme.Space.rowHorizontal)
+        .padding(.vertical, Theme.Space.rowVertical)
+        .frame(minHeight: Theme.Space.rowMinHeight)
     }
 
     private func pickFiles() {
@@ -685,36 +693,38 @@ struct FeedbackView: View {
 
     // MARK: About you
 
-    private var aboutYouCard: some View {
-        GlassCard(title: "About you — optional", symbol: "person.crop.circle") {
-            HStack(spacing: 12) {
+    private var aboutYouSection: some View {
+        SectionBlock(title: "About you — optional", caption: "Remembered on this Mac for next time. Only used to reply to you.") {
+            HStack(alignment: .top, spacing: 12) {
                 labeled("Name") {
                     TextField("Your name", text: $draft.name)
                         .textFieldStyle(.plain)
-                        .padding(.horizontal, 10).frame(height: 32)
+                        .padding(.horizontal, 10).frame(height: 30)
                         .background(FieldBackground())
                 }
                 labeled(draft.emailLooksWrong ? "Email — that doesn’t look right" : "Email, if you’d like a reply") {
                     TextField("you@example.com", text: $draft.email)
                         .textFieldStyle(.plain)
                         .textContentType(.emailAddress)
-                        .padding(.horizontal, 10).frame(height: 32)
+                        .padding(.horizontal, 10).frame(height: 30)
                         .background(FieldBackground(warning: draft.emailLooksWrong))
                 }
             }
+            .padding(.horizontal, Theme.Space.rowHorizontal)
+            .padding(.vertical, 12)
             Toggle(isOn: $draft.contactOK) {
-                Text("OK to contact me about this").font(.system(size: 13))
+                Text("OK to contact me about this").font(Theme.Font.body)
             }
             .toggleStyle(.checkbox)
             .disabled(draft.trimmedEmail.isEmpty)
-            Text("Remembered on this Mac for next time. Only used to reply to you.")
-                .font(.system(size: 11)).foregroundStyle(.tertiary)
+            .padding(.horizontal, Theme.Space.rowHorizontal)
+            .padding(.vertical, 11)
         }
     }
 
     private func labeled<C: View>(_ label: LocalizedStringKey, @ViewBuilder _ content: () -> C) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(label).font(.system(size: 11)).foregroundStyle(.secondary)
+            Text(label).font(Theme.Font.hint).foregroundStyle(.secondary)
             content()
         }
         .frame(maxWidth: .infinity)
@@ -723,16 +733,16 @@ struct FeedbackView: View {
     // MARK: Sent along
 
     private var factsDisclosure: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             Button {
-                withAnimation(.smooth(duration: 0.25)) { showFacts.toggle() }
+                withAnimation(Theme.Motion.spring) { showFacts.toggle() }
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 9, weight: .bold))
                         .rotationEffect(.degrees(showFacts ? 90 : 0))
                     Text("Also sent: \(draft.factsLine(model))")
-                        .font(.system(size: 12))
+                        .font(Theme.Font.hint)
                         .lineLimit(1)
                     Spacer()
                 }
@@ -742,63 +752,59 @@ struct FeedbackView: View {
             .buttonStyle(.plain)
 
             if showFacts {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 5) {
                     ForEach(draft.facts(model)) { fact in
                         HStack(alignment: .firstTextBaseline) {
-                            Text(fact.label).font(.system(size: 12)).foregroundStyle(.secondary)
+                            Text(fact.label).font(Theme.Font.hint).foregroundStyle(.secondary)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.8)
                                 .frame(width: 110, alignment: .leading)
-                            Text(fact.value).font(.system(size: 12, weight: .medium, design: .rounded))
+                            Text(fact.value).font(Theme.Font.hint.weight(.medium))
                                 .textSelection(.enabled)
                             Spacer()
                         }
                     }
                     Text("So I know where it happened. Nothing else about your Mac is sent.")
-                        .font(.system(size: 11)).foregroundStyle(.tertiary)
+                        .font(Theme.Font.hint).foregroundStyle(.tertiary)
                         .padding(.top, 2)
                 }
-                .padding(14)
-                .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(.white.opacity(0.06)))
-                .transition(.opacity.combined(with: .move(edge: .top)))
+                .padding(.leading, 15)
+                .transition(.opacity)
             }
         }
-        .padding(.horizontal, 6)
-        .padding(.bottom, 6)
     }
 
     // MARK: Footer
 
     private var footer: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             switch draft.phase {
             case .sending(let fraction, let note):
                 VStack(alignment: .leading, spacing: 5) {
                     ProgressView(value: fraction)
                         .progressViewStyle(.linear)
-                        .tint(.cyan)
+                        .tint(Theme.ball)
                     Text(note)
-                        .font(.system(size: 11))
+                        .font(Theme.Font.hint)
                         .foregroundStyle(.secondary)
                         .monospacedDigit()
                         .lineLimit(1)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 Button("Cancel") { draft.cancelSending() }
-                    .buttonStyle(.glass)
             case .failed(let message):
                 Label {
                     Text(message).fixedSize(horizontal: false, vertical: true).lineLimit(3)
                 } icon: {
-                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Theme.warn)
                 }
-                .font(.system(size: 12))
+                .font(Theme.Font.hint)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 closeButton
                 sendButton(title: "Try Again", symbol: "arrow.clockwise")
             default:
                 Text(sendSummary)
-                    .font(.system(size: 11))
+                    .font(Theme.Font.hint)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 closeButton
@@ -806,26 +812,22 @@ struct FeedbackView: View {
             }
         }
         .controlSize(.large)
-        .padding(.horizontal, 18)
-        .padding(.vertical, 12)
-        .glassEffect(.regular, in: .rect(cornerRadius: 22))
-        .padding(.horizontal, 16)
-        .padding(.bottom, 16)
-        .padding(.top, 6)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 14)
+        .background(alignment: .top) { Hairline() }
     }
 
     private var closeButton: some View {
         Button("Close") { dismiss() }
-            .buttonStyle(.glass)
             .keyboardShortcut(.cancelAction)
     }
 
     private func sendButton(title: LocalizedStringKey, symbol: String) -> some View {
         Button { draft.send(model) } label: {
-            Label(title, systemImage: symbol).padding(.horizontal, 4)
+            Label(title, systemImage: symbol)
         }
-        .buttonStyle(.glassProminent)
-        .tint(.cyan)
+        .buttonStyle(.borderedProminent)
+        .tint(Theme.ball)
         .keyboardShortcut(.return, modifiers: .command)
         .disabled(!draft.canSend)
         .help(draft.canSend ? "Send (⌘↩)" : "Give it a title first")
@@ -847,11 +849,12 @@ struct FeedbackView: View {
 
 private struct FieldBackground: View {
     var warning = false
+    var focused = false
     var body: some View {
-        RoundedRectangle(cornerRadius: 11, style: .continuous)
-            .fill(.white.opacity(0.07))
-            .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous)
-                .strokeBorder(warning ? Color.orange.opacity(0.8) : Color.white.opacity(0.16), lineWidth: 1))
+        let shape = RoundedRectangle(cornerRadius: 8, style: .continuous)
+        shape.fill(Theme.raised)
+            .overlay(shape.strokeBorder(warning ? Theme.warn : focused ? Theme.ball.opacity(0.6) : Theme.groupBorder,
+                                        lineWidth: warning || focused ? 1 : 0.5))
     }
 }
 
@@ -868,7 +871,7 @@ private struct AttachmentThumb: View {
                             Image(nsImage: image).resizable().aspectRatio(contentMode: .fill)
                         } else {
                             ZStack {
-                                Color.white.opacity(0.08)
+                                Theme.groupFill
                                 Image(systemName: file.isVideo ? "film" : "photo")
                                     .font(.system(size: 20, weight: .light)).foregroundStyle(.secondary)
                             }
@@ -885,8 +888,8 @@ private struct AttachmentThumb: View {
                             .padding(5)
                     }
                 }
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(.white.opacity(0.2)))
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Theme.groupBorder, lineWidth: 0.5))
                 .onTapGesture { NSWorkspace.shared.open(file.url) }
                 .help("Click to open")
 
@@ -910,81 +913,93 @@ private struct AttachmentThumb: View {
     }
 }
 
+/// After a send: the check draws itself, a thank-you that's about the person,
+/// what happens next, and the reference to quote.
 private struct SentView: View {
     let draft: FeedbackDraft
     let id: String
     let done: () -> Void
+    @State private var shown = false
+    @State private var copied = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        VStack(spacing: 16) {
-            Spacer()
-            SentCheck(color: .green)
-            Text(thanks)
-                .font(.system(size: 24, weight: .bold, design: .rounded))
-                .multilineTextAlignment(.center)
-            Text(detail)
-                .font(.system(size: 13))
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 400)
-            HStack(spacing: 10) {
-                Button("Send Another") { withAnimation(.smooth) { draft.phase = .writing } }
-                    .buttonStyle(.glass)
-                Button("Done", action: done)
-                    .buttonStyle(.glassProminent)
-                    .tint(.cyan)
-                    .keyboardShortcut(.defaultAction)
-            }
-            .controlSize(.large)
-            .padding(.top, 6)
-            Text("Reference \(id)")
-                .font(.system(size: 10, design: .monospaced))
-                .foregroundStyle(.tertiary)
-                .textSelection(.enabled)
+        VStack(spacing: 0) {
+            Spacer(minLength: 0)
+            VStack(spacing: 18) {
+                ResultMark(color: Theme.ok, size: 76)
+                VStack(spacing: 8) {
+                    Text(verbatim: thanks)
+                        .font(.system(size: 24, weight: .semibold))
+                        .multilineTextAlignment(.center)
+                        .accessibilityAddTraits(.isHeader)
+                    Text(verbatim: detail)
+                        .font(Theme.Font.body)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: 420)
+                }
+                .opacity(shown ? 1 : 0)
+                .offset(y: shown || reduceMotion ? 0 : Theme.Motion.tabRise)
+
+                HStack(spacing: 8) {
+                    Text("Reference").font(Theme.Font.hint).foregroundStyle(.secondary)
+                    Text(verbatim: id)
+                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                        .textSelection(.enabled)
+                    Button {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(id, forType: .string)
+                        copied = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { copied = false }
+                    } label: {
+                        Label(copied ? "Copied" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc")
+                            .contentTransition(.symbolEffect(.replace))
+                    }
+                    .buttonStyle(ChipButtonStyle())
+                    .help("Copy the reference, to quote if you write about this report")
+                }
+                .padding(.leading, 12)
+                .padding(.trailing, 6)
+                .padding(.vertical, 5)
+                .groupBackground(radius: 10)
+                .opacity(shown ? 1 : 0)
+
+                HStack(spacing: 10) {
+                    Button("Send Another") { withAnimation(Theme.Motion.spring) { draft.phase = .writing } }
+                    Button("Done", action: done)
+                        .buttonStyle(.borderedProminent)
+                        .tint(Theme.ball)
+                        .keyboardShortcut(.defaultAction)
+                }
+                .controlSize(.large)
                 .padding(.top, 4)
-            Spacer()
-            Spacer()
+                .opacity(shown ? 1 : 0)
+            }
+            Spacer(minLength: 0)
+            Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.horizontal, 24)
+        .padding(.horizontal, 32)
+        .onAppear {
+            Sounds.shared.play(.tick)
+            if Sandbox.isActive { shown = true; return }
+            withAnimation(Theme.Motion.fade.delay(0.35)) { shown = true }
+        }
     }
 
     private var thanks: String {
         guard let first = draft.name.split(separator: " ").first.map(String.init) else {
-            return String(localized: "Thanks — it went straight to the developer.")
+            return String(localized: "Sent. Thank you!")
         }
-        return String(localized: "Thanks, \(first) — it went straight to the developer.", comment: "%@ is the sender's first name")
+        return String(localized: "Sent. Thanks, \(first)!", comment: "%@ is the sender's first name")
     }
 
     private var detail: String {
         if draft.contactOK && !draft.trimmedEmail.isEmpty {
-            return String(localized: "If there’s a question, the reply goes to \(draft.trimmedEmail).", comment: "%@ is an email address")
+            return String(localized: "I read every report myself. If I have a question, I’ll write to \(draft.trimmedEmail).", comment: "%@ is an email address")
         }
-        return String(localized: "Every report is read. Add an email next time if you’d like a reply.")
-    }
-}
-
-/// A check that draws itself in a ring.
-private struct SentCheck: View {
-    let color: Color
-    @State private var t: CGFloat = 0
-
-    var body: some View {
-        ZStack {
-            Circle().fill(color.opacity(0.12))
-            Circle().trim(from: 0, to: t)
-                .stroke(color, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                .rotationEffect(.degrees(-90))
-            Path { p in
-                p.move(to: CGPoint(x: 27, y: 45))
-                p.addLine(to: CGPoint(x: 39, y: 57))
-                p.addLine(to: CGPoint(x: 62, y: 32))
-            }
-            .trim(from: 0, to: max(0, (t - 0.5) * 2))
-            .stroke(color, style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
-        }
-        .frame(width: 88, height: 88)
-        .shadow(color: color.opacity(0.5), radius: 14)
-        .onAppear { withAnimation(.easeInOut(duration: 0.9)) { t = 1 } }
+        return String(localized: "I read every report myself. Add your email next time if you’d like a reply.")
     }
 }

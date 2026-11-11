@@ -248,20 +248,35 @@ enum RenderUI {
 
     /// Glideball › Settings…, through the real `SettingsWindowController` (toolbar tabs and all).
     static func settings(_ pane: SettingsPane, dark: Bool, scale: CGFloat) -> NSBitmapImageRep? {
-        UserDefaults.standard.set(pane.rawValue, forKey: "GlideSettingsPane")
+        UserDefaults.standard.set(pane.rawValue, forKey: SettingsWindowController.lastPaneKey)
         let controller = SettingsWindowController()
         guard let window = controller.window, let content = window.contentView else { return nil }
         window.appearance = appearance(dark)
         window.animationBehavior = .none
         Offscreen.lookActive(window)
+        // The tab reports its height once it has laid out; the window follows.
         Offscreen.settleDown(content, seconds: 0.3)
-        if let tabs = window.contentViewController as? NSTabViewController {
-            // The window fits the chosen tab's content once it has laid out.
-            tabs.tabView(tabs.tabView, didSelect: tabs.tabView.selectedTabViewItem)
-        }
         Offscreen.settleDown(content, seconds: 0.1)
         defer { window.close() }
         return Offscreen.draw(window, content: content, chrome: .titled, scale: scale)
+    }
+
+    /// A small titled panel (the external-control notice), built the way the app builds it.
+    static func panel<V: View>(_ view: V, dark: Bool, scale: CGFloat) -> NSBitmapImageRep? {
+        let controller = NSHostingController(rootView: Offscreen.withoutAnimations(view))
+        controller.sizingOptions = [.preferredContentSize]
+        let w = Offscreen.ActiveLookingWindow(contentViewController: controller)
+        w.styleMask = [.titled, .closable, .fullSizeContentView]
+        w.titlebarAppearsTransparent = true
+        w.titleVisibility = .hidden
+        w.isReleasedWhenClosed = false
+        w.appearance = appearance(dark)
+        guard let content = w.contentView else { return nil }
+        Offscreen.settleDown(content, seconds: 0.2)
+        w.setContentSize(controller.view.fittingSize)
+        Offscreen.settleDown(content, seconds: 0.05)
+        defer { w.close() }
+        return Offscreen.draw(w, content: content, chrome: .titled, scale: scale)
     }
 
     /// The Software Update window, built the way AppDelegate builds it.

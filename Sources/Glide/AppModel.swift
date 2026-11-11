@@ -56,6 +56,8 @@ final class AppModel {
     var showingSmallFavor = false
     /// What's New over the main window (see WhatsNew.swift).
     var showingWhatsNew = false
+    /// "Glideball has a new look" over the main window (see `AppIconChoice`).
+    var showingIconChoice = false
     /// Work with Kensington's other trackballs. Per-Mac, never synced — see
     /// `OtherTrackballs`. Takes effect immediately.
     var otherTrackballs = OtherTrackballs.isEnabled {
@@ -167,6 +169,7 @@ final class AppModel {
         }
         assignStep = .idle
         assignProfileID = nil
+        Sounds.shared.play(.tick)
     }
 
     /// Returns true when it made or changed a combo.
@@ -249,7 +252,14 @@ final class AppModel {
         engine.onModes = { [weak self] m in self?.modes = m }
         delight.reloadHistory(currentKey: totalsDay)
         delight.present = { [weak self] in self?.show($0) }
-        delight.canCelebrate = { [weak self] in self?.showingWelcomeTour == false && self?.showingWhatsNew == false }
+        delight.canCelebrate = { [weak self] in
+            self?.showingWelcomeTour == false && self?.showingWhatsNew == false && self?.showingIconChoice == false
+        }
+        // A soft tick with the "Saved" pill, only while someone's looking at the window
+        // (not for a pointer speed set from Raycast), and never over a sound that just played.
+        delight.onSaved = { [weak self] in
+            if self?.windowVisible == true { Sounds.shared.play(.tick, quietAfter: 1.5) }
+        }
         backups.currentConfig = { AppModel.shared.config }
         // `--render-ui` and `--self-test`: a model with nothing live — no engine,
         // timers, observers, sync or update checks (see Sandbox.swift).
@@ -411,7 +421,8 @@ final class AppModel {
     @ObservationIgnored private var configBeforeImport: GlideConfig?
     @ObservationIgnored private var toastDismissal: DispatchWorkItem?
 
-    // What's New and the "A small favor" card take turns: see `showNextPrompt()` in WhatsNew.swift.
+    // What's New, "Glideball has a new look" and the "A small favor" card take
+    // turns: see `showNextPrompt()` in WhatsNew.swift.
 
     func show(_ toast: Toast) {
         self.toast = toast

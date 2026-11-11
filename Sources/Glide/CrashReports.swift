@@ -137,20 +137,37 @@ enum CrashReports {
 
     /// Anything that could name the person or their files, taken out: their
     /// home folder and user name, other people's home folders, other
-    /// volumes, and email addresses.
+    /// volumes, and email addresses. The same rules as the server's own
+    /// `scrub` (website/netlify/lib/usage.mjs), which runs again on arrival.
     static func scrub(_ s: String, max: Int) -> String {
-        var out = s
+        // Invisible characters first (control, zero-width, right-to-left marks),
+        // so none can split a path or an address to slip it past what follows.
+        var out = String(String.UnicodeScalarView(s.unicodeScalars.filter { !isInvisible($0) }))
         let home = FileManager.default.homeDirectoryForCurrentUser.path
-        if home.count > 1 { out = out.replacingOccurrences(of: home, with: "~") }
+        if home.count > 1 { out = out.replacingOccurrences(of: home, with: "~", options: .caseInsensitive) }
+        // macOS folders match in any case (/users/jane is /Users/jane), and a drive's
+        // name can have spaces in it ("Jane's Passport"): all of it, up to the next folder.
         for (pattern, replacement) in [(#"/(Users|home)/[^/\s:")]+"#, "/$1/~"),
-                                       (#"/Volumes/[^/\s:")]+"#, "/Volumes/~"),
+                                       (#"/Volumes/[^/\n]+"#, "/Volumes/~"),
                                        (#"[^\s@'"<>()]+@[^\s@'"<>()]+\.[A-Za-z]{2,}"#, "(email)")] {
-            out = out.replacingOccurrences(of: pattern, with: replacement, options: .regularExpression)
+            out = out.replacingOccurrences(of: pattern, with: replacement, options: [.regularExpression, .caseInsensitive])
         }
         for name in [NSUserName(), NSFullUserName()] where name.count >= 3 {
             out = out.replacingOccurrences(of: name, with: "(name)", options: .caseInsensitive)
         }
-        return String(out.unicodeScalars.filter { $0.value >= 0x20 && $0.value != 0x7f }.map(Character.init).prefix(max))
+        // One line: line breaks and tabs become spaces.
+        let flat = out.unicodeScalars.map { $0 == "\n" || $0 == "\t" ? " " : $0 }
+        return String(String.UnicodeScalarView(flat).prefix(max)).trimmingCharacters(in: .whitespaces)
+    }
+
+    /// Control characters (but not line breaks and tabs) and invisible format
+    /// characters: zero-width spaces and joiners, direction marks and overrides.
+    static func isInvisible(_ c: Unicode.Scalar) -> Bool {
+        switch c.value {
+        case 0x09, 0x0A: return false
+        case 0x00...0x1F, 0x7F...0x9F: return true
+        default: return c.properties.generalCategory == .format
+        }
     }
 }
 

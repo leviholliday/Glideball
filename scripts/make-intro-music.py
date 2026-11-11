@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""Glide's launch sounds, synthesized from scratch (pure Python, no packages).
+"""Glide's first-launch intro music, synthesized from scratch (pure Python, no packages).
 
     python3 scripts/make-intro-music.py            -> Resources/IntroMusic.m4a
-                                                      Resources/LaunchChime.m4a
 
 IntroMusic (about 8 s) plays once, under the first-launch intro, and is timed
 to its picture (LaunchViews.swift):
@@ -16,9 +15,6 @@ to its picture (LaunchViews.swift):
          bloom, a bright bell chord and the pad resolving to D major nine,
          shimmering an octave up and ringing out through a long reverb
     6.4  everything fades as the window's glass dissolves in
-
-LaunchChime (about 1.6 s) goes with the short launch animation: a quick airy
-flick and a glassy two-note bell (A5 -> D6) over a soft fifth.
 
 Everything is original: sine/additive oscillators, filtered noise, and a
 Freeverb-style reverb, written out below. Output: 44.1 kHz stereo WAV, then
@@ -320,23 +316,6 @@ def intro():
     return m
 
 
-def chime():
-    m = Mix(1.7, seed=7)
-    # An airy flick: bright noise sweeping across, very short.
-    m.noise(0.0, 0.3, 0.35, cutoff_fn=lambda t: 1500 + 9000 * t / 0.3,
-            env_fn=lambda t: math.sin(math.pi * min(1.0, t / 0.3)) ** 2,
-            pan_fn=lambda t: 0.25 + 0.5 * t / 0.3, highpass=900)
-    # A soft fifth underneath (D4 A4), then the bell: A5 -> D6.
-    m.pad_note(62, 0.06, 1.5, 0.10, 0.4, attack=0.05, release=1.2, bright=0.4, voices=2)
-    m.pad_note(69, 0.06, 1.5, 0.08, 0.6, attack=0.05, release=1.2, bright=0.4, voices=2)
-    m.bell(81, 0.08, 0.20, 0.4, decay=0.55)
-    m.bell(86, 0.19, 0.22, 0.6, decay=0.7)
-    m.bell(93, 0.24, 0.05, 0.5, decay=0.5)
-    m.reverb(wet=0.32, room=0.8)
-    m.master(fade_in=0.004, fade_out=0.6, peak=0.7)
-    return m
-
-
 def render(m, name, keep_wav):
     os.makedirs(RESOURCES, exist_ok=True)
     wav = os.path.join(RESOURCES if keep_wav else tempfile.gettempdir(), name + ".wav")
@@ -357,4 +336,3 @@ def render(m, name, keep_wav):
 if __name__ == "__main__":
     keep = "--wav" in sys.argv
     render(intro(), "IntroMusic", keep)
-    render(chime(), "LaunchChime", keep)

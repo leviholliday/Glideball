@@ -416,7 +416,7 @@ cp "$BIN" "$APP/Contents/MacOS/Glide"
 cp "$PLIST" "$APP/Contents/Info.plist"
 cp "$ICON" "$APP/Contents/Resources/AppIcon.icns"
 cp "$ICON_CLASSIC" "$APP/Contents/Resources/AppIconClassic.icns" || die "couldn't copy $ICON_CLASSIC (./build.sh --icon makes it)"
-cp Resources/IntroMusic.m4a Resources/LaunchChime.m4a "$APP/Contents/Resources/"   # scripts/make-intro-music.py
+cp Resources/IntroMusic.m4a "$APP/Contents/Resources/"   # scripts/make-intro-music.py
 cp Resources/Sounds/*.caf "$APP/Contents/Resources/" || die "couldn't copy the interface sounds (scripts/make-sounds.py)"
 lprojs=(Resources/*.lproj(N))   # translations (scripts/l10n) — copied before signing so the seal covers them
 (( ${#lprojs} )) || die "no Resources/*.lproj translations found"

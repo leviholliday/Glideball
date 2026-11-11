@@ -23,7 +23,7 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/Glide"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns Resources/AppIconClassic.icns "$APP/Contents/Resources/"   # the Orb icon, and the classic one to offer
-cp Resources/IntroMusic.m4a Resources/LaunchChime.m4a "$APP/Contents/Resources/"   # scripts/make-intro-music.py
+cp Resources/IntroMusic.m4a "$APP/Contents/Resources/"   # scripts/make-intro-music.py
 cp Resources/Sounds/*.caf "$APP/Contents/Resources/"   # scripts/make-sounds.py
 cp -R Resources/*.lproj(N) "$APP/Contents/Resources/"   # translations (scripts/l10n); before signing
 

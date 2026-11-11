@@ -111,7 +111,7 @@ struct WhatsNewView: View {
     private func help(for destination: WhatsNew.Destination) -> String {
         switch destination {
         case .tab(let tab): String(localized: "Open the \(tab.title) tab", comment: "%@ is a tab name")
-        case .settings(let pane): String(localized: "Open Settings › \(pane.title)", comment: "%@ is a Settings tab name")
+        case .settings(let pane, _): String(localized: "Open Settings › \(pane.title)", comment: "%@ is a Settings tab name")
         }
     }
 }

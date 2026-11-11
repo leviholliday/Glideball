@@ -1,4 +1,5 @@
 import AppKit
+import Carbon.HIToolbox
 import SwiftUI
 
 /// Every screen `--render-ui` draws, in order. Names are stable: they're the
@@ -148,6 +149,10 @@ extension RenderUI {
             prepare: { model.showingSmallFavor = true }) { dark, scale in
             mainWindow(model, tab: .overview, dark: dark, scale: scale)
         }
+        add("icon-prompt", "States", "“Glideball has a new look” (after an update from the classic icon)",
+            prepare: { model.showingIconChoice = true }) { dark, scale in
+            mainWindow(model, tab: .overview, dark: dark, scale: scale)
+        }
 
         // The trackball hero in every state, at the sidebar's size and large (the tour's).
         add("trackball-states", "Trackball", "The trackball in each state") { dark, scale in
@@ -219,9 +224,59 @@ extension RenderUI {
 
         // Glideball › Settings… (⌘,)
         for pane in SettingsPane.allCases {
-            add("settings-\(pane.rawValue)", "Settings window", "Settings › \(pane.rawValue.capitalized)") { dark, scale in
+            add("settings-\(pane.rawValue)", "Settings window", "Settings › \(pane.title)") { dark, scale in
                 settings(pane, dark: dark, scale: scale)
             }
+        }
+        add("settings-general-spotlight", "Settings window", "General, opened from the external-control notice (the switch pointed out)",
+            prepare: { SettingsSpotlight.shared.show("external-control") }) { dark, scale in
+            settings(.general, dark: dark, scale: scale)
+        }
+        add("settings-look-classic", "Settings window", "Look & Sound with the classic icon and Sounds off",
+            prepare: {
+                AppIconChoice.shared.choose(.classic)
+                Sounds.shared.enabled = false
+            },
+            cleanup: {
+                AppIconChoice.shared.choose(.orb)
+                Sounds.shared.enabled = true
+            }) { dark, scale in
+            settings(.look, dark: dark, scale: scale)
+        }
+        add("settings-privacy-deleted", "Settings window", "Privacy, just after Delete My Data",
+            prepare: { ShareDataSettings.sandboxDeleted = true },
+            cleanup: { ShareDataSettings.sandboxDeleted = nil }) { dark, scale in
+            settings(.privacy, dark: dark, scale: scale)
+        }
+        add("settings-shortcuts-search", "Settings window", "Shortcuts, searching “scroll”",
+            prepare: { ShortcutsSettingsPane.sandboxSearch = "scroll" },
+            cleanup: { ShortcutsSettingsPane.sandboxSearch = "" }) { dark, scale in
+            settings(.shortcuts, dark: dark, scale: scale)
+        }
+        add("settings-shortcuts-no-match", "Settings window", "Shortcuts, a search that matches nothing",
+            prepare: { ShortcutsSettingsPane.sandboxSearch = "zoom" },
+            cleanup: { ShortcutsSettingsPane.sandboxSearch = "" }) { dark, scale in
+            settings(.shortcuts, dark: dark, scale: scale)
+        }
+        add("settings-shortcuts-conflict", "Settings window", "Shortcuts: one moved from another, one the window uses (⌘1), one macOS uses (⌃↑)",
+            prepare: {
+                var g = model.config.globalShortcuts
+                g.ballScroll = KeyShortcut.make(kVK_ANSI_P, "P", [.maskControl, .maskAlternate, .maskCommand])
+                g.precision = nil
+                g.pause = KeyShortcut.make(kVK_ANSI_1, "1", [.maskCommand])
+                g.dragLock = .missionControl
+                model.config.globalShortcuts = g
+                ShortcutsSettingsPane.sandboxNote = .init(text: String(localized: "\("⌃⌥⌘P") was the shortcut for \(GlobalShortcuts.Action.precision.title). That one has no shortcut now.",
+                                                                       comment: "First %@ is a shortcut like ⌃⌥⌘P; the second is what it did, like Precision"))
+            },
+            cleanup: {
+                model.config.globalShortcuts = DemoData.config.globalShortcuts
+                ShortcutsSettingsPane.sandboxNote = nil
+            }) { dark, scale in
+            settings(.shortcuts, dark: dark, scale: scale)
+        }
+        add("external-control-notice", "Settings window", "“Something tried to control Glideball” (the switch is off)") { dark, scale in
+            panel(ExternalControlNoticeView(openSettings: {}, close: {}), dark: dark, scale: scale)
         }
 
         // The launch animations: the intro at three moments, and each short one
@@ -377,6 +432,7 @@ extension RenderUI {
         model.pressed = []
         model.toast = nil
         model.showingSmallFavor = false
+        model.showingIconChoice = false
         model.showingAbout = false
         model.showingFeedback = false
         model.showingWelcomeTour = false
