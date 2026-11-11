@@ -1,0 +1,25 @@
+# Glideball
+
+> Glideball is a free, open-source (MIT) Mac app for Kensington trackballs that replaces KensingtonWorks. It raises pointer speed past macOS's tracking limit on the trackball only, makes the scroll ring scroll smoothly (Native, Flywheel and Follow modes), and remaps buttons with two- and three-button combos. It needs macOS 26 Tahoe or later, on Apple silicon or Intel. No driver, no account, no analytics in the app.
+
+Supported trackballs: the wired Kensington Expert Mouse is fully supported. Other Kensington trackballs (Expert Mouse Wireless, SlimBlade, Orbit) work when the Beta program is turned on in the app; the SlimBlade's top buttons aren't supported yet. Other brands' mice and the trackpad are never changed.
+
+Install: uninstall KensingtonWorks and restart first. Download Glideball.zip or run `brew install --cask leviholliday/tap/glideball`. Glideball is signed but not notarized by Apple, so the first launch needs System Settings › Privacy & Security › Open Anyway. It asks for Input Monitoring and Accessibility; it never monitors typing.
+
+Made by Levi Holliday, a student developer. Contact: glideball@proton.me.
+
+## Main pages
+
+- [Glideball home](https://glideball.netlify.app/): Features, live scroll demo, install steps and FAQ
+- [Install steps](https://glideball.netlify.app/#install): Download, Open Anyway, permissions
+- [FAQ](https://glideball.netlify.app/#faq): Supported trackballs, safety, privacy, uninstalling
+- [Send feedback](https://glideball.netlify.app/feedback/): Bug reports and ideas, straight to the developer
+
+## Source and releases
+
+- [Glideball on GitHub](https://github.com/leviholliday/glideball): Source code, MIT license
+- [Releases](https://github.com/leviholliday/glideball/releases): Release notes and downloads
+
+## Optional
+
+- [Linux and Windows previews](https://glideball.netlify.app/#linux-windows): Early ports, not yet tried with a real Expert Mouse
