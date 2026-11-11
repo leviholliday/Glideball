@@ -979,7 +979,6 @@
 
 "Click or press Escape to skip" = "Clique ou pressione Esc para pular";
 
-"Make your Expert Mouse feel amazing" = "Deixe seu Expert Mouse incrível";
 
 "Click to skip" = "Clique para pular";
 
@@ -1308,11 +1307,9 @@
 
 /* ---- WelcomeTourView.swift ---- */
 
-"Welcome Tour" = "Tour de Boas-vindas";
 
 "Close the tour (esc) — reopen it from Help › Show Welcome Tour…" = "Fechar o tour (esc) — reabra em Ajuda › Mostrar Tour de Boas-vindas…";
 
-"Close tour" = "Fechar tour";
 
 "Skip for now" = "Pular por enquanto";
 
@@ -1328,15 +1325,10 @@
 
 "Welcome to Glideball" = "Boas-vindas ao Glideball";
 
-"Your Kensington trackball, tuned exactly the way you like it." = "Seu trackball Kensington, ajustado exatamente do jeito que você gosta.";
 
-"A faster pointer" = "Um ponteiro mais rápido";
 
-"A silky scroll ring" = "Um anel de rolagem sedoso";
 
-"Buttons that do more" = "Botões que fazem mais";
 
-"About a minute. Use Return or the arrow keys to move along." = "Cerca de um minuto. Use Return ou as setas para avançar.";
 
 "Glideball needs these to read your trackball and change what it does. Until both are on, your trackball works normally and Glideball stays out of the way." = "O Glideball precisa delas para ler seu trackball e mudar o que ele faz. Até as duas estarem ativadas, seu trackball funciona normalmente e o Glideball fica fora do caminho.";
 
@@ -1374,35 +1366,23 @@
 
 "%lld of 4 found. Shortcuts are paused while you try them, so nothing happens by surprise." = "%lld de 4 encontrados. Os atalhos ficam pausados enquanto você testa, então nada acontece de surpresa.";
 
-"Choose your scrolling" = "Escolha sua rolagem";
 
-"How the scroll ring moves the page. Try one, spin the ring, and switch whenever you like." = "Como o anel de rolagem move a página. Escolha um, gire o anel e troque quando quiser.";
 
 "How far the cursor travels when you roll the ball. macOS stops at its own setting; Glideball goes past it." = "Quanto o cursor anda quando você rola a bola. O macOS para no próprio limite; o Glideball vai além.";
 
 "Fine-tune both later in the Pointer and Scrolling tabs." = "Ajuste os dois depois nas abas Ponteiro e Rolagem.";
 
-"You're always in control" = "Você sempre está no controle";
 
-"Two promises that keep your Mac usable, whatever you set up." = "Duas promessas que mantêm seu Mac utilizável, não importa o que você configure.";
 
-"Pause instantly" = "Pause na hora";
 
-"Press ⌃⌥⌘G anywhere and Glideball pauses — your trackball goes straight back to plain macOS. Press it again to resume." = "Pressione ⌃⌥⌘G em qualquer lugar e o Glideball pausa — seu trackball volta direto ao macOS puro. Pressione de novo para retomar.";
 
-"Glideball is on — try it" = "O Glideball está ativo — experimente";
 
 "Glideball is paused" = "O Glideball está pausado";
 
-"Main click stays a left click" = "O clique principal continua sendo clique esquerdo";
 
-"The bottom-left button is always a left click, whatever else you remap — so Glideball can never lock you out." = "O botão inferior esquerdo é sempre um clique esquerdo, não importa o que você remapear — assim o Glideball nunca te deixa sem controle.";
 
-"Quitting Glideball also puts your trackball back to normal." = "Encerrar o Glideball também devolve seu trackball ao normal.";
 
-"You're all set" = "Tudo pronto";
 
-"Glideball keeps running when you close its window — click Glideball in the Dock to come back." = "O Glideball continua rodando quando você fecha a janela — clique no Glideball no Dock para voltar.";
 
 "Turn On" = "Ativar";
 
@@ -1686,3 +1666,36 @@
 "The page follows the ring exactly and stops when you stop. A hard flick can still throw it." = "A página acompanha o anel exatamente e para quando você para. Um peteleco forte ainda pode arremessá-la.";
 "Turn the ring the other way to stop it." = "Gire o anel no sentido oposto para pará-lo.";
 "While Precision is on, tracking drops to %@ of your normal speed." = "Enquanto a precisão está ativada, a velocidade cai para %@ da sua velocidade normal.";
+/* The redesign (stage 2): launch, Welcome Tour, What’s New */
+"A new look" = "Um visual novo";
+"A ruler to try scrolling on" = "Uma régua para testar a rolagem";
+"Closing the window keeps Glideball running" = "Fechar a janela mantém o Glideball funcionando";
+"Crash reports, only if you want" = "Relatórios de falhas, só se você quiser";
+"Every version, on the Glideball website" = "Todas as versões, no site do Glideball";
+"For your Kensington trackball" = "Para o seu trackball Kensington";
+"Full changelog" = "Todas as novidades";
+"Give it a flick over the ruler and watch how far it glides." = "Gire o anel com um impulso sobre a régua e veja até onde ele desliza.";
+"Glideball › Settings (⌘,) has everything that used to sit at the bottom of Overview, plus a new set of soft sounds you can turn off with one switch." = "Glideball › Ajustes (⌘,) tem tudo o que ficava no fim da Visão Geral, além de novos sons suaves que você desliga com um só botão.";
+"Here’s what changed since 2.9.1. Most of it is how Glideball looks and sounds; your settings are all still here." = "Veja o que mudou desde a 2.9.1. Quase tudo é a aparência e o som do Glideball; seus ajustes continuam todos aí.";
+"How Glideball uses these, on the Glideball website" = "Para que o Glideball usa isso, no site do Glideball";
+"It works. %lld of 4 found." = "Funciona. %lld de 4 encontrados.";
+"Let’s set up your trackball. It takes about a minute." = "Vamos configurar o seu trackball. Leva cerca de um minuto.";
+"Open Settings › %@" = "Abrir Ajustes › %@";
+"Open it again from the Dock or the menu bar." = "Abra de novo pelo Dock ou pela barra de menus.";
+"Pause any time with %@" = "Pause quando quiser com %@";
+"Pausing puts your speed back" = "Pausar devolve a sua velocidade";
+"Pick a pointer speed" = "Escolha uma velocidade do ponteiro";
+"Press Return to go on, or use the arrow keys." = "Pressione Return para seguir ou use as setas.";
+"Raycast and scripts" = "Raycast e scripts";
+"Roll the ball after each one to feel the difference." = "Role a bola depois de cada uma para sentir a diferença.";
+"Settings get their own window" = "Os ajustes ganharam uma janela própria";
+"Show Me" = "Mostrar";
+"Skip Tour" = "Pular tour";
+"Spin the scroll ring" = "Gire o anel de rolagem";
+"There’s a sidebar now, with your trackball at the top. Roll the ball, turn the ring or press a button and it moves with you. Glideball has a new icon too." = "Agora há uma barra lateral com o seu trackball no topo. Role a bola, gire o anel ou aperte um botão e ele se move com você. O Glideball também tem um ícone novo.";
+"Turn on Allow Raycast and scripts and you can pause Glideball, switch Precision or change the scroll mode from Raycast or a glideball:// link." = "Ative “Permitir Raycast e scripts” para pausar o Glideball, alternar a Precisão ou mudar o modo de rolagem pelo Raycast ou por um link glideball://.";
+"What’s new in Glideball %@" = "Novidades do Glideball %@";
+"When you pause or quit Glideball, your trackball goes back to exactly the tracking speed in System Settings, so it always feels the same." = "Quando você pausa ou fecha o Glideball, seu trackball volta exatamente à velocidade de rastreamento dos Ajustes do Sistema, então ele sempre parece igual.";
+"You can let Glideball send me crash reports, and a few anonymous settings stats if you like. It’s off unless you pick it." = "Você pode deixar o Glideball me enviar relatórios de falhas e, se quiser, algumas estatísticas anônimas dos seus ajustes. Fica desligado a menos que você escolha.";
+"Your trackball goes straight back to plain macOS. Press it again to resume." = "Seu trackball volta na hora a funcionar como no macOS normal. Pressione de novo para retomar.";
+"You’re all set" = "Tudo pronto";

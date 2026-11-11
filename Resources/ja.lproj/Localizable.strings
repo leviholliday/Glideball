@@ -979,7 +979,6 @@
 
 "Click or press Escape to skip" = "クリックまたはEscキーでスキップ";
 
-"Make your Expert Mouse feel amazing" = "Expert Mouseを最高の操作感に";
 
 "Click to skip" = "クリックでスキップ";
 
@@ -1308,11 +1307,9 @@
 
 /* ---- WelcomeTourView.swift ---- */
 
-"Welcome Tour" = "ようこそツアー";
 
 "Close the tour (esc) — reopen it from Help › Show Welcome Tour…" = "ツアーを閉じる（esc）— 「ヘルプ」›「ようこそツアーを表示…」からもう一度開けます";
 
-"Close tour" = "ツアーを閉じる";
 
 "Skip for now" = "今はスキップ";
 
@@ -1326,17 +1323,12 @@
 
 "Continue" = "続ける";
 
-"Welcome to Glideball" = "Glideへようこそ";
+"Welcome to Glideball" = "Glideballへようこそ";
 
-"Your Kensington trackball, tuned exactly the way you like it." = "Kensingtonトラックボールを、思いどおりの操作感に。";
 
-"A faster pointer" = "もっと速いポインタ";
 
-"A silky scroll ring" = "なめらかなスクロールリング";
 
-"Buttons that do more" = "もっと働くボタン";
 
-"About a minute. Use Return or the arrow keys to move along." = "1分ほどで終わります。Returnキーか矢印キーで進めます。";
 
 "Glideball needs these to read your trackball and change what it does. Until both are on, your trackball works normally and Glideball stays out of the way." = "Glideがトラックボールを読み取り、その動作を変更するにはこれらが必要です。両方がオンになるまで、トラックボールは通常どおり動作し、Glideは何もしません。";
 
@@ -1374,35 +1366,23 @@
 
 "%lld of 4 found. Shortcuts are paused while you try them, so nothing happens by surprise." = "4個中%lld個が見つかりました。試している間はショートカットが一時停止するので、思わぬ動作は起きません。";
 
-"Choose your scrolling" = "スクロールを選ぼう";
 
-"How the scroll ring moves the page. Try one, spin the ring, and switch whenever you like." = "スクロールリングでページがどう動くかです。1つ選んでリングを回してみてください。いつでも切り替えられます。";
 
 "How far the cursor travels when you roll the ball. macOS stops at its own setting; Glideball goes past it." = "ボールを転がしたときにカーソルが動く距離です。macOSには上限がありますが、Glideはそれを超えられます。";
 
 "Fine-tune both later in the Pointer and Scrolling tabs." = "どちらもあとで「ポインタ」と「スクロール」タブで細かく調整できます。";
 
-"You're always in control" = "主導権は常にあなたに";
 
-"Two promises that keep your Mac usable, whatever you set up." = "どんな設定にしても、Macを使える状態に保つ2つの約束。";
 
-"Pause instantly" = "すぐに一時停止";
 
-"Press ⌃⌥⌘G anywhere and Glideball pauses — your trackball goes straight back to plain macOS. Press it again to resume." = "どこでも⌃⌥⌘Gを押すとGlideが一時停止し、トラックボールは素のmacOSの動作に戻ります。もう一度押すと再開します。";
 
-"Glideball is on — try it" = "Glideはオンです — 試してみてください";
 
 "Glideball is paused" = "Glideは一時停止中です";
 
-"Main click stays a left click" = "メインのクリックは左クリックのまま";
 
-"The bottom-left button is always a left click, whatever else you remap — so Glideball can never lock you out." = "左下のボタンは、ほかをどう変更しても常に左クリックです — だからGlideで操作不能になることはありません。";
 
-"Quitting Glideball also puts your trackball back to normal." = "Glideを終了しても、トラックボールは通常の動作に戻ります。";
 
-"You're all set" = "準備完了です";
 
-"Glideball keeps running when you close its window — click Glideball in the Dock to come back." = "Glideはウインドウを閉じても動作し続けます — DockのGlideをクリックすると戻れます。";
 
 "Turn On" = "オンにする";
 
@@ -1686,3 +1666,36 @@
 "The page follows the ring exactly and stops when you stop. A hard flick can still throw it." = "ページはリングに正確に追従し、止めるとすぐに止まります。強く弾けば、フリックで飛ばすこともできます。";
 "Turn the ring the other way to stop it." = "リングを逆方向に回すと止められます。";
 "While Precision is on, tracking drops to %@ of your normal speed." = "精密モード中は、軌跡の速さが通常の%@に下がります。";
+/* The redesign (stage 2): launch, Welcome Tour, What’s New */
+"A new look" = "新しいデザイン";
+"A ruler to try scrolling on" = "スクロールを試すための目盛り";
+"Closing the window keeps Glideball running" = "ウインドウを閉じてもGlideballは動き続けます";
+"Crash reports, only if you want" = "クラッシュレポートは希望する場合のみ";
+"Every version, on the Glideball website" = "すべてのバージョンをGlideballのWebサイトで";
+"For your Kensington trackball" = "Kensingtonトラックボールのために";
+"Full changelog" = "変更履歴をすべて見る";
+"Give it a flick over the ruler and watch how far it glides." = "目盛りの上でリングを勢いよく回して、どこまで滑るか見てみましょう。";
+"Glideball › Settings (⌘,) has everything that used to sit at the bottom of Overview, plus a new set of soft sounds you can turn off with one switch." = "Glideball › 設定（⌘,）に、以前「概要」の下にあったものがすべて入りました。新しい控えめなサウンドも、スイッチひとつでオフにできます。";
+"Here’s what changed since 2.9.1. Most of it is how Glideball looks and sounds; your settings are all still here." = "2.9.1からの変更点です。ほとんどはGlideballの見た目と音の変更で、設定はすべてそのまま残っています。";
+"How Glideball uses these, on the Glideball website" = "Glideballがこれらを使う理由（GlideballのWebサイト）";
+"It works. %lld of 4 found." = "動作しています。4つ中%lld個が見つかりました。";
+"Let’s set up your trackball. It takes about a minute." = "トラックボールを設定しましょう。1分ほどで終わります。";
+"Open Settings › %@" = "設定 › %@ を開く";
+"Open it again from the Dock or the menu bar." = "Dockかメニューバーからもう一度開けます。";
+"Pause any time with %@" = "%@ でいつでも一時停止";
+"Pausing puts your speed back" = "一時停止で速度が元に戻ります";
+"Pick a pointer speed" = "ポインタの速度を選ぶ";
+"Press Return to go on, or use the arrow keys." = "Returnキーで次へ。矢印キーも使えます。";
+"Raycast and scripts" = "Raycastとスクリプト";
+"Roll the ball after each one to feel the difference." = "それぞれ選んだらボールを転がして、違いを確かめましょう。";
+"Settings get their own window" = "設定が専用のウインドウになりました";
+"Show Me" = "表示";
+"Skip Tour" = "ツアーをスキップ";
+"Spin the scroll ring" = "スクロールリングを回す";
+"There’s a sidebar now, with your trackball at the top. Roll the ball, turn the ring or press a button and it moves with you. Glideball has a new icon too." = "サイドバーができて、いちばん上にトラックボールが表示されます。ボールを転がしたり、リングを回したり、ボタンを押したりすると一緒に動きます。アイコンも新しくなりました。";
+"Turn on Allow Raycast and scripts and you can pause Glideball, switch Precision or change the scroll mode from Raycast or a glideball:// link." = "「Raycastとスクリプトを許可」をオンにすると、Raycastやglideball://リンクからGlideballの一時停止、精密モードの切り替え、スクロールモードの変更ができます。";
+"What’s new in Glideball %@" = "Glideball %@ の新機能";
+"When you pause or quit Glideball, your trackball goes back to exactly the tracking speed in System Settings, so it always feels the same." = "Glideballを一時停止または終了すると、トラックボールはシステム設定の軌跡の速さにぴったり戻るので、いつも同じ感覚で使えます。";
+"You can let Glideball send me crash reports, and a few anonymous settings stats if you like. It’s off unless you pick it." = "Glideballからクラッシュレポートを、希望すれば設定に関する匿名の統計も、私に送れるようにできます。選ばない限りオフのままです。";
+"Your trackball goes straight back to plain macOS. Press it again to resume." = "トラックボールはすぐに通常のmacOSの動作に戻ります。もう一度押すと再開します。";
+"You’re all set" = "準備ができました";

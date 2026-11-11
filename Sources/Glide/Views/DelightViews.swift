@@ -10,7 +10,9 @@ import SwiftUI
 // MARK: - Confetti
 
 /// A short burst of confetti from the bottom-centre of the window (where the
-/// toast appears). Lives ~2 s, then the view is removed — no idle timer.
+/// toast appears), in the three part colors: mostly the celebrated part's,
+/// some of the other two. Once, about 1.4 s, then the view is removed (no
+/// idle timer). Never with Reduce Motion.
 struct ConfettiBurst: View {
     let burst: DelightCenter.Burst
     @State private var start = Date()
@@ -21,31 +23,37 @@ struct ConfettiBurst: View {
         let delay: Double
         let spin: Double                // radians/s
         let flutter: Double             // tumble speed
-        let hue: Double
+        let part: Metric
         let size: CGSize
         let round: Bool
     }
 
-    static let life = 2.1
-    private static let gravity = 900.0
-    private static let drag = 2.2
+    static let life = 1.4
+    private static let gravity = 1100.0
+    private static let drag = 2.4
 
     init(burst: DelightCenter.Burst) {
         self.burst = burst
         var rng = SplitMix(seed: UInt64(truncatingIfNeeded: burst.id.hashValue))
-        particles = (0..<90).map { _ in
-            let angle = -Double.pi / 2 + rng.next(in: -0.62...0.62)
-            let speed = rng.next(in: 650...1250)
+        let parts: [Metric] = [.ball, .scroll, .clicks]
+        particles = (0..<64).map { _ in
+            let angle = -Double.pi / 2 + rng.next(in: -0.6...0.6)
+            let speed = rng.next(in: 620...1150)
+            let pick = rng.next(in: 0...1)
+            let part = burst.lead.map { lead in pick < 0.55 ? lead : parts[Int(pick * 30) % 3] }
+                ?? parts[Int(pick * 2.999)]
             return Particle(vx: cos(angle) * speed, vy: sin(angle) * speed,
-                            delay: rng.next(in: 0...0.12),
+                            delay: rng.next(in: 0...0.08),
                             spin: rng.next(in: -9...9), flutter: rng.next(in: 6...14),
-                            hue: burst.hues.isEmpty ? 0.75 : burst.hues[Int(rng.next(in: 0...Double(burst.hues.count) - 0.001))],
-                            size: CGSize(width: rng.next(in: 6...10), height: rng.next(in: 3.5...5.5)),
+                            part: part,
+                            size: CGSize(width: rng.next(in: 6...9), height: rng.next(in: 3.5...5)),
                             round: rng.next(in: 0...1) < 0.25)
         }
     }
 
     var body: some View {
+        // The part colors, resolved once for this appearance.
+        let colors: [Metric: Color] = [.ball: Theme.ball, .scroll: Theme.ring, .clicks: Theme.buttons]
         TimelineView(.animation) { timeline in
             let t = timeline.date.timeIntervalSince(start)
             Canvas { g, size in
@@ -58,7 +66,7 @@ struct ConfettiBurst: View {
                     let e = 1 - exp(-k * tt)
                     let x = origin.x + p.vx / k * e
                     let y = origin.y + grav / k * tt + (p.vy - grav / k) * e / k
-                    let fade = min(1, (Self.life - tt) / 0.6)
+                    let fade = min(1, (Self.life - tt) / 0.45)
                     var ctx = g
                     ctx.opacity = fade
                     ctx.translateBy(x: x, y: y)
@@ -66,8 +74,8 @@ struct ConfettiBurst: View {
                     // Squash one axis to fake a 3D tumble.
                     let w = p.size.width * max(0.15, abs(cos(p.flutter * tt)))
                     let rect = CGRect(x: -w / 2, y: -p.size.height / 2, width: w, height: p.size.height)
-                    let color = Color(hue: p.hue, saturation: p.hue == 0.14 ? 0.55 : 0.7, brightness: 1)
-                    ctx.fill(p.round ? Path(ellipseIn: rect) : Path(roundedRect: rect, cornerRadius: 1.2), with: .color(color))
+                    ctx.fill(p.round ? Path(ellipseIn: rect) : Path(roundedRect: rect, cornerRadius: 1.2),
+                             with: .color(colors[p.part] ?? Theme.ball))
                 }
             }
         }
@@ -92,19 +100,31 @@ private struct SplitMix {
     }
 }
 
-/// The celebration toast's icon: the milestone's symbol, which bounces once as it lands.
+/// Which part a celebration toast is about (set by `RootView` from `Toast.part`).
+private struct CelebrationPartKey: EnvironmentKey { static let defaultValue: Metric? = nil }
+
+extension EnvironmentValues {
+    var celebrationPart: Metric? {
+        get { self[CelebrationPartKey.self] }
+        set { self[CelebrationPartKey.self] = newValue }
+    }
+}
+
+/// The celebration toast's icon: the milestone's symbol on a disc in its
+/// part's color, like the badge it earned. It bounces once as it lands.
 struct CelebrationToastIcon: View {
     let symbol: String
     @State private var bounce = 0
+    @Environment(\.celebrationPart) private var part
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Image(systemName: symbol)
             .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(.primary)
+            .foregroundStyle(part == nil ? AnyShapeStyle(.primary) : AnyShapeStyle(.white))
             .frame(width: 28, height: 28)
-            .background(Circle().fill(Theme.hoverFill))
-            .overlay(Circle().strokeBorder(Theme.groupBorder, lineWidth: 0.5))
+            .background(Circle().fill(part?.color ?? Theme.hoverFill))
+            .overlay(Circle().strokeBorder(part == nil ? Theme.groupBorder : .clear, lineWidth: 0.5))
             .symbolEffect(.bounce, value: bounce)
             .onAppear { if !reduceMotion { bounce += 1 } }
     }

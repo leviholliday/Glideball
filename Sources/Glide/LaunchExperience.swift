@@ -6,17 +6,17 @@ import Observation
 /// What plays over the window when Glide starts (the views are in
 /// `LaunchViews.swift`):
 ///
-/// - The very first launch on a Mac that has never used Glide: a ~7 s
-///   cinematic intro with its own music (IntroMusic.m4a), after which the
-///   window's glass dissolves in and the Welcome Tour opens.
+/// - The very first launch on a Mac that has never used Glide: a ~6.5 s
+///   intro with its own music (IntroMusic.m4a), after which the window fades
+///   in and the Welcome Tour opens.
 /// - Every other cold launch that opens the window: what Settings › General ›
-///   "When Glideball opens" says: a short (~1.5 s) glass animation, a different
-///   one each time (the default), a quick fade, or nothing.
+///   "When Glideball opens" says: a short (1.15 s) animation, one of two in
+///   turn (the default), a quick fade, or nothing.
 ///
-/// Sound: the soft chime plays only on the first launch after an update (the
-/// version changed since the last launch), and the intro's music only on the
-/// very first launch (or when replayed from Help › Play the Intro). Never when
-/// the Mac is muted, and "Launch sound" in Settings turns it off for good.
+/// Sound: "hello" (`Sounds`) plays only on the first launch after an update
+/// (the version changed since the last launch), and the intro's music only on
+/// the very first launch (or when replayed from Help › Play the Intro). Never
+/// when the Mac is muted, and never with Sounds off (`Sounds.shared.enabled`).
 ///
 /// None of it ever holds anything up: the engine is already running before the
 /// window opens, only the window's contents wait. A click or esc skips.
@@ -26,7 +26,7 @@ import Observation
 /// Debugging:
 ///   defaults write com.leviholliday.glide GlideForceIntro -bool YES
 ///       plays the intro on the next launch (once)
-///   defaults write com.leviholliday.glide GlideForceSplashVariant -int <0…5>
+///   defaults write com.leviholliday.glide GlideForceSplashVariant -int <0…1>
 ///       always plays that launch animation (`defaults delete` to go back)
 @Observable
 final class LaunchExperience {
@@ -36,8 +36,8 @@ final class LaunchExperience {
     static let forceIntroKey = "GlideForceIntro"
     static let forceVariantKey = "GlideForceSplashVariant"
     static let lastVariantKey = "GlideLastSplashVariant"
-    /// "Launch sound" in Settings. The key predates "When Glideball opens",
-    /// so someone who turned the old "Launch sounds" off stays silent.
+    /// The old "Launch sounds" switch. Settings folds it into the one Sounds
+    /// switch (`Sounds.enabled`); the launch only ever reads that.
     static let soundsKey = "GlideLaunchSounds"
     static let styleKey = "GlideLaunchStyle"
     static let lastVersionKey = "GlideLastLaunchedVersion"
@@ -70,9 +70,11 @@ final class LaunchExperience {
     private(set) var revealStart: Date?
     private(set) var revealDuration: Double = 0.45
 
-    /// "Launch sound" in Settings › General. On by default.
+    /// The one Sounds switch, as the launch sees it (kept for Settings' old
+    /// "Launch sound" row until that row goes).
     var soundsOn: Bool {
-        didSet { defaults.set(soundsOn, forKey: Self.soundsKey) }
+        get { access(keyPath: \.soundsOn); return Sounds.shared.enabled }
+        set { withMutation(keyPath: \.soundsOn) { Sounds.shared.enabled = newValue } }
     }
 
     /// "When Glideball opens" in Settings › General. Animation by default.
@@ -87,8 +89,10 @@ final class LaunchExperience {
 
     @ObservationIgnored private let defaults = UserDefaults.standard
     @ObservationIgnored private var openTourWhenDone = false
-    /// Whether this showing plays its sound (the chime or the intro's music).
+    /// Whether this showing plays its sound (the intro's music, or "hello").
     @ObservationIgnored private var soundWanted = false
+    /// "hello" instead of the music (a launch after an update).
+    @ObservationIgnored private var helloWanted = false
     /// A replay of the intro from the Help menu: no tour and no favor card after it.
     @ObservationIgnored private var replaying = false
     @ObservationIgnored private var player: AVAudioPlayer?
@@ -96,7 +100,6 @@ final class LaunchExperience {
     @ObservationIgnored private var generation = 0
 
     private init() {
-        soundsOn = defaults.object(forKey: Self.soundsKey) as? Bool ?? true
         style = defaults.string(forKey: Self.styleKey).flatMap(Style.init(rawValue:)) ?? .animation
     }
 
@@ -106,7 +109,7 @@ final class LaunchExperience {
     var revealAt: Double {
         switch show {
         case .intro: reduceMotion ? 2.6 : 6.4
-        case .splash: reduceMotion ? 0.55 : 1.1
+        case .splash: reduceMotion ? 0.5 : 0.8
         case .fade: 0.3
         case nil: 0
         }
@@ -114,9 +117,9 @@ final class LaunchExperience {
 
     private var naturalRevealDuration: Double {
         switch show {
-        case .intro: reduceMotion ? 0.5 : 0.95
-        case .fade: 0.35
-        default: reduceMotion ? 0.3 : 0.5
+        case .intro: reduceMotion ? 0.45 : 0.6
+        case .fade: 0.3
+        default: reduceMotion ? 0.25 : 0.35
         }
     }
 
@@ -132,17 +135,19 @@ final class LaunchExperience {
         if forced { defaults.removeObject(forKey: Self.forceIntroKey) }   // once
         // Has the version changed since the last launch? Noted whether or not
         // anything plays, so a quiet launch at login uses up the "first launch
-        // after an update" and the chime doesn't turn up at a later launch.
+        // after an update" and "hello" doesn't turn up at a later launch.
+        // What's New is due on that same launch (and waits for the window).
         let current = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
         let updated = defaults.string(forKey: Self.lastVersionKey) != current
         defaults.set(current, forKey: Self.lastVersionKey)
+        WhatsNew.noteLaunch(firstLaunch: firstLaunch, version: current)
         guard showsWindow, !CommandLine.arguments.contains("--no-launch-animation") else { return false }
 
         if forced || (firstLaunch && !defaults.bool(forKey: Self.introPlayedKey)) {
             show = .intro
             openTourWhenDone = firstLaunch
             defaults.set(true, forKey: Self.introPlayedKey)
-            preparePlayer("IntroMusic", volume: 0.6, wanted: soundsOn)
+            preparePlayer("IntroMusic", volume: 0.6, wanted: Sounds.shared.enabled)
         } else {
             switch style {
             case .animation:
@@ -152,21 +157,21 @@ final class LaunchExperience {
             case .none:
                 return false
             }
-            preparePlayer("LaunchChime", volume: 0.32, wanted: soundsOn && updated)
+            helloWanted = updated && Sounds.shared.enabled
         }
         installKeyMonitor()
         return show == .intro
     }
 
     /// Help › Play the Intro: the first-launch intro again, with its music
-    /// (unless the Mac is muted), whatever "When Glideball opens" says. It
+    /// (unless the Mac is muted or Sounds is off), whatever "When Glideball opens" says. It
     /// opens neither the tour nor the favor card afterwards.
     func replayIntro() {
         guard show == nil else { return }
         replaying = true
         openTourWhenDone = false
         show = .intro
-        preparePlayer("IntroMusic", volume: 0.6, wanted: true)
+        preparePlayer("IntroMusic", volume: 0.6, wanted: Sounds.shared.enabled)
         installKeyMonitor()
     }
 
@@ -177,7 +182,7 @@ final class LaunchExperience {
             return forced
         }
         let last = defaults.object(forKey: Self.lastVariantKey) as? Int
-        let pick = SplashVariant.allCases.filter { $0.rawValue != last }.randomElement() ?? .ringIgnition
+        let pick = SplashVariant.allCases.filter { $0.rawValue != last }.randomElement() ?? .ringSpin
         defaults.set(pick.rawValue, forKey: Self.lastVariantKey)
         return pick
     }
@@ -190,6 +195,10 @@ final class LaunchExperience {
             player.play()
         } else {
             player = nil
+        }
+        if helloWanted {
+            helloWanted = false
+            Sounds.shared.play(.hello)   // silent when muted, with Sounds off, and in sandbox runs
         }
         let gen = generation
         DispatchQueue.main.asyncAfter(deadline: .now() + revealAt) { [weak self] in
@@ -238,7 +247,7 @@ final class LaunchExperience {
         if replaying {
             replaying = false
         } else if !openTourWhenDone {
-            AppModel.shared.offerSmallFavor()   // the tour offers it itself when it closes
+            AppModel.shared.showNextPrompt()   // What's New, or the small favor (the tour offers it itself when it closes)
         } else {
             openTourWhenDone = false
             // Only into a window that's still open (closing it skips the tour
@@ -310,19 +319,10 @@ final class LaunchExperience {
 }
 
 /// The short launch animations. One plays per cold launch, never the same
-/// one twice running.
+/// one twice running. (2.10 cut the other four: they were decoration.)
 enum SplashVariant: Int, CaseIterable {
-    /// The scroll ring's ridges light up in turn as it spins up.
-    case ringIgnition
-    /// The ball rolls in over a glass floor, its reflection beneath.
-    case ballRoll
-    /// Sparks swirl inward and condense into the trackball.
-    case particleSwirl
-    /// Liquid-glass ripples spread out and the trackball wobbles into place.
-    case ripple
-    /// The six tab icons ride a wave across, then gather into the trackball.
-    case tabWave
-    /// Streaks flick past, like a spin of the ring, and the trackball
-    /// glides in on momentum.
-    case flick
+    /// The ring is turning fast as it appears, and coasts to a stop.
+    case ringSpin
+    /// The ball rolls into its seat and the ring settles round it.
+    case rollIn
 }

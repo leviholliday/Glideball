@@ -92,9 +92,19 @@ extension RenderUI {
             prepare: {
                 let m = Milestone.all.first { $0.id == "ball-1k" } ?? Milestone.all[0]
                 model.show(.init(symbol: m.symbol, text: String(localized: "Milestone: \(m.title)", comment: "%@ is a badge name"),
-                                 detail: m.detail, celebration: true))
+                                 detail: m.detail, celebration: true, part: m.metric))
             }) { dark, scale in
             mainWindow(model, tab: .overview, dark: dark, scale: scale)
+        }
+        add("celebration-confetti", "States", "A big milestone: the toast and its confetti, a moment in",
+            prepare: {
+                let m = Milestone.all.first { $0.id == "ball-1k" } ?? Milestone.all[0]
+                model.show(.init(symbol: m.symbol, text: String(localized: "Milestone: \(m.title)", comment: "%@ is a badge name"),
+                                 detail: m.detail, celebration: true, part: m.metric))
+            }) { dark, scale in
+            mainWindow(model, tab: .overview, dark: dark, scale: scale) {
+                ConfettiBurst(burst: .init(lead: .ball))
+            }
         }
         add("toast-import", "States", "An import toast with Undo",
             prepare: {
@@ -146,10 +156,32 @@ extension RenderUI {
 
         // The Welcome Tour, every step, over the window.
         for step in WelcomeTourView.Step.allCases {
-            let name = ["welcome", "permissions", "buttons", "scrolling", "safety", "done"][step.rawValue]
-            add("tour-\(step.rawValue + 1)-\(name)", "Welcome Tour", "Tour step \(step.rawValue + 1): \(name)",
+            add("tour-\(step.rawValue + 1)-\(step.name)", "Welcome Tour", "Tour step \(step.rawValue + 1): \(step.name)",
                 prepare: { if step == .permissions { model.hasInputMonitoring = false } }) { dark, scale in
                 mainWindow(model, tab: .overview, dark: dark, scale: scale) {
+                    WelcomeTourView(model: model, step: step)
+                }
+            }
+        }
+        add("tour-3-buttons-found", "Welcome Tour", "Meet your buttons, two found and the top right held",
+            prepare: { model.pressed = [3] }) { dark, scale in
+            mainWindow(model, tab: .overview, dark: dark, scale: scale) {
+                WelcomeTourView(model: model, step: .buttons, found: [2, 3])
+            }
+        }
+
+        // What's New after an update (the 2.10 entry), over the window.
+        add("whats-new", "What’s New", "What’s New in this version",
+            prepare: { model.showingWhatsNew = true }) { dark, scale in
+            mainWindow(model, tab: .overview, dark: dark, scale: scale)
+        }
+        add("min-size-whats-new", "Smallest window", "What’s New at the minimum size",
+            prepare: { model.showingWhatsNew = true }) { dark, scale in
+            mainWindow(model, tab: .overview, dark: dark, scale: scale, size: AppDelegate.mainWindowMinSize)
+        }
+        for step in [WelcomeTourView.Step.buttons, .tryIt] {
+            add("min-size-tour-\(step.rawValue + 1)", "Smallest window", "Tour step \(step.rawValue + 1) at the minimum size") { dark, scale in
+                mainWindow(model, tab: .overview, dark: dark, scale: scale, size: AppDelegate.mainWindowMinSize) {
                     WelcomeTourView(model: model, step: step)
                 }
             }
@@ -192,16 +224,29 @@ extension RenderUI {
             }
         }
 
-        // The launch animations, near the end of each (they're animations: one frame each).
-        add("launch-intro", "Launch", "First-launch intro (at 5.2 s)") { dark, scale in
-            Offscreen.render(IntroScene(t: 5.2, calm: false).ignoresSafeArea(), size: windowSize, chrome: .window,
+        // The launch animations: the intro at three moments, and each short one
+        // part-way and at its finished frame (they're animations: one frame each).
+        func launch<V: View>(_ view: V, _ dark: Bool, _ scale: CGFloat) -> NSBitmapImageRep? {
+            Offscreen.render(view.ignoresSafeArea(), size: windowSize, chrome: .window,
                              appearance: NSAppearance(named: dark ? .darkAqua : .aqua), scale: scale)
         }
-        for variant in SplashVariant.allCases {
-            add("launch-splash-\(variant.rawValue + 1)", "Launch", "Launch animation \(variant.rawValue + 1) (at 0.95 s)") { dark, scale in
-                Offscreen.render(SplashScene(variant: variant, t: 0.95, calm: false).ignoresSafeArea(), size: windowSize, chrome: .window,
-                                 appearance: NSAppearance(named: dark ? .darkAqua : .aqua), scale: scale)
+        for (t, what) in [(1.4, "rolling in"), (3.0, "ring spinning up"), (5.6, "finished")] {
+            let name = "launch-intro-" + what.replacingOccurrences(of: " ", with: "-")
+            add(name, "Launch", "First-launch intro at \(t) s: \(what)") { dark, scale in
+                launch(IntroScene(t: t, calm: false), dark, scale)
             }
+        }
+        for variant in SplashVariant.allCases {
+            let name = variant == .ringSpin ? "ring-spin" : "roll-in"
+            add("launch-\(name)-start", "Launch", "Launch animation “\(name)” part-way (0.2 s)") { dark, scale in
+                launch(SplashScene(variant: variant, t: 0.2, calm: false), dark, scale)
+            }
+            add("launch-\(name)", "Launch", "Launch animation “\(name)”, finished (0.8 s)") { dark, scale in
+                launch(SplashScene(variant: variant, t: 0.8, calm: false), dark, scale)
+            }
+        }
+        add("launch-fade", "Launch", "Quick fade, finished") { dark, scale in
+            launch(SplashScene(variant: .ringSpin, t: 0.3, calm: true), dark, scale)
         }
 
         // Software Update, in each state it can show (in this order: each builds on the last).
@@ -335,6 +380,7 @@ extension RenderUI {
         model.showingAbout = false
         model.showingFeedback = false
         model.showingWelcomeTour = false
+        model.showingWhatsNew = false
         model.pendingImport = nil
         model.assignStep = .idle
         model.isEditingProfiles = false

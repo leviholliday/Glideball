@@ -152,9 +152,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     @objc private func openHelp(_ sender: Any?) { NSWorkspace.shared.open(SiteLinks.help) }
     @objc private func openTroubleshooting(_ sender: Any?) { NSWorkspace.shared.open(SiteLinks.troubleshooting) }
 
+    /// Help › What's New: this version's What's New, over the window.
     @objc private func openWhatsNew(_ sender: Any?) {
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
-        NSWorkspace.shared.open(SiteLinks.whatsNew(in: version))
+        showWindow()
+        AppModel.shared.showWhatsNew()
     }
 
     /// Help › Play the Intro: the first-launch intro again, with its music.
@@ -184,13 +185,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func showWindow() {
         makeWindow()
         guard !Sandbox.isActive else { return }   // `--self-test` builds the window but never shows it
+        let opening = window?.isVisible != true
         window?.makeKeyAndOrderFront(nil)
         NSApp.activate()
         reportWindowState()
-        // With no launch animation playing (a reopened window, a launch at
-        // login opened later), the card can come straight away; otherwise
-        // the animation offers it when it ends.
-        if LaunchExperience.shared.show == nil { AppModel.shared.offerSmallFavor() }
+        // Opening the window with no launch animation playing (a reopened
+        // window, a launch at login opened later): What's New or the small
+        // favor can come straight away; otherwise the animation offers it when it ends.
+        if opening && LaunchExperience.shared.show == nil { AppModel.shared.showNextPrompt() }
     }
 
     /// The main window and its contents, made once.
