@@ -18,7 +18,7 @@
   <sub>macOS 26 Tahoe or later · Apple silicon &amp; Intel · <a href="#linux--windows-preview">Linux &amp; Windows preview</a></sub>
 </p>
 
-Hi, I'm Levi, a student, and Glideball is my one-person project. With it you can push the pointer past the speed limit in System Settings, pick how the scroll ring should feel, and turn the buttons into clicks, shortcuts or multi-button combos. Your trackpad and other mice keep their own settings, and if you pause or quit Glideball, the trackball is an ordinary mouse again.
+I'm Levi, a student, and Glideball is my one-person project (not my only one). I built it after I got a Kensington trackball, installed Kensington's app and driver, and found it barely did anything I wanted and was hard to find my way around. With it you can push the pointer past the speed limit in System Settings, pick how the scroll ring should feel, and turn the buttons into clicks, shortcuts or multi-button combos. Your trackpad and other mice keep their own settings, and if you pause or quit Glideball, the trackball is an ordinary mouse again.
 
 <p align="center">
   <img src="docs/screenshots/overview.png" width="860" alt="Glideball's Overview tab with a live trackball diagram, ball speed and scroll ring graphs, and today's clicks and distances">
