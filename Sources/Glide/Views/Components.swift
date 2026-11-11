@@ -68,6 +68,21 @@ extension SectionBlock where Accessory == EmptyView {
     }
 }
 
+/// A section whose body isn't a group of rows (a row of choices, a chart): the
+/// title and caption, then the content straight on the page.
+struct PlainSection<Content: View>: View {
+    let title: LocalizedStringKey
+    var caption: LocalizedStringKey? = nil
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Theme.Space.titleToGroup) {
+            SectionTitle(title: title, caption: caption)
+            content
+        }
+    }
+}
+
 /// A section's title and caption on their own (for a section whose body isn't a group: a chart, say).
 struct SectionTitle<Accessory: View>: View {
     let title: LocalizedStringKey?
@@ -560,50 +575,76 @@ struct GlideBackground: View {
     }
 }
 
-// MARK: - Pointer speed presets
+// MARK: - A row of choices
 
-/// Precise / macOS / Fast / Turbo — used on the Pointer tab and in the Welcome Tour.
-struct PointerPresetRow: View {
-    @Binding var speed: Double
-
-    private struct Preset: Identifiable {
-        let name: LocalizedStringKey
+/// A quiet row of equal choices (a preset, a mode): the chosen one is filled and
+/// outlined in the part's color, the rest are plain until hovered. The chosen
+/// one reads as "this one" without relying on color alone (weight and outline
+/// change too), in light and dark.
+struct ChoiceStrip<Value: Hashable>: View {
+    struct Choice: Identifiable {
+        let value: Value
+        let title: LocalizedStringKey
         let symbol: String
-        let speed: Double
-        var id: String { symbol }
+        var id: Value { value }
     }
 
-    private let presets: [Preset] = [
-        .init(name: LocalizedStringKey("Precise"), symbol: "scope", speed: 1.5),
-        .init(name: LocalizedStringKey("macOS"), symbol: "applelogo", speed: 3),
-        .init(name: LocalizedStringKey("Fast"), symbol: "hare", speed: 5),
-        .init(name: LocalizedStringKey("Turbo"), symbol: "bolt", speed: 7.5),
-    ]
+    let choices: [Choice]
+    /// Whether a choice is the current one (a preset is matched by what it sets, not only by having been picked).
+    let isSelected: (Value) -> Bool
+    let tint: Color
+    let select: (Value) -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        HStack(spacing: 8) {
-            ForEach(presets) { p in
-                let selected = abs(speed - p.speed) < 0.01
+        HStack(spacing: 6) {
+            ForEach(choices) { c in
+                let selected = isSelected(c.value)
                 Button {
-                    withAnimation(Theme.Motion.spring) { speed = p.speed }
+                    withAnimation(Theme.Motion.respecting(reduceMotion, Theme.Motion.spring)) { select(c.value) }
                 } label: {
-                    VStack(spacing: 5) {
-                        Image(systemName: p.symbol).font(.system(size: 16))
-                        Text(p.name).font(.system(size: 12, weight: .medium))
+                    HStack(spacing: 6) {
+                        Image(systemName: c.symbol)
+                            .font(.system(size: 13, weight: selected ? .semibold : .regular))
+                            .foregroundStyle(selected ? AnyShapeStyle(tint) : AnyShapeStyle(.secondary))
+                        Text(c.title)
+                            .font(.system(size: 13, weight: selected ? .semibold : .regular))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 9)
-                    .foregroundStyle(selected ? AnyShapeStyle(Theme.ball) : AnyShapeStyle(.primary))
+                    .foregroundStyle(.primary)
+                    .frame(maxWidth: .infinity, minHeight: 32)
+                    .padding(.horizontal, 6)
                     .background {
-                        RoundedRectangle(cornerRadius: 9, style: .continuous)
-                            .fill(selected ? Theme.ball.opacity(0.12) : .clear)
-                            .strokeBorder(selected ? Theme.ball.opacity(0.55) : Theme.groupBorder, lineWidth: selected ? 1 : 0.5)
+                        let shape = RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        shape.fill(selected ? tint.opacity(0.13) : Theme.groupFill)
+                            .overlay(shape.strokeBorder(selected ? tint.opacity(0.7) : Theme.groupBorder,
+                                                        lineWidth: selected ? 1 : 0.5))
                     }
                     .contentShape(Rectangle())
                 }
-                .buttonStyle(HoverButtonStyle(radius: 9))
+                .buttonStyle(HoverButtonStyle(radius: 8))
                 .accessibilityAddTraits(selected ? .isSelected : [])
             }
         }
+    }
+}
+
+// MARK: - Pointer speed presets
+
+/// Precise / macOS / Fast / Turbo: used on the Pointer tab and in the Welcome Tour.
+/// The chosen one is whichever matches the speed right now.
+struct PointerPresetRow: View {
+    @Binding var speed: Double
+
+    private static let presets: [ChoiceStrip<Double>.Choice] = [
+        .init(value: 1.5, title: LocalizedStringKey("Precise"), symbol: "scope"),
+        .init(value: 3, title: LocalizedStringKey("macOS"), symbol: "applelogo"),
+        .init(value: 5, title: LocalizedStringKey("Fast"), symbol: "hare"),
+        .init(value: 7.5, title: LocalizedStringKey("Turbo"), symbol: "bolt"),
+    ]
+
+    var body: some View {
+        ChoiceStrip(choices: Self.presets, isSelected: { abs(speed - $0) < 0.01 }, tint: Theme.ball) { speed = $0 }
     }
 }
