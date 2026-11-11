@@ -50,6 +50,9 @@ async function forget(req, context) {
   if (bad) return fail(400, bad);
   const id = normalizeID(b.installId);
   if (!id) return fail(400, "No install ID.");
+  // Each one reads the whole list of what's kept, so however many addresses
+  // ask, only this many a day. (The app says it couldn't and tries again.)
+  if (!(await allow("usage-delete/everyone", 500, 86400))) return fail(429, "Too many today. Try again tomorrow.");
   const deleted = await deleteInstall(id);
   return json({ ok: true, deleted });
 }

@@ -66,10 +66,14 @@ export const dayOf = (ms) => new Date(ms).toISOString().slice(0, 10);
  * does this too; this is in case an older or a modified one doesn't.) */
 export function scrub(s, max) {
   return String(s ?? "")
-    .replace(/\/(Users|home)\/[^/\s:")]+/g, "/$1/~")
-    .replace(/\/Volumes\/[^/\s:")]+/g, "/Volumes/~")
+    // Invisible characters first (control, zero-width, right-to-left marks),
+    // so none can split a path or an address to slip it past what follows.
+    .replace(/[\u0000-\u0008\u000b-\u001f\u007f-\u009f\p{Cf}]/gu, "")
+    // (macOS folders match in any case: /users/jane is /Users/jane.)
+    .replace(/\/(Users|home)\/[^/\s:")]+/gi, "/$1/~")
+    // A drive's name can have spaces in it ("Jane's Passport"): all of it, up to the next folder.
+    .replace(/\/Volumes\/[^/\n]+/gi, "/Volumes/~")
     .replace(/[^\s@'"<>()]+@[^\s@'"<>()]+\.[a-z]{2,}/gi, "(email)")
-    .replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, "")
     .trim()
     .slice(0, max);
 }
@@ -283,7 +287,9 @@ export function weekOf(day) {
   return dayOf(t - back * 86400e3);
 }
 
-const bump = (o, k, n = 1) => { o[k] = (o[k] ?? 0) + n; };
+// (Own keys only: a version sent as "constructor" or "toString" would
+// otherwise start from the function every object has, not from 0.)
+const bump = (o, k, n = 1) => { o[k] = (Object.hasOwn(o, k) ? o[k] : 0) + n; };
 /** A count in a few groups: with edges [0, 1, 2, 5], "0", "1", "2–4" or "5+". */
 function bucket(n, edges) {
   for (let i = edges.length - 1; i >= 0; i--) {
