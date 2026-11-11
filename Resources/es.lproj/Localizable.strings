@@ -1595,3 +1595,19 @@
 
 "Why?" = "¿Por qué?";
 
+/* ---- Commands.swift ---- */
+
+"Pause Glideball" = "Pausar Glideball";
+
+"Resume Glideball" = "Reanudar Glideball";
+
+"Use an app setup" = "Usar una configuración de app";
+
+"Open Glideball" = "Abrir Glideball";
+
+/* ---- ExternalControlApp.swift ---- */
+
+"Something tried to control Glideball." = "Algo intentó controlar Glideball.";
+
+/* “Allow Raycast and scripts” is a switch in Settings › General */
+"Turn on “Allow Raycast and scripts” in Settings to let it." = "Activa «Permitir Raycast y scripts» en Ajustes para permitirlo.";

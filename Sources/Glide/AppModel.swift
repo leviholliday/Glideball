@@ -17,6 +17,7 @@ final class AppModel {
             if !config.enabled && oldValue.enabled {
                 engine.releaseHeldKeys()
                 engine.releaseAll()
+                pinnedProfileID = nil   // a pause hands app setups back to the app in front
             }
             pushToEngine()
             if config.globalShortcuts != oldValue.globalShortcuts { GlobalHotKeys.shared.apply(config.globalShortcuts) }
@@ -60,6 +61,15 @@ final class AppModel {
             guard otherTrackballs != oldValue else { return }
             UserDefaults.standard.set(otherTrackballs, forKey: OtherTrackballs.defaultsKey)
             engine.setBetaProgram(otherTrackballs)
+        }
+    }
+    /// "Allow Raycast and scripts": glideball:// URLs may change things, and
+    /// status.json is kept. Per-Mac, never synced, off by default — see ExternalControl.swift.
+    var allowExternalControl = ExternalControlSetting.isEnabled {
+        didSet {
+            guard allowExternalControl != oldValue else { return }
+            UserDefaults.standard.set(allowExternalControl, forKey: ExternalControlSetting.defaultsKey)
+            ExternalControlCenter.shared.settingChanged()
         }
     }
     /// Offer prerelease updates. Per-Mac, never synced — see `EarlyUpdates`.
@@ -273,13 +283,21 @@ final class AppModel {
         didSet { if isEditingProfiles != oldValue { pushToEngine() } }
     }
     @ObservationIgnored private var pushedConfig = GlideConfig()
+    /// An app setup chosen with glideball://app-setup: it's used whatever app is
+    /// in front, until "automatic", a pause or a quit. Never saved.
+    var pinnedProfileID: String? {
+        didSet { if pinnedProfileID != oldValue { pushToEngine() } }
+    }
     /// While the Welcome Tour asks you to press each button, run without remaps or combos.
     @ObservationIgnored var mappingsSuspended = false
 
     /// Whose setup the engine should run: the frontmost app's, or — while
     /// Glide itself is in front — the one open on the Apps tab, else the main setup.
+    /// A pinned setup (`pinnedProfileID`) wins over the app in front, not over the Apps tab.
     private var profileTarget: String? {
-        glideIsFrontmost ? (isEditingProfiles ? selectedProfileID : nil) : frontmostBundleID
+        if glideIsFrontmost && isEditingProfiles { return selectedProfileID }
+        if let pinned = pinnedProfileID, config.profile(for: pinned) != nil { return pinned }
+        return glideIsFrontmost ? nil : frontmostBundleID
     }
 
     /// The app setup in effect right now, if any.

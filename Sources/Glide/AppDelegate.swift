@@ -5,6 +5,8 @@ import SwiftUI
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private(set) var window: NSWindow?
     private var launchedAtLogin = false
+    /// Launched to open a glideball:// URL: start quietly, like at login.
+    private var launchedForURL = false
     private var statusItem: NSStatusItem?
     private var precisionItem: NSMenuItem?
     private var isExplicitlyQuitting = false
@@ -21,6 +23,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
            event.paramDescriptor(forKeyword: keyAEPropData)?.enumCodeValue == keyAELaunchedAsLogInItem {
             launchedAtLogin = true
         }
+        if let event = NSAppleEventManager.shared().currentAppleEvent,
+           event.eventClass == AEEventClass(kInternetEventClass), event.eventID == AEEventID(kAEGetURL),
+           event.paramDescriptor(forKeyword: keyDirectObject)?.stringValue?.lowercased()
+               .hasPrefix(ExternalControl.scheme + ":") == true {
+            launchedForURL = true
+        }
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -36,7 +44,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         _ = AppModel.shared   // starts the engine
         watchModes()
         startHotKeys()
-        let showsWindow = firstLaunch || !launchedAtLogin || !AppModel.shared.permissionsOK
+        ExternalControlCenter.shared.start()   // status.json, if "Allow Raycast and scripts" is on
+        let quietLaunch = launchedAtLogin || launchedForURL
+        let showsWindow = firstLaunch || !quietLaunch || !AppModel.shared.permissionsOK
         // The launch animation; the first-launch intro opens the tour itself when it ends.
         let introPlays = LaunchExperience.shared.prepare(firstLaunch: firstLaunch, showsWindow: showsWindow)
         if firstLaunch && !introPlays { AppModel.shared.showWelcomeTour() }
@@ -108,16 +118,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         return true
     }
 
+    /// glideball:// URLs go to ExternalControlCenter (Raycast, scripts).
     /// Double-clicking a .glide-settings file: open the window and preview it.
     func application(_ application: NSApplication, open urls: [URL]) {
-        guard let url = urls.first else { return }
+        let isLink = { (url: URL) in url.scheme?.lowercased() == ExternalControl.scheme }
+        urls.filter(isLink).forEach { ExternalControlCenter.shared.handle($0) }
+        guard let url = urls.first(where: { !isLink($0) }) else { return }
         showWindow()
         AppModel.shared.previewImport(url)
     }
 
     @objc private func sendFeedback(_ sender: Any?) {
-        showWindow()
-        AppModel.shared.showingFeedback = true
+        Commands.run("feedback", on: AppCommandTarget.shared)
     }
 
     @objc private func showAbout(_ sender: Any?) {
@@ -159,6 +171,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     @objc private func importSettings() { showWindow(); AppModel.shared.importSettings() }
 
     func applicationWillTerminate(_ notification: Notification) {
+        ExternalControlCenter.shared.stop()   // status.json goes with the app
         AppModel.shared.engine.releaseHeldKeys()
         AppModel.shared.engine.releaseAll()
         AppModel.shared.engine.handBackPointer()   // after releaseAll, which re-applies Glide's speed
@@ -288,7 +301,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     @objc private func toggleGlide(_ sender: Any?) {
-        AppModel.shared.config.enabled.toggle()
+        Commands.run("toggle", on: AppCommandTarget.shared)
     }
 
     @objc private func togglePrecision(_ sender: Any?) {
@@ -298,12 +311,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     @objc private func quitGlide(_ sender: Any?) { quitNow() }
 
     @objc private func checkForUpdates(_ sender: Any?) {
-        showUpdatePanel()
+        Commands.run("check-for-updates", on: AppCommandTarget.shared)
     }
 
     private var settingsWindow: SettingsWindowController?
 
-    @objc private func openSettings(_ sender: Any?) { showSettings() }
+    @objc private func openSettings(_ sender: Any?) { Commands.run("settings", on: AppCommandTarget.shared) }
 
     /// Glideball › Settings… (⌘,): one window, brought forward if it's already
     /// open. Works with the main window closed and with no Dock icon.
@@ -351,9 +364,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         GlobalHotKeys.shared.start(AppModel.shared.config.globalShortcuts) { [weak self] action in
             switch action {
             case .pause:
-                let model = AppModel.shared
-                model.config.enabled.toggle()
-                NSSound(named: model.config.enabled ? "Pop" : "Funk")?.play()
+                Commands.run("toggle", on: AppCommandTarget.shared) { running in
+                    NSSound(named: running == true ? "Pop" : "Funk")?.play()
+                }
             case .precision: self?.toggleMode(.precision)
             case .ballScroll: self?.toggleMode(.ballScroll)
             case .dragLock: self?.toggleMode(.dragLock)
@@ -373,8 +386,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     /// A quiet sound says which way it went; a beep means nothing changed
     /// (Glide is paused, or the trackball isn't there to scroll with).
-    private func toggleMode(_ mode: Engine.ToggleMode) {
-        AppModel.shared.engine.toggleMode(mode) { on in
+    private func toggleMode(_ mode: GlideMode) {
+        Commands.run(mode.rawValue, .toggle, on: AppCommandTarget.shared) { on in
             guard let on else { return NSSound.beep() }
             NSSound(named: on ? "Tink" : "Purr")?.play()
         }
