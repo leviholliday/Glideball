@@ -414,19 +414,6 @@ struct StatusPill: View {
     }
 }
 
-/// "Beta" beside a device supported through Other Kensington trackballs.
-struct BetaBadge: View {
-    var body: some View {
-        Text("Beta", comment: "Badge beside a trackball that's only supported in the beta (Other Kensington trackballs)")
-            .font(.system(size: 10, weight: .semibold))
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 5)
-            .padding(.vertical, 1)
-            .overlay(Capsule().strokeBorder(.tertiary, lineWidth: 0.5))
-            .fixedSize()
-            .help("Not fully tested yet — you may hit bugs")
-    }
-}
 
 /// A notice at the top of the content: what's going on, in a sentence, and the one thing to do about it.
 struct NoticeBanner<Actions: View>: View {

@@ -228,13 +228,10 @@ private struct SidebarHero: View {
                     .strokeBorder(Color.white.opacity(0.06), lineWidth: 0.5))
 
             VStack(spacing: 3) {
-                HStack(spacing: 5) {
-                    Text(status.deviceName)
-                        .font(.system(size: 13, weight: .semibold))
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                    if model.status.deviceConnected && model.status.deviceIsBeta { BetaBadge() }
-                }
+                Text(status.deviceName)
+                    .font(.system(size: 13, weight: .semibold))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
                 HStack(spacing: 5) {
                     StatusDot(color: status.color, size: 7)
                     Text(status.text)
@@ -243,6 +240,9 @@ private struct SidebarHero: View {
                         .lineLimit(1)
                 }
                 .accessibilityElement(children: .combine)
+                // "Connected · Beta": a device supported through Other Kensington trackballs.
+                .help(model.status.deviceConnected && model.status.deviceIsBeta
+                      ? String(localized: "Not fully tested yet — you may hit bugs") : "")
             }
             .padding(.horizontal, 4)
         }
@@ -261,7 +261,8 @@ struct SidebarStatus {
     @MainActor init(_ model: AppModel) {
         let s = model.status
         deviceName = s.deviceConnected ? (s.deviceName ?? "Kensington Expert Mouse")
-                                       : (s.unsupportedDeviceName.map { "Kensington \($0)" } ?? s.deviceName ?? "Kensington Expert Mouse")
+                                       : (s.unsupportedDeviceName.map { $0.localizedCaseInsensitiveContains("Kensington") ? $0 : "Kensington \($0)" }
+                                          ?? s.deviceName ?? "Kensington Expert Mouse")
         if !model.permissionsOK {
             text = String(localized: "Needs permission", comment: "Status pill"); color = Theme.warn
         } else if !model.config.enabled {
