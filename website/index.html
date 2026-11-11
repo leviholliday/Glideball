@@ -76,7 +76,7 @@
         "applicationCategory": "UtilitiesApplication",
         "applicationSubCategory": "Trackball and mouse utility",
         "operatingSystem": "macOS 26 Tahoe or later (Apple silicon and Intel)",
-        "softwareRequirements": "A Kensington trackball. The wired Expert Mouse is fully supported; other Kensington trackballs work in the Beta program.",
+        "softwareRequirements": "A Kensington trackball. The wired Expert Mouse is fully supported; other Kensington trackballs work when you turn on Other Kensington trackballs in Glideball › Settings.",
         "image": "https://glideball.netlify.app/assets/icon-256.png",
         "screenshot": [
           "https://glideball.netlify.app/assets/screens/overview-1200.png",
@@ -139,7 +139,7 @@
             "name": "Which Kensington trackballs does Glideball support?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Glideball fully supports the wired Kensington Expert Mouse. Other Kensington trackballs, like the Expert Mouse Wireless, SlimBlade and Orbit, work when you turn on the Beta program in the app, but I haven't tuned Glideball on them yet, so you may hit bugs. Glideball never changes other brands' mice or your trackpad."
+              "text": "Glideball fully supports the wired Kensington Expert Mouse. Other Kensington trackballs, like the Expert Mouse Wireless, SlimBlade and Orbit, work when you turn on Other Kensington trackballs in Glideball › Settings › General, but I haven't tuned Glideball on them yet, so you may hit bugs. Glideball never changes other brands' mice or your trackpad."
             }
           },
           {
@@ -303,34 +303,87 @@
           </div>
           <p class="fine"><span>Free and open source (MIT)</span> · <span>macOS 26 Tahoe or later</span> · <span>Apple silicon &amp; Intel</span><span data-downloads hidden> · <b data-downloads-n></b> downloads</span></p>
           <p class="fine">Apple hasn't notarized Glideball, so you'll approve it once in System Settings. <a href="#install">Here's how</a>.</p>
-          <p class="fine">It's built on the wired Kensington Expert Mouse, and other Kensington trackballs work through the <a href="/trackballs/">Beta program</a>.</p>
+          <p class="fine">It's built on the wired Kensington Expert Mouse, and other Kensington trackballs work if you turn on <a href="/trackballs/">Other Kensington trackballs</a> in Settings.</p>
         </div>
 
         <div class="tb" data-tb>
-          <div class="tb-stage" role="img" aria-label="A Kensington trackball drawn in Glideball's colors: a glossy ball inside a fine scroll ring, with a button in each corner.">
+          <div class="tb-stage" role="img" aria-label="A Kensington trackball drawn in Glideball's colors: a glossy ball inside a fine scroll ring with tick marks, and a button in each corner.">
             <div class="tb-body">
-              <span class="tb-pad tb-tl" data-pad></span>
-              <span class="tb-pad tb-tr" data-pad></span>
-              <span class="tb-pad tb-bl" data-pad></span>
-              <span class="tb-pad tb-br" data-pad></span>
-              <div class="tb-well"></div>
-              <div class="tb-glow"></div>
-              <svg class="tb-ring" viewBox="0 0 100 100" focusable="false">
+              <svg class="tb-pads" viewBox="0 0 100 100" focusable="false">
                 <defs>
-                  <linearGradient id="tb-rg" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0" stop-color="#4f9bff"/>
-                    <stop offset=".55" stop-color="#6a6cff"/>
-                    <stop offset="1" stop-color="#9a5cff"/>
-                  </linearGradient>
+                  <linearGradient id="tb-pf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".115"/><stop offset="1" stop-color="#fff" stop-opacity=".065"/></linearGradient>
+                  <linearGradient id="tb-ps" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset="1" stop-color="#fff" stop-opacity=".04"/></linearGradient>
+                  <linearGradient id="tb-pa" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffcc73"/><stop offset="1" stop-color="#ffb340"/></linearGradient>
+                  <filter id="tb-pb" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2"/></filter>
+                  <mask id="tb-hole" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100"><rect width="100" height="100" fill="#fff"/><circle cx="50" cy="50" r="42.7" fill="#000"/></mask>
                 </defs>
-                <circle cx="50" cy="50" r="47.2" fill="none" stroke="url(#tb-rg)" stroke-width=".8"/>
-                <circle cx="50" cy="50" r="44.4" fill="none" stroke="#ffffff" stroke-opacity=".11" stroke-width="2.6" pathLength="360" stroke-dasharray="1.1 4.9"/>
-                <circle cx="50" cy="50" r="41.6" fill="none" stroke="#ffffff" stroke-opacity=".07" stroke-width=".35"/>
+              <g class="tb-pad tb-tl" data-pad>
+                <path class="tb-pad-glow" d="M21.8 3.8H43.6A4.5 4.5 0 0 1 48.1 8.3V43.6A4.5 4.5 0 0 1 43.6 48.1H8.3A4.5 4.5 0 0 1 3.8 43.6V21.8A18 18 0 0 1 21.8 3.8Z" filter="url(#tb-pb)"/>
+                <g mask="url(#tb-hole)">
+                  <path class="tb-pad-base" d="M21.8 3.8H43.6A4.5 4.5 0 0 1 48.1 8.3V43.6A4.5 4.5 0 0 1 43.6 48.1H8.3A4.5 4.5 0 0 1 3.8 43.6V21.8A18 18 0 0 1 21.8 3.8Z"/>
+                  <path class="tb-pad-on" d="M21.8 3.8H43.6A4.5 4.5 0 0 1 48.1 8.3V43.6A4.5 4.5 0 0 1 43.6 48.1H8.3A4.5 4.5 0 0 1 3.8 43.6V21.8A18 18 0 0 1 21.8 3.8Z"/>
+                </g>
+              </g>
+              <g class="tb-pad tb-tr" data-pad>
+                <path class="tb-pad-glow" d="M56.4 3.8H78.2A18 18 0 0 1 96.2 21.8V43.6A4.5 4.5 0 0 1 91.7 48.1H56.4A4.5 4.5 0 0 1 51.9 43.6V8.3A4.5 4.5 0 0 1 56.4 3.8Z" filter="url(#tb-pb)"/>
+                <g mask="url(#tb-hole)">
+                  <path class="tb-pad-base" d="M56.4 3.8H78.2A18 18 0 0 1 96.2 21.8V43.6A4.5 4.5 0 0 1 91.7 48.1H56.4A4.5 4.5 0 0 1 51.9 43.6V8.3A4.5 4.5 0 0 1 56.4 3.8Z"/>
+                  <path class="tb-pad-on" d="M56.4 3.8H78.2A18 18 0 0 1 96.2 21.8V43.6A4.5 4.5 0 0 1 91.7 48.1H56.4A4.5 4.5 0 0 1 51.9 43.6V8.3A4.5 4.5 0 0 1 56.4 3.8Z"/>
+                </g>
+              </g>
+              <g class="tb-pad tb-bl" data-pad>
+                <path class="tb-pad-glow" d="M8.3 51.9H43.6A4.5 4.5 0 0 1 48.1 56.4V91.7A4.5 4.5 0 0 1 43.6 96.2H21.8A18 18 0 0 1 3.8 78.2V56.4A4.5 4.5 0 0 1 8.3 51.9Z" filter="url(#tb-pb)"/>
+                <g mask="url(#tb-hole)">
+                  <path class="tb-pad-base" d="M8.3 51.9H43.6A4.5 4.5 0 0 1 48.1 56.4V91.7A4.5 4.5 0 0 1 43.6 96.2H21.8A18 18 0 0 1 3.8 78.2V56.4A4.5 4.5 0 0 1 8.3 51.9Z"/>
+                  <path class="tb-pad-on" d="M8.3 51.9H43.6A4.5 4.5 0 0 1 48.1 56.4V91.7A4.5 4.5 0 0 1 43.6 96.2H21.8A18 18 0 0 1 3.8 78.2V56.4A4.5 4.5 0 0 1 8.3 51.9Z"/>
+                </g>
+              </g>
+              <g class="tb-pad tb-br" data-pad>
+                <path class="tb-pad-glow" d="M56.4 51.9H91.7A4.5 4.5 0 0 1 96.2 56.4V78.2A18 18 0 0 1 78.2 96.2H56.4A4.5 4.5 0 0 1 51.9 91.7V56.4A4.5 4.5 0 0 1 56.4 51.9Z" filter="url(#tb-pb)"/>
+                <g mask="url(#tb-hole)">
+                  <path class="tb-pad-base" d="M56.4 51.9H91.7A4.5 4.5 0 0 1 96.2 56.4V78.2A18 18 0 0 1 78.2 96.2H56.4A4.5 4.5 0 0 1 51.9 91.7V56.4A4.5 4.5 0 0 1 56.4 51.9Z"/>
+                  <path class="tb-pad-on" d="M56.4 51.9H91.7A4.5 4.5 0 0 1 96.2 56.4V78.2A18 18 0 0 1 78.2 96.2H56.4A4.5 4.5 0 0 1 51.9 91.7V56.4A4.5 4.5 0 0 1 56.4 51.9Z"/>
+                </g>
+              </g>
+              </svg>
+              <div class="tb-well"></div>
+              <svg class="tb-edge" viewBox="0 0 100 100" focusable="false">
+                <defs>
+                  <linearGradient id="tb-rg" x1=".35" y1="0" x2=".65" y2="1">
+                    <stop offset="0" stop-color="#5cadff"/>
+                    <stop offset=".5" stop-color="#6b73ff"/>
+                    <stop offset="1" stop-color="#9455f8"/>
+                  </linearGradient>
+                  <linearGradient id="tb-rc" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".7"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+                  <filter id="tb-rb" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2.4"/></filter>
+                </defs>
+                <circle cx="50" cy="50" r="37.8" fill="none" stroke="url(#tb-rg)" stroke-width="3.8" opacity=".38" filter="url(#tb-rb)"/>
+                <circle cx="50" cy="50" r="31.1" fill="none" stroke="#fff" stroke-opacity=".06" stroke-width=".3"/>
+                <circle cx="50" cy="50" r="37.8" fill="none" stroke="url(#tb-rg)" stroke-width=".85"/>
+                <path d="M13.03 42.14A37.8 37.8 0 0 1 46.05 12.41" fill="none" stroke="url(#tb-rc)" stroke-width=".6" stroke-linecap="round"/>
+              </svg>
+              <div class="tb-glow"></div>
+              <svg class="tb-ticks" viewBox="0 0 100 100" focusable="false">
+                <path class="tb-t tb-t-minor" d="M53.42 17.48L53.73 14.50M56.80 18.01L57.42 15.08M60.10 18.90L61.03 16.05M63.30 20.13L64.52 17.39M69.22 23.55L70.98 21.12M71.88 25.70L73.89 23.47M74.30 28.12L76.53 26.11M76.45 30.78L78.88 29.02M79.87 36.70L82.61 35.48M81.10 39.90L83.95 38.97M81.99 43.20L84.92 42.58M82.52 46.58L85.50 46.27M82.52 53.42L85.50 53.73M81.99 56.80L84.92 57.42M81.10 60.10L83.95 61.03M79.87 63.30L82.61 64.52M76.45 69.22L78.88 70.98M74.30 71.88L76.53 73.89M71.88 74.30L73.89 76.53M69.22 76.45L70.98 78.88M63.30 79.87L64.52 82.61M60.10 81.10L61.03 83.95M56.80 81.99L57.42 84.92M53.42 82.52L53.73 85.50M46.58 82.52L46.27 85.50M43.20 81.99L42.58 84.92M39.90 81.10L38.97 83.95M36.70 79.87L35.48 82.61M30.78 76.45L29.02 78.88M28.12 74.30L26.11 76.53M25.70 71.88L23.47 73.89M23.55 69.22L21.12 70.98M20.13 63.30L17.39 64.52M18.90 60.10L16.05 61.03M18.01 56.80L15.08 57.42M17.48 53.42L14.50 53.73M17.48 46.58L14.50 46.27M18.01 43.20L15.08 42.58M18.90 39.90L16.05 38.97M20.13 36.70L17.39 35.48M23.55 30.78L21.12 29.02M25.70 28.12L23.47 26.11M28.12 25.70L26.11 23.47M30.78 23.55L29.02 21.12M36.70 20.13L35.48 17.39M39.90 18.90L38.97 16.05M43.20 18.01L42.58 15.08M46.58 17.48L46.27 14.50"/>
+                <path class="tb-t tb-t-major" d="M50.00 18.00L50.00 13.80M66.00 22.29L68.10 18.65M77.71 34.00L81.35 31.90M82.00 50.00L86.20 50.00M77.71 66.00L81.35 68.10M66.00 77.71L68.10 81.35M50.00 82.00L50.00 86.20M34.00 77.71L31.90 81.35M22.29 66.00L18.65 68.10M18.00 50.00L13.80 50.00M22.29 34.00L18.65 31.90M34.00 22.29L31.90 18.65"/>
+                <g class="tb-sweep">
+                  <circle cx="50" cy="50" r="37.8" pathLength="360" stroke-dasharray="70 290" stroke-dashoffset="-290" stroke-opacity=".3"/>
+                  <circle cx="50" cy="50" r="37.8" pathLength="360" stroke-dasharray="36 324" stroke-dashoffset="-324" stroke-opacity=".6"/>
+                  <circle cx="50" cy="50" r="37.8" pathLength="360" stroke-dasharray="10 350" stroke-dashoffset="-350" stroke="#fff" stroke-opacity=".95"/>
+                </g>
+                <g class="tb-hot">
+                  <path class="tb-t-minor" d="M53.42 17.48L53.73 14.50M56.80 18.01L57.42 15.08M60.10 18.90L61.03 16.05M63.30 20.13L64.52 17.39M69.22 23.55L70.98 21.12M71.88 25.70L73.89 23.47M74.30 28.12L76.53 26.11M76.45 30.78L78.88 29.02M79.87 36.70L82.61 35.48M81.10 39.90L83.95 38.97M81.99 43.20L84.92 42.58M82.52 46.58L85.50 46.27M82.52 53.42L85.50 53.73M81.99 56.80L84.92 57.42M81.10 60.10L83.95 61.03M79.87 63.30L82.61 64.52M76.45 69.22L78.88 70.98M74.30 71.88L76.53 73.89M71.88 74.30L73.89 76.53M69.22 76.45L70.98 78.88M63.30 79.87L64.52 82.61M60.10 81.10L61.03 83.95M56.80 81.99L57.42 84.92M53.42 82.52L53.73 85.50M46.58 82.52L46.27 85.50M43.20 81.99L42.58 84.92M39.90 81.10L38.97 83.95M36.70 79.87L35.48 82.61M30.78 76.45L29.02 78.88M28.12 74.30L26.11 76.53M25.70 71.88L23.47 73.89M23.55 69.22L21.12 70.98M20.13 63.30L17.39 64.52M18.90 60.10L16.05 61.03M18.01 56.80L15.08 57.42M17.48 53.42L14.50 53.73M17.48 46.58L14.50 46.27M18.01 43.20L15.08 42.58M18.90 39.90L16.05 38.97M20.13 36.70L17.39 35.48M23.55 30.78L21.12 29.02M25.70 28.12L23.47 26.11M28.12 25.70L26.11 23.47M30.78 23.55L29.02 21.12M36.70 20.13L35.48 17.39M39.90 18.90L38.97 16.05M43.20 18.01L42.58 15.08M46.58 17.48L46.27 14.50"/>
+                  <path class="tb-t-major" d="M50.00 18.00L50.00 13.80M66.00 22.29L68.10 18.65M77.71 34.00L81.35 31.90M82.00 50.00L86.20 50.00M77.71 66.00L81.35 68.10M66.00 77.71L68.10 81.35M50.00 82.00L50.00 86.20M34.00 77.71L31.90 81.35M22.29 66.00L18.65 68.10M18.00 50.00L13.80 50.00M22.29 34.00L18.65 31.90M34.00 22.29L31.90 18.65"/>
+                </g>
               </svg>
               <div class="tb-ball">
-                <div class="tb-liquid"></div>
-                <div class="tb-shade"></div>
-                <div class="tb-spec"></div>
+                <div class="tb-cast"></div>
+                <div class="tb-orb">
+                  <div class="tb-liquid"></div>
+                  <div class="tb-shade"></div>
+                  <div class="tb-rim"></div>
+                  <div class="tb-spec"></div>
+                </div>
               </div>
             </div>
           </div>
@@ -424,8 +477,8 @@
           </div>
           <figure class="shot">
             <picture>
-              <source type="image/webp" srcset="assets/screens/pointer-960.webp?v=74682813 960w, assets/screens/pointer-1600.webp?v=74682813 1600w" sizes="(min-width: 1000px) 640px, 92vw">
-              <img src="assets/screens/pointer-1200.png?v=74682813" width="2080" height="1400" loading="lazy" decoding="async" alt="Glideball's Pointer tab: the Tracking speed slider, presets for Precise, macOS, Fast and Turbo, and a response curve rising far above the dashed no-acceleration line.">
+              <source type="image/webp" srcset="assets/screens/pointer-960.webp?v=332b54a0 960w, assets/screens/pointer-1600.webp?v=332b54a0 1600w" sizes="(min-width: 1000px) 640px, 92vw">
+              <img src="assets/screens/pointer-1200.png?v=332b54a0" width="1960" height="1360" loading="lazy" decoding="async" alt="Glideball's Pointer tab: the Tracking speed slider at 5.5, which is 1.8 times System Settings' fastest speed, presets for Precise, macOS, Fast and Turbo, and the response curve above the dashed no-acceleration line.">
             </picture>
           </figure>
         </div>
@@ -445,8 +498,8 @@
           </div>
           <figure class="shot">
             <picture>
-              <source type="image/webp" srcset="assets/screens/scrolling-960.webp?v=76b36635 960w, assets/screens/scrolling-1600.webp?v=76b36635 1600w" sizes="(min-width: 1000px) 640px, 92vw">
-              <img src="assets/screens/scrolling-1200.png?v=76b36635" width="2080" height="1400" loading="lazy" decoding="async" alt="Glideball's Scrolling tab with Flywheel selected: sliders for how the ring scrolls, and a graph of the push per tick as the ring turns faster.">
+              <source type="image/webp" srcset="assets/screens/scrolling-960.webp?v=ffa172b5 960w, assets/screens/scrolling-1600.webp?v=ffa172b5 1600w" sizes="(min-width: 1000px) 640px, 92vw">
+              <img src="assets/screens/scrolling-1200.png?v=ffa172b5" width="1960" height="1360" loading="lazy" decoding="async" alt="Glideball's Scrolling tab with Flywheel chosen next to Native and Follow, and the Flywheel sliders: slow-turn distance, spin power, fast-spin reach and glide.">
             </picture>
           </figure>
         </div>
@@ -466,8 +519,8 @@
           </div>
           <figure class="shot">
             <picture>
-              <source type="image/webp" srcset="assets/screens/buttons-960.webp?v=c141f848 960w, assets/screens/buttons-1600.webp?v=c141f848 1600w" sizes="(min-width: 1000px) 640px, 92vw">
-              <img src="assets/screens/buttons-1200.png?v=c141f848" width="2080" height="1400" loading="lazy" decoding="async" alt="Glideball's Buttons tab: Quick assign, what each of the four buttons does, and the button combos.">
+              <source type="image/webp" srcset="assets/screens/buttons-960.webp?v=7f77309e 960w, assets/screens/buttons-1600.webp?v=7f77309e 1600w" sizes="(min-width: 1000px) 640px, 92vw">
+              <img src="assets/screens/buttons-1200.png?v=7f77309e" width="1960" height="1360" loading="lazy" decoding="async" alt="Glideball's Buttons tab: Quick assign, what each of the four buttons does (the bottom-left one stays a left click), and the button combos.">
             </picture>
           </figure>
         </div>
@@ -483,8 +536,8 @@
         </header>
         <figure class="shot shot-wide">
           <picture>
-            <source type="image/webp" srcset="assets/screens/overview-960.webp?v=c4b5fcc8 960w, assets/screens/overview-1600.webp?v=c4b5fcc8 1600w" sizes="(min-width: 1120px) 1040px, 92vw">
-            <img src="assets/screens/overview-1200.png?v=c4b5fcc8" width="2080" height="1400" loading="lazy" decoding="async" alt="Glideball's Overview tab: the live trackball, Ball speed and Scroll ring graphs, and today's clicks, distance rolled and distance scrolled.">
+            <source type="image/webp" srcset="assets/screens/overview-960.webp?v=365ab2ce 960w, assets/screens/overview-1600.webp?v=365ab2ce 1600w" sizes="(min-width: 1120px) 1040px, 92vw">
+            <img src="assets/screens/overview-1200.png?v=365ab2ce" width="1960" height="1360" loading="lazy" decoding="async" alt="Glideball's Overview tab, with the live trackball in the sidebar: today's clicks, distance rolled and distance scrolled, and the Live activity graph of ball speed and scroll ring.">
           </picture>
         </figure>
         <div class="earned">
@@ -659,7 +712,7 @@
           </details>
           <details>
             <summary>Which Kensington trackballs does Glideball support?</summary>
-            <p>Glideball fully supports the wired Kensington Expert Mouse. Other Kensington trackballs, like the Expert Mouse Wireless, SlimBlade and Orbit, work when you turn on the Beta program in the app, but I haven't tuned Glideball on them yet, so you may hit bugs. Glideball never changes other brands' mice or your trackpad.</p>
+            <p>Glideball fully supports the wired Kensington Expert Mouse. Other Kensington trackballs, like the Expert Mouse Wireless, SlimBlade and Orbit, work when you turn on Other Kensington trackballs in Glideball › Settings › General, but I haven't tuned Glideball on them yet, so you may hit bugs. Glideball never changes other brands' mice or your trackpad.</p>
           </details>
           <details>
             <summary>How do I make the Kensington scroll ring scroll smoothly on a Mac?</summary>

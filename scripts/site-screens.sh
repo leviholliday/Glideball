@@ -15,6 +15,9 @@ set -euo pipefail
 ROOT=${0:A:h:h}
 cd "$ROOT"
 
+# Where each one goes on the homepage: pointer = Ball, scrolling = Ring, buttons = Buttons,
+# overview = "See what your trackball is doing, live". The app has a sidebar now, so each
+# picture is the window as it opens on that tab (the sidebar's trackball included).
 SCREENS=(overview pointer scrolling buttons)
 OUT=build/site-screens
 DEST=website/assets/screens

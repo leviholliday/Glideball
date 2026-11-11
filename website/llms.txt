@@ -2,7 +2,7 @@
 
 > Glideball is a free, open-source (MIT) Mac app for Kensington trackballs that replaces KensingtonWorks. It raises pointer speed past macOS's tracking limit on the trackball only, makes the scroll ring scroll smoothly (Native, Flywheel and Follow modes), and remaps buttons with two- and three-button combos. It needs macOS 26 Tahoe or later, on Apple silicon or Intel. No driver and no account; the app sends crash reports or anonymous settings stats only if you opt in.
 
-Supported trackballs: the wired Kensington Expert Mouse is fully supported. Other Kensington trackballs (Expert Mouse Wireless, SlimBlade, Orbit) work when the Beta program is turned on in the app; the SlimBlade's top buttons aren't supported yet. Other brands' mice and the trackpad are never changed.
+Supported trackballs: the wired Kensington Expert Mouse is fully supported. Other Kensington trackballs (Expert Mouse Wireless, SlimBlade, Orbit) work when Other Kensington trackballs is turned on in Glideball › Settings › General; the SlimBlade's top buttons aren't supported yet. Other brands' mice and the trackpad are never changed.
 
 Install: uninstall KensingtonWorks and restart first. Download Glideball.zip or run `brew install --cask leviholliday/tap/glideball`. Glideball is signed but not notarized by Apple, so the first launch needs System Settings › Privacy & Security › Open Anyway. It asks for Input Monitoring and Accessibility; it never monitors typing.
 
@@ -14,7 +14,7 @@ Made by Levi Holliday, a student developer. Contact: glideball@proton.me.
 - [Install steps](https://glideball.netlify.app/#install): Download, Open Anyway, permissions
 - [FAQ](https://glideball.netlify.app/#faq): Supported trackballs, safety, privacy, uninstalling
 - [KensingtonWorks alternative](https://glideball.netlify.app/kensingtonworks-alternative/): Dated comparison of Glideball, KensingtonWorks, SteerMouse and LinearMouse, and how to switch
-- [Supported trackballs](https://glideball.netlify.app/trackballs/): Which Kensington models are fully supported and which work in the Beta program
+- [Supported trackballs](https://glideball.netlify.app/trackballs/): Which Kensington models are fully supported and which work with Other Kensington trackballs turned on
 - [What's new](https://glideball.netlify.app/changelog/): Release notes for every version, built from GitHub releases
 - [Privacy](https://glideball.netlify.app/privacy/): What the app sends (update checks and feedback you choose to send) and what the website measures
 - [Send feedback](https://glideball.netlify.app/feedback/): Bug reports and ideas, sent straight to Levi

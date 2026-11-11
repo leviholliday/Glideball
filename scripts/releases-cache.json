@@ -1,5 +1,13 @@
 [
  {
+  "body": "This one is a new look for the whole app. Your settings are all still here.\n• A sidebar, with your trackball at the top. Roll the ball, turn the ring or press a button and it moves with you.\n• Every page is redrawn, and each slider now says what its current setting does.\n• Settings has five tabs now, including Look & Sound (new soft sounds with one switch, and a choice between the new icon and the classic one).\n• After an update you'll see What's New once. It's also under Help.\n• New: Settings › General › Allow Raycast and scripts. It's off unless you turn it on.\n• If anything looks off or feels worse than before, please tell me. That's what the beta is for.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `fd5c3069e48545459465bea782102cb9edbfaf07ad8c44a03662d46b7880fe14`",
+  "date": "2026-11-11T16:43:45Z",
+  "name": "Glideball 2.10 beta 8",
+  "prerelease": true,
+  "tag": "v2.10-beta.8",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.8"
+ },
+ {
   "body": "• What's New, Help and Troubleshooting now open the Glideball website, and there's a \"Why?\" link next to the permission requests.\n• The launch chime now only plays the first time Glideball opens after an update. Settings has a new \"When Glideball opens\" choice: Animation, Quick fade or Nothing. Help › Play the Intro replays the intro.\n• ⌘1 to ⌘6 switch pages (see the new View menu), and Escape closes Settings.\n• Behind the scenes: every release is now tested before it goes out, including a check that it launches.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `d4c356e5085bff29de80a4f1ae8ff701ecf75228bf24924cff608bcf67fca54c`",
   "date": "2026-11-11T05:35:36Z",
   "name": "Glideball 2.10 beta 7",
