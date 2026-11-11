@@ -51,8 +51,12 @@ CACHE = os.path.join(HERE, "releases-cache.json")
 SITE = "https://glideball.netlify.app"
 REPO = "leviholliday/glideball"
 ZIP = f"https://github.com/{REPO}/releases/latest/download/Glideball.zip"
-OG_IMAGE = SITE + "/assets/og.png?v=2.9"
-OG_ALT = "The Glideball app icon and its Overview window, showing a live trackball diagram and graphs."
+DOWNLOAD = "/download/"   # the "Your download is starting" page, which starts ZIP
+# /assets/ is cached for a year: bump ASSET_V when the icons or og.png change (scripts/site-icons.py).
+ASSET_V = "3"
+OG_IMAGE = SITE + f"/assets/og.png?v={ASSET_V}"
+OG_ALT = ("The Glideball app icon, a glowing trackball, next to the name Glideball and the line: "
+          "A smoother scroll ring and a faster pointer for your Kensington trackball.")
 
 # ------------------------------------------------------------------ nav + footer
 # (href, label, key). The key marks the current page (aria-current).
@@ -67,7 +71,7 @@ NAV = [
 
 FOOTER_COLS = [
     ("Glideball", [
-        (ZIP, "Download for Mac"),
+        (DOWNLOAD, "Download for Mac"),
         ("/#features", "Features"),
         ("/#install", "Install"),
         ("/changelog/", "What's new"),
@@ -97,25 +101,24 @@ def nav_html(current=None, home=False):
         f'<a href="{h}"{cur if k == current else ""}>{label}</a>' for h, label, k in NAV)
     brand = "#top" if home else "/"
     return f"""<header class="nav-wrap">
-    <div class="nav glass">
+    <div class="nav">
       <a class="brand" href="{brand}" aria-label="Glideball home">
-        <img src="/assets/icon-256.webp" width="32" height="32" alt="">
+        <img src="/assets/icon-256.webp?v={ASSET_V}" width="28" height="28" alt="">
         <span>Glideball</span>
       </a>
       <nav class="nav-links" aria-label="Primary">
         {links}
       </nav>
-      <a class="btn btn-primary btn-sm" href="{ZIP}">
+      <a class="btn btn-primary btn-sm" href="{DOWNLOAD}">
         <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
         <span>Download</span>
       </a>
       <details class="nav-menu">
         <summary aria-label="Menu"><span class="nav-menu-bars" aria-hidden="true"></span></summary>
-        <nav class="nav-menu-panel glass" aria-label="Menu">
+        <nav class="nav-menu-panel" aria-label="Menu">
           {links.replace(chr(10) + "        ", chr(10) + "          ")}
         </nav>
       </details>
-      <div class="scroll-progress" aria-hidden="true"></div>
     </div>
   </header>"""
 
@@ -130,7 +133,7 @@ def footer_html():
     <div class="container footer-inner">
       <div class="footer-about">
         <div class="footer-brand">
-          <img src="/assets/icon-256.webp" width="28" height="28" alt="" loading="lazy">
+          <img src="/assets/icon-256.webp?v={ASSET_V}" width="24" height="24" alt="" loading="lazy">
           <span>Glideball</span>
         </div>
         <p class="footer-tag">A free, open-source Mac app for Kensington trackballs. Made by Levi Holliday, a student.</p>
@@ -164,7 +167,7 @@ ICONS = {
     "swap": '<path d="M4 8h14m0 0-3.5-3.5M18 8l-3.5 3.5M20 16H6m0 0 3.5-3.5M6 16l3.5 3.5"/>',
     "alert": '<path d="M12 3.8 21 19.5H3z"/><path d="M12 10v4.2M12 17h.01"/>',
     "question": '<circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.4a2.5 2.5 0 0 1 4.8 1c0 1.7-2.4 2.1-2.4 3.6M12 17h.01"/>',
-    "sparkles": '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.8 5.8l2.6 2.6M15.6 15.6l2.6 2.6M18.2 5.8l-2.6 2.6M8.4 15.6l-2.6 2.6"/>',
+    "list": '<path d="M9 6.5h11M9 12h11M9 17.5h11"/><path d="M4.5 6.5h.01M4.5 12h.01M4.5 17.5h.01"/>',
     "target": '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.6"/>',
     "file": '<path d="M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5M9.5 13.5h5M9.5 17h5"/>',
     "github": '<path class="fill" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>',
@@ -214,6 +217,14 @@ def faq_ld(body):
 
 
 # ------------------------------------------------------------------ one page
+ROBOTS = "index, follow, max-image-preview:large, max-snippet:-1"
+
+
+def indexed(meta):
+    """A page with "robots: noindex" in its header stays out of the sitemap."""
+    return "noindex" not in meta.get("robots", "")
+
+
 def render(meta, body, trail):
     path = meta["path"]
     url = SITE + path
@@ -237,8 +248,10 @@ def render(meta, body, trail):
     crumb_html = '<span aria-hidden="true">›</span>'.join(
         f'<a href="{p}">{escape(n)}</a>' if i < len(trail) - 1 else f'<span aria-current="page">{escape(n)}</span>'
         for i, (n, p) in enumerate(trail))
-    kicker = f'<p class="kicker">{meta["kicker"]}</p>' if meta.get("kicker") else ""
     extra_head = meta.get("head", "")
+    # "scripts: /app.js" in a page header: more of the site's own scripts (the CSP allows 'self' only).
+    scripts = "".join(f'\n  <script src="{attr(src)}" defer></script>' for src in meta.get("scripts", "").split())
+    body_class = f' class="{attr(meta["body_class"])}"' if meta.get("body_class") else ""
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -246,15 +259,14 @@ def render(meta, body, trail):
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{escape(title, quote=False)}</title>
   <meta name="description" content="{attr(desc)}">
-  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+  <meta name="robots" content="{meta.get('robots', ROBOTS)}">
   <link rel="canonical" href="{url}">
   <meta name="application-name" content="Glideball">
-  <meta name="color-scheme" content="dark light">
-  <meta name="theme-color" content="#120c33" media="(prefers-color-scheme: dark)">
-  <meta name="theme-color" content="#f1edff" media="(prefers-color-scheme: light)">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0b0b10">
   <link rel="icon" href="/favicon.ico" sizes="48x48">
-  <link rel="icon" type="image/png" sizes="64x64" href="/assets/favicon-64.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="/assets/favicon-64.png?v={ASSET_V}">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v={ASSET_V}">
   <meta property="og:url" content="{url}">
   <meta property="og:type" content="{meta.get('og_type', 'website')}">
   <meta property="og:site_name" content="Glideball">
@@ -269,23 +281,15 @@ def render(meta, body, trail):
   <meta name="twitter:title" content="{attr(title)}">
   <meta name="twitter:description" content="{attr(desc)}">
   <meta name="twitter:image" content="{OG_IMAGE}">{extra_head}
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/styles.css">{scripts}
   <script src="/privacy.js" defer></script>
   <script type="application/ld+json">
 {ld}
   </script>
 </head>
-<body>
+<body{body_class}>
   <!-- Generated by scripts/build_pages.py from {meta['source']}. Edit that file, not this one. -->
   {sprite()}
-
-  <div class="bg" aria-hidden="true">
-    <div class="blob b1"></div>
-    <div class="blob b2"></div>
-    <div class="blob b3"></div>
-    <div class="blob b4"></div>
-    <div class="grain"></div>
-  </div>
 
   <a class="skip" href="#main">Skip to content</a>
 
@@ -297,7 +301,6 @@ def render(meta, body, trail):
     <div class="container pg-container">
       <nav class="crumbs" aria-label="Breadcrumb">{crumb_html}</nav>
       <header class="pg-hero">
-        {kicker}
         <h1>{meta["h1"]}</h1>
         {f'<p class="lede">{meta["lede"]}</p>' if meta.get("lede") else ""}
       </header>
@@ -315,22 +318,22 @@ def render(meta, body, trail):
 
 
 # <!-- cta --> in a page body: the closing download card.
-CTA = f"""      <section class="pg-cta glass" aria-labelledby="cta-h">
+CTA = f"""      <section class="pg-cta" aria-labelledby="cta-h">
         <picture>
-          <source srcset="/assets/icon-256.webp" type="image/webp">
-          <img src="/assets/icon-256.png" width="72" height="72" alt="" loading="lazy">
+          <source srcset="/assets/icon-256.webp?v={ASSET_V}" type="image/webp">
+          <img src="/assets/icon-256.png?v={ASSET_V}" width="72" height="72" alt="" loading="lazy">
         </picture>
         <h2 id="cta-h">Get Glideball</h2>
         <p>Free and open source. macOS 26 Tahoe or later, on Apple silicon or Intel.</p>
         <div class="cta-row">
-          <a class="btn btn-primary btn-lg" href="{ZIP}">{icon('download')}<span>Download for Mac</span></a>
-          <a class="btn btn-glass btn-lg" href="https://github.com/{REPO}">{icon('github')}<span>View on GitHub</span></a>
+          <a class="btn btn-primary btn-lg" href="{DOWNLOAD}">{icon('download')}<span>Download for Mac</span></a>
+          <a class="btn btn-secondary btn-lg" href="https://github.com/{REPO}">{icon('github')}<span>View on GitHub</span></a>
         </div>
       </section>"""
 
 # <!-- still-stuck --> in a page body: where to get help.
 STUCK = """      <section class="pg-section">
-        <div class="callout glass">
+        <div class="callout">
           <svg class="icon" aria-hidden="true"><use href="#i-question"/></svg>
           <div>
             <p><strong>Still stuck?</strong> Tell me what happened on the <a href="/feedback/">feedback page</a> or email <a href="mailto:glideball@proton.me">glideball@proton.me</a>. In the app, Help › Send Feedback… can attach your settings and a scroll log, and you see it all before it goes. It's just me, so replies can take a few days.</p>
@@ -339,10 +342,22 @@ STUCK = """      <section class="pg-section">
       </section>"""
 
 
+def install_steps():
+    """The homepage's install steps (between its <!-- install-steps --> markers), so
+    /download/ shows the very same words."""
+    with open(os.path.join(WEB, "index.html"), encoding="utf-8") as f:
+        m = re.search(r"<!-- install-steps -->\n(.*?)\n\s*<!-- /install-steps -->", f.read(), re.S)
+    if not m:
+        sys.exit("index.html: no <!-- install-steps --> markers to copy the install steps from")
+    return m.group(1)
+
+
 def parse_page(file):
     with open(file, encoding="utf-8") as f:
         text = f.read()
     text = text.replace("<!-- cta -->", CTA).replace("<!-- still-stuck -->", STUCK)
+    if "<!-- install-steps -->" in text:
+        text = text.replace("<!-- install-steps -->", install_steps())
     m = re.match(r"\s*<!--(.*?)-->\n?", text, re.S)
     if not m:
         sys.exit(f"{file}: needs a <!-- key: value --> header")
@@ -469,7 +484,7 @@ def changelog_body(rels):
         badge = '<span class="pill pill-quiet">Beta</span>' if beta else (
             '<span class="pill">Current</span>' if r is latest else "")
         notes = md_block(r.get("body", "")) or "<p>No notes for this one.</p>"
-        return f"""        <article class="rel glass" id="{attr(r['tag'])}">
+        return f"""        <article class="rel" id="{attr(r['tag'])}">
           <header class="rel-head">
             <h3>{escape(name, quote=False)}{" " + badge if badge else ""}</h3>
             <time datetime="{r['date'][:10]}">{long_date(r['date'])}</time>
@@ -490,7 +505,7 @@ def changelog_body(rels):
             parts.append(f"""      <section class="pg-section" aria-labelledby="beta-{attr(ver)}">
         <h2 id="beta-{attr(ver)}">In beta: {escape(ver)}</h2>
         <p>These builds go to people who turned on Early updates in the app (Glideball › Settings › Updates › Early updates). They become the next release once they've had some use.</p>
-        <details class="rel-betas glass">
+        <details class="rel-betas">
           <summary>{len(bs)} beta build{'s' if len(bs) != 1 else ''} of {escape(ver)}, newest first {icon('chevron')}</summary>
           <div class="rel-list">
 {chr(10).join(card(b, beta=True) for b in bs)}
@@ -507,7 +522,7 @@ def changelog_body(rels):
       </section>""")
     if old_betas:
         parts.append(f"""      <section class="pg-section">
-        <details class="rel-betas glass">
+        <details class="rel-betas">
           <summary>Older beta builds ({len(old_betas)}) {icon('chevron')}</summary>
           <div class="rel-list">
 {chr(10).join(card(b, beta=True) for b in old_betas)}
@@ -604,7 +619,8 @@ def main():
     built = {}
     for meta, body in pages:
         write(meta["path"], render(meta, body, trail_for(meta, by_path)))
-        built[meta["path"]] = meta["updated"]
+        if indexed(meta):
+            built[meta["path"]] = meta["updated"]
 
     cmeta, cbody = changelog_page(releases())
     write(cmeta["path"], render(cmeta, cbody, [("Glideball", "/"), (cmeta["crumb"], cmeta["path"])]))
@@ -612,7 +628,7 @@ def main():
 
     sync_markers("index.html", home=True)
     sync_markers("feedback/index.html", current="feedback")
-    sync_markers("404.html", nav=False)
+    sync_markers("404.html")
     write_sitemap(built)
 
 

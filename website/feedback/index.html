@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Send feedback · Glideball</title>
   <meta name="description" content="Found a bug in Glideball, have an idea, or stuck on something? Send feedback here and it goes straight to Levi, the developer.">
-  <meta name="color-scheme" content="dark light">
-  <meta name="theme-color" content="#120c33" media="(prefers-color-scheme: dark)">
-  <meta name="theme-color" content="#f1edff" media="(prefers-color-scheme: light)">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0b0b10">
   <link rel="canonical" href="https://glideball.netlify.app/feedback/">
-  <link rel="icon" type="image/png" sizes="64x64" href="/assets/favicon-64.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="icon" type="image/png" sizes="64x64" href="/assets/favicon-64.png?v=3">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=3">
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/feedback/feedback.css">
   <script src="/feedback/feedback.js" defer></script>
@@ -30,21 +30,13 @@
     <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.8 21 19.5H3z"/><path d="M12 10v4.2M12 17h.01"/></symbol>
   </svg>
 
-  <div class="bg" aria-hidden="true">
-    <div class="blob b1"></div>
-    <div class="blob b2"></div>
-    <div class="blob b3"></div>
-    <div class="blob b4"></div>
-    <div class="grain"></div>
-  </div>
-
   <a class="skip" href="#main">Skip to content</a>
 
   <!-- site-nav -->
   <header class="nav-wrap">
-    <div class="nav glass">
+    <div class="nav">
       <a class="brand" href="/" aria-label="Glideball home">
-        <img src="/assets/icon-256.webp" width="32" height="32" alt="">
+        <img src="/assets/icon-256.webp?v=3" width="28" height="28" alt="">
         <span>Glideball</span>
       </a>
       <nav class="nav-links" aria-label="Primary">
@@ -55,13 +47,13 @@
         <a href="/changelog/">What's new</a>
         <a href="/feedback/" aria-current="page">Feedback</a>
       </nav>
-      <a class="btn btn-primary btn-sm" href="https://github.com/leviholliday/glideball/releases/latest/download/Glideball.zip">
+      <a class="btn btn-primary btn-sm" href="/download/">
         <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
         <span>Download</span>
       </a>
       <details class="nav-menu">
         <summary aria-label="Menu"><span class="nav-menu-bars" aria-hidden="true"></span></summary>
-        <nav class="nav-menu-panel glass" aria-label="Menu">
+        <nav class="nav-menu-panel" aria-label="Menu">
           <a href="/#features">Features</a>
           <a href="/#install">Install</a>
           <a href="/help/">Help</a>
@@ -70,7 +62,6 @@
           <a href="/feedback/" aria-current="page">Feedback</a>
         </nav>
       </details>
-      <div class="scroll-progress" aria-hidden="true"></div>
     </div>
   </header>
   <!-- /site-nav -->
@@ -78,12 +69,11 @@
   <main id="main" class="fb-main">
     <div class="container fb-container">
       <div class="section-head fb-head">
-        <p class="kicker"><svg class="icon" aria-hidden="true"><use href="#i-sparkles"/></svg>Feedback</p>
         <h1 class="fb-title">Send feedback</h1>
         <p class="body">Found a bug, have an idea, or stuck on something? Tell me here and it comes straight to me.</p>
       </div>
 
-      <form class="fb-card glass" id="fb-form" novalidate>
+      <form class="fb-card" id="fb-form" novalidate>
         <fieldset class="fb-types">
           <legend class="fb-label">What is it?</legend>
           <div class="fb-seg">
@@ -165,12 +155,12 @@
         </div>
       </form>
 
-      <div class="fb-card fb-done glass" id="fb-done" hidden tabindex="-1">
+      <div class="fb-card fb-done" id="fb-done" hidden tabindex="-1">
         <div class="fb-done-mark"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></div>
         <h2 class="fb-done-title">Thank you!</h2>
         <p class="body" id="fb-done-text">Your feedback is on its way to me.</p>
         <div class="cta-row">
-          <button class="btn btn-glass btn-lg" id="fb-again" type="button">Send something else</button>
+          <button class="btn btn-secondary btn-lg" id="fb-again" type="button">Send something else</button>
           <a class="btn btn-primary btn-lg" href="/">Back to Glideball</a>
         </div>
       </div>
@@ -182,7 +172,7 @@
     <div class="container footer-inner">
       <div class="footer-about">
         <div class="footer-brand">
-          <img src="/assets/icon-256.webp" width="28" height="28" alt="" loading="lazy">
+          <img src="/assets/icon-256.webp?v=3" width="24" height="24" alt="" loading="lazy">
           <span>Glideball</span>
         </div>
         <p class="footer-tag">A free, open-source Mac app for Kensington trackballs. Made by Levi Holliday, a student.</p>
@@ -190,7 +180,7 @@
       <div class="footer-cols">
         <div class="footer-col">
           <h2 class="footer-h">Glideball</h2>
-          <ul><li><a href="https://github.com/leviholliday/glideball/releases/latest/download/Glideball.zip">Download for Mac</a></li><li><a href="/#features">Features</a></li><li><a href="/#install">Install</a></li><li><a href="/changelog/">What's new</a></li><li><a href="/trackballs/">Supported trackballs</a></li><li><a href="/kensingtonworks-alternative/">KensingtonWorks alternative</a></li></ul>
+          <ul><li><a href="/download/">Download for Mac</a></li><li><a href="/#features">Features</a></li><li><a href="/#install">Install</a></li><li><a href="/changelog/">What's new</a></li><li><a href="/trackballs/">Supported trackballs</a></li><li><a href="/kensingtonworks-alternative/">KensingtonWorks alternative</a></li></ul>
         </div>
         <div class="footer-col">
           <h2 class="footer-h">Help</h2>

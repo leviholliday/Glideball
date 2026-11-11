@@ -1,4 +1,7 @@
-/* Glideball — site interactions. Vanilla JS, no dependencies, no tracking. */
+/* Glideball: site interactions. Vanilla JS, no dependencies, no tracking.
+   Nothing here runs in a loop by itself: every animation starts from something
+   you did (pointer, scroll, a press) and stops once things are still, and
+   everything sleeps while it's off screen. */
 (() => {
   'use strict';
 
@@ -6,10 +9,8 @@
   root.classList.add('js');
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const lightScheme = window.matchMedia('(prefers-color-scheme: light)');
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
   const hasIO = 'IntersectionObserver' in window;
-  const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
   const fmtInt = (n) => Math.round(n).toLocaleString('en-US');
 
   /** Re-triggers a one-shot CSS animation class. */
@@ -36,59 +37,104 @@
     return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
   }
 
-  /* ------------------------------------------------------------ Reveal */
-  function initReveal() {
-    const els = Array.from(document.querySelectorAll('.reveal'));
-    // Stagger siblings that reveal together (grids of cards).
-    els.forEach((el) => {
-      const sibs = Array.from(el.parentElement.children).filter((c) => c.classList.contains('reveal'));
-      const i = sibs.indexOf(el);
-      if (sibs.length > 2 && i > 0) el.style.setProperty('--d', `${Math.min(i, 5) * 70}ms`);
-    });
-    if (!hasIO || reduceMotion.matches) {
-      els.forEach((el) => el.classList.add('in'));
-      return;
-    }
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('in');
-          io.unobserve(entry.target);
-        }
-      });
-    }, { rootMargin: '0px 0px -6% 0px', threshold: 0.06 });
-    els.forEach((el) => io.observe(el));
-  }
+  /* ------------------------------------------------------------ The trackball (hero)
+     The pointer moves the ball's inner light, scrolling the page turns the ring
+     (its pink glow grows with scroll speed), and a corner pad lights amber while
+     you hover or press it. With Reduce Motion only the pads answer. */
+  function initTrackball() {
+    const stage = document.querySelector('.tb-stage');
+    if (!stage) return;
 
-  /* ------------------------------------------------------------ Hero tilt */
-  function initTilt() {
-    const el = document.querySelector('[data-tilt]');
-    if (!el) return;
-    let queued = false;
-    const update = () => {
-      queued = false;
-      if (reduceMotion.matches) { el.style.setProperty('--tilt', '0'); return; }
-      const r = el.getBoundingClientRect();
-      const vh = window.innerHeight || 1;
-      // 1 while the shot's top sits low in the viewport, easing to 0 as it scrolls up.
-      const t = clamp((r.top - vh * 0.18) / (vh * 0.55), 0, 1);
-      el.style.setProperty('--tilt', t.toFixed(3));
+    stage.querySelectorAll('[data-pad]').forEach((pad) => {
+      let timer = 0;
+      const on = () => { clearTimeout(timer); pad.classList.add('lit'); };
+      const off = () => pad.classList.remove('lit');
+      pad.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') on(); });
+      pad.addEventListener('pointerleave', off);
+      pad.addEventListener('pointerdown', (e) => {
+        on();
+        if (e.pointerType !== 'mouse') timer = setTimeout(off, 280);
+      });
+    });
+
+    let visible = !hasIO;
+    watchVisibility(stage, (v) => { visible = v; }, '0px');
+
+    // ---- light: follows the pointer (and a tap on touch screens)
+    let lx = 0;
+    let ly = 0;
+    let lightQueued = false;
+    let rest = 0;
+    const applyLight = () => {
+      lightQueued = false;
+      stage.style.setProperty('--lx', lx.toFixed(3));
+      stage.style.setProperty('--ly', ly.toFixed(3));
     };
-    const queue = () => { if (!queued) { queued = true; requestAnimationFrame(update); } };
-    window.addEventListener('scroll', queue, { passive: true });
-    window.addEventListener('resize', queue);
-    update();
+    const aimAt = (x, y, reach) => {
+      const r = stage.getBoundingClientRect();
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+      lx = clamp((x - cx) / reach, -1, 1);
+      ly = clamp((y - cy) / reach, -1, 1);
+      if (!lightQueued) { lightQueued = true; requestAnimationFrame(applyLight); }
+    };
+    window.addEventListener('pointermove', (e) => {
+      if (!visible || reduceMotion.matches || e.pointerType !== 'mouse') return;
+      stage.classList.add('live');
+      aimAt(e.clientX, e.clientY, Math.max(window.innerWidth, window.innerHeight) * 0.45);
+    }, { passive: true });
+    stage.addEventListener('pointerdown', (e) => {
+      if (reduceMotion.matches || e.pointerType === 'mouse') return;
+      stage.classList.remove('live');
+      aimAt(e.clientX, e.clientY, stage.clientWidth * 0.4);
+      clearTimeout(rest);
+      rest = setTimeout(() => aimAt(0, 0, Infinity), 1400);
+    });
+    document.documentElement.addEventListener('pointerleave', () => {
+      if (reduceMotion.matches) return;
+      stage.classList.remove('live');
+      lx = 0; ly = 0;
+      if (!lightQueued) { lightQueued = true; requestAnimationFrame(applyLight); }
+    });
+
+    // ---- ring: turns with the page; glow follows scroll speed, then fades and the loop stops
+    let angle = 0;
+    let lastY = window.scrollY;
+    let lastT = performance.now();
+    let target = 0;
+    let glow = 0;
+    let running = false;
+    const frame = () => {
+      glow += (target - glow) * (target > glow ? 0.45 : 0.1);
+      target *= 0.82;
+      stage.style.setProperty('--ring', `${angle.toFixed(2)}deg`);
+      stage.style.setProperty('--glow', glow < 0.004 ? '0' : glow.toFixed(3));
+      if (glow < 0.004 && target < 0.004) { running = false; glow = 0; target = 0; return; }
+      requestAnimationFrame(frame);
+    };
+    window.addEventListener('scroll', () => {
+      const y = window.scrollY;
+      const t = performance.now();
+      const dy = y - lastY;
+      const dt = Math.max(t - lastT, 8);
+      lastY = y;
+      lastT = t;
+      if (!visible || reduceMotion.matches) return;
+      angle += dy * 0.14;
+      target = Math.max(target, clamp((Math.abs(dy) / dt) * 1000 / 2400, 0, 1));
+      if (!running) { running = true; requestAnimationFrame(frame); }
+    }, { passive: true });
   }
 
   /* ------------------------------------------------------------ Sparkline (canvas) */
   class Spark {
-    constructor(canvas, { windowMs = 3000, floor = 1000, colors = ['--cyan', '--violet'] } = {}) {
+    constructor(canvas, { windowMs = 3000, floor = 1000, color = '--ring' } = {}) {
       this.canvas = canvas;
       this.ctx = canvas.getContext('2d');
       this.windowMs = windowMs;
       this.floor = floor;
       this.scale = floor;
-      this.colorVars = colors;
+      this.colorVar = color;
       this.samples = []; // flat [t0, v0, t1, v1, ...]
       this.readColors();
       this.resize();
@@ -96,9 +142,8 @@
 
     readColors() {
       const cs = getComputedStyle(this.canvas);
-      this.c1 = cs.getPropertyValue(this.colorVars[0]).trim() || '#67e8f9';
-      this.c2 = cs.getPropertyValue(this.colorVars[1]).trim() || '#a78bfa';
-      this.grid = cs.getPropertyValue('--line').trim() || 'rgba(255,255,255,.1)';
+      this.c = cs.getPropertyValue(this.colorVar).trim() || '#ff5ca8';
+      this.grid = cs.getPropertyValue('--line').trim() || 'rgba(255,255,255,.08)';
     }
 
     resize() {
@@ -168,124 +213,19 @@
       ctx.lineTo(lead ? 0 : X(s[0]), base);
       ctx.closePath();
       const fill = ctx.createLinearGradient(0, top, 0, base);
-      fill.addColorStop(0, hexToRgba(this.c2, 0.34));
-      fill.addColorStop(1, hexToRgba(this.c1, 0));
+      fill.addColorStop(0, hexToRgba(this.c, 0.26));
+      fill.addColorStop(1, hexToRgba(this.c, 0));
       ctx.fillStyle = fill;
       ctx.fill();
 
       // Line
       trace();
-      const stroke = ctx.createLinearGradient(0, 0, w, 0);
-      stroke.addColorStop(0, this.c1);
-      stroke.addColorStop(1, this.c2);
-      ctx.strokeStyle = stroke;
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = this.c;
+      ctx.lineWidth = 1.75;
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
       ctx.stroke();
     }
-  }
-
-  const sparks = [];
-  lightScheme.addEventListener?.('change', () => sparks.forEach((sp) => sp.readColors()));
-
-  /* ------------------------------------------------------------ Response curve */
-  function initCurve() {
-    const card = document.querySelector('[data-curve]');
-    if (!card) return;
-    const svg = card.querySelector('svg');
-    const line = card.querySelector('[data-curve-line]');
-    const area = card.querySelector('[data-curve-area]');
-    const mac = card.querySelector('[data-curve-mac]');
-    const macTag = card.querySelector('[data-curve-mactag]');
-    const dot = card.querySelector('[data-curve-dot]');
-    const halo = card.querySelector('[data-curve-halo]');
-    const input = card.querySelector('#speed');
-    const out = card.querySelector('[data-speed-out]');
-
-    // Plot box in viewBox units
-    const X0 = 10, X1 = 310, Y0 = 168, Y1 = 8;
-    const P = 2.2;
-    const MAC_MAX = 3;
-    const gain = (s) => 0.1 + s * 0.09;
-    const fy = (x, s) => gain(s) * Math.pow(x, P);
-    const toX = (x) => X0 + x * (X1 - X0);
-    const toY = (y) => Y0 - y * (Y0 - Y1);
-    const xLimit = (s) => Math.min(1, Math.pow(1 / gain(s), 1 / P));
-
-    const pathFor = (s, steps = 72) => {
-      const xm = xLimit(s);
-      let d = '';
-      for (let i = 0; i <= steps; i++) {
-        const x = (i / steps) * xm;
-        d += `${i ? 'L' : 'M'}${toX(x).toFixed(2)} ${toY(fy(x, s)).toFixed(2)}`;
-      }
-      return { d, xm };
-    };
-
-    const macPath = pathFor(MAC_MAX);
-    mac.setAttribute('d', macPath.d);
-    macTag.setAttribute('y', (toY(fy(1, MAC_MAX)) - 8).toFixed(1));
-
-    let speed = Number(input.value);
-    let xm = 1;
-    let hoverX = null;
-
-    const placeDot = (x) => {
-      const cx = toX(x).toFixed(2);
-      const cy = toY(fy(x, speed)).toFixed(2);
-      dot.setAttribute('cx', cx); dot.setAttribute('cy', cy);
-      halo.setAttribute('cx', cx); halo.setAttribute('cy', cy);
-    };
-
-    const drawCurve = () => {
-      const p = pathFor(speed);
-      xm = p.xm;
-      line.setAttribute('d', p.d);
-      area.setAttribute('d', p.d); // soft glow under the line
-      out.textContent = String(speed);
-      const pct = ((speed - Number(input.min)) / (Number(input.max) - Number(input.min))) * 100;
-      input.style.setProperty('--fill', `${pct}%`);
-      if (reduceMotion.matches || !running) placeDot(hoverX ?? xm * 0.62);
-    };
-
-    input.addEventListener('input', () => { speed = Number(input.value); drawCurve(); });
-
-    const toPlotX = (clientX) => {
-      const r = svg.getBoundingClientRect();
-      const vbX = ((clientX - r.left) / r.width) * 320;
-      return clamp((vbX - X0) / (X1 - X0), 0, 1);
-    };
-    svg.addEventListener('pointermove', (e) => {
-      hoverX = Math.min(toPlotX(e.clientX), xm);
-      if (!running) placeDot(hoverX);
-    });
-    svg.addEventListener('pointerleave', () => { hoverX = null; if (!running) placeDot(xm * 0.62); });
-
-    // Gentle "roll the ball" animation of the dot along the curve.
-    let running = false;
-    let visible = false;
-    let phase = 0.15;
-    let last = 0;
-    const frame = (t) => {
-      if (!visible || reduceMotion.matches) { running = false; last = 0; return; }
-      const dt = last ? Math.min(t - last, 50) : 16;
-      last = t;
-      if (hoverX == null) {
-        phase += dt / 3400;
-        const u = 0.5 - 0.5 * Math.cos(phase * Math.PI * 2);
-        placeDot(0.03 + u * (xm * 0.97 - 0.03));
-      } else {
-        placeDot(Math.min(hoverX, xm));
-      }
-      requestAnimationFrame(frame);
-    };
-    watchVisibility(card, (v) => {
-      visible = v;
-      if (v && !running && !reduceMotion.matches) { running = true; requestAnimationFrame(frame); }
-    }, '0px');
-
-    drawCurve();
   }
 
   /* ------------------------------------------------------------ Flywheel demo */
@@ -315,7 +255,6 @@
       li.className = 'fw-row';
       const dotEl = document.createElement('span');
       dotEl.className = 'fw-dot';
-      dotEl.style.color = `hsl(${(14 + i * 8) % 360} 85% 66%)`;
       const label = document.createElement('span');
       label.className = 'fw-label';
       label.textContent = `Row ${i + 1}`;
@@ -354,9 +293,9 @@
     };
 
     const spark = new Spark(canvas, { windowMs: 3000, floor: 1200 });
-    sparks.push(spark);
 
     // ---- flick meter: your best moments in this visit. Nothing is stored or sent.
+    // A new best is a real event, so it gets the one small bounce (the badge); nothing else celebrates.
     const meter = (() => {
       if (!fm) return { update() {} };
       const bar = fm.querySelector('.fm-bar');
@@ -388,11 +327,6 @@
         badge.classList.add('show');
         clearTimeout(badgeTimer);
         badgeTimer = setTimeout(() => badge.classList.remove('show'), 1800);
-        if (!reduceMotion.matches) {
-          pulse(fm, 'record');
-          const r = badge.getBoundingClientRect();
-          Confetti.burst(r.left + r.width / 2, r.top + r.height / 2, { count: 34, power: 0.5, spread: 1.1 });
-        }
         live.textContent = `New best: ${fmtInt(best)} pixels per second.`;
       };
 
@@ -624,278 +558,6 @@
     spark.draw(performance.now());
   }
 
-  /* ------------------------------------------------------------ Mini dashboard */
-  function initDash() {
-    const card = document.querySelector('[data-dash]');
-    if (!card) return;
-    const pads = card.querySelectorAll('[data-pad]');
-    const shine = card.querySelector('[data-dash-shine]');
-    const canvas = card.querySelector('[data-dash-canvas]');
-    const speedOut = card.querySelector('[data-dash-speed]');
-    const clicksOut = card.querySelector('[data-dash-clicks]');
-    const stage = card.querySelector('[data-dash-stage]');
-    const ring = card.querySelector('.tb-ring');
-    let ringAngle = 0;
-
-    const spark = new Spark(canvas, { windowMs: 4000, floor: 900, colors: ['--cyan', '--violet'] });
-    sparks.push(spark);
-
-    let clicks = 0;
-    const press = (pad) => {
-      pad.classList.add('lit');
-      if (!reduceMotion.matches) pulse(pad, 'ripple');
-      clicks += 1;
-      clicksOut.textContent = String(clicks);
-    };
-    const release = (pad) => pad.classList.remove('lit');
-
-    pads.forEach((pad) => {
-      pad.addEventListener('pointerdown', (e) => { if (e.button === 0) press(pad); });
-      pad.addEventListener('pointerup', () => release(pad));
-      pad.addEventListener('pointerleave', () => release(pad));
-      pad.addEventListener('pointercancel', () => release(pad));
-      pad.addEventListener('keydown', (e) => {
-        if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); press(pad); }
-      });
-      pad.addEventListener('keyup', (e) => { if (e.key === ' ' || e.key === 'Enter') release(pad); });
-      pad.addEventListener('blur', () => release(pad));
-    });
-
-    let acc = 0;
-    let lastX = null;
-    let lastY = 0;
-    let rollX = 0;
-    let rollY = 0;
-    card.addEventListener('pointermove', (e) => {
-      if (lastX !== null) {
-        const dx = e.clientX - lastX;
-        const dy = e.clientY - lastY;
-        acc += Math.hypot(dx, dy);
-        rollX = clamp(rollX + dx * 0.18, -16, 16);
-        rollY = clamp(rollY + dy * 0.18, -14, 14);
-      }
-      lastX = e.clientX;
-      lastY = e.clientY;
-      wake();
-    });
-    card.addEventListener('pointerleave', () => { lastX = null; });
-
-    let running = false;
-    let visible = false;
-    let lastT = 0;
-    let ema = 0;
-    let quietFor = 0;
-    const frame = (t) => {
-      if (!visible || document.hidden) { running = false; lastT = 0; return; }
-      const dt = lastT ? Math.min(t - lastT, 64) : 16.7;
-      lastT = t;
-      const inst = (acc / dt) * 1000;
-      acc = 0;
-      ema += (inst - ema) * 0.3;
-      if (ema < 1) ema = 0;
-      spark.push(t, ema);
-      spark.draw(t);
-      speedOut.textContent = String(Math.round(ema));
-
-      if (!reduceMotion.matches) {
-        rollX *= 0.9;
-        rollY *= 0.9;
-        shine.style.transform = `translate3d(${rollX.toFixed(2)}px, ${rollY.toFixed(2)}px, 0)`;
-        // The scroll ring turns with your pointer, like the app's live view.
-        if (ema > 0) {
-          ringAngle = (ringAngle + ema * dt * 0.00022) % 360;
-          ring.style.transform = `rotate(${ringAngle.toFixed(2)}deg)`;
-        }
-      }
-
-      quietFor = ema === 0 ? quietFor + dt : 0;
-      if (quietFor > 4300) { running = false; lastT = 0; return; }
-      requestAnimationFrame(frame);
-    };
-    const wake = () => {
-      quietFor = 0;
-      if (!running && visible) { running = true; requestAnimationFrame(frame); }
-    };
-
-    if ('ResizeObserver' in window) {
-      new ResizeObserver(() => { spark.resize(); spark.draw(performance.now()); }).observe(canvas.parentElement);
-    }
-    watchVisibility(card, (isVisible) => {
-      visible = isVisible;
-      stage.classList.toggle('idle', isVisible && !reduceMotion.matches);
-      if (isVisible) wake();
-    });
-    spark.draw(performance.now());
-  }
-
-  /* ------------------------------------------------------------ Confetti */
-  /** A short canvas burst. The canvas exists only while pieces are flying. */
-  const Confetti = (() => {
-    const COLORS = ['#a78bfa', '#67e8f9', '#f472b6', '#fde68a', '#818cf8', '#5eead4'];
-    let canvas = null;
-    let ctx = null;
-    let pieces = [];
-    let raf = 0;
-    let last = 0;
-
-    const size = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      canvas.width = Math.round(window.innerWidth * dpr);
-      canvas.height = Math.round(window.innerHeight * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    };
-
-    const step = (t) => {
-      const dt = clamp((t - last) / 1000, 0, 0.05);
-      last = t;
-      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-      const k = 2.3;       // air drag
-      const g = 1150;      // gravity, px/s²
-      pieces = pieces.filter((p) => {
-        p.age += dt;
-        if (p.age < 0) return true;
-        if (p.age > p.life) return false;
-        p.vx -= p.vx * k * dt;
-        p.vy += (g - p.vy * k) * dt;
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.rot += p.vr * dt;
-        ctx.save();
-        ctx.globalAlpha = Math.min(1, (p.life - p.age) / 0.5);
-        ctx.translate(p.x, p.y);
-        ctx.rotate(p.rot);
-        ctx.scale(Math.max(0.15, Math.abs(Math.cos(p.age * p.flutter))), 1);
-        ctx.fillStyle = p.color;
-        if (p.round) { ctx.beginPath(); ctx.arc(0, 0, p.h * 0.6, 0, Math.PI * 2); ctx.fill(); }
-        else ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
-        ctx.restore();
-        return true;
-      });
-      if (pieces.length) { raf = requestAnimationFrame(step); return; }
-      raf = 0;
-      window.removeEventListener('resize', size);
-      canvas.remove();
-      canvas = null;
-    };
-
-    return {
-      burst(x, y, { count = 110, power = 1, spread = 0.7 } = {}) {
-        if (reduceMotion.matches) return;
-        if (!canvas) {
-          canvas = document.createElement('canvas');
-          canvas.className = 'confetti';
-          canvas.setAttribute('aria-hidden', 'true');
-          document.body.append(canvas);
-          ctx = canvas.getContext('2d');
-          size();
-          window.addEventListener('resize', size);
-        }
-        for (let i = 0; i < count; i++) {
-          const angle = -Math.PI / 2 + (Math.random() * 2 - 1) * spread;
-          const speed = (480 + Math.random() * 700) * power;
-          pieces.push({
-            x,
-            y,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed,
-            age: -Math.random() * 0.08,
-            life: 1.5 + Math.random() * 0.9,
-            rot: Math.random() * Math.PI,
-            vr: (Math.random() * 2 - 1) * 10,
-            flutter: 6 + Math.random() * 8,
-            w: 6 + Math.random() * 5,
-            h: 3.5 + Math.random() * 2.5,
-            round: Math.random() < 0.22,
-            color: COLORS[(Math.random() * COLORS.length) | 0],
-          });
-        }
-        if (!raf) { last = performance.now(); raf = requestAnimationFrame(step); }
-      },
-    };
-  })();
-
-  /* ------------------------------------------------------------ Download: confetti + what's next */
-  function initDownload() {
-    const links = document.querySelectorAll('a[href$="/releases/latest/download/Glideball.zip"]');
-    if (!links.length) return;
-    let toast = null;
-    let hideTimer = 0; // kept for hide(); the toast now stays until dismissed
-    let lastBurst = 0;
-
-    const hide = () => {
-      if (!toast) return;
-      const el = toast;
-      toast = null;
-      clearTimeout(hideTimer);
-      if (reduceMotion.matches) { el.remove(); return; }
-      el.classList.add('leaving');
-      el.addEventListener('animationend', () => el.remove(), { once: true });
-      setTimeout(() => el.remove(), 600);
-    };
-
-    const show = () => {
-      if (toast) return;
-      const svgNS = 'http://www.w3.org/2000/svg';
-      toast = document.createElement('div');
-      toast.className = 'dl-toast glass';
-      toast.setAttribute('role', 'status');
-
-      const check = document.createElement('span');
-      check.className = 'dl-check';
-      const svg = document.createElementNS(svgNS, 'svg');
-      svg.setAttribute('class', 'icon');
-      svg.setAttribute('aria-hidden', 'true');
-      const use = document.createElementNS(svgNS, 'use');
-      use.setAttribute('href', '#i-check');
-      svg.append(use);
-      check.append(svg);
-
-      const text = document.createElement('div');
-      text.className = 'dl-text';
-      const title = document.createElement('strong');
-      const next = document.createElement('span');
-      if (window.matchMedia('(pointer: coarse)').matches) {
-        title.textContent = 'Glideball is a Mac app';
-        next.append('Open this page on your Mac to install it.');
-      } else {
-        title.textContent = 'Glideball is on its way';
-        next.append('Unzip it and drag Glideball to Applications. The first time you open it, macOS will say \u201CGlideball\u201D Not Opened. Click ');
-        const done = document.createElement('b');
-        done.textContent = 'Done';
-        const anyway = document.createElement('b');
-        anyway.textContent = 'Open Anyway';
-        next.append(done, ', then ', anyway, ' in System Settings \u203A Privacy & Security. ');
-        const steps = document.createElement('a');
-        steps.href = '#install';
-        steps.textContent = 'Install steps';
-        steps.addEventListener('click', hide);
-        next.append(steps);
-      }
-      text.append(title, next);
-
-      const close = document.createElement('button');
-      close.type = 'button';
-      close.className = 'dl-close';
-      close.setAttribute('aria-label', 'Dismiss');
-      close.textContent = '×';
-      close.addEventListener('click', hide);
-
-      toast.append(check, text, close);
-      document.body.append(toast);
-    };
-
-    links.forEach((a) => a.addEventListener('click', () => {
-      // Never delay or block the download: celebrate alongside it.
-      const now = performance.now();
-      if (now - lastBurst > 900) {
-        lastBurst = now;
-        const r = a.getBoundingClientRect();
-        Confetti.burst(r.left + r.width / 2, r.top + r.height / 2);
-      }
-      show();
-    }));
-  }
-
   /* ------------------------------------------------------------ Copy buttons */
   function initCopy() {
     document.querySelectorAll('.copy-btn[data-copy]').forEach((btn) => {
@@ -925,81 +587,37 @@
     });
   }
 
-  /* ------------------------------------------------------------ Magnetic buttons */
-  function initMagnetic() {
-    if (!finePointer.matches || reduceMotion.matches) return;
-    document.querySelectorAll('.btn-primary').forEach((btn) => {
-      let raf = 0;
-      let px = 0;
-      let py = 0;
-      let mx = 0;
-      let my = 0;
-      const apply = () => {
-        raf = 0;
-        const r = btn.getBoundingClientRect();
-        // Measure from where the button would be without its current pull.
-        const cx = r.left - mx + r.width / 2;
-        const cy = r.top - my + r.height / 2;
-        mx = clamp((px - cx) * 0.16, -8, 8);
-        my = clamp((py - cy) * 0.28, -5, 5);
-        btn.style.setProperty('--mx', `${mx.toFixed(2)}px`);
-        btn.style.setProperty('--my', `${my.toFixed(2)}px`);
-        btn.style.setProperty('--gx', `${(((px - r.left) / r.width) * 100).toFixed(1)}%`);
-        btn.style.setProperty('--gy', `${(((py - r.top) / r.height) * 100).toFixed(1)}%`);
-      };
-      btn.addEventListener('pointerenter', () => btn.classList.add('magnet'));
-      btn.addEventListener('pointermove', (e) => {
-        px = e.clientX;
-        py = e.clientY;
-        if (!raf) raf = requestAnimationFrame(apply);
-      });
-      btn.addEventListener('pointerleave', () => {
-        cancelAnimationFrame(raf);
-        raf = 0;
-        mx = 0;
-        my = 0;
-        btn.style.setProperty('--mx', '0px');
-        btn.style.setProperty('--my', '0px');
-      });
-    });
-  }
-
-  /* ------------------------------------------------------------ Cursor glow on glass cards */
-  function initGlow() {
-    if (!finePointer.matches || reduceMotion.matches) return;
-    const cards = document.querySelectorAll('.hl.glass, .mode.glass, .card.glass, .step.glass, .sync.glass, .final-card.glass, .faq details.glass, .curve-card, .dash-card');
-    cards.forEach((el) => {
-      el.classList.add('glow');
-      let raf = 0;
-      let x = 0;
-      let y = 0;
-      const apply = () => {
-        raf = 0;
-        const r = el.getBoundingClientRect();
-        el.style.setProperty('--px', `${(x - r.left).toFixed(0)}px`);
-        el.style.setProperty('--py', `${(y - r.top).toFixed(0)}px`);
-      };
-      el.addEventListener('pointerenter', () => el.classList.add('glowing'));
-      el.addEventListener('pointermove', (e) => {
-        x = e.clientX;
-        y = e.clientY;
-        if (!raf) raf = requestAnimationFrame(apply);
-      }, { passive: true });
-      el.addEventListener('pointerleave', () => el.classList.remove('glowing'));
-    });
+  /* ------------------------------------------------------------ /download/
+     On a Mac, start the download right away (the fallback link stays on the
+     page). On a phone, Windows or Linux, explain instead of downloading. */
+  function initDownloadPage() {
+    const page = document.querySelector('[data-dl]');
+    if (!page) return;
+    const zip = page.getAttribute('data-dl');
+    const ua = navigator.userAgent || '';
+    const platform = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '';
+    const mobile = /iPhone|iPad|iPod|Android|Mobile/i.test(ua) || (navigator.userAgentData && navigator.userAgentData.mobile);
+    // iPadOS Safari says "Macintosh" too; a Mac has no touch screen.
+    const iPad = /Macintosh/.test(ua) && navigator.maxTouchPoints > 1;
+    const mac = (/Mac/i.test(platform) || /Macintosh|Mac OS X/.test(ua)) && !mobile && !iPad;
+    const h1 = document.querySelector('.pg-hero h1');
+    if (!mac) {
+      document.body.classList.add('not-mac');
+      if (h1) h1.textContent = 'Glideball is a Mac app';
+      return;
+    }
+    document.body.classList.add('is-mac');
+    if (h1) h1.textContent = 'Your download is starting';
+    // A moment first, so the page is on screen before the browser's download UI takes over.
+    setTimeout(() => { window.location.href = zip; }, 450);
   }
 
   /* ------------------------------------------------------------ Boot */
   const boot = () => {
-    initReveal();
-    initTilt();
-    initCurve();
+    initTrackball();
     initDemo();
-    initDash();
-    initDownload();
     initCopy();
-    initMagnetic();
-    initGlow();
+    initDownloadPage();
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();

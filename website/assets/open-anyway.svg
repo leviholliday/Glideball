@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" width="640" height="400" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif">
+  <!-- System Settings › Privacy & Security, drawn for the install steps. -->
+  <defs>
+    <clipPath id="win"><rect x="1" y="1" width="638" height="398" rx="14"/></clipPath>
+  </defs>
+  <g clip-path="url(#win)">
+    <rect width="640" height="400" fill="#1d1d23"/>
+    <!-- Sidebar -->
+    <rect width="176" height="400" fill="#17171c"/>
+    <line x1="176.5" y1="0" x2="176.5" y2="400" stroke="#ffffff" stroke-opacity=".08"/>
+    <circle cx="22" cy="22" r="6" fill="#3a3a42"/>
+    <circle cx="42" cy="22" r="6" fill="#3a3a42"/>
+    <circle cx="62" cy="22" r="6" fill="#3a3a42"/>
+    <rect x="14" y="46" width="148" height="26" rx="7" fill="#ffffff" fill-opacity=".06"/>
+    <text x="26" y="63.5" font-size="12" fill="#8e8e98">Search</text>
+    <g font-size="12.5" fill="#c9c9d2">
+      <text x="44" y="104">Wi‑Fi</text>
+      <text x="44" y="134">Bluetooth</text>
+      <text x="44" y="164">Network</text>
+      <text x="44" y="194">Notifications</text>
+      <text x="44" y="224">Desktop &amp; Dock</text>
+      <text x="44" y="284">Touch ID &amp; Password</text>
+      <text x="44" y="314">Users &amp; Groups</text>
+    </g>
+    <g fill="#ffffff" fill-opacity=".14">
+      <rect x="20" y="93" width="16" height="16" rx="4.5"/>
+      <rect x="20" y="123" width="16" height="16" rx="4.5"/>
+      <rect x="20" y="153" width="16" height="16" rx="4.5"/>
+      <rect x="20" y="183" width="16" height="16" rx="4.5"/>
+      <rect x="20" y="213" width="16" height="16" rx="4.5"/>
+      <rect x="20" y="273" width="16" height="16" rx="4.5"/>
+      <rect x="20" y="303" width="16" height="16" rx="4.5"/>
+    </g>
+    <!-- The selected row -->
+    <rect x="10" y="239" width="156" height="28" rx="7" fill="#0a6cff"/>
+    <rect x="20" y="245" width="16" height="16" rx="4.5" fill="#ffffff" fill-opacity=".9"/>
+    <path d="M28 248.5l4 1.6v2.6c0 2.3-1.6 4.2-4 4.9-2.4-.7-4-2.6-4-4.9v-2.6z" fill="#0a6cff"/>
+    <text x="44" y="258" font-size="12.5" font-weight="600" fill="#ffffff">Privacy &amp; Security</text>
+
+    <!-- Content -->
+    <text x="204" y="34" font-size="15" font-weight="700" fill="#f2f2f6">Privacy &amp; Security</text>
+    <line x1="176" y1="54.5" x2="640" y2="54.5" stroke="#ffffff" stroke-opacity=".06"/>
+    <rect x="204" y="74" width="408" height="58" rx="10" fill="#ffffff" fill-opacity=".04" stroke="#ffffff" stroke-opacity=".07"/>
+    <rect x="204" y="74" width="408" height="58" rx="10" fill="none"/>
+    <rect x="220" y="92" width="200" height="8" rx="4" fill="#ffffff" fill-opacity=".12"/>
+    <rect x="220" y="108" width="140" height="8" rx="4" fill="#ffffff" fill-opacity=".07"/>
+
+    <text x="206" y="168" font-size="13" font-weight="700" fill="#f2f2f6">Security</text>
+    <rect x="204" y="180" width="408" height="182" rx="10" fill="#ffffff" fill-opacity=".04" stroke="#ffffff" stroke-opacity=".07"/>
+    <text x="220" y="210" font-size="12.5" fill="#d8d8e0">Allow applications from</text>
+    <rect x="452" y="194" width="146" height="24" rx="6" fill="#ffffff" fill-opacity=".08"/>
+    <text x="462" y="210.5" font-size="11.5" fill="#c9c9d2">App Store &amp; Known…</text>
+    <path d="M585 204.5l3-3 3 3M585 207.5l3 3 3-3" fill="none" stroke="#c9c9d2" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="220" y1="232.5" x2="596" y2="232.5" stroke="#ffffff" stroke-opacity=".07"/>
+    <text x="220" y="262" font-size="12.5" fill="#f2f2f6">“Glideball” was blocked to protect</text>
+    <text x="220" y="280" font-size="12.5" fill="#f2f2f6">your Mac.</text>
+    <!-- Open Anyway, ringed in the site's blue -->
+    <rect x="480.5" y="250.5" width="117" height="31" rx="10" fill="none" stroke="#4da8ff" stroke-width="2.5"/>
+    <rect x="485" y="255" width="108" height="22" rx="6" fill="#ffffff" fill-opacity=".16"/>
+    <text x="539" y="270.5" font-size="12" font-weight="600" fill="#ffffff" text-anchor="middle">Open Anyway</text>
+    <line x1="220" y1="304.5" x2="596" y2="304.5" stroke="#ffffff" stroke-opacity=".07"/>
+    <rect x="220" y="324" width="230" height="8" rx="4" fill="#ffffff" fill-opacity=".1"/>
+    <rect x="220" y="340" width="170" height="8" rx="4" fill="#ffffff" fill-opacity=".06"/>
+    <!-- Pointer -->
+    <path d="M556 284l0 22 5.2-5 3.6 8.2 3.4-1.5-3.6-8 7.2-.4z" fill="#ffffff" stroke="#111" stroke-width="1.2" stroke-linejoin="round"/>
+  </g>
+  <rect x="0.5" y="0.5" width="639" height="399" rx="14" fill="none" stroke="#ffffff" stroke-opacity=".12"/>
+</svg>

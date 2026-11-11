@@ -10,13 +10,11 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
-# Short, shareable download link: https://<site>/download
-[[redirects]]
-  from = "/download"
-  to = "https://github.com/leviholliday/glideball/releases/latest/download/Glideball.zip"
-  status = 301
-  force = true
-
+# Short, shareable download link: https://<site>/download is now a page
+# (website/download/, built from _pages/download.html) that starts the Mac zip and
+# stays with you through Open Anyway. It used to redirect straight to the zip; a
+# rule for "/download" would also catch "/download/", so there isn't one any more.
+# The previews still redirect straight to their files:
 [[redirects]]
   from = "/download/linux"
   to = "https://github.com/leviholliday/glideball/releases/latest/download/Glideball-Linux-Preview.tar.gz"

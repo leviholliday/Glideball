@@ -1,5 +1,29 @@
 [
  {
+  "body": "• What's New, Help and Troubleshooting now open the Glideball website, and there's a \"Why?\" link next to the permission requests.\n• The launch chime now only plays the first time Glideball opens after an update. Settings has a new \"When Glideball opens\" choice: Animation, Quick fade or Nothing. Help › Play the Intro replays the intro.\n• ⌘1 to ⌘6 switch pages (see the new View menu), and Escape closes Settings.\n• Behind the scenes: every release is now tested before it goes out, including a check that it launches.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `d4c356e5085bff29de80a4f1ae8ff701ecf75228bf24924cff608bcf67fca54c`",
+  "date": "2026-11-11T05:35:36Z",
+  "name": "Glideball 2.10 beta 7",
+  "prerelease": true,
+  "tag": "v2.10-beta.7",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.7"
+ },
+ {
+  "body": "• Settings now has its own window, like other Mac apps: Glideball › Settings… or ⌘, (also in the menu bar icon). The settings that were on Overview moved there.\n• \"A small favour\" is now spelled \"A small favor\".\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `e12a6f5bc78fccf6a71d8ff73956bd8e3c12993954920ee02100ba780fb9db46`",
+  "date": "2026-11-11T03:52:35Z",
+  "name": "Glideball 2.10 beta 6",
+  "prerelease": true,
+  "tag": "v2.10-beta.6",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.6"
+ },
+ {
+  "body": "New: you can choose to send me crash reports, or crash reports plus a few anonymous settings stats. It's off unless you pick something, and you can change it or delete what was sent in Overview › General.\n• The Beta program switch is now two: Other Kensington trackballs, and Early updates. If you had Beta on, both are on.\n• About now has a Support Glideball link, if you'd ever like to chip in. Totally optional.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `cdb91d3cb45e7c5593f0edcf8c4beeb84e38e61175c77f16252be92b9ea6b4d3`",
+  "date": "2026-11-11T03:10:51Z",
+  "name": "Glideball 2.10 beta 5",
+  "prerelease": true,
+  "tag": "v2.10-beta.5",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.5"
+ },
+ {
   "body": "Beta 4: pausing and quitting now both give your trackball exactly your System Settings tracking speed, so they always feel the same.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `40d5b0d4ca4dfa3525f7b3c1a1e24754c9510098c26a516da9b88925f4654fdf`",
   "date": "2026-11-11T01:53:47Z",
   "name": "Glideball 2.10 beta 4",

@@ -110,6 +110,46 @@ for url, p in sorted(pages.items()):
         if not exists(urljoin(url, a)):
             problems.append(f"{url}: missing asset {a}")
 
+def plain(html_text):
+    """HTML as the words a reader sees."""
+    from html import unescape
+    return re.sub(r"\s+", " ", unescape(re.sub(r"<[^>]+>", "", html_text))).strip()
+
+
+# FAQPage structured data must say exactly what the page shows (Google's rule, and ours).
+for url, p in sorted(pages.items()):
+    faqs = []
+    for block in p.ld:
+        try:
+            data = json.loads(block)
+        except ValueError:
+            continue
+        for node in data.get("@graph", [data]):
+            if node.get("@type") == "FAQPage":
+                faqs += node.get("mainEntity", [])
+    if not faqs:
+        continue
+    rel = url.lstrip("/") + ("index.html" if url.endswith("/") or url == "" else "")
+    with open(os.path.join(ROOT, rel or "index.html"), encoding="utf-8") as fh:
+        shown = {plain(q): plain(a) for q, a in re.findall(
+            r"<details[^>]*>\s*<summary>(.*?)</summary>(.*?)</details>", fh.read(), re.S)}
+    for item in faqs:
+        q, a = item.get("name", ""), item.get("acceptedAnswer", {}).get("text", "")
+        if q not in shown:
+            problems.append(f"{url}: FAQ question in JSON-LD isn't on the page: {q}")
+        elif shown[q] != a:
+            problems.append(f"{url}: FAQ answer in JSON-LD doesn't match the page: {q}")
+
+# The sitemap lists pages that exist, and no page that asks not to be indexed.
+with open(os.path.join(ROOT, "sitemap.xml"), encoding="utf-8") as fh:
+    for loc in re.findall(r"<loc>https://[^/]+(/[^<]*)</loc>", fh.read()):
+        if not exists(loc):
+            problems.append(f"sitemap.xml: {loc} doesn't exist")
+            continue
+        with open(os.path.join(ROOT, loc.lstrip("/"), "index.html") if loc.endswith("/") else os.path.join(ROOT, loc.lstrip("/")), encoding="utf-8") as fh2:
+            if re.search(r'<meta name="robots" content="[^"]*noindex', fh2.read()):
+                problems.append(f"sitemap.xml: {loc} is noindex")
+
 for line in problems:
     print(line)
 print(f"{len(pages)} pages, {sum(len(p.links) for p in pages.values())} links, {len(problems)} problems")

@@ -6,11 +6,11 @@
   <title>Page not found · Glideball</title>
   <meta name="description" content="This page doesn't exist. Head back to Glideball, the free Mac app for Kensington trackballs.">
   <meta name="robots" content="noindex">
-  <meta name="color-scheme" content="dark light">
-  <meta name="theme-color" content="#120c33" media="(prefers-color-scheme: dark)">
-  <meta name="theme-color" content="#f1edff" media="(prefers-color-scheme: light)">
-  <link rel="icon" type="image/png" sizes="64x64" href="/assets/favicon-64.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0b0b10">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="icon" type="image/png" sizes="64x64" href="/assets/favicon-64.png?v=3">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=3">
   <link rel="stylesheet" href="/styles.css">
   <script src="/privacy.js" defer></script>
 </head>
@@ -20,19 +20,47 @@
     <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5m0 0 5.5-5.5M5 12l5.5 5.5"/></symbol>
   </svg>
 
-  <div class="bg" aria-hidden="true">
-    <div class="blob b1"></div>
-    <div class="blob b2"></div>
-    <div class="blob b3"></div>
-    <div class="blob b4"></div>
-    <div class="grain"></div>
-  </div>
+  <a class="skip" href="#main">Skip to content</a>
 
-  <main class="nf">
-    <div class="nf-card glass">
+  <!-- site-nav -->
+  <header class="nav-wrap">
+    <div class="nav">
+      <a class="brand" href="/" aria-label="Glideball home">
+        <img src="/assets/icon-256.webp?v=3" width="28" height="28" alt="">
+        <span>Glideball</span>
+      </a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="/#features">Features</a>
+        <a href="/#install">Install</a>
+        <a href="/help/">Help</a>
+        <a href="/trackballs/">Trackballs</a>
+        <a href="/changelog/">What's new</a>
+        <a href="/feedback/">Feedback</a>
+      </nav>
+      <a class="btn btn-primary btn-sm" href="/download/">
+        <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+        <span>Download</span>
+      </a>
+      <details class="nav-menu">
+        <summary aria-label="Menu"><span class="nav-menu-bars" aria-hidden="true"></span></summary>
+        <nav class="nav-menu-panel" aria-label="Menu">
+          <a href="/#features">Features</a>
+          <a href="/#install">Install</a>
+          <a href="/help/">Help</a>
+          <a href="/trackballs/">Trackballs</a>
+          <a href="/changelog/">What's new</a>
+          <a href="/feedback/">Feedback</a>
+        </nav>
+      </details>
+    </div>
+  </header>
+  <!-- /site-nav -->
+
+  <main id="main" class="nf">
+    <div class="nf-inner">
       <picture>
-        <source srcset="/assets/icon-256.webp" type="image/webp">
-        <img src="/assets/icon-256.png" width="96" height="96" alt="Glideball app icon">
+        <source srcset="/assets/icon-256.webp?v=3" type="image/webp">
+        <img src="/assets/icon-256.png?v=3" width="96" height="96" alt="Glideball app icon">
       </picture>
       <p class="nf-code" aria-hidden="true">404</p>
       <h1>This page rolled off the edge.</h1>
@@ -42,7 +70,7 @@
           <svg class="icon" aria-hidden="true"><use href="#i-arrow-left"/></svg>
           <span>Back to Glideball</span>
         </a>
-        <a class="btn btn-glass btn-lg" href="https://github.com/leviholliday/glideball/releases/latest/download/Glideball.zip">
+        <a class="btn btn-secondary btn-lg" href="/download/">
           <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
           <span>Download for Mac</span>
         </a>
@@ -55,7 +83,7 @@
     <div class="container footer-inner">
       <div class="footer-about">
         <div class="footer-brand">
-          <img src="/assets/icon-256.webp" width="28" height="28" alt="" loading="lazy">
+          <img src="/assets/icon-256.webp?v=3" width="24" height="24" alt="" loading="lazy">
           <span>Glideball</span>
         </div>
         <p class="footer-tag">A free, open-source Mac app for Kensington trackballs. Made by Levi Holliday, a student.</p>
@@ -63,7 +91,7 @@
       <div class="footer-cols">
         <div class="footer-col">
           <h2 class="footer-h">Glideball</h2>
-          <ul><li><a href="https://github.com/leviholliday/glideball/releases/latest/download/Glideball.zip">Download for Mac</a></li><li><a href="/#features">Features</a></li><li><a href="/#install">Install</a></li><li><a href="/changelog/">What's new</a></li><li><a href="/trackballs/">Supported trackballs</a></li><li><a href="/kensingtonworks-alternative/">KensingtonWorks alternative</a></li></ul>
+          <ul><li><a href="/download/">Download for Mac</a></li><li><a href="/#features">Features</a></li><li><a href="/#install">Install</a></li><li><a href="/changelog/">What's new</a></li><li><a href="/trackballs/">Supported trackballs</a></li><li><a href="/kensingtonworks-alternative/">KensingtonWorks alternative</a></li></ul>
         </div>
         <div class="footer-col">
           <h2 class="footer-h">Help</h2>

@@ -11,13 +11,12 @@
   <meta name="application-name" content="Glideball">
   <meta name="google-site-verification" content="JtQEDIbASJat7QjyKVsECUtNOLmuwnuhqjlxrOLVW-o">
   <meta name="msvalidate.01" content="F87F244FC698BE26AE27B1340A7701B4">
-  <meta name="color-scheme" content="dark light">
-  <meta name="theme-color" content="#120c33" media="(prefers-color-scheme: dark)">
-  <meta name="theme-color" content="#f1edff" media="(prefers-color-scheme: light)">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0b0b10">
 
   <link rel="icon" href="/favicon.ico" sizes="48x48">
-  <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png?v=3">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=3">
 
   <!-- Open Graph / Twitter -->
   <meta property="og:url" content="https://glideball.netlify.app/">
@@ -25,16 +24,15 @@
   <meta property="og:site_name" content="Glideball">
   <meta property="og:title" content="Glideball: a free KensingtonWorks alternative for Kensington trackballs">
   <meta property="og:description" content="A free, open-source Mac app for Kensington trackballs that replaces KensingtonWorks: a faster pointer, a scroll ring that glides, and buttons that do what you want.">
-  <meta property="og:image" content="https://glideball.netlify.app/assets/og.png?v=2.9">
+  <meta property="og:image" content="https://glideball.netlify.app/assets/og.png?v=3">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="The Glideball app icon and its Overview window, showing a live trackball diagram and graphs.">
+  <meta property="og:image:alt" content="The Glideball app icon, a glowing trackball, next to the name Glideball and the line: A smoother scroll ring and a faster pointer for your Kensington trackball.">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Glideball: a free KensingtonWorks alternative for Kensington trackballs">
   <meta name="twitter:description" content="A free, open-source Mac app for Kensington trackballs that replaces KensingtonWorks: a faster pointer, a scroll ring that glides, and buttons that do what you want.">
-  <meta name="twitter:image" content="https://glideball.netlify.app/assets/og.png?v=2.9">
+  <meta name="twitter:image" content="https://glideball.netlify.app/assets/og.png?v=3">
 
-  <link rel="preload" as="image" href="assets/icon-512.webp" type="image/webp">
   <link rel="stylesheet" href="styles.css">
   <script src="app.js" defer></script>
   <script src="privacy.js" defer></script>
@@ -238,53 +236,23 @@
   }
   </script>
 </head>
-<body>
+<body class="home">
   <!-- Icon sprite -->
   <svg class="sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
     <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14"/></symbol>
     <symbol id="i-github" viewBox="0 0 16 16"><path class="fill" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></symbol>
-    <symbol id="i-cursor" viewBox="0 0 24 24"><path d="M5.5 3.8 18.6 10l-5.7 1.9-2.4 5.9z"/><path d="m13 12 5 5"/></symbol>
-    <symbol id="i-scroll" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v9M9.6 9.9 12 7.5l2.4 2.4M9.6 14.1 12 16.5l2.4-2.4"/></symbol>
-    <symbol id="i-buttons" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="2.2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2.2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2.2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2.2"/></symbol>
-    <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M2.5 12h4l2.5-6.5 4.5 13 2.6-6.5h5.4"/></symbol>
-    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 19 6v5.5c0 4.3-2.9 7.9-7 9.2-4.1-1.3-7-4.9-7-9.2V6z"/><path d="m9 12 2.1 2.1L15.2 10"/></symbol>
-    <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7.2 18.5h10.1a4.2 4.2 0 0 0 .5-8.37 6 6 0 0 0-11.5-1A4.7 4.7 0 0 0 7.2 18.5z"/></symbol>
-    <symbol id="i-sync" viewBox="0 0 24 24"><path d="M19.5 9A8 8 0 0 0 5.2 7.4M4.5 15a8 8 0 0 0 14.3 1.6"/><path d="M19.8 4.5V9h-4.5M4.2 19.5V15h4.5"/></symbol>
-    <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.8 5.8l2.6 2.6M15.6 15.6l2.6 2.6M18.2 5.8l-2.6 2.6M8.4 15.6l-2.6 2.6"/></symbol>
-    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.6"/><path d="M8.2 10.5V8a3.8 3.8 0 0 1 7.6 0v2.5"/></symbol>
-    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13.2 2.8 5.5 13.4h5.8l-.9 7.8 7.9-10.8h-5.9z"/></symbol>
-    <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6.5" y="5" width="3.6" height="14" rx="1.3"/><rect x="13.9" y="5" width="3.6" height="14" rx="1.3"/></symbol>
-    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.6"/></symbol>
-    <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3.5V11"/><path d="M6.4 7a7.6 7.6 0 1 0 11.2 0"/></symbol>
-    <symbol id="i-file" viewBox="0 0 24 24"><path d="M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5M9.5 13.5h5M9.5 17h5"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.4 4.4L19 7.5"/></symbol>
-    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
-    <symbol id="i-flywheel" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M12 10C11 6 12.5 3 15 3s3.2 3 0 5.6M14 12c4-1 7 .5 7 3s-3 3.2-5.6 0M12 14c1 4-.5 7-3 7s-3.2-3 0-5.6M10 12c-4 1-7-.5-7-3s3-3.2 5.6 0"/></symbol>
-    <symbol id="i-follow" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 3v3.2M12 17.8V21M3 12h3.2M17.8 12H21"/></symbol>
-    <symbol id="i-display" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12.5" rx="2.4"/><path d="M9 20.5h6M12 16.5v4"/></symbol>
-    <symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.6"/><path d="M6.5 10h.01M10 10h.01M13.5 10h.01M17 10h.01M7.5 14h9"/></symbol>
-    <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></symbol>
-    <symbol id="i-combo" viewBox="0 0 24 24"><rect x="3.5" y="8" width="11" height="11" rx="2.6"/><path d="M9.5 8V6.1a2.6 2.6 0 0 1 2.6-2.6h5.8a2.6 2.6 0 0 1 2.6 2.6v5.8a2.6 2.6 0 0 1-2.6 2.6h-3.4"/></symbol>
-    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 19.5h16"/><path d="m5.5 15.5 4.2-5 3.1 3 5.7-8"/></symbol>
     <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m0 0-5.5-5.5M19 12l-5.5 5.5"/></symbol>
-    <symbol id="i-hand" viewBox="0 0 24 24"><path d="M9 11.5V5.2a1.6 1.6 0 0 1 3.2 0V11m0-1.5V4.6a1.6 1.6 0 0 1 3.2 0V11m0-4.2a1.6 1.6 0 0 1 3.2 0v6.7a7 7 0 0 1-7 7h-.9a6.2 6.2 0 0 1-4.9-2.4l-3-3.9a1.6 1.6 0 0 1 2.4-2.1L9 14"/></symbol>
+    <symbol id="i-sync" viewBox="0 0 24 24"><path d="M19.5 9A8 8 0 0 0 5.2 7.4M4.5 15a8 8 0 0 0 14.3 1.6"/><path d="M19.8 4.5V9h-4.5M4.2 19.5V15h4.5"/></symbol>
   </svg>
-
-  <div class="bg" aria-hidden="true">
-    <div class="blob b1"></div>
-    <div class="blob b2"></div>
-    <div class="blob b3"></div>
-    <div class="blob b4"></div>
-    <div class="grain"></div>
-  </div>
 
   <a class="skip" href="#main">Skip to content</a>
 
   <!-- site-nav -->
   <header class="nav-wrap">
-    <div class="nav glass">
+    <div class="nav">
       <a class="brand" href="#top" aria-label="Glideball home">
-        <img src="/assets/icon-256.webp" width="32" height="32" alt="">
+        <img src="/assets/icon-256.webp?v=3" width="28" height="28" alt="">
         <span>Glideball</span>
       </a>
       <nav class="nav-links" aria-label="Primary">
@@ -295,13 +263,13 @@
         <a href="/changelog/">What's new</a>
         <a href="/feedback/">Feedback</a>
       </nav>
-      <a class="btn btn-primary btn-sm" href="https://github.com/leviholliday/glideball/releases/latest/download/Glideball.zip">
+      <a class="btn btn-primary btn-sm" href="/download/">
         <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
         <span>Download</span>
       </a>
       <details class="nav-menu">
         <summary aria-label="Menu"><span class="nav-menu-bars" aria-hidden="true"></span></summary>
-        <nav class="nav-menu-panel glass" aria-label="Menu">
+        <nav class="nav-menu-panel" aria-label="Menu">
           <a href="/#features">Features</a>
           <a href="/#install">Install</a>
           <a href="/help/">Help</a>
@@ -310,408 +278,291 @@
           <a href="/feedback/">Feedback</a>
         </nav>
       </details>
-      <div class="scroll-progress" aria-hidden="true"></div>
     </div>
   </header>
   <!-- /site-nav -->
 
   <main id="main">
-    <!-- ───────────────────────── Hero ───────────────────────── -->
-    <section class="hero" id="top">
-      <svg class="hero-graph" viewBox="0 0 1200 600" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-        <defs>
-          <linearGradient id="hg-a" x1="0" x2="1" y1="0" y2="0">
-            <stop offset="0" class="s-cyan" stop-opacity="0"/>
-            <stop offset=".45" class="s-cyan" stop-opacity=".55"/>
-            <stop offset="1" class="s-violet" stop-opacity=".1"/>
-          </linearGradient>
-          <linearGradient id="hg-b" x1="0" x2="1" y1="0" y2="0">
-            <stop offset="0" class="s-pink" stop-opacity="0"/>
-            <stop offset=".55" class="s-pink" stop-opacity=".45"/>
-            <stop offset="1" class="s-pink" stop-opacity="0"/>
-          </linearGradient>
-        </defs>
-        <path class="hg-line hg-a" d="M0 520 C 260 515, 420 470, 560 380 S 860 120, 1200 60"/>
-        <path class="hg-line hg-b" d="M0 470 C 180 470, 260 400, 360 420 S 520 520, 640 450 S 820 300, 940 340 S 1100 420, 1200 380"/>
-      </svg>
+    <!-- Hero -->
+    <section class="hero" id="top" aria-labelledby="hero-h">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <p class="hero-kicker">A free, open-source KensingtonWorks alternative</p>
+          <h1 class="wordmark" id="hero-h">Glideball</h1>
+          <p class="tagline">A smoother scroll ring and a faster pointer for your Kensington&nbsp;trackball.</p>
+          <p class="lede">Glideball is a free Mac app for Kensington trackballs. It lets the pointer go faster than macOS allows, makes the scroll ring scroll smoothly, and lets you choose what each button does. There's no driver to install and no account to make.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary btn-lg" href="/download/">
+              <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+              <span>Download for Mac</span>
+            </a>
+            <a class="btn btn-secondary btn-lg" href="https://github.com/leviholliday/glideball">
+              <svg class="icon" aria-hidden="true"><use href="#i-github"/></svg>
+              <span>Open source on GitHub</span>
+            </a>
+          </div>
+          <p class="fine"><span>Free and open source (MIT)</span> · <span>macOS 26 Tahoe or later</span> · <span>Apple silicon &amp; Intel</span><span data-downloads hidden> · <b data-downloads-n></b> downloads</span></p>
+          <p class="fine">Apple hasn't notarized Glideball, so you'll approve it once in System Settings. <a href="#install">Here's how</a>.</p>
+          <p class="fine">It's built on the wired Kensington Expert Mouse, and other Kensington trackballs work through the <a href="/trackballs/">Beta program</a>.</p>
+        </div>
 
-      <div class="container hero-inner">
-        <div class="hero-icon">
-          <picture>
-            <source srcset="assets/icon-512.webp" type="image/webp">
-            <img src="assets/icon-256.png" width="176" height="176" alt="Glideball app icon: a glossy violet trackball">
-          </picture>
+        <div class="tb" data-tb>
+          <div class="tb-stage" role="img" aria-label="A Kensington trackball drawn in Glideball's colors: a glossy ball inside a fine scroll ring, with a button in each corner.">
+            <div class="tb-body">
+              <span class="tb-pad tb-tl" data-pad></span>
+              <span class="tb-pad tb-tr" data-pad></span>
+              <span class="tb-pad tb-bl" data-pad></span>
+              <span class="tb-pad tb-br" data-pad></span>
+              <div class="tb-well"></div>
+              <div class="tb-glow"></div>
+              <svg class="tb-ring" viewBox="0 0 100 100" focusable="false">
+                <defs>
+                  <linearGradient id="tb-rg" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stop-color="#4f9bff"/>
+                    <stop offset=".55" stop-color="#6a6cff"/>
+                    <stop offset="1" stop-color="#9a5cff"/>
+                  </linearGradient>
+                </defs>
+                <circle cx="50" cy="50" r="47.2" fill="none" stroke="url(#tb-rg)" stroke-width=".8"/>
+                <circle cx="50" cy="50" r="44.4" fill="none" stroke="#ffffff" stroke-opacity=".11" stroke-width="2.6" pathLength="360" stroke-dasharray="1.1 4.9"/>
+                <circle cx="50" cy="50" r="41.6" fill="none" stroke="#ffffff" stroke-opacity=".07" stroke-width=".35"/>
+              </svg>
+              <div class="tb-ball">
+                <div class="tb-liquid"></div>
+                <div class="tb-shade"></div>
+                <div class="tb-spec"></div>
+              </div>
+            </div>
+          </div>
+          <p class="tb-hint" aria-hidden="true">Move the pointer, scroll, or press a corner.</p>
         </div>
-        <p class="eyebrow">A free, open-source KensingtonWorks alternative</p>
-        <h1 class="hero-title">Glideball</h1>
-        <p class="tagline">A smoother scroll ring and a faster pointer for your Kensington&nbsp;trackball.</p>
-        <p class="lede">Glideball is a free Mac app for Kensington trackballs. It lets the pointer go faster than macOS allows, makes the scroll ring scroll smoothly, and lets you choose what each button does. There's no driver to install and no account to make.</p>
-        <div class="cta-row">
-          <a class="btn btn-primary btn-lg" href="https://github.com/leviholliday/glideball/releases/latest/download/Glideball.zip">
-            <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
-            <span>Download for Mac</span>
-          </a>
-          <a class="btn btn-glass btn-lg" href="https://github.com/leviholliday/glideball">
-            <svg class="icon" aria-hidden="true"><use href="#i-github"/></svg>
-            <span>Open source on GitHub</span>
-          </a>
-        </div>
-        <p class="fine"><span>Free and open source (MIT)</span> · <span>macOS 26 Tahoe or later</span> · <span>Apple silicon &amp; Intel</span><span data-downloads hidden> · <b data-downloads-n></b> downloads</span></p>
-        <p class="fine">Apple hasn't notarized Glideball, so you'll approve it once in System Settings. <a href="#install">Here's how</a>.</p>
-        <p class="fine">It's built on the wired Kensington Expert Mouse, and other Kensington trackballs work through the <a href="/trackballs/">Beta program</a>.</p>
       </div>
 
-      <div class="container">
-        <figure class="hero-shot" data-tilt>
-          <picture>
-            <source type="image/webp" srcset="assets/screens/overview-960.webp?v=2.9 960w, assets/screens/overview-1600.webp?v=2.9 1600w" sizes="(min-width: 1200px) 1080px, 94vw">
-            <img src="assets/screens/overview-1200.png?v=2.9" width="1920" height="1288" alt="Glideball's Overview tab: a live trackball diagram, Ball speed and Scroll ring activity graphs, and today's clicks, distance rolled and distance scrolled." fetchpriority="high">
-          </picture>
-          <div class="chip glass chip-1" aria-hidden="true"><svg class="icon"><use href="#i-flywheel"/></svg>Flywheel scrolling</div>
-          <div class="chip glass chip-2" aria-hidden="true"><svg class="icon"><use href="#i-cursor"/></svg>Past macOS's speed limit</div>
-          <div class="chip glass chip-3" aria-hidden="true"><span class="keys"><kbd>⌃</kbd><kbd>⌥</kbd><kbd>⌘</kbd><kbd>G</kbd></span>pauses instantly</div>
-        </figure>
-      </div>
-    </section>
-
-    <!-- ───────────────────── Highlights ───────────────────── -->
-    <section class="container highlights" aria-label="Highlights">
-      <ul class="hl-grid">
-        <li class="hl glass reveal">
-          <span class="hl-icon"><svg class="icon" aria-hidden="true"><use href="#i-bolt"/></svg></span>
-          <div><strong>No driver to install</strong><span>macOS still moves the cursor; Glideball just adjusts it.</span></div>
-        </li>
-        <li class="hl glass reveal">
-          <span class="hl-icon"><svg class="icon" aria-hidden="true"><use href="#i-target"/></svg></span>
-          <div><strong>Only your trackball</strong><span>Your trackpad and other mice keep their settings.</span></div>
-        </li>
-        <li class="hl glass reveal">
-          <span class="hl-icon"><svg class="icon" aria-hidden="true"><use href="#i-pause"/></svg></span>
-          <div><strong>One shortcut to pause</strong><span>⌃⌥⌘G pauses it from anywhere.</span></div>
-        </li>
-        <li class="hl glass reveal">
-          <span class="hl-icon"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg></span>
-          <div><strong>No tracking in the app</strong><span>No account, and crash reports only if you say yes.</span></div>
-        </li>
-      </ul>
-    </section>
-
-    <!-- ───────────────────── Scrolling ───────────────────── -->
-    <section class="section" id="features" aria-labelledby="scroll-h">
-      <div class="container">
-        <div class="section-head reveal">
-          <p class="kicker"><svg class="icon" aria-hidden="true"><use href="#i-scroll"/></svg>Scroll ring</p>
-          <h2 id="scroll-h">Make the Kensington scroll ring feel the way you&nbsp;want.</h2>
-          <p class="body">There are three scroll modes, and you can switch between them any time. They only change your trackball, not your trackpad or other mice.</p>
-        </div>
-
-        <div class="modes">
-          <article class="mode glass reveal">
-            <span class="mode-icon"><svg class="icon" aria-hidden="true"><use href="#i-display"/></svg></span>
-            <h3>Native</h3>
-            <p>macOS scrolls the ring the way it always has, and you can turn the wheel speed up for the trackball alone.</p>
-          </article>
-          <article class="mode glass mode-featured reveal">
-            <span class="mode-icon"><svg class="icon" aria-hidden="true"><use href="#i-flywheel"/></svg></span>
-            <h3>Flywheel <span class="pill">Kensington's feel</span></h3>
-            <p>Each notch gives the page a push and friction slows it to a stop, so gentle turns barely coast and hard spins go a long way (Fast-spin reach sets how far). I based it on measurements of Kensington's own driver, and it runs at your display's refresh rate. If you change things and want the original feel back, the Kensington feel button puts the measured values back in one click.</p>
-          </article>
-          <article class="mode glass reveal">
-            <span class="mode-icon"><svg class="icon" aria-hidden="true"><use href="#i-follow"/></svg></span>
-            <h3>Follow</h3>
-            <p>The page follows the ring notch for notch and stops when you stop. If you want, a real flick can still coast.</p>
-          </article>
-        </div>
-
-        <figure class="shot shot-wide reveal">
-          <picture>
-            <source type="image/webp" srcset="assets/screens/scrolling-960.webp?v=2.9 960w, assets/screens/scrolling-1600.webp?v=2.9 1600w" sizes="(min-width: 1100px) 960px, 94vw">
-            <img src="assets/screens/scrolling-1200.png?v=2.9" width="1920" height="1288" loading="lazy" decoding="async" alt="Glideball's Scrolling tab with Flywheel selected: sliders for slow-turn distance, spin power and glide, and a Push per tick graph that rises with ring speed.">
-          </picture>
-        </figure>
+      <div class="wrap">
+        <ul class="facts" aria-label="Highlights">
+          <li><strong>No driver to install</strong><span>macOS still moves the cursor; Glideball just adjusts it.</span></li>
+          <li><strong>Only your trackball</strong><span>Your trackpad and other mice keep their settings.</span></li>
+          <li><strong>One shortcut to pause</strong><span>⌃⌥⌘G pauses it from anywhere.</span></li>
+          <li><strong>No tracking in the app</strong><span>No account, and crash reports only if you say yes.</span></li>
+        </ul>
       </div>
     </section>
 
-    <!-- ───────────────────── Demo ───────────────────── -->
+    <!-- Feel it -->
     <section class="section" id="demo" aria-labelledby="demo-h">
-      <div class="container">
-        <div class="section-head reveal">
-          <p class="kicker"><svg class="icon" aria-hidden="true"><use href="#i-hand"/></svg>Try it</p>
+      <div class="wrap">
+        <header class="sec-head">
           <h2 id="demo-h">Feel the difference before you&nbsp;download.</h2>
-          <p class="body">Scroll the list with a mouse wheel or trackpad, or drag and flick it, then flip the switch to compare. It's easiest to feel with a real scroll wheel.</p>
-        </div>
+          <p>Scroll the list with a mouse wheel or trackpad, or drag and flick it, then flip the switch to compare. It's easiest to feel with a real scroll wheel.</p>
+        </header>
 
-        <div class="demo glass reveal" data-demo>
-          <div class="demo-bar">
-            <fieldset class="seg">
-              <legend class="sr-only">Scrolling style</legend>
-              <input type="radio" name="fw-mode" id="fw-plain" value="plain">
-              <label for="fw-plain">Plain wheel</label>
-              <input type="radio" name="fw-mode" id="fw-fly" value="flywheel" checked>
-              <label for="fw-fly"><svg class="icon" aria-hidden="true"><use href="#i-flywheel"/></svg>Flywheel</label>
-              <span class="seg-thumb" aria-hidden="true"></span>
-            </fieldset>
-            <button class="btn btn-glass btn-sm" type="button" data-fw-spin>
-              <svg class="icon" aria-hidden="true"><use href="#i-sync"/></svg>
-              <span>Simulate a spin</span>
-            </button>
+        <div class="demo" data-demo>
+          <div class="fw-viewport" tabindex="0" role="group" aria-label="Demo list" aria-describedby="fw-help" data-fw-viewport>
+            <ol class="fw-track" aria-hidden="true" data-fw-track></ol>
+            <div class="fw-scrollbar" aria-hidden="true"><div class="fw-thumb" data-fw-thumb></div></div>
+            <noscript><p class="noscript">This demo needs JavaScript.</p></noscript>
           </div>
 
-          <div class="demo-body">
-            <div class="fw-viewport" tabindex="0" role="group" aria-label="Demo list" aria-describedby="fw-help" data-fw-viewport>
-              <ol class="fw-track" aria-hidden="true" data-fw-track></ol>
-              <div class="fw-scrollbar" aria-hidden="true"><div class="fw-thumb" data-fw-thumb></div></div>
-              <noscript><p class="noscript">This demo needs JavaScript.</p></noscript>
+          <div class="demo-side">
+            <div class="demo-controls">
+              <fieldset class="seg">
+                <legend class="sr-only">Scrolling style</legend>
+                <input type="radio" name="fw-mode" id="fw-plain" value="plain">
+                <label for="fw-plain">Plain wheel</label>
+                <input type="radio" name="fw-mode" id="fw-fly" value="flywheel" checked>
+                <label for="fw-fly">Flywheel</label>
+              </fieldset>
+              <button class="btn btn-secondary btn-sm" type="button" data-fw-spin>
+                <svg class="icon" aria-hidden="true"><use href="#i-sync"/></svg>
+                <span>Simulate a spin</span>
+              </button>
             </div>
 
-            <div class="fw-side">
-              <div class="fw-graph">
-                <div class="card-head">
-                  <p class="label-caps"><svg class="icon" aria-hidden="true"><use href="#i-pulse"/></svg>Scroll speed</p>
-                  <p class="fw-readout"><output data-fw-speed>0</output> <span>px/s</span></p>
-                </div>
-                <div class="spark"><canvas data-fw-canvas aria-hidden="true"></canvas></div>
-                <p class="card-note">The last 3 seconds. Plain steps spike, and the flywheel spreads each push into a smooth glide.</p>
+            <div class="demo-block">
+              <div class="demo-head">
+                <p class="demo-label"><span class="dot dot-ring" aria-hidden="true"></span>Scroll speed</p>
+                <p class="readout"><output data-fw-speed>0</output> <span>px/s</span></p>
               </div>
-              <div class="fw-meter" data-fm>
-                <div class="card-head">
-                  <p class="label-caps"><svg class="icon" aria-hidden="true"><use href="#i-bolt"/></svg>Flick meter</p>
-                  <span class="fm-badge" data-fm-badge aria-hidden="true">New best</span>
-                </div>
-                <div class="fm-bar" aria-hidden="true"><span class="fm-fill" data-fm-fill></span><span class="fm-best" data-fm-best></span></div>
-                <dl class="fm-stats">
-                  <div><dt>Top speed</dt><dd><output data-fm-top>0</output> <span>px/s</span></dd></div>
-                  <div><dt>Longest glide</dt><dd><output data-fm-glide>0</output> <span>rows</span></dd></div>
-                  <div><dt>This visit</dt><dd><output data-fm-total>0</output> <span>rows</span></dd></div>
-                </dl>
-                <p class="sr-only" aria-live="polite" data-fm-live></p>
-              </div>
-              <p class="fw-mode-note" data-fw-note aria-live="polite">Flywheel: each tick adds a push, and friction (τ&nbsp;≈&nbsp;82&nbsp;ms) glides it to a stop. Same distance, no jolts.</p>
+              <div class="spark"><canvas data-fw-canvas aria-hidden="true"></canvas></div>
+              <p class="demo-note">The last 3 seconds. Plain steps spike, and the flywheel spreads each push into a smooth glide.</p>
             </div>
+
+            <div class="demo-block fw-meter" data-fm>
+              <div class="demo-head">
+                <p class="demo-label">Flick meter</p>
+                <span class="fm-badge" data-fm-badge aria-hidden="true">New best</span>
+              </div>
+              <div class="fm-bar" aria-hidden="true"><span class="fm-fill" data-fm-fill></span><span class="fm-best" data-fm-best></span></div>
+              <dl class="fm-stats">
+                <div><dt>Top speed</dt><dd><output data-fm-top>0</output> <span>px/s</span></dd></div>
+                <div><dt>Longest glide</dt><dd><output data-fm-glide>0</output> <span>rows</span></dd></div>
+                <div><dt>This visit</dt><dd><output data-fm-total>0</output> <span>rows</span></dd></div>
+              </dl>
+              <p class="sr-only" aria-live="polite" data-fm-live></p>
+            </div>
+
+            <p class="demo-note fw-mode-note" data-fw-note aria-live="polite">Flywheel: each tick adds a push, and friction (τ&nbsp;≈&nbsp;82&nbsp;ms) glides it to a stop. Same distance, no jolts.</p>
           </div>
           <p class="sr-only" id="fw-help">Focus the list and use the arrow keys, Page Up, Page Down, Home or End. Your page will not scroll while the pointer is over the list.</p>
         </div>
       </div>
     </section>
 
-    <!-- ───────────────────── Pointer ───────────────────── -->
-    <section class="section" id="pointer" aria-labelledby="pointer-h">
-      <div class="container feature">
-        <div class="feature-copy reveal">
-          <p class="kicker"><svg class="icon" aria-hidden="true"><use href="#i-cursor"/></svg>Pointer</p>
-          <h2 id="pointer-h">A faster trackball pointer than macOS&nbsp;allows.</h2>
-          <p class="body">The tracking speed slider in System Settings stops at 3. Glideball goes way past that, so one flick of the ball gets you across a big display, and slow rolls are still precise.</p>
-          <ul class="ticks">
-            <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><span><strong>Only your trackball.</strong> Your trackpad and other mice keep their own settings.</span></li>
-            <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><span><strong>No added lag.</strong> macOS still moves the cursor; Glideball just changes the curve.</span></li>
-            <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><span><strong>Presets or fine control.</strong> Pick Precise, macOS, Fast or Turbo, or set it anywhere in between.</span></li>
-          </ul>
-
-          <div class="curve-card glass" data-curve>
-            <div class="card-head">
-              <p class="label-caps"><svg class="icon" aria-hidden="true"><use href="#i-chart"/></svg>Response curve</p>
-              <p class="legend" aria-hidden="true"><span class="lg lg-solid"></span>Your curve <span class="lg lg-dash"></span>macOS max</p>
-            </div>
-            <svg class="curve-svg" viewBox="0 0 320 196" role="img" aria-labelledby="curve-title curve-desc">
-              <title id="curve-title">Pointer response curve</title>
-              <desc id="curve-desc">Illustration: as you raise tracking speed, the curve for your trackball climbs far above the dashed macOS maximum.</desc>
-              <defs>
-                <linearGradient id="cg-line" x1="0" x2="1" y1="1" y2="0">
-                  <stop offset="0" class="s-cyan"/>
-                  <stop offset="1" class="s-violet"/>
-                </linearGradient>
-                <clipPath id="cg-clip"><rect x="10" y="0" width="300" height="168"/></clipPath>
-                <filter id="cg-blur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="4"/></filter>
-              </defs>
-              <g class="curve-grid">
-                <line x1="10" x2="310" y1="48" y2="48"/>
-                <line x1="10" x2="310" y1="88" y2="88"/>
-                <line x1="10" x2="310" y1="128" y2="128"/>
-                <line x1="85" x2="85" y1="8" y2="168"/>
-                <line x1="160" x2="160" y1="8" y2="168"/>
-                <line x1="235" x2="235" y1="8" y2="168"/>
-                <line class="axis" x1="10" x2="310" y1="168" y2="168"/>
-              </g>
-              <g clip-path="url(#cg-clip)">
-                <path class="curve-area" data-curve-area d=""/>
-                <path class="curve-mac" data-curve-mac d=""/>
-                <path class="curve-line" data-curve-line d=""/>
-                <circle class="curve-dot-halo" data-curve-halo r="9" cx="10" cy="168"/>
-                <circle class="curve-dot" data-curve-dot r="4.5" cx="10" cy="168"/>
-              </g>
-              <text class="curve-tag" data-curve-mactag x="306" y="150" text-anchor="end">macOS max</text>
-              <text class="axis-label" x="10" y="188">How fast you roll the ball →</text>
-            </svg>
-            <div class="slider-row">
-              <label for="speed">Tracking speed</label>
-              <output for="speed" data-speed-out>32</output>
-            </div>
-            <input class="range" type="range" id="speed" min="1" max="50" step="1" value="32" aria-describedby="speed-hint">
-            <div class="range-ends" aria-hidden="true"><span>Slow</span><span>Ludicrous</span></div>
-            <p class="card-note" id="speed-hint">Drag to watch the curve climb. Illustrative, not to scale.</p>
+    <!-- The three parts -->
+    <div id="features" class="parts">
+      <section class="section part part-ball" id="pointer" aria-labelledby="pointer-h">
+        <div class="wrap part-grid">
+          <div class="part-copy">
+            <p class="part-tag"><span class="dot dot-ball" aria-hidden="true"></span>Ball</p>
+            <h2 id="pointer-h">A faster trackball pointer than macOS&nbsp;allows.</h2>
+            <p class="body">The tracking speed slider in System Settings stops at 3. Glideball goes way past that, so one flick of the ball gets you across a big display, and slow rolls are still precise.</p>
+            <ul class="points">
+              <li><strong>Only your trackball.</strong> Your trackpad and other mice keep their own settings.</li>
+              <li><strong>No added lag.</strong> macOS still moves the cursor; Glideball just changes the curve.</li>
+              <li><strong>Presets or fine control.</strong> Pick Precise, macOS, Fast or Turbo, or set it anywhere in between.</li>
+            </ul>
           </div>
-        </div>
-
-        <div class="feature-media reveal">
           <figure class="shot">
             <picture>
-              <source type="image/webp" srcset="assets/screens/pointer-960.webp?v=2.9 960w, assets/screens/pointer-1600.webp?v=2.9 1600w" sizes="(min-width: 1000px) 680px, 94vw">
-              <img src="assets/screens/pointer-1200.png?v=2.9" width="1920" height="1288" loading="lazy" decoding="async" alt="Glideball's Pointer tab: a Tracking speed slider set to 32, presets for Precise, macOS, Fast and Turbo, and a response curve rising far above the dashed no-acceleration line.">
+              <source type="image/webp" srcset="assets/screens/pointer-960.webp?v=74682813 960w, assets/screens/pointer-1600.webp?v=74682813 1600w" sizes="(min-width: 1000px) 640px, 92vw">
+              <img src="assets/screens/pointer-1200.png?v=74682813" width="2080" height="1400" loading="lazy" decoding="async" alt="Glideball's Pointer tab: the Tracking speed slider, presets for Precise, macOS, Fast and Turbo, and a response curve rising far above the dashed no-acceleration line.">
             </picture>
           </figure>
+        </div>
+      </section>
+
+      <section class="section part part-ring" id="scroll" aria-labelledby="scroll-h">
+        <div class="wrap part-grid">
+          <div class="part-copy">
+            <p class="part-tag"><span class="dot dot-ring" aria-hidden="true"></span>Ring</p>
+            <h2 id="scroll-h">Make the Kensington scroll ring feel the way you&nbsp;want.</h2>
+            <p class="body">There are three scroll modes, and you can switch between them any time. They only change your trackball, not your trackpad or other mice.</p>
+            <ul class="points">
+              <li><strong>Native.</strong> macOS scrolls the ring the way it always has, and you can turn the wheel speed up for the trackball alone.</li>
+              <li><strong>Flywheel.</strong> <span class="tag">Kensington's feel</span> Each notch gives the page a push and friction slows it to a stop, so gentle turns barely coast and hard spins go a long way. I based it on measurements of Kensington's own driver, and it runs at your display's refresh rate.</li>
+              <li><strong>Follow.</strong> The page follows the ring notch for notch and stops when you stop. If you want, a real flick can still coast.</li>
+            </ul>
+          </div>
+          <figure class="shot">
+            <picture>
+              <source type="image/webp" srcset="assets/screens/scrolling-960.webp?v=76b36635 960w, assets/screens/scrolling-1600.webp?v=76b36635 1600w" sizes="(min-width: 1000px) 640px, 92vw">
+              <img src="assets/screens/scrolling-1200.png?v=76b36635" width="2080" height="1400" loading="lazy" decoding="async" alt="Glideball's Scrolling tab with Flywheel selected: sliders for how the ring scrolls, and a graph of the push per tick as the ring turns faster.">
+            </picture>
+          </figure>
+        </div>
+      </section>
+
+      <section class="section part part-buttons" id="buttons" aria-labelledby="buttons-h">
+        <div class="wrap part-grid">
+          <div class="part-copy">
+            <p class="part-tag"><span class="dot dot-buttons" aria-hidden="true"></span>Buttons</p>
+            <h2 id="buttons-h">Remap the buttons, or press two at once for something&nbsp;else.</h2>
+            <p class="body">Each button can be a click, a keyboard shortcut, Mission Control, a Space switch and more. Press two or three together and that combo gets its own action too. Setting one up takes two presses.</p>
+            <ul class="points">
+              <li><strong>Quick assign.</strong> Press a trackball button, then the shortcut you want it to send. That's it.</li>
+              <li><strong>Two- and three-button combos.</strong> Press buttons together and they do their own thing, on top of what each one does alone.</li>
+              <li><strong>Your main click stays put.</strong> The bottom-left button is always a left click, so you can't lock yourself out.</li>
+            </ul>
+          </div>
+          <figure class="shot">
+            <picture>
+              <source type="image/webp" srcset="assets/screens/buttons-960.webp?v=c141f848 960w, assets/screens/buttons-1600.webp?v=c141f848 1600w" sizes="(min-width: 1000px) 640px, 92vw">
+              <img src="assets/screens/buttons-1200.png?v=c141f848" width="2080" height="1400" loading="lazy" decoding="async" alt="Glideball's Buttons tab: Quick assign, what each of the four buttons does, and the button combos.">
+            </picture>
+          </figure>
+        </div>
+      </section>
+    </div>
+
+    <!-- Live overview and earned rewards -->
+    <section class="section live" aria-labelledby="dash-h">
+      <div class="wrap">
+        <header class="sec-head">
+          <h2 id="dash-h">See what your trackball is doing, live.</h2>
+          <p>The Overview tab graphs ball speed and scroll-ring activity as they happen, lights up each button as you press it, and keeps a tally of your day: clicks, distance rolled, distance scrolled.</p>
+        </header>
+        <figure class="shot shot-wide">
+          <picture>
+            <source type="image/webp" srcset="assets/screens/overview-960.webp?v=c4b5fcc8 960w, assets/screens/overview-1600.webp?v=c4b5fcc8 1600w" sizes="(min-width: 1120px) 1040px, 92vw">
+            <img src="assets/screens/overview-1200.png?v=c4b5fcc8" width="2080" height="1400" loading="lazy" decoding="async" alt="Glideball's Overview tab: the live trackball, Ball speed and Scroll ring graphs, and today's clicks, distance rolled and distance scrolled.">
+          </picture>
+        </figure>
+        <div class="earned">
+          <p>It also keeps your records and lifetime totals, and gives you a badge when you pass a real milestone, like these. Make it yours ticks off each thing you set up, and none of it nags.</p>
+          <ul class="badges">
+            <li><span class="dot dot-ring" aria-hidden="true"></span><strong>Eiffel Tower</strong><span>Scrolled the height of the Eiffel Tower (330 m)</span></li>
+            <li><span class="dot dot-ball" aria-hidden="true"></span><strong>One lap</strong><span>Rolled one lap of a running track (400 m)</span></li>
+            <li><span class="dot dot-buttons" aria-hidden="true"></span><strong>A thousand clicks</strong><span>1,000 clicks</span></li>
+          </ul>
         </div>
       </div>
     </section>
 
-    <!-- ───────────────────── Buttons ───────────────────── -->
-    <section class="section" aria-labelledby="buttons-h">
-      <div class="container feature feature-reverse">
-        <div class="feature-copy reveal">
-          <p class="kicker"><svg class="icon" aria-hidden="true"><use href="#i-buttons"/></svg>Buttons &amp; combos</p>
-          <h2 id="buttons-h">Remap the buttons, or press two at once for something&nbsp;else.</h2>
-          <p class="body">Each button can be a click, a keyboard shortcut, Mission Control, a Space switch and more. Press two or three together and that combo gets its own action too. Setting one up takes two presses.</p>
-          <ul class="feature-list">
-            <li>
-              <span class="fl-icon"><svg class="icon" aria-hidden="true"><use href="#i-sparkles"/></svg></span>
-              <div><h3>Quick assign</h3><p>Press a trackball button, then the shortcut you want it to send. That's it.</p></div>
-            </li>
-            <li>
-              <span class="fl-icon"><svg class="icon" aria-hidden="true"><use href="#i-combo"/></svg></span>
-              <div><h3>Two- and three-button combos</h3><p>Press buttons together and they do their own thing, on top of what each one does alone.</p></div>
-            </li>
-            <li>
-              <span class="fl-icon"><svg class="icon" aria-hidden="true"><use href="#i-mic"/></svg></span>
-              <div><h3>Hold shortcuts</h3><p>The shortcut stays held as long as the button is down. Handy for push-to-talk.</p></div>
-            </li>
-            <li>
-              <span class="fl-icon"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg></span>
-              <div><h3>Your main click stays put</h3><p>The bottom-left button is always a left click, so you can't lock yourself out.</p></div>
-            </li>
-          </ul>
-        </div>
-
-        <div class="feature-media reveal">
-          <figure class="shot">
-            <picture>
-              <source type="image/webp" srcset="assets/screens/buttons-960.webp?v=2.9 960w, assets/screens/buttons-1600.webp?v=2.9 1600w" sizes="(min-width: 1000px) 680px, 94vw">
-              <img src="assets/screens/buttons-1200.png?v=2.9" width="1920" height="1288" loading="lazy" decoding="async" alt="Glideball's Buttons tab: Quick assign, the four buttons mapped to Left click (locked), Mission Control, Previous Space and Next Space, and combos such as Top left plus Top right for Control-right-click.">
-            </picture>
-          </figure>
-          <div class="combo-card glass" aria-hidden="true">
-            <span class="kbd-pill">Top left</span><span class="plus">+</span><span class="kbd-pill">Top right</span>
-            <svg class="icon arrow" aria-hidden="true"><use href="#i-arrow"/></svg>
-            <span class="kbd-pill kbd-accent">⌃ Control-click</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ───────────────────── Modes & apps ───────────────────── -->
+    <!-- Modes & apps -->
     <section class="section" id="modes" aria-labelledby="modes-h">
-      <div class="container">
-        <div class="section-head reveal">
-          <p class="kicker"><svg class="icon" aria-hidden="true"><use href="#i-sparkles"/></svg>Modes &amp; apps</p>
+      <div class="wrap">
+        <header class="sec-head">
           <h2 id="modes-h">A different setup for every&nbsp;app.</h2>
-          <p class="body">Pick an app and give it its own pointer speed, scrolling, buttons and combos. Glideball switches when that app comes to the front, and switches back when you leave it.</p>
-        </div>
-        <div class="cards-3">
-          <article class="card glass reveal">
-            <span class="card-icon"><svg class="icon" aria-hidden="true"><use href="#i-target"/></svg></span>
+          <p>Pick an app and give it its own pointer speed, scrolling, buttons and combos. Glideball switches when that app comes to the front, and switches back when you leave it.</p>
+        </header>
+        <div class="trio">
+          <article>
             <h3>Precision</h3>
             <p>Slows the pointer down for fine work. Hold a button for it, or press once to turn it on and again to turn it off.</p>
           </article>
-          <article class="card glass reveal">
-            <span class="card-icon"><svg class="icon" aria-hidden="true"><use href="#i-scroll"/></svg></span>
+          <article>
             <h3>Scroll with ball</h3>
             <p>Roll the ball to scroll in any direction, sideways too. The pointer stays where it is.</p>
           </article>
-          <article class="card glass reveal">
-            <span class="card-icon"><svg class="icon" aria-hidden="true"><use href="#i-hand"/></svg></span>
+          <article>
             <h3>Drag lock</h3>
             <p>Holds the click down for you, so you can drag without keeping a finger on the button. Click again to let go.</p>
           </article>
         </div>
-        <div class="section-head reveal">
-          <p class="body">You can put each of these on a button or a keyboard shortcut.</p>
+        <p class="trio-note">You can put each of these on a button or a keyboard shortcut.</p>
+      </div>
+    </section>
+
+    <!-- Sync -->
+    <section class="section section-tight" aria-labelledby="sync-h">
+      <div class="wrap split">
+        <h2 id="sync-h">The same setup on every Mac you use.</h2>
+        <div class="split-body">
+          <p>Turn on sync and your other Macs get the same setup through your own iCloud Drive, with no account to make. You can also export your settings to a file and import them on another Mac.</p>
+          <p>Glideball backs up your settings on its own too: every day for two weeks, then once a month for a year. So if you change something and don't like it, you can go back with one click.</p>
         </div>
       </div>
     </section>
 
-    <!-- ───────────────────── Dashboard ───────────────────── -->
-    <section class="section" aria-labelledby="dash-h">
-      <div class="container feature">
-        <div class="feature-copy reveal">
-          <p class="kicker"><svg class="icon" aria-hidden="true"><use href="#i-pulse"/></svg>Live dashboard</p>
-          <h2 id="dash-h">See what your trackball is doing, live.</h2>
-          <p class="body">The Overview tab graphs ball speed and scroll-ring activity as they happen, lights up each button as you press it, and keeps a tally of your day: clicks, distance rolled, distance scrolled.</p>
-
-          <div class="dash-card glass" data-dash>
-            <div class="tb" data-dash-stage>
-              <button type="button" class="tb-pad tb-tl" data-pad aria-label="Top left button"></button>
-              <button type="button" class="tb-pad tb-tr" data-pad aria-label="Top right button"></button>
-              <button type="button" class="tb-pad tb-bl" data-pad aria-label="Bottom left button"></button>
-              <button type="button" class="tb-pad tb-br" data-pad aria-label="Bottom right button"></button>
-              <div class="tb-ring" aria-hidden="true"></div>
-              <div class="tb-ball" aria-hidden="true"><div class="tb-shine" data-dash-shine></div></div>
-            </div>
-            <div class="dash-side">
-              <div class="card-head">
-                <p class="label-caps"><span class="dot dot-cyan" aria-hidden="true"></span>Your pointer</p>
-                <p class="fw-readout"><output data-dash-speed>0</output> <span>px/s</span></p>
-              </div>
-              <div class="spark"><canvas data-dash-canvas aria-hidden="true"></canvas></div>
-              <p class="card-note">Move over this card or press its buttons. <span class="nowrap">Presses: <output data-dash-clicks>0</output></span></p>
-            </div>
-          </div>
-        </div>
-
-        <div class="feature-media reveal">
-          <figure class="shot">
-            <picture>
-              <source type="image/webp" srcset="assets/screens/overview-960.webp?v=2.9 960w, assets/screens/overview-1600.webp?v=2.9 1600w" sizes="(min-width: 1000px) 680px, 94vw">
-              <img src="assets/screens/overview-1200.png?v=2.9" width="1920" height="1288" loading="lazy" decoding="async" alt="Glideball's Overview tab showing live Ball speed and Scroll ring graphs and daily stats for clicks, ball rolled and scrolled.">
-            </picture>
-          </figure>
-        </div>
-      </div>
-    </section>
-
-    <!-- ───────────────────── Safety ───────────────────── -->
+    <!-- Safety -->
     <section class="section" aria-labelledby="safety-h">
-      <div class="container">
-        <div class="section-head reveal">
-          <p class="kicker"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg>Safety</p>
+      <div class="wrap">
+        <header class="sec-head">
           <h2 id="safety-h">Is Glideball safe to use?</h2>
-          <p class="body">I built it so a bad setting can't leave you stuck, and so your trackball goes back to normal whenever Glideball isn't running.</p>
-        </div>
-        <div class="cards-3">
-          <article class="card glass reveal">
-            <div class="keys keys-lg" aria-hidden="true"><kbd>⌃</kbd><kbd>⌥</kbd><kbd>⌘</kbd><kbd>G</kbd></div>
-            <h3>Instant pause</h3>
+          <p>I built it so a bad setting can't leave you stuck, and so your trackball goes back to normal whenever Glideball isn't running.</p>
+        </header>
+        <div class="group safety">
+          <article>
+            <h3>Instant pause <span class="keys" aria-hidden="true"><kbd>⌃</kbd><kbd>⌥</kbd><kbd>⌘</kbd><kbd>G</kbd></span></h3>
             <p>Press <span class="sr-only">Control Option Command G</span><span aria-hidden="true">⌃⌥⌘G</span> from anywhere and Glideball steps aside. Press it again to turn it back on.</p>
           </article>
-          <article class="card glass reveal">
-            <span class="card-icon"><svg class="icon" aria-hidden="true"><use href="#i-power"/></svg></span>
+          <article>
             <h3>Fails safe</h3>
             <p>If you pause or quit Glideball, or it doesn't have permission, your buttons and scrolling work the way macOS normally does.</p>
           </article>
-          <article class="card glass reveal">
-            <span class="card-icon"><svg class="icon" aria-hidden="true"><use href="#i-cursor"/></svg></span>
+          <article>
             <h3>No driver</h3>
             <p>It's a regular app, not a driver or system extension. macOS keeps control of the trackball the whole time.</p>
           </article>
-          <article class="card glass reveal">
-            <span class="card-icon"><svg class="icon" aria-hidden="true"><use href="#i-github"/></svg></span>
+          <article>
             <h3>Open source</h3>
             <p>MIT licensed. You can read every line on <a href="https://github.com/leviholliday/glideball">GitHub</a>.</p>
           </article>
-          <article class="card glass reveal">
-            <span class="card-icon"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg></span>
+          <article>
             <h3>Private</h3>
             <p>The app has no tracking. It sends crash reports or stats only if you say yes, and otherwise only goes online to check GitHub for updates, to sync through your own iCloud Drive if you turn that on, and to send feedback when you press Send.</p>
           </article>
-          <article class="card glass reveal">
-            <span class="card-icon"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></span>
+          <article>
             <h3>Checked updates</h3>
             <p>Updates install in one click. Glideball won't install a download that isn't signed with the same certificate as the app you already have.</p>
           </article>
@@ -719,59 +570,40 @@
       </div>
     </section>
 
-    <!-- ───────────────────── Sync ───────────────────── -->
-    <section class="section" aria-labelledby="sync-h">
-      <div class="container">
-        <div class="sync glass reveal">
-          <div class="sync-copy">
-            <p class="kicker"><svg class="icon" aria-hidden="true"><use href="#i-cloud"/></svg>Backup &amp; sync</p>
-            <h2 id="sync-h">The same setup on every Mac you use.</h2>
-            <p class="body">Turn on sync and your other Macs get the same setup through your own iCloud Drive, with no account to make. You can also export your settings to a file and import them on another Mac.</p>
-            <p class="body">Glideball backs up your settings on its own too: every day for two weeks, then once a month for a year. So if you change something and don't like it, you can go back with one click.</p>
-          </div>
-          <div class="sync-art" aria-hidden="true">
-            <div class="sync-node"><svg class="icon"><use href="#i-display"/></svg><span>Desk</span></div>
-            <div class="sync-link"><span class="sync-cloud"><svg class="icon"><use href="#i-cloud"/></svg></span></div>
-            <div class="sync-node"><svg class="icon"><use href="#i-display"/></svg><span>Studio</span></div>
-            <div class="sync-file"><svg class="icon"><use href="#i-file"/></svg><span>Glideball Settings</span></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ───────────────────── Install ───────────────────── -->
+    <!-- Install -->
     <section class="section" id="install" aria-labelledby="install-h">
-      <div class="container">
-        <div class="section-head reveal">
-          <p class="kicker"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Install</p>
+      <div class="wrap">
+        <header class="sec-head">
           <h2 id="install-h">How to install&nbsp;Glideball</h2>
-          <p class="body">Glideball isn't on the App Store, so the first launch takes one extra step. Here's exactly what you'll see.</p>
-        </div>
+          <p>Glideball isn't on the App Store, so the first launch takes one extra step. Here's exactly what you'll see.</p>
+        </header>
+        <!-- install-steps -->
         <ol class="steps">
-          <li class="step glass reveal">
-            <span class="step-n" aria-hidden="true">1</span>
-            <h3>Remove KensingtonWorks <span class="pill">Do this first</span></h3>
+          <li>
+            <h3>Remove KensingtonWorks <span class="tag">Do this first</span></h3>
             <p>Uninstall KensingtonWorks, then restart your Mac once so its driver lets go of the trackball. The two can't run together.</p>
           </li>
-          <li class="step glass reveal">
-            <span class="step-n" aria-hidden="true">2</span>
+          <li>
             <h3>Download</h3>
             <p>Download <a href="https://github.com/leviholliday/glideball/releases/latest/download/Glideball.zip">Glideball.zip</a>, unzip it, and drag Glideball into your Applications folder.</p>
-            <p>Or use Homebrew: <code>brew install --cask leviholliday/tap/glideball</code><button type="button" class="copy-btn" data-copy="brew install --cask leviholliday/tap/glideball">Copy</button></p>
+            <p class="brew">Or use Homebrew: <code>brew install --cask leviholliday/tap/glideball</code><button type="button" class="copy-btn" data-copy="brew install --cask leviholliday/tap/glideball">Copy</button></p>
           </li>
-          <li class="step glass reveal">
-            <span class="step-n" aria-hidden="true">3</span>
-            <h3>Open it once and approve it</h3>
-            <p>Open Glideball. macOS will say “Glideball” Not Opened. Click <b>Done</b>, then <b>Open Anyway</b> in System Settings › Privacy &amp; Security:</p>
-            <ol>
-              <li>Open <b>System Settings › Privacy &amp; Security</b> and scroll down to Security.</li>
-              <li>Next to the message about Glideball, click <b>Open Anyway</b>. The button shows for about an hour after you tried to open the app. If it's gone, open Glideball again.</li>
-              <li>Enter your password or use Touch ID, then click <b>Open Anyway</b> one more time.</li>
-            </ol>
-            <p>You only do this once. Control-click › Open doesn't work for this anymore on macOS 15 and later.</p>
+          <li class="step-wide">
+            <div class="step-text">
+              <h3>Open it once and approve it</h3>
+              <p>Open Glideball. macOS will say “Glideball” Not Opened. Click <b>Done</b>, then <b>Open Anyway</b> in System Settings › Privacy &amp; Security:</p>
+              <ol>
+                <li>Open <b>System Settings › Privacy &amp; Security</b> and scroll down to Security.</li>
+                <li>Next to the message about Glideball, click <b>Open Anyway</b>. The button shows for about an hour after you tried to open the app. If it's gone, open Glideball again.</li>
+                <li>Enter your password or use Touch ID, then click <b>Open Anyway</b> one more time.</li>
+              </ol>
+              <p>You only do this once. Control-click › Open doesn't work for this anymore on macOS 15 and later.</p>
+            </div>
+            <figure class="open-anyway">
+              <img src="/assets/open-anyway.svg?v=1" width="640" height="400" loading="lazy" decoding="async" alt="A drawing of System Settings with Privacy &amp; Security selected. Under Security it says “Glideball” was blocked to protect your Mac, with the Open Anyway button next to it.">
+            </figure>
           </li>
-          <li class="step glass reveal">
-            <span class="step-n" aria-hidden="true">4</span>
+          <li>
             <h3>Allow two permissions</h3>
             <p>Glideball's window has a button for each. Until both are on, your trackball just works normally.</p>
             <ul>
@@ -781,124 +613,120 @@
             <p><b>What it can't see:</b> it never monitors your typing. It only sees mouse buttons, scrolling, and which modifier keys (⌘ ⌥ ⌃ ⇧) are held, plus the keys you press while recording a shortcut in Glideball's own window. None of that leaves your Mac.</p>
           </li>
         </ol>
+        <!-- /install-steps -->
 
-        <div class="section-head reveal" id="linux-windows">
-          <h3 class="h3-lg">Linux and Windows <span class="pill">Preview</span></h3>
-          <p class="body">These are early versions with the same scroll feel, buttons, combos and settings files as the Mac app. I haven't tested them on a real trackball yet, so expect rough edges, and please <a href="/feedback/">tell me</a> how they go.</p>
+        <div class="previews" id="linux-windows">
+          <div class="previews-head">
+            <h3>Linux and Windows <span class="tag">Preview</span></h3>
+            <p>These are early versions with the same scroll feel, buttons, combos and settings files as the Mac app. I haven't tested them on a real trackball yet, so expect rough edges, and please <a href="/feedback/">tell me</a> how they go.</p>
+          </div>
+          <div class="group previews-list">
+            <div>
+              <h4>Linux</h4>
+              <p>Ubuntu 24.04+, Fedora 39+ or similar. Unpack it and run <code>./install.sh</code>. It asks for your password once so Glideball can read the trackball. With the <code>.deb</code>, run <code>systemctl --user enable --now glideball</code>.</p>
+              <p class="previews-links"><a class="btn btn-secondary btn-sm" href="/download/linux">Download for Linux</a> <a href="/download/linux-deb">.deb</a></p>
+            </div>
+            <div>
+              <h4>Windows</h4>
+              <p>Windows 10 or 11. Windows may show a SmartScreen warning because the app isn't signed. Choose <b>More info › Run anyway</b>.</p>
+              <p class="previews-links"><a class="btn btn-secondary btn-sm" href="/download/windows">Download for Windows</a> <a href="/download/windows-arm">ARM</a></p>
+            </div>
+          </div>
         </div>
-        <ol class="steps">
-          <li class="step step-plain glass reveal">
-            <h3>Linux <span class="pill pill-quiet">Preview</span></h3>
-            <p>Ubuntu 24.04+, Fedora 39+ or similar. Unpack it and run <code>./install.sh</code>. It asks for your password once so Glideball can read the trackball. With the <code>.deb</code>, run <code>systemctl --user enable --now glideball</code>.</p>
-            <p><a class="btn btn-glass btn-sm" href="/download/linux">Download for Linux</a> <a href="/download/linux-deb">.deb</a></p>
-          </li>
-          <li class="step step-plain glass reveal">
-            <h3>Windows <span class="pill pill-quiet">Preview</span></h3>
-            <p>Windows 10 or 11. Windows may show a SmartScreen warning because the app isn't signed. Choose <b>More info › Run anyway</b>.</p>
-            <p><a class="btn btn-glass btn-sm" href="/download/windows">Download for Windows</a> <a href="/download/windows-arm">ARM</a></p>
-          </li>
-        </ol>
       </div>
     </section>
 
-    <!-- ───────────────────── FAQ ───────────────────── -->
+    <!-- Who makes it -->
+    <section class="section" id="about" aria-labelledby="about-h">
+      <div class="wrap narrow about">
+        <h2 id="about-h">Who makes Glideball?</h2>
+        <p>I'm Levi. I'm a student, and I make Glideball on my own, alongside a few other projects.</p>
+        <p>I started it after I got a new Kensington trackball. I installed Kensington's app and driver and started trying things out, but it didn't do most of what I wanted, and I had a hard time finding my way around it. So I started building my own. If you're curious how the two compare, there's a <a href="/kensingtonworks-alternative/">side-by-side comparison</a>.</p>
+        <p>If something breaks or doesn't feel right, or you have an idea, <a href="/feedback/">let me know</a>.</p>
+        <p class="support">Glideball is free whether or not you give anything. If you'd like to help me out, you can <a href="https://venmo.com/code?user_id=3866596929963831322&amp;created=1793653243" rel="noopener">send a little through Venmo</a>. It's completely optional, and the app never asks.</p>
+        <p class="signature">Levi</p>
+      </div>
+    </section>
+
+    <!-- FAQ -->
     <section class="section" id="faq" aria-labelledby="faq-h">
-      <div class="container narrow">
-        <div class="section-head reveal">
-          <p class="kicker"><svg class="icon" aria-hidden="true"><use href="#i-sparkles"/></svg>FAQ</p>
-          <h2 id="faq-h">Questions about Glideball</h2>
-        </div>
+      <div class="wrap narrow">
+        <h2 id="faq-h">Questions about Glideball</h2>
         <div class="faq">
-          <details class="glass reveal">
-            <summary>Is there a KensingtonWorks alternative for Mac?<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+          <details>
+            <summary>Is there a KensingtonWorks alternative for Mac?</summary>
             <p>Yes. Glideball is a free, open-source Mac app that replaces KensingtonWorks for Kensington trackballs on macOS 26 Tahoe and later. It covers pointer speed, scroll-ring scrolling, button remapping and two- or three-button combos, and adds per-app setups and a live dashboard. Uninstall KensingtonWorks before you install it.</p>
           </details>
-          <details class="glass reveal">
-            <summary>Which Kensington trackballs does Glideball support?<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+          <details>
+            <summary>Which Kensington trackballs does Glideball support?</summary>
             <p>Glideball fully supports the wired Kensington Expert Mouse. Other Kensington trackballs, like the Expert Mouse Wireless, SlimBlade and Orbit, work when you turn on the Beta program in the app, but I haven't tuned Glideball on them yet, so you may hit bugs. Glideball never changes other brands' mice or your trackpad.</p>
           </details>
-          <details class="glass reveal">
-            <summary>How do I make the Kensington scroll ring scroll smoothly on a Mac?<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+          <details>
+            <summary>How do I make the Kensington scroll ring scroll smoothly on a Mac?</summary>
             <p>Install Glideball and pick the Flywheel scroll mode. Each notch of the ring gives the page a push that glides to a stop, based on measurements of Kensington's own driver. If you'd rather have the page follow the ring exactly, pick Follow.</p>
           </details>
-          <details class="glass reveal">
-            <summary>Can I make my trackball pointer faster than macOS allows?<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+          <details>
+            <summary>Can I make my trackball pointer faster than macOS allows?</summary>
             <p>Yes. The tracking speed slider in System Settings stops at 3. Glideball lets your Kensington trackball go well past that, and slow movements stay precise. Your trackpad and other mice aren't affected.</p>
           </details>
-          <details class="glass reveal">
-            <summary>Why does macOS say Glideball can't be opened? Is it safe?<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+          <details>
+            <summary>Why does macOS say Glideball can't be opened? Is it safe?</summary>
             <p>Apple hasn't notarized Glideball, because notarizing needs a paid Apple Developer membership ($99 a year). macOS blocks the first launch of any app like that. To open it, click <b>Done</b>, then <b>Open Anyway</b> in System Settings › Privacy &amp; Security. Glideball is open source, so anyone can read every line on <a href="https://github.com/leviholliday/glideball">GitHub</a>.</p>
           </details>
-          <details class="glass reveal">
-            <summary>Do I need to uninstall KensingtonWorks first?<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+          <details>
+            <summary>Do I need to uninstall KensingtonWorks first?</summary>
             <p>Yes. Uninstall KensingtonWorks and restart your Mac once before you install Glideball. Kensington's driver handles the trackball itself, and the two conflict.</p>
           </details>
-          <details class="glass reveal">
-            <summary>What can Glideball see with Accessibility and Input Monitoring?<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+          <details>
+            <summary>What can Glideball see with Accessibility and Input Monitoring?</summary>
             <p>Glideball never monitors your typing. It only sees mouse buttons, scrolling and which modifier keys are held, plus the keys you press while recording a shortcut in its own window. Input Monitoring lets it read the trackball. Accessibility lets it change what the buttons and scrolling do.</p>
           </details>
-          <details class="glass reveal">
-            <summary>Does Glideball collect my data?<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+          <details>
+            <summary>Does Glideball collect my data?</summary>
             <p>Not unless you say yes. The app has no tracking and no account. The first time you open it, it asks whether it can send me crash reports, or crash reports and anonymous settings stats, and it's off until you pick one. Besides that, it only goes online to check GitHub for updates, to sync through your own iCloud Drive if you turn that on, and to send feedback when you press Send, and you can see exactly what's included before it goes. This website is separate: it can use optional analytics, which the <a href="#cg-website-privacy">website privacy notice</a> at the bottom of the page explains.</p>
           </details>
-          <details class="glass reveal">
-            <summary>What do the optional crash reports and stats send?<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+          <details>
+            <summary>What do the optional crash reports and stats send?</summary>
             <p>A crash report says where in Glideball's code it crashed, plus your Glideball and macOS versions. Stats, sent once a day, say which Kensington trackball you have and a few settings, like the scroll mode and roughly how fast the pointer is. Neither one includes what you type, which apps you use or your name. You can change your choice, or delete what was sent, any time in Glideball › Settings › Privacy. The <a href="/privacy/#app-data">privacy page</a> lists everything that's sent.</p>
           </details>
-          <details class="glass reveal">
-            <summary>Does it work on macOS 15 Sequoia or older?<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+          <details>
+            <summary>Does it work on macOS 15 Sequoia or older?</summary>
             <p>No. Glideball needs macOS 26 Tahoe or later, on Apple silicon or Intel. Linux and Windows versions are available as a <a href="#linux-windows">preview</a>.</p>
           </details>
-          <details class="glass reveal">
-            <summary>How do I pause or uninstall Glideball?<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+          <details>
+            <summary>How do I pause or uninstall Glideball?</summary>
             <p>Press ⌃⌥⌘G (Control-Option-Command-G) from anywhere to pause it, and your buttons and scrolling go back to normal. To uninstall, quit Glideball and drag it to the Trash, or run <code>brew uninstall --zap --cask glideball</code> if you used Homebrew. To remove everything by hand, also delete <code>~/Library/Application Support/Glide</code>, <code>~/Library/Logs/Glide</code> and the Glide folder in iCloud Drive, run <code>defaults delete com.leviholliday.glide</code>, and remove Glideball from the Accessibility and Input Monitoring lists in System Settings › Privacy &amp; Security.</p>
           </details>
-          <details class="glass reveal">
-            <summary>Is Glideball available in my language?<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+          <details>
+            <summary>Is Glideball available in my language?</summary>
             <p>Glideball speaks English, <span lang="es">Español</span>, <span lang="fr">Français</span>, <span lang="de">Deutsch</span>, <span lang="it">Italiano</span>, <span lang="pt-BR">Português (Brasil)</span>, <span lang="ja">日本語</span>, <span lang="ko">한국어</span> and <span lang="zh-Hans">简体中文</span>. It follows your Mac's language, or you can pick one in Glideball › Settings › General › Language.</p>
           </details>
-          <details class="glass reveal">
-            <summary>Found a bug or have an idea?<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+          <details>
+            <summary>Found a bug or have an idea?</summary>
             <p><a href="/feedback/">Send feedback</a> and it comes straight to me. You can also email <a href="mailto:glideball@proton.me">glideball@proton.me</a> or open an issue on <a href="https://github.com/leviholliday/glideball/issues">GitHub</a>.</p>
           </details>
         </div>
       </div>
     </section>
 
-    <!-- ───────────────────── Made by one person ───────────────────── -->
-    <section class="section" id="about" aria-labelledby="about-h">
-      <div class="container narrow">
-        <div class="section-head reveal">
-          <h2 id="about-h">Who makes Glideball?</h2>
-          <p class="body">I'm Levi. I'm a student, and I make Glideball on my own, alongside a few other projects.</p>
-          <p class="body">I started it after I got a new Kensington trackball. I installed Kensington's app and driver and started trying things out, but it didn't do most of what I wanted, and I had a hard time finding my way around it. So I started building my own. If you're curious how the two compare, there's a <a href="/kensingtonworks-alternative/">side-by-side comparison</a>.</p>
-          <p class="body">If something breaks or doesn't feel right, or you have an idea, <a href="/feedback/">let me know</a>.</p>
-          <p class="body">Glideball is free whether or not you give anything. If you'd like to help me out, you can <a href="https://venmo.com/code?user_id=3866596929963831322&created=1793653243" rel="noopener">send a little through Venmo</a>. It's completely optional, and the app never asks.</p>
-          <p class="body">Levi</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- ───────────────────── Final CTA ───────────────────── -->
-    <section class="section final" aria-labelledby="final-h">
-      <div class="container">
-        <div class="final-card glass reveal">
-          <picture>
-            <source srcset="assets/icon-256.webp" type="image/webp">
-            <img src="assets/icon-256.png" width="112" height="112" alt="" loading="lazy">
-          </picture>
-          <h2 id="final-h">Give it a try.</h2>
-          <p class="body">Free for macOS&nbsp;26 Tahoe or later. Apple&nbsp;silicon&nbsp;&amp;&nbsp;Intel.</p>
-          <div class="cta-row">
-            <a class="btn btn-primary btn-lg" href="https://github.com/leviholliday/glideball/releases/latest/download/Glideball.zip">
-              <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
-              <span>Download for Mac</span>
-            </a>
-            <a class="btn btn-glass btn-lg" href="https://github.com/leviholliday/glideball">
-              <svg class="icon" aria-hidden="true"><use href="#i-github"/></svg>
-              <span>Open source on GitHub</span>
-            </a>
-          </div>
+    <!-- Closing -->
+    <section class="section closing" aria-labelledby="final-h">
+      <div class="wrap closing-inner">
+        <picture>
+          <source srcset="assets/icon-256.webp?v=3" type="image/webp">
+          <img src="assets/icon-256.png?v=3" width="88" height="88" alt="" loading="lazy">
+        </picture>
+        <h2 id="final-h">Give it a try.</h2>
+        <p>Free for macOS&nbsp;26 Tahoe or later. Apple&nbsp;silicon&nbsp;&amp;&nbsp;Intel.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary btn-lg" href="/download/">
+            <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+            <span>Download for Mac</span>
+          </a>
+          <a class="btn btn-secondary btn-lg" href="https://github.com/leviholliday/glideball">
+            <svg class="icon" aria-hidden="true"><use href="#i-github"/></svg>
+            <span>Open source on GitHub</span>
+          </a>
         </div>
       </div>
     </section>
@@ -909,7 +737,7 @@
     <div class="container footer-inner">
       <div class="footer-about">
         <div class="footer-brand">
-          <img src="/assets/icon-256.webp" width="28" height="28" alt="" loading="lazy">
+          <img src="/assets/icon-256.webp?v=3" width="24" height="24" alt="" loading="lazy">
           <span>Glideball</span>
         </div>
         <p class="footer-tag">A free, open-source Mac app for Kensington trackballs. Made by Levi Holliday, a student.</p>
@@ -917,7 +745,7 @@
       <div class="footer-cols">
         <div class="footer-col">
           <h2 class="footer-h">Glideball</h2>
-          <ul><li><a href="https://github.com/leviholliday/glideball/releases/latest/download/Glideball.zip">Download for Mac</a></li><li><a href="/#features">Features</a></li><li><a href="/#install">Install</a></li><li><a href="/changelog/">What's new</a></li><li><a href="/trackballs/">Supported trackballs</a></li><li><a href="/kensingtonworks-alternative/">KensingtonWorks alternative</a></li></ul>
+          <ul><li><a href="/download/">Download for Mac</a></li><li><a href="/#features">Features</a></li><li><a href="/#install">Install</a></li><li><a href="/changelog/">What's new</a></li><li><a href="/trackballs/">Supported trackballs</a></li><li><a href="/kensingtonworks-alternative/">KensingtonWorks alternative</a></li></ul>
         </div>
         <div class="footer-col">
           <h2 class="footer-h">Help</h2>
