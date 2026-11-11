@@ -249,7 +249,7 @@ final class DelightCenter {
         case .record(let k, _): k.newRecordTitle
         case .checklistStep(let item): item.doneTitle
         case .checklistDone: String(localized: "Glideball is all yours")
-        case .welcome(let n): String(localized: "Glideball now keeps your records — \(n) badges already earned")
+        case .welcome(let n): String(localized: "Glideball now keeps your records: \(n) badges already earned")
         }
     }
 
@@ -261,7 +261,7 @@ final class DelightCenter {
         case .checklistStep:
             String(localized: "\(ledger.checklist.count) of \(ChecklistItem.allCases.count) on Make it yours",
                    comment: "“Make it yours” is the setup checklist on Overview")
-        case .checklistDone: String(localized: "Every part of your trackball, set up your way.")
+        case .checklistDone: String(localized: "Every part of your trackball is set up.")
         case .welcome: String(localized: "See them on Overview")
         }
     }

@@ -370,7 +370,7 @@ private struct OverrideSection<Content: View>: View {
                     Text(title)
                         .font(Theme.Font.sectionTitle)
                         .accessibilityAddTraits(.isHeader)
-                    Text(isCustom ? "Custom for this app — starts as a copy of your main setup"
+                    Text(isCustom ? "Custom for this app · starts as a copy of your main setup"
                                   : "Following your main setup · \(mainSummary)")
                         .font(Theme.Font.hint)
                         .foregroundStyle(.secondary)

@@ -169,13 +169,13 @@ struct MakeItYoursCard: View {
                 }
                 .buttonStyle(HoverButtonStyle(radius: 5))
                 .foregroundStyle(.secondary)
-                .help("Hide this checklist — it won’t come back")
+                .help("Hide this checklist. It won’t come back")
                 .accessibilityLabel("Hide checklist")
             }
         } content: {
             if allDone {
                 SettingRow(title: "You’ve made Glideball yours.",
-                           hint: "Speed, scrolling, buttons, a combo and an app setup — all tuned to you. Change anything, any time.",
+                           hint: "Speed, scrolling, buttons, a combo and an app setup are all done. Change anything, any time.",
                            symbol: "checkmark.circle.fill", tint: Theme.ok) {
                     Button("Hide This Card") { withAnimation(Theme.Motion.spring) { delight.dismissChecklist() } }
                         .controlSize(.small)
@@ -218,7 +218,7 @@ struct MakeItYoursCard: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(HoverButtonStyle(radius: 0))
-        .help(isDone ? String(localized: "Done — open to change it")
+        .help(isDone ? String(localized: "Done: open to change it")
                      : String(localized: "Open the \(tab(for: item).title) tab", comment: "%@ is a tab name"))
     }
 
@@ -509,7 +509,7 @@ private struct BadgeView: View {
         }
         .opacity(earned == nil && progress == nil ? 0.55 : 1)
         .onHover { h in withAnimation(Theme.Motion.spring) { hovering = h } }
-        .help(earned.map { String(localized: "\(m.detail) — earned \($0.formatted(date: .abbreviated, time: .omitted))",
+        .help(earned.map { String(localized: "\(m.detail), earned \($0.formatted(date: .abbreviated, time: .omitted))",
                                   comment: "Badge tooltip: what earns it, then the date") }
               ?? String(localized: "Goal: \(m.detail)", comment: "Badge tooltip: what earns it"))
         .accessibilityElement(children: .ignore)

@@ -61,7 +61,7 @@ private struct SyncSection: View {
 
     var body: some View {
         SectionBlock(title: "iCloud Drive",
-                     caption: "Your settings live in iCloud Drive › Glide, so every Mac signed in to your Apple Account stays in step — no extra account. The pause switch stays per-Mac.") {
+                     caption: "Your settings live in iCloud Drive › Glide, so every Mac signed in to your Apple Account stays in step. No extra account. The pause switch stays per-Mac.") {
             statusRow
             if sync.isEnabled {
                 ForEach(sync.devices) { device in
@@ -117,7 +117,7 @@ private struct SyncSection: View {
 
     private var statusText: String {
         switch sync.status {
-        case .off: String(localized: "Off — settings stay on this Mac")
+        case .off: String(localized: "Off: settings stay on this Mac")
         case .unavailable(let why): why
         case .syncing: String(localized: "Syncing…")
         case .upToDate(let date): String(localized: "Up to date · \(date.formatted(.relative(presentation: .named)))",

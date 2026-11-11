@@ -197,7 +197,7 @@
 
 "Grabs what's under the pointer once you let go of the keys. Press again, or click, to drop." = "키에서 손을 떼면 포인터 아래에 있는 것을 잡아요. 다시 누르거나 클릭하면 놓아요.";
 
-"Include ⌘, ⌃, or ⌥ — %@ on its own would stop working everywhere else." = "⌘, ⌃ 또는 ⌥를 포함하세요 — %@만 쓰면 다른 모든 곳에서 작동하지 않게 돼요.";
+"Include ⌘, ⌃, or ⌥. %@ on its own would stop working everywhere else." = "⌘, ⌃ 또는 ⌥를 포함하세요. %@만 쓰면 다른 모든 곳에서 작동하지 않게 돼요.";
 
 /* First %@ is a keyboard shortcut like ⌃⌥⌘G; second is a mode name like “Precision” */
 "%@ is already the shortcut for %@." = "%@은(는) 이미 %@의 단축키예요.";
@@ -241,7 +241,7 @@
 /* “Make it yours” is the setup checklist on Overview */
 "%lld of %lld on Make it yours" = "나만의 Glideball 만들기 %lld/%lld 완료";
 
-"Every part of your trackball, set up your way." = "트랙볼의 모든 부분을 내 방식대로.";
+"Every part of your trackball is set up." = "트랙볼의 모든 부분을 설정했어요.";
 
 "See them on Overview" = "개요에서 확인하세요";
 
@@ -482,15 +482,15 @@
 
 "Done: add an app setup" = "완료: 앱 구성 추가하기";
 
-"Pointer tab — try a preset" = "포인터 탭 — 프리셋을 사용해 보세요";
+"Pointer tab: try a preset" = "포인터 탭: 프리셋을 사용해 보세요";
 
-"Scrolling tab — Flywheel, Follow or Native" = "스크롤 탭 — 플라이휠, 따라가기 또는 네이티브";
+"Scrolling tab: Flywheel, Follow or Native" = "스크롤 탭: 플라이휠, 따라가기 또는 네이티브";
 
-"Buttons tab — Quick assign takes two presses" = "버튼 탭 — 빠른 지정은 두 번만 누르면 돼요";
+"Buttons tab: Quick assign takes two presses" = "버튼 탭: 빠른 지정은 두 번만 누르면 돼요";
 
-"Buttons tab — press two buttons together" = "버튼 탭 — 버튼 두 개를 함께 누르세요";
+"Buttons tab: press two buttons together" = "버튼 탭: 버튼 두 개를 함께 누르세요";
 
-"Apps tab — a different feel per app" = "앱 탭 — 앱마다 다른 느낌으로";
+"Apps tab: a different feel per app" = "앱 탭: 앱마다 다른 느낌으로";
 
 /* ---- SettingsSync.swift ---- */
 
@@ -574,7 +574,7 @@
 /* After “Following your main setup ·” */
 "default buttons" = "기본 버튼";
 
-"Custom for this app — starts as a copy of your main setup" = "이 앱 전용 — 기본 구성의 복사본으로 시작해요";
+"Custom for this app · starts as a copy of your main setup" = "이 앱 전용 · 기본 구성의 복사본으로 시작해요";
 
 "Following your main setup · %@" = "기본 구성을 따름 · %@";
 
@@ -586,7 +586,7 @@
 
 "Quick assign" = "빠른 지정";
 
-"Press a trackball button — or hold two or three together for a combo — then press the keyboard shortcut it should send." = "트랙볼 버튼을 누르거나 콤보를 위해 두세 개를 함께 누른 다음, 보낼 키보드 단축키를 누르세요.";
+"Press a trackball button, or hold two or three together for a combo, then press the keyboard shortcut it should send." = "트랙볼 버튼을 누르거나 콤보를 위해 두세 개를 함께 누른 다음, 보낼 키보드 단축키를 누르세요.";
 
 "Assign" = "지정";
 
@@ -660,9 +660,9 @@
 
 "This Mac" = "이 Mac";
 
-"Your settings live in iCloud Drive › Glide, so every Mac signed in to your Apple Account stays in step — no extra account. The pause switch stays per-Mac." = "설정은 iCloud Drive › Glide에 저장되므로 같은 Apple 계정으로 로그인한 모든 Mac이 동일하게 유지돼요 — 추가 계정은 필요 없어요. 일시 정지 스위치는 Mac마다 따로 적용돼요.";
+"Your settings live in iCloud Drive › Glide, so every Mac signed in to your Apple Account stays in step. No extra account. The pause switch stays per-Mac." = "설정은 iCloud Drive › Glide에 저장되므로 같은 Apple 계정으로 로그인한 모든 Mac이 동일하게 유지돼요. 추가 계정은 필요 없어요. 일시 정지 스위치는 Mac마다 따로 적용돼요.";
 
-"Off — settings stay on this Mac" = "끔 — 설정이 이 Mac에만 저장돼요";
+"Off: settings stay on this Mac" = "끔: 설정이 이 Mac에만 저장돼요";
 
 "Syncing…" = "동기화 중…";
 
@@ -673,7 +673,7 @@
 
 /* ---- ButtonsView.swift ---- */
 
-"Press a button on your trackball — its row lights up." = "트랙볼의 버튼을 누르면 해당 행이 빛나요.";
+"Press a button on your trackball: its row lights up." = "트랙볼의 버튼을 누르면 해당 행이 빛나요.";
 
 /* Button preset name */
 "Spaces + Wispr Flow" = "스페이스 + Wispr Flow";
@@ -718,15 +718,15 @@
 
 "You’ve made Glideball yours." = "Glide를 나만의 것으로 만들었어요.";
 
-"Speed, scrolling, buttons, a combo and an app setup — all tuned to you. Change anything, any time." = "속도, 스크롤, 버튼, 콤보, 앱 구성까지 — 모두 나에게 맞췄어요. 언제든지 무엇이든 바꿀 수 있어요.";
+"Speed, scrolling, buttons, a combo and an app setup are all done. Change anything, any time." = "속도, 스크롤, 버튼, 콤보, 앱 구성까지 모두 끝났어요. 언제든지 무엇이든 바꿀 수 있어요.";
 
 "Hide This Card" = "이 카드 가리기";
 
-"Hide this checklist — it won’t come back" = "이 체크리스트 가리기 — 다시 나타나지 않아요";
+"Hide this checklist. It won’t come back" = "이 체크리스트 가리기. 다시 나타나지 않아요";
 
 "Hide checklist" = "체크리스트 가리기";
 
-"Done — open to change it" = "완료 — 열어서 변경하기";
+"Done: open to change it" = "완료: 열어서 변경하기";
 
 /* %@ is a tab name */
 "Open the %@ tab" = "%@ 탭 열기";
@@ -785,7 +785,7 @@
 "today" = "오늘";
 
 /* Badge tooltip: what earns it, then the date */
-"%@ — earned %@" = "%@ — %@에 획득";
+"%@, earned %@" = "%@, %@에 획득";
 
 /* Badge tooltip: what earns it */
 "Goal: %@" = "목표: %@";
@@ -815,7 +815,7 @@
 
 "What happened, what you expected, and how to make it happen again (if you know)." = "무슨 일이 있었는지, 원래 예상한 동작은 무엇인지, 그리고 (알고 있다면) 다시 재현하는 방법을 적어주세요.";
 
-"Tell me more — how would it work, and what would it help with?" = "더 자세히 알려주세요 — 어떻게 작동하고, 어떤 점에 도움이 될까요?";
+"Tell me more: how would it work, and what would it help with?" = "더 자세히 알려주세요: 어떻게 작동하고, 어떤 점에 도움이 될까요?";
 
 "Any details that help me answer." = "답변에 도움이 될 만한 세부 사항을 적어주세요.";
 
@@ -872,17 +872,17 @@
 
 "That email address doesn’t look right." = "이메일 주소가 올바르지 않은 것 같아요.";
 
-"Your feedback didn’t send — open Send Feedback to try again." = "피드백이 전송되지 않았어요 — 피드백 보내기를 열어 다시 시도하세요.";
+"Your feedback didn’t send. Open Send Feedback to try again." = "피드백이 전송되지 않았어요. 피드백 보내기를 열어 다시 시도하세요.";
 
-"Feedback sent — thank you!" = "피드백을 보냈어요 — 감사합니다!";
+"Feedback sent. Thank you!" = "피드백을 보냈어요. 감사합니다!";
 
 "Send Feedback" = "피드백 보내기";
 
-"Bugs, ideas, questions — it goes straight to the developer." = "버그, 아이디어, 질문 — 개발자에게 바로 전달돼요.";
+"Bugs, ideas and questions go straight to me." = "버그, 아이디어, 질문은 저에게 바로 전달돼요.";
 
 "Close" = "닫기";
 
-"Hide — it keeps sending in the background" = "가리기 — 백그라운드에서 계속 보내요";
+"Hide. It keeps sending in the background" = "가리기. 백그라운드에서 계속 보내요";
 
 "Attachments" = "첨부 파일";
 
@@ -892,9 +892,9 @@
 
 "Include the scroll log" = "스크롤 로그 포함";
 
-"The last %@ lines of timings from the scroll ring (scroll-log.txt) — no keystrokes or window contents." = "스크롤 링의 최근 타이밍 기록 %@줄(scroll-log.txt) — 키 입력이나 윈도우 내용은 포함되지 않아요.";
+"The last %@ lines of timings from the scroll ring (scroll-log.txt). No keystrokes or window contents." = "스크롤 링의 최근 타이밍 기록 %@줄(scroll-log.txt). 키 입력이나 윈도우 내용은 포함되지 않아요.";
 
-"There’s no scroll log yet — scroll with the ring and it will have something to send." = "아직 스크롤 로그가 없어요 — 링으로 스크롤하면 보낼 내용이 생겨요.";
+"There’s no scroll log yet. Scroll with the ring and it will have something to send." = "아직 스크롤 로그가 없어요. 링으로 스크롤하면 보낼 내용이 생겨요.";
 
 "Drop screenshots or screen recordings here" = "여기에 스크린샷이나 화면 기록을 놓으세요";
 
@@ -911,13 +911,13 @@
 /* Open panel button */
 "Attach" = "첨부";
 
-"About you — optional" = "보내는 사람 — 선택 사항";
+"About you (optional)" = "보내는 사람 (선택 사항)";
 
 "Name" = "이름";
 
 "Your name" = "이름 입력";
 
-"Email — that doesn’t look right" = "이메일 — 올바르지 않은 것 같아요";
+"Email: that doesn’t look right" = "이메일: 올바르지 않은 것 같아요";
 
 "Email, if you’d like a reply" = "답장을 원하시면 이메일 입력";
 
@@ -982,7 +982,7 @@
 
 "Celebrations" = "축하 효과";
 
-"Closing this window keeps Glideball running. Click Glideball in the Dock to bring it back, or press ⌘Q to quit — your trackball then goes back to normal." = "이 윈도우를 닫아도 Glide는 계속 실행돼요. Dock에서 Glide를 클릭하면 다시 열리고, ⌘Q를 눌러 종료하면 트랙볼이 원래대로 돌아가요.";
+"Closing this window keeps Glideball running. Click Glideball in the Dock to bring it back, or press ⌘Q to quit. Your trackball then goes back to normal." = "이 윈도우를 닫아도 Glide는 계속 실행돼요. Dock에서 Glide를 클릭하면 다시 열리고, ⌘Q를 눌러 종료하면 트랙볼이 원래대로 돌아가요.";
 
 "Waiting for permissions…" = "권한 대기 중…";
 
@@ -1032,7 +1032,7 @@
 
 "Set a button to Precision in Buttons. Hold it (or toggle it on) and the cursor slows to this speed for fine work, then snaps back." = "버튼 탭에서 버튼을 정밀 모드로 설정하세요. 버튼을 누르고 있거나 켜 두면 세밀한 작업을 위해 커서가 이 속도로 느려졌다가 다시 원래대로 돌아와요.";
 
-"Applies only to the Expert Mouse — your other mice and trackpad keep their own settings. macOS still moves the cursor itself, so there's zero added lag." = "Expert Mouse에만 적용돼요 — 다른 마우스와 트랙패드는 각자의 설정을 유지해요. 커서는 여전히 macOS가 직접 움직이므로 지연이 전혀 추가되지 않아요.";
+"Applies only to the Expert Mouse; your other mice and trackpad keep their own settings. macOS still moves the cursor itself, so there's no added lag." = "Expert Mouse에만 적용돼요; 다른 마우스와 트랙패드는 각자의 설정을 유지해요. 커서는 여전히 macOS가 직접 움직이므로 지연이 전혀 추가되지 않아요.";
 
 "Response curve" = "응답 곡선";
 
@@ -1060,13 +1060,13 @@
 /* Tab name */
 "Apps" = "앱";
 
-"A Precision button is slowing the cursor — press it again (or pause Glideball) to stop" = "정밀 모드 버튼이 커서를 느리게 하고 있어요 — 다시 누르거나 Glide를 일시 정지하면 멈춰요";
+"A Precision button is slowing the cursor. Press it again (or pause Glideball) to stop" = "정밀 모드 버튼이 커서를 느리게 하고 있어요. 다시 누르거나 Glide를 일시 정지하면 멈춰요";
 
-"The left button is held by Drag lock — click, or press the Drag lock button again, to let go" = "드래그 잠금이 왼쪽 버튼을 누르고 있어요 — 클릭하거나 드래그 잠금 버튼을 다시 누르면 놓아요";
+"The left button is held by Drag lock. Click, or press the Drag lock button again, to let go" = "드래그 잠금이 왼쪽 버튼을 누르고 있어요. 클릭하거나 드래그 잠금 버튼을 다시 누르면 놓아요";
 
 "Ball scroll" = "볼 스크롤";
 
-"Pause or resume Glideball — also %@ from anywhere" = "Glideball 일시 정지 또는 재개 — 어디서나 %@ 사용 가능";
+"Pause or resume Glideball (also %@ from anywhere)" = "Glideball 일시 정지 또는 재개 (어디서나 %@ 사용 가능)";
 
 "Pause or resume Glideball" = "Glideball 일시 정지 또는 재개";
 
@@ -1095,13 +1095,13 @@
 
 "Glideball needs these to read your trackball and adjust its buttons and scrolling. Until both are on, your trackball works normally and Glideball stays out of the way." = "Glide가 트랙볼을 읽고 버튼과 스크롤을 조정하려면 이 권한이 필요해요. 둘 다 켜기 전까지는 트랙볼이 평소처럼 작동하고 Glide는 관여하지 않아요.";
 
-"Accessibility — on" = "손쉬운 사용 — 켬";
+"Accessibility: on" = "손쉬운 사용: 켬";
 
 "Allow Accessibility…" = "손쉬운 사용 허용…";
 
 "Allow Input Monitoring…" = "입력 모니터링 허용…";
 
-"Input Monitoring — on" = "입력 모니터링 — 켬";
+"Input Monitoring: on" = "입력 모니터링: 켬";
 
 "Downloading %lld%%" = "다운로드 중 %lld%%";
 
@@ -1116,7 +1116,7 @@
 /* Update button after a failed install */
 "Retry" = "재시도";
 
-"Glideball %@ is available — install it or see what's new" = "Glideball %@ 사용 가능 — 설치하거나 새로운 기능 보기";
+"Glideball %@ is available. Install it or see what's new" = "Glideball %@ 사용 가능. 설치하거나 새로운 기능 보기";
 
 /* ---- ScrollSettingsView.swift ---- */
 
@@ -1185,7 +1185,7 @@
 
 "Throw" = "던지기";
 
-"Spin fast and let go — the page glides and lands" = "빠르게 돌리고 놓으면 페이지가 미끄러지다가 멈춰요";
+"Spin fast and let go. The page glides and lands" = "빠르게 돌리고 놓으면 페이지가 미끄러지다가 멈춰요";
 
 "Throw to coast" = "던져서 미끄러지기";
 
@@ -1224,7 +1224,7 @@
 
 "ms" = "ms";
 
-"Throw is off — the page stops the moment the ring stops." = "던지기가 꺼져 있어요 — 링이 멈추는 순간 페이지도 멈춰요.";
+"Throw is off. The page stops the moment the ring stops." = "던지기가 꺼져 있어요. 링이 멈추는 순간 페이지도 멈춰요.";
 
 "×" = "×";
 
@@ -1246,11 +1246,11 @@
 /* Welcome Tour, spin-the-ring step: what the chosen scroll mode does */
 "macOS does the scrolling" = "macOS가 스크롤을 처리해요";
 
-"Push and glide — Kensington's feel" = "밀고 미끄러지기 — Kensington의 느낌";
+"Push and glide (Kensington's feel)" = "밀고 미끄러지기 (Kensington의 느낌)";
 
 "Page tracks the ring exactly" = "페이지가 링을 정확히 따라가요";
 
-"Close the tour (esc) — reopen it from Help › Show Welcome Tour…" = "투어 닫기(esc) — 도움말 › 환영 투어 보기…에서 다시 열 수 있어요";
+"Close the tour (esc). Reopen it from Help › Show Welcome Tour…" = "투어 닫기(esc). 도움말 › 환영 투어 보기…에서 다시 열 수 있어요";
 
 "Skip for now" = "나중에";
 
@@ -1276,9 +1276,9 @@
 
 "Lets Glideball tell your trackball apart from your other mice and trackpad." = "Glide가 트랙볼을 다른 마우스나 트랙패드와 구별할 수 있게 해줘요.";
 
-"All set — Glideball can see your trackball." = "모두 완료 — Glide가 트랙볼을 인식할 수 있어요.";
+"All set. Glideball can see your trackball." = "모두 완료. Glide가 트랙볼을 인식할 수 있어요.";
 
-"Switch Glideball on in each list in System Settings, then come back — the checkmarks update by themselves." = "시스템 설정의 각 목록에서 Glide를 켠 다음 돌아오세요 — 체크 표시는 자동으로 업데이트돼요.";
+"Switch Glideball on in each list in System Settings, then come back. The checkmarks update by themselves." = "시스템 설정의 각 목록에서 Glide를 켠 다음 돌아오세요. 체크 표시는 자동으로 업데이트돼요.";
 
 "Allow…" = "허용…";
 
@@ -1286,7 +1286,7 @@
 
 "Press each button on your trackball." = "트랙볼의 각 버튼을 눌러보세요.";
 
-"Left click — always" = "왼쪽 클릭 — 항상";
+"Left click, always" = "왼쪽 클릭, 항상";
 
 "Does: %@" = "기능: %@";
 
@@ -1327,7 +1327,7 @@
 "Every day of the last two weeks, then one a month for a year. Each backup is about a kilobyte, and only made when something changed." = "최근 2주 동안은 매일, 그 후 1년 동안은 한 달에 하나씩 보관해요. 백업 하나는 약 1KB이고, 무언가 바뀌었을 때만 만들어져요.";
 "Monthly" = "월별";
 "Off · %@ · %@" = "끔 · %@ · %@";
-"On — nothing backed up yet" = "켬 — 아직 백업이 없어요";
+"On, nothing backed up yet" = "켬, 아직 백업이 없어요";
 "Only fine-tuning differs (a value inside a mode or app setup)." = "세부 조정만 달라요(모드나 앱 설정 안의 값).";
 "Restore" = "복원";
 "Restored the backup from %@" = "%@ 백업을 복원했어요";
@@ -1396,11 +1396,11 @@
 "You have %@. Your settings and permissions carry over." = "현재 %@을(를) 사용 중이에요. 설정과 권한은 그대로 유지돼요.";
 
 /* ---- Split of the Beta program switch; support link ---- */
-"An early update — it may have bugs" = "얼리 업데이트예요. 버그가 있을 수 있어요";
+"An early update. It may have bugs" = "얼리 업데이트예요. 버그가 있을 수 있어요";
 "An early update. It may have bugs." = "얼리 업데이트예요. 버그가 있을 수 있어요.";
 "Early updates" = "얼리 업데이트";
 "Made for Kensington trackballs. Glideball is an independent project and isn’t affiliated with Kensington." = "Kensington 트랙볼을 위해 만들었어요. Glideball은 독립 프로젝트이며 Kensington과 관련이 없어요.";
-"Not fully tested yet — you may hit bugs" = "아직 충분히 테스트하지 못했어요. 버그가 있을 수 있어요";
+"Not fully tested yet. You may hit bugs" = "아직 충분히 테스트하지 못했어요. 버그가 있을 수 있어요";
 "Other Kensington trackballs" = "다른 Kensington 트랙볼";
 "Turn on Other Kensington trackballs to try Glideball with your %@." = "‘다른 Kensington 트랙볼’을 켜면 %@에서 Glideball을 사용해 볼 수 있어요.";
 "Your %@ can work with Glideball if you turn on Other Kensington trackballs. You can do that at the end of the tour." = "‘다른 Kensington 트랙볼’을 켜면 %@에서 Glideball을 사용할 수 있어요. 투어 마지막에 켤 수 있어요.";

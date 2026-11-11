@@ -46,7 +46,7 @@ final class FeedbackDraft {
         var detailsPrompt: String {
             switch self {
             case .bug: String(localized: "What happened, what you expected, and how to make it happen again (if you know).")
-            case .idea: String(localized: "Tell me more — how would it work, and what would it help with?")
+            case .idea: String(localized: "Tell me more: how would it work, and what would it help with?")
             case .question: String(localized: "Any details that help me answer.")
             }
         }
@@ -383,7 +383,7 @@ final class FeedbackDraft {
                 withAnimation(.smooth) { phase = .failed(message) }
                 if !isPresented {
                     model.show(.init(symbol: "exclamationmark.bubble.fill",
-                                     text: String(localized: "Your feedback didn’t send — open Send Feedback to try again."), isError: true))
+                                     text: String(localized: "Your feedback didn’t send. Open Send Feedback to try again."), isError: true))
                 }
             }
             task = nil
@@ -401,7 +401,7 @@ final class FeedbackDraft {
             phase = .sent(id)
         }
         if !isPresented {
-            model.show(.init(symbol: "paperplane.fill", text: String(localized: "Feedback sent — thank you!")))
+            model.show(.init(symbol: "paperplane.fill", text: String(localized: "Feedback sent. Thank you!")))
             phase = .writing
         }
     }
@@ -470,11 +470,11 @@ struct FeedbackView: View {
                 Text("Send Feedback")
                     .font(.system(size: 20, weight: .semibold))
                     .accessibilityAddTraits(.isHeader)
-                Text("Bugs, ideas, questions — it goes straight to the developer.")
+                Text("Bugs, ideas and questions go straight to me.")
                     .font(Theme.Font.hint).foregroundStyle(.secondary)
             }
             Spacer()
-            IconButton(symbol: "xmark", help: draft.phase.isSending ? "Hide — it keeps sending in the background" : "Close") {
+            IconButton(symbol: "xmark", help: draft.phase.isSending ? "Hide. It keeps sending in the background" : "Close") {
                 dismiss()
             }
         }
@@ -608,8 +608,8 @@ struct FeedbackView: View {
                                symbol: "slider.horizontal.3", isOn: $draft.includeSettings)
                 SettingsToggle(title: "Include the scroll log",
                                hint: FeedbackDraft.hasScrollLog
-                                   ? String(localized: "The last \(FeedbackDraft.logLines.formatted()) lines of timings from the scroll ring (scroll-log.txt) — no keystrokes or window contents.")
-                                   : String(localized: "There’s no scroll log yet — scroll with the ring and it will have something to send."),
+                                   ? String(localized: "The last \(FeedbackDraft.logLines.formatted()) lines of timings from the scroll ring (scroll-log.txt). No keystrokes or window contents.")
+                                   : String(localized: "There’s no scroll log yet. Scroll with the ring and it will have something to send."),
                                symbol: "waveform.path.ecg.text", isOn: $draft.includeLog)
             }
             .overlay {
@@ -687,7 +687,7 @@ struct FeedbackView: View {
     // MARK: About you
 
     private var aboutYouSection: some View {
-        SectionBlock(title: "About you — optional", caption: "Remembered on this Mac for next time. Only used to reply to you.") {
+        SectionBlock(title: "About you (optional)", caption: "Remembered on this Mac for next time. Only used to reply to you.") {
             HStack(alignment: .top, spacing: 12) {
                 labeled("Name") {
                     TextField("Your name", text: $draft.name)
@@ -695,7 +695,7 @@ struct FeedbackView: View {
                         .padding(.horizontal, 10).frame(height: 30)
                         .background(FieldBackground())
                 }
-                labeled(draft.emailLooksWrong ? "Email — that doesn’t look right" : "Email, if you’d like a reply") {
+                labeled(draft.emailLooksWrong ? "Email: that doesn’t look right" : "Email, if you’d like a reply") {
                     TextField("you@example.com", text: $draft.email)
                         .textFieldStyle(.plain)
                         .textContentType(.emailAddress)

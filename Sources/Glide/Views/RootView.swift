@@ -257,7 +257,7 @@ private struct SidebarHero: View {
                 .accessibilityElement(children: .combine)
                 // "Connected · Beta": a device supported through Other Kensington trackballs.
                 .help(model.status.deviceConnected && model.status.deviceIsBeta
-                      ? String(localized: "Not fully tested yet — you may hit bugs") : "")
+                      ? String(localized: "Not fully tested yet. You may hit bugs") : "")
             }
             .padding(.horizontal, 4)
         }
@@ -318,7 +318,7 @@ private struct SidebarFooter: View {
                     .toggleStyle(.switch)
                     .controlSize(.small)
                     .labelsHidden()
-                    .help(model.config.globalShortcuts.pause.map { String(localized: "Pause or resume Glideball — also \($0.display) from anywhere") }
+                    .help(model.config.globalShortcuts.pause.map { String(localized: "Pause or resume Glideball (also \($0.display) from anywhere)") }
                           ?? String(localized: "Pause or resume Glideball"))
             }
             HStack(spacing: 4) {
@@ -351,11 +351,11 @@ private struct ModeChips: View {
             HStack(spacing: 5) {
                 if modes.precision {
                     ModeChip(text: "Precision", symbol: "scope", tint: Theme.ball)
-                        .help("A Precision button is slowing the cursor — press it again (or pause Glideball) to stop")
+                        .help("A Precision button is slowing the cursor. Press it again (or pause Glideball) to stop")
                 }
                 if modes.dragLocked {
                     ModeChip(text: "Drag lock", symbol: "hand.draw.fill", tint: Theme.buttons)
-                        .help("The left button is held by Drag lock — click, or press the Drag lock button again, to let go")
+                        .help("The left button is held by Drag lock. Click, or press the Drag lock button again, to let go")
                 }
             }
             if modes.ballScrolling {
@@ -433,10 +433,10 @@ struct PermissionsBanner: View {
     var body: some View {
         NoticeBanner(symbol: "lock.shield", tint: Theme.warn, title: "Two quick permissions",
                      message: "Glideball needs these to read your trackball and adjust its buttons and scrolling. Until both are on, your trackball works normally and Glideball stays out of the way.") {
-            permissionButton(granted: model.hasAccessibility, on: "Accessibility — on", off: "Allow Accessibility…") {
+            permissionButton(granted: model.hasAccessibility, on: "Accessibility: on", off: "Allow Accessibility…") {
                 model.requestAccessibility()
             }
-            permissionButton(granted: model.hasInputMonitoring, on: "Input Monitoring — on", off: "Allow Input Monitoring…") {
+            permissionButton(granted: model.hasInputMonitoring, on: "Input Monitoring: on", off: "Allow Input Monitoring…") {
                 model.requestInputMonitoring()
             }
             Link("Why?", destination: SiteLinks.permissions)
@@ -488,7 +488,7 @@ struct UpdateButton: View {
                 Button("What’s New in \(update.displayVersion)…") { NSWorkspace.shared.open(update.notesPage) }
                 if update.isPrerelease {
                     Divider()
-                    Text("An early update — it may have bugs")
+                    Text("An early update. It may have bugs")
                 }
                 if case .failed(let message) = updates.installState {
                     Divider()
@@ -510,7 +510,7 @@ struct UpdateButton: View {
             .buttonStyle(HoverButtonStyle(radius: 12))
             .menuIndicator(.hidden)
             .fixedSize()
-            .help("Glideball \(update.displayVersion) is available — install it or see what's new")
+            .help("Glideball \(update.displayVersion) is available. Install it or see what's new")
         }
     }
 }

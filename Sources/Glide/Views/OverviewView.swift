@@ -203,7 +203,7 @@ private struct SettingsHint: View {
     var body: some View {
         RowGroup {
             SettingRow(title: "Looking for Open at login, Language, Updates or Keyboard shortcuts? They've moved to Settings. Press ⌘, any time Glideball is in front.",
-                       hint: "Closing this window keeps Glideball running. Click Glideball in the Dock to bring it back, or press ⌘Q to quit — your trackball then goes back to normal.",
+                       hint: "Closing this window keeps Glideball running. Click Glideball in the Dock to bring it back, or press ⌘Q to quit. Your trackball then goes back to normal.",
                        symbol: "gearshape") {
                 Button("Settings…") { (NSApp.delegate as? AppDelegate)?.showSettings() }
                     .controlSize(.small)

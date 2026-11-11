@@ -15,7 +15,7 @@ struct ButtonsView: View {
         VStack(alignment: .leading, spacing: Theme.Space.section) {
             AssignPanel(model: model)
 
-            SectionBlock(title: "Your buttons", caption: "Press a button on your trackball — its row lights up.",
+            SectionBlock(title: "Your buttons", caption: "Press a button on your trackball: its row lights up.",
                          dividerInset: ButtonRow.dividerInset) {
                 ForEach(buttons, id: \.index) { b in
                     ButtonRow(index: b.index, name: b.name, normally: b.normally,

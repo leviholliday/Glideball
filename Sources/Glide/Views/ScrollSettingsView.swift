@@ -174,7 +174,7 @@ enum ScrollHints {
 
     static func throwReach(_ config: GlideConfig) -> String {
         guard config.throwEnabled else {
-            return String(localized: "Throw is off — the page stops the moment the ring stops.")
+            return String(localized: "Throw is off. The page stops the moment the ring stops.")
         }
         let v0 = min(ThrowCurve.typicalSpeed(config), SmoothScroller.throwMaxSpeed)
         let duration = SmoothScroller.throwDuration(speed: v0, throwAmount: config.throwAmount)
@@ -350,7 +350,7 @@ struct ScrollControls: View {
 
     var throwSection: some View {
         SectionBlock(title: "Throw") {
-            ToggleRow(title: "Throw to coast", subtitle: "Spin fast and let go — the page glides and lands",
+            ToggleRow(title: "Throw to coast", subtitle: "Spin fast and let go. The page glides and lands",
                       symbol: "paperplane.fill", isOn: $config.throwEnabled)
             TuningSlider(title: "Throw distance", symbol: "ruler",
                          value: $config.throwAmount, range: 0...1,

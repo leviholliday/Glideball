@@ -10,7 +10,7 @@ struct PointerView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Space.section) {
             SectionBlock(title: "Feel",
-                         caption: "Applies only to the Expert Mouse — your other mice and trackpad keep their own settings. macOS still moves the cursor itself, so there's zero added lag.") {
+                         caption: "Applies only to the Expert Mouse; your other mice and trackpad keep their own settings. macOS still moves the cursor itself, so there's no added lag.") {
                 TuningSlider(title: "Tracking speed", symbol: "gauge.with.dots.needle.67percent",
                              value: $model.config.trackingSpeed, range: 0.5...80, step: 0.5,
                              format: { $0.twoDigits },

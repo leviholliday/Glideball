@@ -82,7 +82,7 @@ struct AssignPanel: View {
             Group {
                 switch model.assignStep {
                 case .idle:
-                    SettingRow(title: "Press a trackball button — or hold two or three together for a combo — then press the keyboard shortcut it should send.",
+                    SettingRow(title: "Press a trackball button, or hold two or three together for a combo, then press the keyboard shortcut it should send.",
                                symbol: "hand.point.up.left") {
                         Button("Assign") { model.beginAssign(for: profileID) }
                             .buttonStyle(.borderedProminent)

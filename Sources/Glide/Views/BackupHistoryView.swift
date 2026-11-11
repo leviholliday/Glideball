@@ -116,7 +116,7 @@ struct BackupHistorySection: View {
     private var statusText: String {
         guard let newest = store.backups.first else {
             return store.isEnabled
-                ? String(localized: "On — nothing backed up yet", comment: "Automatic backups status")
+                ? String(localized: "On, nothing backed up yet", comment: "Automatic backups status")
                 : String(localized: "Off", comment: "Automatic backups status")
         }
         let size = ByteCountFormatter.string(fromByteCount: Int64(store.totalBytes), countStyle: .file)

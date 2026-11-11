@@ -56,7 +56,7 @@ struct WelcomeTourView: View {
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(.secondary)
                         .keyboardShortcut(.cancelAction)
-                        .help("Close the tour (esc) — reopen it from Help › Show Welcome Tour…")
+                        .help("Close the tour (esc). Reopen it from Help › Show Welcome Tour…")
                         .opacity(step == .done ? 0 : 1)
                 }
                 .padding(.horizontal, 22)
@@ -259,10 +259,10 @@ struct WelcomeTourView: View {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 Group {
                     if model.permissionsOK {
-                        Label("All set — Glideball can see your trackball.", systemImage: "checkmark.circle.fill")
+                        Label("All set. Glideball can see your trackball.", systemImage: "checkmark.circle.fill")
                             .foregroundStyle(Theme.ok)
                     } else {
-                        Label("Switch Glideball on in each list in System Settings, then come back — the checkmarks update by themselves.",
+                        Label("Switch Glideball on in each list in System Settings, then come back. The checkmarks update by themselves.",
                               systemImage: "info.circle")
                             .foregroundStyle(.secondary)
                     }
@@ -340,7 +340,7 @@ struct WelcomeTourView: View {
         let isPressed = model.pressed.contains(index)
         let isFound = found.contains(index)
         let action = model.config.buttons[index] ?? .system
-        let does = index == 0 ? String(localized: "Left click — always") : action == .system ? normally : action.title
+        let does = index == 0 ? String(localized: "Left click, always") : action == .system ? normally : action.title
         return HStack(spacing: Theme.Space.symbolGap) {
             CornerGlyph(index: index, lit: isPressed)
                 .frame(width: Theme.Space.symbolColumn)
@@ -439,7 +439,7 @@ struct WelcomeTourView: View {
     private var modeHint: String {
         switch model.config.scrollMode {
         case .native: String(localized: "macOS does the scrolling")
-        case .flywheel: String(localized: "Push and glide — Kensington's feel")
+        case .flywheel: String(localized: "Push and glide (Kensington's feel)")
         case .follow: String(localized: "Page tracks the ring exactly")
         }
     }
