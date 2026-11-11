@@ -1,6 +1,6 @@
 # Developing Glideball
 
-Everything that used to sit in the bottom half of the README: how Glideball works inside, how to build it, and how releases go out. If you just want to use Glideball, the [README](../README.md) is all you need.
+This is the technical side of Glideball that used to be in the README: how it works inside, how to build it, and how releases go out. If you just want to use Glideball, the [README](../README.md) and the [help pages](https://glideball.netlify.app/help/) are all you need.
 
 ## Repo layout
 
