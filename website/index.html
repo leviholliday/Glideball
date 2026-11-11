@@ -188,7 +188,15 @@
             "name": "Does Glideball collect my data?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "No. The app has no analytics, no tracking and no account. It only goes online to check GitHub for updates, to sync through your own iCloud Drive if you turn that on, and to send feedback when you press Send, and you can see exactly what's included before it goes. This website is separate: it can use optional analytics, which the website privacy notice at the bottom of the page explains."
+              "text": "Not unless you say yes. The app has no tracking and no account. The first time you open it, it asks whether it can send me crash reports, or crash reports and anonymous settings stats, and it's off until you pick one. Besides that, it only goes online to check GitHub for updates, to sync through your own iCloud Drive if you turn that on, and to send feedback when you press Send, and you can see exactly what's included before it goes. This website is separate: it can use optional analytics, which the website privacy notice at the bottom of the page explains."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What do the optional crash reports and stats send?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "A crash report says where in Glideball's code it crashed, plus your Glideball and macOS versions. Stats, sent once a day, say which Kensington trackball you have and a few settings, like the scroll mode and roughly how fast the pointer is. Neither one includes what you type, which apps you use or your name. You can change your choice, or delete what was sent, any time in Overview › General. The privacy page lists everything that's sent."
             }
           },
           {
@@ -382,7 +390,7 @@
         </li>
         <li class="hl glass reveal">
           <span class="hl-icon"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg></span>
-          <div><strong>No tracking in the app</strong><span>No analytics and no account.</span></div>
+          <div><strong>No tracking in the app</strong><span>No account, and crash reports only if you say yes.</span></div>
         </li>
       </ul>
     </section>
@@ -699,7 +707,7 @@
           <article class="card glass reveal">
             <span class="card-icon"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg></span>
             <h3>Private</h3>
-            <p>The app has no analytics. It only goes online to check GitHub for updates, to sync through your own iCloud Drive if you turn that on, and to send feedback when you press Send.</p>
+            <p>The app has no tracking. It sends crash reports or stats only if you say yes, and otherwise only goes online to check GitHub for updates, to sync through your own iCloud Drive if you turn that on, and to send feedback when you press Send.</p>
           </article>
           <article class="card glass reveal">
             <span class="card-icon"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></span>
@@ -830,7 +838,11 @@
           </details>
           <details class="glass reveal">
             <summary>Does Glideball collect my data?<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
-            <p>No. The app has no analytics, no tracking and no account. It only goes online to check GitHub for updates, to sync through your own iCloud Drive if you turn that on, and to send feedback when you press Send, and you can see exactly what's included before it goes. This website is separate: it can use optional analytics, which the <a href="#cg-website-privacy">website privacy notice</a> at the bottom of the page explains.</p>
+            <p>Not unless you say yes. The app has no tracking and no account. The first time you open it, it asks whether it can send me crash reports, or crash reports and anonymous settings stats, and it's off until you pick one. Besides that, it only goes online to check GitHub for updates, to sync through your own iCloud Drive if you turn that on, and to send feedback when you press Send, and you can see exactly what's included before it goes. This website is separate: it can use optional analytics, which the <a href="#cg-website-privacy">website privacy notice</a> at the bottom of the page explains.</p>
+          </details>
+          <details class="glass reveal">
+            <summary>What do the optional crash reports and stats send?<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <p>A crash report says where in Glideball's code it crashed, plus your Glideball and macOS versions. Stats, sent once a day, say which Kensington trackball you have and a few settings, like the scroll mode and roughly how fast the pointer is. Neither one includes what you type, which apps you use or your name. You can change your choice, or delete what was sent, any time in Overview › General. The <a href="/privacy/#app-data">privacy page</a> lists everything that's sent.</p>
           </details>
           <details class="glass reveal">
             <summary>Does it work on macOS 15 Sequoia or older?<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>

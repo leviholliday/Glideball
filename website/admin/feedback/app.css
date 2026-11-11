@@ -183,6 +183,7 @@ select.field { cursor: pointer; }
   transition: background 0.15s, color 0.15s;
 }
 .icon-btn:hover { color: var(--ink); background: var(--accent-soft); }
+a.icon-btn { display: inline-flex; align-items: center; text-decoration: none; }
 .menu { position: relative; }
 .menu-list {
   position: absolute;

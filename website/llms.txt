@@ -1,6 +1,6 @@
 # Glideball
 
-> Glideball is a free, open-source (MIT) Mac app for Kensington trackballs that replaces KensingtonWorks. It raises pointer speed past macOS's tracking limit on the trackball only, makes the scroll ring scroll smoothly (Native, Flywheel and Follow modes), and remaps buttons with two- and three-button combos. It needs macOS 26 Tahoe or later, on Apple silicon or Intel. No driver, no account, no analytics in the app.
+> Glideball is a free, open-source (MIT) Mac app for Kensington trackballs that replaces KensingtonWorks. It raises pointer speed past macOS's tracking limit on the trackball only, makes the scroll ring scroll smoothly (Native, Flywheel and Follow modes), and remaps buttons with two- and three-button combos. It needs macOS 26 Tahoe or later, on Apple silicon or Intel. No driver and no account; the app sends crash reports or anonymous settings stats only if you opt in.
 
 Supported trackballs: the wired Kensington Expert Mouse is fully supported. Other Kensington trackballs (Expert Mouse Wireless, SlimBlade, Orbit) work when the Beta program is turned on in the app; the SlimBlade's top buttons aren't supported yet. Other brands' mice and the trackpad are never changed.
 

@@ -22,6 +22,15 @@ final class Engine {
         var deviceIsBeta = false
         /// A connected Kensington pointing device Glide leaves alone unless "Other Kensington trackballs" is on.
         var unsupportedDeviceName: String?
+        /// Every Kensington pointing device connected, supported or not, by name and
+        /// product ID. Only for the opt-in settings stats (see `ShareData`).
+        var kensingtonModels: [Model] = []
+
+        struct Model: Hashable, Comparable {
+            var name: String
+            var productID: Int
+            static func < (a: Model, b: Model) -> Bool { (a.name, a.productID) < (b.name, b.productID) }
+        }
     }
 
     /// Glide's own button modes that are currently on, for the UI.
@@ -355,6 +364,8 @@ final class Engine {
         s.deviceIsBeta = supported.first.map { $0.kind != .expertMouse } ?? false
         s.unsupportedDeviceName = devices.filter { $0.value.kind == .otherKensington && deviceSupported[$0.key] != true }
             .values.map(\.displayName).sorted().first
+        s.kensingtonModels = Set(devices.values.filter { $0.vendorID == DeviceIdentity.kensingtonVendorID }
+            .map { Status.Model(name: $0.displayName, productID: $0.productID ?? 0) }).sorted()
         s.tapActive = tap.map { CGEvent.tapIsEnabled(tap: $0) } ?? false
         s.listening = hid != nil
         guard s != status else { return }

@@ -75,6 +75,7 @@ COMPONENTS: dict[str, set] = {
     "header": {1, 2},                    # WelcomeTourView
     "feature": {1},                      # WelcomeTourView
     "permissionRow": {0, "detail"},      # WelcomeTourView
+    "option": {"detail"},                # ShareDataViews (SmallFavourCard)
 }
 
 # Interpolations that are Int (→ %lld). Everything else is %@ unless it has

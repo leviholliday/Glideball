@@ -173,7 +173,9 @@ final class LaunchExperience {
         start = nil
         revealStart = nil
         removeKeyMonitor()
-        if openTourWhenDone {
+        if !openTourWhenDone {
+            AppModel.shared.offerSmallFavour()   // the tour offers it itself when it closes
+        } else {
             openTourWhenDone = false
             // Only into a window that's still open (closing it skips the tour
             // for now; it opens next launch, as it hasn't been finished).

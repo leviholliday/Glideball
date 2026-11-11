@@ -1,6 +1,7 @@
 # Netlify config for the Glide website (static, no build step), plus the
 # feedback functions: /api/feedback (from the Mac app and /feedback/),
-# /api/admin/* (the admin page at /admin/feedback/), and an hourly cleanup.
+# /api/admin/* (the admin pages at /admin/feedback/ and /admin/usage/), the app's
+# opt-in stats and crash reports (/api/usage, /api/crash), and an hourly cleanup.
 
 [build]
   publish = "."
@@ -41,7 +42,7 @@
   force = true
 
 # The site is published from this folder, so keep what isn't a page out of
-# reach: the functions' source, the npm files and node_modules.
+# reach: the functions' source and tests, the npm files and node_modules.
 [[redirects]]
   from = "/netlify/*"
   to = "/404.html"
@@ -51,6 +52,12 @@
 # The page sources scripts/build_pages.py builds from (the built pages are what's served).
 [[redirects]]
   from = "/_pages/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/tests/*"
   to = "/404.html"
   status = 404
   force = true
@@ -80,7 +87,7 @@
 #   matches what's live; if the snippet changes, its hashes change with it.
 # - Links to github.com are plain navigations, which CSP does not restrict.
 # - img-src blob: is for the feedback page's previews of the pictures picked.
-# - connect-src 'self' covers the feedback page and the admin page talking
+# - connect-src 'self' covers the feedback page and the admin pages talking
 #   to /api/feedback and /api/admin/*.
 [[headers]]
   for = "/*"

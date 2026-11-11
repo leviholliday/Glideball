@@ -63,6 +63,8 @@ struct OverviewView: View {
                           subtitle: "Get new versions before they go out to everyone. They've had less testing, so you may hit bugs.",
                           symbol: "flask", isOn: $model.earlyUpdates)
                 Divider().opacity(0.4)
+                ShareDataRow(model: model)
+                Divider().opacity(0.4)
                 ToggleRow(title: "Celebrations",
                           subtitle: "A toast and a little confetti when you reach a milestone or set a personal best. Badges are kept either way.",
                           symbol: "party.popper", isOn: Bindable(model.delight).celebrationsOn)

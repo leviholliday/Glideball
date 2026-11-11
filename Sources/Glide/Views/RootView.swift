@@ -93,9 +93,16 @@ struct RootView: View {
                     .transition(.opacity.combined(with: .scale(scale: 1.02)))
             }
         }
+        .overlay {
+            if model.showingSmallFavour {
+                SmallFavourCard(model: model)
+                    .transition(.opacity.combined(with: .scale(scale: 1.02)))
+            }
+        }
         // The launch animation, over everything until it hands over.
         .overlay { LaunchOverlay() }
         .animation(.smooth(duration: 0.35), value: model.showingWelcomeTour)
+        .animation(.smooth(duration: 0.35), value: model.showingSmallFavour)
         .animation(.smooth, value: model.permissionsOK)
         .animation(.smooth(duration: 0.2), value: model.modes)
         .animation(.spring(response: 0.35, dampingFraction: 0.6), value: model.delight.showSaved)

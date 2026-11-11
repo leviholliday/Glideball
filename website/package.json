@@ -4,7 +4,9 @@
   "type": "module",
   "description": "glideball.netlify.app: the Glide website, where feedback from the app and the site arrives, and the page it's read on",
   "scripts": {
-    "dev": "netlify dev"
+    "dev": "netlify dev",
+    "test:usage": "node --experimental-test-module-mocks --test tests/usage.test.mjs",
+    "test": "node --experimental-test-module-mocks --test tests/*.test.mjs"
   },
   "dependencies": {
     "@netlify/blobs": "^10.0.0"
