@@ -16,7 +16,7 @@
 			<string>백업 %lld개</string>
 		</dict>
 	</dict>
-	<key>%lld buttons</key>
+	<key>%lld buttons changed</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
 		<string>%#@count@</string>
@@ -27,7 +27,7 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>lld</string>
 			<key>other</key>
-			<string>버튼 %lld개</string>
+			<string>버튼 %lld개 변경됨</string>
 		</dict>
 	</dict>
 	<key>%lld combos</key>

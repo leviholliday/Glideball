@@ -102,11 +102,6 @@
 
 /* ---- AppProfile.swift ---- */
 
-/* Pointer speed in an app setup */
-"Speed %@" = "速度 %@";
-
-"Default buttons" = "默认按钮";
-
 "No combos" = "无组合键";
 
 "Uses your main setup" = "使用主配置";
@@ -530,8 +525,6 @@
 
 "Give an app its own setup" = "为 App 设定专属配置";
 
-"Faster tracking in a design app, different buttons in your browser — Glideball switches the moment that app comes to the front, and back again when you leave. Pick only the parts you want to change; everything else follows your main setup." = "在设计 App 中指针更快，在浏览器中按钮不同 — 该 App 一到最前面 Glideball 就立即切换，离开后再切回。只选你想更改的部分，其他一切跟随主配置。";
-
 "Open apps" = "已打开的 App";
 
 "No other open apps" = "没有其他已打开的 App";
@@ -627,8 +620,6 @@
 "Export" = "导出";
 
 "Drag to Finder, Messages, Mail…" = "拖到访达、信息、邮件…";
-
-"Drag the file anywhere, or:" = "将文件拖到任意位置，或：";
 
 "Save to File…" = "存储到文件…";
 
@@ -1627,3 +1618,49 @@
 "Your trackball, live" = "你的轨迹球，实时";
 "No trackball connected" = "未连接轨迹球";
 "Default: %@" = "默认：%@";
+
+/* ---- Apps and Sync pages (redesign) ---- */
+
+"Active now" = "当前使用";
+
+"Backed up" = "已备份";
+
+"Checks iCloud Drive for changes from your other Macs and sends this Mac’s." = "检查 iCloud 云盘中其他 Mac 的更改，并发送这台 Mac 的更改。";
+
+"Drag the file anywhere, or save or share it." = "把文件拖到任何地方，或者存储、共享它。";
+
+"Glideball saves your current settings first, and you can undo right after." = "Glideball 会先保存你当前的设置，之后你可以立即撤销。";
+
+"Glideball switches to it whenever that app is in front, and back when you leave." = "只要该 App 在最前面，Glideball 就会切换到它，离开时再切换回来。";
+
+"Hide older backups" = "隐藏较早的备份";
+
+"Pointer %@" = "指针 %@";
+
+"Restore the backup from %@?" = "要恢复 %@ 的备份吗？";
+
+"Restore…" = "恢复…";
+
+"Show older backups" = "显示较早的备份";
+
+"Shows what this backup would change" = "显示此备份会更改的内容";
+
+"Sync now" = "立即同步";
+
+"This deletes what you changed for %@: %@. It will follow your main setup again." = "这会删除你为 %@ 所做的更改：%@。它将重新跟随你的主配置。";
+
+"This replaces your current settings with that backup. Each line goes from what you have now to what the backup holds:" = "这会用该备份替换你当前的设置。每一行显示从你现在的设置变为备份中的设置：";
+
+"This replaces your current settings with that backup. Only fine-tuning values inside a mode or app setup differ." = "这会用该备份替换你当前的设置。只有模式或 App 配置内的微调数值不同。";
+
+"This replaces your current settings with the ones in this file. Glideball saves a backup first, and you can undo right after." = "这会用此文件中的设置替换你当前的设置。Glideball 会先创建备份，之后你可以立即撤销。";
+
+"This setup is in effect right now." = "此配置当前正在生效。";
+
+"Up to date" = "已是最新";
+
+"What’s in the file" = "文件内容";
+
+"Your settings as a file" = "以文件形式导出你的设置";
+
+"iCloud Drive" = "iCloud 云盘";

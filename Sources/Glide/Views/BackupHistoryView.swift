@@ -1,65 +1,115 @@
 import SwiftUI
 
-/// Automatic backups: a year at a glance, and every backup you can go back to.
-struct BackupHistoryCard: View {
+/// Automatic backups: whether they're on, a year at a glance, and every
+/// backup you can go back to, grouped by week and month.
+struct BackupHistorySection: View {
     let model: AppModel
     @Bindable var store: BackupStore
     @State private var expanded: URL?
     @State private var hovered: URL?
+    @State private var showOlder = false
+    @State private var restoring: BackupStore.Backup?
+    @State private var justBackedUp = false
+    @State private var backedUpTask: Task<Void, Never>?
+
+    private static let rowDividerInset = ListRowButtonStyle.dividerInset(leading: BackupRow.symbolWidth + 10)
 
     var body: some View {
-        GlassCard(title: "Backups", symbol: "clock.arrow.circlepath") {
-            header
-            BackupTimeline(backups: store.backups, highlighted: hovered ?? expanded) { backup in
-                withAnimation(.smooth(duration: 0.25)) { expanded = backup.url }
-            }
-            if store.backups.isEmpty {
-                Text("Your first backup is made the next time your settings change.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-            } else {
-                list
-            }
-            HStack(alignment: .firstTextBaseline) {
-                Text("Every day of the last two weeks, then one a month for a year. Each backup is about a kilobyte, and only made when something changed.")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.tertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 12)
+        let sections = sections
+        VStack(alignment: .leading, spacing: Theme.Space.titleToGroup) {
+            SectionTitle(title: "Backups",
+                         caption: "Every day of the last two weeks, then one a month for a year. Each backup is about a kilobyte, and only made when something changed.") {
                 Button("Show in Finder") { store.revealInFinder() }
-                    .buttonStyle(.plain)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.cyan)
+                    .buttonStyle(.link)
+                    .controlSize(.small)
             }
-        }
-    }
-
-    private var header: some View {
-        HStack(alignment: .center, spacing: 16) {
-            ZStack {
-                Circle().fill(.white.opacity(0.08)).frame(width: 52, height: 52)
-                Image(systemName: store.isEnabled ? "clock.arrow.circlepath" : "clock.badge.xmark")
-                    .font(.system(size: 22, weight: .medium))
-                    .foregroundStyle(store.isEnabled ? .green : .secondary)
-                    .contentTransition(.symbolEffect(.replace))
-            }
-            VStack(alignment: .leading, spacing: 3) {
-                Text("Automatic backups").font(.system(size: 15, weight: .semibold))
-                Text(statusText).font(.system(size: 12)).foregroundStyle(.secondary)
-                    .lineLimit(1)
+            RowGroup {
+                statusRow
                 if let error = store.lastError {
-                    Text(error).font(.system(size: 11)).foregroundStyle(.orange).lineLimit(1)
+                    SettingRow(title: .verbatim(error), symbol: "exclamationmark.triangle", tint: Theme.warn)
+                }
+                if store.backups.isEmpty {
+                    SettingRow(title: "Your first backup is made the next time your settings change.")
+                        .foregroundStyle(.secondary)
+                } else {
+                    BackupTimeline(backups: store.backups, highlighted: hovered ?? expanded) { backup in
+                        withAnimation(Theme.Motion.spring) {
+                            expanded = backup.url
+                            if let first = sections.first, !first.backups.contains(backup) { showOlder = true }
+                        }
+                    }
+                    ForEach(showOlder ? sections : Array(sections.prefix(1)), id: \.title) { section in
+                        BackupListSection(model: model, store: store, title: section.title, monthly: section.monthly,
+                                          backups: section.backups, expanded: expanded, dividerInset: Self.rowDividerInset,
+                                          toggle: { backup in
+                                              withAnimation(Theme.Motion.spring) { expanded = expanded == backup.url ? nil : backup.url }
+                                          },
+                                          hover: { backup, inside in
+                                              hovered = inside ? backup.url : (hovered == backup.url ? nil : hovered)
+                                          },
+                                          restore: { restoring = $0 })
+                    }
+                    if sections.count > 1 {
+                        olderRow
+                    }
                 }
             }
-            Spacer()
-            Button(action: model.backUpNow) {
-                Label("Back Up Now", systemImage: "plus.circle")
+        }
+        .confirmationDialog("Restore the backup from \(restoring.map(Self.when) ?? "")?",
+                            isPresented: Binding(get: { restoring != nil }, set: { if !$0 { restoring = nil } }),
+                            presenting: restoring) { backup in
+            Button("Restore") {
+                withAnimation(Theme.Motion.spring) { model.restoreBackup(backup) }
             }
-            .buttonStyle(.glass)
-            Toggle("", isOn: $store.isEnabled)
+        } message: { backup in
+            Text(verbatim: restoreMessage(backup))
+        }
+        .onDisappear { backedUpTask?.cancel() }
+    }
+
+    // MARK: Status
+
+    private var statusRow: some View {
+        HStack(spacing: Theme.Space.symbolGap) {
+            RowSymbol(symbol: store.isEnabled ? "clock.arrow.circlepath" : "clock.badge.xmark")
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Automatic backups").font(Theme.Font.body)
+                Text(statusText)
+                    .font(Theme.Font.hint)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            Button(action: backUp) {
+                if justBackedUp {
+                    Label("Backed up", systemImage: "checkmark").foregroundStyle(Theme.ok)
+                } else {
+                    Label("Back Up Now", systemImage: "plus.circle")
+                }
+            }
+            .controlSize(.small)
+            .fixedSize()
+            Toggle("Automatic backups", isOn: $store.isEnabled)
                 .toggleStyle(.switch)
+                .controlSize(.small)
                 .labelsHidden()
                 .help("Back up your settings once a day")
+        }
+        .padding(.horizontal, Theme.Space.rowHorizontal)
+        .padding(.vertical, Theme.Space.rowVertical)
+        .frame(minHeight: Theme.Space.rowMinHeight)
+        .animation(Theme.Motion.fade, value: justBackedUp)
+    }
+
+    /// Back Up Now, and a checkmark in its place for a moment when it worked (a failure shows as a row below).
+    private func backUp() {
+        model.backUpNow()
+        guard store.lastError == nil else { return }
+        justBackedUp = true
+        backedUpTask?.cancel()
+        backedUpTask = Task {
+            try? await Task.sleep(for: .seconds(2.5))
+            if !Task.isCancelled { justBackedUp = false }
         }
     }
 
@@ -79,41 +129,26 @@ struct BackupHistoryCard: View {
                       comment: "Automatic backups status: count, total size, date of the newest backup")
     }
 
-    // MARK: List
+    // MARK: Older backups
 
-    private var list: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 4, pinnedViews: []) {
-                ForEach(sections, id: \.title) { section in
-                    Text(section.title)
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(.tertiary)
-                        .textCase(.uppercase)
-                        .tracking(0.5)
-                        .padding(.top, section.title == sections.first?.title ? 0 : 8)
-                        .padding(.leading, 4)
-                    ForEach(section.backups) { backup in
-                        BackupRow(model: model, store: store, backup: backup,
-                                  monthly: section.monthly,
-                                  isExpanded: expanded == backup.url) {
-                            withAnimation(.smooth(duration: 0.25)) {
-                                expanded = expanded == backup.url ? nil : backup.url
-                            }
-                        }
-                        .onHover { hovered = $0 ? backup.url : (hovered == backup.url ? nil : hovered) }
-                    }
-                }
-            }
-            .padding(.vertical, 2)
-        }
-        .scrollIndicators(.never)
-        .frame(maxHeight: 260)
-        .mask {   // fade the edge where rows scroll out of view
-            VStack(spacing: 0) {
-                Rectangle()
-                LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom).frame(height: 18)
+    private var olderRow: some View {
+        Button {
+            withAnimation(Theme.Motion.spring) { showOlder.toggle() }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(.tertiary)
+                    .rotationEffect(.degrees(showOlder ? 180 : 0))
+                    .frame(width: BackupRow.symbolWidth)
+                    .accessibilityHidden(true)
+                Text(showOlder ? "Hide older backups" : "Show older backups")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                Spacer(minLength: 0)
             }
         }
+        .buttonStyle(ListRowButtonStyle())
     }
 
     private struct Section {
@@ -137,6 +172,62 @@ struct BackupHistoryCard: View {
             Section(title: String(localized: "Monthly", comment: "Backups list section"), monthly: true, backups: monthly),
         ].filter { !$0.backups.isEmpty }
     }
+
+    // MARK: Restoring
+
+    /// "Nov 5, 1:22 AM".
+    private static func when(_ backup: BackupStore.Backup) -> String {
+        backup.date.formatted(.dateTime.month(.abbreviated).day().hour().minute())
+    }
+
+    /// Exactly what restoring changes (from now to the backup), and that it can be undone.
+    private func restoreMessage(_ backup: BackupStore.Backup) -> String {
+        let footer = String(localized: "Glideball saves your current settings first, and you can undo right after.")
+        guard let saved = store.load(backup) else { return String(localized: "That backup couldn’t be read.") }
+        let changes = BackupRow.changes(from: model.config, to: saved)
+        if changes.isEmpty {
+            let intro = String(localized: "This replaces your current settings with that backup. Only fine-tuning values inside a mode or app setup differ.")
+            return intro + "\n\n" + footer
+        }
+        let intro = String(localized: "This replaces your current settings with that backup. Each line goes from what you have now to what the backup holds:")
+        let lines = changes.map { "\($0.title): \($0.now) → \($0.then)" }.joined(separator: "\n")
+        return intro + "\n\n" + lines + "\n\n" + footer
+    }
+}
+
+// MARK: - A group of rows
+
+/// A week's or a month's backups under a small title, with hairlines between them.
+private struct BackupListSection: View {
+    let model: AppModel
+    let store: BackupStore
+    let title: String
+    let monthly: Bool
+    let backups: [BackupStore.Backup]
+    let expanded: URL?
+    let dividerInset: CGFloat
+    let toggle: (BackupStore.Backup) -> Void
+    let hover: (BackupStore.Backup, Bool) -> Void
+    let restore: (BackupStore.Backup) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(verbatim: title)
+                .font(Theme.Font.hint.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, Theme.Space.rowHorizontal)
+                .padding(.top, 12)
+                .padding(.bottom, 2)
+                .accessibilityAddTraits(.isHeader)
+            ForEach(Array(backups.enumerated()), id: \.element.id) { i, backup in
+                if i > 0 { Hairline().padding(.leading, dividerInset) }
+                BackupRow(model: model, store: store, backup: backup, monthly: monthly,
+                          isExpanded: expanded == backup.url, toggle: { toggle(backup) }, restore: { restore(backup) })
+                    .onHover { hover(backup, $0) }
+            }
+        }
+        .padding(.bottom, 2)
+    }
 }
 
 // MARK: - Row
@@ -148,65 +239,62 @@ private struct BackupRow: View {
     let monthly: Bool
     let isExpanded: Bool
     let toggle: () -> Void
+    let restore: () -> Void
+
+    static let symbolWidth: CGFloat = 22
 
     var body: some View {
         let saved = store.load(backup)
         let changes = saved.map { Self.changes(from: model.config, to: $0) }
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 0) {
             Button(action: toggle) {
                 HStack(spacing: 10) {
                     Image(systemName: symbol)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(tint)
-                        .frame(width: 22, height: 22)
-                        .background(Circle().fill(tint.opacity(0.15)))
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                        .frame(width: Self.symbolWidth)
+                        .accessibilityHidden(true)
                     Text(BackupDates.label(backup.date, style: monthly ? .month : .recent))
-                        .font(.system(size: 13, weight: .medium))
+                        .font(Theme.Font.body)
                         .lineLimit(1)
-                    if let kindLabel {
-                        Text(kindLabel)
-                            .font(.system(size: 10, weight: .semibold))
-                            .padding(.horizontal, 7).padding(.vertical, 2)
-                            .glassEffect(.regular.tint(tint.opacity(0.25)), in: .capsule)
-                    }
+                    if let kindLabel { QuietChip(text: kindLabel) }
                     Spacer(minLength: 8)
                     differenceLabel(saved: saved, changes: changes)
                     Image(systemName: "chevron.right")
                         .font(.system(size: 10, weight: .bold))
                         .foregroundStyle(.tertiary)
                         .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                        .accessibilityHidden(true)
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(ListRowButtonStyle())
+            .accessibilityAddTraits(isExpanded ? .isSelected : [])
+            .accessibilityHint(isExpanded ? "" : String(localized: "Shows what this backup would change"))
 
             if isExpanded, let saved, let changes {
                 detail(saved: saved, changes: changes)
-                    .padding(.horizontal, 8)
-                    .padding(.bottom, 8)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+                    .padding(.leading, ListRowButtonStyle.dividerInset(leading: Self.symbolWidth + 10))
+                    .padding(.trailing, Theme.Space.rowHorizontal)
+                    .padding(.bottom, 12)
+                    .transition(.opacity)
             }
         }
-        .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .fill(.white.opacity(isExpanded ? 0.07 : 0)))
     }
 
     @ViewBuilder
     private func differenceLabel(saved: GlideConfig?, changes: [Change]?) -> some View {
         if saved == nil {
             Label("Unreadable", systemImage: "exclamationmark.triangle")
-                .font(.system(size: 11)).foregroundStyle(.orange)
+                .font(Theme.Font.hint).foregroundStyle(.secondary)
         } else if saved == current {
             Label("Same as now", systemImage: "checkmark")
-                .font(.system(size: 11, weight: .medium)).foregroundStyle(.green)
+                .font(Theme.Font.hint.weight(.medium)).foregroundStyle(Theme.ok)
         } else if let changes, !changes.isEmpty {
             Text("\(changes.count) differences")
-                .font(.system(size: 11)).foregroundStyle(.secondary)
+                .font(Theme.Font.hint).foregroundStyle(.secondary)
         } else {
             Text("Small differences")
-                .font(.system(size: 11)).foregroundStyle(.secondary)
+                .font(Theme.Font.hint).foregroundStyle(.secondary)
         }
     }
 
@@ -218,42 +306,39 @@ private struct BackupRow: View {
 
     @ViewBuilder
     private func detail(saved: GlideConfig, changes: [Change]) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             if changes.isEmpty {
                 Text(saved == current
                      ? "This backup matches your settings right now."
                      : "Only fine-tuning differs (a value inside a mode or app setup).")
-                    .font(.system(size: 12))
+                    .font(Theme.Font.hint)
                     .foregroundStyle(.secondary)
             } else {
                 VStack(spacing: 7) {
                     ForEach(changes) { change in
                         HStack(spacing: 8) {
-                            Image(systemName: change.symbol).font(.system(size: 12)).foregroundStyle(.secondary).frame(width: 18)
+                            Image(systemName: change.symbol)
+                                .font(.system(size: 12))
+                                .foregroundStyle(summaryPartColor(change.symbol).map { AnyShapeStyle($0) } ?? AnyShapeStyle(.secondary))
+                                .frame(width: 18)
                             Text(change.title).font(.system(size: 12)).foregroundStyle(.secondary)
                             Spacer(minLength: 4)
-                            Text(change.now).font(.system(size: 12, design: .rounded)).strikethrough().foregroundStyle(.tertiary).lineLimit(1)
-                            Image(systemName: "arrow.right").font(.system(size: 9, weight: .bold)).foregroundStyle(.cyan)
-                            Text(change.then).font(.system(size: 12, weight: .semibold, design: .rounded)).lineLimit(1)
+                            Text(change.now).font(.system(size: 12)).strikethrough().foregroundStyle(.tertiary).lineLimit(1)
+                            Image(systemName: "arrow.right").font(.system(size: 9, weight: .bold)).foregroundStyle(.secondary)
+                            Text(change.then).font(.system(size: 12, weight: .semibold)).lineLimit(1)
                         }
+                        .accessibilityElement(children: .combine)
                     }
                 }
-                .padding(10)
-                .background(RoundedRectangle(cornerRadius: 10).fill(.white.opacity(0.05)))
             }
-            HStack {
+            HStack(spacing: 8) {
                 Button("Show in Finder") { store.revealInFinder(backup) }
-                    .buttonStyle(.glass)
                 Spacer()
-                Button {
-                    model.restoreBackup(backup)
-                } label: {
-                    Label("Restore", systemImage: "clock.arrow.circlepath")
-                }
-                .buttonStyle(.glassProminent)
-                .disabled(saved == current)
+                Button("Restore…", action: restore)
+                    .buttonStyle(.borderedProminent)
+                    .disabled(saved == current)
             }
-            .controlSize(.regular)
+            .controlSize(.small)
         }
     }
 
@@ -280,14 +365,6 @@ private struct BackupRow: View {
         }
     }
 
-    private var tint: Color {
-        switch backup.kind {
-        case .daily: .cyan
-        case .beforeImport, .beforeRestore: .orange
-        case .manual: .purple
-        }
-    }
-
     private var kindLabel: String? {
         switch backup.kind {
         case .daily: nil
@@ -301,7 +378,9 @@ private struct BackupRow: View {
 // MARK: - Timeline
 
 /// The last year on one line: the right half is the last two weeks, day by day;
-/// the left half is the months before. Each dot is a backup.
+/// the left half is the months before. Each dot is a backup: filled for the
+/// daily ones, an open ring for the ones taken before an import or restore or
+/// by you. (The list below is the accessible version of it.)
 private struct BackupTimeline: View {
     let backups: [BackupStore.Backup]
     let highlighted: URL?
@@ -316,24 +395,22 @@ private struct BackupTimeline: View {
                 let w = geo.size.width
                 let split = w * (1 - dailyShare)
                 ZStack(alignment: .leading) {
-                    Capsule().fill(.white.opacity(0.07)).frame(height: 6)
-                    Capsule()
-                        .fill(LinearGradient(colors: [.purple.opacity(0.35), .cyan.opacity(0.55)],
-                                             startPoint: .leading, endPoint: .trailing))
-                        .frame(width: w - split, height: 6)
-                        .offset(x: split)
-                    Rectangle().fill(.white.opacity(0.25)).frame(width: 1, height: 14).offset(x: split)
+                    Capsule().fill(Theme.hoverFill).frame(height: 4)
+                    Capsule().fill(Theme.pressedFill).frame(width: w - split, height: 4).offset(x: split)
+                    Rectangle().fill(Theme.hairline).frame(width: 1, height: 12).offset(x: split)
                     ForEach(backups) { backup in
                         let isHot = backup.url == highlighted
+                        let size: CGFloat = isHot ? 11 : 8
+                        let filled = backup.kind == .daily
                         Circle()
-                            .fill(color(backup))
-                            .frame(width: isHot ? 13 : 9, height: isHot ? 13 : 9)
-                            .overlay(Circle().strokeBorder(.white.opacity(isHot ? 0.9 : 0.4), lineWidth: 1))
-                            .shadow(color: color(backup).opacity(0.7), radius: isHot ? 6 : 2)
+                            .fill(filled ? (isHot ? Color.primary : Color.secondary) : Theme.windowBackground)
+                            .overlay(Circle().strokeBorder(isHot ? Color.primary : Color.secondary, lineWidth: filled ? 0 : 1.25))
+                            .frame(width: size, height: size)
+                            .contentShape(Circle().inset(by: -5))
                             .position(x: x(for: backup.date, width: w), y: geo.size.height / 2)
                             .onTapGesture { select(backup) }
                             .help(BackupDates.label(backup.date, style: .recent))
-                            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isHot)
+                            .animation(.easeOut(duration: 0.12), value: isHot)
                     }
                 }
                 .frame(height: geo.size.height)
@@ -351,15 +428,9 @@ private struct BackupTimeline: View {
             }
             .frame(height: 12)
         }
-        .padding(.horizontal, 6)
-    }
-
-    private func color(_ b: BackupStore.Backup) -> Color {
-        switch b.kind {
-        case .daily: .cyan
-        case .beforeImport, .beforeRestore: .orange
-        case .manual: .purple
-        }
+        .padding(.horizontal, Theme.Space.rowHorizontal + 6)
+        .padding(.vertical, 12)
+        .accessibilityHidden(true)
     }
 
     /// Piecewise-linear: days 0–14 fill the right share, days 14–365 the left.

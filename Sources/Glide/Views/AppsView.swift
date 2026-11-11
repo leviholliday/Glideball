@@ -2,32 +2,24 @@ import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// The Apps tab: setups Glide switches to while a particular app is in front.
+/// Apps: setups Glideball switches to while a particular app is in front. One
+/// list of them (each with what it changes from the main setup, the one in use
+/// marked), and below it the editor for the one that's selected.
 struct AppsView: View {
     @Bindable var model: AppModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var profiles: [AppProfile] { model.config.appProfiles }
 
     var body: some View {
-        Group {
+        VStack(alignment: .leading, spacing: Theme.Space.section) {
             if profiles.isEmpty {
                 emptyState
             } else {
-                // One column, as the redesigned pages are (this page's own redesign comes later).
-                VStack(alignment: .leading, spacing: Theme.Space.section) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        listCard
-                        Text("When one of these apps is in front, Glideball switches to its setup. Anything left on “Main setup” follows your main settings.")
-                            .font(.system(size: 12))
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .padding(.horizontal, 2)
-                    }
-
-                    if let id = model.selectedProfileID, profiles.contains(where: { $0.id == id }) {
-                        ProfileEditor(model: model, profileID: id)
-                            .id(id)
-                    }
+                setupList
+                if let id = model.selectedProfileID, profiles.contains(where: { $0.id == id }) {
+                    ProfileEditor(model: model, profileID: id)
+                        .id(id)
                 }
             }
         }
@@ -46,54 +38,93 @@ struct AppsView: View {
         }
     }
 
-    private var listCard: some View {
-        GlassCard(title: "App setups", symbol: "square.grid.2x2") {
-            VStack(spacing: 4) {
-                ForEach(profiles) { p in
-                    let selected = p.id == model.selectedProfileID
-                    Button {
-                        withAnimation(.smooth(duration: 0.2)) { model.selectedProfileID = p.id }
-                    } label: {
-                        HStack(spacing: 10) {
-                            AppIcon(bundleID: p.bundleID, size: 30)
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(p.name).font(.system(size: 14, weight: .semibold)).lineLimit(1)
-                                Text(p.summary).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(2)
-                            }
-                            Spacer(minLength: 0)
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 8)
-                        .background {
-                            RoundedRectangle(cornerRadius: 16).fill(.white.opacity(selected ? 0.16 : 0))
-                        }
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
+    private var setupList: some View {
+        let main = model.config
+        let activeID = model.activeProfile?.id
+        return SectionBlock(title: "App setups",
+                            caption: "When one of these apps is in front, Glideball switches to its setup. Anything left on “Main setup” follows your main settings.",
+                            dividerInset: AppSetupRow.dividerInset,
+                            accessory: { AddAppMenu(model: model) }) {
+            ForEach(profiles) { p in
+                AppSetupRow(profile: p, summary: p.summary(comparedTo: main),
+                            selected: p.id == model.selectedProfileID, active: p.id == activeID) {
+                    withAnimation(Theme.Motion.respecting(reduceMotion, Theme.Motion.spring)) { model.selectedProfileID = p.id }
                 }
             }
-            AddAppMenu(model: model)
         }
     }
 
     private var emptyState: some View {
-        GlassCard(title: "App setups", symbol: "square.grid.2x2") {
-            HStack(alignment: .center, spacing: 18) {
-                Image(systemName: "square.grid.2x2.fill")
-                    .font(.system(size: 40))
-                    .foregroundStyle(LinearGradient(colors: [.cyan, .purple], startPoint: .topLeading, endPoint: .bottomTrailing))
-                VStack(alignment: .leading, spacing: 6) {
+        SectionBlock(title: "App setups") {
+            VStack(spacing: 14) {
+                Image(systemName: "macwindow")
+                    .font(.system(size: 28, weight: .light))
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+                VStack(spacing: 4) {
                     Text("Give an app its own setup")
-                        .font(.system(size: 17, weight: .semibold))
-                    Text("Faster tracking in a design app, different buttons in your browser — Glideball switches the moment that app comes to the front, and back again when you leave. Pick only the parts you want to change; everything else follows your main setup.")
-                        .font(.system(size: 13))
+                        .font(Theme.Font.emphasis)
+                    Text("Glideball switches to it whenever that app is in front, and back when you leave.")
+                        .font(Theme.Font.body)
                         .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                Spacer(minLength: 16)
-                AddAppMenu(model: model)
+                .frame(maxWidth: 560)
+                AddAppMenu(model: model, prominent: true)
+            }
+            .padding(.vertical, 28)
+            .padding(.horizontal, 24)
+            .frame(maxWidth: .infinity)
+        }
+    }
+}
+
+// MARK: - The list
+
+/// One app setup in the list: its icon, name, what it changes, and whether
+/// it's the one in effect now. The selected one is the one open below.
+private struct AppSetupRow: View {
+    let profile: AppProfile
+    let summary: String
+    let selected: Bool
+    let active: Bool
+    let select: () -> Void
+
+    private static let iconSize: CGFloat = 28
+    /// Where the hairlines start: past the row's inset, padding, icon and gap.
+    static let dividerInset = ListRowButtonStyle.dividerInset(leading: iconSize + Theme.Space.symbolGap)
+
+    var body: some View {
+        Button(action: select) {
+            HStack(spacing: Theme.Space.symbolGap) {
+                AppIcon(bundleID: profile.bundleID, size: Self.iconSize)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(profile.name)
+                        .font(.system(size: 13, weight: .medium))
+                        .lineLimit(1)
+                    Text(summary)
+                        .font(Theme.Font.hint)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                if active {
+                    HStack(spacing: 5) {
+                        StatusDot(color: Theme.ok, size: 7)
+                        Text("Active now")
+                            .font(Theme.Font.hint.weight(.medium))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                    .fixedSize()
+                    .help("This setup is in effect right now.")
+                }
             }
         }
+        .buttonStyle(ListRowButtonStyle(selected: selected))
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
 
@@ -101,6 +132,8 @@ struct AppsView: View {
 
 private struct AddAppMenu: View {
     let model: AppModel
+    /// The one button of an empty page (otherwise a small one beside the list's title).
+    var prominent = false
 
     private struct Candidate {
         let bundleID: String
@@ -124,7 +157,7 @@ private struct AddAppMenu: View {
     }
 
     var body: some View {
-        Menu {
+        let menu = Menu {
             let apps = candidates
             Section("Open apps") {
                 if apps.isEmpty {
@@ -132,7 +165,7 @@ private struct AddAppMenu: View {
                 }
                 ForEach(apps, id: \.bundleID) { app in
                     Button {
-                        withAnimation(.smooth) { model.addProfile(bundleID: app.bundleID, name: app.name) }
+                        withAnimation(Theme.Motion.spring) { model.addProfile(bundleID: app.bundleID, name: app.name) }
                     } label: {
                         Label { Text(app.name) } icon: { Image(nsImage: app.icon) }
                     }
@@ -142,11 +175,14 @@ private struct AddAppMenu: View {
             Button("Choose from Applications…", action: chooseApp)
         } label: {
             Label("Add App…", systemImage: "plus")
-                .padding(.horizontal, 4)
         }
         .menuStyle(.button)
-        .buttonStyle(.glassProminent)
         .fixedSize()
+        if prominent {
+            menu.controlSize(.large)
+        } else {
+            menu.controlSize(.small)
+        }
     }
 
     private func chooseApp() {
@@ -167,7 +203,7 @@ private struct AddAppMenu: View {
             model.show(.init(symbol: "info.circle.fill", text: String(localized: "Glideball itself always uses your main setup.")))
             return
         }
-        withAnimation(.smooth) { model.addProfile(bundleID: id, name: url.deletingPathExtension().lastPathComponent) }
+        withAnimation(Theme.Motion.spring) { model.addProfile(bundleID: id, name: url.deletingPathExtension().lastPathComponent) }
     }
 }
 
@@ -193,19 +229,19 @@ private struct ProfileEditor: View {
     /// Switches an area between the main setup (nil) and a custom copy of it.
     private func customizing<T>(_ path: WritableKeyPath<AppProfile, T?>, from main: @escaping () -> T) -> Binding<Bool> {
         Binding(get: { profile.wrappedValue[keyPath: path] != nil },
-                set: { on in withAnimation(.smooth(duration: 0.25)) { profile.wrappedValue[keyPath: path] = on ? main() : nil } })
+                set: { on in withAnimation(Theme.Motion.spring) { profile.wrappedValue[keyPath: path] = on ? main() : nil } })
     }
 
     var body: some View {
         let p = profile.wrappedValue
         let main = model.config
-        VStack(spacing: 18) {
+        VStack(alignment: .leading, spacing: Theme.Space.section) {
             header(p)
 
-            OverrideSection(title: "Pointer", symbol: "cursorarrow.motionlines",
+            OverrideSection(title: "Pointer",
                             mainSummary: String(localized: "speed \(main.trackingSpeed.formatted())", comment: "Pointer speed, after “Following your main setup ·”"),
                             isCustom: customizing(\.trackingSpeed) { model.config.trackingSpeed }) {
-                GlassCard {
+                RowGroup {
                     TuningSlider(title: "Tracking speed", symbol: "gauge.with.dots.needle.67percent",
                                  value: Binding(get: { profile.wrappedValue.trackingSpeed ?? model.config.trackingSpeed },
                                                 set: { profile.wrappedValue.trackingSpeed = $0 }),
@@ -215,17 +251,20 @@ private struct ProfileEditor: View {
                 }
             }
 
-            OverrideSection(title: "Scrolling", symbol: "arrow.up.and.down.circle",
+            OverrideSection(title: "Scrolling",
                             mainSummary: main.scrollMode.title,
                             isCustom: customizing(\.scroll) { model.config.scrollSettings }) {
                 let scroll = scrollConfig
-                ModePicker(mode: scroll.scrollMode)
-                ScrollControls(config: scroll)
+                VStack(alignment: .leading, spacing: Theme.Space.section) {
+                    ModePicker(mode: scroll.scrollMode)
+                        .fixedSize(horizontal: false, vertical: true)
+                    ScrollControls(config: scroll)
+                }
             }
 
             AssignPanel(model: model, profileID: profileID)
 
-            OverrideSection(title: "Buttons", symbol: "button.programmable",
+            OverrideSection(title: "Buttons",
                             mainSummary: Self.remapped(main.buttons),
                             isCustom: customizing(\.buttons) { model.config.buttons }) {
                 RowGroup(dividerInset: ButtonRow.dividerInset) {
@@ -237,7 +276,7 @@ private struct ProfileEditor: View {
                 }
             }
 
-            OverrideSection(title: "Combos", symbol: "square.on.square",
+            OverrideSection(title: "Combos",
                             mainSummary: main.chords.isEmpty ? String(localized: "none", comment: "No combos, after “Following your main setup ·”")
                                                              : String(localized: "\(main.chords.count) combos"),
                             isCustom: customizing(\.chords) { model.config.chords }) {
@@ -247,34 +286,44 @@ private struct ProfileEditor: View {
         }
         .confirmationDialog("Delete the \(p.name) setup?", isPresented: $confirmingDelete) {
             Button("Delete Setup", role: .destructive) {
-                withAnimation(.smooth) { model.deleteProfile(profileID) }
+                withAnimation(Theme.Motion.spring) { model.deleteProfile(profileID) }
             }
         } message: {
-            Text("\(p.name) will follow your main setup again.")
+            let changes = p.changes(comparedTo: main)
+            if changes.isEmpty {
+                Text("\(p.name) will follow your main setup again.")
+            } else {
+                Text("This deletes what you changed for \(p.name): \(changes.joined(separator: ", ")). It will follow your main setup again.")
+            }
         }
     }
 
+    /// Whose setup this is, and the way to delete it.
     private func header(_ p: AppProfile) -> some View {
-        HStack(spacing: 14) {
-            AppIcon(bundleID: p.bundleID, size: 48)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(p.name).font(.system(size: 20, weight: .bold, design: .rounded)).lineLimit(1)
-                Text("Used whenever \(p.name) is in front. While you edit it here, it’s live so you can try it.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: 16) {
+            Hairline()
+            HStack(spacing: 12) {
+                AppIcon(bundleID: p.bundleID, size: 36)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(p.name)
+                        .font(Theme.Font.emphasis)
+                        .lineLimit(1)
+                        .accessibilityAddTraits(.isHeader)
+                    Text("Used whenever \(p.name) is in front. While you edit it here, it’s live so you can try it.")
+                        .font(Theme.Font.hint)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                Button(role: .destructive) {
+                    confirmingDelete = true
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+                .controlSize(.small)
+                .help("Delete this app’s setup")
             }
-            Spacer(minLength: 12)
-            Button(role: .destructive) {
-                confirmingDelete = true
-            } label: {
-                Label("Delete", systemImage: "trash")
-            }
-            .buttonStyle(.glass)
-            .help("Delete this app’s setup")
         }
-        .padding(20)
-        .glassEffect(.regular, in: .rect(cornerRadius: 26))
     }
 
     /// The main setup with this app's scrolling laid over it; writes go to the app only.
@@ -305,29 +354,27 @@ private struct ProfileEditor: View {
     }
 }
 
-/// One area of an app setup: a "Main setup / Customize" switch, then that
-/// area's usual controls when customized.
+/// One area of an app setup: its title, whether it follows the main setup or
+/// is customized (a "Main setup / Customize" switch), and, when customized,
+/// that area's usual controls below.
 private struct OverrideSection<Content: View>: View {
     let title: LocalizedStringKey
-    let symbol: String
     let mainSummary: String
     @Binding var isCustom: Bool
     @ViewBuilder var content: Content
 
     var body: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 12) {
-                Image(systemName: symbol)
-                    .font(.system(size: 16, weight: .medium))
-                    .frame(width: 24)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(title).font(.system(size: 15, weight: .semibold))
+        VStack(alignment: .leading, spacing: Theme.Space.titleToGroup) {
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(Theme.Font.sectionTitle)
+                        .accessibilityAddTraits(.isHeader)
                     Text(isCustom ? "Custom for this app — starts as a copy of your main setup"
                                   : "Following your main setup · \(mainSummary)")
-                        .font(.system(size: 11))
+                        .font(Theme.Font.hint)
                         .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.85)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 12)
                 Picker(title, selection: $isCustom) {
@@ -336,14 +383,13 @@ private struct OverrideSection<Content: View>: View {
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
+                .controlSize(.small)
                 .fixedSize()
             }
-            .padding(16)
-            .glassEffect(isCustom ? .regular.tint(.cyan.opacity(0.18)) : .regular, in: .rect(cornerRadius: 22))
 
             if isCustom {
                 content
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+                    .transition(.opacity)
             }
         }
     }

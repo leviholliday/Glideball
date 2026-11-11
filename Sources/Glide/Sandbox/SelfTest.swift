@@ -152,7 +152,7 @@ enum SelfTest {
             try draw(FeedbackView(model: model), "Send Feedback")
             try draw(SmallFavorCard(model: model), "A small favor", size: RenderUI.windowSize)
             try draw(UpdatePanelView(updates: model.updates) {}, "Software Update")
-            try draw(BackupHistoryCard(model: model, store: model.backups).frame(width: 900), "Backups")
+            try draw(BackupHistorySection(model: model, store: model.backups).frame(width: 900), "Backups")
             return "About, Feedback, A small favor, Software Update, Backups drawn"
         }
 

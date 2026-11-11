@@ -16,7 +16,7 @@
 			<string>%lld 份备份</string>
 		</dict>
 	</dict>
-	<key>%lld buttons</key>
+	<key>%lld buttons changed</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
 		<string>%#@count@</string>
@@ -27,7 +27,7 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>lld</string>
 			<key>other</key>
-			<string>%lld 个按钮</string>
+			<string>已更改 %lld 个按钮</string>
 		</dict>
 	</dict>
 	<key>%lld combos</key>

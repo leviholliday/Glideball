@@ -102,11 +102,6 @@
 
 /* ---- AppProfile.swift ---- */
 
-/* Pointer speed in an app setup */
-"Speed %@" = "Velocità %@";
-
-"Default buttons" = "Pulsanti predefiniti";
-
 "No combos" = "Nessuna combo";
 
 "Uses your main setup" = "Usa la configurazione principale";
@@ -530,8 +525,6 @@
 
 "Give an app its own setup" = "Dai a un’app una configurazione tutta sua";
 
-"Faster tracking in a design app, different buttons in your browser — Glideball switches the moment that app comes to the front, and back again when you leave. Pick only the parts you want to change; everything else follows your main setup." = "Puntatore più veloce in un’app di grafica, pulsanti diversi nel browser: Glideball cambia appena quell’app passa in primo piano e torna indietro quando la lasci. Scegli solo le parti da cambiare; tutto il resto segue la configurazione principale.";
-
 "Open apps" = "App aperte";
 
 "No other open apps" = "Nessun’altra app aperta";
@@ -627,8 +620,6 @@
 "Export" = "Esporta";
 
 "Drag to Finder, Messages, Mail…" = "Trascina nel Finder, in Messaggi, in Mail…";
-
-"Drag the file anywhere, or:" = "Trascina il file dove vuoi, oppure:";
 
 "Save to File…" = "Salva su file…";
 
@@ -1627,3 +1618,49 @@
 "Your trackball, live" = "La tua trackball, in tempo reale";
 "No trackball connected" = "Nessuna trackball collegata";
 "Default: %@" = "Predefinito: %@";
+
+/* ---- Apps and Sync pages (redesign) ---- */
+
+"Active now" = "Attiva ora";
+
+"Backed up" = "Backup eseguito";
+
+"Checks iCloud Drive for changes from your other Macs and sends this Mac’s." = "Controlla iCloud Drive per le modifiche dei tuoi altri Mac e invia quelle di questo Mac.";
+
+"Drag the file anywhere, or save or share it." = "Trascina il file dove vuoi, oppure salvalo o condividilo.";
+
+"Glideball saves your current settings first, and you can undo right after." = "Glideball salva prima le impostazioni attuali e puoi annullare subito dopo.";
+
+"Glideball switches to it whenever that app is in front, and back when you leave." = "Glideball la applica ogni volta che quell’app è in primo piano e torna indietro quando esci.";
+
+"Hide older backups" = "Nascondi backup meno recenti";
+
+"Pointer %@" = "Puntatore %@";
+
+"Restore the backup from %@?" = "Ripristinare il backup del %@?";
+
+"Restore…" = "Ripristina…";
+
+"Show older backups" = "Mostra backup meno recenti";
+
+"Shows what this backup would change" = "Mostra cosa cambierebbe questo backup";
+
+"Sync now" = "Sincronizza ora";
+
+"This deletes what you changed for %@: %@. It will follow your main setup again." = "Questo elimina ciò che hai modificato per %@: %@. Seguirà di nuovo la configurazione principale.";
+
+"This replaces your current settings with that backup. Each line goes from what you have now to what the backup holds:" = "Questo sostituisce le impostazioni attuali con quelle del backup. Ogni riga va da ciò che hai ora a ciò che contiene il backup:";
+
+"This replaces your current settings with that backup. Only fine-tuning values inside a mode or app setup differ." = "Questo sostituisce le impostazioni attuali con quelle del backup. Differiscono solo valori di regolazione fine all’interno di una modalità o di una configurazione app.";
+
+"This replaces your current settings with the ones in this file. Glideball saves a backup first, and you can undo right after." = "Questo sostituisce le impostazioni attuali con quelle di questo file. Glideball crea prima un backup e puoi annullare subito dopo.";
+
+"This setup is in effect right now." = "Questa configurazione è in uso in questo momento.";
+
+"Up to date" = "Aggiornato";
+
+"What’s in the file" = "Cosa contiene il file";
+
+"Your settings as a file" = "Le tue impostazioni come file";
+
+"iCloud Drive" = "iCloud Drive";

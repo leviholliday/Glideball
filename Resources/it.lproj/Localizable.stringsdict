@@ -18,7 +18,7 @@
 			<string>%lld backup</string>
 		</dict>
 	</dict>
-	<key>%lld buttons</key>
+	<key>%lld buttons changed</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
 		<string>%#@count@</string>
@@ -29,9 +29,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>lld</string>
 			<key>one</key>
-			<string>%lld pulsante</string>
+			<string>%lld pulsante modificato</string>
 			<key>other</key>
-			<string>%lld pulsanti</string>
+			<string>%lld pulsanti modificati</string>
 		</dict>
 	</dict>
 	<key>%lld combos</key>

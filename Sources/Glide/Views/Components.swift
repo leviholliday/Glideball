@@ -513,6 +513,65 @@ struct HoverButtonStyle: ButtonStyle {
     }
 }
 
+/// A full-width list row that's a button, inset a little inside its group: a
+/// wash on hover, a little more while pressed, a ball-blue outline when it's
+/// the selected one, and the standard focus ring. (The group's own hairlines
+/// should start at `dividerInset(leading:)`.)
+struct ListRowButtonStyle: ButtonStyle {
+    var selected = false
+    static let outerInset: CGFloat = 4
+    static let innerPadding: CGFloat = 10
+
+    /// Where a group's hairlines start for a row whose text begins `leading` pt (an icon and its gap) in.
+    static func dividerInset(leading: CGFloat) -> CGFloat { outerInset + innerPadding + leading }
+
+    func makeBody(configuration: Configuration) -> some View {
+        RowBody(configuration: configuration, selected: selected)
+    }
+
+    private struct RowBody: View {
+        let configuration: ButtonStyleConfiguration
+        let selected: Bool
+        @State private var hovering = false
+
+        var body: some View {
+            let shape = RoundedRectangle(cornerRadius: 9, style: .continuous)
+            configuration.label
+                .padding(.horizontal, ListRowButtonStyle.innerPadding)
+                .padding(.vertical, 6)
+                .frame(minHeight: Theme.Space.rowMinHeight - 2 * ListRowButtonStyle.outerInset)
+                .background {
+                    shape.fill(configuration.isPressed ? Theme.pressedFill
+                               : selected ? Theme.ball.opacity(0.12)
+                               : hovering ? Theme.hoverFill : .clear)
+                }
+                .overlay { if selected { shape.strokeBorder(Theme.ball.opacity(0.45), lineWidth: 1) } }
+                .contentShape(shape)
+                .padding(ListRowButtonStyle.outerInset)
+                .onHover { hovering = $0 }
+                .animation(.easeOut(duration: 0.12), value: hovering)
+                .focusEffectDisabled(false)
+        }
+    }
+}
+
+/// A small neutral label next to a name ("This Mac", "Before import"). Already-localized text.
+struct QuietChip: View {
+    let text: String
+
+    var body: some View {
+        Text(verbatim: text)
+            .font(.system(size: 10, weight: .medium))
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 2)
+            .background(Capsule().fill(Theme.hoverFill))
+            .overlay(Capsule().strokeBorder(Theme.groupBorder, lineWidth: 0.5))
+            .fixedSize()
+    }
+}
+
 // MARK: - Compatibility: the old card
 
 /// Pages not yet redesigned still build their blocks out of `GlassCard`. It now

@@ -105,6 +105,22 @@ extension RenderUI {
             }) { dark, scale in
             mainWindow(model, tab: .backup, dark: dark, scale: scale)
         }
+        add("import-preview-page", "States", "Sync page, whole, with an import to review",
+            prepare: {
+                var incoming = DemoData.config
+                incoming.trackingSpeed = 3
+                incoming.scrollMode = .native
+                incoming.appProfiles.removeLast()
+                model.pendingImport = .init(fileName: "Studio Mac setup",
+                                            file: GlideSettingsFile(config: incoming, exportedFrom: "Studio Mac"))
+            }) { dark, scale in
+            fullPage(page(.backup, model), dark: dark, scale: scale)
+        }
+        add("apps-empty", "States", "Apps tab with no app setups yet",
+            prepare: { model.config.appProfiles = [] },
+            cleanup: { model.config.appProfiles = DemoData.config.appProfiles }) { dark, scale in
+            mainWindow(model, tab: .apps, dark: dark, scale: scale)
+        }
         add("quick-assign", "States", "Quick assign, waiting for a shortcut",
             prepare: { model.assignStep = .waitingForAction([2, 3]) }) { dark, scale in
             mainWindow(model, tab: .buttons, dark: dark, scale: scale)
@@ -157,7 +173,7 @@ extension RenderUI {
             return sheet(FeedbackView(model: model), dark: dark, scale: scale)
         }
         add("backup-history", "Sheets", "Backup history (Sync tab)") { dark, scale in
-            card(BackupHistoryCard(model: model, store: model.backups), width: windowSize.width, dark: dark, scale: scale)
+            card(BackupHistorySection(model: model, store: model.backups), width: windowSize.width, dark: dark, scale: scale)
         }
 
         // Glideball › Settings… (⌘,)

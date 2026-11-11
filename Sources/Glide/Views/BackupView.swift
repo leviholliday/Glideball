@@ -16,20 +16,21 @@ struct SettingsDocument: Transferable {
     }
 }
 
+/// Sync: where your settings stand (on or off, last synced, which Macs), then
+/// what you can do (sync now, export, import), then the automatic backups.
 struct BackupView: View {
     @Bindable var model: AppModel
 
     var body: some View {
-        // One column, as the redesigned pages are (this page's own redesign comes later).
-        VStack(spacing: Theme.Space.section) {
-            ExportCard(model: model)
-            ImportCard(model: model)
-            SyncCard(model: model, sync: model.sync)
-            BackupHistoryCard(model: model, store: model.backups)
+        VStack(alignment: .leading, spacing: Theme.Space.section) {
+            SyncSection(model: model, sync: model.sync)
+            ExportSection(model: model)
+            ImportSection(model: model)
+            BackupHistorySection(model: model, store: model.backups)
             Text(versionLine)
-                .font(.system(size: 11))
+                .font(Theme.Font.hint)
                 .foregroundStyle(.tertiary)
-                .frame(maxWidth: .infinity)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -42,278 +43,76 @@ struct BackupView: View {
     }
 }
 
-// MARK: - Export
-
-private struct ExportCard: View {
-    let model: AppModel
-    @State private var lifted = false
-
-    var body: some View {
-        GlassCard(title: "Export", symbol: "square.and.arrow.up") {
-            HStack(alignment: .center, spacing: 18) {
-                SettingsFileTile(lifted: lifted)
-                    .draggable(SettingsDocument(model: model)) {
-                        SettingsFileTile(lifted: true).frame(width: 90)
-                    }
-                    .onHover { lifted = $0 }
-                    .help("Drag to Finder, Messages, Mail…")
-                VStack(alignment: .leading, spacing: 8) {
-                    ForEach(model.config.summary) { row in
-                        SummaryLine(row: row)
-                    }
-                }
-            }
-            Text("Drag the file anywhere, or:")
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
-            GlassEffectContainer(spacing: 10) {
-                HStack(spacing: 10) {
-                    Button(action: model.exportSettings) {
-                        Label("Save to File…", systemImage: "arrow.down.doc")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.glassProminent)
-                    .keyboardShortcut("e", modifiers: .command)
-                    ShareLink(item: SettingsDocument(model: model),
-                              preview: SharePreview("Glideball Settings", image: Image(nsImage: NSApp.applicationIconImage))) {
-                        Label("Share…", systemImage: "square.and.arrow.up")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.glass)
-                }
-                .controlSize(.large)
-            }
-        }
-    }
-}
-
-/// A little document with Glide's icon on it — the thing you drag.
-private struct SettingsFileTile: View {
-    var lifted: Bool
-
-    var body: some View {
-        ZStack(alignment: .bottom) {
-            UnevenRoundedRectangle(topLeadingRadius: 10, bottomLeadingRadius: 10,
-                                   bottomTrailingRadius: 10, topTrailingRadius: 24)
-                .fill(LinearGradient(colors: [.white.opacity(0.28), .white.opacity(0.08)],
-                                     startPoint: .top, endPoint: .bottom))
-                .overlay(
-                    UnevenRoundedRectangle(topLeadingRadius: 10, bottomLeadingRadius: 10,
-                                           bottomTrailingRadius: 10, topTrailingRadius: 24)
-                        .strokeBorder(.white.opacity(0.35), lineWidth: 1)
-                )
-            VStack(spacing: 6) {
-                Image(nsImage: NSApp.applicationIconImage)
-                    .resizable()
-                    .frame(width: 48, height: 48)
-                    .shadow(color: .purple.opacity(0.6), radius: 10)
-                Text("Settings")
-                    .font(.system(size: 11, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.bottom, 14)
-        }
-        .frame(width: 96, height: 124)
-        .rotationEffect(.degrees(lifted ? -4 : 0))
-        .scaleEffect(lifted ? 1.05 : 1)
-        .shadow(color: .black.opacity(lifted ? 0.35 : 0.15), radius: lifted ? 16 : 6, y: lifted ? 10 : 3)
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: lifted)
-    }
-}
-
-private struct SummaryLine: View {
-    let row: SettingsSummaryRow
-    var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: row.symbol)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.secondary)
-                .frame(width: 18)
-            Text(row.title).font(.system(size: 12)).foregroundStyle(.secondary)
-            Spacer(minLength: 6)
-            Text(row.value).font(.system(size: 12, weight: .semibold, design: .rounded))
-                .lineLimit(1)
-        }
-    }
-}
-
-// MARK: - Import
-
-private struct ImportCard: View {
-    @Bindable var model: AppModel
-    @State private var targeted = false
-
-    var body: some View {
-        GlassCard(title: "Import", symbol: "square.and.arrow.down") {
-            if let pending = model.pendingImport {
-                ImportPreview(model: model, pending: pending)
-                    .transition(.opacity.combined(with: .scale(scale: 0.97)))
-            } else {
-                dropZone
-                    .transition(.opacity)
-            }
-        }
-        .animation(.smooth(duration: 0.25), value: model.pendingImport?.id)
-    }
-
-    private var dropZone: some View {
-        VStack(spacing: 10) {
-            Image(systemName: targeted ? "arrow.down.doc.fill" : "arrow.down.doc")
-                .font(.system(size: 34, weight: .light))
-                .symbolEffect(.bounce, value: targeted)
-            Text(targeted ? "Drop to preview" : "Drop a settings file here")
-                .font(.system(size: 14, weight: .semibold))
-            Text("You’ll see exactly what changes before anything is replaced.")
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-            Button("Choose File…", action: model.importSettings)
-                .buttonStyle(.glass)
-                .keyboardShortcut("o", modifiers: .command)
-                .padding(.top, 4)
-        }
-        .frame(maxWidth: .infinity, minHeight: 196)
-        .background {
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [6, 6]))
-                .foregroundStyle(targeted ? Color.cyan : Color.white.opacity(0.25))
-                .background(RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(targeted ? Color.cyan.opacity(0.12) : Color.clear))
-        }
-        .scaleEffect(targeted ? 1.02 : 1)
-        .animation(.spring(response: 0.3, dampingFraction: 0.75), value: targeted)
-        .dropDestination(for: URL.self) { urls, _ in
-            guard let url = urls.first else { return false }
-            model.previewImport(url)
-            return true
-        } isTargeted: { targeted = $0 }
-    }
-}
-
-/// Side-by-side: what you have now vs. what the file contains.
-private struct ImportPreview: View {
-    let model: AppModel
-    let pending: AppModel.PendingImport
-
-    var body: some View {
-        let current = model.config.summary
-        let incoming = pending.file.config.summary
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 10) {
-                Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 34, height: 34)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(pending.fileName).font(.system(size: 14, weight: .semibold)).lineLimit(1)
-                    Text(origin).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
-                }
-            }
-            VStack(spacing: 7) {
-                ForEach(Array(zip(current, incoming)), id: \.0.id) { now, new in
-                    HStack(spacing: 8) {
-                        Image(systemName: now.symbol).font(.system(size: 12)).foregroundStyle(.secondary).frame(width: 18)
-                        Text(now.title).font(.system(size: 12)).foregroundStyle(.secondary)
-                        Spacer(minLength: 4)
-                        if now.value == new.value {
-                            Text(new.value).font(.system(size: 12, design: .rounded)).foregroundStyle(.secondary).lineLimit(1)
-                        } else {
-                            Text(now.value).font(.system(size: 12, design: .rounded)).strikethrough().foregroundStyle(.tertiary).lineLimit(1)
-                            Image(systemName: "arrow.right").font(.system(size: 9, weight: .bold)).foregroundStyle(.cyan)
-                            Text(new.value).font(.system(size: 12, weight: .semibold, design: .rounded)).lineLimit(1)
-                        }
-                    }
-                }
-            }
-            .padding(12)
-            .background(RoundedRectangle(cornerRadius: 14).fill(.white.opacity(0.06)))
-            HStack {
-                Button("Cancel") { model.pendingImport = nil }
-                    .buttonStyle(.glass)
-                    .keyboardShortcut(.cancelAction)
-                Spacer()
-                Button(action: model.confirmImport) {
-                    Label("Replace My Settings", systemImage: "arrow.down.doc.fill")
-                }
-                .buttonStyle(.glassProminent)
-                .keyboardShortcut(.defaultAction)
-            }
-            .controlSize(.large)
-        }
-    }
-
-    private var origin: String {
-        let date = pending.file.exportedAt?.formatted(date: .abbreviated, time: .shortened)
-        switch (date, pending.file.exportedFrom) {
-        case let (date?, from?): return String(localized: "Exported \(date) from \(from)", comment: "Date, then the Mac's name")
-        case let (date?, nil): return String(localized: "Exported \(date)")
-        case let (nil, from?): return String(localized: "Exported from \(from)", comment: "The Mac's name")
-        case (nil, nil): return String(localized: "Glideball settings file")
-        }
+/// The part a summary line is about, when it's about one (pointer: the ball, scrolling: the ring, buttons and combos: the buttons).
+func summaryPartColor(_ symbol: String) -> Color? {
+    switch symbol {
+    case "cursorarrow.motionlines": Theme.ball
+    case "arrow.up.and.down.circle": Theme.ring
+    case "button.programmable", "square.on.square": Theme.buttons
+    default: nil
     }
 }
 
 // MARK: - Sync
 
-private struct SyncCard: View {
+private struct SyncSection: View {
     let model: AppModel
     let sync: SettingsSync
 
     var body: some View {
-        GlassCard(title: "Sync", symbol: "icloud") {
-            HStack(alignment: .center, spacing: 16) {
-                ZStack {
-                    Circle().fill(.white.opacity(0.08)).frame(width: 52, height: 52)
-                    Image(systemName: statusSymbol)
-                        .font(.system(size: 22, weight: .medium))
-                        .foregroundStyle(statusColor)
-                        .symbolEffect(.pulse, isActive: sync.status == .syncing)
-                }
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Sync with iCloud Drive").font(.system(size: 15, weight: .semibold))
-                    Text(statusText).font(.system(size: 12)).foregroundStyle(.secondary)
-                }
-                Spacer()
-                if sync.isEnabled {
-                    Button {
-                        sync.syncNow(current: model.config)
-                    } label: {
-                        Label("Sync Now", systemImage: "arrow.triangle.2.circlepath")
-                    }
-                    .buttonStyle(.glass)
-                    .disabled(sync.status == .syncing)
-                }
-                Toggle("", isOn: Binding(get: { sync.isEnabled },
-                                         set: { sync.setEnabled($0, current: model.config) }))
-                    .toggleStyle(.switch)
-                    .labelsHidden()
-                    .disabled(!sync.iCloudDriveAvailable && !sync.isEnabled)
-            }
-
-            if sync.isEnabled && !sync.devices.isEmpty {
-                Divider().opacity(0.3)
-                VStack(alignment: .leading, spacing: 8) {
-                    ForEach(sync.devices) { device in
-                        HStack(spacing: 10) {
-                            Image(systemName: device.isThisMac ? "desktopcomputer" : "laptopcomputer")
-                                .foregroundStyle(device.isThisMac ? .cyan : .secondary)
-                                .frame(width: 20)
-                            Text(device.name).font(.system(size: 13, weight: device.isThisMac ? .semibold : .regular))
-                            if device.isThisMac {
-                                Text("This Mac").font(.system(size: 10, weight: .semibold))
-                                    .padding(.horizontal, 7).padding(.vertical, 2)
-                                    .glassEffect(.regular.tint(.cyan.opacity(0.3)), in: .capsule)
-                            }
-                            Spacer()
+        SectionBlock(title: "iCloud Drive",
+                     caption: "Your settings live in iCloud Drive › Glide, so every Mac signed in to your Apple Account stays in step — no extra account. The pause switch stays per-Mac.") {
+            statusRow
+            if sync.isEnabled {
+                ForEach(sync.devices) { device in
+                    SettingRow(title: .verbatim(device.name),
+                               symbol: device.isThisMac ? "desktopcomputer" : "laptopcomputer") {
+                        HStack(spacing: 8) {
+                            if device.isThisMac { QuietChip(text: String(localized: "This Mac")) }
                             Text(device.lastSeen, format: .relative(presentation: .named))
-                                .font(.system(size: 11)).foregroundStyle(.secondary)
+                                .font(Theme.Font.hint)
+                                .foregroundStyle(.secondary)
                         }
                     }
                 }
+                SyncNowRow(model: model, sync: sync)
             }
-
-            Text("Your settings live in iCloud Drive › Glide, so every Mac signed in to your Apple Account stays in step — no extra account. The pause switch stays per-Mac.")
-                .font(.system(size: 11))
-                .foregroundStyle(.tertiary)
-                .fixedSize(horizontal: false, vertical: true)
         }
+    }
+
+    private var statusRow: some View {
+        HStack(spacing: Theme.Space.symbolGap) {
+            Group {
+                if sync.status == .syncing {
+                    ProgressView().controlSize(.small)
+                } else {
+                    Image(systemName: statusSymbol)
+                        .font(.system(size: 15))
+                        .foregroundStyle(statusColor)
+                }
+            }
+            .frame(width: Theme.Space.symbolColumn)
+            .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Sync with iCloud Drive").font(Theme.Font.body)
+                Text(statusText)
+                    .font(Theme.Font.hint)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .contentTransition(.opacity)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            Toggle("Sync with iCloud Drive", isOn: Binding(get: { sync.isEnabled },
+                                                           set: { sync.setEnabled($0, current: model.config) }))
+                .toggleStyle(.switch)
+                .controlSize(.small)
+                .labelsHidden()
+                .disabled(!sync.iCloudDriveAvailable && !sync.isEnabled)
+        }
+        .padding(.horizontal, Theme.Space.rowHorizontal)
+        .padding(.vertical, Theme.Space.rowVertical)
+        .frame(minHeight: Theme.Space.rowMinHeight)
+        .animation(Theme.Motion.fade, value: statusText)
     }
 
     private var statusText: String {
@@ -339,10 +138,276 @@ private struct SyncCard: View {
 
     private var statusColor: Color {
         switch sync.status {
-        case .upToDate: .green
-        case .syncing: .cyan
-        case .error, .unavailable: .orange
-        case .off: .secondary
+        case .upToDate: Theme.ok
+        case .syncing, .off: Color.secondary
+        case .error, .unavailable: Theme.warn
+        }
+    }
+}
+
+/// "Sync now": while it runs the button gives way to a spinner, and when it's
+/// done a checkmark says so for a moment, right where you pressed it.
+private struct SyncNowRow: View {
+    let model: AppModel
+    let sync: SettingsSync
+    @State private var justFinished = false
+    @State private var finishedTask: Task<Void, Never>?
+
+    var body: some View {
+        SettingRow(title: "Sync now",
+                   hint: "Checks iCloud Drive for changes from your other Macs and sends this Mac’s.",
+                   symbol: "arrow.triangle.2.circlepath") {
+            Group {
+                if sync.status == .syncing {
+                    HStack(spacing: 6) {
+                        ProgressView().controlSize(.small)
+                        Text("Syncing…").font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
+                    }
+                } else if justFinished {
+                    Label("Up to date", systemImage: "checkmark")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Theme.ok)
+                } else {
+                    Button("Sync Now") { sync.syncNow(current: model.config) }
+                        .controlSize(.small)
+                }
+            }
+            .transition(.opacity)
+        }
+        .animation(Theme.Motion.fade, value: sync.status == .syncing)
+        .animation(Theme.Motion.fade, value: justFinished)
+        .onChange(of: sync.status) { old, new in
+            guard old == .syncing, case .upToDate = new else { return }
+            justFinished = true
+            finishedTask?.cancel()
+            finishedTask = Task {
+                try? await Task.sleep(for: .seconds(2.5))
+                if !Task.isCancelled { justFinished = false }
+            }
+        }
+        .onDisappear { finishedTask?.cancel() }
+    }
+}
+
+// MARK: - Export
+
+private struct ExportSection: View {
+    let model: AppModel
+    @State private var lifted = false
+
+    var body: some View {
+        SectionBlock(title: "Export") {
+            HStack(spacing: Theme.Space.symbolGap + 2) {
+                SettingsFileChip(lifted: lifted)
+                    .draggable(SettingsDocument(model: model)) {
+                        SettingsFileChip(lifted: true)
+                    }
+                    .onHover { lifted = $0 }
+                    .help("Drag to Finder, Messages, Mail…")
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Your settings as a file").font(Theme.Font.body)
+                    Text("Drag the file anywhere, or save or share it.")
+                        .font(Theme.Font.hint)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                HStack(spacing: 8) {
+                    Button(action: model.exportSettings) {
+                        Label("Save to File…", systemImage: "arrow.down.doc")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .keyboardShortcut("e", modifiers: .command)
+                    ShareLink(item: SettingsDocument(model: model),
+                              preview: SharePreview("Glideball Settings", image: Image(nsImage: NSApp.applicationIconImage))) {
+                        Label("Share…", systemImage: "square.and.arrow.up")
+                    }
+                    .buttonStyle(.bordered)
+                }
+                .controlSize(.small)
+                .fixedSize()
+            }
+            .padding(.horizontal, Theme.Space.rowHorizontal)
+            .padding(.vertical, Theme.Space.rowVertical)
+            .frame(minHeight: Theme.Space.rowMinHeight)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("What’s in the file")
+                    .font(Theme.Font.hint.weight(.medium))
+                    .foregroundStyle(.secondary)
+                ForEach(model.config.summary) { row in
+                    SummaryLine(row: row)
+                }
+            }
+            .padding(.horizontal, Theme.Space.rowHorizontal)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+}
+
+/// A small document with Glideball's icon on it: the thing you drag.
+private struct SettingsFileChip: View {
+    var lifted: Bool
+
+    var body: some View {
+        let shape = UnevenRoundedRectangle(topLeadingRadius: 5, bottomLeadingRadius: 5,
+                                           bottomTrailingRadius: 5, topTrailingRadius: 10, style: .continuous)
+        ZStack {
+            shape.fill(Theme.groupFill)
+                .overlay(shape.strokeBorder(Theme.hairline, lineWidth: 0.5))
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .interpolation(.high)
+                .frame(width: 20, height: 20)
+        }
+        .frame(width: 30, height: 38)
+        .scaleEffect(lifted ? 1.06 : 1)
+        .shadow(color: .black.opacity(lifted ? 0.2 : 0), radius: 4, y: 2)
+        .animation(.easeOut(duration: 0.12), value: lifted)
+        .accessibilityHidden(true)
+    }
+}
+
+private struct SummaryLine: View {
+    let row: SettingsSummaryRow
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: row.symbol)
+                .font(.system(size: 12))
+                .foregroundStyle(summaryPartColor(row.symbol).map { AnyShapeStyle($0) } ?? AnyShapeStyle(.secondary))
+                .frame(width: 18)
+            Text(row.title).font(.system(size: 12)).foregroundStyle(.secondary)
+            Spacer(minLength: 6)
+            Text(row.value).font(.system(size: 12, weight: .medium)).lineLimit(1)
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+// MARK: - Import
+
+private struct ImportSection: View {
+    @Bindable var model: AppModel
+    @State private var targeted = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Theme.Space.titleToGroup) {
+            SectionTitle(title: "Import")
+            if let pending = model.pendingImport {
+                ImportPreview(model: model, pending: pending)
+                    .transition(.opacity)
+            } else {
+                dropTarget
+                    .transition(.opacity)
+            }
+        }
+        .animation(Theme.Motion.fade, value: model.pendingImport?.id)
+    }
+
+    /// One row that takes a dropped file (the group's edge turns blue while one's over it) or opens the file chooser.
+    private var dropTarget: some View {
+        RowGroup {
+            SettingRow(title: targeted ? "Drop to preview" : "Drop a settings file here",
+                       hint: "You’ll see exactly what changes before anything is replaced.",
+                       symbol: targeted ? "arrow.down.doc.fill" : "arrow.down.doc",
+                       tint: targeted ? Theme.ball : nil) {
+                Button("Choose File…", action: model.importSettings)
+                    .controlSize(.small)
+                    .keyboardShortcut("o", modifiers: .command)
+            }
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: Theme.Radius.group, style: .continuous)
+                .strokeBorder(Theme.ball, lineWidth: 1.5)
+                .opacity(targeted ? 1 : 0)
+                .allowsHitTesting(false)
+        }
+        .animation(.easeOut(duration: 0.12), value: targeted)
+        .dropDestination(for: URL.self) { urls, _ in
+            guard let url = urls.first else { return false }
+            model.previewImport(url)
+            return true
+        } isTargeted: { targeted = $0 }
+    }
+}
+
+/// What you have now against what the file holds, and what replacing does.
+private struct ImportPreview: View {
+    let model: AppModel
+    let pending: AppModel.PendingImport
+
+    var body: some View {
+        let current = model.config.summary
+        let incoming = pending.file.config.summary
+        RowGroup {
+            HStack(spacing: Theme.Space.symbolGap) {
+                Image(nsImage: NSApp.applicationIconImage)
+                    .resizable()
+                    .interpolation(.high)
+                    .frame(width: 28, height: 28)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(pending.fileName).font(Theme.Font.body.weight(.medium)).lineLimit(1)
+                    Text(origin).font(Theme.Font.hint).foregroundStyle(.secondary).lineLimit(1)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, Theme.Space.rowHorizontal)
+            .padding(.vertical, Theme.Space.rowVertical)
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            VStack(spacing: 8) {
+                ForEach(Array(zip(current, incoming)), id: \.0.id) { now, new in
+                    HStack(spacing: 8) {
+                        Image(systemName: now.symbol)
+                            .font(.system(size: 12))
+                            .foregroundStyle(summaryPartColor(now.symbol).map { AnyShapeStyle($0) } ?? AnyShapeStyle(.secondary))
+                            .frame(width: 18)
+                        Text(now.title).font(.system(size: 12)).foregroundStyle(.secondary)
+                        Spacer(minLength: 4)
+                        if now.value == new.value {
+                            Text(new.value).font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(1)
+                        } else {
+                            Text(now.value).font(.system(size: 12)).strikethrough().foregroundStyle(.tertiary).lineLimit(1)
+                            Image(systemName: "arrow.right").font(.system(size: 9, weight: .bold)).foregroundStyle(.secondary)
+                            Text(new.value).font(.system(size: 12, weight: .semibold)).lineLimit(1)
+                        }
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+            }
+            .padding(.horizontal, Theme.Space.rowHorizontal)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            HStack(alignment: .center, spacing: 12) {
+                Text("This replaces your current settings with the ones in this file. Glideball saves a backup first, and you can undo right after.")
+                    .font(Theme.Font.hint)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Button("Cancel") { model.pendingImport = nil }
+                    .keyboardShortcut(.cancelAction)
+                Button(action: model.confirmImport) {
+                    Label("Replace My Settings", systemImage: "arrow.down.doc.fill")
+                }
+                .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.defaultAction)
+            }
+            .controlSize(.small)
+            .padding(.horizontal, Theme.Space.rowHorizontal)
+            .padding(.vertical, Theme.Space.rowVertical)
+        }
+    }
+
+    private var origin: String {
+        let date = pending.file.exportedAt?.formatted(date: .abbreviated, time: .shortened)
+        switch (date, pending.file.exportedFrom) {
+        case let (date?, from?): return String(localized: "Exported \(date) from \(from)", comment: "Date, then the Mac's name")
+        case let (date?, nil): return String(localized: "Exported \(date)")
+        case let (nil, from?): return String(localized: "Exported from \(from)", comment: "The Mac's name")
+        case (nil, nil): return String(localized: "Glideball settings file")
         }
     }
 }

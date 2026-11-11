@@ -102,11 +102,6 @@
 
 /* ---- AppProfile.swift ---- */
 
-/* Pointer speed in an app setup */
-"Speed %@" = "速度%@";
-
-"Default buttons" = "デフォルトのボタン";
-
 "No combos" = "コンボなし";
 
 "Uses your main setup" = "メイン設定を使用";
@@ -530,8 +525,6 @@
 
 "Give an app its own setup" = "Appに専用の設定を";
 
-"Faster tracking in a design app, different buttons in your browser — Glideball switches the moment that app comes to the front, and back again when you leave. Pick only the parts you want to change; everything else follows your main setup." = "デザインAppではポインタを速く、ブラウザでは別のボタンに — そのAppが最前面に来た瞬間にGlideが切り替え、離れると元に戻します。変えたい部分だけを選べば、ほかはメイン設定に従います。";
-
 "Open apps" = "開いているApp";
 
 "No other open apps" = "ほかに開いているAppはありません";
@@ -627,8 +620,6 @@
 "Export" = "書き出す";
 
 "Drag to Finder, Messages, Mail…" = "Finder、メッセージ、メールなどにドラッグ…";
-
-"Drag the file anywhere, or:" = "ファイルを好きな場所にドラッグするか：";
 
 "Save to File…" = "ファイルに保存…";
 
@@ -1627,3 +1618,49 @@
 "Your trackball, live" = "トラックボールのライブ表示";
 "No trackball connected" = "トラックボールが接続されていません";
 "Default: %@" = "デフォルト：%@";
+
+/* ---- Apps and Sync pages (redesign) ---- */
+
+"Active now" = "使用中";
+
+"Backed up" = "バックアップ済み";
+
+"Checks iCloud Drive for changes from your other Macs and sends this Mac’s." = "iCloud Driveで他のMacの変更を確認し、このMacの変更を送信します。";
+
+"Drag the file anywhere, or save or share it." = "ファイルをどこにでもドラッグするか、保存または共有できます。";
+
+"Glideball saves your current settings first, and you can undo right after." = "Glideballは先に現在の設定を保存するので、直後であれば取り消せます。";
+
+"Glideball switches to it whenever that app is in front, and back when you leave." = "そのアプリが最前面にあるときGlideballがこの設定に切り替わり、離れると元に戻ります。";
+
+"Hide older backups" = "古いバックアップを隠す";
+
+"Pointer %@" = "ポインタ %@";
+
+"Restore the backup from %@?" = "%@のバックアップを復元しますか？";
+
+"Restore…" = "復元…";
+
+"Show older backups" = "古いバックアップを表示";
+
+"Shows what this backup would change" = "このバックアップで何が変わるかを表示します";
+
+"Sync now" = "今すぐ同期";
+
+"This deletes what you changed for %@: %@. It will follow your main setup again." = "%1$@用に変更した内容（%2$@）を削除します。メイン設定に従う状態に戻ります。";
+
+"This replaces your current settings with that backup. Each line goes from what you have now to what the backup holds:" = "現在の設定がこのバックアップの内容に置き換わります。各行は、現在の内容からバックアップの内容への変化を示します：";
+
+"This replaces your current settings with that backup. Only fine-tuning values inside a mode or app setup differ." = "現在の設定がこのバックアップの内容に置き換わります。違いは、モードやアプリ設定内の細かい調整値だけです。";
+
+"This replaces your current settings with the ones in this file. Glideball saves a backup first, and you can undo right after." = "現在の設定がこのファイルの内容に置き換わります。Glideballは先にバックアップを作成するので、直後であれば取り消せます。";
+
+"This setup is in effect right now." = "この設定は現在使われています。";
+
+"Up to date" = "最新";
+
+"What’s in the file" = "ファイルの内容";
+
+"Your settings as a file" = "設定をファイルとして";
+
+"iCloud Drive" = "iCloud Drive";

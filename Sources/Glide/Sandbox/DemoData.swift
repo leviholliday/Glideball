@@ -116,7 +116,7 @@ enum DemoData {
         safari.scroll = scroll
         var chrome = AppProfile(bundleID: "com.google.Chrome", name: "Google Chrome")
         chrome.trackingSpeed = 7
-        chrome.buttons = [2: .back, 3: .forward]
+        chrome.buttons = c.buttons.merging([2: .back, 3: .forward]) { $1 }   // a copy of the main buttons with two changed, as customizing makes it
         var excel = AppProfile(bundleID: "com.microsoft.Excel", name: "Microsoft Excel")
         excel.trackingSpeed = 3.5
         excel.chords = [Chord(buttons: [2, 3], action: .shortcut(.copy))]
