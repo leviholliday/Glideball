@@ -76,12 +76,20 @@ enum LaunchMath {
     }
 }
 
-/// The near-black stage everything launches on (the same dark the sidebar's trackball sits in).
+/// The near-black stage everything launches on: the window's own lit stage
+/// (always the dark one), its aurora centered on the trackball and coming up
+/// as the trackball arrives (`light`, 0…1), so the launch hands over to the
+/// window without a change of world.
 struct LaunchStage: View {
+    var light = 1.0
+
     var body: some View {
         ZStack {
             Color(red: 0.027, green: 0.027, blue: 0.04)
-            RadialGradient(colors: [.clear, .black.opacity(0.5)], center: .center, startRadius: 220, endRadius: 760)
+            StaticAtmosphere(dark: true, anchor: UnitPoint(x: 0.5, y: 0.42))
+                .environment(\.colorScheme, .dark)
+                .opacity(light)
+            RadialGradient(colors: [.clear, .black.opacity(0.5)], center: .center, startRadius: 260, endRadius: 760)
         }
     }
 }
@@ -117,7 +125,8 @@ struct IntroScene: View {   // internal: drawn by --render-ui and --self-test to
             let hit = Self.hit
             let lift = calm ? 1 : LaunchMath.easeInOut(LaunchMath.span(t, hit, hit + 0.7))
             ZStack {
-                LaunchStage()
+                // The room lights up as the ball arrives and the ring spins up.
+                LaunchStage(light: calm ? 1 : LaunchMath.easeInOut(LaunchMath.span(t, 0.8, hit + 0.5)))
 
                 TrackballArt(pose: pose(width: g.size.width))
                     .frame(width: Self.markSide, height: Self.markSide)

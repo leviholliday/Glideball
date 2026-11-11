@@ -96,6 +96,7 @@ COMPONENTS: dict[str, set] = {
 # `specifier:`. Matched against the whole interpolated expression.
 INT_NAMES = {
     "n", "i", "b", "pct", "more", "remapped", "code", "maxAttachments",
+    "stepsDone", "steps", "stepsLeft", "done", "total",
 }
 INT_PATTERNS = [
     r"Int\(.*\)",                        # Int(x) — but not Int(x).formatted(): see specifier()

@@ -297,6 +297,7 @@ private struct ProgressHeader: View {
 
     var body: some View {
         let f = total > 0 ? Double(done) / Double(total) : 0
+        let stepsLeft = max(total - done, 0)
         HStack(spacing: 14) {
             ZStack {
                 Circle().stroke(Theme.ball.opacity(0.15), lineWidth: 4)
@@ -312,7 +313,7 @@ private struct ProgressHeader: View {
             }
             .frame(width: 38, height: 38)
             VStack(alignment: .leading, spacing: 6) {
-                Text(done >= total - 1 ? "One step to go" : "\(total - done) steps to go")
+                Text(stepsLeft == 1 ? "One step to go" : "\(stepsLeft) steps to go")
                     .font(.system(size: 13, weight: .semibold))
                     .contentTransition(.opacity)
                 GeometryReader { g in

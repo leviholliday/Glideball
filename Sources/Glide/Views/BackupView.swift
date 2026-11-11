@@ -89,9 +89,19 @@ private struct SyncSection: View {
                     Image(systemName: statusSymbol)
                         .font(.system(size: 15))
                         .foregroundStyle(statusColor)
+                        .symbolEffect(.bounce, value: inStep)
                 }
             }
             .frame(width: Theme.Space.symbolColumn)
+            // In step: when a sync finishes, one ring of light goes out from here.
+            .overlay {
+                Circle()
+                    .stroke(Theme.ok, lineWidth: 1.5)
+                    .frame(width: 22, height: 22)
+                    .scaleEffect(pulse ? 2.4 : 0.8)
+                    .opacity(pulse ? 0 : (pulsing ? 0.8 : 0))
+                    .allowsHitTesting(false)
+            }
             .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text("Sync with iCloud Drive").font(Theme.Font.body)
@@ -113,7 +123,20 @@ private struct SyncSection: View {
         .padding(.vertical, Theme.Space.rowVertical)
         .frame(minHeight: Theme.Space.rowMinHeight)
         .animation(Theme.Motion.fade, value: statusText)
+        .onChange(of: sync.status) { old, new in
+            guard old == .syncing, case .upToDate = new else { return }
+            inStep += 1
+            guard !reduceMotion else { return }
+            pulsing = true
+            pulse = false
+            withAnimation(.easeOut(duration: 0.7)) { pulse = true } completion: { pulsing = false; pulse = false }
+        }
     }
+
+    @State private var inStep = 0
+    @State private var pulse = false
+    @State private var pulsing = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var statusText: String {
         switch sync.status {

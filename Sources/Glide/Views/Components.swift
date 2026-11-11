@@ -551,7 +551,7 @@ struct InstrumentSlider: View {
                         .fill(.tertiary)
                         .frame(width: 1.5, height: 4)
                         .position(x: inset + CGFloat(f) * w, y: mid + 10)
-                        .help(defaultText.map { "Default: \($0)" } ?? "")
+                        .help("Default: \(defaultText ?? "")")
                 }
                 // The thumb's glow while dragging.
                 Circle()
@@ -945,11 +945,14 @@ struct GlassCard<Content: View>: View {
 
 /// The stage on its own, without the live light (sheets, the tour, whole-page pictures).
 struct GlideBackground: View {
+    /// Where the light comes from, relative to the stage (nil: the sidebar trackball's place).
+    var anchor: UnitPoint? = nil
+    var strength = 1.0
     @Environment(\.colorScheme) private var scheme
     @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
-        StaticAtmosphere(dark: scheme == .dark, contrast: contrast == .increased)
+        StaticAtmosphere(dark: scheme == .dark, contrast: contrast == .increased, anchor: anchor, strength: strength)
             .ignoresSafeArea()
             .allowsHitTesting(false)
     }

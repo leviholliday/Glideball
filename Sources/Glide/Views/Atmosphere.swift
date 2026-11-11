@@ -48,12 +48,16 @@ struct StaticAtmosphere: View, Equatable {
     var contrast = false
     /// Where the aurora's heart is (the sidebar trackball by default).
     var center: CGPoint = LightSource.sidebar
+    /// Or a point relative to the stage's size (a sheet's top, the tour's trackball).
+    var anchor: UnitPoint? = nil
+    /// How strong the light is (sheets and Settings use a gentler one).
+    var strength = 1.0
 
     var body: some View {
         // Increase Contrast: the light steps back so text stays crisp.
         let k = contrast ? 0.5 : 1.0
         GeometryReader { geo in
-            let c = center
+            let c = anchor.map { CGPoint(x: geo.size.width * $0.x, y: geo.size.height * $0.y) } ?? center
             ZStack(alignment: .topLeading) {
                 Theme.windowBackground
                 // The aurora: the orb's colors, centered on the trackball, bleeding up and across the top.
@@ -62,6 +66,7 @@ struct StaticAtmosphere: View, Equatable {
                 glow(Theme.orbViolet, dark ? 0.24 : 0.13, at: CGPoint(x: c.x + 330, y: c.y - 170), size: CGSize(width: 1100, height: 520))
                 glow(Theme.orbMagenta, dark ? 0.11 : 0.07, at: CGPoint(x: c.x + 120, y: c.y + 330), size: CGSize(width: 620, height: 520))
                 RingTexture(center: c, dark: dark)
+                    .opacity(strength)
                 Grain(dark: dark)
             }
             .opacity(1)
@@ -72,8 +77,9 @@ struct StaticAtmosphere: View, Equatable {
         }
     }
 
-    private func glow(_ color: Color, _ strength: Double, at p: CGPoint, size: CGSize) -> some View {
-        Rectangle()
+    private func glow(_ color: Color, _ amount: Double, at p: CGPoint, size: CGSize) -> some View {
+        let strength = amount * self.strength
+        return Rectangle()
             .fill(EllipticalGradient(colors: [color.opacity(strength), color.opacity(strength * 0.45), color.opacity(0)],
                                  center: .center, startRadiusFraction: 0, endRadiusFraction: 0.5))
             .frame(width: size.width, height: size.height)

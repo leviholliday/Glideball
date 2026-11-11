@@ -447,7 +447,7 @@ struct FeedbackView: View {
             }
         }
         .frame(width: 640, height: 640)
-        .background(Theme.windowBackground)
+        .background(GlideBackground(anchor: UnitPoint(x: 0.15, y: -0.1), strength: 0.6))
         .animation(Theme.Motion.spring, value: draft.phase)
         .onAppear {
             draft.isPresented = true

@@ -32,6 +32,7 @@ struct WelcomeTourView: View {
     @FocusState private var focused: Bool
     @Environment(\.appearsActive) private var appearsActive
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorScheme) private var scheme
 
     /// `step` other than `.welcome` (and `found`) are for `--render-ui` and `--self-test`, which draw every step.
     init(model: AppModel, step: Step = .welcome, found: Set<Int> = []) {
@@ -47,7 +48,8 @@ struct WelcomeTourView: View {
 
     var body: some View {
         ZStack {
-            GlideBackground()
+            // The light comes from where the tour's trackball sits.
+            GlideBackground(anchor: UnitPoint(x: 0.5, y: 0.42))
             VStack(spacing: 0) {
                 HStack {
                     Spacer()
@@ -209,14 +211,23 @@ struct WelcomeTourView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// The live trackball on its dark stage, like the sidebar's.
+    /// The live trackball standing on the lit stage, its own light around it (and the hand's, as you use it).
     private func stage(_ side: CGFloat, look: TrackballLook) -> some View {
         TrackballView(feed: model.live, pressed: model.pressed, look: look)
             .frame(width: side, height: side)
             .padding(side * 0.09)
-            .background(RoundedRectangle(cornerRadius: side * 0.13, style: .continuous).fill(Theme.stage))
-            .overlay(RoundedRectangle(cornerRadius: side * 0.13, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.06), lineWidth: 0.5))
+            .background {
+                ZStack {
+                    Circle()
+                        .fill(RadialGradient(colors: [Theme.orbBlue.opacity(look == .connected ? 0.35 : 0.12), .clear],
+                                             center: .center, startRadius: side * 0.2, endRadius: side * 0.85))
+                        .frame(width: side * 1.8, height: side * 1.8)
+                    if look == .connected && model.performance != .minimal {
+                        LightBloom(feed: model.live, pressed: model.pressed, dark: scheme == .dark, size: side * 1.9, strength: 0.7)
+                    }
+                }
+                .allowsHitTesting(false)
+            }
     }
 
     // 1. Welcome

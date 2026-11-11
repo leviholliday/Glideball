@@ -77,7 +77,7 @@ struct AboutView: View {
             .scrollIndicators(.automatic)
         }
         .frame(width: 520, height: 640)
-        .background(Theme.windowBackground)
+        .background(GlideBackground(anchor: UnitPoint(x: 0.5, y: -0.05), strength: 0.8))
         .overlay(alignment: .topTrailing) {
             Button("Done") { dismiss() }
                 .keyboardShortcut(.cancelAction)

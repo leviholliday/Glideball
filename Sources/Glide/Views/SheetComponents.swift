@@ -19,9 +19,8 @@ extension Theme {
 }
 
 /// A card over the main window (A small favor, the new icon): the window
-/// dims, nothing under it can be clicked, and the card sits in the middle on
-/// a raised surface with a hairline edge and a soft shadow. Not glass: it's
-/// something to read and answer, not something floating by.
+/// dims, nothing under it can be clicked, and the card sits in the middle,
+/// floating over the lit stage (`LitCardBackground`).
 struct OverlayCard<Content: View>: View {
     var width: CGFloat = 520
     @ViewBuilder var content: Content
@@ -32,14 +31,46 @@ struct OverlayCard<Content: View>: View {
             content
                 .padding(28)
                 .frame(width: width)
-                .background {
-                    let shape = RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    shape.fill(Theme.raised)
-                        .pixelBorder(shape, Theme.groupBorder)
-                        .shadow(color: .black.opacity(0.28), radius: 30, y: 12)
-                }
+                .background { LitCardBackground(radius: 20) }
         }
         .contentShape(Rectangle())   // nothing underneath can be clicked
+    }
+}
+
+/// A card that floats over the window (What's New, the new icon, a small
+/// favor): Liquid Glass tinted nearly solid (so the words never fight what's
+/// underneath), the trackball's aurora glowing in from the top, light catching
+/// its top edge, and a deep soft shadow.
+struct LitCardBackground: View {
+    var radius: CGFloat = 20
+    @Environment(\.colorScheme) private var scheme
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
+        let dark = scheme == .dark
+        Color.clear
+            .glassEffect(.regular.tint(Theme.raised.opacity(contrast == .increased ? 0.97 : 0.86)), in: shape)
+            .overlay {
+                // The aurora, in from the top.
+                VStack {
+                    Rectangle()
+                        .fill(EllipticalGradient(colors: [Theme.orbBlue.opacity(dark ? 0.42 : 0.18),
+                                                          Theme.orbViolet.opacity(dark ? 0.18 : 0.08), .clear],
+                                                 center: UnitPoint(x: 0.3, y: 0), startRadiusFraction: 0, endRadiusFraction: 0.55))
+                        .frame(height: 260)
+                    Spacer(minLength: 0)
+                }
+                .clipShape(shape)
+                .opacity(contrast == .increased ? 0.4 : 1)
+                .allowsHitTesting(false)
+            }
+            .overlay {
+                shape.strokeBorder(LinearGradient(colors: [Theme.surfaceHighlight, Theme.groupBorder, Theme.groupBorder],
+                                                  startPoint: .topLeading, endPoint: .bottom), lineWidth: 1)
+            }
+            .shadow(color: .black.opacity(dark ? 0.45 : 0.16), radius: 34, y: 16)
+            .shadow(color: Theme.orbBlue.opacity(dark ? 0.12 : 0.06), radius: 40, y: 0)
     }
 }
 

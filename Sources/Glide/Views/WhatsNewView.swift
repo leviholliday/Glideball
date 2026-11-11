@@ -11,7 +11,7 @@ struct WhatsNewView: View {
 
     var body: some View {
         ZStack {
-            Rectangle().fill(.black.opacity(0.32)).ignoresSafeArea()
+            Theme.scrim.ignoresSafeArea()
             if let entry {
                 GeometryReader { g in
                     card(entry)
@@ -27,7 +27,7 @@ struct WhatsNewView: View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 5) {
                 Text("What’s new in Glideball \(entry.title)", comment: "What's New title; %@ is a version like 2.10")
-                    .font(.system(size: 22, weight: .semibold))
+                    .font(.system(size: 28, weight: .semibold))
                     .accessibilityAddTraits(.isHeader)
                 Text(verbatim: entry.intro)
                     .font(Theme.Font.body)
@@ -69,13 +69,7 @@ struct WhatsNewView: View {
         }
         .padding(26)
         .frame(width: 640)
-        .background {
-            // Solid, so the page underneath never shows through the words.
-            let shape = RoundedRectangle(cornerRadius: 22, style: .continuous)
-            shape.fill(Theme.windowBackground)
-                .pixelBorder(shape, Theme.groupBorder)
-                .shadow(color: .black.opacity(0.25), radius: 30, y: 12)
-        }
+        .background { LitCardBackground(radius: 24) }
     }
 
     private func items(_ entry: WhatsNew.Entry) -> some View {

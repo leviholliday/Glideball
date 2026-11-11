@@ -72,7 +72,7 @@ final class SettingsWindowController: NSWindowController, NSToolbarDelegate {
                                       styleMask: [.titled, .closable], backing: .buffered, defer: false)
         window.toolbarStyle = .preference
         window.isReleasedWhenClosed = false
-        window.backgroundColor = NSColor(name: nil) { Theme.isDark($0) ? NSColor(srgbHex: 0x121216) : .windowBackgroundColor }
+        window.backgroundColor = NSColor(name: nil) { Theme.isDark($0) ? NSColor(srgbHex: 0x09090D) : NSColor(srgbHex: 0xF1F2F7) }
         // Over a full-screen window rather than off on another Space.
         window.collectionBehavior.insert([.fullScreenAuxiliary, .moveToActiveSpace])
         window.contentView = container
@@ -140,7 +140,7 @@ final class SettingsWindowController: NSWindowController, NSToolbarDelegate {
                 self?.heightChanged(pane, to: height)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .background(Theme.windowBackground)
+            .background(GlideBackground(anchor: UnitPoint(x: 0.12, y: -0.08), strength: 0.7))
         let view = NSHostingView(rootView: AnyView(content))
         view.sizingOptions = []   // the window's size is ours to animate
         pages[pane] = view

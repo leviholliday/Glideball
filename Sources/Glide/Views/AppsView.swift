@@ -99,6 +99,16 @@ private struct AppSetupRow: View {
         Button(action: select) {
             HStack(spacing: Theme.Space.symbolGap) {
                 AppIcon(bundleID: profile.bundleID, size: Self.iconSize)
+                    // The setup in effect right now glows softly behind its icon.
+                    .background {
+                        if active {
+                            Circle()
+                                .fill(RadialGradient(colors: [Theme.ok.opacity(0.45), Theme.ok.opacity(0)], center: .center,
+                                                     startRadius: 2, endRadius: Self.iconSize * 0.95))
+                                .frame(width: Self.iconSize * 2, height: Self.iconSize * 2)
+                                .allowsHitTesting(false)
+                        }
+                    }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(profile.name)
                         .font(.system(size: 13, weight: .medium))
@@ -113,6 +123,7 @@ private struct AppSetupRow: View {
                 if active {
                     HStack(spacing: 5) {
                         StatusDot(color: Theme.ok, size: 7)
+                            .shadow(color: Theme.ok, radius: 3)
                         Text("Active now")
                             .font(Theme.Font.hint.weight(.medium))
                             .foregroundStyle(.secondary)
