@@ -3,7 +3,7 @@ import Observation
 
 /// What the person said Glideball may send Levi: nothing (the default), crash
 /// reports, or crash reports plus anonymous settings stats. Asked once on the
-/// "A small favour" card (`SmallFavourCard`), changed any time in Overview ›
+/// "A small favor" card (`SmallFavorCard`), changed any time in Overview ›
 /// General (`ShareDataRow`).
 enum ShareChoice: String, CaseIterable, Identifiable {
     case nothing, crashes, crashesAndStats

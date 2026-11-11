@@ -1540,8 +1540,8 @@
 "Turn on Other Kensington trackballs to try Glideball with your %@." = "‘다른 Kensington 트랙볼’을 켜면 %@에서 Glideball을 사용해 볼 수 있어요.";
 "Your %@ can work with Glideball if you turn on Other Kensington trackballs. You can do that at the end of the tour." = "‘다른 Kensington 트랙볼’을 켜면 %@에서 Glideball을 사용할 수 있어요. 투어 마지막에 켤 수 있어요.";
 "Support Glideball" = "Glideball 후원하기";
-/* Opt-in crash reports and stats: the “A small favour” card and Overview › General */
-"A small favour" = "작은 부탁";
+/* Opt-in crash reports and stats: the “A small favor” card and Overview › General */
+"A small favor" = "작은 부탁";
 "Hi, I'm Levi. I make Glideball on my own, and when it crashes on someone's Mac, I usually never hear about it. If you're okay with it, Glideball can send me a little anonymous information, so I can fix crashes and see which settings people actually use. It's off unless you pick something here." = "안녕하세요, Levi입니다. Glideball은 혼자 만들고 있어서, 누군가의 Mac에서 충돌이 나도 대부분 알 수가 없어요. 괜찮으시다면 Glideball이 익명 정보를 조금 보내 줄 수 있어요. 그러면 충돌을 고치고 사람들이 실제로 어떤 설정을 쓰는지 알 수 있어요. 여기서 무언가를 고르지 않으면 꺼진 상태로 있어요.";
 "Nothing" = "보내지 않음";
 "Crash reports only" = "충돌 보고서만";

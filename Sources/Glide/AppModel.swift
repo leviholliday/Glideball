@@ -51,8 +51,8 @@ final class AppModel {
     var showingAbout = false
     /// The Welcome Tour over the main window (see WelcomeTour.swift).
     var showingWelcomeTour = false
-    /// The "A small favour" card over the main window (see `offerSmallFavour()`).
-    var showingSmallFavour = false
+    /// The "A small favor" card over the main window (see `offerSmallFavor()`).
+    var showingSmallFavor = false
     /// Work with Kensington's other trackballs. Per-Mac, never synced — see
     /// `OtherTrackballs`. Takes effect immediately.
     var otherTrackballs = OtherTrackballs.isEnabled {
@@ -372,17 +372,17 @@ final class AppModel {
     @ObservationIgnored private var configBeforeImport: GlideConfig?
     @ObservationIgnored private var toastDismissal: DispatchWorkItem?
 
-    /// Shows the "A small favour" card (opt-in crash reports and stats) if it
+    /// Shows the "A small favor" card (opt-in crash reports and stats) if it
     /// hasn't been answered, once the window is open and nothing else is over
     /// it: never on top of the launch animation, the Welcome Tour or a sheet.
     /// If something's in the way it waits for the next time the window opens.
-    func offerSmallFavour(after delay: Double = 0.8) {
+    func offerSmallFavor(after delay: Double = 0.8) {
         guard ShareData.shared.shouldAsk else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-            guard let self, ShareData.shared.shouldAsk, !self.showingSmallFavour, !self.showingWelcomeTour,
+            guard let self, ShareData.shared.shouldAsk, !self.showingSmallFavor, !self.showingWelcomeTour,
                   !self.showingFeedback, !self.showingAbout, self.pendingImport == nil,
                   LaunchExperience.shared.show == nil, self.windowVisible else { return }
-            self.showingSmallFavour = true
+            self.showingSmallFavor = true
         }
     }
 

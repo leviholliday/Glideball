@@ -1,12 +1,12 @@
 import AppKit
 import SwiftUI
 
-/// "A small favour": asks once whether Glideball may send crash reports, or
+/// "A small favor": asks once whether Glideball may send crash reports, or
 /// crash reports and settings stats (see `ShareData`). Nothing is picked
 /// unless the person picks it. Shown over the window by
-/// `AppModel.offerSmallFavour()`: after the Welcome Tour on a new Mac, or
+/// `AppModel.offerSmallFavor()`: after the Welcome Tour on a new Mac, or
 /// once after updating on a Mac that already used Glideball.
-struct SmallFavourCard: View {
+struct SmallFavorCard: View {
     @Bindable var model: AppModel
     @State private var pick: ShareChoice = .nothing
 
@@ -18,7 +18,7 @@ struct SmallFavourCard: View {
                     Image(nsImage: NSApp.applicationIconImage)
                         .resizable()
                         .frame(width: 46, height: 46)
-                    Text("A small favour")
+                    Text("A small favor")
                         .font(.system(size: 24, weight: .bold, design: .rounded))
                 }
                 Text("Hi, I'm Levi. I make Glideball on my own, and when it crashes on someone's Mac, I usually never hear about it. If you're okay with it, Glideball can send me a little anonymous information, so I can fix crashes and see which settings people actually use. It's off unless you pick something here.")
@@ -54,7 +54,7 @@ struct SmallFavourCard: View {
                     Button {
                         ShareData.shared.choice = pick
                         ShareData.shared.asked = true
-                        model.showingSmallFavour = false
+                        model.showingSmallFavor = false
                     } label: {
                         Text("Done").font(.system(size: 13, weight: .semibold)).padding(.horizontal, 10)
                     }

@@ -33,7 +33,7 @@ extension AppModel {
         suspendButtonMappings(false)
         showingWelcomeTour = false
         UserDefaults.standard.set(true, forKey: WelcomeTour.doneKey)
-        offerSmallFavour(after: 1.2)   // after the tour, never on top of it
+        offerSmallFavor(after: 1.2)   // after the tour, never on top of it
     }
 
     /// While the tour asks you to press each button, the buttons do only their

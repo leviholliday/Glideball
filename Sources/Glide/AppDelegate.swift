@@ -164,7 +164,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         // With no launch animation playing (a reopened window, a launch at
         // login opened later), the card can come straight away; otherwise
         // the animation offers it when it ends.
-        if LaunchExperience.shared.show == nil { AppModel.shared.offerSmallFavour() }
+        if LaunchExperience.shared.show == nil { AppModel.shared.offerSmallFavor() }
     }
 
     /// Tells the model what the window's doing, so it animates only while someone can see it.

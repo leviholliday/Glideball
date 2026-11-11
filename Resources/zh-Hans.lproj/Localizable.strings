@@ -1540,8 +1540,8 @@
 "Turn on Other Kensington trackballs to try Glideball with your %@." = "开启“其他 Kensington 轨迹球”，即可在 Glideball 中使用你的 %@。";
 "Your %@ can work with Glideball if you turn on Other Kensington trackballs. You can do that at the end of the tour." = "开启“其他 Kensington 轨迹球”后，你的 %@ 就能配合 Glideball 使用。你可以在导览结尾开启。";
 "Support Glideball" = "支持 Glideball";
-/* Opt-in crash reports and stats: the “A small favour” card and Overview › General */
-"A small favour" = "一个小请求";
+/* Opt-in crash reports and stats: the “A small favor” card and Overview › General */
+"A small favor" = "一个小请求";
 "Hi, I'm Levi. I make Glideball on my own, and when it crashes on someone's Mac, I usually never hear about it. If you're okay with it, Glideball can send me a little anonymous information, so I can fix crashes and see which settings people actually use. It's off unless you pick something here." = "你好，我是 Levi。Glideball 是我一个人做的，所以当它在别人的 Mac 上崩溃时，我通常根本不知道。如果你愿意，Glideball 可以给我发送一点匿名信息，这样我就能修复崩溃，也能了解大家实际在用哪些设置。除非你在这里选择，否则它是关闭的。";
 "Nothing" = "不发送";
 "Crash reports only" = "仅崩溃报告";

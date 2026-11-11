@@ -1540,8 +1540,8 @@
 "Turn on Other Kensington trackballs to try Glideball with your %@." = "Attiva “Altri trackball Kensington” per provare Glideball con il tuo %@.";
 "Your %@ can work with Glideball if you turn on Other Kensington trackballs. You can do that at the end of the tour." = "Il tuo %@ può funzionare con Glideball se attivi “Altri trackball Kensington”. Puoi farlo alla fine del tour.";
 "Support Glideball" = "Sostieni Glideball";
-/* Opt-in crash reports and stats: the “A small favour” card and Overview › General */
-"A small favour" = "Un piccolo favore";
+/* Opt-in crash reports and stats: the “A small favor” card and Overview › General */
+"A small favor" = "Un piccolo favore";
 "Hi, I'm Levi. I make Glideball on my own, and when it crashes on someone's Mac, I usually never hear about it. If you're okay with it, Glideball can send me a little anonymous information, so I can fix crashes and see which settings people actually use. It's off unless you pick something here." = "Ciao, sono Levi. Sviluppo Glideball da solo, e quando si blocca sul Mac di qualcuno di solito non lo vengo mai a sapere. Se per te va bene, Glideball può inviarmi qualche informazione anonima, così posso correggere i crash e vedere quali impostazioni usano davvero le persone. È disattivato finché non scegli qualcosa qui.";
 "Nothing" = "Niente";
 "Crash reports only" = "Solo segnalazioni di crash";
