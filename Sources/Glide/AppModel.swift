@@ -590,6 +590,7 @@ final class AppModel {
     private(set) var windowVisible = false
     @ObservationIgnored private var samplerInterval = 0.0
     @ObservationIgnored private var lastDelightTick = 0.0
+    @ObservationIgnored private var lastClickCount = Int.max
     @ObservationIgnored private var lastSave = 0.0
 
     /// Told by the window's delegate whenever it's shown, hidden, covered, or gains/loses focus.
@@ -641,6 +642,9 @@ final class AppModel {
                   ringVelocity: -smoothedRing, dt: dt, interval: samplerInterval)
 
         if s.pressed != pressed { pressed = s.pressed }
+        // Every click flashes the room amber (even one too quick to be caught down by a sample).
+        if s.totals.clicks > lastClickCount { live.pulseClick() }
+        lastClickCount = s.totals.clicks
         // Totals tick up with every click and scroll; the tiles don't need more than a few updates a second.
         if s.totals != totals, now - lastTotalsPublish > 0.25 { lastTotalsPublish = now; totals = s.totals }
 

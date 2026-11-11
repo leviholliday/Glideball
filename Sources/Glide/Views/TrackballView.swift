@@ -44,13 +44,16 @@ struct TrackballView: View {
         TimelineView(.animation(minimumInterval: interval, paused: !live && drift == 0)) { context in
             let now = CACurrentMediaTime()
             let t = context.date.timeIntervalSinceReferenceDate
+            let light = live ? feed.lightLevels(at: now) : LightField.Levels()
             TrackballArt(pose: TrackballPose(
                 look: look, pressed: pressed,
                 ballSpeed: live ? feed.ballSpeed : 0,
                 roll: live ? CGVector(dx: feed.rollX, dy: feed.rollY) : .zero,
                 ringRate: live ? feed.ringVelocity : 0,
                 ringAngle: feed.ringAngle(at: now),
-                ballPhase: feed.ballPhase(at: now) + (drift > 0 ? t * 0.05 : 0)))
+                ballPhase: feed.ballPhase(at: now) + (drift > 0 ? t * 0.05 : 0),
+                afterglow: light.ball, afterglowDirection: light.roll,
+                comet: light.ring, cometSign: light.ringSign))
         }
         .aspectRatio(1, contentMode: .fit)
         .accessibilityElement()
@@ -83,6 +86,12 @@ struct TrackballPose {
     var ringAngle = 0.0
     /// How far the liquid inside the ball has turned (radians).
     var ballPhase = 0.0
+    /// The ball's light lingering after a roll (0…1), leaning the way it went.
+    var afterglow = 0.0
+    var afterglowDirection = CGVector.zero
+    /// The ring's light coasting on after a spin (0…1): the sweep keeps going and fades.
+    var comet = 0.0
+    var cometSign = 1.0
 
     // For the launch animations.
     var bodyOpacity = 1.0
@@ -214,7 +223,7 @@ struct TrackballArt: View {
                         .stroke(Theme.ring, lineWidth: w * 1.1)
                         .opacity(spin * 0.85)
                         .frame(width: d, height: d)
-                    if !reduceMotion && spin > 0.01 { sweep(d, w) }
+                    if !reduceMotion && max(spin, pose.comet) > 0.01 { sweep(d, w) }
                 }
             }
         }
@@ -270,8 +279,10 @@ struct TrackballArt: View {
 
     /// A bright arc running round the edge the way it turns, longer and brighter the faster.
     private func sweep(_ d: CGFloat, _ w: CGFloat) -> some View {
-        let length = 0.06 + 0.16 * spin
-        let clockwise = pose.ringRate >= 0
+        // Driven by the turn and, once it stops, by the ring's fading light: a comet that coasts out.
+        let energy = max(spin, pose.comet * 0.9)
+        let length = 0.06 + 0.2 * energy
+        let clockwise = abs(pose.ringRate) > 0.05 ? pose.ringRate >= 0 : pose.cometSign >= 0
         return Circle()
             .trim(from: 0, to: length)
             .stroke(AngularGradient(colors: [Theme.ring.opacity(0), Theme.ring.opacity(0.9), .white],
@@ -279,7 +290,7 @@ struct TrackballArt: View {
                     style: StrokeStyle(lineWidth: w * 1.6, lineCap: .round))
             .scaleEffect(x: clockwise ? 1 : -1)
             .rotationEffect(.degrees(pose.ringAngle * (clockwise ? 1 : -1) - 90))
-            .opacity(spin)
+            .opacity(energy)
             .frame(width: d, height: d)
     }
 
@@ -302,6 +313,17 @@ struct TrackballArt: View {
                                          center: .center, startRadius: d * 0.45, endRadius: d * (0.78 + 0.08 * speed)))
                     .frame(width: d * 1.7, height: d * 1.7)
                     .opacity(lit ? 0.75 + 0.25 * speed + 0.4 * pose.flare : 0)
+                // Afterglow: the ball's light lingers a moment the way it rolled.
+                if lit && pose.afterglow > 0.01 && !reduceMotion {
+                    Circle()
+                        .fill(RadialGradient(colors: [Theme.orbCyan.opacity(0.7), Theme.ball.opacity(0.3), .clear],
+                                             center: .center, startRadius: 0, endRadius: d * 0.62))
+                        .frame(width: d * 1.3, height: d * 1.3)
+                        .offset(x: pose.afterglowDirection.dx * d * 0.2 * pose.afterglow,
+                                y: pose.afterglowDirection.dy * d * 0.2 * pose.afterglow)
+                        .opacity(pose.afterglow * 0.85)
+                        .blendMode(.plusLighter)
+                }
                 // Contact shadow, down and to the right, away from the light.
                 Circle()
                     .fill(Color.black.opacity(0.7))
@@ -425,6 +447,8 @@ private struct CornerPad: View {
                                           startPoint: .top, endPoint: .bottom))
                     .shadow(color: Theme.buttons.opacity(0.65), radius: size * 0.035)
                     .opacity(down ? 1 : 0)
+                    // A slight squash as it goes down.
+                    .scaleEffect(down ? 0.965 : 1, anchor: .center)
                     .animation(down ? Theme.Motion.pressIn : Theme.Motion.pressOut, value: down)
             }
         }

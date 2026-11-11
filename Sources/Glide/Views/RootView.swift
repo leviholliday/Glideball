@@ -51,16 +51,21 @@ struct RootView: View {
     @Bindable var model: AppModel
     @State private var tab: GlideTab = GlideTab(rawValue: UserDefaults.standard.string(forKey: "GlideInitialTab") ?? "") ?? .overview
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var shell = ShellState()
     private let launch = LaunchExperience.shared
 
     var body: some View {
         NavigationSplitView(columnVisibility: .constant(.all)) {
-            Sidebar(model: model, tab: Binding(get: { tab }, set: { if let t = $0 { select(t) } }))
+            Sidebar(model: model, compact: shell.heroOnScreen && tab == .overview,
+                    tab: Binding(get: { tab }, set: { if let t = $0 { select(t) } }))
                 .navigationSplitViewColumnWidth(Theme.Space.sidebarWidth)
         } detail: {
             content
         }
         .navigationSplitViewStyle(.balanced)
+        // The lit stage under everything: the sidebar's glass picks up its light too.
+        .background { Atmosphere(model: model, tab: tab).ignoresSafeArea() }
+        .environment(shell)
         .overlay {
             // Confetti for milestones and records — skipped with Reduce Motion.
             if let burst = model.delight.burst, !reduceMotion {
@@ -141,7 +146,6 @@ struct RootView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(GlideBackground())
         .overlay(alignment: .topTrailing) {
             if model.delight.showSaved {
                 SavedPill()
@@ -202,6 +206,8 @@ struct TabPage: View {
 
 private struct Sidebar: View {
     @Bindable var model: AppModel
+    /// Overview's big trackball is on screen: this one steps down to a small status light.
+    var compact = false
     @Binding var tab: GlideTab?
 
     var body: some View {
@@ -216,7 +222,7 @@ private struct Sidebar: View {
         .scrollDisabled(true)
         .toolbar(removing: .sidebarToggle)
         .safeAreaInset(edge: .top, spacing: 6) {
-            SidebarHero(model: model)
+            SidebarHero(model: model, compact: compact)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             SidebarFooter(model: model)
@@ -227,20 +233,28 @@ private struct Sidebar: View {
 /// The live trackball on its stage, the device's name and one status line.
 private struct SidebarHero: View {
     let model: AppModel
+    var compact = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         let status = SidebarStatus(model)
+        let side: CGFloat = compact ? 84 : 150
         VStack(spacing: 10) {
             TrackballView(feed: model.live, pressed: model.pressed, look: TrackballLook.of(model),
-                          driftFPS: model.windowVisible
+                          driftFPS: model.windowVisible && !compact
                             ? model.performance.idleDriftFPS(windowIsKey: model.windowIsKey, deviceConnected: model.status.deviceConnected)
                             : 0)
+                .frame(width: side, height: side)
+                // The space stays the same either way, so the list below never moves.
                 .frame(width: 150, height: 150)
                 .padding(.vertical, 10)
                 .frame(maxWidth: .infinity)
-                .background(RoundedRectangle(cornerRadius: Theme.Radius.stage, style: .continuous).fill(Theme.stage))
-                .overlay(RoundedRectangle(cornerRadius: Theme.Radius.stage, style: .continuous)
-                    .strokeBorder(Color.white.opacity(0.06), lineWidth: 0.5))
+                .background {
+                    SidebarAura(model: model, look: TrackballLook.of(model))
+                        .scaleEffect(compact ? 0.7 : 1)
+                        .opacity(compact ? 0.75 : 1)
+                }
+                .animation(reduceMotion ? Theme.Motion.fade : .spring(response: 0.45, dampingFraction: 0.85), value: compact)
 
             VStack(spacing: 3) {
                 Text(status.deviceName)
@@ -264,6 +278,36 @@ private struct SidebarHero: View {
         .padding(.horizontal, 12)
         // Up into the empty title bar a little, closer under the traffic lights.
         .padding(.top, -10)
+    }
+}
+
+/// The trackball's light on the sidebar's glass: a soft aurora in the orb's
+/// colors around it (dimmer when it's paused or missing), and the hand's live
+/// light on top. Static at rest.
+private struct SidebarAura: View {
+    let model: AppModel
+    let look: TrackballLook
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        let dark = scheme == .dark
+        let k = look == .connected ? 1.0 : 0.35
+        ZStack {
+            Rectangle()
+                .fill(EllipticalGradient(colors: [Theme.orbBlue.opacity((dark ? 0.55 : 0.30) * k),
+                                              Theme.orbViolet.opacity((dark ? 0.22 : 0.12) * k), .clear], center: .center, startRadiusFraction: 0, endRadiusFraction: 0.5))
+                .frame(width: 380, height: 360)
+            Rectangle()
+                .fill(EllipticalGradient(colors: [Theme.orbMagenta.opacity((dark ? 0.16 : 0.08) * k), .clear], center: .center, startRadiusFraction: 0, endRadiusFraction: 0.5))
+                .frame(width: 240, height: 200)
+                .offset(x: 50, y: 70)
+            if model.performance != .minimal, look == .connected {
+                LightBloom(feed: model.live, pressed: model.pressed, dark: dark, size: 360, strength: 0.9)
+            }
+        }
+        .animation(Theme.Motion.pause, value: look)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 }
 

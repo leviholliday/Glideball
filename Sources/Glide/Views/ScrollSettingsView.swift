@@ -20,17 +20,17 @@ struct ScrollSettingsView: View {
             switch model.config.scrollMode {
             case .native:
                 controls.nativeSection
-                TryItArea()
+                TryItArea(feed: model.live)
             case .flywheel:
                 controls.flywheelSection
-                TryItArea()
+                TryItArea(feed: model.live)
                 LiveTimeline(feed: model.live, maxFPS: 20) { feed, _ in
                     FlywheelCurve(config: model.config, liveRate: feed.notchRate)
                 }
             case .follow:
                 controls.presetsSection
                 controls.feelSection
-                TryItArea()
+                TryItArea(feed: model.live)
                 LiveTimeline(feed: model.live, maxFPS: 20) { feed, _ in
                     SpinCurve(config: model.config, liveRate: feed.notchRate)
                 }
@@ -307,7 +307,7 @@ struct ScrollControls: View {
         PlainSection(title: "Presets",
                      caption: "Control is the recommended starting point: the page follows the ring and stops when you stop.") {
             ChoiceStrip(
-                choices: Self.presets.map { .init(value: $0.symbol, title: $0.name, symbol: $0.symbol) },
+                choices: Self.presets.map { .init(value: $0.symbol, title: $0.name, symbol: $0.symbol, demo: .follow(reach: $0.accel, coast: $0.throwOn)) },
                 isSelected: { symbol in Self.presets.first { $0.symbol == symbol }?.matches(config) ?? false },
                 tint: Theme.ring
             ) { symbol in
@@ -404,7 +404,7 @@ struct ModePicker: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             ChoiceStrip(
-                choices: ScrollMode.allCases.map { .init(value: $0, title: .verbatim($0.title), symbol: Self.symbol($0)) },
+                choices: ScrollMode.allCases.map { .init(value: $0, title: .verbatim($0.title), symbol: Self.symbol($0), demo: .scroll($0)) },
                 isSelected: { $0 == mode },
                 tint: Theme.ring
             ) { mode = $0 }
@@ -600,10 +600,45 @@ enum ChartScale {
 /// A list to scroll with the ring, to feel the settings: plain rows with hairlines
 /// between them (they move when the page does, so you can judge smoothness by eye).
 struct TryItArea: View {
+    /// The live feed: the lane lights pink and draws the ring's speed while you spin.
+    var feed: LiveFeed? = nil
+
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Space.titleToGroup) {
             SectionTitle(title: "Try it here", caption: "Put the pointer over the list and spin the ring.")
-            ScrollView {
+            lane
+        }
+    }
+
+    private var lane: some View {
+        list
+            .overlay(alignment: .trailing) {
+                if let feed {
+                    // The ring's speed, drawn down the lane's right edge as you spin (newest at the bottom).
+                    LiveTimeline(feed: feed, maxFPS: 30) { feed, _ in
+                        LaneTrace(values: feed.notchHistory)
+                    }
+                    .frame(width: 46)
+                    .padding(.vertical, 6)
+                    .allowsHitTesting(false)
+                }
+            }
+            .overlay {
+                if let feed {
+                    // The lane's edge lights up pink with the ring, and fades after.
+                    LiveLight(feed: feed) { l in
+                        RoundedRectangle(cornerRadius: Theme.Radius.group, style: .continuous)
+                            .strokeBorder(Theme.ring, lineWidth: 1.5)
+                            .shadow(color: Theme.ring, radius: 8)
+                            .opacity(min(1, l.ring * 1.2))
+                    }
+                    .allowsHitTesting(false)
+                }
+            }
+    }
+
+    private var list: some View {
+        ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
                     ForEach(1...300, id: \.self) { i in
                         if i > 1 { Hairline() }
@@ -621,6 +656,35 @@ struct TryItArea: View {
             .frame(height: 176)
             .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.group, style: .continuous))
             .groupBackground()
+    }
+}
+
+/// The ring's recent speed as a pink trace running down the lane's edge: the
+/// oldest at the top, now at the bottom, fading toward the past.
+private struct LaneTrace: View {
+    let values: [Double]
+
+    var body: some View {
+        Canvas { ctx, size in
+            let recent = Array(values.suffix(max(values.count / 3, 2)))
+            guard recent.count > 1, recent.contains(where: { $0 > 0 }) else { return }
+            let top = max(20, recent.max() ?? 0)
+            var line = Path()
+            for (i, v) in recent.enumerated() {
+                let y = size.height * CGFloat(i) / CGFloat(recent.count - 1)
+                let x = size.width - 6 - (size.width - 12) * CGFloat(min(v / top, 1))
+                if i == 0 { line.move(to: CGPoint(x: x, y: y)) } else { line.addLine(to: CGPoint(x: x, y: y)) }
+            }
+            let fade = GraphicsContext.Shading.linearGradient(Gradient(colors: [Theme.ring.opacity(0), Theme.ring]),
+                                                              startPoint: .zero, endPoint: CGPoint(x: 0, y: size.height))
+            ctx.opacity = 0.2
+            ctx.stroke(line, with: fade, style: StrokeStyle(lineWidth: 8, lineCap: .round, lineJoin: .round))
+            ctx.opacity = 0.45
+            ctx.stroke(line, with: fade, style: StrokeStyle(lineWidth: 3.5, lineCap: .round, lineJoin: .round))
+            ctx.opacity = 1
+            ctx.stroke(line, with: .linearGradient(Gradient(colors: [Theme.ring.opacity(0), .white]),
+                                                   startPoint: .zero, endPoint: CGPoint(x: 0, y: size.height)),
+                       style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
         }
     }
 }

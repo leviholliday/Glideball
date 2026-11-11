@@ -154,6 +154,60 @@ extension RenderUI {
             mainWindow(model, tab: .overview, dark: dark, scale: scale)
         }
 
+        // Version 2: the light the hand makes, and the moments that can't be seen in a still otherwise.
+        add("overview-record", "Light and motion", "Overview the moment today passes your best rolling day (sweep, pop, sparks)",
+            prepare: {
+                model.delight.celebrationsOn = false   // just the dial's moment, not the toast
+                var t = DemoData.today
+                t.ballCounts = 72.0 / Tally.metersPerBallCount
+                model.engine.telemetry.restore(t)
+                model.totals = t
+                model.delight.tick(totals: t, peaks: Telemetry.Peaks())
+                TodayCluster.sandboxRecordMoment = .ball
+            },
+            cleanup: {
+                TodayCluster.sandboxRecordMoment = nil
+                model.engine.telemetry.restore(DemoData.today)
+                model.totals = DemoData.today
+                model.delight.tick(totals: DemoData.today, peaks: Telemetry.Peaks())
+                model.delight.celebrationsOn = true
+            }) { dark, scale in
+            mainWindow(model, tab: .overview, dark: dark, scale: scale)
+        }
+        add("atmosphere-rolling", "Light and motion", "Rolling the ball: the room warms blue, the dot rides the response curve",
+            prepare: { DemoData.move(model.live, roll: CGVector(dx: 2.4, dy: -1.2)) }) { dark, scale in
+            mainWindow(model, tab: .pointer, dark: dark, scale: scale)
+        }
+        add("atmosphere-ring", "Light and motion", "Spinning the ring: pink runs through the light, the lane lights up",
+            prepare: { DemoData.move(model.live, ring: 22) }) { dark, scale in
+            mainWindow(model, tab: .scroll, dark: dark, scale: scale)
+        }
+        add("atmosphere-click", "Light and motion", "A click: amber flashes, the button's row lights",
+            prepare: {
+                model.pressed = [3]
+                model.live.pulseClick()
+            }) { dark, scale in
+            mainWindow(model, tab: .buttons, dark: dark, scale: scale)
+        }
+        add("slider-dragging", "Light and motion", "Dragging a slider (every slider drawn mid-drag)",
+            prepare: { InstrumentSlider.sandboxDragging = true },
+            cleanup: { InstrumentSlider.sandboxDragging = false }) { dark, scale in
+            mainWindow(model, tab: .scroll, dark: dark, scale: scale)
+        }
+        add("mode-card-hover", "Light and motion", "Hovering the Follow mode card: its demo plays",
+            prepare: { ChoiceCardSandbox.hovered = "hand.point.up.left" },
+            cleanup: { ChoiceCardSandbox.hovered = nil }) { dark, scale in
+            mainWindow(model, tab: .scroll, dark: dark, scale: scale)
+        }
+        add("minimal-performance", "Light and motion", "Minimal performance mode while rolling: the stage stays still",
+            prepare: {
+                model.performance = .minimal
+                DemoData.move(model.live, roll: CGVector(dx: 2.4, dy: -1.2))
+            },
+            cleanup: { model.performance = .efficient }) { dark, scale in
+            mainWindow(model, tab: .pointer, dark: dark, scale: scale)
+        }
+
         // The trackball hero in every state, at the sidebar's size and large (the tour's).
         add("trackball-states", "Trackball", "The trackball in each state") { dark, scale in
             card(TrackballStates(), width: 1000, dark: dark, scale: scale)

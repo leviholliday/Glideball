@@ -147,19 +147,26 @@ struct SavedPill: View {
 
 // MARK: - Make it yours
 
-/// The setup checklist, while it has steps left: one row per step, each
-/// opening the page where it's done.
+/// The setup checklist, while it has steps left: progress you can see (a ring
+/// and a bar that fill), then one row per step, each opening the page where
+/// it's done. "Trackball found" comes first, already ticked when Glideball
+/// really is talking to one (it's true, so it's a head start and not a trick).
 struct MakeItYoursCard: View {
     let delight: DelightCenter
+    /// Glideball has found a trackball (the first step, done for you).
+    var trackballFound = true
     /// Opens the tab where a step is done.
     let open: (GlideTab) -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var done: Set<ChecklistItem> { delight.ledger.checklist }
     private var allDone: Bool { done.count == ChecklistItem.allCases.count }
+    private var stepsDone: Int { done.count + (trackballFound ? 1 : 0) }
+    private var steps: Int { ChecklistItem.allCases.count + 1 }
 
     var body: some View {
         SectionBlock(title: "Make it yours",
-                     caption: allDone ? nil : "\(done.count) of \(ChecklistItem.allCases.count)",
+                     caption: allDone ? nil : "\(stepsDone) of \(steps) done. Each one takes a few seconds.",
                      dividerInset: Theme.Space.rowHorizontal + Theme.Space.symbolColumn + Theme.Space.symbolGap) {
             if !allDone {
                 Button {
@@ -181,9 +188,33 @@ struct MakeItYoursCard: View {
                         .controlSize(.small)
                 }
             } else {
+                ProgressHeader(done: stepsDone, total: steps)
+                foundRow
                 ForEach(ChecklistItem.allCases) { item in row(item) }
             }
         }
+    }
+
+    /// Step one: a trackball found (done by Glideball, not a button).
+    private var foundRow: some View {
+        HStack(spacing: Theme.Space.symbolGap) {
+            CheckMark(done: trackballFound)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Trackball found")
+                    .font(Theme.Font.body)
+                    .foregroundStyle(trackballFound ? .secondary : .primary)
+                Text(trackballFound ? "Glideball is talking to your trackball." : "Plug in your trackball and this ticks itself.")
+                    .font(Theme.Font.hint)
+                    .foregroundStyle(.secondary)
+            }
+            .lineLimit(1)
+            .minimumScaleFactor(0.9)
+            Spacer(minLength: 8)
+        }
+        .padding(.horizontal, Theme.Space.rowHorizontal)
+        .padding(.vertical, Theme.Space.rowVertical - 2)
+        .frame(minHeight: Theme.Space.rowMinHeight)
+        .accessibilityElement(children: .combine)
     }
 
     private func row(_ item: ChecklistItem) -> some View {
@@ -192,11 +223,7 @@ struct MakeItYoursCard: View {
             open(tab(for: item))
         } label: {
             HStack(spacing: Theme.Space.symbolGap) {
-                Image(systemName: isDone ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 15))
-                    .foregroundStyle(isDone ? AnyShapeStyle(Theme.ok) : AnyShapeStyle(.tertiary))
-                    .contentTransition(.symbolEffect(.replace))
-                    .frame(width: Theme.Space.symbolColumn)
+                CheckMark(done: isDone)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(item.title)
                         .font(Theme.Font.body)
@@ -228,6 +255,87 @@ struct MakeItYoursCard: View {
         case .scroll: .scroll
         case .button, .combo: .buttons
         case .app: .apps
+        }
+    }
+}
+
+/// A step's tick: an empty circle, or a green check that lands with a small
+/// bounce (and a ring of light that fades) the moment the step is done.
+private struct CheckMark: View {
+    let done: Bool
+    @State private var flash = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        Image(systemName: done ? "checkmark.circle.fill" : "circle")
+            .font(.system(size: 15))
+            .foregroundStyle(done ? AnyShapeStyle(Theme.ok) : AnyShapeStyle(.tertiary))
+            .contentTransition(.symbolEffect(.replace))
+            .symbolEffect(.bounce, value: done)
+            .overlay {
+                if flash {
+                    Circle().stroke(Theme.ok.opacity(0.7), lineWidth: 1.5)
+                        .transition(.asymmetric(insertion: .identity, removal: .scale(scale: 2.2).combined(with: .opacity)))
+                }
+            }
+            .frame(width: Theme.Space.symbolColumn)
+            .onChange(of: done) { _, now in
+                guard now, !reduceMotion else { return }
+                flash = true
+                withAnimation(.easeOut(duration: 0.5)) { flash = false }
+            }
+    }
+}
+
+/// The checklist's progress as something you can see fill: a small ring like
+/// the scroll ring and a bar, in the ball's blue, with the count.
+private struct ProgressHeader: View {
+    let done: Int
+    let total: Int
+    @State private var shown = 0.0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        let f = total > 0 ? Double(done) / Double(total) : 0
+        HStack(spacing: 14) {
+            ZStack {
+                Circle().stroke(Theme.ball.opacity(0.15), lineWidth: 4)
+                Circle()
+                    .trim(from: 0, to: shown)
+                    .stroke(LinearGradient(colors: [Theme.orbCyan, Theme.ball], startPoint: .top, endPoint: .bottom),
+                            style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .shadow(color: Theme.ball.opacity(0.6), radius: 4)
+                Text("\(done)")
+                    .font(Theme.Font.numeral(15))
+                    .contentTransition(.numericText(value: Double(done)))
+            }
+            .frame(width: 38, height: 38)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(done >= total - 1 ? "One step to go" : "\(total - done) steps to go")
+                    .font(.system(size: 13, weight: .semibold))
+                    .contentTransition(.opacity)
+                GeometryReader { g in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Theme.ball.opacity(0.13))
+                        Capsule()
+                            .fill(LinearGradient(colors: [Theme.orbCyan, Theme.ball], startPoint: .leading, endPoint: .trailing))
+                            .frame(width: max(6, g.size.width * shown))
+                            .shadow(color: Theme.ball.opacity(0.55), radius: 4)
+                    }
+                }
+                .frame(height: 5)
+            }
+        }
+        .padding(.horizontal, Theme.Space.rowHorizontal)
+        .padding(.vertical, 12)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(String(localized: "\(done) of \(total) steps done", comment: "Make it yours progress, spoken"))
+        .onAppear {
+            if reduceMotion { shown = f } else { withAnimation(.spring(response: 0.8, dampingFraction: 0.9)) { shown = f } }
+        }
+        .onChange(of: f) { _, new in
+            withAnimation(reduceMotion ? Theme.Motion.fade : .spring(response: 0.5, dampingFraction: 0.8)) { shown = new }
         }
     }
 }
@@ -279,7 +387,7 @@ private struct LifetimeStat: View {
 
     var body: some View {
         let value = delight.lifetime.value(metric)
-        InlineStat(value: metric.format(value), label: .verbatim(title), color: metric.color, size: 22, detail: comparison)
+        InlineStat(value: metric.format(value), label: .verbatim(title), color: metric.color, size: 30, detail: comparison)
             .animation(.smooth(duration: 0.4), value: value)
     }
 
@@ -329,8 +437,11 @@ private struct WeekChart: View {
                     BarMark(x: .value("Day", day.date, unit: .day),
                             y: .value(metric.title, grown ? day.tally.value(metric) : 0),
                             width: .ratio(0.5))
-                        .foregroundStyle(metric.color.opacity(day.isToday ? 1 : 0.45))
-                        .cornerRadius(3)
+                        .foregroundStyle(LinearGradient(colors: day.isToday ? [.white.opacity(0.9), metric.color, metric.color.opacity(0.8)]
+                                                                            : [metric.color.opacity(0.6), metric.color.opacity(0.28)],
+                                                        startPoint: .top, endPoint: .bottom))
+                        .cornerRadius(4)
+                        .shadow(color: day.isToday ? metric.color.opacity(0.7) : .clear, radius: 8)
                 }
                 if average > 0 {
                     RuleMark(y: .value("Average", average))
@@ -466,23 +577,32 @@ private struct BadgeView: View {
         VStack(spacing: 5) {
             ZStack {
                 if earned != nil {
-                    Circle().fill(color)
+                    // A lit tile: the part's color glowing from inside, light catching the top edge.
+                    let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    shape.fill(RadialGradient(colors: [color.mix(with: .white, by: 0.35), color, color.mix(with: .black, by: 0.25)],
+                                              center: UnitPoint(x: 0.35, y: 0.25), startRadius: 1, endRadius: 40))
+                        .shadow(color: color.opacity(0.55), radius: hovering ? 12 : 7, y: 2)
+                    shape.strokeBorder(LinearGradient(colors: [.white.opacity(0.6), .white.opacity(0.05)],
+                                                      startPoint: .top, endPoint: .bottom), lineWidth: 1)
                 } else {
-                    Circle().strokeBorder(Theme.hairline, lineWidth: 1)
+                    // Locked: a dim, empty tile; the next one shows how far along you are.
+                    let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    shape.fill(Theme.groupFill)
+                    shape.strokeBorder(Theme.groupBorder, lineWidth: 1)
                     if let progress {
-                        Circle()
+                        shape.inset(by: 1.5)
                             .trim(from: 0, to: max(0.02, min(progress, 1)))
-                            .stroke(color, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
-                            .rotationEffect(.degrees(-90))
-                            .padding(1.25)
+                            .stroke(color, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                            .shadow(color: color.opacity(0.6), radius: 3)
                     }
                 }
                 Image(systemName: m.symbol)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(size: 17, weight: .semibold))
                     .foregroundStyle(earned != nil ? AnyShapeStyle(.white) : AnyShapeStyle(.tertiary))
+                    .shadow(color: earned != nil ? .black.opacity(0.25) : .clear, radius: 1, y: 1)
                     .symbolEffect(.bounce, value: earned != nil)
             }
-            .frame(width: 40, height: 40)
+            .frame(width: 44, height: 44)
             .overlay(alignment: .topTrailing) {
                 if let earned, Date().timeIntervalSince(earned) < 24 * 3600 {
                     Text("New", comment: "On a badge earned in the last day")

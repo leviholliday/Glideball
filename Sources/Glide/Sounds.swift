@@ -111,6 +111,68 @@ final class Sounds: @unchecked Sendable {
         }
     }
 
+    // MARK: Pitched ticks (slider detents, button press and release)
+
+    // Only touched on `queue`.
+    private var engine: AVAudioEngine?
+    private var tickNode: AVAudioPlayerNode?
+    private var varispeed: AVAudioUnitVarispeed?
+    private var tickBuffer: AVAudioPCMBuffer?
+    private var tickUnavailable = false
+    private var lastDetent: TimeInterval = 0
+    private var engineIdle: DispatchWorkItem?
+
+    /// The soft tick, played faster and higher (`pitch` > 1) or slower and lower, and
+    /// quieter than the other sounds: a slider's detents rise with its value, a press
+    /// clicks and its release answers lower. Rate-limited (one every 45 ms at most), so
+    /// a fast drag never chatters; on the same "Sounds" switch; silent when muted. The
+    /// little audio engine behind it stops itself a second after the last tick.
+    func detent(pitch: Double, volume: Float = 0.3) {
+        guard enabled, !silentRun else { return }
+        let requested = ProcessInfo.processInfo.systemUptime
+        queue.async { [self] in
+            guard requested - lastDetent >= 0.045, !LaunchExperience.systemOutputMuted else { return }
+            // Never over a melody (a milestone, the hello chord): those win.
+            if let current, current.isPlaying, let last = lastRequest, last.sound != .tick { return }
+            guard let node = tickEngine() else { return }
+            lastDetent = requested
+            varispeed?.rate = Float(min(max(pitch, 0.5), 2))
+            node.volume = min(max(volume, 0), 1)
+            node.scheduleBuffer(tickBuffer!, at: nil, options: .interrupts)
+            if !node.isPlaying { node.play() }
+            engineIdle?.cancel()
+            let idle = DispatchWorkItem { [weak self] in
+                self?.tickNode?.stop()
+                self?.engine?.stop()
+            }
+            engineIdle = idle
+            queue.asyncAfter(deadline: .now() + 1.2, execute: idle)
+        }
+    }
+
+    private func tickEngine() -> AVAudioPlayerNode? {
+        if let engine, let tickNode {
+            if !engine.isRunning { try? engine.start() }
+            return engine.isRunning ? tickNode : nil
+        }
+        guard !tickUnavailable,
+              let url = Bundle.main.url(forResource: Sound.tick.rawValue, withExtension: "caf"),
+              let file = try? AVAudioFile(forReading: url),
+              let buffer = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(file.length)),
+              (try? file.read(into: buffer)) != nil else {
+            tickUnavailable = true
+            return nil
+        }
+        let e = AVAudioEngine(), node = AVAudioPlayerNode(), speed = AVAudioUnitVarispeed()
+        e.attach(node)
+        e.attach(speed)
+        e.connect(node, to: speed, format: buffer.format)
+        e.connect(speed, to: e.mainMixerNode, format: buffer.format)
+        do { try e.start() } catch { tickUnavailable = true; return nil }
+        engine = e; tickNode = node; varispeed = speed; tickBuffer = buffer
+        return node
+    }
+
     private func start(_ player: AVAudioPlayer) {
         player.volume = 1
         player.currentTime = 0

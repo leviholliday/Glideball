@@ -151,12 +151,25 @@ enum DemoData {
                 : t > 0.78 && t < 0.88 ? 14 * sin((t - 0.78) / 0.10 * .pi) : 0
             live.push(ball: ball, notch: max(0, spin), dt: dt, interval: dt)
         }
+        // The hand has stopped: the room is dark again (the graphs keep their trace).
+        live.lightClockFrozen = true
+        live.darkenLight()
+    }
+
+    /// The window's own feed caught mid-motion (the light stays where it is: renders have no clock).
+    static func move(_ live: LiveFeed, roll: CGVector = .zero, ring: Double = 0) {
+        live.lightClockFrozen = true
+        let ball = (roll.dx * roll.dx + roll.dy * roll.dy).squareRoot()
+        for _ in 0..<12 {
+            live.push(ball: ball, notch: abs(ring), rollX: roll.dx, rollY: roll.dy, ringVelocity: ring, dt: 0.05, interval: 0.05)
+        }
     }
 
     /// A feed caught mid-motion: the ball rolling `roll` (in/s, + = right / toward you),
     /// the ring turning `ring` (notches/s, + = clockwise).
     static func movingFeed(roll: CGVector = .zero, ring: Double = 0) -> LiveFeed {
         let live = LiveFeed()
+        live.lightClockFrozen = true
         let ball = (roll.dx * roll.dx + roll.dy * roll.dy).squareRoot()
         for _ in 0..<12 {
             live.push(ball: ball, notch: abs(ring), rollX: roll.dx, rollY: roll.dy, ringVelocity: ring, dt: 0.05, interval: 0.05)

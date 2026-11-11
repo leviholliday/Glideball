@@ -113,16 +113,30 @@ struct ResponseCurve: View {
             }
             ForEach(curve) { p in
                 AreaMark(x: .value("Ball", p.x), y: .value("Cursor", p.y), series: .value("Series", p.series))
-                    .foregroundStyle(LinearGradient(colors: [Theme.ball.opacity(0.16), Theme.ball.opacity(0)], startPoint: .top, endPoint: .bottom))
+                    .foregroundStyle(LinearGradient(colors: [Theme.ball.opacity(0.22), Theme.ball.opacity(0)], startPoint: .top, endPoint: .bottom))
                     .interpolationMethod(.monotone)
+            }
+            // The curve glows: a wide soft stroke under the crisp one.
+            ForEach(curve) { p in
+                LineMark(x: .value("Ball", p.x), y: .value("Cursor", p.y), series: .value("Series", "glow"))
+                    .foregroundStyle(Theme.ball.opacity(0.18))
+                    .lineStyle(StrokeStyle(lineWidth: 9, lineCap: .round))
+                    .interpolationMethod(.monotone)
+            }
+            ForEach(curve) { p in
                 LineMark(x: .value("Ball", p.x), y: .value("Cursor", p.y), series: .value("Series", p.series))
-                    .foregroundStyle(Theme.ball)
-                    .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round))
+                    .foregroundStyle(LinearGradient(colors: [Theme.ball.opacity(0.6), Theme.ball, Theme.orbCyan],
+                                                    startPoint: .leading, endPoint: .trailing))
+                    .lineStyle(StrokeStyle(lineWidth: 2.2, lineCap: .round))
                     .interpolationMethod(.monotone)
             }
             if liveBall > 0.02 {
+                // Where you are right now: the dot rides the curve, with a line down to how fast you're rolling.
+                RuleMark(x: .value("Ball", liveX), yStart: .value("Cursor", 0), yEnd: .value("Cursor", liveY))
+                    .foregroundStyle(LinearGradient(colors: [Theme.ball.opacity(0), Theme.ball.opacity(0.7)], startPoint: .bottom, endPoint: .top))
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [2, 3]))
                 PointMark(x: .value("Ball", liveX), y: .value("Cursor", liveY))
-                    .symbol { LiveDot(color: Theme.ball) }
+                    .symbol { LiveDot(color: Theme.ball, glow: true) }
             }
         }
         .chartXScale(domain: 0...6)
@@ -173,15 +187,24 @@ enum ChartGrid {
     }
 }
 
-/// Where you are right now on a chart: a plain dot in the part's color with a
-/// thin ring of the window's color so it reads over the trace. Never glows.
+/// Where you are right now on a chart: a dot in the part's color with a thin
+/// ring of the stage's color so it reads over the trace. It's the ball's (or
+/// the ring's) own light, so it may glow.
 struct LiveDot: View {
     let color: Color
+    var glow = true
 
     var body: some View {
         Circle()
             .fill(color)
-            .frame(width: 9, height: 9)
-            .overlay(Circle().strokeBorder(Theme.windowBackground, lineWidth: 1.5))
+            .frame(width: 10, height: 10)
+            .overlay(Circle().strokeBorder(.white.opacity(0.9), lineWidth: 1.5))
+            .background {
+                if glow {
+                    Circle().fill(RadialGradient(colors: [color.opacity(0.6), color.opacity(0)], center: .center,
+                                                 startRadius: 3, endRadius: 16))
+                        .frame(width: 32, height: 32)
+                }
+            }
     }
 }

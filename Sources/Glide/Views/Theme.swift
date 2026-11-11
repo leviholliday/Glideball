@@ -2,14 +2,15 @@ import AppKit
 import SwiftUI
 
 /// Every color, type style, spacing, radius and motion constant the window
-/// uses, from the design guide (`.claude/plans/design-guide.md`). Nothing else
-/// hard-codes a color: if a view needs one that isn't here, it probably
-/// shouldn't have one.
+/// uses, from the design guide (`.claude/plans/design-guide.md`, "Version 2:
+/// lit by the ball"). Nothing else hard-codes a color: if a view needs one
+/// that isn't here, it probably shouldn't have one.
 ///
-/// The one rule: the trackball is the only thing that glows. Color means a
-/// part — ball blue, ring pink, buttons amber — and green/yellow/red only say
-/// how something is. Surfaces and text are the system's own semantic colors,
-/// so light, dark and Increase Contrast all work.
+/// The rule: the trackball lights the room. The ball, the ring and the buttons
+/// are the only light sources; their colors (ball blue, ring pink, buttons
+/// amber, and the orb where all three meet) spill onto the stage around them,
+/// and green/yellow/red only say how something is. Text is the system's own
+/// semantic colors, so light, dark and Increase Contrast all work.
 enum Theme {
     // MARK: Part colors
 
@@ -38,23 +39,56 @@ enum Theme {
 
     // MARK: Surfaces and text
 
-    /// The plain window background: near-black with a slight cool tint in
-    /// dark mode, the system's own in light.
+    /// The stage everything sits on (under the atmosphere's light): near-black
+    /// with a cool tint in dark mode, a soft cool white in light.
     static let windowBackground = Color(nsColor: NSColor(name: "GlideWindowBackground") { appearance in
-        isDark(appearance) ? NSColor(srgbHex: 0x121216) : .windowBackgroundColor
+        isDark(appearance) ? NSColor(srgbHex: 0x09090D) : NSColor(srgbHex: 0xF1F2F7)
     })
-    /// A row group's quiet fill (like quaternarySystemFill): a whisper lighter
-    /// than the window in dark mode, a whisper darker in light.
+    /// A quiet fill for small things on the stage (chips, wells, unselected choices):
+    /// a whisper lighter than the stage in dark mode, a whisper darker in light.
     static let groupFill = Color(nsColor: NSColor(name: "GlideGroupFill") { appearance in
         if isHighContrast(appearance) {
-            return isDark(appearance) ? NSColor(white: 1, alpha: 0.09) : NSColor(white: 0, alpha: 0.06)
+            return isDark(appearance) ? NSColor(white: 1, alpha: 0.10) : NSColor(white: 0, alpha: 0.07)
         }
-        return isDark(appearance) ? NSColor(white: 1, alpha: 0.045) : NSColor(white: 0, alpha: 0.03)
+        return isDark(appearance) ? NSColor(white: 1, alpha: 0.055) : NSColor(white: 0, alpha: 0.035)
     })
-    /// A group's 0.5 pt edge.
+    /// A group's 1 px edge.
     static let groupBorder = Color(nsColor: NSColor(name: "GlideGroupBorder") { appearance in
         if isHighContrast(appearance) { return .separatorColor }
-        return isDark(appearance) ? NSColor(white: 1, alpha: 0.07) : NSColor(white: 0, alpha: 0.07)
+        return isDark(appearance) ? NSColor(white: 1, alpha: 0.075) : NSColor(white: 0, alpha: 0.075)
+    })
+
+    // MARK: Surfaces with weight (version 2)
+
+    /// A surface's fill at its top and bottom edges: lit from above, so a
+    /// shade brighter at the top. Dark: a lifted graphite; light: paper white.
+    static let surfaceTop = Color(nsColor: NSColor(name: "GlideSurfaceTop") { appearance in
+        if isHighContrast(appearance) {
+            return isDark(appearance) ? NSColor(srgbHex: 0x1E1E25) : .white
+        }
+        return isDark(appearance) ? NSColor(srgbHex: 0x17171D, alpha: 0.92) : NSColor(white: 1, alpha: 0.94)
+    })
+    static let surfaceBottom = Color(nsColor: NSColor(name: "GlideSurfaceBottom") { appearance in
+        if isHighContrast(appearance) {
+            return isDark(appearance) ? NSColor(srgbHex: 0x18181E) : NSColor(srgbHex: 0xFAFAFC)
+        }
+        return isDark(appearance) ? NSColor(srgbHex: 0x111116, alpha: 0.92) : NSColor(srgbHex: 0xFBFBFD, alpha: 0.86)
+    })
+    /// The 1 px light catching a surface's top edge.
+    static let surfaceHighlight = Color(nsColor: NSColor(name: "GlideSurfaceHighlight") { appearance in
+        isDark(appearance) ? NSColor(white: 1, alpha: 0.11) : NSColor(white: 1, alpha: 1)
+    })
+    /// A surface's soft shadow onto the stage.
+    static let surfaceShadow = Color(nsColor: NSColor(name: "GlideSurfaceShadow") { appearance in
+        isDark(appearance) ? NSColor(white: 0, alpha: 0.45) : NSColor(srgbHex: 0x1C2240, alpha: 0.07)
+    })
+    /// The spotlight that follows the pointer along a surface's edge.
+    static let spotlight = Color(nsColor: NSColor(name: "GlideSpotlight") { appearance in
+        isDark(appearance) ? NSColor(white: 1, alpha: 0.55) : NSColor(srgbHex: 0x0A6CFF, alpha: 0.45)
+    })
+    /// An inset well (the oscilloscope's screen, a slider's track): a little darker than a surface.
+    static let well = Color(nsColor: NSColor(name: "GlideWell") { appearance in
+        isDark(appearance) ? NSColor(srgbHex: 0x050507, alpha: 0.75) : NSColor(srgbHex: 0xE9EBF2, alpha: 0.9)
     })
     /// Hairlines between rows, and dividers.
     static let hairline = Color(nsColor: .separatorColor)
@@ -70,7 +104,8 @@ enum Theme {
     static let gridLine = Color(nsColor: NSColor(name: "GlideGridLine") { appearance in
         isDark(appearance) ? NSColor(white: 1, alpha: 0.07) : NSColor(white: 0, alpha: 0.07)
     })
-    /// The dark well the sidebar's trackball sits in (dark in both appearances: it's the device's own world).
+    /// The dark well the trackball sits in where it isn't on the stage itself (the tour's picture):
+    /// dark in both appearances, it's the device's own world.
     static let stage = Color(nsColor: NSColor(name: "GlideStage") { appearance in
         isDark(appearance) ? NSColor(srgbHex: 0x08080C) : NSColor(srgbHex: 0x101016)
     })
@@ -78,19 +113,19 @@ enum Theme {
     // MARK: Type
 
     enum Font {
-        /// 26 semibold: a page's title.
-        static let pageTitle = SwiftUI.Font.system(size: 26, weight: .semibold)
+        /// 32 semibold: a page's title.
+        static let pageTitle = SwiftUI.Font.system(size: 32, weight: .semibold)
         /// 15: emphasis (a row group's lead line, a banner's title).
         static let emphasis = SwiftUI.Font.system(size: 15, weight: .semibold)
         /// 13: body text and row labels.
         static let body = SwiftUI.Font.system(size: 13)
-        /// 13 semibold: a section's title.
-        static let sectionTitle = SwiftUI.Font.system(size: 13, weight: .semibold)
+        /// 15 semibold: a section's title.
+        static let sectionTitle = SwiftUI.Font.system(size: 15, weight: .semibold)
         /// 11: hints and captions under things.
         static let hint = SwiftUI.Font.system(size: 11)
         /// A number that changes, in a row (monospaced digits).
         static let value = SwiftUI.Font.system(size: 13, weight: .medium).monospacedDigit()
-        /// Big rounded numerals (Today, lifetime).
+        /// Big rounded numerals (Today, lifetime): 40–56 for heroes.
         static func numeral(_ size: CGFloat = 30) -> SwiftUI.Font {
             .system(size: size, weight: .semibold, design: .rounded).monospacedDigit()
         }
@@ -116,7 +151,7 @@ enum Theme {
     }
 
     enum Radius {
-        static let group: CGFloat = 12
+        static let group: CGFloat = 14
         static let stage: CGFloat = 16
         static let control: CGFloat = 7
     }
@@ -133,8 +168,8 @@ enum Theme {
         static let tabRise: CGFloat = 6
         /// Only for earned moments (a badge landing, the tour's first "it works").
         static let bounce = Animation.spring(response: 0.45, dampingFraction: 0.62)
-        /// A button corner filling as it's pressed, and emptying after.
-        static let pressIn = Animation.easeOut(duration: 0.08)
+        /// A button corner filling as it's pressed (under 50 ms), and emptying after.
+        static let pressIn = Animation.easeOut(duration: 0.045)
         static let pressOut = Animation.easeOut(duration: 0.25)
         /// Pausing: the ball loses its color.
         static let pause = Animation.easeInOut(duration: 0.3)

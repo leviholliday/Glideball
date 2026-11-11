@@ -29,6 +29,15 @@ struct ButtonsView: View {
             CombosCard(model: model)
             ButtonPresetCard(model: model)
         }
+        // While you're on this page with Glideball in front, a real button answers with a soft
+        // click down and a lower one up (Sounds on). Not the primary button: that's the one you
+        // click this window with, and it would tick at every click.
+        .onChange(of: model.pressed) { old, new in
+            guard model.windowIsKey else { return }
+            let down = new.subtracting(old).subtracting([0]), up = old.subtracting(new).subtracting([0])
+            if !down.isEmpty { Sounds.shared.detent(pitch: 1.05, volume: 0.45) }
+            else if !up.isEmpty { Sounds.shared.detent(pitch: 0.8, volume: 0.3) }
+        }
     }
 }
 
@@ -70,6 +79,8 @@ struct ButtonRow: View {
 
     @State private var recording = false
     @State private var monitor: Any?
+    @State private var pulse = 0.0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     static let dividerInset = Theme.Space.rowHorizontal + 26 + Theme.Space.symbolGap
 
@@ -133,8 +144,31 @@ struct ButtonRow: View {
         .padding(.horizontal, Theme.Space.rowHorizontal)
         .padding(.vertical, Theme.Space.rowVertical)
         .frame(minHeight: Theme.Space.rowMinHeight)
-        .background(Theme.buttons.opacity(isPressed ? 0.14 : 0))
+        .background {
+            ZStack(alignment: .leading) {
+                Theme.buttons.opacity(isPressed ? 0.16 : 0)
+                // The edge nearest the trackball lights first…
+                LinearGradient(colors: [Theme.buttons.opacity(0.9), Theme.buttons.opacity(0)], startPoint: .leading, endPoint: .trailing)
+                    .frame(width: 3)
+                    .opacity(isPressed ? 1 : 0)
+                    .shadow(color: Theme.buttons, radius: 6)
+                // …and a pulse of light runs across the row from that side.
+                GeometryReader { g in
+                    LinearGradient(colors: [Theme.buttons.opacity(0), Theme.buttons.opacity(0.35), Theme.buttons.opacity(0)],
+                                   startPoint: .leading, endPoint: .trailing)
+                        .frame(width: 140)
+                        .offset(x: -140 + (g.size.width + 140) * pulse)
+                        .opacity(pulse < 1 && pulse > 0 ? 1 : 0)
+                }
+            }
+            .allowsHitTesting(false)
+        }
         .animation(isPressed ? Theme.Motion.pressIn : Theme.Motion.pressOut, value: isPressed)
+        .onChange(of: isPressed) { _, down in
+            guard down, !reduceMotion else { return }
+            pulse = 0.001
+            withAnimation(.easeOut(duration: 0.45)) { pulse = 1 }
+        }
         .onDisappear { stopRecording() }
     }
 
@@ -176,6 +210,8 @@ struct CornerGlyph: View {
                             .fill(b == index ? (lit ? AnyShapeStyle(Theme.buttons) : AnyShapeStyle(.secondary))
                                              : AnyShapeStyle(Theme.hairline))
                             .frame(width: 9, height: 9)
+                            .shadow(color: b == index && lit ? Theme.buttons : .clear, radius: 4)
+                            .scaleEffect(b == index && lit ? 0.88 : 1)
                     }
                 }
             }

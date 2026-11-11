@@ -215,12 +215,77 @@ private struct GroupBackground: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .background {
-                let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
-                shape.fill(Theme.groupFill)
-                    .overlay(shape.strokeBorder(Theme.groupBorder, lineWidth: 1 / max(scale, 1)))
-            }
+            .background { SurfaceShape(radius: radius, pixel: 1 / max(scale, 1)) }
+            .modifier(Spotlight(radius: radius))
             .pixelAligned()
+    }
+}
+
+/// A raised surface, lit from the top left (where the trackball is): a fill a
+/// shade brighter at the top, a 1 px edge brightest toward the light, an inner
+/// highlight along the top, and two soft layered shadows.
+struct SurfaceShape: View {
+    var radius: CGFloat = Theme.Radius.group
+    var pixel: CGFloat = 0.5
+    /// A little more lift (floating cards).
+    var raised = false
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
+        shape
+            .fill(LinearGradient(colors: [Theme.surfaceTop, Theme.surfaceBottom], startPoint: .top, endPoint: .bottom))
+            .shadow(color: Theme.surfaceShadow, radius: raised ? 3 : 1.5, x: 0, y: raised ? 2 : 1)
+            .shadow(color: Theme.surfaceShadow.opacity(0.7), radius: raised ? 26 : 14, x: raised ? 4 : 2, y: raised ? 14 : 7)
+            .overlay {
+                // The edge: brighter where it faces the light (top left), quieter opposite.
+                shape.strokeBorder(LinearGradient(colors: [Theme.surfaceHighlight, Theme.groupBorder, Theme.groupBorder],
+                                                  startPoint: .topLeading, endPoint: UnitPoint(x: 0.7, y: 1)),
+                                   lineWidth: pixel * 2 > 1 ? pixel * 2 : 1)
+                    .opacity(0.9)
+            }
+            .overlay {
+                // The inner highlight just under the top edge.
+                shape.inset(by: 1)
+                    .stroke(LinearGradient(stops: [.init(color: Theme.surfaceHighlight.opacity(0.55), location: 0),
+                                                   .init(color: .clear, location: 0.08)],
+                                           startPoint: .top, endPoint: .bottom), lineWidth: 1)
+            }
+    }
+}
+
+/// A soft light that follows the pointer along a surface's edge (and a whisper
+/// across its face) while hovering. Driven by pointer moves only: it stops when
+/// the pointer does, and it's off with Reduce Motion or Increase Contrast.
+struct Spotlight: ViewModifier {
+    var radius: CGFloat = Theme.Radius.group
+    @State private var point: CGPoint?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    func body(content: Content) -> some View {
+        content
+            .overlay {
+                if let point, !reduceMotion, contrast != .increased {
+                    GeometryReader { geo in
+                        let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
+                        let c = UnitPoint(x: point.x / max(geo.size.width, 1), y: point.y / max(geo.size.height, 1))
+                        ZStack {
+                            shape.fill(RadialGradient(colors: [Theme.spotlight.opacity(0.06), .clear],
+                                                      center: c, startRadius: 0, endRadius: 280))
+                            shape.strokeBorder(RadialGradient(colors: [Theme.spotlight, Theme.spotlight.opacity(0)],
+                                                              center: c, startRadius: 0, endRadius: 160), lineWidth: 1)
+                        }
+                    }
+                    .allowsHitTesting(false)
+                    .transition(.opacity)
+                }
+            }
+            .onContinuousHover(coordinateSpace: .local) { phase in
+                switch phase {
+                case .active(let p): point = p
+                case .ended: withAnimation(.easeOut(duration: 0.25)) { point = nil }
+                }
+            }
     }
 }
 
@@ -268,13 +333,15 @@ struct SettingRow<Control: View>: View {
     var symbol: String? = nil
     /// The part this row is about (its symbol takes the part's color).
     var tint: Color? = nil
+    /// The symbol bounces when this changes (a switch turned on).
+    var bounce: Bool? = nil
     @ViewBuilder var control: Control
     @Environment(\.rowPadding) private var padded
 
     var body: some View {
         HStack(alignment: .center, spacing: Theme.Space.symbolGap) {
             if let symbol {
-                RowSymbol(symbol: symbol, tint: tint)
+                RowSymbol(symbol: symbol, tint: tint, bounce: bounce)
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
@@ -300,7 +367,7 @@ struct SettingRow<Control: View>: View {
 
 extension SettingRow where Control == EmptyView {
     init(title: LocalizedStringKey, hint: LocalizedStringKey? = nil, symbol: String? = nil, tint: Color? = nil) {
-        self.init(title: title, hint: hint, symbol: symbol, tint: tint) { EmptyView() }
+        self.init(title: title, hint: hint, symbol: symbol, tint: tint, bounce: nil) { EmptyView() }
     }
 }
 
@@ -309,6 +376,7 @@ extension SettingRow where Control == EmptyView {
 struct RowSymbol: View {
     let symbol: String
     var tint: Color? = nil
+    var bounce: Bool? = nil
 
     var body: some View {
         ViewThatFits(in: .horizontal) {
@@ -317,6 +385,8 @@ struct RowSymbol: View {
             Image(systemName: symbol).font(.system(size: 11)).fixedSize()
         }
         .foregroundStyle(tint.map { AnyShapeStyle($0) } ?? AnyShapeStyle(.secondary))
+        .symbolEffect(.bounce, value: bounce ?? false)
+        .animation(Theme.Motion.fade, value: bounce)
         .frame(width: Theme.Space.symbolColumn)
         .accessibilityHidden(true)
     }
@@ -330,8 +400,12 @@ struct ToggleRow: View {
     var tint: Color? = nil
 
     var body: some View {
-        SettingRow(title: title, hint: subtitle, symbol: symbol, tint: tint) {
-            Toggle(title, isOn: $isOn)
+        // Turning it on lights the row's symbol and gives it a small bounce, with a soft tick up (or down).
+        SettingRow(title: title, hint: subtitle, symbol: symbol, tint: isOn ? (tint ?? Theme.ball) : tint, bounce: isOn) {
+            Toggle(title, isOn: Binding(get: { isOn }, set: { new in
+                isOn = new
+                Sounds.shared.detent(pitch: new ? 1.25 : 0.85, volume: 0.4)
+            }))
                 .toggleStyle(.switch)
                 .controlSize(.small)
                 .labelsHidden()
@@ -367,8 +441,9 @@ struct TuningSlider: View {
                 Spacer(minLength: 8)
                 Text(format(value))
                     .font(Theme.Font.value)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(dragging ? AnyShapeStyle(tint) : AnyShapeStyle(.secondary))
                     .contentTransition(.numericText(value: value))
+                    .animation(.snappy(duration: 0.18), value: value)
                     .accessibilityHidden(true)
             }
             slider
@@ -416,31 +491,151 @@ struct TuningSlider: View {
             })
     }
 
-    @ViewBuilder private var slider: some View {
-        Group {
-            Slider(value: snapping, in: range, label: { Text(title) }, onEditingChanged: { dragging = $0 })
-        }
-        .labelsHidden()
-        .controlSize(.small)
-        .tint(tint)
-        .accessibilityValue(format(value))
-        .background(alignment: .bottomLeading) {
-            // The default, as a small mark under the track. (Drawn here rather than as a
-            // system tick so the slider never snaps to it.)
-            if let defaultValue, range.upperBound > range.lowerBound {
-                GeometryReader { geo in
-                    let knob: CGFloat = 5   // the small knob's half width: where the track's ends really are
-                    let f = (min(max(defaultValue, range.lowerBound), range.upperBound) - range.lowerBound)
-                        / (range.upperBound - range.lowerBound)
+    private var slider: some View {
+        InstrumentSlider(value: snapping, range: range, step: step, tint: tint, defaultValue: defaultValue,
+                         label: Text(title), valueText: format(value), defaultText: defaultValue.map(format),
+                         dragging: $dragging)
+    }
+}
+
+/// A slider made like an instrument: a track of ticks like the scroll ring's,
+/// filled in the part's color up to a thumb that glows while you drag it, and
+/// a small mark at the default. While dragging, each detent ticks softly (when
+/// Sounds is on), a little higher the further along it is. VoiceOver and the
+/// arrow keys see a plain system slider.
+struct InstrumentSlider: View {
+    @Binding var value: Double
+    let range: ClosedRange<Double>
+    var step: Double? = nil
+    var tint: Color = Theme.ball
+    var defaultValue: Double? = nil
+    let label: Text
+    let valueText: String
+    var defaultText: String? = nil
+    @Binding var dragging: Bool
+    @State private var hovering = false
+    @State private var lastDetent: Int?
+    @FocusState private var focused: Bool
+    @Environment(\.isEnabled) private var enabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorScheme) private var scheme
+
+    /// Renders: draw every slider as if it were being dragged.
+    nonisolated(unsafe) static var sandboxDragging = false
+
+    private static let thumb: CGFloat = 16
+    private var span: Double { max(range.upperBound - range.lowerBound, 1e-9) }
+    private var fraction: Double { min(max((value - range.lowerBound) / span, 0), 1) }
+
+    var body: some View {
+        let active = (dragging || Self.sandboxDragging) && enabled
+        GeometryReader { geo in
+            let inset = Self.thumb / 2
+            let w = max(geo.size.width - inset * 2, 1)
+            let x = inset + CGFloat(fraction) * w
+            let mid = geo.size.height / 2
+            ZStack(alignment: .topLeading) {
+                SliderTicks(fraction: fraction, tint: tint, lit: active, dark: scheme == .dark)
+                    .frame(width: w, height: 12)
+                    .position(x: inset + w / 2, y: mid)
+                // The fill.
+                Capsule()
+                    .fill(LinearGradient(colors: [tint.opacity(0.55), tint], startPoint: .leading, endPoint: .trailing))
+                    .frame(width: max(x - inset, 0), height: 3)
+                    .shadow(color: tint.opacity(active ? 0.8 : 0.35), radius: active ? 5 : 2)
+                    .position(x: inset + max(x - inset, 0) / 2, y: mid)
+                // The default, a small mark under the track.
+                if let defaultValue {
+                    let f = (min(max(defaultValue, range.lowerBound), range.upperBound) - range.lowerBound) / span
                     Capsule()
                         .fill(.tertiary)
                         .frame(width: 1.5, height: 4)
-                        .position(x: knob + CGFloat(f) * (geo.size.width - knob * 2), y: geo.size.height + 3)
+                        .position(x: inset + CGFloat(f) * w, y: mid + 10)
+                        .help(defaultText.map { "Default: \($0)" } ?? "")
                 }
-                .help("Default: \(format(defaultValue))")
-                .accessibilityHidden(true)
+                // The thumb's glow while dragging.
+                Circle()
+                    .fill(RadialGradient(colors: [tint.opacity(0.55), tint.opacity(0)], center: .center, startRadius: 2, endRadius: 18))
+                    .frame(width: 36, height: 36)
+                    .position(x: x, y: mid)
+                    .opacity(active ? 1 : 0)
+                // The thumb: a small lit bead.
+                Circle()
+                    .fill(LinearGradient(colors: [.white, Color(white: 0.86)], startPoint: .top, endPoint: .bottom))
+                    .overlay(Circle().strokeBorder(focused ? tint : Color.black.opacity(0.12), lineWidth: focused ? 2 : 0.5))
+                    .shadow(color: .black.opacity(0.3), radius: 1.5, y: 1)
+                    .frame(width: Self.thumb, height: Self.thumb)
+                    .scaleEffect(active ? 1.12 : hovering ? 1.05 : 1)
+                    .position(x: x, y: mid)
             }
+            .contentShape(Rectangle())
+            .gesture(DragGesture(minimumDistance: 0)
+                .onChanged { g in
+                    guard enabled else { return }
+                    if !dragging { dragging = true }
+                    let f = min(max((g.location.x - inset) / w, 0), 1)
+                    value = range.lowerBound + Double(f) * span
+                }
+                .onEnded { _ in dragging = false; lastDetent = nil })
         }
+        .frame(height: 24)
+        .opacity(enabled ? 1 : 0.4)
+        .onHover { hovering = $0 }
+        .animation(reduceMotion ? nil : .spring(response: 0.25, dampingFraction: 0.7), value: active)
+        .animation(.easeOut(duration: 0.12), value: hovering)
+        .focusable(enabled)
+        .focused($focused)
+        .focusEffectDisabled()
+        .onKeyPress(.leftArrow) { nudge(-1); return .handled }
+        .onKeyPress(.rightArrow) { nudge(1); return .handled }
+        .onChange(of: value) { detentTick() }
+        .accessibilityRepresentation {
+            Slider(value: $value, in: range) { label }
+                .accessibilityValue(valueText)
+        }
+    }
+
+    private func nudge(_ direction: Double) {
+        value = min(max(value + direction * (step ?? span / 50), range.lowerBound), range.upperBound)
+    }
+
+    /// A soft tick each time the drag crosses a detent (a step, or a twentieth of the range).
+    private func detentTick() {
+        guard dragging else { return }
+        let index = step.map { Int(((value - range.lowerBound) / $0).rounded()) } ?? Int((fraction * 20).rounded())
+        defer { lastDetent = index }
+        guard let lastDetent, lastDetent != index else { return }
+        Sounds.shared.detent(pitch: 0.8 + 0.55 * fraction)
+    }
+}
+
+/// A slider's track: the scroll ring's ticks laid out straight, every fifth one
+/// longer, lit in the part's color up to the value.
+private struct SliderTicks: View {
+    let fraction: Double
+    let tint: Color
+    let lit: Bool
+    let dark: Bool
+
+    var body: some View {
+        Canvas { ctx, size in
+            let n = 40
+            let ink: Color = dark ? .white : .black
+            var off = Path(), on = Path()
+            for i in 0...n {
+                let f = Double(i) / Double(n)
+                let x = (size.width * CGFloat(f)).rounded() + 0.5
+                let long = i % 5 == 0
+                let h: CGFloat = long ? 10 : 5
+                var p = Path()
+                p.move(to: CGPoint(x: x, y: (size.height - h) / 2))
+                p.addLine(to: CGPoint(x: x, y: (size.height + h) / 2))
+                if f <= fraction + 1e-6 { on.addPath(p) } else { off.addPath(p) }
+            }
+            ctx.stroke(off, with: .color(ink.opacity(dark ? 0.16 : 0.2)), lineWidth: 1)
+            ctx.stroke(on, with: .color(tint.opacity(lit ? 0.75 : 0.42)), lineWidth: 1)
+        }
+        .allowsHitTesting(false)
     }
 }
 
@@ -621,6 +816,7 @@ struct HoverButtonStyle: ButtonStyle {
         let radius: CGFloat
         @State private var hovering = false
         @Environment(\.isEnabled) private var enabled
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
         var body: some View {
             configuration.label
@@ -631,9 +827,12 @@ struct HoverButtonStyle: ButtonStyle {
                     case .rounded: RoundedRectangle(cornerRadius: radius, style: .continuous).fill(fill)
                     }
                 }
+                .scaleEffect(configuration.isPressed && !reduceMotion ? 0.97 : 1)
                 .opacity(enabled ? 1 : 0.45)
                 .onHover { hovering = $0 }
                 .animation(.easeOut(duration: 0.12), value: hovering)
+                .animation(configuration.isPressed ? .easeOut(duration: 0.08) : .spring(response: 0.3, dampingFraction: 0.6),
+                           value: configuration.isPressed)
                 .focusEffectDisabled(false)
         }
     }
@@ -659,23 +858,36 @@ struct ListRowButtonStyle: ButtonStyle {
         let configuration: ButtonStyleConfiguration
         let selected: Bool
         @State private var hovering = false
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
         var body: some View {
             let shape = RoundedRectangle(cornerRadius: 9, style: .continuous)
+            let lift = hovering && !configuration.isPressed && !reduceMotion
             configuration.label
                 .padding(.horizontal, ListRowButtonStyle.innerPadding)
                 .padding(.vertical, 6)
                 .frame(minHeight: Theme.Space.rowMinHeight - 2 * ListRowButtonStyle.outerInset)
                 .background {
                     shape.fill(configuration.isPressed ? Theme.pressedFill
-                               : selected ? Theme.ball.opacity(0.12)
+                               : selected ? Theme.ball.opacity(0.14)
                                : hovering ? Theme.hoverFill : .clear)
+                        .shadow(color: selected ? Theme.ball.opacity(0.35) : (lift ? Theme.surfaceShadow : .clear),
+                                radius: selected ? 8 : 4, y: lift ? 2 : 0)
                 }
-                .overlay { if selected { shape.strokeBorder(Theme.ball.opacity(0.45), lineWidth: 1) } }
+                .overlay {
+                    if selected {
+                        shape.strokeBorder(LinearGradient(colors: [Theme.ball.opacity(0.85), Theme.ball.opacity(0.35)],
+                                                          startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1)
+                    }
+                }
                 .contentShape(shape)
+                .offset(y: lift ? -1 : 0)
+                .scaleEffect(configuration.isPressed && !reduceMotion ? 0.985 : 1)
                 .padding(ListRowButtonStyle.outerInset)
                 .onHover { hovering = $0 }
                 .animation(.easeOut(duration: 0.12), value: hovering)
+                .animation(configuration.isPressed ? .easeOut(duration: 0.08) : .spring(response: 0.3, dampingFraction: 0.6),
+                           value: configuration.isPressed)
                 .focusEffectDisabled(false)
         }
     }
@@ -731,24 +943,32 @@ struct GlassCard<Content: View>: View {
 
 // MARK: - Background
 
-/// The plain window background (no gradient, no mesh).
+/// The stage on its own, without the live light (sheets, the tour, whole-page pictures).
 struct GlideBackground: View {
+    @Environment(\.colorScheme) private var scheme
+    @Environment(\.colorSchemeContrast) private var contrast
+
     var body: some View {
-        Theme.windowBackground.ignoresSafeArea()
+        StaticAtmosphere(dark: scheme == .dark, contrast: contrast == .increased)
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
     }
 }
 
 // MARK: - A row of choices
 
-/// A quiet row of equal choices (a preset, a mode): the chosen one is filled and
-/// outlined in the part's color, the rest are plain until hovered. The chosen
-/// one reads as "this one" without relying on color alone (weight and outline
-/// change too), in light and dark.
+/// A row of equal choices (a mode, a preset) as cards. Each card can carry a
+/// tiny looping demo of what it does (a list moving the way a scroll mode moves
+/// it, a dot crossing at a pointer speed) that plays only while the card is
+/// hovered or keyboard-focused, and holds still otherwise. The chosen card is
+/// lit in the part's color (outline, weight and a check, not color alone).
+/// Picking one answers with a small spring and a soft tick.
 struct ChoiceStrip<Value: Hashable>: View {
     struct Choice: Identifiable {
         let value: Value
         let title: LocalizedStringKey
         let symbol: String
+        var demo: ChoiceDemo? = nil
         var id: Value { value }
     }
 
@@ -760,34 +980,198 @@ struct ChoiceStrip<Value: Hashable>: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 8) {
             ForEach(choices) { c in
-                let selected = isSelected(c.value)
-                Button {
+                ChoiceCard(title: c.title, symbol: c.symbol, demo: c.demo, selected: isSelected(c.value), tint: tint) {
+                    let was = isSelected(c.value)
                     withAnimation(Theme.Motion.respecting(reduceMotion, Theme.Motion.spring)) { select(c.value) }
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: c.symbol)
-                            .font(.system(size: 13, weight: selected ? .semibold : .regular))
-                            .foregroundStyle(selected ? AnyShapeStyle(tint) : AnyShapeStyle(.secondary))
-                        Text(c.title)
-                            .font(.system(size: 13, weight: selected ? .semibold : .regular))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.85)
-                    }
-                    .foregroundStyle(.primary)
-                    .frame(maxWidth: .infinity, minHeight: 32)
-                    .padding(.horizontal, 6)
-                    .background {
-                        let shape = RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        shape.fill(selected ? tint.opacity(0.13) : Theme.groupFill)
-                            .pixelBorder(shape, selected ? tint.opacity(0.7) : Theme.groupBorder, pixels: selected ? 2 : 1)
-                    }
-                    .contentShape(Rectangle())
+                    if !was { Sounds.shared.detent(pitch: 1.1, volume: 0.45) }
                 }
-                .buttonStyle(HoverButtonStyle(radius: 8))
-                .accessibilityAddTraits(selected ? .isSelected : [])
             }
+        }
+    }
+}
+
+/// Renders: draw the choice card with this symbol as if hovered, mid-demo.
+enum ChoiceCardSandbox {
+    nonisolated(unsafe) static var hovered: String?
+}
+
+/// What a choice card's little demo shows.
+enum ChoiceDemo: Equatable {
+    /// A list scrolling the way this mode scrolls it.
+    case scroll(ScrollMode)
+    /// A Follow preset: how far a spin carries the list (0…1) and whether it coasts.
+    case follow(reach: Double, coast: Bool)
+    /// A dot crossing a line at a pointer speed (in the tracking slider's units).
+    case pointer(Double)
+}
+
+private struct ChoiceCard: View {
+    let title: LocalizedStringKey
+    let symbol: String
+    let demo: ChoiceDemo?
+    let selected: Bool
+    let tint: Color
+    let action: () -> Void
+    @State private var hovering = false
+    @FocusState private var focused: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        let playing = (hovering || focused || ChoiceCardSandbox.hovered == symbol) && !reduceMotion
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 6) {
+                    Image(systemName: symbol)
+                        .font(.system(size: 13, weight: selected ? .semibold : .regular))
+                        .foregroundStyle(selected ? AnyShapeStyle(tint) : AnyShapeStyle(.secondary))
+                    Text(title)
+                        .font(.system(size: 13, weight: selected ? .semibold : .regular))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                    Spacer(minLength: 0)
+                    if selected {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 12))
+                            .foregroundStyle(tint)
+                            .transition(.scale(scale: 0.6).combined(with: .opacity))
+                    }
+                }
+                if let demo {
+                    DemoView(demo: demo, tint: selected || playing ? tint : Color.secondary, playing: playing,
+                             frozenAt: ChoiceCardSandbox.hovered == symbol ? 0.55 : nil)
+                        .frame(height: 30)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .foregroundStyle(.primary)
+            .padding(.horizontal, 11)
+            .padding(.vertical, demo == nil ? 8 : 10)
+            .frame(maxWidth: .infinity, minHeight: 34, alignment: .leading)
+            .background {
+                let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
+                if selected {
+                    shape.fill(LinearGradient(colors: [tint.opacity(0.20), tint.opacity(0.08)], startPoint: .top, endPoint: .bottom))
+                        .shadow(color: tint.opacity(0.35), radius: 8, y: 2)
+                    shape.strokeBorder(LinearGradient(colors: [tint, tint.opacity(0.55)], startPoint: .topLeading, endPoint: .bottomTrailing),
+                                       lineWidth: 1.5)
+                } else {
+                    SurfaceShape(radius: 10)
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PressableStyle())
+        .focused($focused)
+        .onHover { h in withAnimation(.easeOut(duration: 0.15)) { hovering = h } }
+        .offset(y: hovering && !selected && !reduceMotion ? -1 : 0)
+        .animation(Theme.Motion.spring, value: selected)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+}
+
+/// A card's demo, drawn on its own timeline only while it plays.
+private struct DemoView: View {
+    let demo: ChoiceDemo
+    let tint: Color
+    let playing: Bool
+    var frozenAt: Double? = nil
+    @State private var start = Date()
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !playing || frozenAt != nil)) { tl in
+            let t = frozenAt ?? (playing ? tl.date.timeIntervalSince(start) : 0.55)
+            Canvas { ctx, size in Self.draw(demo, t: t, tint: tint, in: &ctx, size: size) }
+        }
+        .onChange(of: playing) { _, now in if now { start = Date() } }
+        .accessibilityHidden(true)
+    }
+
+    private static func draw(_ demo: ChoiceDemo, t: Double, tint: Color, in ctx: inout GraphicsContext, size: CGSize) {
+        switch demo {
+        case .pointer(let speed):
+            // A dot crossing a line, faster for a faster preset, with a short trail.
+            let y = size.height / 2
+            var line = Path(); line.move(to: CGPoint(x: 0, y: y)); line.addLine(to: CGPoint(x: size.width, y: y))
+            ctx.stroke(line, with: .color(tint.opacity(0.22)), style: StrokeStyle(lineWidth: 1, dash: [2, 3]))
+            let period = 2.6 / max(speed / 3, 0.3)
+            let f = (t.truncatingRemainder(dividingBy: period)) / period
+            let x = size.width * CGFloat(f)
+            let trail = min(size.width * 0.35, CGFloat(speed) * 6)
+            ctx.fill(Path(roundedRect: CGRect(x: x - trail, y: y - 1.5, width: trail, height: 3), cornerRadius: 1.5),
+                     with: .linearGradient(Gradient(colors: [tint.opacity(0), tint.opacity(0.6)]),
+                                           startPoint: CGPoint(x: x - trail, y: y), endPoint: CGPoint(x: x, y: y)))
+            ctx.fill(Path(ellipseIn: CGRect(x: x - 4, y: y - 4, width: 8, height: 8)), with: .color(tint))
+        case .scroll, .follow:
+            // A little list, moved the way the mode moves a page.
+            let rowH: CGFloat = 9
+            let offset = CGFloat(Self.scrollOffset(demo, t: t)) * rowH
+            ctx.clip(to: Path(CGRect(origin: .zero, size: size)))
+            let first = Int(floor(offset / rowH)) - 1
+            for i in first...(first + Int(size.height / rowH) + 2) {
+                let y = CGFloat(i) * rowH - offset
+                let w = size.width * (0.35 + 0.45 * CGFloat(abs((i * 37) % 10)) / 10)
+                ctx.fill(Path(roundedRect: CGRect(x: 0, y: y + 2.5, width: w, height: 4), cornerRadius: 2),
+                         with: .color(tint.opacity(i % 3 == 0 ? 0.55 : 0.3)))
+            }
+            // Fade the list out at the top and bottom edges.
+            ctx.blendMode = .destinationOut
+            ctx.fill(Path(CGRect(x: 0, y: 0, width: size.width, height: 6)),
+                     with: .linearGradient(Gradient(colors: [.black, .clear]), startPoint: .zero, endPoint: CGPoint(x: 0, y: 6)))
+            ctx.fill(Path(CGRect(x: 0, y: size.height - 6, width: size.width, height: 6)),
+                     with: .linearGradient(Gradient(colors: [.clear, .black]), startPoint: CGPoint(x: 0, y: size.height - 6),
+                                           endPoint: CGPoint(x: 0, y: size.height)))
+        }
+    }
+
+    /// Rows travelled after `t` seconds of the demo's loop.
+    static func scrollOffset(_ demo: ChoiceDemo, t: Double) -> Double {
+        switch demo {
+        case .scroll(.native):
+            // Plain steps: one row at a time.
+            return floor(t / 0.32)
+        case .scroll(.flywheel):
+            // A spin every 1.6 s, then friction slows the page: it coasts.
+            let period = 1.6
+            let n = floor(t / period), u = t - n * period
+            return n * 6 + 6 * (1 - exp(-u / 0.32))
+        case .scroll(.follow):
+            // The page follows the ring exactly and stops when it stops.
+            let period = 1.2
+            let n = floor(t / period), u = min((t - n * period) / 0.55, 1)
+            return n * 3 + 3 * (u < 1 ? u : 1)
+        case .follow(let reach, let coast):
+            let period = 1.5
+            let n = floor(t / period), u = t - n * period
+            let push = 2 + 4 * reach
+            let follow = push * min(u / 0.45, 1)
+            let glide = coast && u > 0.45 ? push * 0.8 * (1 - exp(-(u - 0.45) / 0.25)) : 0
+            return n * push * (coast ? 1.8 : 1) + follow + glide
+        case .pointer:
+            return 0
+        }
+    }
+}
+
+/// For cards and chips: compresses a little while pressed and springs back.
+struct PressableStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        PressBody(configuration: configuration)
+    }
+
+    private struct PressBody: View {
+        let configuration: ButtonStyleConfiguration
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
+        @Environment(\.isEnabled) private var enabled
+
+        var body: some View {
+            configuration.label
+                .scaleEffect(configuration.isPressed && !reduceMotion ? 0.97 : 1)
+                .opacity(enabled ? 1 : 0.45)
+                .animation(configuration.isPressed ? .easeOut(duration: 0.08) : .spring(response: 0.3, dampingFraction: 0.55),
+                           value: configuration.isPressed)
+                .focusEffectDisabled(false)
         }
     }
 }
@@ -800,10 +1184,10 @@ struct PointerPresetRow: View {
     @Binding var speed: Double
 
     private static let presets: [ChoiceStrip<Double>.Choice] = [
-        .init(value: 1.5, title: LocalizedStringKey("Precise"), symbol: "scope"),
-        .init(value: 3, title: LocalizedStringKey("macOS"), symbol: "applelogo"),
-        .init(value: 5, title: LocalizedStringKey("Fast"), symbol: "hare"),
-        .init(value: 7.5, title: LocalizedStringKey("Turbo"), symbol: "bolt"),
+        .init(value: 1.5, title: LocalizedStringKey("Precise"), symbol: "scope", demo: .pointer(1.5)),
+        .init(value: 3, title: LocalizedStringKey("macOS"), symbol: "applelogo", demo: .pointer(3)),
+        .init(value: 5, title: LocalizedStringKey("Fast"), symbol: "hare", demo: .pointer(5)),
+        .init(value: 7.5, title: LocalizedStringKey("Turbo"), symbol: "bolt", demo: .pointer(7.5)),
     ]
 
     var body: some View {
