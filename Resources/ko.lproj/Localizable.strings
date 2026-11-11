@@ -1017,10 +1017,6 @@
 
 "Celebration sounds" = "축하 사운드";
 
-"A soft chime as Glideball opens. Never when your Mac is muted." = "Glide가 열릴 때 부드러운 차임이 울려요. Mac이 음소거 상태일 때는 울리지 않아요.";
-
-"Launch sounds" = "실행 사운드";
-
 
 
 "Closing this window keeps Glideball running. Click Glideball in the Dock to bring it back, or press ⌘Q to quit — your trackball then goes back to normal." = "이 윈도우를 닫아도 Glide는 계속 실행돼요. Dock에서 Glide를 클릭하면 다시 열리고, ⌘Q를 눌러 종료하면 트랙볼이 원래대로 돌아가요.";
@@ -1540,7 +1536,7 @@
 /* Opt-in crash reports and stats: the “A small favor” card and Overview › General */
 "A small favor" = "작은 부탁";
 "Hi, I'm Levi. I make Glideball on my own, and when it crashes on someone's Mac, I usually never hear about it. If you're okay with it, Glideball can send me a little anonymous information, so I can fix crashes and see which settings people actually use. It's off unless you pick something here." = "안녕하세요, Levi입니다. Glideball은 혼자 만들고 있어서, 누군가의 Mac에서 충돌이 나도 대부분 알 수가 없어요. 괜찮으시다면 Glideball이 익명 정보를 조금 보내 줄 수 있어요. 그러면 충돌을 고치고 사람들이 실제로 어떤 설정을 쓰는지 알 수 있어요. 여기서 무언가를 고르지 않으면 꺼진 상태로 있어요.";
-"Nothing" = "보내지 않음";
+"Nothing" = "없음";
 "Crash reports only" = "충돌 보고서만";
 "Crash reports and settings stats" = "충돌 보고서와 설정 통계";
 "Glideball doesn't send anything, and that's fine." = "Glideball은 아무것도 보내지 않아요. 그래도 괜찮아요.";
@@ -1568,3 +1564,34 @@
 "Privacy" = "개인정보 보호";
 "Shortcuts" = "단축키";
 "Looking for Open at login, Language, Updates or Keyboard shortcuts? They've moved to Settings. Press ⌘, any time Glideball is in front." = "로그인 시 열기, 언어, 업데이트, 키보드 단축키를 찾고 있나요? 이제 설정에 있어요. Glideball이 앞에 있을 때 언제든 ⌘,를 누르세요.";
+
+/* ---- Launch setting, View and Help menus, permission links ---- */
+
+"Animation" = "애니메이션";
+
+"Quick fade" = "빠른 페이드";
+
+"When Glideball opens" = "Glideball을 열 때";
+
+"A short animation over the window. You can click or press Esc to skip it." = "윈도우 위에 짧은 애니메이션이 나와요. 클릭하거나 Esc 키를 눌러 건너뛸 수 있어요.";
+
+"The Glideball mark shows for a moment, then the window fades in." = "Glideball 마크가 잠깐 나타난 뒤 윈도우가 서서히 나타나요.";
+
+"The window opens with no animation at all." = "애니메이션 없이 윈도우가 열려요.";
+
+"Launch sound" = "실행 사운드";
+
+"A soft chime the first time Glideball opens after an update. Never when your Mac is muted." = "업데이트 후 Glideball을 처음 열 때만 부드러운 차임이 울려요. Mac이 음소거 상태일 때는 울리지 않아요.";
+
+"View" = "보기";
+
+"Play the Intro" = "인트로 재생";
+
+"Glideball Help" = "Glideball 도움말";
+
+"Troubleshooting" = "문제 해결";
+
+"What’s New" = "새로운 기능";
+
+"Why?" = "왜 필요한가요?";
+

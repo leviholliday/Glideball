@@ -1017,10 +1017,6 @@
 
 "Celebration sounds" = "Suoni dei festeggiamenti";
 
-"A soft chime as Glideball opens. Never when your Mac is muted." = "Un leggero rintocco all’apertura di Glideball. Mai quando il Mac è silenziato.";
-
-"Launch sounds" = "Suono all’avvio";
-
 
 
 "Closing this window keeps Glideball running. Click Glideball in the Dock to bring it back, or press ⌘Q to quit — your trackball then goes back to normal." = "Chiudendo questa finestra Glideball resta attivo. Fai clic su Glideball nel Dock per riaprirla, oppure premi ⌘Q per uscire: la trackball tornerà alla normalità.";
@@ -1568,3 +1564,34 @@
 "Privacy" = "Privacy";
 "Shortcuts" = "Abbreviazioni";
 "Looking for Open at login, Language, Updates or Keyboard shortcuts? They've moved to Settings. Press ⌘, any time Glideball is in front." = "Cerchi «Apri al login», «Lingua», «Aggiornamenti» o «Abbreviazioni da tastiera»? Ora sono nelle Impostazioni. Premi ⌘, quando Glideball è in primo piano.";
+
+/* ---- Launch setting, View and Help menus, permission links ---- */
+
+"Animation" = "Animazione";
+
+"Quick fade" = "Dissolvenza rapida";
+
+"When Glideball opens" = "All’apertura di Glideball";
+
+"A short animation over the window. You can click or press Esc to skip it." = "Una breve animazione sopra la finestra. Puoi fare clic o premere Esc per saltarla.";
+
+"The Glideball mark shows for a moment, then the window fades in." = "Il logo di Glideball compare per un momento, poi la finestra appare in dissolvenza.";
+
+"The window opens with no animation at all." = "La finestra si apre senza alcuna animazione.";
+
+"Launch sound" = "Suono all’avvio";
+
+"A soft chime the first time Glideball opens after an update. Never when your Mac is muted." = "Un leggero rintocco la prima volta che Glideball si apre dopo un aggiornamento. Mai quando il Mac è silenziato.";
+
+"View" = "Vista";
+
+"Play the Intro" = "Riproduci l’intro";
+
+"Glideball Help" = "Aiuto di Glideball";
+
+"Troubleshooting" = "Risoluzione dei problemi";
+
+"What’s New" = "Novità";
+
+"Why?" = "Perché?";
+

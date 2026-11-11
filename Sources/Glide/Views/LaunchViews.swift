@@ -17,7 +17,7 @@ struct LaunchOverlay: View {
                 let t = launch.start.map { max(0, tl.date.timeIntervalSince($0)) } ?? 0
                 let reveal = launch.revealStart.map { LaunchMath.clamp(tl.date.timeIntervalSince($0) / launch.revealDuration) } ?? 0
                 scene(show, t: t)
-                    .modifier(RevealOut(progress: reveal, calm: launch.reduceMotion, iris: show == .intro))
+                    .modifier(RevealOut(progress: reveal, calm: launch.reduceMotion || show == .fade, iris: show == .intro))
             }
             .ignoresSafeArea()
             .contentShape(Rectangle())
@@ -37,6 +37,7 @@ struct LaunchOverlay: View {
         switch show {
         case .intro: IntroScene(t: t, calm: launch.reduceMotion)
         case .splash(let variant): SplashScene(variant: variant, t: t, calm: launch.reduceMotion)
+        case .fade: SplashScene(variant: .ringIgnition, t: t, calm: true)
         }
     }
 }

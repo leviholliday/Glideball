@@ -9,10 +9,16 @@ import Observation
 /// - The very first launch on a Mac that has never used Glide: a ~7 s
 ///   cinematic intro with its own music (IntroMusic.m4a), after which the
 ///   window's glass dissolves in and the Welcome Tour opens.
-/// - Every other cold launch that opens the window: a short (~1.5 s) glass
-///   animation, a different one each time, with an optional soft chime.
+/// - Every other cold launch that opens the window: what Settings › General ›
+///   "When Glideball opens" says: a short (~1.5 s) glass animation, a different
+///   one each time (the default), a quick fade, or nothing.
 ///
-/// Neither ever holds anything up: the engine is already running before the
+/// Sound: the soft chime plays only on the first launch after an update (the
+/// version changed since the last launch), and the intro's music only on the
+/// very first launch (or when replayed from Help › Play the Intro). Never when
+/// the Mac is muted, and "Launch sound" in Settings turns it off for good.
+///
+/// None of it ever holds anything up: the engine is already running before the
 /// window opens, only the window's contents wait. A click or esc skips.
 /// Reopening a closed window, or a launch at login that opens no window,
 /// shows nothing.
@@ -30,11 +36,30 @@ final class LaunchExperience {
     static let forceIntroKey = "GlideForceIntro"
     static let forceVariantKey = "GlideForceSplashVariant"
     static let lastVariantKey = "GlideLastSplashVariant"
+    /// "Launch sound" in Settings. The key predates "When Glideball opens",
+    /// so someone who turned the old "Launch sounds" off stays silent.
     static let soundsKey = "GlideLaunchSounds"
+    static let styleKey = "GlideLaunchStyle"
+    static let lastVersionKey = "GlideLastLaunchedVersion"
+
+    /// "When Glideball opens" in Settings › General. The raw value is what's saved.
+    enum Style: String, CaseIterable, Identifiable {
+        case animation, fade, none
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .animation: String(localized: "Animation", comment: "Setting: what plays when Glideball opens")
+            case .fade: String(localized: "Quick fade", comment: "Setting: what plays when Glideball opens")
+            case .none: String(localized: "Nothing", comment: "Setting: what plays when Glideball opens")
+            }
+        }
+    }
 
     enum Show: Equatable {
         case intro
         case splash(SplashVariant)
+        /// "Quick fade": the mark, then a short dissolve into the window.
+        case fade
     }
 
     /// What's over the window right now; nil once it has gone.
@@ -45,9 +70,14 @@ final class LaunchExperience {
     private(set) var revealStart: Date?
     private(set) var revealDuration: Double = 0.45
 
-    /// "Launch sounds" in Settings › General. On by default.
+    /// "Launch sound" in Settings › General. On by default.
     var soundsOn: Bool {
         didSet { defaults.set(soundsOn, forKey: Self.soundsKey) }
+    }
+
+    /// "When Glideball opens" in Settings › General. Animation by default.
+    var style: Style {
+        didSet { defaults.set(style.rawValue, forKey: Self.styleKey) }
     }
 
     /// The window's contents are drawn (from the start of the reveal on).
@@ -57,12 +87,17 @@ final class LaunchExperience {
 
     @ObservationIgnored private let defaults = UserDefaults.standard
     @ObservationIgnored private var openTourWhenDone = false
+    /// Whether this showing plays its sound (the chime or the intro's music).
+    @ObservationIgnored private var soundWanted = false
+    /// A replay of the intro from the Help menu: no tour and no favor card after it.
+    @ObservationIgnored private var replaying = false
     @ObservationIgnored private var player: AVAudioPlayer?
     @ObservationIgnored private var keyMonitor: Any?
     @ObservationIgnored private var generation = 0
 
     private init() {
         soundsOn = defaults.object(forKey: Self.soundsKey) as? Bool ?? true
+        style = defaults.string(forKey: Self.styleKey).flatMap(Style.init(rawValue:)) ?? .animation
     }
 
     // MARK: Timing
@@ -72,6 +107,7 @@ final class LaunchExperience {
         switch show {
         case .intro: reduceMotion ? 2.6 : 6.4
         case .splash: reduceMotion ? 0.55 : 1.1
+        case .fade: 0.3
         case nil: 0
         }
     }
@@ -79,6 +115,7 @@ final class LaunchExperience {
     private var naturalRevealDuration: Double {
         switch show {
         case .intro: reduceMotion ? 0.5 : 0.95
+        case .fade: 0.35
         default: reduceMotion ? 0.3 : 0.5
         }
     }
@@ -93,19 +130,44 @@ final class LaunchExperience {
     func prepare(firstLaunch: Bool, showsWindow: Bool) -> Bool {
         let forced = defaults.bool(forKey: Self.forceIntroKey)
         if forced { defaults.removeObject(forKey: Self.forceIntroKey) }   // once
+        // Has the version changed since the last launch? Noted whether or not
+        // anything plays, so a quiet launch at login uses up the "first launch
+        // after an update" and the chime doesn't turn up at a later launch.
+        let current = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        let updated = defaults.string(forKey: Self.lastVersionKey) != current
+        defaults.set(current, forKey: Self.lastVersionKey)
         guard showsWindow, !CommandLine.arguments.contains("--no-launch-animation") else { return false }
 
         if forced || (firstLaunch && !defaults.bool(forKey: Self.introPlayedKey)) {
             show = .intro
             openTourWhenDone = firstLaunch
             defaults.set(true, forKey: Self.introPlayedKey)
-            preparePlayer("IntroMusic", volume: 0.6)
+            preparePlayer("IntroMusic", volume: 0.6, wanted: soundsOn)
         } else {
-            show = .splash(nextVariant())
-            preparePlayer("LaunchChime", volume: 0.32)
+            switch style {
+            case .animation:
+                show = .splash(nextVariant())
+            case .fade:
+                show = .fade
+            case .none:
+                return false
+            }
+            preparePlayer("LaunchChime", volume: 0.32, wanted: soundsOn && updated)
         }
         installKeyMonitor()
         return show == .intro
+    }
+
+    /// Help › Play the Intro: the first-launch intro again, with its music
+    /// (unless the Mac is muted), whatever "When Glideball opens" says. It
+    /// opens neither the tour nor the favor card afterwards.
+    func replayIntro() {
+        guard show == nil else { return }
+        replaying = true
+        openTourWhenDone = false
+        show = .intro
+        preparePlayer("IntroMusic", volume: 0.6, wanted: true)
+        installKeyMonitor()
     }
 
     /// Random, never the same twice in a row (unless one is forced).
@@ -124,7 +186,7 @@ final class LaunchExperience {
     func began() {
         guard show != nil, start == nil else { return }
         start = Date()
-        if soundsOn, !Self.systemOutputMuted, let player {
+        if soundWanted, !Self.systemOutputMuted, let player {
             player.play()
         } else {
             player = nil
@@ -173,7 +235,9 @@ final class LaunchExperience {
         start = nil
         revealStart = nil
         removeKeyMonitor()
-        if !openTourWhenDone {
+        if replaying {
+            replaying = false
+        } else if !openTourWhenDone {
             AppModel.shared.offerSmallFavor()   // the tour offers it itself when it closes
         } else {
             openTourWhenDone = false
@@ -190,8 +254,9 @@ final class LaunchExperience {
 
     // MARK: Sound
 
-    private func preparePlayer(_ name: String, volume: Float) {
-        guard soundsOn, let url = Bundle.main.url(forResource: name, withExtension: "m4a"),
+    private func preparePlayer(_ name: String, volume: Float, wanted: Bool) {
+        soundWanted = wanted
+        guard wanted, let url = Bundle.main.url(forResource: name, withExtension: "m4a"),
               let p = try? AVAudioPlayer(contentsOf: url) else { return }
         p.volume = volume
         p.prepareToPlay()

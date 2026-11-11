@@ -1017,10 +1017,6 @@
 
 "Celebration sounds" = "庆祝音效";
 
-"A soft chime as Glideball opens. Never when your Mac is muted." = "Glideball 打开时轻响一声。Mac 静音时不会响。";
-
-"Launch sounds" = "启动音效";
-
 
 
 "Closing this window keeps Glideball running. Click Glideball in the Dock to bring it back, or press ⌘Q to quit — your trackball then goes back to normal." = "关闭此窗口后 Glideball 仍会继续运行。点按程序坞中的 Glideball 即可回来，或按 ⌘Q 退出，轨迹球随即恢复正常。";
@@ -1540,7 +1536,7 @@
 /* Opt-in crash reports and stats: the “A small favor” card and Overview › General */
 "A small favor" = "一个小请求";
 "Hi, I'm Levi. I make Glideball on my own, and when it crashes on someone's Mac, I usually never hear about it. If you're okay with it, Glideball can send me a little anonymous information, so I can fix crashes and see which settings people actually use. It's off unless you pick something here." = "你好，我是 Levi。Glideball 是我一个人做的，所以当它在别人的 Mac 上崩溃时，我通常根本不知道。如果你愿意，Glideball 可以给我发送一点匿名信息，这样我就能修复崩溃，也能了解大家实际在用哪些设置。除非你在这里选择，否则它是关闭的。";
-"Nothing" = "不发送";
+"Nothing" = "无";
 "Crash reports only" = "仅崩溃报告";
 "Crash reports and settings stats" = "崩溃报告和设置统计";
 "Glideball doesn't send anything, and that's fine." = "Glideball 不会发送任何内容，这完全没问题。";
@@ -1568,3 +1564,34 @@
 "Privacy" = "隐私";
 "Shortcuts" = "快捷键";
 "Looking for Open at login, Language, Updates or Keyboard shortcuts? They've moved to Settings. Press ⌘, any time Glideball is in front." = "在找“登录时打开”“语言”“更新”或“键盘快捷键”吗？它们已移到“设置”中。只要 Glideball 在前台，随时按 ⌘, 即可打开。";
+
+/* ---- Launch setting, View and Help menus, permission links ---- */
+
+"Animation" = "动画";
+
+"Quick fade" = "快速淡入";
+
+"When Glideball opens" = "打开 Glideball 时";
+
+"A short animation over the window. You can click or press Esc to skip it." = "在窗口上显示一段简短的动画。点按或按下 Esc 键即可跳过。";
+
+"The Glideball mark shows for a moment, then the window fades in." = "Glideball 标志会短暂出现，然后窗口淡入。";
+
+"The window opens with no animation at all." = "窗口打开时不显示任何动画。";
+
+"Launch sound" = "启动音效";
+
+"A soft chime the first time Glideball opens after an update. Never when your Mac is muted." = "仅在更新后第一次打开 Glideball 时轻响一声。Mac 静音时不会响。";
+
+"View" = "显示";
+
+"Play the Intro" = "播放开场动画";
+
+"Glideball Help" = "Glideball 帮助";
+
+"Troubleshooting" = "疑难解答";
+
+"What’s New" = "新功能";
+
+"Why?" = "为什么需要？";
+

@@ -1017,10 +1017,6 @@
 
 "Celebration sounds" = "Sons de comemoração";
 
-"A soft chime as Glideball opens. Never when your Mac is muted." = "Um som suave quando o Glideball abre. Nunca com o Mac sem som.";
-
-"Launch sounds" = "Sons de abertura";
-
 
 
 "Closing this window keeps Glideball running. Click Glideball in the Dock to bring it back, or press ⌘Q to quit — your trackball then goes back to normal." = "Fechar esta janela mantém o Glideball rodando. Clique no Glideball no Dock para trazê-lo de volta ou pressione ⌘Q para encerrar — seu trackball então volta ao normal.";
@@ -1568,3 +1564,34 @@
 "Privacy" = "Privacidade";
 "Shortcuts" = "Atalhos";
 "Looking for Open at login, Language, Updates or Keyboard shortcuts? They've moved to Settings. Press ⌘, any time Glideball is in front." = "Procurando “Abrir ao iniciar sessão”, “Idioma”, “Atualizações” ou “Atalhos de teclado”? Eles foram para os Ajustes. Pressione ⌘, sempre que o Glideball estiver na frente.";
+
+/* ---- Launch setting, View and Help menus, permission links ---- */
+
+"Animation" = "Animação";
+
+"Quick fade" = "Esmaecimento rápido";
+
+"When Glideball opens" = "Quando o Glideball abre";
+
+"A short animation over the window. You can click or press Esc to skip it." = "Uma animação curta sobre a janela. Clique ou pressione Esc para pular.";
+
+"The Glideball mark shows for a moment, then the window fades in." = "A marca do Glideball aparece por um instante e depois a janela surge com um esmaecimento.";
+
+"The window opens with no animation at all." = "A janela abre sem nenhuma animação.";
+
+"Launch sound" = "Som de abertura";
+
+"A soft chime the first time Glideball opens after an update. Never when your Mac is muted." = "Um som suave na primeira vez que o Glideball abre depois de uma atualização. Nunca com o Mac sem som.";
+
+"View" = "Visualizar";
+
+"Play the Intro" = "Reproduzir a Introdução";
+
+"Glideball Help" = "Ajuda do Glideball";
+
+"Troubleshooting" = "Solução de Problemas";
+
+"What’s New" = "Novidades";
+
+"Why?" = "Por quê?";
+

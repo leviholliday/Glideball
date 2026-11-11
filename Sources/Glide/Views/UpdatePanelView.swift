@@ -148,7 +148,7 @@ struct UpdatePanelView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             buttons {
-                Button("Release Notes") { NSWorkspace.shared.open(update.page) }
+                Button("Release Notes") { NSWorkspace.shared.open(update.notesPage) }
                     .buttonStyle(.glass)
                 Spacer(minLength: 0)
                 Button("Later", action: close).buttonStyle(.glass)

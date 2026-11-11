@@ -45,10 +45,11 @@ final class SettingsWindowController: NSWindowController {
             tabs.addTabViewItem(item)
         }
         tabs.tabStyle = .toolbar
+        tabs.transitionOptions = []   // the tab controller fades each new tab in itself
         let saved = UserDefaults.standard.string(forKey: Self.lastPaneKey).flatMap(SettingsPane.init(rawValue:)) ?? .general
         tabs.selectedTabViewItemIndex = SettingsPane.allCases.firstIndex(of: saved) ?? 0
 
-        let window = NSWindow(contentViewController: tabs)
+        let window = SettingsNSWindow(contentViewController: tabs)
         window.styleMask = [.titled, .closable]
         window.toolbarStyle = .preference
         window.isReleasedWhenClosed = false
@@ -81,6 +82,11 @@ final class SettingsWindowController: NSWindowController {
     }
 }
 
+/// The Settings window closes on Escape (a shortcut being recorded takes Escape first).
+private final class SettingsNSWindow: NSWindow {
+    override func cancelOperation(_ sender: Any?) { performClose(sender) }
+}
+
 /// Toolbar tabs that resize the window to the chosen tab's content, keeping its top edge still.
 private final class SettingsTabController: NSTabViewController {
     var onSelect: ((SettingsPane) -> Void)?
@@ -89,6 +95,19 @@ private final class SettingsTabController: NSTabViewController {
         super.tabView(tabView, didSelect: tabViewItem)
         if let id = tabViewItem?.identifier as? String, let pane = SettingsPane(rawValue: id) { onSelect?(pane) }
         fitWindow(animated: view.window?.isVisible == true)
+        fadeIn(tabViewItem?.viewController)
+    }
+
+    /// The chosen tab's content fades in instead of jumping (not with Reduce Motion).
+    private func fadeIn(_ controller: NSViewController?) {
+        guard view.window?.isVisible == true, let content = controller?.view,
+              !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
+        content.alphaValue = 0
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.22
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            content.animator().alphaValue = 1
+        }
     }
 
     /// A tab's content changed height (a row appeared or went away): follow it.

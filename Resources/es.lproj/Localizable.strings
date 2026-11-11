@@ -1017,10 +1017,6 @@
 
 "Celebration sounds" = "Sonidos de celebración";
 
-"A soft chime as Glideball opens. Never when your Mac is muted." = "Un suave sonido al abrir Glideball. Nunca si tu Mac está silenciado.";
-
-"Launch sounds" = "Sonidos de inicio";
-
 
 
 "Closing this window keeps Glideball running. Click Glideball in the Dock to bring it back, or press ⌘Q to quit — your trackball then goes back to normal." = "Al cerrar esta ventana, Glideball sigue funcionando. Haz clic en Glideball en el Dock para recuperarla o pulsa ⌘Q para salir: tu trackball volverá a la normalidad.";
@@ -1568,3 +1564,34 @@
 "Privacy" = "Privacidad";
 "Shortcuts" = "Funciones rápidas";
 "Looking for Open at login, Language, Updates or Keyboard shortcuts? They've moved to Settings. Press ⌘, any time Glideball is in front." = "¿Buscas «Abrir al iniciar sesión», «Idioma», «Actualizaciones» o «Funciones rápidas de teclado»? Ahora están en Ajustes. Pulsa ⌘, siempre que Glideball esté delante.";
+
+/* ---- Launch setting, View and Help menus, permission links ---- */
+
+"Animation" = "Animación";
+
+"Quick fade" = "Fundido rápido";
+
+"When Glideball opens" = "Al abrir Glideball";
+
+"A short animation over the window. You can click or press Esc to skip it." = "Una animación corta sobre la ventana. Puedes hacer clic o pulsar Esc para omitirla.";
+
+"The Glideball mark shows for a moment, then the window fades in." = "La marca de Glideball aparece un momento y luego la ventana se muestra con un fundido.";
+
+"The window opens with no animation at all." = "La ventana se abre sin ninguna animación.";
+
+"Launch sound" = "Sonido de inicio";
+
+"A soft chime the first time Glideball opens after an update. Never when your Mac is muted." = "Un sonido suave la primera vez que se abre Glideball después de una actualización. Nunca si tu Mac está silenciado.";
+
+"View" = "Visualización";
+
+"Play the Intro" = "Reproducir la introducción";
+
+"Glideball Help" = "Ayuda de Glideball";
+
+"Troubleshooting" = "Solución de problemas";
+
+"What’s New" = "Novedades";
+
+"Why?" = "¿Por qué?";
+

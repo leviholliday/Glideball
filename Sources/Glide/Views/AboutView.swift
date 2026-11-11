@@ -9,7 +9,7 @@ struct AboutView: View {
     @State private var copied = false
 
     private static let website = URL(string: "https://glideball.netlify.app")!
-    private static let releases = URL(string: "https://github.com/leviholliday/glideball/releases")!
+    private static let releases = SiteLinks.changelog
     private static let issues = URL(string: "https://github.com/leviholliday/glideball/issues")!
     private static let source = URL(string: "https://github.com/leviholliday/glideball")!
     static let contactEmail = "glideball@proton.me"

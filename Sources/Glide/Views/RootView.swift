@@ -332,6 +332,8 @@ struct PermissionsCard: View {
                 permissionButton(granted: model.hasInputMonitoring, on: "Input Monitoring — on", off: "Allow Input Monitoring…") {
                     model.requestInputMonitoring()
                 }
+                Link("Why?", destination: SiteLinks.permissions)
+                    .font(.system(size: 12))
             }
         }
     }
@@ -371,7 +373,7 @@ struct UpdateButton: View {
             Menu {
                 Button("Install \(update.displayVersion) & Relaunch") { updates.install() }
                 Button("Details…") { (NSApp.delegate as? AppDelegate)?.showUpdatePanel(check: false) }
-                Button("What’s New in \(update.displayVersion)…") { NSWorkspace.shared.open(update.page) }
+                Button("What’s New in \(update.displayVersion)…") { NSWorkspace.shared.open(update.notesPage) }
                 if update.isPrerelease {
                     Divider()
                     Text("An early update — it may have bugs")

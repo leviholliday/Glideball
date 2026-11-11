@@ -52,6 +52,9 @@ ZIP=$OUT/Glideball.zip
 # Glide 2.7.1 and earlier look for Glide.zip holding Glide.app; attach that too so
 # they can update (the new app renames itself to Glideball.app on first launch).
 LEGACY_ZIP=$OUT/Glide.zip
+# The same zip as Glideball.zip, under a second name: the in-app updater downloads this one,
+# and the website's download counter skips it, so the count is people and not updates.
+UPDATE_ZIP=$OUT/Glideball-update.zip
 PLISTBUDDY=/usr/libexec/PlistBuddy
 
 # ---------------------------------------------------------------- output
@@ -135,7 +138,7 @@ STAGE=preflight    # how far the irreversible part has got
 REMOTE='' MERGE_REF=''
 
 gh_command() {
-  print -r -- "gh release create $TAG $ZIP $LEGACY_ZIP --title ${(qq):-Glideball $DISPLAY_VERSION} --notes ${(qq)FULL_NOTES} --verify-tag${PRERELEASE_FLAG:+ $PRERELEASE_FLAG}"
+  print -r -- "gh release create $TAG $ZIP $UPDATE_ZIP $LEGACY_ZIP --title ${(qq):-Glideball $DISPLAY_VERSION} --notes ${(qq)FULL_NOTES} --verify-tag${PRERELEASE_FLAG:+ $PRERELEASE_FLAG}"
 }
 PRERELEASE_FLAG=''
 (( PRERELEASE )) && PRERELEASE_FLAG=--prerelease
@@ -296,7 +299,7 @@ lipo -create "$BIN_ARM" "$BIN_X86" -output "$BIN" || die "lipo couldn't merge th
 lipo -info "$BIN"
 
 step "Assembling $APP"
-rm -rf "$APP" "$ZIP" "$LEGACY_ZIP" "$OUT/legacy"
+rm -rf "$APP" "$ZIP" "$LEGACY_ZIP" "$UPDATE_ZIP" "$OUT/legacy"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/Glide"
 cp "$PLIST" "$APP/Contents/Info.plist"
@@ -344,6 +347,7 @@ built=$($PLISTBUDDY -c "Print :CFBundleShortVersionString" "$APP/Contents/Info.p
 
 step "Packaging $ZIP"
 ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP" || die "ditto could not create $ZIP"
+cp "$ZIP" "$UPDATE_ZIP" || die "could not copy $ZIP to $UPDATE_ZIP"
 SHA=$(shasum -a 256 "$ZIP" | awk '{print $1}')
 SIZE=$(du -h "$ZIP" | awk '{print $1}')
 mkdir -p "$OUT/legacy" && ditto "$APP" "$OUT/legacy/Glide.app"
@@ -392,7 +396,7 @@ STAGE=pushed
 step "Creating GitHub release $TAG"
 typeset -a gh_flags
 (( PRERELEASE )) && gh_flags=(--prerelease)
-gh release create "$TAG" "$ZIP" "$LEGACY_ZIP" --title "Glideball $DISPLAY_VERSION" --notes "$FULL_NOTES" --verify-tag "${gh_flags[@]}" \
+gh release create "$TAG" "$ZIP" "$UPDATE_ZIP" "$LEGACY_ZIP" --title "Glideball $DISPLAY_VERSION" --notes "$FULL_NOTES" --verify-tag "${gh_flags[@]}" \
   || die "gh release create failed"
 STAGE=done
 

@@ -22,6 +22,9 @@ final class UpdateChecker {
         let notes: String
         var isPrerelease = false
 
+        /// What's new in this version, on Glideball's website.
+        var notesPage: URL { SiteLinks.whatsNew(in: version) }
+
         /// "2.4" or "2.4 beta 1".
         var displayVersion: String { GlideVersion(version)?.display ?? version }
     }
@@ -38,6 +41,12 @@ final class UpdateChecker {
 
     /// The newest releases, prereleases included (GitHub's "latest" never is one).
     static let releasesAPI = URL(string: "https://api.github.com/repos/leviholliday/glideball/releases?per_page=30")!
+    /// What the app downloads when it updates itself. The same zip as
+    /// `assetName`, attached under a second name so the website's download
+    /// counter (which skips this one) counts people, not updates.
+    static let updateAssetName = "Glideball-update.zip"
+    /// What the website's download button links to; the app falls back to it
+    /// for releases made before `updateAssetName` existed.
     static let assetName = "Glideball.zip"
     /// What versions before the rename (≤ 2.7.1) download; releases still attach it.
     static let legacyAssetName = "Glide.zip"
@@ -111,14 +120,24 @@ final class UpdateChecker {
         guard let tag = json["tag_name"] as? String,
               let page = (json["html_url"] as? String).flatMap(URL.init(string:)) else { return nil }
         let assets = json["assets"] as? [[String: Any]] ?? []
-        let zip = (assets.first { $0["name"] as? String == assetName }
-                   ?? assets.first { $0["name"] as? String == legacyAssetName })?["browser_download_url"] as? String
+        let zip = downloadURL(in: assets)
         let version = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
         return Update(version: version,
                       page: page,
                       download: zip.flatMap(URL.init(string:)),
                       notes: json["body"] as? String ?? "",
                       isPrerelease: json["prerelease"] as? Bool == true || GlideVersion(version)?.isPrerelease == true)
+    }
+
+    /// The zip to update from: Glideball-update.zip, else Glideball.zip, else the
+    /// legacy Glide.zip. Whichever it is, `prepare` checks the signature.
+    static func downloadURL(in assets: [[String: Any]]) -> String? {
+        for name in [updateAssetName, assetName, legacyAssetName] {
+            if let url = assets.first(where: { $0["name"] as? String == name })?["browser_download_url"] as? String {
+                return url
+            }
+        }
+        return nil
     }
 
     /// "1.10" > "1.9", and "2.4" > "2.4-beta.2" > "2.4-beta.1" > "2.3".
