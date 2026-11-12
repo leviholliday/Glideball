@@ -1,6 +1,14 @@
 // The admin side: one password (set once with SETUP_CODE, then changeable),
 // a signed cookie, and the feedback itself.
 //
+// Reached through the admin site (admin-glideball.netlify.app, admin-site/ in
+// the repo, docs/ADMIN-SITE.md): its edge function forwards /api/admin/* here
+// with x-glide-admin-proxy: ADMIN_PROXY_SECRET and the visitor's address
+// (x-glide-client-ip). The data stays on this site because Netlify Blobs
+// belong to one site. A wrong proxy secret is refused before a cookie is read.
+// Until the cut-over (DIRECT_ACCESS below), the old pages on this site's own
+// /admin/ still reach it directly too.
+//
 //   GET    /api/admin/session                  { needsSetup, loggedIn }
 //   POST   /api/admin/setup     {code, password}   first password, once
 //   POST   /api/admin/login     {password}
@@ -19,13 +27,39 @@
 
 import crypto from "node:crypto";
 import {
-  STATUSES, UPLOAD_WINDOW, items, files, misc, env, json, fail, sameSecret, randomToken, clientIP, allow, take, giveBack, forAdmin, changeItem, whole,
+  STATUSES, UPLOAD_WINDOW, items, files, misc, env, adminURL, json, fail, sameSecret, randomToken, clientIP, allow, take, giveBack, forAdmin, changeItem, whole,
 } from "../lib/common.mjs";
 import { feedbackSummaries } from "../lib/summaries.mjs";
 import { statsReport } from "../lib/stats.mjs";
 import { usageReport, deleteInstall, lookUpInstall, deleteDays, normalizeID, DAY } from "../lib/usage.mjs";
 
 export const config = { path: "/api/admin/*" };
+
+// CUT-OVER (docs/ADMIN-SITE.md, step 2): true while the old /admin/ pages on
+// this site still work; false once the admin site does, and then only
+// requests through the admin site's proxy get in.
+export const DIRECT_ACCESS = true;
+
+const PROXY_HEADER = "x-glide-admin-proxy";
+const CLIENT_IP_HEADER = "x-glide-client-ip";
+const IP_RE = /^[0-9A-Fa-f:.]{2,45}$/;
+
+/** Who may ask, and from which address (for the limits on wrong passwords):
+ * { ip } or null (refused). Through the admin site's proxy: its secret,
+ * compared in constant time, and the address it saw. A request carrying the
+ * proxy header with the wrong secret (or with none set here, or a short one)
+ * is refused, never treated as a direct one. Directly (no proxy header): only
+ * while `direct`; its own address, and any x-glide-client-ip is ignored. */
+export function caller(req, context, direct = DIRECT_ACCESS) {
+  const sent = req.headers.get(PROXY_HEADER);
+  if (sent !== null) {
+    const want = env("ADMIN_PROXY_SECRET");
+    if (!want || want.length < 32 || !sameSecret(sent, want)) return null;
+    const ip = (req.headers.get(CLIENT_IP_HEADER) ?? "").trim();
+    return { ip: IP_RE.test(ip) ? ip : context?.ip };
+  }
+  return direct ? { ip: context?.ip } : null;
+}
 
 const COOKIE = "glide_admin";
 const DAYS = 30;
@@ -112,6 +146,9 @@ export default async (req, context) => {
 };
 
 async function route(req, context) {
+  // Before anything else: no cookie is read, nothing is counted.
+  const client = caller(req, context);
+  if (!client) return fail(403, `The admin pages are at ${adminURL()}/`);
   if (!secret()) return fail(500, "The site isn't set up (SESSION_SECRET).");
   const path = new URL(req.url).pathname.replace(/^\/api\/admin\/?/, "").replace(/\/+$/, "");
   // (Nothing to decode: ids and route names are plain letters and digits.)
@@ -125,8 +162,8 @@ async function route(req, context) {
   if (path === "session" && m === "GET") {
     return json({ needsSetup: !(await passwordRecord()), loggedIn: await signedIn(req) });
   }
-  if (path === "setup" && m === "POST") return setup(req, context);
-  if (path === "login" && m === "POST") return login(req, context);
+  if (path === "setup" && m === "POST") return setup(req, client);
+  if (path === "login" && m === "POST") return login(req, client);
   if (path === "logout" && m === "POST") {
     return json({ ok: true }, 200, { "set-cookie": cookieHeader("", 0) });
   }
@@ -194,9 +231,10 @@ async function body(req) {
   } catch { return {}; }
 }
 
-async function setup(req, context) {
+/** (client: { ip }, from caller().) */
+async function setup(req, client) {
   if (await passwordRecord()) return fail(409, "There's already a password. Sign in instead.");
-  if (!(await allow(`setup/${clientIP(req, context)}`, 8, 900))) return fail(429, "Too many tries. Wait a few minutes.");
+  if (!(await allow(`setup/${clientIP(req, client)}`, 8, 900))) return fail(429, "Too many tries. Wait a few minutes.");
   const { code, password } = await body(req);
   if (!env("SETUP_CODE") || !sameSecret(code, env("SETUP_CODE"))) return fail(403, "That setup code isn't right.");
   if (typeof password !== "string" || password.length < 10) return fail(400, "Use at least 10 characters.");
@@ -212,8 +250,8 @@ async function setup(req, context) {
 // password is checked (so tries sent all at once can't slip past the
 // limits) and given back if it was right, so signing in never uses up
 // either limit, and the many-addresses limit fills only with real guesses.
-async function login(req, context) {
-  const mine = await take(`login/${clientIP(req, context)}`, 8, 900);
+async function login(req, client) {
+  const mine = await take(`login/${clientIP(req, client)}`, 8, 900);
   if (!mine) return fail(429, "Too many tries. Wait a few minutes.");
   const rec = await passwordRecord();
   const device = knownDevice(req, rec);

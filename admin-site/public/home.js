@@ -37,7 +37,7 @@ function gate(setup) {
   if (setup) {
     app.innerHTML = `<div class="gate"><div class="card glass"><img src="${ICON}" alt=""><h1>Glideball Admin</h1>
       <p>The password isn't set yet. Set it once on the Feedback page.</p>
-      <a class="primary link-btn" href="/admin/feedback/">Go to setup</a></div></div>`;
+      <a class="primary link-btn" href="feedback/">Go to setup</a></div></div>`;
     return;
   }
   app.innerHTML = `
@@ -85,9 +85,9 @@ function main() {
     </header>
     <main class="home">
       <nav class="cards" aria-label="Admin pages">
-        ${card("/admin/feedback/", "Feedback", "What people send from the app and the site: read, sort and answer it.", "n-feedback")}
-        ${card("/admin/usage/", "Usage", "What the app reports from people who turned on anonymous usage statistics.", "n-usage")}
-        ${card("/admin/stats/", "Statistics", "Downloads, feedback counts and site health: aggregate numbers only.", "n-stats")}
+        ${card("feedback/", "Feedback", "What people send from the app and the site: read, sort and answer it.", "n-feedback")}
+        ${card("usage/", "Usage", "What the app reports from people who turned on anonymous usage statistics.", "n-usage")}
+        ${card("stats/", "Statistics", "Downloads, feedback counts and site health: aggregate numbers only.", "n-stats")}
       </nav>
     </main>`;
   document.getElementById("sign-out").addEventListener("click", async () => {

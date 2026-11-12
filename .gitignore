@@ -10,3 +10,5 @@ website/node_modules/
 .admin-setup-code.txt
 deno.lock
 website/.gitignore
+admin-site/.site-id
+admin-site/public/assets/

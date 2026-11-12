@@ -22,7 +22,8 @@ Date.now = () => clock ?? realNow();
 
 const { default: usageFn } = await import("../netlify/functions/usage.mjs");
 const { default: crashFn } = await import("../netlify/functions/crash.mjs");
-const { default: adminFn } = await import("../netlify/functions/admin.mjs");
+const { viaProxy } = await import("./admin-helpers.mjs");
+const adminFn = viaProxy((await import("../netlify/functions/admin.mjs")).default);
 const { default: cleanup } = await import("../netlify/functions/cleanup.mjs");
 const { weekOf, scrub, signature, normalizeID, installKey } = await import("../netlify/lib/usage.mjs");
 
@@ -455,8 +456,8 @@ test("feedback: at most 200 items a day from everywhere, however many addresses"
 
 test("the admin pages get a policy of their own, with no outside scripts", async () => {
   const { readFile } = await import("node:fs/promises");
-  const toml = await readFile(new URL("../netlify.toml", import.meta.url), "utf8");
-  const block = /for = "\/admin\/\*"\s*\[headers\.values\]([\s\S]*?)(?=\n\[\[|$)/.exec(toml)?.[1] ?? "";
+  const toml = await readFile(new URL("../../admin-site/netlify.toml", import.meta.url), "utf8");
+  const block = /for = "\/\*"\s*\[headers\.values\]([\s\S]*?)(?=\n\[\[|$)/.exec(toml)?.[1] ?? "";
   const csp = /Content-Security-Policy = "([^"]+)"/.exec(block)?.[1] ?? "";
   assert.match(csp, /script-src 'self';/);
   assert.match(csp, /connect-src 'self';/);

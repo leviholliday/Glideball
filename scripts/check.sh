@@ -13,6 +13,7 @@
 #   command-sim  scripts/command-sim/run.sh      glideball:// URLs, good and hostile, and status.json
 #   l10n         scripts/l10n/check.py           every translation complete, no repeated keys
 #   website      the website's function tests    (npm ci first if website/node_modules is missing)
+#   admin        the admin site's tests          its proxy against the real admin function, its pages and policy
 #   site         build_pages.py + check_site.py  in a copy of website/, so nothing here changes
 #   self-test    scripts/self-test.sh            the real launch path, sandboxed, twice
 #   render-ui    every screen drawn once         all pictures made, none blank
@@ -26,7 +27,7 @@ VERBOSE=0
 for arg in "$@"; do
   case $arg in
     -v|--verbose) VERBOSE=1 ;;
-    -h|--help) sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,23p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) print -u2 "unknown option: $arg"; exit 64 ;;
   esac
 done
@@ -85,10 +86,17 @@ website_tests() (   # a subshell: the cd stays in here
   # Every tests/*.test.mjs (usage, stats, and any added later), each in its own process.
   npm run -s test || return 1
 )
+admin_tests() (
+  cd website
+  [[ -d node_modules ]] || npm ci --no-audit --no-fund || return 1
+  node --check ../admin-site/netlify/edge-functions/admin-proxy.js || return 1
+  npm run -s test:admin || return 1
+)
 if command -v npm >/dev/null; then
   run website "website function tests (npm)" website_tests
+  run admin "admin site: proxy, pages, policy (admin-site/)" admin_tests
 else
-  failed+=(website); print "${RED}✗ website: npm isn't installed${RESET}"
+  failed+=(website admin); print "${RED}✗ website, admin: npm isn't installed${RESET}"
 fi
 
 # Builds the pages in a copy, so a check never changes committed files. If the

@@ -7,6 +7,7 @@
     "dev": "netlify dev",
     "test:usage": "node --experimental-test-module-mocks --test tests/usage.test.mjs",
     "test:stats": "node --experimental-test-module-mocks --test tests/stats.test.mjs",
+    "test:admin": "node --experimental-test-module-mocks --test tests/admin-site.test.mjs",
     "test":"node --experimental-test-module-mocks --test tests/*.test.mjs"
   },
   "dependencies": {

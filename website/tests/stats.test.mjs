@@ -25,7 +25,8 @@ const realNow = Date.now;
 let clock = null;
 Date.now = () => clock ?? realNow();
 
-const { default: adminFn } = await import("../netlify/functions/admin.mjs");
+const { viaProxy } = await import("./admin-helpers.mjs");
+const adminFn = viaProxy((await import("../netlify/functions/admin.mjs")).default);
 const { default: snapshotFn, config: snapshotConfig } = await import("../netlify/functions/stats-snapshot.mjs");
 const { default: publicDownloads } = await import("../netlify/functions/downloads.mjs");
 const D = await import("../netlify/lib/downloads.mjs");
@@ -488,7 +489,7 @@ test("the Feedback page's list still works after its code moved to lib/summaries
 
 // ------------------------------------------------------------ the page
 
-const root = new URL("../admin/", import.meta.url);
+const root = new URL("../../admin-site/public/", import.meta.url);
 const read = (p) => readFile(new URL(p, root), "utf8");
 
 test("the page follows the site's CSP: no inline styles, handlers or scripts", async () => {
@@ -506,10 +507,11 @@ test("the page follows the site's CSP: no inline styles, handlers or scripts", a
 
 test("the three admin pages link to each other", async () => {
   const [feedback, usage, stats] = await Promise.all([read("feedback/app.js"), read("usage/usage.js"), read("stats/stats.js")]);
-  assert.match(feedback, /href="\/admin\/stats\/"/);
-  assert.match(usage, /href="\/admin\/stats\/"/);
-  assert.match(stats, /href="\/admin\/usage\/"/);
-  assert.match(stats, /href="\/admin\/feedback\/"/);
+  // (relative, so they work at the admin site's / and, until the cut-over, at this site's /admin/)
+  assert.match(feedback, /href="\.\.\/stats\/"/);
+  assert.match(usage, /href="\.\.\/stats\/"/);
+  assert.match(stats, /href="\.\.\/usage\/"/);
+  assert.match(stats, /href="\.\.\/feedback\/"/);
 });
 
 /** The page's render(), run without a browser (it only builds strings). */

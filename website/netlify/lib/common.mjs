@@ -39,6 +39,10 @@ export const misc = () => getStore({ name: "glide-feedback-misc", consistency: "
 
 export const env = (k) => globalThis.Netlify?.env?.get(k) ?? process.env[k];
 
+/** The admin site (admin-site/, docs/ADMIN-SITE.md), without a slash at the end.
+ * ADMIN_URL only if it ended up with another name. */
+export const adminURL = () => (env("ADMIN_URL") || "https://admin-glideball.netlify.app").replace(/\/+$/, "");
+
 export function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
     status,

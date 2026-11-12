@@ -1,7 +1,7 @@
 # Netlify config for the Glide website (static, no build step), plus the
 # feedback functions: /api/feedback (from the Mac app and /feedback/),
-# /api/admin/* (the admin pages at /admin/feedback/, /admin/usage/ and
-# /admin/stats/), the app's opt-in stats and crash reports (/api/usage,
+# /api/admin/* (the admin site's data, reached through its proxy: see
+# docs/ADMIN-SITE.md), the app's opt-in stats and crash reports (/api/usage,
 # /api/crash), an hourly cleanup, and the download snapshot that fills the
 # Statistics page (netlify/functions/stats-snapshot.mjs, scheduled in its own file).
 
@@ -99,7 +99,10 @@
     Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
     Cross-Origin-Opener-Policy = "same-origin"
 
-# The admin pages: not for search engines, and none of the analytics. Netlify
+# The admin pages, until the cut-over (docs/ADMIN-SITE.md, step 2): their home
+# is now the admin site (admin-site/, admin-glideball.netlify.app), and
+# scripts/deploy-site.sh also publishes a copy here at /admin/ meanwhile.
+# Not for search engines, and none of the analytics. Netlify
 # injects its snippet (the analytics notice, then Google Analytics and the
 # Cloudflare beacon) into every HTML page, admin ones too, where they'd see
 # the feedback on screen and could call /api/admin/* as the signed-in admin.

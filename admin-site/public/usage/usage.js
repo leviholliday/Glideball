@@ -58,9 +58,9 @@ function shell() {
         ${PERIODS.map(([d, label]) => `<option value="${d}" ${d === state.days ? "selected" : ""}>${label}</option>`).join("")}
       </select>
       <button class="icon-btn" id="refresh">Refresh</button>
-      <a class="icon-btn" href="/admin/">Admin</a>
-      <a class="icon-btn" href="/admin/stats/">Statistics</a>
-      <a class="icon-btn" href="/admin/feedback/">Feedback</a>
+      <a class="icon-btn" href="../">Admin</a>
+      <a class="icon-btn" href="../stats/">Statistics</a>
+      <a class="icon-btn" href="../feedback/">Feedback</a>
     </header>
     <main class="usage" id="body"><div class="placeholder">Loading…</div></main>`;
   document.getElementById("period").addEventListener("change", (e) => {
@@ -88,7 +88,7 @@ function signedOut() {
       <img src="${ICON}" alt="">
       <h1>Glideball Usage</h1>
       <p>Sign in on the Feedback page first. It's the same password, and you'll stay signed in here too.</p>
-      <a class="primary link-btn" href="/admin/feedback/">Go to sign in</a>
+      <a class="primary link-btn" href="../feedback/">Go to sign in</a>
     </div></div>`;
 }
 

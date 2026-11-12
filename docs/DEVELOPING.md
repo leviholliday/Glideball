@@ -275,7 +275,7 @@ Everyone else sees a button with the new version number at the top of the window
 
 ## Feedback backend
 
-Send Feedback (in the app) and the website's [/feedback](https://glideball.netlify.app/feedback/) page post to a small Netlify function (`website/netlify/functions/feedback.mjs`). Reports are stored in Netlify Blobs and read on a password-protected admin page (`admin.mjs`). Each new report triggers an ntfy push with its title, priority and app version, not the message itself (`website/netlify/lib/common.mjs`). `cleanup.mjs` prunes old data on a schedule.
+Send Feedback (in the app) and the website's [/feedback](https://glideball.netlify.app/feedback/) page post to a small Netlify function (`website/netlify/functions/feedback.mjs`). Reports are stored in Netlify Blobs and read on the password-protected admin site (`admin-site/`, admin-glideball.netlify.app), whose edge function passes `/api/admin/*` on to `admin.mjs` on the main site with a shared secret ([ADMIN-SITE.md](ADMIN-SITE.md)). Each new report triggers an ntfy push with its title, priority and app version, not the message itself (`website/netlify/lib/common.mjs`). `cleanup.mjs` prunes old data on a schedule.
 
 ## Linux & Windows
 

@@ -1,0 +1,62 @@
+# The admin site: admin-glideball.netlify.app (docs/ADMIN-SITE.md). Only Levi's
+# admin pages, on an origin of their own: no analytics, no Netlify snippets,
+# nothing from another host. The data stays on the main site
+# (glideball.netlify.app, its Blobs stores): /api/admin/* here is the edge
+# function netlify/edge-functions/admin-proxy.js, which passes each request on
+# to the main site's admin function with ADMIN_PROXY_SECRET (set on both sites).
+#
+# Pages: / (home), /feedback/, /usage/, /stats/ (public/). The icons in
+# public/assets/ are copied from website/assets/ by scripts/deploy-admin.sh.
+# Deployed with scripts/deploy-admin.sh, never by a Git build.
+
+[build]
+  publish = "public"
+  command = "echo 'static site: nothing to build'"
+  edge_functions = "netlify/edge-functions"
+
+# Old addresses: the main site's /admin/... redirects here as /..., but a link
+# copied with the old path onto this host still works.
+[[redirects]]
+  from = "/admin"
+  to = "/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/admin/*"
+  to = "/:splat"
+  status = 301
+  force = true
+
+# Every address: only this site's own files. The pages have no inline styles,
+# scripts or on*= handlers (website/tests/admin-site.test.mjs checks), so no
+# 'unsafe-inline' and no hashes. img/media 'self' covers attachments served
+# from /api/admin/file; data: and blob: for the feedback page's previews.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self'; connect-src 'self'; font-src 'self'; manifest-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+    Strict-Transport-Security = "max-age=31536000"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "no-referrer"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+    Cross-Origin-Opener-Policy = "same-origin"
+    Cross-Origin-Resource-Policy = "same-origin"
+    X-Robots-Tag = "noindex, nofollow"
+
+# Pages, scripts and styles: always revalidate so an update shows up right away.
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "no-cache"

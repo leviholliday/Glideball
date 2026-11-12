@@ -49,9 +49,9 @@ function shell() {
       <span class="count" id="stamp"></span>
       <span class="spacer"></span>
       <button class="icon-btn" id="refresh">Refresh</button>
-      <a class="icon-btn" href="/admin/">Admin</a>
-      <a class="icon-btn" href="/admin/usage/">Usage</a>
-      <a class="icon-btn" href="/admin/feedback/">Feedback</a>
+      <a class="icon-btn" href="../">Admin</a>
+      <a class="icon-btn" href="../usage/">Usage</a>
+      <a class="icon-btn" href="../feedback/">Feedback</a>
     </header>
     <main class="stats" id="body"><div class="placeholder">Loading…</div></main>`;
   document.getElementById("refresh").addEventListener("click", load);
@@ -74,7 +74,7 @@ function signedOut() {
       <img src="${ICON}" alt="">
       <h1>Glideball Statistics</h1>
       <p>Sign in on the Feedback page first. It's the same password, and you'll stay signed in here too.</p>
-      <a class="primary link-btn" href="/admin/feedback/">Go to sign in</a>
+      <a class="primary link-btn" href="../feedback/">Go to sign in</a>
     </div></div>`;
 }
 
@@ -183,9 +183,9 @@ const KIND_KEYS = [
 ];
 
 function feedback(f) {
-  if (!f.total) return `<p class="hint">Counts only; the messages are on the <a href="/admin/feedback/">Feedback page</a>.</p><p class="none">No feedback yet.</p>`;
+  if (!f.total) return `<p class="hint">Counts only; the messages are on the <a href="../feedback/">Feedback page</a>.</p><p class="none">No feedback yet.</p>`;
   return `
-    <p class="hint">Counts only; the messages are on the <a href="/admin/feedback/">Feedback page</a>. Open means not marked done yet. Days and weeks are UTC (weeks start on Monday).</p>
+    <p class="hint">Counts only; the messages are on the <a href="../feedback/">Feedback page</a>. Open means not marked done yet. Days and weeks are UTC (weeks start on Monday).</p>
     <div class="tiles">${tile(f.open, "Open now")}${tile(f.total, "In all")}${tile(f.last7Days, "Last 7 days")}${tile(f.last30Days, "Last 30 days")}</div>
     <h4>Open now, by kind</h4>${bars(f.openByKind, KIND_NAMES)}
     <h4>Per day, last 30 days</h4>${stacked(f.days, KIND_KEYS, (x) => fmtDay(x.date), "Feedback per day")}

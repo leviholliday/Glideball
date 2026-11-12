@@ -30,6 +30,18 @@ git ls-files -co --exclude-standard website | while read -r f; do
   mkdir -p "$STAGE/${rel:h}"
   cp "$f" "$STAGE/$rel"
 done
+# UNTIL THE CUT-OVER (docs/ADMIN-SITE.md, step 2): the admin pages, whose home
+# is now admin-site/public/, are also published here at /admin/ as before, so
+# nothing breaks while the admin site is being set up. The cut-over deletes
+# these lines and redirects /admin/* to the admin site instead.
+mkdir -p "$STAGE/admin"
+git ls-files -co --exclude-standard admin-site/public | while read -r f; do
+  rel=${f#admin-site/public/}
+  [[ $rel == robots.txt ]] && continue
+  mkdir -p "$STAGE/admin/${rel:h}"
+  cp "$f" "$STAGE/admin/$rel"
+done
+
 (cd "$STAGE" && npm ci --silent --no-audit --no-fund) \
   || { print -u2 "error: npm ci failed; website not deployed"; exit 1; }
 
