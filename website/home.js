@@ -875,7 +875,8 @@
       L.cursor.style.transform = `translate3d(${(frac * w).toFixed(1)}px, 0, 0)`;
       L.screens.forEach((s, i) => s.classList.toggle('hit', disp > i + 0.02));
     };
-    const targets = () => [BASE, BASE * speedRatio];
+    let power = 1; // 1 is the button's flick; a drag scales it by how fast it was let go
+    const targets = () => [BASE * power, BASE * power * speedRatio];
     const step = (t) => {
       const e = reduce.matches ? 1 : 1 - Math.exp(-(t - t0) / TAU);
       targets().forEach((D, i) => {
@@ -889,12 +890,68 @@
         note.textContent = `Same flick: ${words(Math.min(3, a))} at System Settings’ fastest, and ${words(Math.min(3, b))} with Glideball at ${speedName}.`;
       }
     };
-    go.addEventListener('click', () => {
+    const fire = (p) => {
+      power = p;
       lanes.forEach((L) => place(L, 0, 0));
       t0 = performance.now();
       if (!running) { running = true; requestAnimationFrame(step); }
       bump('ball', 0.4);
-    });
+    };
+    go.addEventListener('click', () => fire(1));
+
+    // Drag across the screens and let go: the flick's strength is the speed of the last moments of the drag.
+    const pad = $('[data-flick-pad]', toy);
+    const REF = 1.3; // px per ms that equals the button's flick
+    let drag = null;
+    if (pad) {
+      pad.addEventListener('pointerdown', (e) => {
+        if (e.button > 0 || !e.isPrimary) return;
+        drag = { id: e.pointerId, x0: e.clientX, pts: [[performance.now(), e.clientX]] };
+        pad.classList.add('grabbing');
+        try { pad.setPointerCapture(e.pointerId); } catch (_) {}
+        e.preventDefault();
+      });
+      pad.addEventListener('pointermove', (e) => {
+        if (!drag || e.pointerId !== drag.id) return;
+        const now = performance.now();
+        drag.pts.push([now, e.clientX]);
+        while (drag.pts.length > 2 && now - drag.pts[0][0] > 90) drag.pts.shift();
+        // The cursors ride along with the finger (a little, so the result is still the surprise).
+        const dx = Math.max(0, e.clientX - drag.x0);
+        lanes.forEach((L, i) => {
+          const f = Math.min(0.2, dx / Math.max(1, L.box.clientWidth) * 0.5);
+          place(L, f * (i ? Math.min(speedRatio, 3) / 3 + 0.35 : 0.35), 0);
+        });
+      });
+      const end = (e, cancelled) => {
+        if (!drag || e.pointerId !== drag.id) return;
+        const now = performance.now();
+        const [t1, x1] = drag.pts[0];
+        const dx = e.clientX - drag.x0;
+        const v = (e.clientX - x1) / Math.max(16, now - t1);
+        drag = null;
+        pad.classList.remove('grabbing');
+        if (cancelled) { lanes.forEach((L) => place(L, 0, 0)); return; }
+        if (dx < 24 || v <= 0) {
+          lanes.forEach((L) => place(L, 0, 0));
+          note.textContent = 'Drag to the right and let go while still moving, or press Try a flick.';
+          return;
+        }
+        fire(Math.min(2.2, Math.max(0.3, v / REF)));
+      };
+      pad.addEventListener('pointerup', (e) => end(e, false));
+      pad.addEventListener('pointercancel', (e) => end(e, true));
+      // A gentle nudge once, the first time the toy scrolls into view.
+      if (!reduce.matches && 'IntersectionObserver' in window) {
+        const io = new IntersectionObserver((es) => {
+          if (!es.some((x) => x.isIntersecting)) return;
+          io.disconnect();
+          toy.classList.add('hinting');
+          setTimeout(() => toy.classList.remove('hinting'), 2200);
+        }, { threshold: 0.6 });
+        io.observe(toy);
+      }
+    }
     if (demo === 'flick') { t0 = performance.now() - 5000; step(performance.now()); }
   }
 

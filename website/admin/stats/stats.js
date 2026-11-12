@@ -49,6 +49,7 @@ function shell() {
       <span class="count" id="stamp"></span>
       <span class="spacer"></span>
       <button class="icon-btn" id="refresh">Refresh</button>
+      <a class="icon-btn" href="/admin/">Admin</a>
       <a class="icon-btn" href="/admin/usage/">Usage</a>
       <a class="icon-btn" href="/admin/feedback/">Feedback</a>
     </header>

@@ -118,6 +118,7 @@ async function main() {
       <span class="count" id="count"></span>
       <span class="spacer"></span>
       <button class="icon-btn" id="refresh" title="Refresh">Refresh</button>
+      <a class="icon-btn" href="/admin/">Admin</a>
       <a class="icon-btn" href="/admin/usage/">Usage</a>
       <a class="icon-btn" href="/admin/stats/">Statistics</a>
       <div class="menu" id="menu">

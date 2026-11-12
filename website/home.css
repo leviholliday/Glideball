@@ -829,6 +829,11 @@ input[type="range"]:focus-visible { outline: 2px solid rgb(var(--pc)); outline-o
 .toy { --lc: var(--pc); margin-top: clamp(40px, 5vw, 64px); padding: 24px 26px 22px; }
 .toy-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
 .toy-title { display: inline-flex; align-items: center; gap: 9px; font-size: 16px; font-weight: 600; }
+.toy-sub { margin-top: 8px; color: var(--text-2); font-size: 14px; }
+[data-flick-pad] { cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+[data-flick-pad].grabbing { cursor: grabbing; }
+.toy.hinting .cursor { animation: flick-hint 1.4s var(--ease-out, ease-out) 0.2s 1 both; }
+@keyframes flick-hint { 0%, 100% { translate: 0 0; } 45% { translate: 70px 0; } 60% { translate: 70px 0; } }
 .toy-note { margin-top: 14px; color: var(--text-3); font-size: 14px; }
 .btn-ball, .btn-ring, .btn-buttons {
   color: #fff;
