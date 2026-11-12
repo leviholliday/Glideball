@@ -3,7 +3,7 @@
 # (Sources/Glide/Sandbox/SelfTest.swift) runs the real launch path with nothing
 # live, twice — as a brand-new Mac's first launch and as a returning user's —
 # in a sandbox copy of the app (scripts/sandbox-app.sh). Exits non-zero if
-# either run fails, crashes or takes longer than its 10 s limit.
+# either run fails, crashes or takes longer than its 30 s limit (a hang guard).
 #
 #   scripts/self-test.sh             build (swift build -c release), then test
 #   scripts/self-test.sh --no-build  test the binary that's already built

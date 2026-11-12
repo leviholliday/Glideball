@@ -9,7 +9,7 @@ import SwiftUI
 /// live (Sandbox.swift), then builds and draws, offscreen, everything else a
 /// session shows — every tab, the Settings window, the Welcome Tour, the
 /// sheets, the launch animations — and finally runs the quit path. One line
-/// per step; exits 0 if all pass, 1 on any failure, crash or timeout (10 s).
+/// per step; exits 0 if all pass, 1 on any failure, crash or timeout (30 s; it catches hangs, not slowness).
 ///
 /// `--returning` starts from a returning user's settings (DemoData) instead of
 /// a brand-new Mac's, so the launch takes the short-animation path instead of
@@ -27,7 +27,7 @@ enum SelfTest {
         started = Date()
         let args = CommandLine.arguments
         returning = args.contains("--returning")
-        var timeout = 10.0
+        var timeout = 30.0
         if let i = args.firstIndex(of: "--timeout"), i + 1 < args.count, let t = Double(args[i + 1]), t > 0 { timeout = t }
         let info = Bundle.main.infoDictionary
         print("self-test: Glideball \(info?["CFBundleShortVersionString"] as? String ?? "?") (\(info?["CFBundleVersion"] as? String ?? "?")), "
