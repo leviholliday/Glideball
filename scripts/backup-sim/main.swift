@@ -28,7 +28,7 @@ for day in 0..<540 {
     if !quiet && Int.random(in: 0..<10, using: &rng) < 6 {
         for _ in 0..<Int.random(in: 1...40, using: &rng) {   // a slider drag = many changes
             let old = config
-            config.trackingSpeed = Double.random(in: 1...100, using: &rng)
+            config.trackingSpeed = Double.random(in: 1...80, using: &rng)
             store.willChange(from: old)
         }
     }

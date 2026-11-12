@@ -483,9 +483,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             case .dragLock: self?.toggleMode(.dragLock)
             }
         }
-        // A keyboard Scroll with ball freezes the cursor until switched off:
+        // Scroll with ball and gestures freeze the cursor, held keys and drags hold on:
         // never carry that across sleep or a locked screen.
-        let end: (Notification) -> Void = { _ in AppModel.shared.engine.endBallScrollLatch() }
+        let end: (Notification) -> Void = { _ in AppModel.shared.engine.releaseForSleep() }
         let workspace = NSWorkspace.shared.notificationCenter
         for name in [NSWorkspace.willSleepNotification, NSWorkspace.screensDidSleepNotification,
                      NSWorkspace.sessionDidResignActiveNotification] {

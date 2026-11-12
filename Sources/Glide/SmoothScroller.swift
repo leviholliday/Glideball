@@ -254,6 +254,8 @@ final class SmoothScroller: NSObject {
     }
 
     private var flyTicks: [CFTimeInterval] = []
+    /// The trackball reports at most every 8 ms (125 Hz).
+    static let minTickInterval = 0.008
 
     private func flywheelTick(dir: Double, count: Int, horizontal isHorizontal: Bool, turned: Bool, now: CFTimeInterval) {
         if turned || mode != .flying {
@@ -265,7 +267,12 @@ final class SmoothScroller: NSObject {
         horizontal = isHorizontal
         for _ in 0..<count { flyTicks.append(now) }
         flyTicks.removeAll { now - $0 > 0.15 }
-        let measured = flyTicks.count >= 2 ? Double(flyTicks.count - 1) / max(now - flyTicks[0], 0.004) : 0
+        // Never faster than the trackball can report (125 Hz USB polling): ticks handled
+        // back to back after the input thread was held up aren't a superhuman spin. (The
+        // 4 ms floor allowed 250+ ticks/s, and one tick then moved the page ~17,000 pt
+        // with smooth scrolling off. Found by scripts/engine-fuzz.)
+        let measured = flyTicks.count >= 2
+            ? Double(flyTicks.count - 1) / max(now - flyTicks[0], Self.minTickInterval * Double(flyTicks.count - 1)) : 0
         let distance = Double(count) * Self.flyTickDistance(rate: measured, distance: config.flyDistance,
                                                             acceleration: config.flyAcceleration)
         if !config.smoothScrolling {
@@ -517,6 +524,19 @@ final class SmoothScroller: NSObject {
         start()
     }
 
+    /// Pause, unplug, sleep: every motion stops where it is, the ring's and the
+    /// ball's, and nothing more is posted (not even the fraction still held back).
+    func stopAll() {
+        halt()
+        throwStart = 0
+        emitted = position
+        cancelBall()
+        stop()
+    }
+
+    /// The frame loop is running (scripts/engine-fuzz drives frames while it is).
+    var wantsFrames: Bool { running }
+
     /// Stops ball scrolling immediately, posting nothing more.
     func cancelBall() {
         ballMode = .idle
@@ -561,7 +581,7 @@ final class SmoothScroller: NSObject {
     }
 
     private func postBall(dx: Double, dy: Double) {
-        let x = Int32(dx), y = Int32(dy)
+        let x = Self.points(dx), y = Self.points(dy)
         guard x != 0 || y != 0 else { return }
         if let ballOutput { ballOutput(Double(x), Double(y)); return }
         guard let e = CGEvent(scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 2,
@@ -575,7 +595,7 @@ final class SmoothScroller: NSObject {
     }
 
     private func post(_ delta: Double) {
-        let d = Int32(delta)
+        let d = Self.points(delta)
         guard d != 0 else { return }
         if let output { output(Double(d)); return }
         guard let e = CGEvent(scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 2,
@@ -586,5 +606,12 @@ final class SmoothScroller: NSObject {
         e.setIntegerValueField(.eventSourceUserData, value: Engine.syntheticTag)
         e.post(tap: .cgSessionEventTap)
         telemetry?.addScroll(points: abs(Double(d)))
+    }
+
+    /// Whole points for a scroll event. Never traps: a NaN or an absurd value (which
+    /// clamped settings can't produce, but a bug might) posts nothing rather than crash.
+    static func points(_ v: Double) -> Int32 {
+        guard v.isFinite else { return 0 }
+        return Int32(max(min(v, 100_000), -100_000))
     }
 }

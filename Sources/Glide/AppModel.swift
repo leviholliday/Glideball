@@ -600,29 +600,14 @@ final class AppModel {
     /// Reads a settings file and shows what it contains — nothing changes until confirmed.
     func previewImport(_ url: URL) {
         do {
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
-            guard size <= ImportLimits.maxFileBytes else { throw GlideSettingsFileError.unsupportedVersion(0) }
-            let data = try Data(contentsOf: url)
-            guard ImportJSON.depthIsWithin(data) else { throw GlideSettingsFileError.unsupportedVersion(0) }
             let name = ImportText.clean(url.deletingPathExtension().lastPathComponent)
-            // A shared setup (one part, or everything from someone else) gets the share preview.
-            if let share = try? SharedSetup.decode(file: data) {
+            switch try ImportFile.read(url) {   // checked by scripts/file-fuzz and scripts/import-sim
+            case .share(let share):
                 receiveShare(share, from: .file(name))
                 return
+            case .settings(let file):
+                pendingImport = PendingImport(fileName: name, file: file)
             }
-            var file: GlideSettingsFile
-            if let iso = try? decoder.decode(GlideSettingsFile.self, from: data) {
-                file = iso
-            } else {
-                file = try JSONDecoder().decode(GlideSettingsFile.self, from: data)   // older files
-            }
-            _ = try file.validatedConfig()
-            // What's shown is what would be applied: clamped and checked like every import.
-            file.config = file.config.sanitizedForImport()
-            file.exportedFrom = file.exportedFrom.map { ImportText.clean($0) }
-            pendingImport = PendingImport(fileName: name, file: file)
             requestTab(.backup)
         } catch {
             show(.init(symbol: "exclamationmark.triangle.fill",
@@ -840,10 +825,8 @@ final class AppModel {
     }
 
     private static func loadTotals() -> Telemetry.Totals {
-        guard let d = UserDefaults.standard.dictionary(forKey: todayKey) else { return .init() }
-        return .init(clicks: d["clicks"] as? Int ?? 0,
-                     ballCounts: d["ball"] as? Double ?? 0,
-                     scrollPoints: d["scroll"] as? Double ?? 0)
+        guard let d = SavedDayTotals(UserDefaults.standard.object(forKey: todayKey)) else { return .init() }
+        return .init(clicks: d.clicks, ballCounts: d.ballCounts, scrollPoints: d.scrollPoints)
     }
 
     @ObservationIgnored private var totalsDay = AppModel.todayKey

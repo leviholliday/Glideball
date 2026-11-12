@@ -93,7 +93,8 @@ final class SettingsSync {
         self.folder = folder ?? FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent("Library/Mobile Documents/com~apple~CloudDocs/Glide", isDirectory: true)
         self.defaults = defaults
-        let id = defaults.string(forKey: Keys.deviceID) ?? UUID().uuidString
+        // This Mac's heartbeat file is named after it, so only ever a UUID (never "../x").
+        let id = defaults.string(forKey: Keys.deviceID).flatMap { UUID(uuidString: $0)?.uuidString } ?? UUID().uuidString
         defaults.set(id, forKey: Keys.deviceID)
         deviceID = id
         let enabled = defaults.bool(forKey: Keys.enabled)
@@ -362,7 +363,7 @@ final class SettingsSync {
     private func readRemote() -> RemoteState {
         let data: Data
         do {
-            switch try Self.read(settingsURL) {
+            switch try Self.read(settingsURL, limit: GlideSettingsFile.maxFileBytes) {
             case .missing: return .missing
             case .downloading: return .downloading
             case .data(let contents): data = contents
@@ -370,6 +371,9 @@ final class SettingsSync {
         } catch {
             return .failed(String(localized: "Couldn’t read settings from iCloud Drive: \(error.localizedDescription)"))
         }
+        // Nothing Glideball writes nests this deep, and decoding (or JSONSerialization, below)
+        // would overflow this queue's 512 KB stack: junk, safe to replace.
+        guard (try? SafeRead.checkDepth(data)) != nil else { return .corrupt }
         do {
             let file = try Self.decoder.decode(SharedFile.self, from: data)
             _ = try file.settings.validatedConfig()
@@ -387,25 +391,36 @@ final class SettingsSync {
         let files = Set(names.map { name in
             name.hasPrefix(".") && name.hasSuffix(".icloud") ? String(name.dropFirst().dropLast(7)) : name
         })
-        return files.filter { $0.hasSuffix(".json") }.compactMap { name -> SyncDevice? in
+        // A few Macs is normal; a folder of thousands is junk not worth reading all of
+        // (this Mac's own heartbeat is always read).
+        let mine = "\(deviceID).json"
+        let others = files.filter { $0.hasSuffix(".json") && $0 != mine }.sorted().prefix(Self.maxDevices - 1)
+        return ((files.contains(mine) ? [mine] : []) + others).compactMap { name -> SyncDevice? in
             let url = devicesURL.appendingPathComponent(name)
-            guard case .data(let data)? = try? Self.read(url),
-                  let beat = try? Self.decoder.decode(Heartbeat.self, from: data) else { return nil }
+            guard case .data(let data)? = try? Self.read(url, limit: 64_000),
+                  let beat = try? Self.decoder.decode(Heartbeat.self, from: data),
+                  (Date.distantPast...Date.distantFuture).contains(beat.lastSeen) else { return nil }
             let id = url.deletingPathExtension().lastPathComponent
-            return SyncDevice(id: id, name: beat.name, lastSeen: beat.lastSeen, isThisMac: id == deviceID,
-                              appVersion: beat.appVersion)
+            return SyncDevice(id: id, name: SafeRead.clip(beat.name, bytes: 128), lastSeen: beat.lastSeen,
+                              isThisMac: id == deviceID, appVersion: beat.appVersion.map { SafeRead.clip($0, bytes: 32) })
         }
         .sorted { $0.lastSeen > $1.lastSeen }
     }
 
+    static let maxDevices = 200
+
     private func writeHeartbeat() throws {
+        // A "devices" link to some other folder isn't written through.
+        if (try? devicesURL.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink) == true {
+            throw SafeRead.Refused(reason: "devices is a link")
+        }
         let beat = Heartbeat(name: deviceName, lastSeen: Date(), appVersion: GlideSettingsFile.appVersion)
         try Self.write(Self.encoder.encode(beat), to: devicesURL.appendingPathComponent("\(deviceID).json"))
     }
 
     /// Reads a file another Mac may have written. If iCloud hasn't downloaded it yet,
     /// asks for it and returns `.downloading`; the folder watcher or next poll reads it.
-    private static func read(_ url: URL) throws -> FileRead {
+    private static func read(_ url: URL, limit: Int) throws -> FileRead {
         let fileManager = FileManager.default
         guard fileManager.fileExists(atPath: url.path) else {
             // Older iCloud Drive keeps undownloaded files as hidden ".<name>.icloud" stubs.
@@ -413,6 +428,12 @@ final class SettingsSync {
             guard fileManager.fileExists(atPath: stub.path) else { return .missing }
             try? fileManager.startDownloadingUbiquitousItem(at: url)
             return .downloading
+        }
+        // Only a plain file: coordinating a read of a pipe waits forever, and a link could
+        // point anywhere (SafeRead refuses both too, but only once the coordinator lets it in).
+        var info = stat()
+        guard lstat(url.path, &info) == 0, info.st_mode & S_IFMT == S_IFREG else {
+            throw SafeRead.Refused(reason: "not a regular file")
         }
         // Current iCloud Drive keeps them as "dataless" files, which the coordinated read downloads.
         let values = try? url.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey])
@@ -423,7 +444,7 @@ final class SettingsSync {
         var readError: Error?
         var coordinatorError: NSError?
         NSFileCoordinator().coordinate(readingItemAt: url, options: [], error: &coordinatorError) { url in
-            do { data = try Data(contentsOf: url) } catch { readError = error }
+            do { data = try SafeRead.data(url, limit: limit) } catch { readError = error }
         }
         if let coordinatorError { throw coordinatorError }
         if let readError { throw readError }

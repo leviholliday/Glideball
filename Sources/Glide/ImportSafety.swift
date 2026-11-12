@@ -228,6 +228,6 @@ extension GlideConfig {
             if let name = displaySpeeds.names[key] { ds.names[key] = ImportText.clean(name) }
         }
         c.displaySpeeds = ds
-        return c
+        return c.clamped()   // and the limits every config from a file, backup or sync gets (ConfigLimits)
     }
 }

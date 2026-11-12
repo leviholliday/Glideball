@@ -40,13 +40,14 @@ final class Diagnostics {
     func record(_ message: @autoclosure () -> String) {
         let t = (CACurrentMediaTime() - start) * 1000
         lines.append(String(format: "%10.1f  ", t) + message())
-        if lines.count > maxLines { lines.removeFirst(lines.count - maxLines) }
+        // Trimmed in batches: removing the first line every time moved 6,000 lines per record.
+        if lines.count > maxLines + 1000 { lines.removeFirst(lines.count - maxLines) }
         dirty = true
     }
 
     func flush() {
         guard dirty else { return }
         dirty = false
-        try? (lines.joined(separator: "\n") + "\n").data(using: .utf8)?.write(to: Self.url, options: .atomic)
+        try? (lines.suffix(maxLines).joined(separator: "\n") + "\n").data(using: .utf8)?.write(to: Self.url, options: .atomic)
     }
 }

@@ -424,6 +424,7 @@ struct KensingtonWorksImport {
                 c.appProfiles.append(safe)
             }
         }
+        c = c.clamped()   // the same limits as every settings file (ConfigLimits)
         c.buttons[0] = current.buttons[0]   // the primary button never changes
         return c
     }

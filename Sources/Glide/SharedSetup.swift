@@ -230,6 +230,7 @@ struct SharedSetup: Codable {
         case .look:
             break
         }
+        c = c.clamped()   // the same limits as every settings file (ConfigLimits)
         c.buttons[0] = current.buttons[0]   // the primary button never changes
         return c
     }
@@ -357,5 +358,35 @@ extension SharedSetup {
         appSetup = try c.decodeIfPresent(AppProfile.self, forKey: .appSetup)
         look = try c.decodeIfPresent(ShareLook.self, forKey: .look)
         writtenBy = try c.decodeIfPresent(String.self, forKey: .writtenBy).map { ImportText.clean($0, max: 24) }
+    }
+}
+
+// MARK: - A file chosen or double-clicked to import
+
+/// What a .glide-settings file chosen to import (Import…, a double-click, a shared
+/// file) turned out to be. Both kinds are read the same hardened way: only a
+/// regular file (a link someone chose is followed; a pipe or device never is),
+/// never over `ImportLimits.maxFileBytes`, depth-checked, and a settings file's
+/// config clamped and checked (`sanitizedForImport()`) before it's shown, so the
+/// preview is what Apply would do. scripts/file-fuzz and scripts/import-sim throw
+/// hostile files at it.
+enum ImportFile {
+    case share(SharedSetup)
+    case settings(GlideSettingsFile)
+
+    static func read(_ url: URL) throws -> ImportFile {
+        try parse(SafeRead.data(url, limit: ImportLimits.maxFileBytes, followSymlinks: true))
+    }
+
+    static func parse(_ data: Data) throws -> ImportFile {
+        guard data.count <= ImportLimits.maxFileBytes else { throw SharedSetup.Problem.tooBig }
+        guard ImportJSON.depthIsWithin(data) else { throw SharedSetup.Problem.tooDeep }
+        // A shared setup (one part, or everything from someone else) gets the share preview.
+        if let share = try? SharedSetup.decode(file: data) { return .share(share) }
+        var file = try GlideSettingsFile.decode(data)
+        _ = try file.validatedConfig()
+        file.config = file.config.sanitizedForImport()
+        file.exportedFrom = file.exportedFrom.map { ImportText.clean($0) }
+        return .settings(file)
     }
 }

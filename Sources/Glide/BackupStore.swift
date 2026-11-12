@@ -169,7 +169,7 @@ final class BackupStore {
 
     func load(_ backup: Backup) -> GlideConfig? {
         if let cached = loaded[backup.url] { return cached }
-        guard let data = try? Data(contentsOf: backup.url),
+        guard let data = try? SafeRead.data(backup.url, limit: GlideSettingsFile.maxFileBytes),
               let file = try? Self.decode(data),
               var config = try? file.validatedConfig() else { return nil }
         config.enabled = true
@@ -192,11 +192,15 @@ final class BackupStore {
 
     private func scan() -> [Backup] {
         let urls = (try? FileManager.default.contentsOfDirectory(
-            at: folder, includingPropertiesForKeys: [.fileSizeKey], options: [.skipsHiddenFiles])) ?? []
+            at: folder, includingPropertiesForKeys: [.fileSizeKey, .isRegularFileKey], options: [.skipsHiddenFiles])) ?? []
         return urls.compactMap { url -> Backup? in
+            // Only plain files Glideball could have written: never a folder, a pipe or a
+            // symbolic link (pruning would delete it; restoring would read whatever it points to).
             guard url.pathExtension == GlideSettingsFile.fileExtension,
+                  let values = try? url.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey]),
+                  values.isRegularFile == true,
                   let (date, kind) = Self.parse(url.deletingPathExtension().lastPathComponent) else { return nil }
-            let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+            let size = values.fileSize ?? 0
             return Backup(url: url, date: date, kind: kind, size: size)
         }
         .sorted { $0.date > $1.date }
@@ -251,6 +255,7 @@ final class BackupStore {
     }
 
     static func decode(_ data: Data) throws -> GlideSettingsFile {
+        try SafeRead.checkDepth(data)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(GlideSettingsFile.self, from: data)

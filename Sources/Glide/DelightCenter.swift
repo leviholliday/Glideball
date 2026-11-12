@@ -134,10 +134,7 @@ final class DelightCenter {
         dayKey = currentKey
         var days: [String: Tally] = [:]
         for (key, value) in defaults.dictionaryRepresentation() where key.hasPrefix(Self.totalsPrefix) && key != currentKey {
-            guard let d = value as? [String: Any] else { continue }
-            let t = Tally(clicks: d["clicks"] as? Int ?? 0,
-                          ballCounts: d["ball"] as? Double ?? 0,
-                          scrollPoints: d["scroll"] as? Double ?? 0)
+            guard let t = SavedDayTotals(value)?.tally else { continue }
             if !t.isEmpty { days[key] = t }
         }
         past = days

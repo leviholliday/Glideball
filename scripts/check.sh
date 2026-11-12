@@ -14,6 +14,8 @@
 #   gesture-sim  scripts/gesture-sim/run.sh      gesture buttons, including unplug/pause mid-gesture
 #   device-sim   scripts/device-sim/run.sh       per-display speed, connection types, battery notices
 #   import-sim   scripts/import-sim/run.sh       settings files, shared setups, KensingtonWorks: good, hostile, fuzzed
+#   engine-fuzz  scripts/engine-fuzz/run.sh      the real engine, ~1.2M random events + one random seed
+#   file-fuzz    scripts/file-fuzz/run.sh        hostile settings, shares, links, KensingtonWorks, backup, sync, crash-report files
 #   l10n         scripts/l10n/check.py           every translation complete, no repeated keys
 #   website      the website's function tests    (npm ci first if website/node_modules is missing)
 #   admin        the admin site's tests          its proxy against the real admin function, its pages and policy
@@ -30,7 +32,7 @@ VERBOSE=0
 for arg in "$@"; do
   case $arg in
     -v|--verbose) VERBOSE=1 ;;
-    -h|--help) sed -n '2,23p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) print -u2 "unknown option: $arg"; exit 64 ;;
   esac
 done
@@ -81,6 +83,12 @@ run command-sim "glideball:// URLs and status.json, good and hostile" scripts/co
 run gesture-sim "gesture buttons: scripted, hostile and random events" scripts/gesture-sim/run.sh
 run device-sim "per-display speed, connection types, low-battery notices" scripts/device-sim/run.sh
 run import-sim "settings files, shared setups, KensingtonWorks: good, hostile, fuzzed" scripts/import-sim/run.sh
+# Short budgets here (a few seconds each once compiled); scripts/fuzz.sh runs them for long.
+# The engine fuzzer adds one random seed each time and prints it in its log, so every
+# check run explores something new and any failure can be replayed.
+run engine-fuzz "engine fuzzer: the hard rules over ~1.2M random events" scripts/engine-fuzz/run.sh --seeds 1-60 --events 20000 --random
+grep -m1 '^random seed' "$LOGS/engine-fuzz.log" 2>/dev/null | sed 's/^/  /'
+run file-fuzz "hostile files: import, shares, links, KensingtonWorks, backups, sync, crash reports" scripts/file-fuzz/run.sh
 run l10n "translations: complete, no repeated keys" python3 scripts/l10n/check.py
 
 website_tests() (   # a subshell: the cd stays in here

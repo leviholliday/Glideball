@@ -97,3 +97,13 @@ struct LowBatteryAlerts: Codable, Equatable {
         return crossed
     }
 }
+
+extension LowBatteryAlerts {
+    // Saved in UserDefaults. Only a threshold can have been announced: anything
+    // else (Int.max would overflow `a + rearm` above) means nothing was.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let a = (try? c.decodeIfPresent(Int.self, forKey: .announced)) ?? nil
+        self.init(announced: a.flatMap { Self.thresholds.contains($0) ? $0 : nil })
+    }
+}
