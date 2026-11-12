@@ -192,7 +192,6 @@ const MISSED = "push/missed";
 
 /** What a push for this item says. `urgentOK` false: not as an urgent one. */
 export function pushFor(item, urgentOK = true) {
-  const site = env("URL") || "https://glideball.netlify.app";
   const priority = item.priority[0].toUpperCase() + item.priority.slice(1);
   const lost = (item.files ?? []).filter((f) => !f.done).length;
   const version = [item.app?.version, item.app?.build ? `(build ${item.app.build})` : ""].filter(Boolean).join(" ");
@@ -206,7 +205,7 @@ export function pushFor(item, urgentOK = true) {
       (lost ? ` (${lost} didn't arrive)` : ""),
     priority: level >= 5 && !urgentOK ? 3 : level,
     tags: [NTFY_TAGS[item.priority] ?? "speech_balloon"],
-    click: `${site}/admin/feedback/?id=${encodeURIComponent(item.id)}`,
+    click: `${adminURL()}/feedback/?id=${encodeURIComponent(item.id)}`,
   };
 }
 
@@ -242,13 +241,12 @@ export async function pushDigest() {
   // Cleared first, so two runs at once can't both send it.
   const w = await s.setJSON(MISSED, { n: 0 }, { onlyIfMatch: cur.etag });
   if (!w.modified) return;
-  const site = env("URL") || "https://glideball.netlify.app";
   await send({
     title: `Glideball feedback: ${n} more`,
     message: `${n} more feedback item${n > 1 ? "s" : ""} came in without a notification (too many at once). They're in the inbox.`,
     priority: 3,
     tags: ["inbox_tray"],
-    click: `${site}/admin/feedback/`,
+    click: `${adminURL()}/feedback/`,
   });
 }
 

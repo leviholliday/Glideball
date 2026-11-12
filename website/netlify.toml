@@ -41,6 +41,21 @@
   status = 302
   force = true
 
+# The admin pages live on their own site now (admin-site/, docs/ADMIN-SITE.md),
+# away from the analytics scripts on these pages. Old links keep working:
+# /admin/feedback/?id=... goes to .../feedback/?id=... there.
+[[redirects]]
+  from = "/admin"
+  to = "https://admin-glideball.netlify.app/"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/admin/*"
+  to = "https://admin-glideball.netlify.app/:splat"
+  status = 302
+  force = true
+
 # The site is published from this folder, so keep what isn't a page out of
 # reach: the functions' source and tests, the npm files and node_modules.
 [[redirects]]
@@ -87,8 +102,7 @@
 #   matches what's live; if the snippet changes, its hashes change with it.
 # - Links to github.com are plain navigations, which CSP does not restrict.
 # - img-src blob: is for the feedback page's previews of the pictures picked.
-# - connect-src 'self' covers the feedback page and the admin pages talking
-#   to /api/feedback and /api/admin/*.
+# - connect-src 'self' covers the feedback page talking to /api/feedback.
 [[headers]]
   for = "/*"
   [headers.values]
@@ -98,23 +112,6 @@
     X-Frame-Options = "DENY"
     Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
     Cross-Origin-Opener-Policy = "same-origin"
-
-# The admin pages, until the cut-over (docs/ADMIN-SITE.md, step 2): their home
-# is now the admin site (admin-site/, admin-glideball.netlify.app), and
-# scripts/deploy-site.sh also publishes a copy here at /admin/ meanwhile.
-# Not for search engines, and none of the analytics. Netlify
-# injects its snippet (the analytics notice, then Google Analytics and the
-# Cloudflare beacon) into every HTML page, admin ones too, where they'd see
-# the feedback on screen and could call /api/admin/* as the signed-in admin.
-# This second policy allows only the site's own files. (The page also gets
-# the "/*" one above; when two policies apply, a browser enforces both, so
-# whatever either forbids stays forbidden.) Covers /admin/stats/ too: its
-# bars are SVG with plain attributes and every handler is added in its script.
-[[headers]]
-  for = "/admin/*"
-  [headers.values]
-    X-Robots-Tag = "noindex, nofollow"
-    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; media-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
 
 # Images and other static assets: cache for a year.
 # These filenames are not content-hashed, so rename a file (e.g. og-v2.png)

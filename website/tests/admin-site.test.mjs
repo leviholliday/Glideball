@@ -228,3 +228,25 @@ test("the admin site's netlify.toml: strict policy, noindex, the proxy, no analy
   assert.match(toml, /edge_functions = "netlify\/edge-functions"/);
   assert.ok(!/googletagmanager|google-analytics|cloudflareinsights/.test(toml));
 });
+
+// ------------------------------------------------------------------ the cut-over
+
+test("cut-over: the public site sends /admin to the admin site and answers no one else", async () => {
+  assert.equal(A.DIRECT_ACCESS, false);
+  const r = await A.default(new Request("https://glideball.netlify.app/api/admin/session"), { ip: "192.0.2.5" });
+  assert.equal(r.status, 403);
+  const toml = await readFile(new URL("../netlify.toml", import.meta.url), "utf8");
+  for (const [from, to] of [["/admin", "https://admin-glideball.netlify.app/"], ["/admin/*", "https://admin-glideball.netlify.app/:splat"]]) {
+    const rule = new RegExp(`from = "${from.replace(/[*/]/g, "\\$&")}"\\s*to = "${to.replace(/[./:]/g, "\\$&")}"\\s*status = 302\\s*force = true`);
+    assert.match(toml, rule, from);
+  }
+  assert.ok(!/for = "\/admin\/\*"/.test(toml), "no admin pages left to give headers to");
+  const deploy = await readFile(new URL("../../scripts/deploy-site.sh", import.meta.url), "utf8");
+  assert.ok(!/admin-site\/public/.test(deploy), "deploy-site.sh no longer publishes the admin pages");
+});
+
+test("cut-over: a push opens the item on the admin site", async () => {
+  const { pushFor } = await import("../netlify/lib/common.mjs");
+  const p = pushFor({ id: "20261111-120000-a1b2c3d4", title: "t", priority: "normal", platform: "web" });
+  assert.equal(p.click, "https://admin-glideball.netlify.app/feedback/?id=20261111-120000-a1b2c3d4");
+});

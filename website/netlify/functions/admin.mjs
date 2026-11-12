@@ -6,8 +6,8 @@
 // with x-glide-admin-proxy: ADMIN_PROXY_SECRET and the visitor's address
 // (x-glide-client-ip). The data stays on this site because Netlify Blobs
 // belong to one site. A wrong proxy secret is refused before a cookie is read.
-// Until the cut-over (DIRECT_ACCESS below), the old pages on this site's own
-// /admin/ still reach it directly too.
+// Anything else, a script on this site's public pages among it, is refused
+// before a cookie is read.
 //
 //   GET    /api/admin/session                  { needsSetup, loggedIn }
 //   POST   /api/admin/setup     {code, password}   first password, once
@@ -35,10 +35,9 @@ import { usageReport, deleteInstall, lookUpInstall, deleteDays, normalizeID, DAY
 
 export const config = { path: "/api/admin/*" };
 
-// CUT-OVER (docs/ADMIN-SITE.md, step 2): true while the old /admin/ pages on
-// this site still work; false once the admin site does, and then only
-// requests through the admin site's proxy get in.
-export const DIRECT_ACCESS = true;
+// Only requests through the admin site's proxy get in (the cut-over,
+// docs/ADMIN-SITE.md step 2; true would let this site's own pages in again).
+export const DIRECT_ACCESS = false;
 
 const PROXY_HEADER = "x-glide-admin-proxy";
 const CLIENT_IP_HEADER = "x-glide-client-ip";
