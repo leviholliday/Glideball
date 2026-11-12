@@ -1552,7 +1552,6 @@
 "Every tick pushes the page and friction slows it down: gentle turns barely coast, hard spins fly." = "Cada passo empurra a página e o atrito a desacelera: giros leves mal deslizam, giros fortes voam.";
 "Fast spins push no harder than slow ones: %lld pt a tick." = "Giros rápidos não empurram mais do que os lentos: %lld pt por passo.";
 "Glideball steps aside and macOS scrolls the ring itself. Only the speed is adjustable." = "O Glideball sai de cena e o próprio macOS rola com o anel. Só a velocidade é ajustável.";
-"Put the pointer over the list and spin the ring." = "Coloque o ponteiro sobre a lista e gire o anel.";
 "Reach is off: every spin stops speeding up at Kensington’s top speed." = "O alcance está desativado: todo giro deixa de acelerar na velocidade máxima da Kensington.";
 "Rolling the ball one inch scrolls the page about %lld pt." = "Rolar a bola uma polegada rola a página cerca de %lld pt.";
 "Sets distance, power and glide to what Kensington’s own driver measured." = "Ajusta distância, força e deslize para o que o driver da própria Kensington mediu.";
@@ -1715,3 +1714,19 @@
 "Your best day shows here after a few days" = "Seu melhor dia aparece aqui depois de alguns dias";
 "Your best day yet" = "Seu melhor dia até agora";
 "against your best day" = "em relação ao seu melhor dia";
+"Asks first: press ⌘Q again to quit." = "Pergunta antes: pressione ⌘Q de novo para encerrar.";
+"Change in Settings…" = "Alterar nos Ajustes…";
+"Click the list, then spin the ring." = "Clique na lista e depois gire o anel.";
+"Click to try it" = "Clique para testar";
+"Don’t ask again" = "Não perguntar de novo";
+"Glideball’s shortcuts, all in one place." = "Todos os atalhos do Glideball em um só lugar.";
+"Keyboard Shortcuts" = "Atalhos de Teclado";
+"Keyboard shortcuts (this list)" = "Atalhos de teclado (esta lista)";
+"Keyboard shortcuts" = "Atalhos de teclado";
+"No shortcut" = "Sem atalho";
+"Quit Glideball?" = "Encerrar o Glideball?";
+"Quit" = "Encerrar";
+"Stay" = "Ficar";
+"They work in every app, even with the window closed." = "Funcionam em qualquer app, mesmo com a janela fechada.";
+"Your trackball goes back to plain macOS. Closing the window keeps Glideball running." = "Seu trackball volta ao funcionamento normal do macOS. Fechar só a janela mantém o Glideball funcionando.";
+"⌘Q quits straight away. Turn asking back on in Settings › General." = "⌘Q encerra na hora. Ative a pergunta de novo em Ajustes › Geral.";

@@ -101,10 +101,10 @@ enum SelfTest {
                 try check(launch.show == .intro, "a first launch should play the intro, got \(String(describing: launch.show))")
             }
             if case .splash? = launch.show {
-                try check(launch.revealAt + 0.35 <= 1.2, "the short animation takes \(launch.revealAt + 0.35) s (1.2 s at most)")
+                try check(launch.revealAt + 0.4 <= 1.3, "the short animation takes \(launch.revealAt + 0.4) s (1.3 s at most)")
             }
             var drawn = 0
-            for t in [0.3, 1.4, 3.0, 4.2, 5.6] {
+            for t in [0.3, 1.4, 3.0, 3.75, 3.97, 4.2, 5.6] {
                 try draw(IntroScene(t: t, calm: false), "intro at \(t) s", size: RenderUI.windowSize, allowBlank: t < 1); drawn += 1
             }
             try draw(IntroScene(t: 1.0, calm: true), "intro, Reduce Motion", size: RenderUI.windowSize); drawn += 1
@@ -159,6 +159,34 @@ enum SelfTest {
             try draw(UpdatePanelView(updates: model.updates) {}, "Software Update")
             try draw(BackupHistorySection(model: model, store: model.backups).frame(width: 900), "Backups")
             return "About, Feedback, A small favor, Software Update, Backups drawn"
+        }
+
+        step("quit card and shortcuts") {
+            // ⌘Q asks first by default; a second ⌘Q, asking turned off, or anything modal quits straight away.
+            try check(model.confirmQuit, "asking before quitting should be on by default")
+            try check(QuitConfirm.decide(confirm: true, showing: false, modal: false) == .ask, "⌘Q didn't ask")
+            try check(QuitConfirm.decide(confirm: true, showing: true, modal: false) == .quit, "a second ⌘Q didn't quit")
+            try check(QuitConfirm.decide(confirm: false, showing: false, modal: false) == .quit, "⌘Q asked with asking off")
+            try check(QuitConfirm.decide(confirm: true, showing: false, modal: true) == .quit, "⌘Q asked over something modal")
+            // Glideball's own Quit items go to the question; the updater and the system don't come this way.
+            let items = (NSApp.mainMenu?.items ?? []).flatMap { $0.submenu?.items ?? [] } + (delegate.statusMenu?.items ?? [])
+            let quits = items.filter { $0.keyEquivalent == "q" }
+            try check(quits.count == 2 && quits.allSatisfy { $0.action == #selector(AppDelegate.quitGlide(_:)) },
+                      "the Quit items don't ask first")
+            try check(items.contains { $0.keyEquivalent == "/" && $0.action == #selector(AppDelegate.showShortcuts(_:)) },
+                      "no Help › Keyboard Shortcuts (⌘/)")
+            // Asking here puts nothing on screen (the sandbox draws it instead) and quits nothing.
+            QuitConfirm.ask()
+            try check(!QuitConfirm.isShowing && NSApp.windows.allSatisfy { !$0.isVisible }, "the quit card went on screen")
+            try draw(QuitConfirm.preview(), "the quit card")
+            try draw(QuitConfirm.preview(dontAsk: true), "the quit card, don't ask again")
+            try draw(ShortcutsSheet(model: model), "the shortcuts sheet")
+            // The setting the other way round, and back.
+            model.confirmQuit = false
+            try check(UserDefaults.standard.object(forKey: AppModel.confirmQuitKey) as? Bool == false, "Don't ask again wasn't saved")
+            model.confirmQuit = true
+            try check(model.lightIntensity == AppModel.defaultLightIntensity, "the Light setting doesn't start at its default")
+            return "⌘Q asks, ⌘Q again quits, never over a modal; card and shortcuts sheet drawn, nothing shown"
         }
 
         step("what's new") {

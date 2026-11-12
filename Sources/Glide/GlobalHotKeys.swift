@@ -18,7 +18,7 @@ final class GlobalHotKeys {
     @ObservationIgnored private var handler: EventHandlerRef?
     /// While a shortcut is being recorded none are registered, so pressing
     /// one records it instead of firing it.
-    @ObservationIgnored private var suspended = false
+    @ObservationIgnored private(set) var suspended = false
     @ObservationIgnored private var suspendCount = 0
 
     private static let signature = OSType(0x474C_4944)   // "GLID"

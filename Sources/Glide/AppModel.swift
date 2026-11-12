@@ -255,11 +255,8 @@ final class AppModel {
         delight.canCelebrate = { [weak self] in
             self?.showingWelcomeTour == false && self?.showingWhatsNew == false && self?.showingIconChoice == false
         }
-        // A soft tick with the "Saved" pill, only while someone's looking at the window
-        // (not for a pointer speed set from Raycast), and never over a sound that just played.
-        delight.onSaved = { [weak self] in
-            if self?.windowVisible == true { Sounds.shared.play(.tick, quietAfter: 1.5) }
-        }
+        // The "Saved" pill is silent: a tick on every save got old fast.
+        live.lightIntensity = lightIntensity
         backups.currentConfig = { AppModel.shared.config }
         // `--render-ui` and `--self-test`: a model with nothing live — no engine,
         // timers, observers, sync or update checks (see Sandbox.swift).
@@ -584,6 +581,34 @@ final class AppModel {
             updateSampling()
         }
     }
+
+    /// "Light": how bright the room gets when the hand moves (0 none … 1 full). Per-Mac.
+    /// Settings › Look & Sound shows it as a slider.
+    static let lightIntensityKey = "GlideLightIntensity"
+    static let defaultLightIntensity = 0.6
+    static var lightIntensitySaved: Double {
+        let d = UserDefaults.standard
+        guard d.object(forKey: lightIntensityKey) != nil else { return defaultLightIntensity }
+        return min(max(d.double(forKey: lightIntensityKey), 0), 1)
+    }
+    var lightIntensity = AppModel.lightIntensitySaved {
+        didSet {
+            let v = min(max(lightIntensity, 0), 1)
+            if v != lightIntensity { lightIntensity = v; return }
+            UserDefaults.standard.set(v, forKey: Self.lightIntensityKey)
+            live.lightIntensity = v
+        }
+    }
+
+    /// ⌘Q asks first (`QuitConfirm`). Per-Mac; "Don't ask again" turns it off,
+    /// Settings › General turns it back on.
+    static let confirmQuitKey = "GlideConfirmQuit"
+    var confirmQuit = UserDefaults.standard.object(forKey: AppModel.confirmQuitKey) as? Bool ?? true {
+        didSet { UserDefaults.standard.set(confirmQuit, forKey: Self.confirmQuitKey) }
+    }
+
+    /// The keyboard shortcuts sheet (? in the window, Help › Keyboard Shortcuts).
+    var showingShortcuts = false
     /// The window is the one being used (observed, so the background can drift more slowly otherwise).
     private(set) var windowIsKey = false
     /// The window is actually on screen (not closed, minimized, covered, or on a sleeping display).

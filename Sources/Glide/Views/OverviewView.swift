@@ -117,17 +117,18 @@ struct TodayCluster: View {
         VStack(alignment: .leading, spacing: 16) {
             ForEach(Self.order) { m in
                 ClusterStat(metric: m, value: value(m), best: best(m), fraction: fraction(m),
-                            moment: Self.sandboxRecordMoment == m)
+                            moment: Self.sandboxRecordMoment == m, partial: { value(m, scaled: $0) })
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func value(_ m: Metric) -> String {
+    /// Today's number, or `scaled` of the way to it (the count-up at launch).
+    private func value(_ m: Metric, scaled k: Double = 1) -> String {
         switch m {
-        case .clicks: Int(model.totals.clicks).formatted()
-        case .ball: OverviewView.meters(model.totals.ballCounts / AppModel.countsPerInch * 0.0254)
-        case .scroll: OverviewView.meters(model.totals.scrollPoints * 0.00023)
+        case .clicks: Int((Double(model.totals.clicks) * k).rounded()).formatted()
+        case .ball: OverviewView.meters(model.totals.ballCounts / AppModel.countsPerInch * 0.0254 * k)
+        case .scroll: OverviewView.meters(model.totals.scrollPoints * 0.00023 * k)
         }
     }
 
@@ -268,9 +269,19 @@ private struct ClusterStat: View {
     let best: Double?
     let fraction: Double
     var moment = false
+    /// The number part of the way there (0…1), for the count-up.
+    var partial: ((Double) -> String)? = nil
     @State private var pop = false
     @State private var sparks = 0
+    /// Counting up from zero as the launch animation hands over (only then, once).
+    @State private var countFrom: Date? = ClusterStat.countUpNow ? Date() : nil
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    static let countDuration = 0.9
+    /// Overview appearing while the launch animation is still handing over to the window.
+    static var countUpNow: Bool {
+        LaunchExperience.shared.show != nil && !LaunchExperience.shared.reduceMotion && !Sandbox.isActive
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -282,7 +293,7 @@ private struct ClusterStat: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
-            Text(value)
+            numeral
                 .font(Theme.Font.numeral(44))
                 .contentTransition(.numericText())
                 .lineLimit(1)
@@ -312,6 +323,21 @@ private struct ClusterStat: View {
             }
         }
         .accessibilityElement(children: .combine)
+    }
+
+    /// The big number: counting up from zero at launch (easing out, like an odometer settling), then plain.
+    @ViewBuilder private var numeral: some View {
+        if let from = countFrom, let partial {
+            TimelineView(.animation) { tl in
+                let k = min(1, tl.date.timeIntervalSince(from) / Self.countDuration)
+                Text(k >= 1 ? value : partial(1 - pow(1 - k, 3)))
+            }
+            .onAppear {
+                DispatchQueue.main.asyncAfter(deadline: .now() + Self.countDuration + 0.05) { countFrom = nil }
+            }
+        } else {
+            Text(value)
+        }
     }
 
     private var label: String {

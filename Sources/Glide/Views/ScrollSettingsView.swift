@@ -17,26 +17,42 @@ struct ScrollSettingsView: View {
                 ModePicker(mode: $model.config.scrollMode)
             }
 
-            switch model.config.scrollMode {
-            case .native:
-                controls.nativeSection
-                TryItArea(feed: model.live)
-            case .flywheel:
-                controls.flywheelSection
-                TryItArea(feed: model.live)
-                LiveTimeline(feed: model.live, maxFPS: 20) { feed, _ in
-                    FlywheelCurve(config: model.config, liveRate: feed.notchRate)
+            // The mode's own controls glide in under the cards (a rise and a fade) as the old ones fade.
+            Group {
+                switch model.config.scrollMode {
+                case .native:
+                    controls.nativeSection
+                case .flywheel:
+                    controls.flywheelSection
+                case .follow:
+                    controls.presetsSection
+                    controls.feelSection
                 }
-            case .follow:
-                controls.presetsSection
-                controls.feelSection
-                TryItArea(feed: model.live)
-                LiveTimeline(feed: model.live, maxFPS: 20) { feed, _ in
-                    SpinCurve(config: model.config, liveRate: feed.notchRate)
-                }
-                controls.throwSection
-                ThrowCurve(config: model.config)
             }
+            .transition(reduceMotion ? .opacity
+                        : .asymmetric(insertion: .opacity.combined(with: .offset(y: 14)), removal: .opacity))
+
+            // One "Try it here" for every mode: it stays put while the mode changes.
+            TryItArea(feed: model.live)
+
+            Group {
+                switch model.config.scrollMode {
+                case .native:
+                    EmptyView()
+                case .flywheel:
+                    LiveTimeline(feed: model.live, maxFPS: 20) { feed, _ in
+                        FlywheelCurve(config: model.config, liveRate: feed.notchRate)
+                    }
+                case .follow:
+                    LiveTimeline(feed: model.live, maxFPS: 20) { feed, _ in
+                        SpinCurve(config: model.config, liveRate: feed.notchRate)
+                    }
+                    controls.throwSection
+                    ThrowCurve(config: model.config)
+                }
+            }
+            .transition(reduceMotion ? .opacity
+                        : .asymmetric(insertion: .opacity.combined(with: .offset(y: 14)), removal: .opacity))
 
             if model.config.scrollMode != .native { controls.directionSection }
 
@@ -408,13 +424,21 @@ struct ModePicker: View {
                 isSelected: { $0 == mode },
                 tint: Theme.ring
             ) { mode = $0 }
-            Text(Self.about(mode))
-                .font(Theme.Font.hint)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .contentTransition(.opacity)
+            // The line about the mode cross-fades with a small rise.
+            ZStack(alignment: .topLeading) {
+                Text(Self.about(mode))
+                    .font(Theme.Font.hint)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .id(mode)
+                    .transition(reduceMotion ? .opacity
+                                : .asymmetric(insertion: .opacity.combined(with: .offset(y: 5)), removal: .opacity))
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 }
 
 // MARK: - Charts
@@ -605,7 +629,7 @@ struct TryItArea: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Space.titleToGroup) {
-            SectionTitle(title: "Try it here", caption: "Put the pointer over the list and spin the ring.")
+            SectionTitle(title: "Try it here", caption: "Click the list, then spin the ring.")
             lane
         }
     }
@@ -656,6 +680,8 @@ struct TryItArea: View {
             .frame(height: 176)
             .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.group, style: .continuous))
             .groupBackground()
+            // Scrolling down the page never gets caught in here: it takes the ring only after a click or a rest.
+            .scrollCaptureGuard()
     }
 }
 

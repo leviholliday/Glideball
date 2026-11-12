@@ -1552,7 +1552,6 @@
 "Every tick pushes the page and friction slows it down: gentle turns barely coast, hard spins fly." = "每一格都会推动页面，摩擦力让它慢下来：轻转几乎不滑行，猛转一飞冲天。";
 "Fast spins push no harder than slow ones: %lld pt a tick." = "快转并不比慢转推得更远：每格 %lld pt。";
 "Glideball steps aside and macOS scrolls the ring itself. Only the speed is adjustable." = "Glideball 退居一旁，由 macOS 亲自处理滚动环的滚动。只能调节速度。";
-"Put the pointer over the list and spin the ring." = "把指针放在列表上，转动滚动环。";
 "Reach is off: every spin stops speeding up at Kensington’s top speed." = "“快速转动的距离”已关闭：无论怎么转，都不会超过 Kensington 的最高速度。";
 "Rolling the ball one inch scrolls the page about %lld pt." = "把球滚动一英寸，页面会滚动约 %lld pt。";
 "Sets distance, power and glide to what Kensington’s own driver measured." = "把距离、力度和滑行设为 Kensington 自家驱动程序测得的值。";
@@ -1715,3 +1714,19 @@
 "Your best day shows here after a few days" = "几天后，这里会显示你最好的一天";
 "Your best day yet" = "你迄今最好的一天";
 "against your best day" = "与你最好的一天相比";
+"Asks first: press ⌘Q again to quit." = "会先确认：再按一次 ⌘Q 即可退出。";
+"Change in Settings…" = "在设置中更改…";
+"Click the list, then spin the ring." = "先点按列表，再转动滚动环。";
+"Click to try it" = "点按以试用";
+"Don’t ask again" = "不再询问";
+"Glideball’s shortcuts, all in one place." = "Glideball 的所有快捷键都在这里。";
+"Keyboard Shortcuts" = "键盘快捷键";
+"Keyboard shortcuts (this list)" = "键盘快捷键（此列表）";
+"Keyboard shortcuts" = "键盘快捷键";
+"No shortcut" = "无快捷键";
+"Quit Glideball?" = "退出 Glideball？";
+"Quit" = "退出";
+"Stay" = "留下";
+"They work in every app, even with the window closed." = "在任何 App 中都能用，即使窗口已关闭。";
+"Your trackball goes back to plain macOS. Closing the window keeps Glideball running." = "你的轨迹球会恢复为 macOS 的默认行为。只关闭窗口的话，Glideball 会继续运行。";
+"⌘Q quits straight away. Turn asking back on in Settings › General." = "⌘Q 会直接退出。可以在“设置”›“通用”中重新打开确认。";

@@ -110,6 +110,9 @@ struct RootView: View {
         .sheet(isPresented: $model.showingAbout) {
             AboutView(model: model)
         }
+        .sheet(isPresented: $model.showingShortcuts) {
+            ShortcutsSheet(model: model)
+        }
         .onChange(of: model.requestedTab) { _, requested in
             guard let requested else { return }
             select(requested)
@@ -238,15 +241,15 @@ private struct SidebarHero: View {
 
     var body: some View {
         let status = SidebarStatus(model)
-        let side: CGFloat = compact ? 84 : 150
         VStack(spacing: 10) {
             TrackballView(feed: model.live, pressed: model.pressed, look: TrackballLook.of(model),
                           driftFPS: model.windowVisible && !compact
                             ? model.performance.idleDriftFPS(windowIsKey: model.windowIsKey, deviceConnected: model.status.deviceConnected)
                             : 0)
-                .frame(width: side, height: side)
-                // The space stays the same either way, so the list below never moves.
+                // Always drawn at full size and scaled, so stepping down and back is one smooth
+                // scale (the drawing itself never animates); the space stays the same either way.
                 .frame(width: 150, height: 150)
+                .scaleEffect(compact ? 84.0 / 150 : 1)
                 .padding(.vertical, 10)
                 .frame(maxWidth: .infinity)
                 .background {

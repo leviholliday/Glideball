@@ -8,8 +8,8 @@ import SwiftUI
 //
 // On top sits the only part that ever changes: the light the hand makes. Roll
 // the ball and the aurora warms blue, turn the ring and pink runs through it,
-// click and amber flashes, each fading back within about 0.4 s. It's driven by
-// the same live samples as the trackball (`LiveFeed.glow`, `clickPulse`), which
+// click and a soft amber swells, each breathing back out over about a second
+// (`LightField`). It's driven by the same live samples as the trackball, which
 // only change while something moves and never while the window is hidden, so an
 // idle trackball costs nothing. Minimal performance mode leaves it all static.
 
@@ -231,7 +231,7 @@ struct LightBloom: View {
 
     var body: some View {
         LiveLight(feed: feed) { l in
-            let amber = max(l.amber, pressed.isEmpty ? 0 : 0.8)
+            let amber = max(l.amber, pressed.isEmpty ? 0 : 0.5 * feed.lightIntensity / AppModel.defaultLightIntensity)
             let lean = CGSize(width: l.roll.dx * size * 0.08 * l.ball, height: l.roll.dy * size * 0.06 * l.ball)
             ZStack {
                 light(Theme.ball, l.ball * (dark ? 0.55 : 0.30), offset: lean)
@@ -241,7 +241,7 @@ struct LightBloom: View {
             .frame(width: size, height: size)
             .blendMode(dark ? .plusLighter : .normal)
         }
-        .animation(.easeOut(duration: pressed.isEmpty ? 0.25 : 0.05), value: pressed.isEmpty)
+        .animation(.easeOut(duration: pressed.isEmpty ? 0.6 : 0.12), value: pressed.isEmpty)
         .allowsHitTesting(false)
         .accessibilityHidden(true)
     }

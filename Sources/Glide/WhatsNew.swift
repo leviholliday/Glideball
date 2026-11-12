@@ -151,7 +151,7 @@ extension AppModel {
     /// Something is already over the window (or a sheet is up): nothing else may show.
     var promptShowing: Bool {
         showingWelcomeTour || showingWhatsNew || showingIconChoice || showingSmallFavor
-            || showingFeedback || showingAbout || pendingImport != nil
+            || showingFeedback || showingAbout || showingShortcuts || pendingImport != nil
     }
 
     /// Shows the next thing due, once the window is open and nothing else is

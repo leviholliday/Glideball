@@ -44,6 +44,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         _ = Sounds.shared.enabled   // settles "Sounds" (the launch reads it) before anything plays
         AppIconChoice.shared.setUp(firstLaunch: firstLaunch)   // the Dock icon: the Orb, or the classic one
         buildMenu()
+        installKeyMonitor()
         handleTerminateSignal()
         setUpStatusItem()
         _ = AppModel.shared   // starts the engine
@@ -348,7 +349,46 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         toggleMode(.precision)
     }
 
-    @objc private func quitGlide(_ sender: Any?) { quitNow() }
+    /// Glideball's own Quit (the menu, ⌘Q, the menu-bar icon): asks first, unless that's turned off.
+    @objc func quitGlide(_ sender: Any?) { MainActor.assumeIsolated { QuitConfirm.ask() } }
+
+    /// Help › Keyboard Shortcuts (⌘/), and ? in the window.
+    @objc func showShortcuts(_ sender: Any?) {
+        showWindow()
+        AppModel.shared.showingShortcuts = true
+    }
+
+    private var keyMonitor: Any?
+
+    /// ⌘Q goes to the quit question here as well as through the menu (a menu's key
+    /// equivalent can be missed the first time after launch), and ? in the main
+    /// window opens the shortcuts sheet when nothing is being typed.
+    private func installKeyMonitor() {
+        guard keyMonitor == nil else { return }
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] e in
+            let mods = e.modifierFlags.intersection([.command, .option, .control, .shift])
+            // (Not while Settings › Shortcuts is recording a new shortcut: then ⌘Q is the keys being recorded.)
+            if mods == .command, e.charactersIgnoringModifiers?.lowercased() == "q", !GlobalHotKeys.shared.suspended {
+                MainActor.assumeIsolated { QuitConfirm.ask() }
+                return nil
+            }
+            if e.characters == "?", mods.subtracting(.shift).isEmpty, let self, self.wantsShortcutKey {
+                self.showShortcuts(nil)
+                return nil
+            }
+            return e
+        }
+    }
+
+    /// ? means the shortcuts only in the main window with nothing being typed, no sheet,
+    /// no launch animation, tour or card over it.
+    private var wantsShortcutKey: Bool {
+        guard let w = window, NSApp.keyWindow === w, w.attachedSheet == nil else { return false }
+        if w.firstResponder is NSText { return false }
+        let m = AppModel.shared
+        return LaunchExperience.shared.show == nil && !m.showingWelcomeTour && !m.showingWhatsNew
+            && !m.showingIconChoice && !m.showingSmallFavor && !m.showingShortcuts
+    }
 
     @objc private func checkForUpdates(_ sender: Any?) {
         Commands.run("check-for-updates", on: AppCommandTarget.shared)
@@ -496,6 +536,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         helpMenu.addItem(withTitle: String(localized: "About & Help…"), action: #selector(showAbout), keyEquivalent: "").target = self
         helpMenu.addItem(withTitle: String(localized: "Show Welcome Tour…"), action: #selector(showWelcomeTour), keyEquivalent: "").target = self
         helpMenu.addItem(withTitle: String(localized: "Play the Intro"), action: #selector(playIntro), keyEquivalent: "").target = self
+        helpMenu.addItem(withTitle: String(localized: "Keyboard Shortcuts"), action: #selector(showShortcuts), keyEquivalent: "/").target = self
         helpMenu.addItem(.separator())
         helpMenu.addItem(withTitle: String(localized: "Glideball Help"), action: #selector(openHelp), keyEquivalent: "").target = self
         helpMenu.addItem(withTitle: String(localized: "Troubleshooting"), action: #selector(openTroubleshooting), keyEquivalent: "").target = self

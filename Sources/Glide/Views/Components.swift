@@ -962,10 +962,14 @@ struct GlideBackground: View {
 
 /// A row of equal choices (a mode, a preset) as cards. Each card can carry a
 /// tiny looping demo of what it does (a list moving the way a scroll mode moves
-/// it, a dot crossing at a pointer speed) that plays only while the card is
-/// hovered or keyboard-focused, and holds still otherwise. The chosen card is
-/// lit in the part's color (outline, weight and a check, not color alone).
-/// Picking one answers with a small spring and a soft tick.
+/// it, a dot crossing at a pointer speed) that plays while the card is hovered
+/// or keyboard-focused, and holds still otherwise. The chosen card is lit in
+/// the part's color (outline, weight and a check, not color alone).
+///
+/// Picking one is a small moment: the card gives under the click and springs
+/// back, the glow glides over from the old card, the outline draws itself
+/// round the new one, its demo plays once in its own character, and a soft
+/// tick sounds. Reduce Motion: a plain fade.
 struct ChoiceStrip<Value: Hashable>: View {
     struct Choice: Identifiable {
         let value: Value
@@ -981,14 +985,25 @@ struct ChoiceStrip<Value: Hashable>: View {
     let tint: Color
     let select: (Value) -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Namespace private var glow
+    /// The card just picked by hand (its demo plays once), and a count so picking again replays it.
+    @State private var picked: Value?
+    @State private var pickCount = 0
 
     var body: some View {
         HStack(spacing: 8) {
             ForEach(choices) { c in
-                ChoiceCard(title: c.title, symbol: c.symbol, demo: c.demo, selected: isSelected(c.value), tint: tint) {
+                ChoiceCard(title: c.title, symbol: c.symbol, demo: c.demo, selected: isSelected(c.value), tint: tint,
+                           glow: glow, picked: picked == c.value ? pickCount : 0) {
                     let was = isSelected(c.value)
-                    withAnimation(Theme.Motion.respecting(reduceMotion, Theme.Motion.spring)) { select(c.value) }
-                    if !was { Sounds.shared.detent(pitch: 1.1, volume: 0.45) }
+                    withAnimation(reduceMotion ? Theme.Motion.fade : .spring(response: 0.42, dampingFraction: 0.8)) {
+                        select(c.value)
+                    }
+                    if !was {
+                        picked = c.value
+                        pickCount += 1
+                        Sounds.shared.detent(pitch: 1.1, volume: 0.45)
+                    }
                 }
             }
         }
@@ -1016,13 +1031,20 @@ private struct ChoiceCard: View {
     let demo: ChoiceDemo?
     let selected: Bool
     let tint: Color
+    let glow: Namespace.ID
+    /// Changes each time this card is picked by hand (0: it wasn't).
+    let picked: Int
     let action: () -> Void
     @State private var hovering = false
+    @State private var outline = 1.0
+    @State private var give = 1.0
+    @State private var playingOnce = false
+    @State private var onceWork: DispatchWorkItem?
     @FocusState private var focused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        let playing = (hovering || focused || ChoiceCardSandbox.hovered == symbol) && !reduceMotion
+        let playing = (hovering || focused || playingOnce || ChoiceCardSandbox.hovered == symbol) && !reduceMotion
         Button(action: action) {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 6) {
@@ -1038,7 +1060,7 @@ private struct ChoiceCard: View {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 12))
                             .foregroundStyle(tint)
-                            .transition(.scale(scale: 0.6).combined(with: .opacity))
+                            .transition(reduceMotion ? .opacity : .scale(scale: 0.4).combined(with: .opacity))
                     }
                 }
                 if let demo {
@@ -1054,23 +1076,52 @@ private struct ChoiceCard: View {
             .frame(maxWidth: .infinity, minHeight: 34, alignment: .leading)
             .background {
                 let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
+                SurfaceShape(radius: 10)
+                    .opacity(selected ? 0 : 1)
                 if selected {
-                    shape.fill(LinearGradient(colors: [tint.opacity(0.20), tint.opacity(0.08)], startPoint: .top, endPoint: .bottom))
+                    // The glow glides over from the card that had it…
+                    let fill = shape.fill(LinearGradient(colors: [tint.opacity(0.20), tint.opacity(0.08)], startPoint: .top, endPoint: .bottom))
                         .shadow(color: tint.opacity(0.35), radius: 8, y: 2)
-                    shape.strokeBorder(LinearGradient(colors: [tint, tint.opacity(0.55)], startPoint: .topLeading, endPoint: .bottomTrailing),
-                                       lineWidth: 1.5)
-                } else {
-                    SurfaceShape(radius: 10)
+                    if reduceMotion {
+                        fill
+                    } else {
+                        fill.matchedGeometryEffect(id: "glow", in: glow)
+                    }
+                    // …and the outline draws itself round the new one.
+                    shape.inset(by: 0.75)
+                        .trim(from: 0, to: outline)
+                        .stroke(LinearGradient(colors: [tint, tint.opacity(0.55)], startPoint: .topLeading, endPoint: .bottomTrailing),
+                                style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
                 }
             }
             .contentShape(Rectangle())
         }
         .buttonStyle(PressableStyle())
+        .scaleEffect(give)
         .focused($focused)
         .onHover { h in withAnimation(.easeOut(duration: 0.15)) { hovering = h } }
         .offset(y: hovering && !selected && !reduceMotion ? -1 : 0)
         .animation(Theme.Motion.spring, value: selected)
+        .onChange(of: picked) { _, n in if n > 0 { pickedMoment() } }
+        .onDisappear { onceWork?.cancel() }
         .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    /// The card gives a little and springs back, the outline draws round it, and
+    /// its demo plays once (about a loop and a half), in its own character.
+    private func pickedMoment() {
+        guard !reduceMotion else { return }
+        var still = Transaction()
+        still.disablesAnimations = true
+        withTransaction(still) { outline = 0; give = 0.95 }
+        withAnimation(.easeOut(duration: 0.5).delay(0.04)) { outline = 1 }
+        withAnimation(.spring(response: 0.36, dampingFraction: 0.5)) { give = 1 }
+        guard demo != nil else { return }
+        playingOnce = true
+        onceWork?.cancel()
+        let work = DispatchWorkItem { playingOnce = false }
+        onceWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.9, execute: work)
     }
 }
 

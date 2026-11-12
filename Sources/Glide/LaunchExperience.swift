@@ -10,7 +10,7 @@ import Observation
 ///   intro with its own music (IntroMusic.m4a), after which the window fades
 ///   in and the Welcome Tour opens.
 /// - Every other cold launch that opens the window: what Settings › General ›
-///   "When Glideball opens" says: a short (1.15 s) animation, one of two in
+///   "When Glideball opens" says: a short (1.25 s) animation, one of two in
 ///   turn (the default), a quick fade, or nothing.
 ///
 /// Sound: "hello" (`Sounds`) plays only on the first launch after an update
@@ -99,7 +99,7 @@ final class LaunchExperience {
     var revealAt: Double {
         switch show {
         case .intro: reduceMotion ? 2.6 : 6.4
-        case .splash: reduceMotion ? 0.5 : 0.8
+        case .splash: reduceMotion ? 0.5 : 0.85
         case .fade: 0.3
         case nil: 0
         }
@@ -109,7 +109,7 @@ final class LaunchExperience {
         switch show {
         case .intro: reduceMotion ? 0.45 : 0.6
         case .fade: 0.3
-        default: reduceMotion ? 0.25 : 0.35
+        default: reduceMotion ? 0.25 : 0.4
         }
     }
 
