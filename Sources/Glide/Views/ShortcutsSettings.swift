@@ -43,6 +43,7 @@ struct ShortcutsSettingsPane: View {
         [
             Fixed(keys: ["⌘", "1–\(GlideTab.allCases.count)"], title: String(localized: "Switch pages"),
                   detail: ListFormatter.localizedString(byJoining: GlideTab.allCases.map(\.title))),
+            Fixed(keys: ["⌘", "K"], title: String(localized: "Search settings and actions"), detail: String(localized: "⌘F does the same.")),
             Fixed(keys: ["⌘", ","], title: String(localized: "Settings")),
             Fixed(keys: ["⌘", "E"], title: String(localized: "Export Settings…")),
             Fixed(keys: ["⌘", "O"], title: String(localized: "Import Settings…")),
@@ -104,7 +105,7 @@ struct ShortcutsSettingsPane: View {
         VStack(alignment: .leading, spacing: 22) {
             if !actions.isEmpty {
                 SectionBlock(title: "Anywhere on your Mac", dividerInset: SettingsLayout.symbolInset) {
-                    ForEach(actions) { row($0) }
+                    ForEach(actions) { row($0).findable(id: Findable.shortcut($0).id) }
                 }
             }
             if !fixedShown.isEmpty {
@@ -126,6 +127,7 @@ struct ShortcutsSettingsPane: View {
                         .padding(.vertical, 8)
                     }
                 }
+                .findable(.windowShortcuts)
             }
             if actions.isEmpty && fixedShown.isEmpty {
                 VStack(spacing: 8) {
@@ -317,4 +319,24 @@ private struct SearchField: NSViewRepresentable {
             if let field = note.object as? NSSearchField { text.wrappedValue = field.stringValue }
         }
     }
+}
+
+extension Findable {
+    /// A system-wide shortcut's row.
+    static func shortcut(_ action: GlobalShortcuts.Action) -> Findable {
+        Findable(id: "shortcut-\(action.rawValue)",
+                 title: String(localized: "Shortcut: \(action.title)", comment: "Search palette: a system-wide keyboard shortcut; %@ is what it does"),
+                 detail: action.subtitle,
+                 keywords: String(localized: "keyboard shortcut, hot key, hotkey, keys", comment: "Search words for a keyboard shortcut (comma-separated)"),
+                 symbol: action.symbol, place: .settings(.shortcuts))
+    }
+    static let windowShortcuts = Findable(
+        id: "window-shortcuts", title: String(localized: "In Glideball’s window"),
+        detail: String(localized: "The keys that work in Glideball’s own window, like ⌘K and ⌘1.", comment: "Search palette: the window's shortcuts"),
+        keywords: String(localized: "keyboard shortcuts, keys, command, hot keys", comment: "Search words for the window's shortcuts (comma-separated)"),
+        symbol: "keyboard", place: .settings(.shortcuts))
+}
+
+extension ShortcutsSettingsPane {
+    static var findables: [Findable] { GlobalShortcuts.Action.allCases.map(Findable.shortcut) + [.windowShortcuts] }
 }

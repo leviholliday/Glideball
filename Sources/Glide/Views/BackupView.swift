@@ -260,6 +260,7 @@ private struct ExportSection: View {
                 Button("Share…") { model.requestShare(.everything) }
                     .controlSize(.small)
             }
+            .findable(Findable.shareSetup)
 
             VStack(alignment: .leading, spacing: 8) {
                 Text("What’s in the file")
@@ -325,7 +326,7 @@ private struct ImportSection: View {
         VStack(alignment: .leading, spacing: Theme.Space.titleToGroup) {
             SectionTitle(title: "Import")
             if KensingtonWorksSource.found {
-                RowGroup { KensingtonWorksFoundRow(model: model) }
+                RowGroup { KensingtonWorksFoundRow(model: model).findable(Findable.kensingtonWorks) }
             }
             if let pending = model.pendingImport {
                 ImportPreview(model: model, pending: pending)

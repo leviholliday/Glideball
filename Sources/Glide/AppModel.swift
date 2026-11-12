@@ -65,6 +65,11 @@ final class AppModel {
     /// A shared setup (link or file) or KensingtonWorks' settings, waiting in its
     /// preview sheet. One at a time (AppModel+Sharing.swift).
     var pendingIncoming: IncomingSetup?
+    /// One opened while the launch animation, the tour, a sheet or another card
+    /// was up: it takes its turn in `nextPrompt` (WhatsNew.swift).
+    var queuedIncoming: IncomingSetup?
+    /// The self-test's receiving step, run while a long launch animation is still up.
+    @ObservationIgnored var incomingIgnoresLaunch = false
     /// Share…: the sheet that makes a link, file or picture of part of your setup.
     var shareRequest: ShareRequest?
     /// The ball color before an import that changed it, for Undo.
@@ -740,6 +745,8 @@ final class AppModel {
     private(set) var windowIsKey = false
     /// The window is actually on screen (not closed, minimized, covered, or on a sleeping display).
     private(set) var windowVisible = false
+    /// The menu-bar panel is open (`setPanelOpen`).
+    private(set) var panelOpen = false
     @ObservationIgnored private var samplerInterval = 0.0
     @ObservationIgnored private var lastDelightTick = 0.0
     /// The page is scrolling: today's numbers and the badges hold still (for up to a
@@ -759,10 +766,22 @@ final class AppModel {
         if becameVisible { sample() }                                            // fresh numbers on the first frame
     }
 
+    /// The menu-bar panel is open (MenuBarPanel.swift): its little trackball and
+    /// today's numbers want live samples too, as the window's do.
+    func setPanelOpen(_ open: Bool) {
+        guard open != panelOpen else { return }
+        panelOpen = open
+        updateSampling()
+        if open { sample() }
+    }
+
+    /// Someone's looking: the window, or the menu-bar panel.
+    private var watched: Bool { windowVisible || panelOpen }
+
     /// One timer, at the rate the window needs: fast while it's showing, and a slow
     /// housekeeping tick (saving totals, rolling the day) when nobody's looking.
     private func updateSampling() {
-        let wanted = windowVisible ? performance.sampleInterval(windowIsKey: windowIsKey, deviceConnected: status.deviceConnected) : 10
+        let wanted = watched ? performance.sampleInterval(windowIsKey: windowIsKey || panelOpen, deviceConnected: status.deviceConnected) : 10
         guard sampler == nil || wanted != samplerInterval else { return }
         sampler?.invalidate()
         samplerInterval = wanted
@@ -770,7 +789,7 @@ final class AppModel {
         t.tolerance = wanted * 0.15   // lets macOS coalesce wakeups
         RunLoop.main.add(t, forMode: .common)
         sampler = t
-        if !windowVisible { live.reset(); smoothedBall = 0; smoothedNotch = 0; smoothedRollX = 0; smoothedRollY = 0; smoothedRing = 0 }
+        if !watched { live.reset(); smoothedBall = 0; smoothedNotch = 0; smoothedRollX = 0; smoothedRollY = 0; smoothedRing = 0 }
     }
 
     private func sample() {
@@ -778,7 +797,7 @@ final class AppModel {
         let dt = min(max(now - lastSampleTime, 0.001), 1)
         lastSampleTime = now
 
-        guard windowVisible else {              // nobody's looking: just keep the day's totals saved
+        guard watched else {                    // nobody's looking: just keep the day's totals saved
             if now - lastSave > 10 { lastSave = now; saveTotals() }
             return
         }

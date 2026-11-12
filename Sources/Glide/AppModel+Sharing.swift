@@ -148,10 +148,16 @@ extension AppModel {
     }
 
     private func present(_ incoming: IncomingSetup, cooldown: Bool = true) {
-        guard pendingIncoming == nil, pendingImport == nil, shareRequest == nil else { return }   // one at a time
+        guard pendingIncoming == nil, queuedIncoming == nil, pendingImport == nil, shareRequest == nil else { return }   // one at a time
         if cooldown, ProcessInfo.processInfo.systemUptime - lastIncomingClosed < Self.incomingCooldown { return }
         if !Sandbox.isActive { (NSApp.delegate as? AppDelegate)?.showWindow() }
-        pendingIncoming = incoming
+        // The person asked for it, so it shows straight away, unless the launch
+        // animation, the tour, a sheet or another card is up: then it waits its turn.
+        if incomingMustWait {
+            queuedIncoming = incoming
+        } else {
+            pendingIncoming = incoming
+        }
     }
 
     /// Cancel (or Escape): nothing changes.

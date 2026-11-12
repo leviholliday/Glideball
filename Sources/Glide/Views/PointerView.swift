@@ -17,13 +17,17 @@ struct PointerView: View {
                              lowLabel: "Slow", highLabel: "Ludicrous",
                              hint: .verbatim(PointerHints.tracking(model.config.trackingSpeed)),
                              tint: Theme.ball, defaultValue: Self.defaults.trackingSpeed)
+                    .findable(.trackingSpeed)
             }
 
-            PlainSection(title: "Presets") {
+            PlainSection(title: "Presets",
+                         caption: TryHint.due ? "⌥-click a preset to try it for 10 seconds first." : nil) {
                 PointerPresetRow(speed: $model.config.trackingSpeed)
             }
+            .findable(.pointerPresets)
 
             ResponseCurve(model: model)
+                .findable(.responseCurve)
 
             SectionBlock(title: "Precision mode",
                          caption: "Set a button to Precision in Buttons. Hold it (or toggle it on) and the cursor slows to this speed for fine work, then snaps back.") {
@@ -33,11 +37,44 @@ struct PointerView: View {
                              lowLabel: "Pixel-exact", highLabel: "macOS default",
                              hint: .verbatim(PointerHints.precision(model.config.precisionSpeed, tracking: model.config.trackingSpeed)),
                              tint: Theme.ball, defaultValue: Self.defaults.precisionSpeed)
+                    .findable(.precisionSpeed)
             }
 
             DisplaySpeedsSection(model: model)
+                .findable(.perDisplaySpeed)
         }
     }
+
+    static let findables: [Findable] = [.trackingSpeed, .pointerPresets, .responseCurve, .precisionSpeed, .perDisplaySpeed]
+}
+
+// What search finds on Pointer (each next to its row above).
+extension Findable {
+    static let trackingSpeed = Findable(
+        id: "tracking-speed", title: String(localized: "Tracking speed"),
+        detail: String(localized: "How fast the cursor moves when you roll the ball.", comment: "Search palette: Tracking speed"),
+        keywords: String(localized: "speed, pointer speed, cursor speed, sensitivity, dpi, fast, slow, mouse speed", comment: "Search words for Tracking speed (comma-separated; words people might type)"),
+        symbol: "gauge.with.dots.needle.67percent", place: .tab(.pointer), part: .ball, boost: 12)
+    static let pointerPresets = Findable(
+        id: "pointer-presets", title: String(localized: "Pointer presets"),
+        detail: String(localized: "Precise, macOS, Fast or Turbo in one click.", comment: "Search palette: the Pointer page's presets"),
+        keywords: String(localized: "preset, turbo, fast, precise, speed", comment: "Search words for the pointer presets (comma-separated)"),
+        symbol: "square.grid.2x2", place: .tab(.pointer), part: .ball)
+    static let responseCurve = Findable(
+        id: "response-curve", title: String(localized: "Response curve"),
+        detail: String(localized: "How the cursor speeds up the faster you roll.", comment: "Search palette: Response curve"),
+        keywords: String(localized: "acceleration, curve, chart, graph", comment: "Search words for Response curve (comma-separated)"),
+        symbol: "chart.xyaxis.line", place: .tab(.pointer), part: .ball)
+    static let precisionSpeed = Findable(
+        id: "precision-speed", title: String(localized: "Precision speed"),
+        detail: String(localized: "How slow the cursor goes while Precision is on.", comment: "Search palette: Precision speed"),
+        keywords: String(localized: "precision, slow, fine, sniper, accuracy", comment: "Search words for Precision speed (comma-separated)"),
+        symbol: "tortoise", place: .tab(.pointer), part: .ball)
+    static let perDisplaySpeed = Findable(
+        id: "per-display-speed", title: String(localized: "Speed for each display"),
+        detail: String(localized: "A different pointer speed on each screen.", comment: "Search palette: Speed for each display"),
+        keywords: String(localized: "monitor, screen, display, external, multiple displays", comment: "Search words for Speed for each display (comma-separated)"),
+        symbol: "display.2", place: .tab(.pointer), part: .ball)
 }
 
 /// The one line under each Pointer slider: what its value does right now, from

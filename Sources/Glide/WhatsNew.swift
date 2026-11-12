@@ -134,16 +134,26 @@ extension AppModel {
         case whatsNew
         /// "Glideball has a new look" (`IconChoicePrompt`), after an update from the classic icon.
         case iconChoice
+        /// A shared setup or KensingtonWorks' settings the person opened while
+        /// something else was up (`queuedIncoming`). Never by itself.
+        case importPreview
+        /// Last week's recap (`RecapCenter`), once a week after a week of real use.
+        case weeklyRecap
         case smallFavor
     }
 
     /// The next thing due, if any: What's New after an update, then "Glideball
-    /// has a new look" until it's answered, then the "A small favor" card while
-    /// it's unanswered. A fresh install never gets the first two (it starts on
-    /// the Orb and this version's What's New already seen).
+    /// has a new look" until it's answered, then a preview the person opened
+    /// (a link, a file, KensingtonWorks) that had to wait, then last week's
+    /// recap if it's due, then the "A small favor" card while it's unanswered.
+    /// A fresh install
+    /// never gets the first two (it starts on the Orb and this version's What's
+    /// New already seen), nor a recap (there's no week before to look back on).
     var nextPrompt: Prompt? {
         if WhatsNew.isPending { return .whatsNew }
         if AppIconChoice.shared.promptDue { return .iconChoice }
+        if queuedIncoming != nil { return .importPreview }
+        if RecapCenter.shared.due(delight) != nil { return .weeklyRecap }
         if ShareData.shared.shouldAsk { return .smallFavor }
         return nil
     }
@@ -153,6 +163,7 @@ extension AppModel {
         showingWelcomeTour || showingWhatsNew || showingIconChoice || showingSmallFavor
             || showingFeedback || showingAbout || showingShortcuts || pendingImport != nil
             || pendingIncoming != nil || shareRequest != nil
+            || RecapCenter.shared.showing != nil || CommandPalette.shared.isOpen
     }
 
     /// Shows the next thing due, once the window is open and nothing else is
@@ -178,9 +189,30 @@ extension AppModel {
         switch next {
         case .whatsNew: showWhatsNew()
         case .iconChoice: showingIconChoice = true
+        case .importPreview:
+            pendingIncoming = queuedIncoming
+            queuedIncoming = nil
+        case .weeklyRecap:
+            guard let recap = RecapCenter.shared.due(delight) else { return nil }
+            RecapCenter.shared.show(recap, byItself: true)
         case .smallFavor: showingSmallFavor = true
         }
         return next
+    }
+
+    /// A preview the person opened can't show yet: the launch animation, the
+    /// tour, a sheet or another card is up. It waits in `queuedIncoming`.
+    var incomingMustWait: Bool {
+        promptShowing || (LaunchExperience.shared.show != nil && !incomingIgnoresLaunch)
+    }
+
+    /// Whatever was in the way has gone: a preview that's waiting takes its turn
+    /// (after What's New and the icon question, if those are due). Unlike the
+    /// other cards it doesn't wait for the window to open again, as the person
+    /// asked for it.
+    func incomingMayShow() {
+        guard queuedIncoming != nil, !incomingMustWait else { return }
+        showNextPrompt(after: 0.4)
     }
 
     /// Help › What's New, or its turn after an update.
@@ -189,6 +221,7 @@ extension AppModel {
         // Asked for by hand: a card already up steps aside and comes back another time.
         showingSmallFavor = false
         showingIconChoice = false
+        RecapCenter.shared.close()
         showingWhatsNew = true
     }
 

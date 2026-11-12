@@ -35,6 +35,9 @@ enum AppShortcuts {
                         detail: String(localized: "\(ListFormatter.localizedString(byJoining: GlideTab.allCases.map(\.title))). ⌘1–⌘\(GlideTab.allCases.count) work too, even while you’re typing.",
                                        comment: "Shortcuts sheet: the pages in order, then a second way to switch; %lld is the number of pages"),
                         keys: ["⇧", "1–\(pages)"]),
+            AppShortcut(id: "search", title: String(localized: "Search settings and actions"),
+                        detail: String(localized: "⌘F does the same."), keys: ["⌘", "K"], menuKey: "k"),
+            AppShortcut(id: "find", title: String(localized: "Search settings and actions"), keys: ["⌘", "F"], menuKey: "f"),
             AppShortcut(id: "settings", title: String(localized: "Settings"), keys: ["⌘", ","], menuKey: ","),
             AppShortcut(id: "export", title: String(localized: "Export Settings…"), keys: ["⌘", "E"], menuKey: "e"),
             AppShortcut(id: "import", title: String(localized: "Import Settings…"), keys: ["⌘", "O"], menuKey: "o"),
@@ -49,7 +52,7 @@ enum AppShortcuts {
     }
 
     /// What the sheet lists (one line per thing you can do).
-    static var listed: [AppShortcut] { all.filter { $0.id != "shortcuts-menu" } }
+    static var listed: [AppShortcut] { all.filter { $0.id != "shortcuts-menu" && $0.id != "find" } }
 
     static func entry(_ id: String) -> AppShortcut {
         guard let e = all.first(where: { $0.id == id }) else { preconditionFailure("no shortcut \(id)") }

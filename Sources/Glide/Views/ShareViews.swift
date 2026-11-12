@@ -25,6 +25,8 @@ enum ShareCard: Equatable {
     case badge(Milestone, Date?)
     /// A shared setup: what it is, its key settings, and a QR code of its link.
     case setup(SetupCard)
+    /// A week's recap (`WeeklyRecap`).
+    case recap(WeeklyRecap)
 
     /// Points; drawn at 2x (1200 × 750 pixels).
     static let size = CGSize(width: 600, height: 375)
@@ -34,6 +36,7 @@ enum ShareCard: Equatable {
         case .overview: String(localized: "My Glideball", comment: "Share picture file name")
         case .badge(let m, _): String(localized: "Glideball badge – \(m.title)", comment: "Share picture file name; %@ is a badge name")
         case .setup(let s): String(localized: "Glideball setup – \(s.title)", comment: "Share picture file name; %@ is what's shared, like “Scroll feel”")
+        case .recap: String(localized: "My Glideball week", comment: "Share picture file name for the weekly recap")
         }
     }
 }
@@ -80,6 +83,7 @@ struct ShareCardView: View {
             case .overview: overview
             case .badge(let m, let date): badge(m, date)
             case .setup(let s): setup(s)
+            case .recap(let recap): RecapShareContent(recap: recap) { trackball.scaleEffect(0.9) }
             }
 
             VStack {
@@ -395,6 +399,12 @@ struct ShareItems {
         case .setup(let s):
             return String(localized: "My Glideball setup: \(s.title). Glideball is a free Mac app for Kensington trackballs.",
                           comment: "Post text for sharing a setup; %@ is what's shared, like “Scroll feel”")
+        case .recap(let r):
+            let clicks = Metric.clicks.format(r.total.value(.clicks))
+            let ball = Metric.ball.format(r.total.value(.ball))
+            let scroll = Metric.scroll.format(r.total.value(.scroll))
+            return String(localized: "My week with my trackball: \(clicks) clicks, \(ball) rolled and \(scroll) scrolled. Glideball counts it all; it’s a free Mac app for Kensington trackballs.",
+                          comment: "Post text for sharing the weekly recap; the first %@ is a number of clicks, the other two are distances")
         }
     }
 }
