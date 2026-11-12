@@ -49,6 +49,21 @@ final class Engine {
         var dragLocked = false
         /// A gesture button is held (the pointer is frozen until it lifts).
         var gestureHeld = false
+        /// The held gesture's buttons, and which way it's being rolled (for the UI's
+        /// compass: the leaning direction, or the one that fired).
+        var gestureButtons: [Int] = []
+        var gestureDirection: GestureDirection?
+        /// The last thing a gesture did, numbered so the UI can flash each one.
+        var gestureFlash: GestureFlash?
+        /// "Try it" on the Buttons page: gestures are shown, not performed.
+        var gesturePractice = false
+    }
+
+    /// One thing a gesture did: a direction fired (nil direction: the tap).
+    struct GestureFlash: Equatable {
+        var seq: Int
+        var direction: GestureDirection?
+        var buttons: [Int]
     }
 
     let telemetry = Telemetry()
@@ -130,6 +145,8 @@ final class Engine {
     // Gesture buttons (Gestures.swift). Input thread only.
     private let gestures = GestureMachine()
     private var gestureFrozen = false          // a gesture hold has the pointer frozen
+    private var gestureFlash: GestureFlash?    // the last fire or tap, for the UI
+    private var gesturePracticeUntil: CFTimeInterval = 0   // "Try it": show, don't perform, until then
     // Per-display pointer speed (DisplayTracking.swift). Input thread only.
     private var displayTracker = DisplayTracker()
     // Wireless models: connection type and battery, per HID device (DeviceBattery.swift).
@@ -612,13 +629,13 @@ final class Engine {
             telemetry.addBall(dx: v, dy: 0)
             let now = CACurrentMediaTime()
             // A held gesture takes the ball (even over Scroll with ball): see GestureRoute.
-            if gestures.isHeld { applyGesture(gestures.ball(dx: Double(v), dy: 0, now: now)) }
+            if gestures.isHeld { applyGesture(gestures.ball(dx: Double(v), dy: 0, now: now)); publishModes() }
             else if ballScrolling { scroller.addBallDelta(dx: Double(v) * ballSign, dy: 0) }
             watchDisplay(now: now)
         case (kHIDPage_GenericDesktop, kHIDUsage_GD_Y):
             telemetry.addBall(dx: 0, dy: v)
             let now = CACurrentMediaTime()
-            if gestures.isHeld { applyGesture(gestures.ball(dx: 0, dy: Double(v), now: now)) }
+            if gestures.isHeld { applyGesture(gestures.ball(dx: 0, dy: Double(v), now: now)); publishModes() }
             else if ballScrolling { scroller.addBallDelta(dx: 0, dy: Double(v) * ballSign) }
             watchDisplay(now: now)
         case let (p, u) where DeviceBattery.isBatteryUsage(page: p, usage: u):
@@ -1354,10 +1371,30 @@ final class Engine {
                 publishModes()
             case .fire(let action, let direction):
                 diagnostics.record("gesture \(direction.rawValue)")
-                keyQueue.async { Self.perform(action) }
+                flashGesture(direction, buttons: gestures.hold?.buttons ?? [])
+                if !practicing { keyQueue.async { Self.perform(action) } }
             case .tap(let action, let buttons):
-                performTap(action, buttons: buttons)
+                flashGesture(nil, buttons: buttons)
+                if !practicing { performTap(action, buttons: buttons) }
             }
+        }
+    }
+
+    /// "Try it" is on: a gesture shows what it would do and does nothing else.
+    /// It switches itself off after two minutes, so it can never be left on.
+    private var practicing: Bool { CACurrentMediaTime() < gesturePracticeUntil }
+
+    private func flashGesture(_ direction: GestureDirection?, buttons: [Int]) {
+        gestureFlash = GestureFlash(seq: (gestureFlash?.seq ?? 0) + 1, direction: direction, buttons: buttons)
+        publishModes()
+    }
+
+    /// "Try it" on the Buttons page: while on (two minutes at most), gestures show
+    /// on screen what they'd do without doing it. Off: they work as usual.
+    func setGesturePractice(_ on: Bool) {
+        perform {
+            self.gesturePracticeUntil = on ? CACurrentMediaTime() + 120 : 0
+            self.publishModes()
         }
     }
 
@@ -1428,7 +1465,9 @@ final class Engine {
 
     private func publishModes() {
         let m = Modes(precision: precisionActive, ballScrolling: ballScrolling, dragLocked: dragLocked,
-                      gestureHeld: gestures.isHeld)
+                      gestureHeld: gestures.isHeld, gestureButtons: gestures.hold?.buttons ?? [],
+                      gestureDirection: gestures.leaning, gestureFlash: gestureFlash,
+                      gesturePractice: practicing)
         guard m != modes else { return }
         modes = m
         DispatchQueue.main.async { self.onModes?(m) }

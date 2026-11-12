@@ -484,5 +484,73 @@ do {
     check(resolved.buttons[3] == .gesture(.media), "an app setup can have its own gesture")
 }
 
+section("sync guard: older Glideballs")
+do {
+    let decoder = JSONDecoder()
+    let encoder = JSONEncoder()
+
+    // Plain settings stay version 1, so every older Glideball keeps syncing them.
+    var plain = GlideConfig()
+    plain.buttons[3] = .shortcut(.nextSpace)
+    check(GlideSettingsFile(config: plain).version == 1, "settings without newer features are written as version 1")
+
+    // A gesture anywhere (main, combo, app setup) or display speeds: version 2.
+    var g = plain
+    g.buttons[2] = .gesture(.standard)
+    check(GlideSettingsFile(config: g).version == 2, "a gesture button makes it version 2")
+    var c = plain
+    c.chords = [Chord(buttons: [1, 3], action: .gesture(.media))]
+    check(c.requiredFileVersion == 2, "a gesture combo makes it version 2")
+    var a = plain
+    var prof = AppProfile(bundleID: "x", name: "X")
+    prof.buttons = [2: .gesture(.tabs)]
+    a.appProfiles = [prof]
+    check(a.requiredFileVersion == 2, "an app setup's gesture makes it version 2")
+    var d = plain
+    d.displaySpeeds.speeds = ["k": 7]
+    check(d.requiredFileVersion == 2, "display speeds make it version 2")
+
+    // What every shipped Glideball does with a file (validatedConfig: version == 1).
+    func shippedAccepts(_ data: Data) -> Bool {
+        struct Old: Decodable { let version: Int }
+        guard let f = try? decoder.decode(Old.self, from: data) else { return false }
+        return f.version == 1
+    }
+    if let v2 = try? encoder.encode(GlideSettingsFile(config: g)), let v1 = try? encoder.encode(GlideSettingsFile(config: plain)) {
+        check(!shippedAccepts(v2), "an older Glideball refuses (won't adopt or overwrite) a version 2 file")
+        check(shippedAccepts(v1), "an older Glideball still reads a version 1 file")
+        check((try? decoder.decode(GlideSettingsFile.self, from: v2).validatedConfig()) != nil, "this Glideball reads version 2")
+        check((try? decoder.decode(GlideSettingsFile.self, from: v1).validatedConfig()) != nil, "this Glideball reads version 1")
+        let f2 = try? decoder.decode(GlideSettingsFile.self, from: v2)
+        check(f2?.writtenBy != nil, "files say which Glideball wrote them")
+    }
+    let v3 = #"{"version":3,"config":{}}"#
+    check((try? decoder.decode(GlideSettingsFile.self, from: Data(v3.utf8)).validatedConfig()) == nil, "a version 3 file is refused")
+
+    // An older Glideball read our gesture settings (dropping the gestures) and wrote them back.
+    var local = GlideConfig()
+    local.buttons = [1: .rightClick, 2: .gesture(.media), 3: .gesture(.standard)]
+    local.chords = [Chord(buttons: [1, 2], action: .gesture(.tabs)), Chord(buttons: [2, 3], action: .shortcut(.copy))]
+    local.displaySpeeds.enabled = true
+    local.displaySpeeds.speeds = ["k": 9]
+    local.gesturesEnabled = false
+    var oldWrite = GlideConfig()
+    oldWrite.buttons = [1: .rightClick, 3: .back]          // the user changed top right there; top left was dropped
+    oldWrite.chords = [Chord(buttons: [2, 3], action: .shortcut(.copy))]   // the gesture combo was dropped
+    oldWrite.trackingSpeed = 6
+    let merged = oldWrite.keepingNewerFeatures(from: local)
+    check(merged.kept, "keeping dropped gestures is noticed (the user is told once)")
+    check(merged.config.buttons[2] == .gesture(.media), "a gesture the older one dropped comes back")
+    check(merged.config.buttons[3] == .back, "what the older one set explicitly wins")
+    check(merged.config.chords.contains { $0.buttons == [1, 2] && $0.action == .gesture(.tabs) }, "a dropped gesture combo comes back")
+    check(merged.config.chords.count == 2, "no combo is doubled")
+    check(merged.config.trackingSpeed == 6, "everything else comes from the newer write")
+    check(merged.config.displaySpeeds.speeds == ["k": 9] && merged.config.displaySpeeds.enabled, "display speeds stay this Mac's")
+    check(merged.config.gesturesEnabled == false, "the gestures switch stays this Mac's")
+    check(merged.config.requiredFileVersion == 2, "the merged settings go back up as version 2")
+    let nothing = plain.keepingNewerFeatures(from: plain)
+    check(!nothing.kept && nothing.config == plain, "settings with nothing newer merge to themselves, silently")
+}
+
 print(failures == 0 ? "✓ gesture-sim: all \(checks) checks passed" : "✗ gesture-sim: \(failures) of \(checks) checks failed")
 exit(failures == 0 ? 0 : 1)

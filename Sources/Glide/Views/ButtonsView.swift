@@ -34,7 +34,7 @@ struct ButtonsView: View {
                          dividerInset: ButtonRow.dividerInset) {
                 ForEach(buttons, id: \.index) { b in
                     ButtonRow(index: b.index, name: b.name, normally: b.normally,
-                              isPressed: model.pressed.contains(b.index),
+                              isPressed: model.pressed.contains(b.index), model: model,
                               action: Binding(
                                 get: { model.config.buttons[b.index] ?? .system },
                                 set: { model.config.buttons[b.index] = $0 }))
@@ -110,7 +110,11 @@ struct ButtonMap: View {
                         .allowsHitTesting(false)
                     TrackballView(feed: model.live, pressed: model.pressed, look: TrackballLook.of(model))
                         .frame(width: side, height: side)
-                    PadTargets(side: side, openPad: $openPad, highlighted: preview.map(changedPads) ?? [])
+                    PadTargets(side: side, openPad: $openPad, highlighted: preview.map(changedPads) ?? [],
+                               gesturePads: Set((1..<4).filter { (preview?.action(for: $0) ?? current($0)).isGesture }),
+                               heldPads: model.modes.gestureHeld ? Set(model.modes.gestureButtons) : [])
+                    GestureHeldOverlay(model: model)
+                        .frame(width: side, height: side)
                 }
                 .frame(width: side + 24, height: side)
                 .onScrollVisibilityChange(threshold: 0.35) { visible in shell?.heroOnScreen = visible }
@@ -222,6 +226,9 @@ private struct PadTargets: View {
     @Binding var openPad: Int?
     /// Pads to ring in amber (a preset would change them).
     let highlighted: Set<Int>
+    /// Pads that are gestures (a small four-way mark), and the one held right now.
+    var gesturePads: Set<Int> = []
+    var heldPads: Set<Int> = []
     @State private var hovered: Int?
 
     var body: some View {
@@ -236,6 +243,12 @@ private struct PadTargets: View {
                             .strokeBorder(Theme.buttons.opacity(lit ? 0.85 : 0), lineWidth: 1.5)
                             .shadow(color: Theme.buttons.opacity(lit ? 0.5 : 0), radius: 6)
                             .padding(side * 0.03)
+                            .overlay(alignment: b == 2 ? .topLeading : b == 3 ? .topTrailing : b == 0 ? .bottomLeading : .bottomTrailing) {
+                                if gesturePads.contains(b) {
+                                    GesturePadMark(size: side * 0.09, lit: heldPads.contains(b))
+                                        .padding(side * 0.075)
+                                }
+                            }
                             .contentShape(Rectangle())
                             .onHover { h in
                                 if b != 0 { hovered = h ? b : (hovered == b ? nil : hovered) }
@@ -345,6 +358,7 @@ private struct PresetCard: View {
     private var summary: String {
         let top = [2, 3].map { preset.action(for: $0) }
         if top.allSatisfy({ $0 == .system }) { return String(localized: "Out of the box", comment: "Preset card: the stock preset") }
+        if top.contains(where: \.isGesture) { return String(localized: "Hold and roll", comment: "Preset card: a preset whose buttons are gestures") }
         return top.map(\.title).joined(separator: " · ")
     }
 }
@@ -487,6 +501,8 @@ struct ButtonRow: View {
     let name: String
     let normally: String
     let isPressed: Bool
+    /// For a gesture button's editor (what's held right now, Try it).
+    var model: AppModel? = nil
     @Binding var action: ButtonAction
 
     @State private var pulse = 0.0
@@ -495,6 +511,18 @@ struct ButtonRow: View {
     static let dividerInset = Theme.Space.rowHorizontal + 26 + Theme.Space.symbolGap
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            row
+            if case .gesture(let g) = action, index != 0 {
+                GestureEditor(model: model, button: index,
+                              gesture: Binding(get: { g }, set: { action = .gesture($0) }))
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .animation(Theme.Motion.spring, value: action.isGesture)
+    }
+
+    private var row: some View {
         HStack(spacing: Theme.Space.symbolGap) {
             CornerGlyph(index: index, lit: isPressed)
 

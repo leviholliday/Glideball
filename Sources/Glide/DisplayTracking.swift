@@ -33,6 +33,8 @@ struct DisplayInfo: Identifiable, Equatable {
     var key: String
     var name: String
     var isMain: Bool
+    /// Where it sits in the arrangement (global display coordinates), for the Pointer tab's little map.
+    var frame: CGRect = .zero
     var id: String { key }
 }
 

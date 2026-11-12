@@ -249,6 +249,7 @@ private struct SidebarHero: View {
                 // Always drawn at full size and scaled, so stepping down and back is one smooth
                 // scale (the drawing itself never animates); the space stays the same either way.
                 .frame(width: 150, height: 150)
+                .overlay { GestureHeldOverlay(model: model) }   // a held gesture: the way you roll, what fired
                 .scaleEffect(compact ? 84.0 / 150 : 1)
                 .padding(.vertical, 10)
                 .frame(maxWidth: .infinity)
@@ -270,6 +271,12 @@ private struct SidebarHero: View {
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
+                    // How it's connected and its battery, when known (never a guess).
+                    let detail = ConnectionDetail(connection: model.shownConnection, battery: model.shownBattery)
+                    if !detail.isEmpty {
+                        Text(verbatim: "·").font(.system(size: 11)).foregroundStyle(.tertiary)
+                        ViewThatFits { detail; ConnectionDetail(connection: nil, battery: model.shownBattery) }
+                    }
                 }
                 .accessibilityElement(children: .combine)
                 // "Connected · Beta": a device supported through Other Kensington trackballs.

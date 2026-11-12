@@ -103,6 +103,17 @@ final class GestureMachine {
 
     var isHeld: Bool { hold != nil }
 
+    /// Which way the roll is heading, for the UI's compass only (it decides nothing):
+    /// the direction that fired once one has, otherwise the larger axis once the
+    /// ball has moved past the tap slop, nil while it's still a tap.
+    var leaning: GestureDirection? {
+        guard let h = hold else { return nil }
+        if let d = h.direction { return d }
+        guard h.travel >= tuning.tapSlop else { return nil }
+        let horizontal = abs(h.dx) >= abs(h.dy)
+        return Self.direction(axisHorizontal: horizontal, sign: horizontal ? h.dx : h.dy)
+    }
+
     /// Starts a hold. Refuses (no effects) for the primary button or while another is held.
     func begin(buttons: [Int], gesture: ButtonGesture, now: Double) -> [GestureEffect] {
         guard hold == nil, !buttons.isEmpty, !buttons.contains(0) else { return [] }

@@ -35,28 +35,7 @@ struct PointerView: View {
                              tint: Theme.ball, defaultValue: Self.defaults.precisionSpeed)
             }
 
-            // Minimal hooks for the engine features; the proper design comes later.
-            SectionBlock(title: "Per display",
-                         caption: "A speed for each display, used while the pointer is on it. An app setup with its own speed still wins.") {
-                ToggleRow(title: "Speed for each display", subtitle: nil, symbol: "display.2",
-                          isOn: $model.config.displaySpeeds.enabled)
-                if model.config.displaySpeeds.enabled {
-                    ForEach(model.displays) { display in
-                        TuningSlider(title: "\(display.name)", symbol: display.isMain ? "display" : "rectangle.on.rectangle",
-                                     value: Binding(get: { model.displaySpeed(for: display) },
-                                                    set: { model.setDisplaySpeed($0, for: display) }),
-                                     range: 0.5...80, step: 0.5, format: { $0.twoDigits },
-                                     tint: Theme.ball, defaultValue: model.config.trackingSpeed)
-                    }
-                }
-            }
-
-            if model.status.connection?.isWireless == true {
-                SectionBlock(title: "Battery") {
-                    ToggleRow(title: "Low battery alerts", subtitle: "Get a notification when the battery is low, and again when it’s nearly empty.",
-                              symbol: "battery.25percent", isOn: $model.lowBatteryAlerts)
-                }
-            }
+            DisplaySpeedsSection(model: model)
         }
     }
 }

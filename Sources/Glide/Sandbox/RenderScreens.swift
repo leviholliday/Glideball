@@ -249,6 +249,129 @@ extension RenderUI {
             cleanup: { NewComboRow.sandboxPicked = nil }) { dark, scale in
             fullPage(page(.buttons, model), dark: dark, scale: scale)
         }
+        // Gestures, per-display speed, battery and connection.
+        func gestureButtons() {
+            model.config.buttons[3] = .gesture(.standard)
+            model.config.buttons[2] = .gesture(.media)
+        }
+        func restoreButtons() {
+            model.config.buttons = DemoData.config.buttons
+            model.config.chords = DemoData.config.chords
+        }
+        func hold(_ direction: GestureDirection?, fired: GestureDirection?? = nil, tapped: Bool = false) {
+            var m = Engine.Modes()
+            m.gestureHeld = !tapped
+            m.gestureButtons = tapped ? [] : [3]
+            m.gestureDirection = direction
+            if let fired { m.gestureFlash = Engine.GestureFlash(seq: 1, direction: fired, buttons: [3]) }
+            model.modes = m
+            if !tapped { model.pressed = [3] }
+            GestureFlashClock.sandboxHold = true
+        }
+        add("buttons-gesture-page", "Gestures", "Top right and top left as gestures: the editor under each row",
+            prepare: gestureButtons, cleanup: restoreButtons) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale)
+        }
+        add("buttons-gesture-narrow", "Gestures", "The gesture editor at the smallest window's width (stacked)",
+            prepare: gestureButtons, cleanup: restoreButtons) { dark, scale in
+            card(page(.buttons, model).frame(width: AppDelegate.mainWindowMinSize.width - Theme.Space.sidebarWidth - Theme.Space.contentSide * 2),
+                 width: AppDelegate.mainWindowMinSize.width - Theme.Space.sidebarWidth, dark: dark, scale: scale)
+        }
+        add("buttons-gesture-held", "Gestures", "Holding top right and rolling right: Next Space just fired (sidebar, map and label)",
+            prepare: { gestureButtons(); hold(.right, fired: .some(.right)) },
+            cleanup: { restoreButtons(); GestureFlashClock.sandboxHold = false }) { dark, scale in
+            mainWindow(model, tab: .buttons, dark: dark, scale: scale)
+        }
+        add("buttons-gesture-held-page", "Gestures", "Holding top right, rolling up (before it fires): the compass leans up",
+            prepare: { gestureButtons(); hold(.up) },
+            cleanup: { restoreButtons(); GestureFlashClock.sandboxHold = false }) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale)
+        }
+        add("buttons-gesture-try", "Gestures", "Try it: rolled up, Mission Control would have opened",
+            prepare: { gestureButtons(); hold(.up, fired: .some(.up)); GestureEditor.sandboxTrying = true },
+            cleanup: { restoreButtons(); GestureFlashClock.sandboxHold = false; GestureEditor.sandboxTrying = false }) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale)
+        }
+        add("buttons-gesture-try-waiting", "Gestures", "Try it, waiting for a hold",
+            prepare: { gestureButtons(); GestureEditor.sandboxTrying = true },
+            cleanup: { restoreButtons(); GestureEditor.sandboxTrying = false }) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale)
+        }
+        add("buttons-gesture-tap", "Gestures", "A tap (no roll): the tap's picker flashes",
+            prepare: { gestureButtons(); hold(nil, fired: .some(nil), tapped: true); GestureEditor.sandboxTrying = true },
+            cleanup: { restoreButtons(); GestureFlashClock.sandboxHold = false; GestureEditor.sandboxTrying = false }) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale)
+        }
+        add("buttons-picker-gesture", "Gestures", "The picker for top right: Gesture (hold and roll) at the top") { dark, scale in
+            card(PopoverMock { ActionPickerPanel(current: .back, button: 3) { _ in } }, width: 470, dark: dark, scale: scale)
+        }
+        add("buttons-picker-gesture-direction", "Gestures", "The picker for a gesture's direction (only quick actions)") { dark, scale in
+            card(PopoverMock { ActionPickerPanel(current: .shortcut(.nextSpace), purpose: .gestureDirection) { _ in } },
+                 width: 470, dark: dark, scale: scale)
+        }
+        add("buttons-preset-gestures", "Gestures", "Previewing the Gestures preset",
+            prepare: { ButtonsView.sandboxPreview = "gestures" },
+            cleanup: { ButtonsView.sandboxPreview = nil }) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale)
+        }
+
+        func displays(_ n: Int, enabled: Bool = true) {
+            let all = [DisplayInfo(key: "610-41271-1", name: "Built-in Retina Display", isMain: true,
+                                   frame: CGRect(x: 0, y: 0, width: 1512, height: 982)),
+                       DisplayInfo(key: "4268-41150-77", name: "Studio Display", isMain: false,
+                                   frame: CGRect(x: -380, y: -1440, width: 2560, height: 1440)),
+                       DisplayInfo(key: "1552-9984-12", name: "DELL U2723QE", isMain: false,
+                                   frame: CGRect(x: 2180, y: -1580, width: 1440, height: 2560))]
+            model.displays = Array(all.prefix(n))
+            model.config.displaySpeeds.enabled = enabled
+            if n > 1 { model.config.displaySpeeds.speeds = ["4268-41150-77": 9] }
+            var s = DemoData.connected
+            s.pointerDisplay = n > 1 ? "4268-41150-77" : nil
+            model.status = s
+        }
+        func restoreDisplays() {
+            model.refreshDisplays()
+            model.config.displaySpeeds = DisplaySpeeds()
+        }
+        for n in 1...3 {
+            add("pointer-displays-\(n)", "Per-display speed", "Pointer, speed for each display, \(n) display\(n == 1 ? "" : "s") connected",
+                prepare: { displays(n) }, cleanup: restoreDisplays) { dark, scale in
+                fullPage(page(.pointer, model), dark: dark, scale: scale)
+            }
+        }
+        add("pointer-displays-off", "Per-display speed", "Pointer, two displays, the switch off",
+            prepare: { displays(2, enabled: false) }, cleanup: restoreDisplays) { dark, scale in
+            fullPage(page(.pointer, model), dark: dark, scale: scale)
+        }
+
+        func device(_ connection: DeviceConnection?, _ battery: Int?) {
+            var s = DemoData.connected
+            s.deviceName = connection == .usb ? "Kensington Expert Mouse" : "Kensington SlimBlade Pro"
+            s.deviceIsBeta = connection != .usb
+            s.connection = connection
+            s.batteryPercent = battery
+            model.status = s
+        }
+        for (name, connection, battery, what) in [("battery-ok", DeviceConnection.bluetooth, 62, "Bluetooth, 62%"),
+                                                  ("battery-low", .bluetooth, 14, "Bluetooth, 14% (amber)"),
+                                                  ("battery-empty", .receiver, 4, "Receiver, 4% (red)")] as [(String, DeviceConnection, Int, String)] {
+            add(name, "Battery and connection", "Overview and sidebar: \(what)",
+                prepare: { device(connection, battery) }) { dark, scale in
+                mainWindow(model, tab: .overview, dark: dark, scale: scale)
+            }
+        }
+        add("battery-states", "Battery and connection", "The status line in every state (unknown battery and USB show none)") { dark, scale in
+            card(DeviceStatesSheet(), width: 560, dark: dark, scale: scale)
+        }
+        add("sync-older-mac-toast", "Battery and connection", "Sync: another Mac is on an older Glideball (toast)",
+            prepare: {
+                model.show(.init(symbol: "arrow.triangle.2.circlepath",
+                                 text: String(localized: "Another Mac is on an older Glideball, so gestures weren’t synced to it."),
+                                 isError: true))
+            }) { dark, scale in
+            mainWindow(model, tab: .backup, dark: dark, scale: scale)
+        }
+
         add("apps-add-picker", "Buttons and picker", "Add App… (the same picker, for apps)") { dark, scale in
             card(PopoverMock {
                 SearchPickerPanel(placeholder: String(localized: "Search open apps", comment: "Add App picker search field"),
@@ -633,6 +756,43 @@ extension RenderUI {
                 .padding(alignment == .topTrailing ? .trailing : .leading, side)
                 .frame(maxWidth: alignment == .center ? nil : .infinity, maxHeight: alignment == .center ? nil : .infinity,
                        alignment: alignment)
+        }
+    }
+
+    /// The sidebar's status line for each way a trackball can be connected, and the
+    /// battery at each level (wired and unknown show no battery at all).
+    struct DeviceStatesSheet: View {
+        private let rows: [(String, String, DeviceConnection?, Int?)] = [
+            ("Kensington Expert Mouse", "Wired, USB", .usb, nil),
+            ("Kensington SlimBlade Pro", "Bluetooth, battery unknown", .bluetooth, nil),
+            ("Kensington SlimBlade Pro", "Bluetooth, 100%", .bluetooth, 100),
+            ("Kensington SlimBlade Pro", "Bluetooth, 62%", .bluetooth, 62),
+            ("Kensington Expert Mouse Wireless", "Receiver, 15% (amber)", .receiver, 15),
+            ("Kensington Expert Mouse Wireless", "Receiver, 5% (red)", .receiver, 5),
+            ("Kensington Orbit", "Connection unknown, 40%", nil, 40),
+        ]
+
+        var body: some View {
+            VStack(alignment: .leading, spacing: 14) {
+                ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                    HStack(alignment: .top, spacing: 18) {
+                        Text(verbatim: row.1).font(.system(size: 11)).foregroundStyle(.tertiary).frame(width: 170, alignment: .leading)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(verbatim: row.0).font(.system(size: 13, weight: .semibold))
+                            HStack(spacing: 5) {
+                                StatusDot(color: Theme.ok, size: 7)
+                                Text(row.2 == .usb ? "Connected" : "Connected · Beta").font(.system(size: 11)).foregroundStyle(.secondary)
+                                let detail = ConnectionDetail(connection: row.2, battery: row.3)
+                                if !detail.isEmpty {
+                                    Text(verbatim: "·").font(.system(size: 11)).foregroundStyle(.tertiary)
+                                    detail
+                                }
+                            }
+                            ConnectionDetail(connection: row.2, battery: row.3, size: 12, symbol: true)
+                        }
+                    }
+                }
+            }
         }
     }
 

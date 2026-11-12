@@ -276,6 +276,13 @@ final class AppModel {
         // The "Saved" pill is silent: a tick on every save got old fast.
         live.lightIntensity = lightIntensity
         backups.currentConfig = { AppModel.shared.config }
+        sync.onOlderMac = { [weak self] gestures in
+            self?.show(Toast(symbol: "arrow.triangle.2.circlepath",
+                             text: gestures
+                                ? String(localized: "Another Mac is on an older Glideball, so gestures weren’t synced to it.")
+                                : String(localized: "Another Mac is on an older Glideball, so your newest settings weren’t synced to it."),
+                             isError: true))
+        }
         refreshDisplays()   // read-only, so the Pointer tab can list them in a render too
         // `--render-ui` and `--self-test`: a model with nothing live — no engine,
         // timers, observers, sync or update checks (see Sandbox.swift).
@@ -402,7 +409,8 @@ final class AppModel {
             let key = DisplayKey.make(vendor: CGDisplayVendorNumber(id), model: CGDisplayModelNumber(id),
                                       serial: CGDisplaySerialNumber(id),
                                       uuid: uuid.flatMap { CFUUIDCreateString(nil, $0) as String? })
-            infos.append(DisplayInfo(key: key, name: screen.localizedName, isMain: CGDisplayIsMain(id) != 0))
+            infos.append(DisplayInfo(key: key, name: screen.localizedName, isMain: CGDisplayIsMain(id) != 0,
+                                     frame: CGDisplayBounds(id)))
             regions.append(DisplayRegion(key: key, bounds: CGDisplayBounds(id)))
         }
         displayRegions = regions
@@ -419,6 +427,22 @@ final class AppModel {
         speeds.speeds[display.key] = speed
         speeds.names[display.key] = display.name
         config.displaySpeeds = speeds
+    }
+
+    /// "Use main speed": the display follows the main tracking speed again.
+    func clearDisplaySpeed(for display: DisplayInfo) {
+        var speeds = config.displaySpeeds
+        speeds.speeds[display.key] = nil
+        config.displaySpeeds = speeds
+    }
+
+    // MARK: Gestures
+
+    /// "Try it" on the Buttons page: gestures show what they'd do without doing it
+    /// (two minutes at most; the engine ends it itself after that).
+    func setGesturePractice(_ on: Bool) {
+        engine.setGesturePractice(on)
+        if Sandbox.isActive { modes.gesturePractice = on }
     }
 
     // MARK: Permissions
