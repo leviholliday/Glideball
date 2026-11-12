@@ -111,6 +111,10 @@ enum Theme {
     static let pressedFill = Color(nsColor: NSColor(name: "GlidePressedFill") { appearance in
         isDark(appearance) ? NSColor(white: 1, alpha: 0.12) : NSColor(white: 0, alpha: 0.09)
     })
+    /// The selected page in the sidebar, as the system's sidebar draws it.
+    static let sidebarSelection = Color(nsColor: NSColor(name: "GlideSidebarSelection") { appearance in
+        isDark(appearance) ? NSColor(white: 1, alpha: 0.16) : NSColor(white: 0, alpha: 0.09)
+    })
     /// Faint guide lines in charts.
     static let gridLine = Color(nsColor: NSColor(name: "GlideGridLine") { appearance in
         isDark(appearance) ? NSColor(white: 1, alpha: 0.07) : NSColor(white: 0, alpha: 0.07)
@@ -149,6 +153,8 @@ enum Theme {
         static let contentMaxWidth: CGFloat = 680
         static let contentSide: CGFloat = 28
         static let contentTop: CGFloat = 4
+        /// Full screen hides the (empty) toolbar; this much room stands in for it at the top.
+        static let fullScreenTop: CGFloat = 22
         /// Between sections.
         static let section: CGFloat = 24
         /// Between a section's title and its group.

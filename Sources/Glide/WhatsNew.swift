@@ -194,7 +194,7 @@ extension AppModel {
     func closeWhatsNew(then destination: WhatsNew.Destination? = nil) {
         showingWhatsNew = false
         switch destination {
-        case .tab(let tab)?: requestedTab = tab
+        case .tab(let tab)?: requestTab(tab)
         case .settings(let pane, let spotlight)?: (NSApp.delegate as? AppDelegate)?.showSettings(pane, spotlight: spotlight)
         case nil: break
         }

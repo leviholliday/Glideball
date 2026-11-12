@@ -1465,7 +1465,6 @@
 "What each button does, and combos you press together." = "Ce que fait chaque bouton, et les combos à presser ensemble.";
 "Different settings for the apps you choose." = "Des réglages différents pour les apps de votre choix.";
 "Keep your settings the same on all your Macs, and back them up." = "Gardez les mêmes réglages sur tous vos Mac, et sauvegardez-les.";
-"%@ (⌘%lld)" = "%1$@ (⌘%2$lld)";
 "Glideball is on" = "Glideball est activé";
 "Resume" = "Reprendre";
 "Your trackball works like a plain mouse until you turn Glideball back on." = "Votre trackball fonctionne comme une souris ordinaire jusqu’à ce que vous réactiviez Glideball.";
@@ -1701,11 +1700,9 @@
 "Your best day shows here after a few days" = "Ta meilleure journée s’affichera ici d’ici quelques jours";
 "Your best day yet" = "Ta meilleure journée jusqu’ici";
 "against your best day" = "par rapport à ta meilleure journée";
-"Asks first: press ⌘Q again to quit." = "Demande d’abord : appuyez à nouveau sur ⌘Q pour quitter.";
 "Change in Settings…" = "Modifier dans les Réglages…";
 "Click the list, then spin the ring." = "Cliquez sur la liste, puis tournez l’anneau.";
 "Click to try it" = "Cliquez pour essayer";
-"Don’t ask again" = "Ne plus demander";
 "Glideball’s shortcuts, all in one place." = "Tous les raccourcis de Glideball au même endroit.";
 "Keyboard Shortcuts" = "Raccourcis clavier";
 "Keyboard shortcuts (this list)" = "Raccourcis clavier (cette liste)";
@@ -1713,10 +1710,8 @@
 "No shortcut" = "Aucun raccourci";
 "Quit Glideball?" = "Quitter Glideball ?";
 "Quit" = "Quitter";
-"Stay" = "Rester";
 "They work in every app, even with the window closed." = "Ils fonctionnent dans toutes les apps, même fenêtre fermée.";
 "Your trackball goes back to plain macOS. Closing the window keeps Glideball running." = "Votre trackball revient au fonctionnement normal de macOS. Fermer la fenêtre laisse Glideball tourner.";
-"⌘Q quits straight away. Turn asking back on in Settings › General." = "⌘Q quitte directement. Réactivez la question dans Réglages › Général.";
 
 /* Round 3: action picker, presets, ball colors, settings, badges and sharing */
 "%@ of %@" = "%@ sur %@";
@@ -1976,3 +1971,23 @@
 "rolled" = "roulé";
 "scrolled" = "défilé";
 "⌘Q quits straight away. Your trackball goes back to plain macOS until Glideball opens again." = "⌘Q quitte tout de suite. Votre trackball redevient un trackball macOS ordinaire jusqu’à la prochaine ouverture de Glideball.";
+
+/* Fix round after 2.10 beta 10: quit card, sharing, shortcuts, sidebar */
+"%@ (⇧%lld or ⌘%lld)" = "%1$@ (⇧%2$lld ou ⌘%3$lld)";
+"%@. ⌘1–⌘%lld work too, even while you’re typing." = "%@. ⌘1–⌘%lld marchent aussi, même pendant la saisie.";
+"Always quit" = "Toujours quitter";
+"Asks first: Return or ⌘Q again quits." = "Demande d’abord : Retour ou ⌘Q à nouveau quitte.";
+"Copies the picture and opens %@ to paste it into a post" = "Copie l’image et ouvre %@ pour la coller dans une publication";
+"Couldn’t save it to Downloads. Try Save as PNG… instead." = "Impossible de l’enregistrer dans Téléchargements. Essayez Enregistrer en PNG…";
+"Hide this. It won’t come back" = "Masquer. Ne reviendra plus";
+"I just earned “%@” in Glideball: %@. It’s a free Mac app for Kensington trackballs." = "Je viens de gagner « %@ » dans Glideball : %@. C’est une app Mac gratuite pour les trackballs Kensington.";
+"I’m working toward “%@” in Glideball: %@. It’s a free Mac app for Kensington trackballs." = "Je vise « %@ » dans Glideball : %@. C’est une app Mac gratuite pour les trackballs Kensington.";
+"My trackball so far: %@ clicks, %@ rolled and %@ scrolled. Glideball counts it all; it’s a free Mac app for Kensington trackballs." = "Mon trackball jusqu’ici : %@ clics, %@ de bille roulée et %@ de défilement. Glideball compte tout ; c’est une app Mac gratuite pour les trackballs Kensington.";
+"Or ⌘/ from the Help menu." = "Ou ⌘/ depuis le menu Aide.";
+"Pages" = "Pages";
+"Picture copied. Paste it into the post." = "Image copiée. Collez-la dans la publication.";
+"Post on" = "Publier sur";
+"Quits now and stops asking. Turn asking back on in Settings › General." = "Quitte maintenant et ne demande plus. Réactivez la question dans Réglages › Général.";
+"Saved to Downloads. Instagram only takes uploads from its app or site." = "Enregistrée dans Téléchargements. Instagram n’accepte que les envois depuis son app ou son site.";
+"Saves the picture to Downloads and opens Instagram" = "Enregistre l’image dans Téléchargements et ouvre Instagram";
+"Working toward" = "En route vers";

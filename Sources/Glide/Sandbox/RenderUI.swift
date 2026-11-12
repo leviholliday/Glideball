@@ -209,15 +209,18 @@ enum RenderUI {
 
     /// The main window on `tab`, as it opens, with `overlay` on top (the tour, say).
     static func mainWindow<O: View>(_ model: AppModel, tab: GlideTab, dark: Bool, scale: CGFloat,
-                                    size: NSSize? = nil,
+                                    size: NSSize? = nil, fullScreen: Bool = false,
                                     @ViewBuilder overlay: () -> O) -> NSBitmapImageRep? {
         UserDefaults.standard.set(tab.rawValue, forKey: "GlideInitialTab")
         defer { UserDefaults.standard.removeObject(forKey: "GlideInitialTab") }
+        model.fullScreen = fullScreen
+        defer { model.fullScreen = false }
         let view = ZStack {
             RootView(model: model)
             overlay()
         }
-        return Offscreen.render(view, size: size ?? windowSize, chrome: .mainWindow, appearance: appearance(dark), scale: scale)
+        return Offscreen.render(view, size: size ?? windowSize, chrome: fullScreen ? .mainWindowFullScreen : .mainWindow,
+                                appearance: appearance(dark), scale: scale)
     }
 
     static func mainWindow(_ model: AppModel, tab: GlideTab, dark: Bool, scale: CGFloat,

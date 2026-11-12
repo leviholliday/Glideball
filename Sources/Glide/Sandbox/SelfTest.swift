@@ -144,15 +144,42 @@ enum SelfTest {
             return "\(SettingsPane.allCases.count) tabs drawn, never shown"
         }
 
-        step("share pictures") {
-            // The way Share… makes them in the app: drawn offscreen, never shown.
-            let overview = try unwrap(ShareImage.render(.overview, delight: model.delight), "the share picture didn't draw")
-            try check(!Offscreen.isBlank(overview), "the share picture is blank")
-            let m = Milestone.all[0]
-            let badge = try unwrap(ShareImage.render(.badge(m, Date()), delight: model.delight), "the badge picture didn't draw")
-            try check(!Offscreen.isBlank(badge), "the badge picture is blank")
-            try check(ShareImage.png(overview)?.isEmpty == false, "the share picture has no PNG")
-            return "\(overview.pixelsWide)×\(overview.pixelsHigh) and a badge, PNG ready"
+        step("sharing") {
+            // Overview › Share… and a badge › Share…, earned and not yet, end to end:
+            // the panel as each opens it (the badge's details turning into the panel,
+            // which crashed 2.10 beta 10), the picture, and everything handed out.
+            let earnedBadge = try unwrap(Milestone.all.first { model.delight.ledger.earned[$0.id] != nil } ?? (returning ? nil : Milestone.all.first),
+                                         "the demo settings have no earned badge")
+            let lockedBadge = try unwrap(Milestone.all.first { model.delight.ledger.earned[$0.id] == nil }, "every badge is earned")
+            let before = SharePanel.drawnCount
+            try draw(SharePanel(card: .overview), "Overview's share panel")
+            try draw(BadgeDetail(milestone: earnedBadge, delight: model.delight, sharing: true), "an earned badge's share panel")
+            try draw(BadgeDetail(milestone: lockedBadge, delight: model.delight, sharing: true), "a badge-to-earn's share panel")
+            try check(SharePanel.drawnCount - before == 3, "the share panels drew \(SharePanel.drawnCount - before) pictures, not 3")
+            var posts = 0
+            for card in [ShareCard.overview, .badge(earnedBadge, model.delight.ledger.earned[earnedBadge.id] ?? Date()), .badge(lockedBadge, nil)] {
+                let image = try unwrap(ShareImage.render(card, delight: model.delight), "the \(card.fileName) picture didn't draw")
+                try check(image.pixelsWide == 1200 && image.pixelsHigh == 750, "\(card.fileName) is \(image.pixelsWide)×\(image.pixelsHigh), not 1200×750")
+                try check(!Offscreen.isBlank(image), "\(card.fileName) is blank")
+                let items = try unwrap(ShareItems(card: card, image: image, delight: model.delight), "\(card.fileName): no share items")
+                try check(items.png.starts(with: [0x89, 0x50, 0x4E, 0x47]), "\(card.fileName): not a PNG")
+                try check(FileManager.default.fileExists(atPath: items.file.path), "\(card.fileName): the share sheet's file wasn't written")
+                try check(!items.text.isEmpty && items.text.count <= 250, "\(card.fileName): the post is \(items.text.count) characters")
+                for site in SocialSite.allCases {
+                    let url = try unwrap(items.composers[site], "\(card.fileName): no \(site.name) link")
+                    try check(url.scheme == "https" && url.host?.isEmpty == false, "\(card.fileName): \(site.name)'s link is \(url)")
+                    posts += 1
+                }
+                let x = URLComponents(url: items.composers[.x]!, resolvingAgainstBaseURL: false)
+                try check(x?.queryItems?.first { $0.name == "text" }?.value == items.text, "\(card.fileName): X doesn't get the words as written")
+                try? FileManager.default.removeItem(at: items.file)
+            }
+            // Instagram's copy in Downloads (here: the sandbox's folder), under a fresh name each time.
+            let image = try unwrap(ShareImage.render(.overview, delight: model.delight), "the picture didn't draw")
+            let a = try unwrap(ShareImage.save(image, name: ShareCard.overview.fileName, in: ShareImage.downloads), "couldn't save to Downloads")
+            let b = try unwrap(ShareImage.save(image, name: ShareCard.overview.fileName, in: ShareImage.downloads), "couldn't save a second copy")
+            try check(a != b && a.path.hasPrefix(Sandbox.folder.path), "the saved copies collide or left the sandbox")
+            return "3 panels drawn (Overview, an earned badge, one to earn); 3 pictures with PNG, file, words and \(posts) post links checked"
         }
 
         step("welcome tour") {
@@ -189,15 +216,25 @@ enum SelfTest {
             // Asking here puts nothing on screen (the sandbox draws it instead) and quits nothing.
             QuitConfirm.ask()
             try check(!QuitConfirm.isShowing && NSApp.windows.allSatisfy { !$0.isVisible }, "the quit card went on screen")
+            // On the card: Return and Enter quit, Esc cancels; nothing else answers (Space can't press anything).
+            try check(QuitConfirm.answer(keyCode: 36, modifiers: []) == .quit, "Return didn't quit")
+            try check(QuitConfirm.answer(keyCode: 76, modifiers: []) == .quit, "Enter didn't quit")
+            try check(QuitConfirm.answer(keyCode: 53, modifiers: []) == .cancel, "Esc didn't cancel")
+            try check(QuitConfirm.answer(keyCode: 49, modifiers: []) == .none, "Space answered the card")
+            try check(QuitConfirm.answer(keyCode: 36, modifiers: .shift) == .none, "⇧Return quit")
             try draw(QuitConfirm.preview(), "the quit card")
-            try draw(QuitConfirm.preview(dontAsk: true), "the quit card, don't ask again")
             try draw(ShortcutsSheet(model: model), "the shortcuts sheet")
-            // The setting the other way round, and back.
+            // Every in-window shortcut on the sheet is a real key in the menus (or handled by the window).
+            for s in AppShortcuts.all where s.menuKey != nil {
+                try check(items.contains { $0.keyEquivalent == s.menuKey && $0.keyEquivalentModifierMask == s.menuModifiers },
+                          "\(s.title) isn't in the menus with its keys")
+            }
+            // "Always quit" turns asking off, and the setting is saved; then back on.
             model.confirmQuit = false
-            try check(UserDefaults.standard.object(forKey: AppModel.confirmQuitKey) as? Bool == false, "Don't ask again wasn't saved")
+            try check(UserDefaults.standard.object(forKey: AppModel.confirmQuitKey) as? Bool == false, "Always quit's setting wasn't saved")
             model.confirmQuit = true
             try check(model.lightIntensity == AppModel.defaultLightIntensity, "the Light setting doesn't start at its default")
-            return "⌘Q asks, ⌘Q again quits, never over a modal; card and shortcuts sheet drawn, nothing shown"
+            return "⌘Q asks, ⌘Q again or Return quits, Esc cancels, never over a modal; card and shortcuts sheet drawn, nothing shown"
         }
 
         step("what's new") {
@@ -307,6 +344,64 @@ enum SelfTest {
             model.showingWhatsNew = false
             model.showingIconChoice = false
             return (shown.isEmpty ? "nothing due" : shown.joined(separator: ", then ") + ", one at a time") + "; never over the launch"
+        }
+
+        step("switching pages") {
+            // The real main window (built, never shown): pages asked for faster than the
+            // 0.18 s transition, every page, twice, in both orders; the last one asked for shows.
+            let window = try unwrap(delegate.window as? MainWindow, "the main window isn't a MainWindow")
+            let content = try unwrap(window.contentView, "the main window has no content")
+            Offscreen.settleDown(content, seconds: 0.05)
+            try check(model.showTab != nil, "the main window doesn't take page requests directly")
+            var asked = 0
+            for order in [GlideTab.allCases, GlideTab.allCases.reversed()] {
+                for _ in 0..<2 {
+                    for tab in order {
+                        model.requestTab(tab)   // where the rows, ⌘1…⌘6, ⇧1…⇧6 and the View menu go
+                        RunLoop.main.run(until: Date().addingTimeInterval(0.012))
+                        asked += 1
+                    }
+                    Offscreen.settleDown(content, seconds: 0.35)   // the last fade has finished
+                    try check(TabPage.showing == [order.last!] && TabPage.onScreen[order.last!] == 1,
+                              "after \(asked) quick switches the window shows \(TabPage.onScreen), not just \(order.last!)")
+                }
+            }
+            // ⇧1…⇧6 through the window's own key handling (what a key nothing else wanted reaches).
+            for (i, tab) in GlideTab.allCases.enumerated().reversed() {
+                let e = try unwrap(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: .shift, timestamp: 0,
+                                                    windowNumber: window.windowNumber, context: nil, characters: "!",
+                                                    charactersIgnoringModifiers: "!", isARepeat: false,
+                                                    keyCode: AppShortcuts.pageKeyCodes[i]), "couldn't make a key event")
+                window.keyDown(with: e)
+                Offscreen.settleDown(content, seconds: 0.35)
+                try check(TabPage.showing == [tab] && TabPage.onScreen[tab] == 1, "⇧\(i + 1) shows \(TabPage.onScreen), not just \(tab)")
+            }
+            try check(AppShortcuts.page(keyCode: 18, modifiers: [.shift, .command]) == nil, "⇧⌘1 was taken for a page")
+            try check(AppShortcuts.page(keyCode: 18, modifiers: []) == nil, "1 on its own was taken for a page")
+            try check(AppShortcuts.page(keyCode: 22, modifiers: .shift) == .backup, "⇧6 isn't Sync")
+            model.requestTab(.overview)
+            Offscreen.settleDown(content, seconds: 0.25)
+            return "\(asked) switches faster than the transition, then ⇧6…⇧1: the page asked for last shows every time"
+        }
+
+        step("settings hint") {
+            // Gone after five different days, or two weeks after it was first shown, or its ×; never back.
+            let d0 = Date(timeIntervalSince1970: 1_800_000_000)
+            let day = { (n: Int) in SettingsHintMemory.dayKey(d0.addingTimeInterval(Double(n) * 86_400)) }
+            try check(SettingsHintMemory.isDue(firstShown: nil, days: [], gone: false, today: day(0), now: d0), "it doesn't show the first time")
+            try check(SettingsHintMemory.isDue(firstShown: d0, days: (0..<5).map(day), gone: false, today: day(4), now: d0 + 4 * 86_400),
+                      "it's gone during its fifth day")
+            try check(!SettingsHintMemory.isDue(firstShown: d0, days: (0..<5).map(day), gone: false, today: day(5), now: d0 + 5 * 86_400),
+                      "it showed on a sixth day")
+            try check(!SettingsHintMemory.isDue(firstShown: d0, days: [day(0), day(1)], gone: false, today: day(14), now: d0 + 14 * 86_400),
+                      "it showed two weeks after it was first shown")
+            try check(!SettingsHintMemory.isDue(firstShown: d0, days: [day(0)], gone: true, today: day(0), now: d0), "it showed after ×")
+            let memory = MemoryDefaults()
+            try check(SettingsHintMemory.isDue(now: d0, defaults: memory), "it doesn't show on a fresh Mac")
+            for n in 0..<5 { SettingsHintMemory.seen(now: d0 + Double(n) * 86_400, defaults: memory) }
+            try check(!SettingsHintMemory.isDue(now: d0 + 6 * 86_400, defaults: memory), "seen on five days, it still shows")
+            try check(!SettingsHintMemory.isDue(now: d0, defaults: memory), "it came back when the clock went back")
+            return "five days or two weeks, whichever first, or ×; never comes back"
         }
 
         step("crash report scrubbing") {

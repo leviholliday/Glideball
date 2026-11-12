@@ -23,6 +23,21 @@ extension RenderUI {
             }
         }
 
+        // Full screen on a 1440 × 900 display: no toolbar, the sidebar's glass to the top,
+        // the page starting at the top with room of its own (the traffic lights only
+        // appear with the menu bar when the pointer reaches the top edge).
+        add("fullscreen", "Main window", "Overview in full screen (simulated: toolbar hidden, as the app does)") { dark, scale in
+            mainWindow(model, tab: .overview, dark: dark, scale: scale, size: NSSize(width: 1440, height: 900), fullScreen: true) { EmptyView() }
+        }
+        add("fullscreen-pointer", "Main window", "Pointer in full screen (simulated)") { dark, scale in
+            mainWindow(model, tab: .pointer, dark: dark, scale: scale, size: NSSize(width: 1440, height: 900), fullScreen: true) { EmptyView() }
+        }
+        add("overview-hint-gone", "Main window", "Overview, whole page, once the Settings hint has gone (5 days, 2 weeks or its ×)",
+            prepare: { SettingsHintMemory.dismiss() },
+            cleanup: { UserDefaults.standard.removeObject(forKey: SettingsHintMemory.goneKey) }) { dark, scale in
+            fullPage(page(.overview, model), dark: dark, scale: scale)
+        }
+
         // The smallest the window goes (860 × 580): nothing may clip or wrap mid-word.
         for (tab, name) in tabs {
             add("min-size-\(name)", "Smallest window", "\(tab.rawValue) tab at the minimum size") { dark, scale in
@@ -285,21 +300,40 @@ extension RenderUI {
             cleanup: { SharePanel.sandboxImage = nil }) { dark, scale in
             card(PopoverMock { SharePanel(card: .overview) }, width: 500, dark: dark, scale: scale)
         }
-        add("share-card-overview", "Badges and sharing", "The share picture: your numbers (as saved, 2x)") { dark, scale in
-            Offscreen.render(ShareCardView(card: .overview, delight: model.delight), size: NSSize(width: ShareCard.size.width, height: ShareCard.size.height),
-                             chrome: .plain, appearance: NSAppearance(named: .darkAqua), scale: scale)
+        add("share-panel-posted", "Badges and sharing", "Share… after X was clicked: the picture copied, X's composer opened in the browser",
+            prepare: {
+                SharePanel.sandboxImage = ShareImage.render(.overview, delight: model.delight)
+                SharePanel.sandboxDone = String(localized: "Picture copied. Paste it into the post.")
+            },
+            cleanup: { SharePanel.sandboxImage = nil; SharePanel.sandboxDone = nil }) { dark, scale in
+            card(PopoverMock { SharePanel(card: .overview) }, width: 500, dark: dark, scale: scale)
         }
-        add("share-card-badge", "Badges and sharing", "The share picture: a badge (as saved, 2x)") { dark, scale in
+        add("share-panel-badge", "Badges and sharing", "A badge's Share… (the panel the badge's details turn into), after Instagram was clicked",
+            prepare: {
+                let m = Milestone.all.first { $0.id == "scroll-828" }!
+                SharePanel.sandboxImage = ShareImage.render(.badge(m, model.delight.ledger.earned[m.id]), delight: model.delight)
+                SharePanel.sandboxDone = String(localized: "Saved to Downloads. Instagram only takes uploads from its app or site.")
+            },
+            cleanup: { SharePanel.sandboxImage = nil; SharePanel.sandboxDone = nil }) { dark, scale in
+            card(PopoverMock { BadgeDetail(milestone: Milestone.all.first { $0.id == "scroll-828" }!, delight: model.delight, sharing: true) },
+                 width: 500, dark: dark, scale: scale)
+        }
+        // The pictures as Share… makes them (ImageRenderer, always 2x).
+        add("share-card-overview", "Badges and sharing", "The share picture: your numbers (as saved, 2x)") { _, _ in
+            ShareImage.render(.overview, delight: model.delight)
+        }
+        add("share-card-badge", "Badges and sharing", "The share picture: a badge (as saved, 2x)") { _, _ in
             let m = Milestone.all.first { $0.id == "scroll-828" }!
-            return Offscreen.render(ShareCardView(card: .badge(m, model.delight.ledger.earned[m.id] ?? Date()), delight: model.delight),
-                                    size: NSSize(width: ShareCard.size.width, height: ShareCard.size.height),
-                                    chrome: .plain, appearance: NSAppearance(named: .darkAqua), scale: scale)
+            return ShareImage.render(.badge(m, model.delight.ledger.earned[m.id]), delight: model.delight)
+        }
+        add("share-card-badge-locked", "Badges and sharing", "The share picture: a badge not earned yet (as saved, 2x)") { _, _ in
+            let m = Milestone.all.first { $0.id == "scroll-3776" }!
+            return ShareImage.render(.badge(m, nil), delight: model.delight)
         }
         add("share-card-theme", "Badges and sharing", "The share picture in the Sunset ball color",
             prepare: { BallThemeStore.shared.choose("sunset") },
-            cleanup: { BallThemeStore.shared.choose("orb") }) { dark, scale in
-            Offscreen.render(ShareCardView(card: .overview, delight: model.delight), size: NSSize(width: ShareCard.size.width, height: ShareCard.size.height),
-                             chrome: .plain, appearance: NSAppearance(named: .darkAqua), scale: scale)
+            cleanup: { BallThemeStore.shared.choose("orb") }) { _, _ in
+            ShareImage.render(.overview, delight: model.delight)
         }
 
         // The trackball hero in every state, at the sidebar's size and large (the tour's).
@@ -377,8 +411,8 @@ extension RenderUI {
                 QuitConfirm.preview()
             }
         }
-        add("quit-card-dont-ask", "Sheets", "The quit card with “Don’t ask again” ticked") { dark, scale in
-            sheet(QuitConfirm.preview(dontAsk: true).padding(40).background(GlideBackground()), dark: dark, scale: scale)
+        add("quit-card-close", "Sheets", "The quit card on its own, at its real size") { dark, scale in
+            sheet(QuitConfirm.preview().padding(40).background(GlideBackground()), dark: dark, scale: scale)
         }
         add("scrolling-try-active", "States", "Scrolling, “Try it here” taking the ring (after a click): no hint",
             prepare: { ScrollCaptureSandbox.active = true },

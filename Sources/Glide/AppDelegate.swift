@@ -167,11 +167,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         LaunchExperience.shared.replayIntro()
     }
 
-    /// View › ⌘1…⌘6: the main window's tabs, in the order they sit in the window.
+    /// View › ⇧1…⇧6 (⌘1…⌘6): the main window's tabs, in the order they sit in the window.
     @objc private func selectTab(_ sender: NSMenuItem) {
         guard GlideTab.allCases.indices.contains(sender.tag) else { return }
         showWindow()
-        AppModel.shared.requestedTab = GlideTab.allCases[sender.tag]
+        MainActor.assumeIsolated { AppModel.shared.requestTab(GlideTab.allCases[sender.tag]) }
+    }
+
+    /// ⇧ + a digit is a character while something's being typed, never a page.
+    @objc func validateMenuItem(_ item: NSMenuItem) -> Bool {
+        if item.action == #selector(selectTab), item.keyEquivalentModifierMask == .shift,
+           NSApp.currentEvent?.type == .keyDown, MainActor.assumeIsolated({ AppShortcuts.isTyping }) {
+            return false
+        }
+        return true
     }
 
     @objc private func exportSettings() { showWindow(); AppModel.shared.exportSettings() }
@@ -201,13 +210,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     /// The main window and its contents, made once.
     private func makeWindow() {
         if window == nil {
-            let w = NSWindow(contentRect: NSRect(origin: .zero, size: Self.mainWindowSize),
-                             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
-                             backing: .buffered, defer: false)
+            let w = MainWindow(contentRect: NSRect(origin: .zero, size: Self.mainWindowSize),
+                               styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
+                               backing: .buffered, defer: false)
             Self.styleMainWindow(w)
             w.isMovableByWindowBackground = false   // dragging a slider must never move the window
             w.contentMinSize = Self.mainWindowMinSize
-            let hosting = NSHostingView(rootView: RootView(model: AppModel.shared))
+            let hosting = NSHostingView(rootView: RootView(model: AppModel.shared, primary: true))
             hosting.sizingOptions = []   // the window decides its size, not the content
             w.contentView = hosting
             w.setContentSize(Self.mainWindowSize)
@@ -272,6 +281,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func windowDidMiniaturize(_ notification: Notification) { reportWindowState() }
     func windowDidDeminiaturize(_ notification: Notification) { reportWindowState() }
+
+    // Full screen: the empty toolbar that lets the sidebar's glass run under the
+    // traffic lights in a window turns into a plain grey bar across the top in full
+    // screen. So it goes while the window is full screen, and comes back on the way out.
+    func windowWillEnterFullScreen(_ notification: Notification) { Self.setFullScreen(true, window) }
+    func windowWillExitFullScreen(_ notification: Notification) { Self.setFullScreen(false, window) }
+    func windowDidFailToEnterFullScreen(_ window: NSWindow) { Self.setFullScreen(false, window) }
+
+    /// Shared with --render-ui's `fullscreen` picture.
+    static func setFullScreen(_ on: Bool, _ w: NSWindow?) {
+        w?.toolbar?.isVisible = !on
+        AppModel.shared.fullScreen = on
+    }
 
     /// Shows or hides the menu-bar icon to match the "Menu bar icon" setting.
     func updateStatusItemVisibility() {
@@ -473,7 +495,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
     }
 
-    private func buildMenu() {
+    private func buildMenu() { MainActor.assumeIsolated { buildMenuOnMain() } }
+
+    @MainActor private func buildMenuOnMain() {
         let main = NSMenu()
 
         let appItem = NSMenuItem()
@@ -481,22 +505,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         appMenu.addItem(withTitle: String(localized: "About Glideball"), action: #selector(showAbout), keyEquivalent: "").target = self
         appMenu.addItem(withTitle: String(localized: "Check for Updates…"), action: #selector(checkForUpdates), keyEquivalent: "").target = self
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: String(localized: "Settings…"), action: #selector(openSettings), keyEquivalent: ",").target = self
+        // Key equivalents come from AppShortcuts, which the shortcuts sheet lists too.
+        AppShortcuts.addItem("settings", title: String(localized: "Settings…"), action: #selector(openSettings), to: appMenu, target: self)
         appMenu.addItem(.separator())
         appMenu.addItem(withTitle: String(localized: "Hide Glideball"), action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
         let others = appMenu.addItem(withTitle: String(localized: "Hide Others"), action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h")
         others.keyEquivalentModifierMask = [.command, .option]
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: String(localized: "Quit Glideball"), action: #selector(quitGlide), keyEquivalent: "q").target = self
+        AppShortcuts.addItem("quit", title: String(localized: "Quit Glideball"), action: #selector(quitGlide), to: appMenu, target: self)
         appItem.submenu = appMenu
         main.addItem(appItem)
 
         let fileItem = NSMenuItem()
         let fileMenu = NSMenu(title: String(localized: "File", comment: "Menu bar title"))
-        fileMenu.addItem(withTitle: String(localized: "Export Settings…"), action: #selector(exportSettings), keyEquivalent: "e").target = self
-        fileMenu.addItem(withTitle: String(localized: "Import Settings…"), action: #selector(importSettings), keyEquivalent: "o").target = self
+        AppShortcuts.addItem("export", title: String(localized: "Export Settings…"), action: #selector(exportSettings), to: fileMenu, target: self)
+        AppShortcuts.addItem("import", title: String(localized: "Import Settings…"), action: #selector(importSettings), to: fileMenu, target: self)
         fileMenu.addItem(.separator())
-        fileMenu.addItem(withTitle: String(localized: "Close Window"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        AppShortcuts.addItem("close", title: String(localized: "Close Window"), action: #selector(NSWindow.performClose(_:)), to: fileMenu, target: nil)
         fileItem.submenu = fileMenu
         main.addItem(fileItem)
 
@@ -517,10 +542,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         let viewItem = NSMenuItem()
         let viewMenu = NSMenu(title: String(localized: "View", comment: "Menu bar title"))
+        // Each page shows ⇧1…⇧6 (the main window handles those itself, and only when
+        // nothing's being typed); holding ⌘ with the menu open shows ⌘1…⌘6, which work any time.
         for (index, tab) in GlideTab.allCases.enumerated() {
-            let item = viewMenu.addItem(withTitle: tab.title, action: #selector(selectTab), keyEquivalent: String(index + 1))
-            item.target = self
-            item.tag = index
+            for (mask, alternate) in [(NSEvent.ModifierFlags.shift, false), (.command, true)] {
+                let item = viewMenu.addItem(withTitle: tab.title, action: #selector(selectTab), keyEquivalent: String(index + 1))
+                item.keyEquivalentModifierMask = mask
+                item.isAlternate = alternate
+                item.target = self
+                item.tag = index
+            }
         }
         viewItem.submenu = viewMenu
         main.addItem(viewItem)
@@ -536,7 +567,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         helpMenu.addItem(withTitle: String(localized: "About & Help…"), action: #selector(showAbout), keyEquivalent: "").target = self
         helpMenu.addItem(withTitle: String(localized: "Show Welcome Tour…"), action: #selector(showWelcomeTour), keyEquivalent: "").target = self
         helpMenu.addItem(withTitle: String(localized: "Play the Intro"), action: #selector(playIntro), keyEquivalent: "").target = self
-        helpMenu.addItem(withTitle: String(localized: "Keyboard Shortcuts"), action: #selector(showShortcuts), keyEquivalent: "/").target = self
+        AppShortcuts.addItem("shortcuts-menu", title: String(localized: "Keyboard Shortcuts"), action: #selector(showShortcuts), to: helpMenu, target: self)
         helpMenu.addItem(.separator())
         helpMenu.addItem(withTitle: String(localized: "Glideball Help"), action: #selector(openHelp), keyEquivalent: "").target = self
         helpMenu.addItem(withTitle: String(localized: "Troubleshooting"), action: #selector(openTroubleshooting), keyEquivalent: "").target = self
@@ -550,5 +581,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         NSApp.mainMenu = main
         NSApp.windowsMenu = windowMenu
         NSApp.helpMenu = helpMenu
+    }
+}
+
+/// The main window. A key press nothing inside it wanted ends up here: ⇧1…⇧6
+/// switch pages. A search field or a shortcut being recorded takes the key
+/// first, so ⇧1 there still types "!" (or is recorded).
+final class MainWindow: NSWindow {
+    override func keyDown(with event: NSEvent) {
+        if let tab = AppShortcuts.page(keyCode: event.keyCode, modifiers: event.modifierFlags), !AppShortcuts.isTyping {
+            AppModel.shared.requestTab(tab)
+            return
+        }
+        super.keyDown(with: event)
     }
 }

@@ -27,6 +27,7 @@ struct Atmosphere: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
+        let _ = PerfProbe.count("Atmosphere")
         let dark = scheme == .dark
         ZStack {
             StaticAtmosphere(dark: dark, contrast: Theme.isHighContrastNow)
@@ -69,11 +70,13 @@ struct StaticAtmosphere: View, Equatable {
                     .opacity(strength)
                 Grain(dark: dark)
             }
-            .opacity(1)
             .frame(width: geo.size.width, height: geo.size.height, alignment: .topLeading)
             .clipped()
-            .saturation(1)
             .overlay { if contrast { Theme.windowBackground.opacity(1 - k) } }
+            // One flat bitmap, drawn when the window's size or look changes and never
+            // otherwise: four big gradients, the ring texture and the grain's blend
+            // used to be composited again under every frame of a scroll.
+            .drawingGroup()
         }
     }
 
