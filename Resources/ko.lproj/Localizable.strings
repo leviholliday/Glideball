@@ -1552,7 +1552,6 @@
 "Every tick pushes the page and friction slows it down: gentle turns barely coast, hard spins fly." = "틱마다 페이지를 밀고 마찰이 속도를 줄여요. 살살 돌리면 거의 미끄러지지 않고, 세게 돌리면 날아가요.";
 "Fast spins push no harder than slow ones: %lld pt a tick." = "빠르게 돌려도 천천히 돌릴 때보다 세게 밀지 않아요: 틱당 %lld pt.";
 "Glideball steps aside and macOS scrolls the ring itself. Only the speed is adjustable." = "Glideball은 물러나고 macOS가 직접 링 스크롤을 처리해요. 속도만 조절할 수 있어요.";
-"Put the pointer over the list and spin the ring." = "포인터를 목록 위에 두고 링을 돌려 보세요.";
 "Reach is off: every spin stops speeding up at Kensington’s top speed." = "도달 거리가 꺼져 있어요: 어떤 회전이든 Kensington의 최고 속도에서 더 빨라지지 않아요.";
 "Rolling the ball one inch scrolls the page about %lld pt." = "볼을 1인치 굴리면 페이지가 약 %lld pt 스크롤돼요.";
 "Sets distance, power and glide to what Kensington’s own driver measured." = "거리, 파워, 활주를 Kensington 드라이버에서 측정한 값으로 맞춰요.";
@@ -1715,3 +1714,19 @@
 "Your best day shows here after a few days" = "며칠 지나면 여기에 최고의 날이 표시됩니다";
 "Your best day yet" = "지금까지 최고의 날";
 "against your best day" = "최고의 날과 비교";
+"Asks first: press ⌘Q again to quit." = "먼저 확인: 종료하려면 ⌘Q를 한 번 더 누르세요.";
+"Change in Settings…" = "설정에서 변경…";
+"Click the list, then spin the ring." = "목록을 클릭한 다음 링을 돌려 보세요.";
+"Click to try it" = "클릭해서 사용해 보기";
+"Don’t ask again" = "다시 묻지 않기";
+"Glideball’s shortcuts, all in one place." = "Glideball의 단축키를 한곳에서 볼 수 있습니다.";
+"Keyboard Shortcuts" = "키보드 단축키";
+"Keyboard shortcuts (this list)" = "키보드 단축키(이 목록)";
+"Keyboard shortcuts" = "키보드 단축키";
+"No shortcut" = "단축키 없음";
+"Quit Glideball?" = "Glideball을 종료할까요?";
+"Quit" = "종료";
+"Stay" = "계속 사용";
+"They work in every app, even with the window closed." = "창을 닫아도 모든 앱에서 작동합니다.";
+"Your trackball goes back to plain macOS. Closing the window keeps Glideball running." = "트랙볼이 기본 macOS 동작으로 돌아갑니다. 창만 닫으면 Glideball은 계속 실행됩니다.";
+"⌘Q quits straight away. Turn asking back on in Settings › General." = "⌘Q로 바로 종료합니다. 설정 › 일반에서 다시 확인하도록 켤 수 있습니다.";

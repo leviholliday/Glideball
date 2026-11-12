@@ -275,6 +275,22 @@ extension RenderUI {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { FeedbackDraft.shared.phase = .sent("GB-7Q2K-M4XD") }
             return sheet(FeedbackView(model: model), dark: dark, scale: scale)
         }
+        add("shortcuts-sheet", "Sheets", "Keyboard shortcuts (? in the window, Help › Keyboard Shortcuts)") { dark, scale in
+            sheet(ShortcutsSheet(model: model), dark: dark, scale: scale)
+        }
+        add("quit-card", "Sheets", "⌘Q: “Quit Glideball?” over the window (it floats over the whole screen)") { dark, scale in
+            mainWindow(model, tab: .overview, dark: dark, scale: scale) {
+                QuitConfirm.preview()
+            }
+        }
+        add("quit-card-dont-ask", "Sheets", "The quit card with “Don’t ask again” ticked") { dark, scale in
+            sheet(QuitConfirm.preview(dontAsk: true).padding(40).background(GlideBackground()), dark: dark, scale: scale)
+        }
+        add("scrolling-try-active", "States", "Scrolling, “Try it here” taking the ring (after a click): no hint",
+            prepare: { ScrollCaptureSandbox.active = true },
+            cleanup: { ScrollCaptureSandbox.active = false }) { dark, scale in
+            fullPage(page(.scroll, model), dark: dark, scale: scale)
+        }
         add("backup-history", "Sheets", "Backup history (Sync tab)") { dark, scale in
             card(BackupHistorySection(model: model, store: model.backups), width: windowSize.width, dark: dark, scale: scale)
         }
@@ -342,7 +358,8 @@ extension RenderUI {
             Offscreen.render(view.ignoresSafeArea(), size: windowSize, chrome: .window,
                              appearance: NSAppearance(named: dark ? .darkAqua : .aqua), scale: scale)
         }
-        for (t, what) in [(1.4, "rolling in"), (3.0, "ring spinning up"), (5.6, "finished")] {
+        for (t, what) in [(1.4, "rolling in"), (3.0, "ring spinning up"), (3.4, "light drawing in"), (3.75, "held beat"),
+                          (3.97, "the hit"), (4.15, "the word landing"), (4.3, "ripple"), (5.6, "finished")] {
             let name = "launch-intro-" + what.replacingOccurrences(of: " ", with: "-")
             add(name, "Launch", "First-launch intro at \(t) s: \(what)") { dark, scale in
                 launch(IntroScene(t: t, calm: false), dark, scale)
@@ -353,8 +370,20 @@ extension RenderUI {
             add("launch-\(name)-start", "Launch", "Launch animation “\(name)” part-way (0.2 s)") { dark, scale in
                 launch(SplashScene(variant: variant, t: 0.2, calm: false), dark, scale)
             }
-            add("launch-\(name)", "Launch", "Launch animation “\(name)”, finished (0.8 s)") { dark, scale in
-                launch(SplashScene(variant: variant, t: 0.8, calm: false), dark, scale)
+            add("launch-\(name)-settling", "Launch", "Launch animation “\(name)”: the ball's overshoot (0.4 s)") { dark, scale in
+                launch(SplashScene(variant: variant, t: 0.4, calm: false), dark, scale)
+            }
+            add("launch-\(name)", "Launch", "Launch animation “\(name)”, finished (0.85 s)") { dark, scale in
+                launch(SplashScene(variant: variant, t: 0.85, calm: false), dark, scale)
+            }
+        }
+        for (p, what) in [(0.3, "opening"), (0.65, "wide")] {
+            add("launch-reveal-\(what)", "Launch", "The hand-off \(Int(p * 100))% through: the light opening out over the window") { dark, scale in
+                mainWindow(model, tab: .overview, dark: dark, scale: scale) {
+                    SplashScene(variant: .rollIn, t: 0.85, calm: false)
+                        .modifier(RevealOut(progress: p, calm: false, from: SplashScene.ballAnchor))
+                        .ignoresSafeArea()
+                }
             }
         }
         add("launch-fade", "Launch", "Quick fade, finished") { dark, scale in

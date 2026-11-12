@@ -629,7 +629,7 @@ struct TryItArea: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Space.titleToGroup) {
-            SectionTitle(title: "Try it here", caption: "Put the pointer over the list and spin the ring.")
+            SectionTitle(title: "Try it here", caption: "Click the list, then spin the ring.")
             lane
         }
     }

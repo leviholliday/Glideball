@@ -176,8 +176,8 @@ struct QuitCard: View {
                     .foregroundStyle(.secondary)
                     .help("⌘Q quits straight away. Turn asking back on in Settings › General.")
                 Spacer(minLength: 8)
-                answer("Stay", keys: ["esc"], prominent: false, action: stay)
-                answer("Quit", keys: ["⌘", "Q"], prominent: true, action: quit)
+                answer(Text("Stay"), keys: ["esc"], prominent: false, action: stay)
+                answer(Text("Quit"), keys: ["⌘", "Q"], prominent: true, action: quit)
             }
         }
         .padding(20)
@@ -199,14 +199,24 @@ struct QuitCard: View {
         .accessibilityElement(children: .contain)
     }
 
-    private func answer(_ title: LocalizedStringKey, keys: [String], prominent: Bool, action: @escaping () -> Void) -> some View {
+    private func answer(_ title: Text, keys: [String], prominent: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                Text(title).font(.system(size: 13, weight: .semibold))
+                title.font(.system(size: 13, weight: .semibold))
                 HStack(spacing: 2) {
-                    ForEach(Array(keys.enumerated()), id: \.offset) { KeyCap(label: $0.element) }
+                    // Keycaps in the button's own ink, so they read on the blue and on the plain one.
+                    ForEach(Array(keys.enumerated()), id: \.offset) { _, key in
+                        Text(verbatim: key)
+                            .font(.system(size: 10.5, weight: .semibold, design: .rounded))
+                            .frame(minWidth: 18, minHeight: 18)
+                            .padding(.horizontal, key.count > 1 ? 4 : 0)
+                            .background {
+                                let k = RoundedRectangle(cornerRadius: 4.5, style: .continuous)
+                                k.fill(prominent ? Color.white.opacity(0.2) : Theme.raised)
+                                    .overlay(k.strokeBorder(prominent ? Color.white.opacity(0.3) : Theme.groupBorder, lineWidth: 1))
+                            }
+                    }
                 }
-                .scaleEffect(0.9)
                 .accessibilityHidden(true)
             }
             .padding(.leading, 13)

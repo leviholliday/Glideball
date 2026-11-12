@@ -13,24 +13,26 @@ import SwiftUI
 
 extension View {
     /// Keeps this scroll area from capturing a scroll that started outside it (see above).
-    /// `hint` shows over it until it's taking the scroll.
-    func scrollCaptureGuard(hint: LocalizedStringKey = "Click to try it") -> some View {
-        modifier(ScrollCaptureGuard(hint: hint))
+    /// "Click to try it" shows over it until it's taking the scroll.
+    func scrollCaptureGuard() -> some View {
+        modifier(ScrollCaptureGuard())
     }
 }
 
+/// `--render-ui`: draw guarded areas as if they'd been clicked.
+enum ScrollCaptureSandbox {
+    nonisolated(unsafe) static var active = false
+}
+
 private struct ScrollCaptureGuard: ViewModifier {
-    let hint: LocalizedStringKey
-    @State private var active = ScrollCaptureGuard.sandboxActive
-    /// `--render-ui`: draw the area as if it had been clicked.
-    nonisolated(unsafe) static var sandboxActive = false
+    @State private var active = ScrollCaptureSandbox.active
 
     func body(content: Content) -> some View {
         content
             .overlay { ScrollCatcher(active: $active) }
             .overlay(alignment: .bottom) {
                 if !active {
-                    Label(hint, systemImage: "cursorarrow.click")
+                    Label("Click to try it", systemImage: "cursorarrow.click")
                         .font(Theme.Font.hint.weight(.medium))
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 10)

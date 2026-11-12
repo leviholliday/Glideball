@@ -112,6 +112,10 @@ struct TrackballPose {
     var ballOffset = CGSize.zero
     /// A moment of extra light on the ring and the ball, 0…1.
     var flare = 0.0
+    /// How far (degrees) the ticks' pink streaks trail behind them; 0 draws none.
+    var tickStreak = 0.0
+    /// Darkens the whole trackball, 0…1 (the intro's held breath before the hit).
+    var dim = 0.0
 }
 
 /// One frame of the trackball. Every size is a fraction of the body's side, `s`.
@@ -144,6 +148,7 @@ struct TrackballArt: View {
                     .scaleEffect(pose.ringScale)
                 ballOrSocket(s)
             }
+            .opacity(1 - 0.72 * pose.dim)
             .frame(width: s, height: s)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -198,6 +203,14 @@ struct TrackballArt: View {
                     // Pink warming the ticks the faster the ring turns.
                     ticks(s, color: Theme.ring, opacity: spin * 0.85)
                         .blendMode(.plusLighter)
+                    // The launch's spin-up: the ticks streak, pink ghosts trailing behind them.
+                    if pose.tickStreak > 0.5 && !reduceMotion {
+                        ForEach(1..<5) { i in
+                            ticks(s, color: Theme.ring, opacity: spin * 0.55 * (1 - Double(i) / 5),
+                                  angle: pose.ringAngle - pose.tickStreak * Double(i) / 4)
+                                .blendMode(.plusLighter)
+                        }
+                    }
                     // The ring's light spilling into the well (the trackball may glow).
                     Circle()
                         .stroke(ringGradient, lineWidth: w * 4.5)
@@ -245,8 +258,8 @@ struct TrackballArt: View {
     }
 
     /// The ring's tick marks: 60 of them, every fifth a little longer, turning with the ring.
-    private func ticks(_ s: CGFloat, color: Color, opacity: Double) -> some View {
-        let angle = pose.ringAngle
+    private func ticks(_ s: CGFloat, color: Color, opacity: Double, angle: Double? = nil) -> some View {
+        let angle = angle ?? pose.ringAngle
         let reveal = pose.tickReveal
         return Canvas { ctx, size in
             Self.drawTicks(&ctx, size: size, angle: angle, reveal: reveal, color: color, opacity: opacity)

@@ -1552,7 +1552,6 @@
 "Every tick pushes the page and friction slows it down: gentle turns barely coast, hard spins fly." = "1ノッチごとにページを押し出し、摩擦で減速します。ゆっくり回せばほとんど惰性で進まず、強く回せば飛んでいきます。";
 "Fast spins push no harder than slow ones: %lld pt a tick." = "速く回しても、ゆっくり回したときと押し出す距離は同じです：1ノッチあたり%lld pt。";
 "Glideball steps aside and macOS scrolls the ring itself. Only the speed is adjustable." = "Glideballは身を引いて、macOS自身がリングでスクロールします。調整できるのは速度だけです。";
-"Put the pointer over the list and spin the ring." = "ポインタをリストの上に置いて、リングを回してみてください。";
 "Reach is off: every spin stops speeding up at Kensington’s top speed." = "到達距離はオフです：どんな回転でも、Kensingtonの最高速度でそれ以上は速くなりません。";
 "Rolling the ball one inch scrolls the page about %lld pt." = "ボールを1インチ転がすと、ページが約%lld pt スクロールします。";
 "Sets distance, power and glide to what Kensington’s own driver measured." = "距離・パワー・惰性を、Kensington純正ドライバで測定した値に設定します。";
@@ -1715,3 +1714,19 @@
 "Your best day shows here after a few days" = "数日たつと、ここにベストの日が表示されます";
 "Your best day yet" = "これまでのベストの日";
 "against your best day" = "ベストの日と比べて";
+"Asks first: press ⌘Q again to quit." = "確認あり：もう一度⌘Qを押すと終了します。";
+"Change in Settings…" = "設定で変更…";
+"Click the list, then spin the ring." = "リストをクリックしてから、リングを回してください。";
+"Click to try it" = "クリックして試す";
+"Don’t ask again" = "今後確認しない";
+"Glideball’s shortcuts, all in one place." = "Glideballのショートカットをまとめて表示します。";
+"Keyboard Shortcuts" = "キーボードショートカット";
+"Keyboard shortcuts (this list)" = "キーボードショートカット（この一覧）";
+"Keyboard shortcuts" = "キーボードショートカット";
+"No shortcut" = "ショートカットなし";
+"Quit Glideball?" = "Glideballを終了しますか？";
+"Quit" = "終了";
+"Stay" = "続ける";
+"They work in every app, even with the window closed." = "ウインドウを閉じていても、どのアプリでも使えます。";
+"Your trackball goes back to plain macOS. Closing the window keeps Glideball running." = "トラックボールは通常のmacOSの動作に戻ります。ウインドウを閉じるだけなら、Glideballは動き続けます。";
+"⌘Q quits straight away. Turn asking back on in Settings › General." = "⌘Qですぐに終了します。確認は「設定」›「一般」でまた有効にできます。";
