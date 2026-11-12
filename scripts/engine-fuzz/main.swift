@@ -25,6 +25,8 @@
 //   scrolling   the flywheel never scrolls after pause, unplug or sleep, never runs
 //               away (bounded per frame, stops after the last input), never NaN
 //   pointer     pointer speeds only while running, finite, inside the app's limits
+//   connected   the status says "Connected" exactly while the trackball is plugged in (late
+//               values, a reused address, a missed removal until the next device check)
 //
 // On a failure it prints the seed and a minimized list of events (delta debugging).
 //
@@ -144,6 +146,12 @@ final class FakeIO: EngineIO {
         if tapEnabled[ObjectIdentifier(tap)] != nil { tapEnabled[ObjectIdentifier(tap)] = on }
     }
     override func startListening(_ engine: Engine, runLoop: CFRunLoop?) -> Bool { inputMonitoring }
+    /// What IOHIDManager would list now (the World's hardware).
+    var live: () -> [Int: DeviceIdentity] = { [:] }
+    override func liveDevices() -> [Int: (identity: DeviceIdentity, transport: String?, device: IOHIDDevice?)]? {
+        guard inputMonitoring else { return nil }
+        return live().mapValues { ($0, "USB", nil) }
+    }
     /// Wireless trackballs: a battery level that changes over time (and is sometimes missing).
     override func registryBattery(_ key: Int) -> Int? { [nil, 4, 50, 100][Int(clock) % 4] }
 
@@ -168,7 +176,10 @@ enum Op: CustomStringConvertible {
     case remote(Int)          // sync applying another Mac's settings (same path as config)
     case front(Int)           // app in front: -1 none, else app setup index
     case pause, resume
-    case unplug(Int)          // 0: ups after removal, 1: before, 2: lost
+    case unplug(Int)          // 0: ups after removal, 1: before, 2: lost, 3: ups before and the removal callback never comes
+    case lateValues           // the unplugged trackball's last HID values, delivered after its removal
+    case reuse                // another mouse arrives at the unplugged trackball's address (the same key)
+    case reconcile            // screen unlocked or the window opened: the engine checks the live devices
     case replug
     case sleep, wake
     case tapOff(Int)          // this many events go by the switched-off tap
@@ -198,7 +209,10 @@ enum Op: CustomStringConvertible {
         case .front(let i): "appInFront(\(i))"
         case .pause: "pause"
         case .resume: "resume"
-        case .unplug(let m): "unplug(\(["upsAfter", "upsBefore", "upsLost"][m]))"
+        case .unplug(let m): "unplug(\(["upsAfter", "upsBefore", "upsLost", "removalMissed"][m]))"
+        case .lateValues: "lateValuesFromUnplugged"
+        case .reuse: "otherMouseAtSameAddress"
+        case .reconcile: "unlockOrWindowOpens"
         case .replug: "replug"
         case .sleep: "sleep"
         case .wake: "wake"
@@ -378,6 +392,8 @@ final class World {
     var inputs: [Int: InputInfo] = [:]
     var bypass = 0
     var learning = false
+    var stale = false    // the trackball left but the engine was never told (a missed removal)
+    var reused = false   // another mouse has the trackball's key
     var replugs = 0   // every other one comes back over Bluetooth (battery checks)
 
     // What apps see.
@@ -399,6 +415,7 @@ final class World {
     var lastScrollInput = -1e9
     var scrollOut = 0.0
     var violations: [Failure] = []
+    var connected = false   // what the engine's status says
     // The gesture hold now (or the last one): see `observe(_:)`.
     var hold: (buttons: [Int], gesture: ButtonGesture?, tuning: GestureTuning?, start: Double,
                l1: Double, x: Double, y: Double, maxL2: Double, fires: Int, byDirection: [GestureDirection: Int])?
@@ -420,6 +437,12 @@ final class World {
 
     func wire() {
         engine.onModes = { [unowned self] m in self.observe(m) }
+        engine.onStatus = { [unowned self] s in self.connected = s.deviceConnected }
+        io.live = { [unowned self] in
+            var d = [oKey: otherMouse]
+            if self.kConnected { d[kKey] = expert } else if self.reused { d[kKey] = otherMouse }
+            return d
+        }
         io.appButtons = { [unowned self] in
             Set(self.appK.filter { $0.value > 0 }.keys.map(Int64.init)).union(self.appO.filter { $0.value > 0 }.keys.map(Int64.init))
         }
@@ -832,9 +855,10 @@ final class World {
         case .unplug(let mode):
             guard kConnected else { return }
             let held = kDown.sorted()
-            if mode == 1 { for b in held { apply(.kRelease(b, hidFirst: true)) } }
+            if mode == 1 || mode == 3 { for b in held { apply(.kRelease(b, hidFirst: true)) } }
             kConnected = false
-            engine.deviceRemoved(key: kKey)
+            if mode == 3 { stale = true; return }   // until a wake, unlock, window or another removal
+            engine.deviceRemovedByManager(key: kKey)
             if mode == 0 {
                 for b in held {
                     kDown.remove(b)
@@ -849,7 +873,9 @@ final class World {
             scrollMuted = true
         case .replug:
             guard !kConnected else { return }
+            if reused { reused = false; engine.deviceRemovedByManager(key: kKey) }
             kConnected = true
+            stale = false
             engine.deviceAdded(key: kKey, identity: expert, transport: replugs % 2 == 0 ? "USB" : "Bluetooth Low Energy", device: nil)
             replugs += 1
         case .sleep:
@@ -858,7 +884,22 @@ final class World {
             mustBeReleased("sleep", modesToo: false)
             scrollMuted = true
         case .wake:
+            engine.reconcileDevices()   // what AppModel does on wake, in this order
             engine.reapplyPointer()
+            stale = false
+        case .reconcile:
+            engine.reconcileDevices()
+            stale = false
+        case .lateValues:
+            guard !kConnected, !stale, !reused else { return }
+            for (page, usage, value) in [(kHIDPage_GenericDesktop, kHIDUsage_GD_X, 7), (kHIDPage_Button, 2, 1), (kHIDPage_Button, 2, 0)] {
+                stamp += 1
+                engine.hidInput(key: kKey, identity: expert, page: page, usage: usage, value: value, stamp: stamp)
+            }
+        case .reuse:
+            guard !kConnected, !stale, !reused else { return }
+            reused = true
+            engine.deviceAdded(key: kKey, identity: otherMouse, transport: "USB", device: nil)
         case .tapOff(let n):
             bypass = n
         case .setMode(let m, let w):
@@ -907,6 +948,8 @@ final class World {
         wire()
         engine.startInline()
         if kConnected { engine.deviceAdded(key: kKey, identity: expert, transport: "USB", device: nil) }
+        else if reused { engine.deviceAdded(key: kKey, identity: otherMouse, transport: "USB", device: nil) }
+        stale = false
         engine.deviceAdded(key: oKey, identity: otherMouse, transport: "USB", device: nil)
         learning = false
         kReportsButtons = false   // a new engine hasn't seen a button over HID yet
@@ -1011,6 +1054,8 @@ final class World {
     }
 
     func checkAlways() {
+        // "Connected" is the truth, unless a removal went missing and nothing has checked since.
+        if !stale && connected != kConnected { fail("connected", "status says connected = \(connected), the trackball is \(kConnected ? "plugged in" : "unplugged")") }
         if io.frozen != (modes.ballScrolling || modes.gestureHeld) {
             fail("modes", "pointer frozen = \(io.frozen) but Scroll with ball = \(modes.ballScrolling), gesture = \(modes.gestureHeld)")
         }
@@ -1075,7 +1120,10 @@ func generate(seed: UInt64, count: Int) -> (configs: [GlideConfig], ops: [Op]) {
         (1.2, { r in .front(r.int(4) - 1) }),
         (0.7 * rare, { _ in .pause }),
         (0.8, { _ in .resume }),
-        (0.35 * rare, { r in .unplug(r.int(3)) }),
+        (0.35 * rare, { r in .unplug(r.int(4)) }),
+        (0.3, { _ in .lateValues }),
+        (0.15, { _ in .reuse }),
+        (0.2, { _ in .reconcile }),
         (0.45, { _ in .replug }),
         (0.35 * rare, { _ in .sleep }),
         (0.25, { _ in .wake }),
@@ -1245,6 +1293,15 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
     ops = down(1, 3) + pause + [.kBall(30, 0), .pause, .resume] + up(1, 3) + down(1, 3) + pause + [.sleep, .wake] + up(1, 3)
     ops += down(1, 3) + pause + [.quit] + up(1, 3) + settle
     gestureCases.append(("gesture combo held through pause, sleep and quit: nothing held", [comboG], ops))
+    // "Connected" after an unplug (Levi, Nov 2026): every event checks the status against the hardware.
+    var holdKey = GlideConfig()
+    holdKey.buttons[3] = .holdShortcut(.wisprFlow)
+    gestureCases.append(("unplugged, then late values from it: not connected", [GlideConfig()], [.unplug(0), .lateValues, .wait(1)]))
+    gestureCases.append(("unplugged, another mouse at the same address: not connected", [GlideConfig()],
+                         [.unplug(2), .reuse, .reconcile, .wait(1), .replug, .wait(1), .unplug(0), .lateValues, .wait(1)]))
+    gestureCases.append(("removal missed, then wake: not connected, released once", [holdKey],
+                         down(3) + [.setMode(0, 1), .unplug(3), .wait(1), .sleep, .wake, .wait(1)] + up(3) + settle))
+    gestureCases.append(("removal missed, then the window opens: not connected", [GlideConfig()], [.unplug(3), .reconcile, .lateValues, .wait(1)]))
     let older: [(String, [GlideConfig], [Op])] = [
         ("held shortcut, unplugged while held: the key comes up",
          [hold], [.kPress(3, hidFirst: true), .unplug(2), .wait(1)]),

@@ -210,6 +210,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         // window, a launch at login opened later): What's New or the small
         // favor can come straight away; otherwise the animation offers it when it ends.
         if opening && LaunchExperience.shared.show == nil { AppModel.shared.showNextPrompt() }
+        if opening { AppModel.shared.engine.reconcileDevices() }   // "Connected" is checked against the devices there now
     }
 
     /// The main window and its contents, made once.

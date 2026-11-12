@@ -601,8 +601,37 @@ final class Engine {
         publish()
     }
 
-    /// IOHIDManager's callback (input thread).
-    func deviceRemoved(_ device: IOHIDDevice) { deviceRemoved(key: Self.key(device)) }
+    /// IOHIDManager's callback (input thread): that device, then a check of the rest
+    /// against what IOHIDManager has (a removal can go missing, say across a USB hub reset).
+    func deviceRemoved(_ device: IOHIDDevice) { deviceRemovedByManager(key: Self.key(device)) }
+
+    /// What the removal callback does (scripts/engine-fuzz calls this directly).
+    func deviceRemovedByManager(key k: Int) {
+        deviceRemoved(key: k)
+        reconcileNow()
+    }
+
+    /// Wake, screen unlock, the window opening: make the devices Glideball knows match
+    /// the ones IOHIDManager has now. A removal callback that never came would
+    /// otherwise leave "Connected" showing (and the tap on) until a relaunch. Cheap: one
+    /// IOHIDManagerCopyDevices, no timer.
+    func reconcileDevices() { perform { self.reconcileNow() } }
+
+    private func reconcileNow() {
+        guard let live = io.liveDevices() else { return }   // not listening: nothing to compare with
+        var changed = false
+        for k in Array(devices.keys) where live[k] == nil || live[k]?.identity != devices[k] {
+            diagnostics.record("device check: a device left without a removal")
+            deviceRemoved(key: k)   // its releases, exactly as an unplug
+            changed = true
+        }
+        for (k, d) in live.sorted(by: { $0.key < $1.key }) where devices[k] == nil {
+            diagnostics.record("device check: a device arrived without an add")
+            deviceAdded(key: k, identity: d.identity, transport: d.transport, device: d.device)
+            changed = true
+        }
+        if changed { publish() }
+    }
 
     func deviceRemoved(key k: Int) {
         if deviceSupported[k] == true {
@@ -657,6 +686,10 @@ final class Engine {
     /// One HID value from device `k` (scripts/engine-fuzz calls this directly).
     func hidInput(key k: Int, identity: @autoclosure () -> DeviceIdentity, page: Int, usage: Int, value v: Int,
                   stamp: UInt64, logicalMin: Int = 0, logicalMax: Int = 100) {
+        // Only devices that arrived (deviceAdded) count. A value delivered after its
+        // device's removal used to re-add it here as supported, so "Connected" stayed
+        // on after an unplug until a relaunch.
+        guard devices[k] != nil else { return }
         let isK = isSupported(key: k, identity: identity)
         lastActiveIsKensington = isK
         guard isK else { return }

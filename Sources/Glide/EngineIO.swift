@@ -155,6 +155,17 @@ class EngineIO {
     func rememberDevice(_ key: Int, _ device: IOHIDDevice?) { batteryDevices[key] = device }
     func forgetDevice(_ key: Int) { batteryDevices[key] = nil }
 
+    /// The pointing devices IOHIDManager has right now, by `Engine.key`; nil when it isn't open.
+    func liveDevices() -> [Int: (identity: DeviceIdentity, transport: String?, device: IOHIDDevice?)]? {
+        guard let manager, let set = IOHIDManagerCopyDevices(manager) as NSSet? else { return manager == nil ? nil : [:] }
+        var out: [Int: (identity: DeviceIdentity, transport: String?, device: IOHIDDevice?)] = [:]
+        for obj in set {
+            let device = unsafeBitCast(obj as AnyObject, to: IOHIDDevice.self)
+            out[Engine.key(device)] = (Engine.identity(of: device), DeviceBattery.transport(device), device)
+        }
+        return out
+    }
+
     /// `BatteryPercent` from the registry for device `key`, if it has one (DeviceBattery).
     func registryBattery(_ key: Int) -> Int? { batteryDevices[key].flatMap(DeviceBattery.registryPercent) }
 }
