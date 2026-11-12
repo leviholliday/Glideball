@@ -238,7 +238,7 @@ do {
         ("glideball://pause%00", .unknownCommand),
         ("glideball://pause.evil", .unknownCommand),
         ("glideball://delete", .unknownCommand),
-        ("glideball://import?file=/etc/passwd", .unknownCommand),
+        ("glideball://import?file=/etc/passwd", .badParameter),
         ("glideball://export", .unknownCommand),
         ("glideball://run?cmd=rm%20-rf%20~", .unknownCommand),
         ("glideball://\(marker)", .unknownCommand),
@@ -335,6 +335,77 @@ do {
     o.allowed = false
     for _ in 0..<1000 { o.control.handle(url("glideball://pause")) }
     check(o.explanations == 1 && !o.app.paused, "a burst with the switch off: one explanation, nothing changed")
+}
+
+// MARK: - Shared setups (glideball://import)
+
+section("glideball://import: a preview, never a change")
+do {
+    var mine = GlideConfig()
+    mine.trackingSpeed = 9
+    mine.buttons = [2: .shortcut(.copy)]
+    let good = SharedSetup.make(.pointer, from: mine, look: nil)!.link()!.absoluteString
+    let buttons = SharedSetup.make(.buttons, from: mine, look: nil)!.link()!.absoluteString
+    let payload = String(good.dropFirst("glideball://import?d=".count))
+
+    // With the switch off: handed over for a preview, and nothing else.
+    let r = Rig()
+    r.allowed = false
+    var received: [SharedSetup] = []
+    r.control.onImport = { received.append($0) }
+    check(r.send(good) == .performed("import"), "a good link is handed over with the switch off")
+    check(received.count == 1 && received[0].kind == .pointer && received[0].trackingSpeed == 9, "the share arrives intact")
+    check(r.app.changes.isEmpty && r.explanations == 0, "a link changed something or asked for the switch: \(r.app.changes)")
+    check(r.send("glideball://IMPORT?d=" + payload) == .performed("import"), "the command ignores case like the others")
+    check(r.send("glideball://import/?d=" + payload + "&utm_source=x") == .performed("import"), "a trailing slash and unknown parameters are fine")
+    check(r.send(buttons) == .performed("import"), "a buttons link is handed over too (the preview lists them)")
+    check(!r.logs.contains { $0.contains(payload.prefix(12)) }, "the log repeats the payload")
+
+    // Hostile links: ignored before anything sees them.
+    let h = Rig()
+    var leaked = 0
+    h.control.onImport = { _ in leaked += 1 }
+    let marker = "EVILMARKER"
+    let bomb = SharedSetup.base64url(SharedSetup.deflate(Data(repeating: 0x7B, count: 3_000_000))!)
+    let hostile: [(String, ExternalControl.Rejection)] = [
+        ("glideball://import", .badParameter),
+        ("glideball://import?d=", .badParameter),
+        ("glideball://import?d=\(payload)&d=\(payload)", .badParameter),
+        ("glideball://import?D=\(payload)", .badParameter),
+        ("glideball://import?d=\(marker)", .badShare),
+        ("glideball://import?d=%00%01%02", .badShare),
+        ("glideball://import?d=" + bomb, bomb.count + 21 > ExternalControl.maxImportURLLength ? .tooLong : .badShare),
+        ("glideball://import?d=" + String(repeating: "A", count: 2_060), .badShare),   // the URL fits, the payload doesn't
+        ("glideball://import?d=" + String(repeating: "A", count: 2_100), .tooLong),
+        ("glideball://import?d=" + String(repeating: "A", count: 100_000), .tooLong),
+        ("glideball://import/../../etc/passwd?d=\(payload)", .malformed),
+        ("glideball://user:pw@import?d=\(payload)", .malformed),
+        ("glideball://import:99?d=\(payload)", .malformed),
+        ("glideball://import?a=1&b=2&c=3&d=\(payload)&e=5&f=6&g=7&h=8&i=9", .badParameter),
+        ("glideball://import?d=" + SharedSetup.base64url(SharedSetup.deflate(Data("{\"format\":\"glideball-share\",\"version\":7,\"kind\":\"pointer\",\"trackingSpeed\":5}".utf8))!), .badShare),
+        ("glideball://import?d=" + SharedSetup.base64url(SharedSetup.deflate(Data("{\"format\":\"glideball-share\",\"version\":1,\"kind\":\"rm\"}".utf8))!), .badShare),
+    ]
+    for (s, why) in hostile {
+        h.clock += 1
+        guard let u = URL(string: s) else { check(false, "test URL didn't parse: \(s.prefix(60))"); continue }
+        let outcome = h.control.handle(u)
+        check(outcome == .ignored(why), "\(s.prefix(60)) → \(why.rawValue), got \(outcome)")
+    }
+    check(leaked == 0 && h.app.changes.isEmpty, "a hostile import link got through")
+    check(!h.logs.contains { $0.contains(marker) || $0.contains("passwd") }, "the log repeats URL text")
+    check(h.logs.allSatisfy { $0.count < 120 }, "a log line is long")
+    // A share that's fine but asks for the impossible: clamped when it's applied (SharedSetup), still only a preview here.
+    let wild = SharedSetup.base64url(SharedSetup.deflate(Data("{\"format\":\"glideball-share\",\"version\":1,\"kind\":\"pointer\",\"trackingSpeed\":1e300}".utf8))!)
+    h.clock += 1
+    check(h.control.handle(url("glideball://import?d=" + wild)) == .performed("import") && leaked == 1, "a share with a wild value isn't previewed")
+
+    // A page firing links in a loop: the rate limit holds (and the app shows one preview at a time).
+    let b = Rig()
+    var previews = 0
+    b.control.onImport = { _ in previews += 1 }
+    for _ in 0..<1000 { b.control.handle(url(good)) }
+    check(previews == 20, "1,000 import links at once: \(previews) handed over, not 20")
+    check(b.app.changes.isEmpty, "a burst of links changed something")
 }
 
 // MARK: - status.json

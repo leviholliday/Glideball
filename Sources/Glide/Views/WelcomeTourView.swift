@@ -473,6 +473,9 @@ struct WelcomeTourView: View {
                 SettingRow(title: "Closing the window keeps Glideball running",
                            hint: "Open it again from the Dock or the menu bar.",
                            symbol: "macwindow")
+                if KensingtonWorksSource.found {
+                    KensingtonWorksFoundRow(model: model, beforePreview: { model.closeWelcomeTour() })
+                }
                 if let name = model.status.unsupportedDeviceName, !model.otherTrackballs {
                     SettingRow(title: "Turn on Other Kensington trackballs to try Glideball with your \(name).",
                                symbol: "computermouse") {

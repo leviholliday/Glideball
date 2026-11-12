@@ -699,6 +699,7 @@ extension RenderUI {
             }) { dark, scale in
             updatePanel(model, dark: dark, scale: scale)
         }
+        list += sharingScreens(model)   // RenderSharing.swift
         return list
     }
 

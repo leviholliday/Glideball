@@ -182,6 +182,73 @@ enum SelfTest {
             return "3 panels drawn (Overview, an earned badge, one to earn); 3 pictures with PNG, file, words and \(posts) post links checked"
         }
 
+        step("receiving a shared setup") {
+            // A glideball://import link, a shared file and KensingtonWorks' settings, through the
+            // app's real receive path: a preview and nothing else until Apply; one at a time; a
+            // checkpoint, the change and Undo; the primary button never changes; hostile links refused.
+            let before = model.config
+            var theirs = before
+            theirs.buttons = [0: .disabled, 2: .openApp(bundleID: "com.apple.Notes"), 3: .shortcut(.copy)]
+            theirs.chords = [Chord(buttons: [2, 3], action: .shortcut(.missionControl))]
+            let share = try unwrap(SharedSetup.make(.buttons, from: theirs, look: nil), "couldn't make a share")
+            let link = try unwrap(share.link(), "the share didn't fit in a link")
+            guard case .success(let parsed)? = ExternalControl.parseImport(link) else { throw Failure("a good link was refused") }
+            model.lastIncomingClosed = -.infinity
+            model.receiveShare(parsed, from: .link)
+            let pending = try unwrap(model.pendingIncoming, "a link didn't open a preview")
+            try check(model.config == before, "a link changed settings before Apply")
+            let changes = model.changes(for: pending)
+            try check(changes.contains { $0.caution && $0.after?.contains("com.apple.Notes") == true }, "the Open isn't listed with its bundle ID")
+            try check(!changes.contains { $0.title == ImportReview.buttonName(0) }, "the preview offers to change the primary button")
+            model.receiveShare(parsed, from: .link)
+            try check(model.pendingIncoming?.id == pending.id, "a second link replaced the open preview")
+            try draw(IncomingSetupSheet(model: model, incoming: pending), "the preview of a link")
+            let backupsBefore = model.backups.backups.count
+            model.applyIncoming()
+            try check(model.pendingIncoming == nil, "Apply left the preview open")
+            try check(model.config.buttons[2] == .openApp(bundleID: "com.apple.Notes") && model.config.buttons[0] == before.buttons[0],
+                      "Apply didn't apply, or changed the primary button")
+            try check(model.backups.backups.count == backupsBefore + 1, "no checkpoint before Apply")
+            try check(model.toast?.action == .undoImport, "no Undo after Apply")
+            model.undoImport()
+            try check(model.config == before, "Undo didn't put everything back")
+            model.receiveShare(parsed, from: .link)
+            try check(model.pendingIncoming == nil, "a link right after a preview closed opened another")
+
+            for bad in ["glideball://import?d=AAAA", "glideball://import?d=" + String(repeating: "A", count: 3000),
+                        "glideball://import?d=\(SharedSetup.base64url(SharedSetup.deflate(Data(repeating: 0x5B, count: 500_000))!))"] {
+                if let url = URL(string: bad), case .success? = ExternalControl.parseImport(url) { throw Failure("a hostile link was accepted") }
+            }
+
+            // A shared file opens the same preview (and Cancel changes nothing).
+            model.lastIncomingClosed = -.infinity
+            let file = try unwrap(model.shareFile(share, name: "Self-test share"), "couldn't write a share file")
+            model.previewImport(file)
+            try check(model.pendingIncoming?.source == .file("Self-test share"), "a shared file didn't open the share preview")
+            model.cancelIncoming()
+            try check(model.config == before && model.pendingImport == nil, "Cancel changed something")
+
+            // KensingtonWorks (the sample: a render never reads the real file).
+            RenderUI.useSampleKensingtonWorks()
+            defer { KensingtonWorksSource.sandboxSettings = nil }
+            try check(KensingtonWorksSource.found, "the sample KensingtonWorks settings weren't found")
+            model.previewKensingtonWorks()
+            let kw = try unwrap(model.pendingIncoming, "no KensingtonWorks preview")
+            try check(!kw.notes.isEmpty && !model.changes(for: kw).isEmpty, "the KensingtonWorks preview is empty")
+            try draw(IncomingSetupSheet(model: model, incoming: kw), "the KensingtonWorks preview")
+            model.cancelIncoming()
+            try check(model.config == before, "previewing KensingtonWorks changed something")
+
+            // Share…: the sheet and the picture with its QR code.
+            try draw(ShareSetupSheet(model: model, request: ShareRequest(kind: .scrolling)), "Share…")
+            let scrollLink = model.share(.scrolling)?.link()?.absoluteString
+            try check(scrollLink.flatMap(QRCode.image) != nil, "no QR code for the link")
+            let picture = try unwrap(ShareImage.render(.setup(model.setupCard(.scrolling, link: scrollLink)), delight: model.delight), "the setup picture didn't draw")
+            try check(picture.pixelsWide == 1200 && !Offscreen.isBlank(picture), "the setup picture is wrong")
+            model.lastIncomingClosed = -.infinity
+            return "link and file previewed, nothing changed until Apply; checkpoint, Undo; one at a time; 3 hostile links refused; KensingtonWorks previewed; Share… and its picture drawn"
+        }
+
         step("welcome tour") {
             for s in WelcomeTourView.Step.allCases {
                 try draw(WelcomeTourView(model: model, step: s), "tour step \(s.rawValue + 1)", size: RenderUI.windowSize)

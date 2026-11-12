@@ -110,6 +110,7 @@ rm glide-signing.cnf glide-signing.key glide-signing.crt glide-signing.p12
 - **`scripts/backup-sim/run.sh`** runs a year and a half of simulated use through the real `BackupStore` and checks the retention rules.
 - **`scripts/command-sim/run.sh`** compiles the real command registry, `glideball://` parser and status.json writer with a fake app, then throws URLs at them: every good one, the switch off, about sixty malformed and hostile ones (100 KB strings, path traversal, percent-encoding tricks, NUL and newline, format strings, shell syntax, unknown and app-only commands) and a burst of 1,000. It checks nothing changed that shouldn't have, the log never repeats URL text, and the rate limit holds.
 - **`scripts/gesture-sim/run.sh`** compiles the real gesture decision code (`Gestures.swift`) and settings model with a harness wired the way `Engine.swift` wires them, then plays scripted, hostile and about 300,000 random button and ball events (unplug, pause, quit, sleep and the tap switched off mid-gesture, lost releases, 1,000 rapid taps, combos overlapping a held gesture, a gesture on the primary button). After every event it checks the hard rules: the pointer is frozen exactly while a gesture is held, every freeze is undone once, the primary button never becomes a gesture, nothing that holds is ever fired, a late release does nothing, no hold outlives its timeout. It also loads old settings and a newer version's settings with unknown actions and fields.
+- **`scripts/import-sim/run.sh`** compiles the import code (`ImportSafety.swift`, `SharedSetup.swift`, `ImportReview.swift`, `KensingtonWorks.swift`) and checks every share kind round-tripping as a file and a link, hostile links (bad base64, a 2 MB deflate bomb, deep nesting, wrong versions and kinds), hostile settings files, KensingtonWorks fixtures shaped like the real file plus malformed ones, 3,000 fuzzed inputs, that the primary button never changes, that every new Open or shortcut is listed in the preview, and that KensingtonWorks' file is only read.
 - **`scripts/device-sim/run.sh`** checks per-display pointer speed (which display the pointer is on, how often it looks, displays appearing and disappearing, the speed precedence), the connection types and the low-battery notices.
 
 ### Gestures, per-display speed, battery
@@ -125,7 +126,7 @@ One command runs everything that should pass before a release, prints a line per
 | Step | What |
 | --- | --- |
 | build | `swift build -c release` |
-| scroll-sim, backup-sim, command-sim, gesture-sim, device-sim | the simulators above |
+| scroll-sim, backup-sim, command-sim, gesture-sim, device-sim, import-sim | the simulators above |
 | l10n | `scripts/l10n/check.py`: every language complete, format specifiers match, no key written twice in a `.strings` file |
 | website | `npm run test:usage` and any other `website/tests/*.test.mjs` (runs `npm ci` first if `node_modules` is missing) |
 | site | `build_pages.py` and `check_site.py` in a temporary copy of `website/`, so the check never changes committed files. If the fresh build differs from what's committed (usually a new release in the changelog) that's a note, not a failure. |
@@ -197,6 +198,35 @@ Open them with `open -g "glideball://…"` (the `-g` keeps Glideball in the back
 | `glideball://open?tab=overview\|pointer\|scrolling\|buttons\|apps\|sync` | Shows the window, on that tab if given. Works with the switch off. |
 | `glideball://settings?tab=general\|look\|sound\|updates\|privacy\|shortcuts` | Opens Settings, on that tab if given. Works with the switch off. |
 | `glideball://check-for-updates` | Opens Software Update and checks. |
+| `glideball://import?d=<payload>` | A shared setup: shows its preview. Never changes anything by itself. Works with the switch off. |
+
+### Shared setups (`glideball://import`)
+
+Share… (each page's header menu, the Apps page per setup, Sync › Export) makes a share of one part
+(`pointer`, `scrolling`, `buttons`, `look`), one `app-setup`, or `everything` (`SharedSetup.swift`).
+The JSON is the usual settings file type (`.glide-settings`) with `"format": "glideball-share"`, a
+`kind` and only that part; `everything` also carries `config`, so an older Glideball imports it as a
+plain settings file. No Mac name goes in it. `version` follows the settings file's rule (2 only when
+gestures, media keys, Open an app or per-display speeds are in it). The link is
+`glideball://import?d=` + base64url (no padding) of raw-deflated JSON (Compression's `COMPRESSION_ZLIB`),
+offered only when the whole URL is at most 2,000 characters; otherwise it's file only.
+
+Receiving is the dangerous side, since any page can open the link:
+- A link or file opens a preview sheet over Glideball's window listing every setting that would change,
+  before and after (`ImportReview.swift`); actions that open an app or press keys are marked, and an
+  Open shows its bundle ID. Only Apply changes anything: a backup checkpoint, the change, Undo in the toast.
+- One preview at a time; anything arriving while one is open, or in the 1.5 s after it closes, is dropped.
+  Links also share the URL rate limit (20 a second).
+- The URL is at most 2,100 characters, `d` once and at most 2,048, inflated into a fixed 64 KB buffer
+  (anything that fills it is refused), JSON nested at most 32 deep, a known `format`, `kind` and version.
+- Every share, settings file and KensingtonWorks import goes through `GlideConfig.sanitizedForImport()`
+  (`ImportSafety.swift`): values clamped to the sliders' ranges, text cleaned, counts capped, bundle IDs
+  and shortcuts checked, and the primary button never set. A share from someone else keeps this Mac's
+  global shortcuts, per-display speeds and pause switch. Unknown fields are ignored.
+- `scripts/command-sim` and `scripts/import-sim` throw hostile and fuzzed links and files at all of it;
+  the self-test runs the app's real receive path.
+
+KensingtonWorks import: see [KENSINGTONWORKS-IMPORT.md](KENSINGTONWORKS-IMPORT.md).
 
 Commands and values ignore case. Unknown parameters are ignored; an unknown command, a bad or repeated value, or a missing required one means the whole URL is ignored, silently (the scroll log, `~/Library/Logs/Glide/scroll.log`, says `url ignored: <why>`). With the switch off, a URL that would change something does nothing and brings up one short explanation, once per launch. A URL that launches Glideball starts it quietly, like Open at Login (no window unless it's the first launch or a permission is missing).
 

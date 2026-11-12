@@ -13,6 +13,7 @@
 #   command-sim  scripts/command-sim/run.sh      glideball:// URLs, good and hostile, and status.json
 #   gesture-sim  scripts/gesture-sim/run.sh      gesture buttons, including unplug/pause mid-gesture
 #   device-sim   scripts/device-sim/run.sh       per-display speed, connection types, battery notices
+#   import-sim   scripts/import-sim/run.sh       settings files, shared setups, KensingtonWorks: good, hostile, fuzzed
 #   l10n         scripts/l10n/check.py           every translation complete, no repeated keys
 #   website      the website's function tests    (npm ci first if website/node_modules is missing)
 #   admin        the admin site's tests          its proxy against the real admin function, its pages and policy
@@ -79,6 +80,7 @@ run backup-sim "backup retention simulator" scripts/backup-sim/run.sh
 run command-sim "glideball:// URLs and status.json, good and hostile" scripts/command-sim/run.sh
 run gesture-sim "gesture buttons: scripted, hostile and random events" scripts/gesture-sim/run.sh
 run device-sim "per-display speed, connection types, low-battery notices" scripts/device-sim/run.sh
+run import-sim "settings files, shared setups, KensingtonWorks: good, hostile, fuzzed" scripts/import-sim/run.sh
 run l10n "translations: complete, no repeated keys" python3 scripts/l10n/check.py
 
 website_tests() (   # a subshell: the cd stays in here

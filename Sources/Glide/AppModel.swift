@@ -62,6 +62,15 @@ final class AppModel {
     // the UI should switch to (e.g. after double-clicking a settings file).
     var toast: Toast?
     var pendingImport: PendingImport?
+    /// A shared setup (link or file) or KensingtonWorks' settings, waiting in its
+    /// preview sheet. One at a time (AppModel+Sharing.swift).
+    var pendingIncoming: IncomingSetup?
+    /// Share…: the sheet that makes a link, file or picture of part of your setup.
+    var shareRequest: ShareRequest?
+    /// The ball color before an import that changed it, for Undo.
+    @ObservationIgnored var lookBeforeImport: ShareLook?
+    /// When the last preview closed (`systemUptime`): links that come right after are dropped.
+    @ObservationIgnored var lastIncomingClosed = -Double.infinity
     /// A page asked for before the main window's content was there to show it.
     /// Use `requestTab`, which goes straight to the window when it can.
     var requestedTab: GlideTab?
@@ -514,7 +523,7 @@ final class AppModel {
         let file: GlideSettingsFile
     }
 
-    @ObservationIgnored private var configBeforeImport: GlideConfig?
+    @ObservationIgnored var configBeforeImport: GlideConfig?
     @ObservationIgnored private var toastDismissal: DispatchWorkItem?
 
     // What's New, "Glideball has a new look" and the "A small favor" card take
@@ -588,15 +597,27 @@ final class AppModel {
         do {
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
+            let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+            guard size <= ImportLimits.maxFileBytes else { throw GlideSettingsFileError.unsupportedVersion(0) }
             let data = try Data(contentsOf: url)
-            let file: GlideSettingsFile
+            guard ImportJSON.depthIsWithin(data) else { throw GlideSettingsFileError.unsupportedVersion(0) }
+            let name = ImportText.clean(url.deletingPathExtension().lastPathComponent)
+            // A shared setup (one part, or everything from someone else) gets the share preview.
+            if let share = try? SharedSetup.decode(file: data) {
+                receiveShare(share, from: .file(name))
+                return
+            }
+            var file: GlideSettingsFile
             if let iso = try? decoder.decode(GlideSettingsFile.self, from: data) {
                 file = iso
             } else {
                 file = try JSONDecoder().decode(GlideSettingsFile.self, from: data)   // older files
             }
             _ = try file.validatedConfig()
-            pendingImport = PendingImport(fileName: url.deletingPathExtension().lastPathComponent, file: file)
+            // What's shown is what would be applied: clamped and checked like every import.
+            file.config = file.config.sanitizedForImport()
+            file.exportedFrom = file.exportedFrom.map { ImportText.clean($0) }
+            pendingImport = PendingImport(fileName: name, file: file)
             requestTab(.backup)
         } catch {
             show(.init(symbol: "exclamationmark.triangle.fill",
@@ -606,9 +627,11 @@ final class AppModel {
 
     func confirmImport() {
         guard let pending = pendingImport, var incoming = try? pending.file.validatedConfig() else { return }
+        incoming = incoming.sanitizedForImport()
         incoming.enabled = config.enabled            // the pause switch belongs to this Mac
         backups.checkpoint(config, kind: .beforeImport)
         configBeforeImport = config
+        lookBeforeImport = nil
         config = incoming
         pendingImport = nil
         show(.init(symbol: "arrow.down.doc.fill", text: String(localized: "Imported “\(pending.fileName)”"), action: .undoImport))
@@ -622,7 +645,7 @@ final class AppModel {
         updated.apply(preset)
         guard updated != config else { return }
         backups.checkpoint(config, kind: .beforePreset)
-        configBeforeImport = config
+        configBeforeImport = config; lookBeforeImport = nil
         config = updated
         delight.explored(.preset)
         show(.init(symbol: preset.symbol, text: String(localized: "Applied “\(preset.title)”", comment: "Toast; the name of a button preset"),
@@ -633,6 +656,8 @@ final class AppModel {
         guard let previous = configBeforeImport else { return }
         config = previous
         configBeforeImport = nil
+        if let look = lookBeforeImport { BallThemeStore.shared.use(look) }
+        lookBeforeImport = nil
         show(.init(symbol: "arrow.uturn.backward.circle.fill", text: String(localized: "Restored your previous settings")))
     }
 
@@ -650,7 +675,7 @@ final class AppModel {
             return
         }
         backups.checkpoint(config, kind: .beforeRestore)
-        configBeforeImport = config
+        configBeforeImport = config; lookBeforeImport = nil
         config = restored
         let when = backup.date.formatted(.dateTime.month(.abbreviated).day().hour().minute())
         show(.init(symbol: "clock.arrow.circlepath", text: String(localized: "Restored the backup from \(when)", comment: "Toast; the date and time of the backup"), action: .undoImport))

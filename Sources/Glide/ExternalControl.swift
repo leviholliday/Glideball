@@ -19,6 +19,13 @@ import Foundation
 // something gets one short explanation per launch and nothing else; `open`
 // and `settings` only show a window, so they work either way.
 //
+// The one exception that carries data, glideball://import?d=…, a shared setup
+// (SharedSetup.swift), never changes anything either: it only opens a preview
+// in Glideball's own window, one at a time, and only the person clicking Apply
+// there changes a setting (with a backup first and Undo after). That's why it
+// works with the switch off. Its payload is size-capped and decoded with every
+// check a settings file gets; its text never reaches the log.
+//
 // URL text is only ever compared with fixed lists, parsed as a plain decimal or
 // matched against the user's own app setup names. It never reaches a shell,
 // AppleScript, a file path, a format string or the log (the log gets the
@@ -52,7 +59,14 @@ final class ExternalControl {
         case appOnly = "not available from URLs"
         case badParameter = "bad or missing parameter"
         case noSuchSetup = "no app setup by that name"
+        case badShare = "not a shared setup Glideball can read"
     }
+
+    /// glideball://import?d=… (a shared setup, `SharedSetup`): handed here to be
+    /// previewed. It changes nothing by itself, so it works with the switch off;
+    /// only Apply in Glideball's own window does. Links are longer than commands.
+    var onImport: ((SharedSetup) -> Void)?
+    static let maxImportURLLength = 2_100
 
     enum Outcome: Equatable {
         case performed(String)
@@ -92,6 +106,17 @@ final class ExternalControl {
         if dropped > 0 {
             log("url: dropped \(dropped)")
             dropped = 0
+        }
+        if let result = Self.parseImport(url) {
+            switch result {
+            case .failure(let why):
+                log("url ignored: import, \(why.rawValue)")
+                return .ignored(why)
+            case .success(let share):
+                log("url: import (preview only)")
+                onImport?(share)
+                return .performed("import")
+            }
         }
         let command: Command, argument: CommandArgument
         switch Self.parse(url) {
@@ -144,6 +169,25 @@ final class ExternalControl {
         }
         guard let raw = item.value, let argument = parameter.parse(raw) else { return .failure(.badParameter) }
         return .success((command, argument))
+    }
+
+    /// nil when the URL isn't glideball://import; otherwise the share it carries, or
+    /// why it's ignored. As strict as `parse`: one `d`, nothing in the path, no user,
+    /// password or port, and the share itself decoded with every check in SharedSetup.
+    static func parseImport(_ url: URL) -> Result<SharedSetup, Rejection>? {
+        guard url.scheme?.lowercased() == scheme else { return nil }
+        let text = url.absoluteString
+        guard let parts = URLComponents(string: String(text.prefix(maxImportURLLength + 1))),
+              parts.percentEncodedHost?.lowercased() == "import" else { return nil }
+        guard text.utf8.count <= maxImportURLLength else { return .failure(.tooLong) }
+        guard parts.user == nil, parts.password == nil, parts.port == nil,
+              parts.percentEncodedPath.isEmpty || parts.percentEncodedPath == "/" else { return .failure(.malformed) }
+        let items = parts.queryItems ?? []
+        guard items.count <= maxQueryItems else { return .failure(.badParameter) }
+        let values = items.filter { $0.name == "d" }
+        guard values.count == 1, let d = values[0].value, !d.isEmpty else { return .failure(.badParameter) }
+        guard let share = try? SharedSetup.decode(linkPayload: d) else { return .failure(.badShare) }
+        return .success(share)
     }
 
     /// The argument for the log: only values from Glideball's own lists, never a name.

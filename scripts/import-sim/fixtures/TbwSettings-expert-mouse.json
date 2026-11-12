@@ -1,0 +1,338 @@
+{
+  "devices": [
+    [
+      4128,
+      {
+        "*": {
+          "config": {
+            "acceleration": true,
+            "accelerationRate": 0,
+            "commands": [
+              [
+                1,
+                {
+                  "command": "mouse_leftClick",
+                  "params": null
+                }
+              ],
+              [
+                2,
+                {
+                  "command": "missionControl_missionControl",
+                  "params": {}
+                }
+              ],
+              [
+                3,
+                {
+                  "command": "disable",
+                  "params": {}
+                }
+              ],
+              [
+                4,
+                {
+                  "command": "mouse_leftClick",
+                  "params": {
+                    "label": "",
+                    "modifiers": ""
+                  }
+                }
+              ],
+              [
+                5,
+                {
+                  "command": "keyboard_shortcut",
+                  "params": {
+                    "keyCode": 8,
+                    "label": "Copy",
+                    "modifiers": "ctrl"
+                  }
+                }
+              ],
+              [
+                8,
+                {
+                  "command": "disable",
+                  "params": {}
+                }
+              ],
+              [
+                10,
+                {
+                  "command": "keyboard_shortcut",
+                  "params": {
+                    "keyCode": 9,
+                    "label": "Paste",
+                    "modifiers": "ctrl"
+                  }
+                }
+              ],
+              [
+                12,
+                {
+                  "command": "disable",
+                  "params": {}
+                }
+              ],
+              [
+                16,
+                {
+                  "command": "mouse_button5Click",
+                  "params": null
+                }
+              ],
+              [
+                1073741824,
+                {
+                  "command": "navigation_scrollLeft",
+                  "params": null
+                }
+              ],
+              [
+                2147483648,
+                {
+                  "command": "navigation_scrollRight",
+                  "params": null
+                }
+              ]
+            ],
+            "customModifiers": "",
+            "customacceleration": false,
+            "customaccelerationRate": 80,
+            "customspeed": 50,
+            "id": 0,
+            "inertialScroll": true,
+            "inertialScrollFactor": 0,
+            "inertialScrollNullSteps": 0,
+            "inertialScrollTimer": 0,
+            "lockedAxisModifiers": "",
+            "scrollInvert": false,
+            "scrollLines": 19,
+            "slowDivider": 0,
+            "slowModifiers": "",
+            "snapModifiers": "",
+            "snippets": [
+              {
+                "content": "",
+                "label": ""
+              },
+              {
+                "content": "",
+                "label": ""
+              },
+              {
+                "content": "",
+                "label": ""
+              },
+              {
+                "content": "",
+                "label": ""
+              },
+              {
+                "content": "",
+                "label": ""
+              },
+              {
+                "content": "",
+                "label": ""
+              },
+              {
+                "content": "",
+                "label": ""
+              },
+              {
+                "content": "",
+                "label": ""
+              },
+              {
+                "content": "",
+                "label": ""
+              },
+              {
+                "content": "",
+                "label": ""
+              }
+            ],
+            "speed": 100
+          },
+          "fileName": "",
+          "name": "*"
+        },
+        "com.example.editor-Editor": {
+          "config": {
+            "acceleration": true,
+            "accelerationRate": 100,
+            "commands": [
+              [
+                1,
+                {
+                  "command": "mouse_leftClick",
+                  "params": null
+                }
+              ],
+              [
+                2,
+                {
+                  "command": "mouse_rightClick",
+                  "params": null
+                }
+              ],
+              [
+                3,
+                {
+                  "command": "keyboard_shortcut",
+                  "params": {
+                    "keyCode": 15,
+                    "label": "Rotate",
+                    "modifiers": ""
+                  }
+                }
+              ],
+              [
+                4,
+                {
+                  "command": "keyboard_shortcut",
+                  "params": {
+                    "keyCode": 15,
+                    "label": "Run",
+                    "modifiers": "cmd"
+                  }
+                }
+              ],
+              [
+                5,
+                {
+                  "command": "keyboard_shortcut",
+                  "params": {
+                    "keyCode": 8,
+                    "label": "Copy",
+                    "modifiers": "ctrl"
+                  }
+                }
+              ],
+              [
+                8,
+                {
+                  "command": "mouse_rightClick",
+                  "params": {
+                    "label": "",
+                    "modifiers": ""
+                  }
+                }
+              ],
+              [
+                10,
+                {
+                  "command": "keyboard_shortcut",
+                  "params": {
+                    "keyCode": 9,
+                    "label": "Paste",
+                    "modifiers": "ctrl"
+                  }
+                }
+              ],
+              [
+                12,
+                {
+                  "command": "keyboard_shortcut",
+                  "params": {
+                    "keyCode": 2,
+                    "label": "Duplicate",
+                    "modifiers": ""
+                  }
+                }
+              ],
+              [
+                16,
+                {
+                  "command": "mouse_button5Click",
+                  "params": null
+                }
+              ],
+              [
+                1073741824,
+                {
+                  "command": "navigation_scrollLeft",
+                  "params": null
+                }
+              ],
+              [
+                2147483648,
+                {
+                  "command": "navigation_scrollRight",
+                  "params": null
+                }
+              ]
+            ],
+            "customModifiers": "",
+            "customacceleration": false,
+            "customaccelerationRate": 80,
+            "customspeed": 50,
+            "id": 0,
+            "inertialScroll": true,
+            "inertialScrollFactor": 0,
+            "inertialScrollNullSteps": 0,
+            "inertialScrollTimer": 0,
+            "lockedAxisModifiers": "",
+            "scrollInvert": false,
+            "scrollLines": 19,
+            "slowDivider": 0,
+            "slowModifiers": "",
+            "snapModifiers": "",
+            "snippets": [
+              {
+                "content": "",
+                "label": ""
+              },
+              {
+                "content": "",
+                "label": ""
+              },
+              {
+                "content": "",
+                "label": ""
+              },
+              {
+                "content": "",
+                "label": ""
+              },
+              {
+                "content": "",
+                "label": ""
+              },
+              {
+                "content": "",
+                "label": ""
+              },
+              {
+                "content": "",
+                "label": ""
+              },
+              {
+                "content": "",
+                "label": ""
+              },
+              {
+                "content": "",
+                "label": ""
+              },
+              {
+                "content": "",
+                "label": ""
+              }
+            ],
+            "speed": 100
+          },
+          "fileName": "",
+          "name": "Editor"
+        }
+      }
+    ]
+  ],
+  "platform": "darwin",
+  "timestamp": 1790992180,
+  "trayIcon": true,
+  "versionMajor": 2,
+  "versionMinor": 0
+}

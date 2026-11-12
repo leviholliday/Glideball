@@ -217,6 +217,18 @@ struct Chord: Codable, Hashable, Identifiable {
     var action: ButtonAction
 }
 
+extension Chord {
+    private enum Keys: String, CodingKey { case id, buttons, action }
+
+    // A shared setup's link leaves the id out (it's made fresh on import anyway).
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: Keys.self)
+        id = (try? c.decodeIfPresent(UUID.self, forKey: .id)) ?? UUID()
+        buttons = try c.decode([Int].self, forKey: .buttons)
+        action = try c.decode(ButtonAction.self, forKey: .action)
+    }
+}
+
 // Settings written by a newer Glide can contain actions this version doesn't
 // know. Skip just those buttons and combos instead of failing to read — and so
 // losing — the whole settings file.
@@ -602,7 +614,7 @@ struct GlideSettingsFile: Codable {
     static let currentVersion = 2
     static let fileExtension = "glide-settings"
     let version: Int
-    let config: GlideConfig
+    var config: GlideConfig
     /// When and where the file was made — shown in the import preview.
     /// Optional so files from before these fields existed still open.
     var exportedAt: Date?

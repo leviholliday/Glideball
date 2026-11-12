@@ -342,6 +342,26 @@ final class BallThemeStore {
         if theme.id != "orb" { AppModel.shared.delight.explored(.ballColor) }
     }
 
+    /// The ball color in use, as a shared setup carries it.
+    var look: ShareLook {
+        ShareLook(theme: theme.id, custom: theme.id == "custom" ? custom.map(\.hex) : nil)
+    }
+
+    /// Uses a ball color from a shared setup (or puts back the one from before it).
+    func use(_ look: ShareLook) {
+        guard let look = look.sanitized else { return }
+        if let colors = look.custom?.compactMap({ UInt32($0, radix: 16).map(OrbRGB.init(hex:)) }), colors.count == 3 {
+            custom = colors
+            UserDefaults.standard.set(custom.map(\.hex), forKey: Self.customKey)
+        }
+        choose(look.theme)
+    }
+
+    /// A theme's name by id ("Sunset", "Custom"), for previews.
+    static func title(of look: ShareLook) -> String {
+        look.theme == "custom" ? BallTheme.custom([]).title : BallTheme.curated.first { $0.id == look.theme }?.title ?? look.theme
+    }
+
     /// Changes one of the custom colors (0 top, 1 middle, 2 bottom) and uses the custom theme.
     func setCustom(_ index: Int, to color: OrbRGB) {
         guard custom.indices.contains(index), custom[index] != color else { return }

@@ -118,6 +118,9 @@ struct RootView: View {
         .sheet(isPresented: $model.showingShortcuts) {
             ShortcutsSheet(model: model)
         }
+        // A shared setup or KensingtonWorks' settings to preview, and Share… (AppModel+Sharing.swift).
+        .sheet(item: $model.pendingIncoming, onDismiss: { model.cancelIncoming() }) { IncomingSetupSheet(model: model, incoming: $0) }
+        .sheet(item: $model.shareRequest) { ShareSetupSheet(model: model, request: $0) }
         // Pages asked for come straight here (`AppModel.requestTab`). Only the main
         // window's RootView takes them; the pictures --render-ui makes don't.
         .onAppear {
@@ -226,7 +229,7 @@ struct TabPage: View {
     var body: some View {
         let _ = PerfProbe.count("TabPage")
         VStack(alignment: .leading, spacing: Theme.Space.section) {
-            PageHeader(title: .verbatim(tab.title), subtitle: .verbatim(tab.summary))
+            PageHeader(title: .verbatim(tab.title), subtitle: .verbatim(tab.summary)) { PageShareMenu(tab: tab, model: model) }
             switch tab {
             case .overview: OverviewView(model: model)
             case .pointer: PointerView(model: model)

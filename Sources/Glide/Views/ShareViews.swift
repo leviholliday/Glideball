@@ -23,6 +23,8 @@ enum ShareCard: Equatable {
     case overview
     /// One badge, and when it was earned (nil: not yet, it's the one you're working toward).
     case badge(Milestone, Date?)
+    /// A shared setup: what it is, its key settings, and a QR code of its link.
+    case setup(SetupCard)
 
     /// Points; drawn at 2x (1200 × 750 pixels).
     static let size = CGSize(width: 600, height: 375)
@@ -31,8 +33,23 @@ enum ShareCard: Equatable {
         switch self {
         case .overview: String(localized: "My Glideball", comment: "Share picture file name")
         case .badge(let m, _): String(localized: "Glideball badge – \(m.title)", comment: "Share picture file name; %@ is a badge name")
+        case .setup(let s): String(localized: "Glideball setup – \(s.title)", comment: "Share picture file name; %@ is what's shared, like “Scroll feel”")
         }
     }
+}
+
+/// What a shared setup's picture shows.
+struct SetupCard: Equatable {
+    struct Line: Equatable {
+        let title: String
+        let value: String
+    }
+    /// "Scroll feel", "Xcode"
+    let title: String
+    let symbol: String
+    let lines: [Line]
+    /// The glideball://import link, when the setup fits in one.
+    let link: String?
 }
 
 /// The picture itself, always dark (it's the trackball's stage).
@@ -62,6 +79,7 @@ struct ShareCardView: View {
             switch card {
             case .overview: overview
             case .badge(let m, let date): badge(m, date)
+            case .setup(let s): setup(s)
             }
 
             VStack {
@@ -142,6 +160,57 @@ struct ShareCardView: View {
         }
         guard let compare = Landmarks.compare(v, metric: m) else { return base }
         return base + " · " + compare
+    }
+
+    private func setup(_ s: SetupCard) -> some View {
+        HStack(alignment: .center, spacing: 26) {
+            trackball
+                .scaleEffect(s.link == nil ? 1 : 0.72)
+                .frame(width: s.link == nil ? 196 : 142, height: s.link == nil ? 196 : 142)
+            VStack(alignment: .leading, spacing: 10) {
+                Label {
+                    Text("My Glideball setup", comment: "Share picture heading for a shared setup")
+                } icon: {
+                    Image(systemName: s.symbol)
+                }
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.62))
+                Text(verbatim: s.title)
+                    .font(.system(size: 30, weight: .bold, design: .rounded))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(Array(s.lines.prefix(4).enumerated()), id: \.offset) { _, line in
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(verbatim: line.title)
+                                .font(.system(size: 10.5, weight: .medium))
+                                .foregroundStyle(.white.opacity(0.5))
+                            Text(verbatim: line.value)
+                                .font(.system(size: 13.5, weight: .semibold))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.75)
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            if let link = s.link, let qr = QRCode.image(link) {
+                VStack(spacing: 7) {
+                    Image(decorative: qr, scale: 1)
+                        .interpolation(.none)
+                        .resizable()
+                        .frame(width: 112, height: 112)
+                        .padding(8)
+                        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(.white))
+                    Text("Open in Glideball", comment: "Share picture: under the QR code of a shared setup's link")
+                        .font(.system(size: 10.5, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.55))
+                }
+            }
+        }
+        .padding(.leading, 30)
+        .padding(.trailing, 28)
+        .padding(.bottom, 34)
     }
 
     private func badge(_ m: Milestone, _ date: Date?) -> some View {
@@ -323,6 +392,9 @@ struct ShareItems {
         case .badge(let m, .none):
             return String(localized: "I’m working toward “\(m.title)” in Glideball: \(m.detail). It’s a free Mac app for Kensington trackballs.",
                           comment: "Post text for sharing a badge not earned yet; the first %@ is the badge's name, the second what earns it")
+        case .setup(let s):
+            return String(localized: "My Glideball setup: \(s.title). Glideball is a free Mac app for Kensington trackballs.",
+                          comment: "Post text for sharing a setup; %@ is what's shared, like “Scroll feel”")
         }
     }
 }

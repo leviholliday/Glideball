@@ -342,6 +342,13 @@ private struct ProfileEditor: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                Button {
+                    model.requestShare(.appSetup, appSetup: p.bundleID)
+                } label: {
+                    Label("Share…", systemImage: "square.and.arrow.up")
+                }
+                .controlSize(.small)
+                .help("Share this app’s setup as a link, a file or a picture")
                 Button(role: .destructive) {
                     confirmingDelete = true
                 } label: {

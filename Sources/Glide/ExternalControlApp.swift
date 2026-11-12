@@ -114,6 +114,8 @@ final class ExternalControlCenter {
     func start() {
         guard !Sandbox.isActive, !started else { return }
         started = true
+        // glideball://import: a preview in the window, never a change (AppModel+Sharing.swift).
+        control.onImport = { AppModel.shared.receiveShare($0, from: .link) }
         settingChanged()
         let waiting = early
         early = []

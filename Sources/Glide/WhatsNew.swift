@@ -152,6 +152,7 @@ extension AppModel {
     var promptShowing: Bool {
         showingWelcomeTour || showingWhatsNew || showingIconChoice || showingSmallFavor
             || showingFeedback || showingAbout || showingShortcuts || pendingImport != nil
+            || pendingIncoming != nil || shareRequest != nil
     }
 
     /// Shows the next thing due, once the window is open and nothing else is

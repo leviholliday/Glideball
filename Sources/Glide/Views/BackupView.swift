@@ -254,6 +254,13 @@ private struct ExportSection: View {
             .padding(.vertical, Theme.Space.rowVertical)
             .frame(minHeight: Theme.Space.rowMinHeight)
 
+            SettingRow(title: "Share a setup with someone",
+                       hint: "Everything or just one part, as a link, a file or a picture. They see a preview before anything changes.",
+                       symbol: "person.2") {
+                Button("Share…") { model.requestShare(.everything) }
+                    .controlSize(.small)
+            }
+
             VStack(alignment: .leading, spacing: 8) {
                 Text("What’s in the file")
                     .font(Theme.Font.hint.weight(.medium))
@@ -317,6 +324,9 @@ private struct ImportSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Space.titleToGroup) {
             SectionTitle(title: "Import")
+            if KensingtonWorksSource.found {
+                RowGroup { KensingtonWorksFoundRow(model: model) }
+            }
             if let pending = model.pendingImport {
                 ImportPreview(model: model, pending: pending)
                     .transition(.opacity)

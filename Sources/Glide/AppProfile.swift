@@ -38,7 +38,7 @@ struct AppProfile: Codable, Equatable, Identifiable {
         if let scroll, scroll != main.scrollSettings { parts.append(scroll.scrollMode.scrollingTitle) }
         if let buttons {
             // The primary button is never per-app, so only the other three can differ.
-            let n = (1..<4).filter { (buttons[$0] ?? .system) != (main.buttons[$0] ?? .system) }.count
+            let n = (1..<4).filter { !(buttons[$0] ?? .system).sameEffect(as: main.buttons[$0] ?? .system, on: $0) }.count
             if n > 0 { parts.append(String(localized: "\(n) buttons changed", comment: "Buttons that do something other than the main setup, in an app setup")) }
         }
         if let chords, chords != main.chords {
