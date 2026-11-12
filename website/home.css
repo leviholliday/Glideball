@@ -1420,30 +1420,7 @@ input[type="range"]:focus-visible { outline: 2px solid rgb(var(--pc)); outline-o
 .vid-cap { padding: 14px 20px 18px; color: var(--text-3); font-size: 13.5px; line-height: 1.5; border-top: 1px solid rgba(255, 255, 255, 0.06); }
 @media (max-width: 640px) { .vid-cap { padding: 12px 16px 16px; font-size: 13px; } }
 
-/* --------------------------------------------------------------- Sounds toggle, and the end-of-page moment */
-.snd {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  min-height: 44px;
-  margin-top: 34px;
-  padding: 0 18px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-2);
-  font: inherit;
-  font-size: 15px;
-  cursor: pointer;
-  transition: transform 0.2s var(--ease-out), background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.3s;
-}
-.snd:hover { background: rgba(255, 255, 255, 0.1); color: var(--text); }
-.snd:active { transform: scale(0.97); }
-.snd[aria-pressed="true"] { color: var(--text); border-color: rgba(255, 125, 185, 0.55); box-shadow: 0 0 28px -6px rgba(255, 92, 168, 0.6); }
-.snd-ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.snd[aria-pressed="false"] .snd-wave { opacity: 0.25; }
-.closing-inner .snd-note { margin-top: 10px; font-size: 13.5px; color: var(--text-3); }
-
+/* --------------------------------------------------------------- The end-of-page moment */
 .dock-comet { position: absolute; inset: 4px; width: calc(100% - 8px); height: calc(100% - 8px); transform: rotate(-90deg); opacity: 0; pointer-events: none; }
 .dock-comet circle { fill: none; stroke: #ff5ca8; stroke-width: 3.4; stroke-linecap: round; stroke-dasharray: 26 74; filter: drop-shadow(0 0 5px #ff5ca8); }
 .dock.sweep .dock-comet { animation: dock-comet 1.3s cubic-bezier(0.45, 0, 0.2, 1) 1; }
