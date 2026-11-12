@@ -1976,3 +1976,15 @@
 "rolled" = "滚过";
 "scrolled" = "滚动了";
 "⌘Q quits straight away. Your trackball goes back to plain macOS until Glideball opens again." = "⌘Q 会立即退出。在 Glideball 再次打开之前，你的轨迹球会恢复为普通的 macOS 行为。";
+"%@ is at %@. Charge it now so it doesn’t switch off." = "%1$@ 的电量为 %2$@。请立即充电，以免关机。";
+"%@ is at %@. Charge it soon." = "%1$@ 的电量为 %2$@。请尽快充电。";
+"Get a notification when the battery is low, and again when it’s nearly empty." = "电量不足时通知你，快没电时再通知一次。";
+"A speed for each display, used while the pointer is on it. An app setup with its own speed still wins." = "为每个显示器单独设置速度，指针在该显示器上时使用。有自己速度的 App 设置仍然优先。";
+"Battery" = "电池";
+"Gesture (hold and roll)" = "手势（按住并滚动）";
+"Gestures" = "手势";
+"Low battery alerts" = "电量不足提醒";
+"Per display" = "按显示器";
+"Pointer speed per display" = "按显示器设置指针速度";
+"Speed for each display" = "为每个显示器设置速度";
+"Trackball battery low" = "轨迹球电量不足";

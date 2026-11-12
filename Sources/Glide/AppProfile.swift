@@ -151,7 +151,10 @@ extension GlideConfig {
     func resolved(for bundleID: String?) -> GlideConfig {
         guard let p = profile(for: bundleID) else { return self }
         var c = self
-        if let speed = p.trackingSpeed { c.trackingSpeed = speed }
+        if let speed = p.trackingSpeed {
+            c.trackingSpeed = speed
+            c.displaySpeeds.enabled = false   // an app setup's own speed wins over a display's (see DisplaySpeeds)
+        }
         if let scroll = p.scroll { c.scrollSettings = scroll }
         if var map = p.buttons {
             map[0] = buttons[0]   // the primary button is never per-app: it stays a left click

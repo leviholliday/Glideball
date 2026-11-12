@@ -1976,3 +1976,15 @@
 "rolled" = "rotolato";
 "scrolled" = "scorso";
 "⌘Q quits straight away. Your trackball goes back to plain macOS until Glideball opens again." = "⌘Q esce subito. La tua trackball torna a funzionare come in macOS finché Glideball non si riapre.";
+"%@ is at %@. Charge it now so it doesn’t switch off." = "%@ è al %@. Ricaricala ora prima che si spenga.";
+"%@ is at %@. Charge it soon." = "%@ è al %@. Ricaricala presto.";
+"Get a notification when the battery is low, and again when it’s nearly empty." = "Ricevi una notifica quando la batteria è bassa, e un’altra quando è quasi scarica.";
+"A speed for each display, used while the pointer is on it. An app setup with its own speed still wins." = "Una velocità per ogni monitor, usata mentre il puntatore è lì. Un’impostazione per app con la sua velocità ha comunque la precedenza.";
+"Battery" = "Batteria";
+"Gesture (hold and roll)" = "Gesto (tieni premuto e ruota)";
+"Gestures" = "Gesti";
+"Low battery alerts" = "Avvisi di batteria bassa";
+"Per display" = "Per monitor";
+"Pointer speed per display" = "Velocità del puntatore per monitor";
+"Speed for each display" = "Velocità per ogni monitor";
+"Trackball battery low" = "Batteria della trackball bassa";
