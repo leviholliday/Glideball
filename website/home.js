@@ -46,6 +46,76 @@
   const stage = $('[data-tb-stage]');
   if (!hero || !hx || !stage) return;
 
+  /* ============================================================ Sounds (off until you turn them on)
+     The app's own sounds, as small m4a files. Web Audio is created only after someone
+     turns Sounds on (browsers won't allow it before a click, and nothing should play
+     without that). The choice is remembered in localStorage; a remembered "on" starts
+     the audio on your first click or key press. */
+  const SND_KEY = 'glideball-sounds';
+  const sfx = (() => {
+    const FILES = ['tick', 'mode-on', 'mode-off', 'milestone'];
+    let on = false;
+    let ctx = null;
+    const bufs = {};
+    let lastTick = 0;
+    let lastPress = 0;
+    let acc = 0;
+    const load = (name) => {
+      if (bufs[name] || !ctx) return;
+      bufs[name] = 'loading';
+      fetch(`/assets/sounds/${name}.m4a`)
+        .then((r) => r.arrayBuffer())
+        .then((ab) => new Promise((ok, no) => { const p = ctx.decodeAudioData(ab, ok, no); if (p && p.then) p.then(ok, no); }))
+        .then((b) => { bufs[name] = b; })
+        .catch(() => { bufs[name] = null; });
+    };
+    const start = () => {
+      if (ctx || !on) return;
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      try { ctx = new AC(); } catch (_) { ctx = null; return; }
+      FILES.forEach(load);
+    };
+    const play = (name, rate = 1, gain = 1) => {
+      if (!on || !ctx) return;
+      const b = bufs[name];
+      if (!b || b === 'loading') return;
+      if (ctx.state === 'suspended') ctx.resume();
+      const src = ctx.createBufferSource();
+      src.buffer = b;
+      src.playbackRate.value = rate;
+      const g = ctx.createGain();
+      g.gain.value = gain;
+      src.connect(g); g.connect(ctx.destination);
+      src.start();
+    };
+    return {
+      get on() { return on; },
+      set(v) { on = v; if (v) start(); },
+      start,
+      // One soft tick per 6° notch, no more than about 16 a second, higher when faster.
+      ring(deg, speed) {
+        if (!on || !ctx) return;
+        acc += Math.abs(deg);
+        if (acc < 6) return;
+        acc %= 6;
+        const now = performance.now();
+        if (now - lastTick < 60) return;
+        lastTick = now;
+        play('tick', clamp(0.9 + (speed || 0) / 5, 0.9, 1.6), 0.55);
+      },
+      // The app has no button sound, so a lower tick stands in.
+      press() {
+        const now = performance.now();
+        if (now - lastPress < 80) return;
+        lastPress = now;
+        play('tick', 0.62, 0.9);
+      },
+      mode(isOn) { play(isOn ? 'mode-on' : 'mode-off', 1, 0.8); },
+      chime() { play('milestone', 1, 0.7); },
+    };
+  })();
+
   /* ============================================================ The light engine */
   const light = { ball: 0, ring: 0, amber: 0 };
   const LIGHT_TAU = { ball: 520, ring: 560, amber: 380 };
@@ -299,6 +369,7 @@
     if (dock) dockV = Math.max(dockV, clamp(v / 4, 0, 1));
     if (!ringDrag && dy) {
       angle += dy * K;
+      sfx.ring(dy * K, v);
       sweepDir = dy > 0 ? 1 : -1;
       if (heroVisible && !reduce.matches) bump('ring', v / 3);
     }
@@ -311,6 +382,7 @@
     const atTop = window.scrollY <= 0 && e.deltaY < 0;
     if (!atTop) return;
     angle += e.deltaY * K;
+    sfx.ring(e.deltaY * K, 1);
     sweepDir = -1;
     bump('ring', Math.min(1, Math.abs(e.deltaY) / 120));
   }, { passive: true });
@@ -341,6 +413,7 @@
       prevA = a;
       const deg = d * 180 / Math.PI;
       angle += deg; acc += deg;
+      sfx.ring(deg, 1);
       sweepDir = deg >= 0 ? 1 : -1;
       jumpTo(window.scrollY + deg / K);
       trail.push({ t: e.timeStamp, a: acc });
@@ -448,6 +521,7 @@
       const other = [...downPads.keys()].find((o) => o !== k);
       downPads.set(k, e.pointerId);
       lightPad(k, 260);
+      sfx.press();
       if (other) {
         comboed = true;
         const ob = $(`[data-pad="${other}"]`, stage);
@@ -464,6 +538,7 @@
     btn.addEventListener('focus', () => { if (padArt[k]) padArt[k].classList.add('focus'); });
     btn.addEventListener('blur', () => { if (padArt[k]) padArt[k].classList.remove('focus'); });
     btn.addEventListener('click', (e) => {
+      if (e.detail === 0) sfx.press(); // keyboard
       if (comboed || btn.dataset.comboed) { comboed = false; delete btn.dataset.comboed; return; }
       // Shift-click holds a button down, so the next one makes a combo.
       if (e.shiftKey) {
@@ -857,6 +932,7 @@
 
     const setMode = (m) => {
       mode = m;
+      sfx.mode(m !== 'native');
       modeBtns.forEach((b) => b.setAttribute('aria-checked', String(b.dataset.rmMode === m)));
       hint.textContent = HINTS[m];
       v = 0; target = pos;
@@ -1332,6 +1408,7 @@
       tick();
     });
     radios.forEach((r) => r.addEventListener('change', () => {
+      sfx.mode(r.value === 'flywheel');
       if (!r.checked) return;
       mode = r.value; v = 0;
       note.textContent = NOTES[mode];
@@ -1510,6 +1587,84 @@
     if (demo) { liveVisible = true; begin(); intro = 1; shownIntro = 1; Object.keys(stats).forEach(paint); }
   }
 
+  /* ============================================================ The real app, on a loop */
+  function initVideo() {
+    const fig = $('[data-vid]');
+    if (!fig) return;
+    const video = $('video', fig);
+    const btn = $('[data-vid-btn]', fig);
+    if (!video || !btn) return;
+    let visible = false;
+    let userPaused = reduce.matches; // reduced motion: it waits for you to press play
+    const paint = () => {
+      const playing = !video.paused;
+      btn.setAttribute('aria-pressed', String(playing));
+      btn.setAttribute('aria-label', playing ? 'Pause video' : 'Play video');
+    };
+    const go = () => { const p = video.play(); if (p && p.catch) p.catch(() => {}); };
+    const sync = () => {
+      if (visible && !userPaused && !document.hidden) go();
+      else video.pause();
+    };
+    video.addEventListener('play', paint);
+    video.addEventListener('pause', paint);
+    btn.addEventListener('click', () => {
+      if (video.paused) { userPaused = false; go(); } else { userPaused = true; video.pause(); }
+    });
+    document.addEventListener('visibilitychange', sync);
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(([e]) => { visible = e.isIntersecting; sync(); }, { threshold: 0.35 }).observe(fig);
+    }
+    paint();
+  }
+
+  /* ============================================================ Sounds toggle */
+  function initSound() {
+    const btn = $('[data-snd]');
+    if (!btn || !(window.AudioContext || window.webkitAudioContext)) return;
+    const label = $('[data-snd-label]', btn);
+    let stored = false;
+    try { stored = localStorage.getItem(SND_KEY) === '1'; } catch (_) { /* private mode */ }
+    const paint = (on) => {
+      btn.setAttribute('aria-pressed', String(on));
+      label.textContent = on ? 'Sounds: on' : 'Sounds: off';
+    };
+    btn.hidden = false;
+    paint(stored);
+    if (stored) {
+      // Remembered on: audio can only start on a gesture, so it starts with your first one.
+      sfx.set(true);
+      const first = () => sfx.start();
+      window.addEventListener('pointerdown', first, { once: true, capture: true });
+      window.addEventListener('keydown', first, { once: true, capture: true });
+    }
+    btn.addEventListener('click', () => {
+      const on = !sfx.on;
+      sfx.set(on);
+      paint(on);
+      try { localStorage.setItem(SND_KEY, on ? '1' : '0'); } catch (_) { /* ignore */ }
+      if (on) setTimeout(() => sfx.mode(true), 350); // the file takes a moment to arrive
+    });
+  }
+
+  /* ============================================================ End of the page: one pink sweep, once */
+  function initArrival() {
+    const closing = $('.closing');
+    if (!closing || !('IntersectionObserver' in window) || demo) return;
+    const io = new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting) return;
+      io.disconnect();
+      sfx.chime();
+      if (reduce.matches) return;
+      closing.classList.add('arrived');
+      if (dock) {
+        dock.classList.add('sweep');
+        setTimeout(() => dock.classList.remove('sweep'), 1600);
+      }
+    }, { threshold: 0.55 });
+    io.observe(closing);
+  }
+
   /* ============================================================ Boot */
   requestAnimationFrame(() => requestAnimationFrame(() => hx.classList.add('ready')));
   initLive();
@@ -1518,6 +1673,9 @@
   initRing();
   initButtons();
   initDemo();
+  initVideo();
+  initSound();
+  initArrival();
   updateDock();
 
   // Screenshot states (?demo=...). They only set what you'd see after doing it yourself.

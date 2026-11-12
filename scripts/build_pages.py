@@ -53,10 +53,10 @@ REPO = "leviholliday/glideball"
 ZIP = f"https://github.com/{REPO}/releases/latest/download/Glideball.zip"
 DOWNLOAD = "/download/"   # the "Your download is starting" page, which starts ZIP
 # /assets/ is cached for a year: bump ASSET_V when the icons or og.png change (scripts/site-icons.py).
-ASSET_V = "3"
+ASSET_V = "4"
 OG_IMAGE = SITE + f"/assets/og.png?v={ASSET_V}"
 OG_ALT = ("The Glideball app icon, a glowing trackball, next to the name Glideball and the line: "
-          "A smoother scroll ring and a faster pointer for your Kensington trackball.")
+          "A smoother scroll ring and a faster pointer for your Kensington trackball")
 
 # ------------------------------------------------------------------ nav + footer
 # (href, label, key). The key marks the current page (aria-current).

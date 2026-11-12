@@ -11,22 +11,22 @@
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#0b0b10">
   <link rel="icon" href="/favicon.ico" sizes="48x48">
-  <link rel="icon" type="image/png" sizes="64x64" href="/assets/favicon-64.png?v=3">
-  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=3">
+  <link rel="icon" type="image/png" sizes="64x64" href="/assets/favicon-64.png?v=4">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=4">
   <meta property="og:url" content="https://glideball.netlify.app/trackballs/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Glideball">
   <meta property="og:locale" content="en_US">
   <meta property="og:title" content="Supported Trackballs · Glideball">
   <meta property="og:description" content="Which Kensington trackballs work with Glideball on Mac: the wired Expert Mouse fully, and SlimBlade, Orbit and others once Other Kensington trackballs is on.">
-  <meta property="og:image" content="https://glideball.netlify.app/assets/og.png?v=3">
+  <meta property="og:image" content="https://glideball.netlify.app/assets/og.png?v=4">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="The Glideball app icon, a glowing trackball, next to the name Glideball and the line: A smoother scroll ring and a faster pointer for your Kensington trackball.">
+  <meta property="og:image:alt" content="The Glideball app icon, a glowing trackball, next to the name Glideball and the line: A smoother scroll ring and a faster pointer for your Kensington trackball">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Supported Trackballs · Glideball">
   <meta name="twitter:description" content="Which Kensington trackballs work with Glideball on Mac: the wired Expert Mouse fully, and SlimBlade, Orbit and others once Other Kensington trackballs is on.">
-  <meta name="twitter:image" content="https://glideball.netlify.app/assets/og.png?v=3">
+  <meta name="twitter:image" content="https://glideball.netlify.app/assets/og.png?v=4">
   <link rel="stylesheet" href="/styles.css">
   <script src="/privacy.js" defer></script>
   <script type="application/ld+json">
@@ -100,7 +100,7 @@
   <header class="nav-wrap">
     <div class="nav">
       <a class="brand" href="/" aria-label="Glideball home">
-        <img src="/assets/icon-256.webp?v=3" width="28" height="28" alt="">
+        <img src="/assets/icon-256.webp?v=4" width="28" height="28" alt="">
         <span>Glideball</span>
       </a>
       <nav class="nav-links" aria-label="Primary">
@@ -139,19 +139,38 @@
       </header>
       <section class="pg-section" aria-labelledby="models-h">
         <h2 id="models-h">Which Kensington trackballs work with Glideball?</h2>
-        <div class="table-wrap" tabindex="0" role="region" aria-label="Supported trackballs table">
-          <table class="pg-table">
-            <thead><tr><th scope="col">Trackball</th><th scope="col">Status</th><th scope="col">Notes</th></tr></thead>
-            <tbody>
-              <tr><th scope="row">Kensington Expert Mouse, wired (USB)</th><td><span class="status status-full">Full</span></td><td>The one Glideball is built and tested on. Everything works: pointer speed, all three scroll-ring modes, all four buttons and combos.</td></tr>
-              <tr><th scope="row">Kensington Expert Mouse Wireless</th><td><span class="status status-beta">Beta</span></td><td>It may show up as fully supported, depending on the name it reports. If Glideball says Beta, turn on Other Kensington trackballs.</td></tr>
-              <tr><th scope="row">Kensington SlimBlade</th><td><span class="status status-beta">Beta</span></td><td>Not tuned yet. The top buttons aren't supported yet.</td></tr>
-              <tr><th scope="row">Kensington Orbit trackballs</th><td><span class="status status-beta">Beta</span></td><td>Not tuned yet.</td></tr>
-              <tr><th scope="row">Other Kensington trackballs and mice</th><td><span class="status status-beta">Beta</span></td><td>Glideball treats any Kensington pointing device as a Beta device.</td></tr>
-              <tr><th scope="row">Other brands, the trackpad, the Magic Mouse</th><td><span class="status">Not supported</span></td><td>Never touched. They keep their System Settings.</td></tr>
-            </tbody>
-          </table>
-        </div>
+        <ul class="model-grid" aria-label="Supported trackballs">
+          <li class="card lit model model-full">
+            <h3>Kensington Expert Mouse, wired (USB)</h3>
+            <p class="model-status"><span class="status status-full">Fully supported</span></p>
+            <p>The one Glideball is built and tested on. Everything works: pointer speed, all three scroll-ring modes, all four buttons and combos.</p>
+          </li>
+          <li class="card lit model model-beta">
+            <h3>Kensington Expert Mouse Wireless</h3>
+            <p class="model-status"><span class="status status-beta">Works with Other Kensington trackballs on</span></p>
+            <p>It may show up as fully supported, depending on the name it reports. If Glideball says Beta, turn on Other Kensington trackballs.</p>
+          </li>
+          <li class="card lit model model-beta">
+            <h3>Kensington SlimBlade</h3>
+            <p class="model-status"><span class="status status-beta">Works with Other Kensington trackballs on</span></p>
+            <p>Not tuned yet. The top buttons aren't supported yet.</p>
+          </li>
+          <li class="card lit model model-beta">
+            <h3>Kensington Orbit trackballs</h3>
+            <p class="model-status"><span class="status status-beta">Works with Other Kensington trackballs on</span></p>
+            <p>Not tuned yet.</p>
+          </li>
+          <li class="card lit model model-beta">
+            <h3>Other Kensington trackballs and mice</h3>
+            <p class="model-status"><span class="status status-beta">Works with Other Kensington trackballs on</span></p>
+            <p>Glideball treats any Kensington pointing device as a Beta device.</p>
+          </li>
+          <li class="card lit model model-none">
+            <h3>Other brands, the trackpad, the Magic Mouse</h3>
+            <p class="model-status"><span class="status status-none">Not yet</span></p>
+            <p>Never touched. They keep their System Settings.</p>
+          </li>
+        </ul>
       </section>
 
       <section class="pg-section prose" aria-labelledby="beta-h">
@@ -174,8 +193,8 @@
 
       <section class="pg-cta" aria-labelledby="cta-h">
         <picture>
-          <source srcset="/assets/icon-256.webp?v=3" type="image/webp">
-          <img src="/assets/icon-256.png?v=3" width="72" height="72" alt="" loading="lazy">
+          <source srcset="/assets/icon-256.webp?v=4" type="image/webp">
+          <img src="/assets/icon-256.png?v=4" width="72" height="72" alt="" loading="lazy">
         </picture>
         <h2 id="cta-h">Get Glideball</h2>
         <p>Free and open source. macOS 26 Tahoe or later, on Apple silicon or Intel.</p>
@@ -193,7 +212,7 @@
     <div class="container footer-inner">
       <div class="footer-about">
         <div class="footer-brand">
-          <img src="/assets/icon-256.webp?v=3" width="24" height="24" alt="" loading="lazy">
+          <img src="/assets/icon-256.webp?v=4" width="24" height="24" alt="" loading="lazy">
           <span>Glideball</span>
         </div>
         <p class="footer-tag">A free, open-source Mac app for Kensington trackballs. Made by Levi Holliday, a student.</p>

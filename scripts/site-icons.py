@@ -80,7 +80,7 @@ x = 530
 d.text((x, 170), "Glideball", font=font(ROUNDED, 96, 760), fill=(244, 244, 247))
 head = font(SF, 32, 600)
 # The site's headline, broken where it reads best.
-lines = ["A smoother scroll ring and a faster pointer", "for your Kensington trackball."]
+lines = ["A smoother scroll ring and a faster pointer", "for your Kensington trackball"]
 y = 296
 for ln in lines:
     d.text((x, y), ln, font=head, fill=(206, 206, 216))

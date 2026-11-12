@@ -996,3 +996,17 @@ kbd {
   .nav-wrap, .footer, .skip, body::before, body::after { display: none; }
   html, body { background: #fff; color: #000; }
 }
+
+/* Supported trackballs: one lit card per model. */
+.model-grid { list-style: none; margin: 24px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.model { padding: 22px 22px 24px; display: flex; flex-direction: column; gap: 10px; }
+.model h3 { margin: 0; font-size: 18px; letter-spacing: -0.01em; line-height: 1.3; }
+.model p { margin: 0; color: var(--text-2); font-size: 15px; line-height: 1.55; }
+.model .model-status { color: var(--text); font-size: 14px; font-weight: 600; }
+.model .status { white-space: normal; align-items: flex-start; }
+.model .status::before { margin-top: 6px; flex: none; }
+.model-full { --lc: 77, 168, 255; }
+.model-beta { --lc: 255, 179, 64; }
+.model-none { --lc: 190, 190, 205; }
+@media (max-width: 980px) { .model-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .model-grid { grid-template-columns: minmax(0, 1fr); } }
