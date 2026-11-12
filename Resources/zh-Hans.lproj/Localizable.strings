@@ -2153,3 +2153,23 @@
 "⇧ scrolls sideways" = "⇧ 横向滚动";
 "Settings file" = "设置文件";
 "Small enough for any message. Double-click it to open it in Glideball." = "小到可以随任何消息发送。连按两次即可在 Glideball 中打开。";
+/* Chained gestures, gestures on combos, gesture distance */
+"A gesture can’t use the bottom-left button, your primary click" = "手势不能使用左下按键（你的主要点按）";
+"A wider dead zone and a clearer roll before anything fires, so a shaky press stays a tap." = "更大的死区，并且要更明确地滚动才会触发，这样手抖时按一下仍然是轻点。";
+"Distance" = "距离";
+"Each time you roll" = "每次滚动";
+"Fires each time you roll this way, even several times in one hold, mixed with the other directions." = "每次朝这个方向滚动都会触发，一次按住中可以触发多次，也可以和其他方向混用。";
+"Fires once per hold, however far you roll." = "每次按住只触发一次，无论滚动多远。";
+"Gesture distance" = "手势距离";
+"Hold the buttons together and roll the ball: a different action each way." = "同时按住这些按键并滚动轨迹球：每个方向一个不同的操作。";
+"Hold these buttons together and roll the ball. Each way does something the moment you roll a few millimeters, as many times as you like in one hold; a quick press does the tap." = "同时按住这些按键并滚动轨迹球。滚动几毫米就会立即执行该方向的操作，一次按住中可以执行任意多次；快速按一下则执行轻点操作。";
+"Hold these buttons together on your trackball and roll." = "同时按住轨迹球上的这些按键并滚动。";
+"Hold this button and roll the ball. Each way does something the moment you roll a few millimeters, as many times as you like in one hold; a quick press does the tap." = "按住这个按键并滚动轨迹球。滚动几毫米就会立即执行该方向的操作，一次按住中可以执行任意多次；快速按一下则执行轻点操作。";
+"How far you roll before a direction fires. Short suits small, quick rolls; Long ignores more by accident." = "触发一个方向前需要滚动的距离。“短”适合小而快的滚动；“长”会忽略更多误操作。";
+"How far you roll before a direction fires: about 2, 3 or 4.5 mm. A gesture can have its own." = "触发一个方向前需要滚动的距离：约 2、3 或 4.5 毫米。每个手势也可以单独设置。";
+"Includes your primary click, so this combo does the gesture’s tap instead of a gesture." = "包含你的主要点按，所以这个组合键执行手势的轻点操作，而不是手势。";
+"Keeps going for as long as you keep rolling." = "只要你一直滚动就会持续执行。";
+"Like Other Gestures" = "与其他手势相同";
+"Like Other Gestures (%@)" = "与其他手势相同（%@）";
+"Steady hands" = "防手抖";
+"What fired in this hold" = "这次按住时触发的操作";

@@ -64,6 +64,9 @@ final class Engine {
         var seq: Int
         var direction: GestureDirection?
         var buttons: [Int]
+        /// Which fire of its hold this was (1 for the first; 0 for a tap), so the UI
+        /// can show a chain of them and start afresh with each hold.
+        var chain = 0
     }
 
     let telemetry = Telemetry()
@@ -1339,7 +1342,8 @@ final class Engine {
     }
 
     private func beginGesture(_ gesture: ButtonGesture, buttons: [Int64]) {
-        let effects = gestures.begin(buttons: buttons.map { Int($0) }, gesture: gesture, now: CACurrentMediaTime())
+        let tuning = GestureTuning.for(distance: gesture.distance ?? config.gestureDistance, steadyHands: config.gestureSteadyHands)
+        let effects = gestures.begin(buttons: buttons.map { Int($0) }, gesture: gesture, now: CACurrentMediaTime(), tuning: tuning)
         guard !effects.isEmpty else {
             for b in buttons { overrides[b] = .swallow }   // refused: the press and its release do nothing
             return
@@ -1371,7 +1375,7 @@ final class Engine {
                 publishModes()
             case .fire(let action, let direction):
                 diagnostics.record("gesture \(direction.rawValue)")
-                flashGesture(direction, buttons: gestures.hold?.buttons ?? [])
+                flashGesture(direction, buttons: gestures.hold?.buttons ?? [], chain: gestures.hold?.fired ?? 1)
                 if !practicing { keyQueue.async { Self.perform(action) } }
             case .tap(let action, let buttons):
                 flashGesture(nil, buttons: buttons)
@@ -1384,8 +1388,8 @@ final class Engine {
     /// It switches itself off after two minutes, so it can never be left on.
     private var practicing: Bool { CACurrentMediaTime() < gesturePracticeUntil }
 
-    private func flashGesture(_ direction: GestureDirection?, buttons: [Int]) {
-        gestureFlash = GestureFlash(seq: (gestureFlash?.seq ?? 0) + 1, direction: direction, buttons: buttons)
+    private func flashGesture(_ direction: GestureDirection?, buttons: [Int], chain: Int = 0) {
+        gestureFlash = GestureFlash(seq: (gestureFlash?.seq ?? 0) + 1, direction: direction, buttons: buttons, chain: chain)
         publishModes()
     }
 

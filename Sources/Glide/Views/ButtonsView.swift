@@ -42,8 +42,14 @@ struct ButtonsView: View {
             }
 
             CombosCard(model: model)
+
+            if model.config.anyAction(\.isGesture) {
+                GestureSettingsCard(model: model)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
         }
         .animation(Theme.Motion.spring, value: model.assignStep)
+        .animation(Theme.Motion.spring, value: model.config.anyAction(\.isGesture))
         .onAppear {
             if let id = Self.sandboxPreview { preview = ButtonPreset.all.first { $0.id == id } }
         }
@@ -56,11 +62,43 @@ struct ButtonsView: View {
             let down = new.subtracting(old).subtracting([0]), up = old.subtracting(new).subtracting([0])
             if !down.isEmpty { Sounds.shared.detent(pitch: 1.05, volume: 0.45, kind: .buttons) }
             else if !up.isEmpty { Sounds.shared.detent(pitch: 0.8, volume: 0.3, kind: .buttons) }
-            // One button let go, alone: open its picker (a combo opens nothing).
+            // One button let go, alone: open its picker (a combo opens nothing, and neither
+            // does a gesture button: you press those here to try them).
             if old.count == 1, new.isEmpty, let b = old.first, b != 0, openPad == nil,
-               model.assignStep == .idle, preview == nil {
+               model.assignStep == .idle, preview == nil, !(model.buttonsInEffect[b]?.isGesture ?? false) {
                 openPad = b
             }
+        }
+        // Each command a gesture fires: a quiet tick, on this page only (the Sounds switches decide).
+        .onChange(of: model.modes.gestureFlash) { _, f in
+            guard model.windowIsKey, let f, f.direction != nil else { return }
+            Sounds.shared.detent(pitch: 1.2 + 0.03 * Double(min(f.chain, 6)), volume: 0.3, kind: .buttons)
+        }
+    }
+}
+
+// MARK: - Gesture settings
+
+/// Under the combos while any button or combo is a gesture: how far a roll goes
+/// before a direction fires, and Steady hands.
+struct GestureSettingsCard: View {
+    @Bindable var model: AppModel
+
+    var body: some View {
+        SectionBlock(title: "Gestures") {
+            SettingRow(title: "Gesture distance",
+                       hint: "How far you roll before a direction fires: about 2, 3 or 4.5 mm. A gesture can have its own.",
+                       symbol: "ruler", tint: Theme.buttons) {
+                Picker("Gesture distance", selection: $model.config.gestureDistance) {
+                    ForEach(GestureDistance.allCases) { d in Text(verbatim: d.title).tag(d) }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .fixedSize()
+            }
+            ToggleRow(title: "Steady hands",
+                      subtitle: "A wider dead zone and a clearer roll before anything fires, so a shaky press stays a tap.",
+                      symbol: "hand.raised", isOn: $model.config.gestureSteadyHands, tint: Theme.buttons)
         }
     }
 }

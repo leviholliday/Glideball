@@ -2153,3 +2153,23 @@
 "⇧ scrolls sideways" = "⇧ scrollt seitwärts";
 "Settings file" = "Einstellungsdatei";
 "Small enough for any message. Double-click it to open it in Glideball." = "Klein genug für jede Nachricht. Per Doppelklick öffnet sie sich in Glideball.";
+/* Chained gestures, gestures on combos, gesture distance */
+"A gesture can’t use the bottom-left button, your primary click" = "Eine Geste kann die Taste unten links nicht nutzen, deinen Hauptklick";
+"A wider dead zone and a clearer roll before anything fires, so a shaky press stays a tap." = "Eine größere tote Zone und ein deutlicheres Rollen, bevor etwas auslöst, damit ein zittriger Druck ein Tippen bleibt.";
+"Distance" = "Weg";
+"Each time you roll" = "Bei jedem Rollen";
+"Fires each time you roll this way, even several times in one hold, mixed with the other directions." = "Löst jedes Mal aus, wenn du in diese Richtung rollst, auch mehrmals pro Halten und gemischt mit den anderen Richtungen.";
+"Fires once per hold, however far you roll." = "Löst einmal pro Halten aus, egal wie weit du rollst.";
+"Gesture distance" = "Gestenweg";
+"Hold the buttons together and roll the ball: a different action each way." = "Tasten zusammen halten und die Kugel rollen: in jede Richtung eine andere Aktion.";
+"Hold these buttons together and roll the ball. Each way does something the moment you roll a few millimeters, as many times as you like in one hold; a quick press does the tap." = "Halte diese Tasten zusammen und roll die Kugel. Jede Richtung löst aus, sobald du ein paar Millimeter rollst, so oft du willst pro Halten; ein kurzer Druck macht das Tippen.";
+"Hold these buttons together on your trackball and roll." = "Halte diese Tasten an deinem Trackball zusammen und roll.";
+"Hold this button and roll the ball. Each way does something the moment you roll a few millimeters, as many times as you like in one hold; a quick press does the tap." = "Halte diese Taste und roll die Kugel. Jede Richtung löst aus, sobald du ein paar Millimeter rollst, so oft du willst pro Halten; ein kurzer Druck macht das Tippen.";
+"How far you roll before a direction fires. Short suits small, quick rolls; Long ignores more by accident." = "Wie weit du rollst, bis eine Richtung auslöst. Kurz passt zu kleinen, schnellen Bewegungen; Lang ignoriert mehr Versehen.";
+"How far you roll before a direction fires: about 2, 3 or 4.5 mm. A gesture can have its own." = "Wie weit du rollst, bis eine Richtung auslöst: etwa 2, 3 oder 4,5 mm. Jede Geste kann ihren eigenen haben.";
+"Includes your primary click, so this combo does the gesture’s tap instead of a gesture." = "Enthält deinen Hauptklick, deshalb macht diese Kombi das Tippen der Geste statt einer Geste.";
+"Keeps going for as long as you keep rolling." = "Läuft weiter, solange du weiterrollst.";
+"Like Other Gestures" = "Wie andere Gesten";
+"Like Other Gestures (%@)" = "Wie andere Gesten (%@)";
+"Steady hands" = "Ruhige Hand";
+"What fired in this hold" = "Was bei diesem Halten ausgelöst hat";

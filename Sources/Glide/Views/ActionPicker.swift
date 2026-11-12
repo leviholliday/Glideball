@@ -298,6 +298,8 @@ struct ActionPickerPanel: View {
     var button: Int? = nil
     /// What it's choosing: a button's action, one direction of a gesture, or a gesture's tap.
     var purpose: Purpose = .button
+    /// For a combo: its buttons (a combo can be a gesture unless it includes the primary button).
+    var comboButtons: [Int]? = nil
     let pick: (ButtonAction) -> Void
 
     enum Purpose {
@@ -425,12 +427,23 @@ struct ActionPickerPanel: View {
         }
     }
 
-    /// "Gesture": offered for the three free buttons (never the primary one, never a combo),
-    /// and only when choosing what a button does. Search finds it by its own words.
+    /// "Gesture": offered for the three free buttons and for combos without the primary
+    /// button (never the primary one: see `GestureRoute.decide`), and only when choosing
+    /// what a button or combo does. Search finds it by its own words.
     private func gestureEntry(_ q: String) -> PickerEntry? {
-        guard purpose == .button, let button, button != 0 else { return nil }
+        guard purpose == .button else { return nil }
+        let isCombo: Bool
+        if let comboButtons, comboButtons.count > 1, !comboButtons.contains(0) {
+            isCombo = true
+        } else if let button, button != 0, comboButtons == nil {
+            isCombo = false
+        } else {
+            return nil
+        }
         let title = String(localized: "Gesture", comment: "Action picker: hold the button and roll the ball")
-        let detail = String(localized: "Hold the button and roll the ball: a different action each way.", comment: "Action picker: Gesture")
+        let detail = isCombo
+            ? String(localized: "Hold the buttons together and roll the ball: a different action each way.", comment: "Action picker: Gesture, for a combo")
+            : String(localized: "Hold the button and roll the ball: a different action each way.", comment: "Action picker: Gesture")
         let words = title + " " + detail + " " + String(localized: "hold roll swipe direction", comment: "Action picker: extra search words for Gesture")
         if !q.isEmpty, !q.split(separator: " ").allSatisfy({ words.range(of: $0, options: [.caseInsensitive, .diacriticInsensitive]) != nil }) {
             return nil
@@ -554,6 +567,8 @@ struct ActionPickerButton: View {
     /// Lets the page open it (the trackball map, a real button press). Optional.
     var isPresented: Binding<Bool>? = nil
     var purpose: ActionPickerPanel.Purpose = .button
+    /// For a combo: its buttons (so it can offer Gesture).
+    var comboButtons: [Int]? = nil
     /// The keys a shortcut sends, beside its name (off where space is tight).
     var showsKeys = true
     let onPick: (ButtonAction) -> Void
@@ -581,7 +596,7 @@ struct ActionPickerButton: View {
         .accessibilityLabel(Text("\(action?.title ?? String(localized: "Nothing chosen")), choose what this does",
                                  comment: "Spoken: a button’s current action, then what clicking does"))
         .popover(isPresented: shown, arrowEdge: .bottom) {
-            ActionPickerPanel(current: action, button: button, purpose: purpose) { new in onPick(new) }
+            ActionPickerPanel(current: action, button: button, purpose: purpose, comboButtons: comboButtons) { new in onPick(new) }
         }
     }
 }

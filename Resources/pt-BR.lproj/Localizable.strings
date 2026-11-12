@@ -2153,3 +2153,23 @@
 "⇧ scrolls sideways" = "⇧ rola para os lados";
 "Settings file" = "Arquivo de ajustes";
 "Small enough for any message. Double-click it to open it in Glideball." = "Pequeno o bastante para qualquer mensagem. Clique duas vezes para abri-lo no Glideball.";
+/* Chained gestures, gestures on combos, gesture distance */
+"A gesture can’t use the bottom-left button, your primary click" = "Um gesto não pode usar o botão inferior esquerdo, seu clique principal";
+"A wider dead zone and a clearer roll before anything fires, so a shaky press stays a tap." = "Uma zona morta maior e um giro mais claro antes de algo disparar, para que um toque trêmulo continue sendo um toque.";
+"Distance" = "Distância";
+"Each time you roll" = "Cada vez que rola";
+"Fires each time you roll this way, even several times in one hold, mixed with the other directions." = "Dispara cada vez que você rola para este lado, até várias vezes no mesmo toque, misturado com os outros lados.";
+"Fires once per hold, however far you roll." = "Dispara uma vez por toque, não importa quanto você role.";
+"Gesture distance" = "Distância dos gestos";
+"Hold the buttons together and roll the ball: a different action each way." = "Segure os botões juntos e role a bola: uma ação diferente para cada lado.";
+"Hold these buttons together and roll the ball. Each way does something the moment you roll a few millimeters, as many times as you like in one hold; a quick press does the tap." = "Segure estes botões juntos e role a bola. Cada lado faz algo assim que você rola alguns milímetros, quantas vezes quiser no mesmo toque; um clique rápido faz o toque.";
+"Hold these buttons together on your trackball and roll." = "Segure estes botões juntos no trackball e role.";
+"Hold this button and roll the ball. Each way does something the moment you roll a few millimeters, as many times as you like in one hold; a quick press does the tap." = "Segure este botão e role a bola. Cada lado faz algo assim que você rola alguns milímetros, quantas vezes quiser no mesmo toque; um clique rápido faz o toque.";
+"How far you roll before a direction fires. Short suits small, quick rolls; Long ignores more by accident." = "Quanto você rola antes de um lado disparar. Curto combina com giros pequenos e rápidos; Longo ignora mais giros acidentais.";
+"How far you roll before a direction fires: about 2, 3 or 4.5 mm. A gesture can have its own." = "Quanto você rola antes de um lado disparar: cerca de 2, 3 ou 4,5 mm. Cada gesto pode ter a sua.";
+"Includes your primary click, so this combo does the gesture’s tap instead of a gesture." = "Inclui seu clique principal, então este combo faz o toque do gesto em vez de um gesto.";
+"Keeps going for as long as you keep rolling." = "Continua enquanto você continuar rolando.";
+"Like Other Gestures" = "Igual aos outros gestos";
+"Like Other Gestures (%@)" = "Igual aos outros gestos (%@)";
+"Steady hands" = "Mãos trêmulas";
+"What fired in this hold" = "O que disparou neste toque";
