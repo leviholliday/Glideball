@@ -10,22 +10,52 @@ struct OverviewView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Space.section + 8) {
             TodayCluster(model: model)
+                .findable(.today)
             LiveActivity(feed: model.live)
+                .findable(.liveActivity)
             if model.delight.checklistVisible {
                 MakeItYoursCard(delight: model.delight, trackballFound: model.status.deviceConnected) { model.requestTab($0) }
                     .transition(.opacity)
+                    .findable(.makeItYours)
             }
             YourTrackballCard(delight: model.delight)
             SettingsHint()
+                .findable(.settingsMoved)
         }
         .animation(Theme.Motion.spring, value: model.delight.checklistVisible)
     }
+
+    static let findables: [Findable] = [.today, .liveActivity, .makeItYours, .yourTrackball, .thisWeek, .personalBests, .badges, .settingsMoved]
 
     static func meters(_ m: Double) -> String {
         if m < 1 { return Tally.length(m * 100, .centimeters, digits: 0) }
         if m < 1000 { return Tally.length(m, .meters, digits: 1) }
         return Tally.length(m / 1000, .kilometers, digits: 2)
     }
+}
+
+// What search finds on Overview.
+extension Findable {
+    static let today = Findable(
+        id: "today", title: String(localized: "Today"),
+        detail: String(localized: "Today’s clicks, ball and scroll distance against your best day.", comment: "Search palette: Today on Overview"),
+        keywords: String(localized: "stats, statistics, numbers, clicks, distance, gauge, best day", comment: "Search words for Today (comma-separated)"),
+        symbol: "circle.circle", place: .tab(.overview))
+    static let liveActivity = Findable(
+        id: "live-activity", title: String(localized: "Live activity"),
+        detail: String(localized: "The ball and the ring, moving live.", comment: "Search palette: Live activity"),
+        keywords: String(localized: "graph, oscilloscope, live, chart, test", comment: "Search words for Live activity (comma-separated)"),
+        symbol: "waveform.path.ecg", place: .tab(.overview))
+    static let makeItYours = Findable(
+        id: "make-it-yours", title: String(localized: "Make it yours"),
+        detail: String(localized: "The setup checklist: speed, scrolling, buttons, a combo, an app.", comment: "Search palette: Make it yours"),
+        keywords: String(localized: "checklist, setup, getting started, onboarding", comment: "Search words for Make it yours (comma-separated)"),
+        symbol: "checklist", place: .tab(.overview), sometimes: true)
+    static let settingsMoved = Findable(
+        id: "settings-moved", title: String(localized: "Where the settings went"),
+        detail: String(localized: "Open at login, Language, Updates and shortcuts are in Settings (⌘,).", comment: "Search palette: the note on Overview about Settings"),
+        keywords: String(localized: "preferences, general, moved", comment: "Search words for the Settings note (comma-separated)"),
+        symbol: "gearshape", place: .tab(.overview), sometimes: true)
 }
 
 // MARK: - Shell state

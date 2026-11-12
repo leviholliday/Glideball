@@ -13,9 +13,11 @@ struct ScrollSettingsView: View {
     var body: some View {
         let controls = ScrollControls(config: $model.config)
         VStack(alignment: .leading, spacing: Theme.Space.section) {
-            PlainSection(title: "Scroll mode") {
+            PlainSection(title: "Scroll mode",
+                         caption: TryHint.due ? "⌥-click a mode to try it for 10 seconds first." : nil) {
                 ModePicker(mode: $model.config.scrollMode)
             }
+            .findable(.scrollMode)
 
             // The mode's own controls glide in under the cards (a rise and a fade) as the old ones fade.
             Group {
@@ -34,6 +36,7 @@ struct ScrollSettingsView: View {
 
             // One "Try it here" for every mode: it stays put while the mode changes.
             TryItArea(feed: model.live)
+                .findable(.tryItHere)
 
             Group {
                 switch model.config.scrollMode {
@@ -63,10 +66,99 @@ struct ScrollSettingsView: View {
                              format: { "\($0.twoDigits)×" }, lowLabel: "Fine", highLabel: "Fast",
                              hint: .verbatim(ScrollHints.ballScroll(model.config.ballScrollSpeed)),
                              tint: Theme.ball, defaultValue: Self.defaults.ballScrollSpeed)
+                    .findable(.ballScrollSpeed)
             }
         }
         .animation(Theme.Motion.respecting(reduceMotion, Theme.Motion.spring), value: model.config.scrollMode)
     }
+
+    static let findables: [Findable] = [
+        .scrollMode, .nativeScrollSpeed, .flyDistance, .flyPower, .flyReach, .flyGlide, .smoothScrolling, .kensingtonFeel,
+        .followPresets, .followDistance, .followSoftness, .followAcceleration, .throwToCoast, .throwDistance,
+        .flipDirection, .shiftSideways, .tryItHere, .ballScrollSpeed,
+    ]
+}
+
+// What search finds on Scrolling (each next to its row).
+extension Findable {
+    private static func scroll(_ id: String, _ title: String, _ detail: String, _ keywords: String, _ symbol: String,
+                               _ modes: [ScrollMode] = [], part: Metric = .scroll, boost: Int = 0) -> Findable {
+        Findable(id: id, title: title, detail: detail, keywords: keywords, symbol: symbol, place: .tab(.scroll),
+                 part: part, modes: modes, boost: boost)
+    }
+
+    static let scrollMode = scroll("scroll-mode", String(localized: "Scroll mode"),
+        String(localized: "Native, Flywheel or Follow: how the page moves when you turn the ring.", comment: "Search palette: Scroll mode"),
+        String(localized: "scrolling, ring, wheel, flywheel, follow, native, inertia, momentum", comment: "Search words for Scroll mode (comma-separated)"),
+        "arrow.up.and.down.circle", boost: 8)
+    static let nativeScrollSpeed = scroll("native-scroll-speed", String(localized: "Scroll speed"),
+        String(localized: "How far macOS scrolls for each click of the ring, in Native mode.", comment: "Search palette: Native scroll speed"),
+        String(localized: "scroll speed, wheel speed, native, lines", comment: "Search words for Native scroll speed (comma-separated)"),
+        "gauge.with.dots.needle.50percent", [.native], boost: 3)
+    static let flyDistance = scroll("fly-distance", String(localized: "Slow-turn distance"),
+        String(localized: "How far one slow tick moves the page, in Flywheel mode.", comment: "Search palette: Flywheel slow-turn distance"),
+        String(localized: "distance, tick, step, scroll speed, flywheel", comment: "Search words for slow-turn distance (comma-separated)"),
+        "arrow.up.and.down", [.flywheel])
+    static let flyPower = scroll("fly-power", String(localized: "Spin power"),
+        String(localized: "How much harder fast spins push the page, in Flywheel mode.", comment: "Search palette: Flywheel spin power"),
+        String(localized: "acceleration, power, fast spin, flywheel", comment: "Search words for spin power (comma-separated)"),
+        "tornado", [.flywheel])
+    static let flyReach = scroll("fly-reach", String(localized: "Fast-spin reach"),
+        String(localized: "How far a very hard spin can carry the page, in Flywheel mode.", comment: "Search palette: Flywheel fast-spin reach"),
+        String(localized: "reach, top speed, limit, flywheel", comment: "Search words for fast-spin reach (comma-separated)"),
+        "bolt.horizontal", [.flywheel])
+    static let flyGlide = scroll("fly-glide", String(localized: "Glide"),
+        String(localized: "How long the page coasts after a push, in Flywheel mode.", comment: "Search palette: Flywheel glide"),
+        String(localized: "friction, coast, momentum, inertia, slippery, flywheel", comment: "Search words for glide (comma-separated)"),
+        "wind", [.flywheel])
+    static let smoothScrolling = scroll("smooth-scrolling", String(localized: "Smooth scrolling"),
+        String(localized: "Smooth movement, or plain steps like a basic mouse.", comment: "Search palette: Smooth scrolling"),
+        String(localized: "smooth, steps, jumpy, lines", comment: "Search words for smooth scrolling (comma-separated)"),
+        "water.waves", [.flywheel, .follow])
+    static let kensingtonFeel = scroll("kensington-feel", String(localized: "Kensington feel"),
+        String(localized: "Flywheel set to what Kensington’s own driver measured.", comment: "Search palette: Kensington feel"),
+        String(localized: "kensingtonworks, default, reset, original, driver", comment: "Search words for Kensington feel (comma-separated)"),
+        "arrow.counterclockwise", [.flywheel])
+    static let followPresets = scroll("follow-presets", String(localized: "Follow presets"),
+        String(localized: "Precise, Control or Fling, in Follow mode.", comment: "Search palette: Follow presets"),
+        String(localized: "preset, precise, control, fling, follow", comment: "Search words for Follow presets (comma-separated)"),
+        "square.grid.2x2", [.follow])
+    static let followDistance = scroll("follow-distance", String(localized: "Distance per notch"),
+        String(localized: "How far one slow notch moves the page, in Follow mode.", comment: "Search palette: Follow distance per notch"),
+        String(localized: "distance, notch, step, scroll speed, follow", comment: "Search words for distance per notch (comma-separated)"),
+        "arrow.up.and.down", [.follow])
+    static let followSoftness = scroll("follow-softness", String(localized: "Follow"),
+        String(localized: "How closely the page sticks to the ring, in Follow mode.", comment: "Search palette: Follow softness"),
+        String(localized: "softness, smoothing, lag, latency, follow", comment: "Search words for the Follow slider (comma-separated)"),
+        "hand.point.up.left", [.follow])
+    static let followAcceleration = scroll("follow-acceleration", String(localized: "Spin acceleration"),
+        String(localized: "How much farther each notch goes when you spin fast, in Follow mode.", comment: "Search palette: Follow spin acceleration"),
+        String(localized: "acceleration, fast spin, follow", comment: "Search words for spin acceleration (comma-separated)"),
+        "tornado", [.follow])
+    static let throwToCoast = scroll("throw-to-coast", String(localized: "Throw to coast"),
+        String(localized: "Spin fast and let go, and the page glides on, in Follow mode.", comment: "Search palette: Throw to coast"),
+        String(localized: "throw, fling, momentum, inertia, coast", comment: "Search words for throw to coast (comma-separated)"),
+        "paperplane.fill", [.follow])
+    static let throwDistance = scroll("throw-distance", String(localized: "Throw distance"),
+        String(localized: "How far a flick carries the page, in Follow mode.", comment: "Search palette: Throw distance"),
+        String(localized: "throw, fling, coast, distance", comment: "Search words for throw distance (comma-separated)"),
+        "ruler", [.follow])
+    static let flipDirection = scroll("flip-direction", String(localized: "Flip direction"),
+        String(localized: "Scroll the other way, if a scroll reverser gets it wrong.", comment: "Search palette: Flip direction"),
+        String(localized: "reverse, invert, natural scrolling, direction, backwards", comment: "Search words for flip direction (comma-separated)"),
+        "arrow.up.arrow.down", [.flywheel, .follow])
+    static let shiftSideways = scroll("shift-sideways", String(localized: "Shift scrolls sideways"),
+        String(localized: "Hold ⇧ while you spin the ring to scroll left and right.", comment: "Search palette: Shift scrolls sideways"),
+        String(localized: "horizontal, sideways, shift, left, right", comment: "Search words for shift scrolls sideways (comma-separated)"),
+        "shift", [.flywheel, .follow])
+    static let tryItHere = scroll("try-it-here", String(localized: "Try it here"),
+        String(localized: "A list to scroll with the ring, to feel your settings.", comment: "Search palette: Try it here"),
+        String(localized: "test, practice, sandbox, feel", comment: "Search words for Try it here (comma-separated)"),
+        "scroll")
+    static let ballScrollSpeed = scroll("ball-scroll-speed", String(localized: "Ball scroll speed"),
+        String(localized: "How fast rolling the ball scrolls while Scroll with ball is held.", comment: "Search palette: Ball scroll speed"),
+        String(localized: "scroll with ball, ball scroll, speed", comment: "Search words for ball scroll speed (comma-separated)"),
+        "gauge.with.dots.needle.50percent", part: .ball)
 }
 
 // MARK: - The hints
@@ -259,6 +351,7 @@ struct ScrollControls: View {
                          format: { $0.decimals(2) }, lowLabel: "Slow", highLabel: "Fast",
                          hint: .verbatim(ScrollHints.nativeSpeed(config.nativeScrollSpeed)),
                          tint: Theme.ring, defaultValue: Self.defaults.nativeScrollSpeed)
+                .findable(.nativeScrollSpeed)
         }
     }
 
@@ -278,24 +371,29 @@ struct ScrollControls: View {
                          lowLabel: "Precise", highLabel: "Far",
                          hint: .verbatim(ScrollHints.flyDistance(config.flyDistance)),
                          tint: Theme.ring, defaultValue: Self.defaults.flyDistance)
+                .findable(.flyDistance)
             TuningSlider(title: "Spin power", symbol: "tornado",
                          value: $config.flyAcceleration, range: 0...1.5,
                          format: { $0.wholePercent }, lowLabel: "Gentle", highLabel: "Wild",
                          hint: .verbatim(ScrollHints.flyPower(config)),
                          tint: Theme.ring, defaultValue: Self.defaults.flyAcceleration)
+                .findable(.flyPower)
             TuningSlider(title: "Fast-spin reach", symbol: "bolt.horizontal",
                          value: $config.flyReach, range: 0...1,
                          format: { $0.wholePercent }, lowLabel: "Short", highLabel: "Far",
                          hint: .verbatim(ScrollHints.flyReach(config)),
                          tint: Theme.ring, defaultValue: Self.defaults.flyReach)
+                .findable(.flyReach)
             TuningSlider(title: "Glide", symbol: "wind",
                          value: $config.flyGlide, range: 0...1,
                          format: { String(localized: "\(Int(SmoothScroller.flyTau(glide: $0) * 1000)) ms", comment: "Milliseconds") },
                          lowLabel: "Grippy", highLabel: "Slippery",
                          hint: .verbatim(ScrollHints.flyGlide(config.flyGlide)),
                          tint: Theme.ring, defaultValue: Self.defaults.flyGlide)
+                .findable(.flyGlide)
             ToggleRow(title: "Smooth scrolling", subtitle: "Off = plain steps, exactly like a basic mouse",
                       symbol: "water.waves", isOn: $config.smoothScrolling)
+                .findable(.smoothScrolling)
             SettingRow(title: "Kensington feel",
                        hint: "Sets distance, power and glide to what Kensington’s own driver measured.",
                        symbol: "arrow.counterclockwise") {
@@ -314,6 +412,7 @@ struct ScrollControls: View {
                     .controlSize(.small)
                 }
             }
+            .findable(.kensingtonFeel)
         }
     }
 
@@ -325,7 +424,8 @@ struct ScrollControls: View {
             ChoiceStrip(
                 choices: Self.presets.map { .init(value: $0.symbol, title: $0.name, symbol: $0.symbol, demo: .follow(reach: $0.accel, coast: $0.throwOn)) },
                 isSelected: { symbol in Self.presets.first { $0.symbol == symbol }?.matches(config) ?? false },
-                tint: Theme.ring
+                tint: Theme.ring,
+                trial: followTrial
             ) { symbol in
                 guard let p = Self.presets.first(where: { $0.symbol == symbol }) else { return }
                 config.scrollDistance = p.distance
@@ -336,18 +436,51 @@ struct ScrollControls: View {
                 config.smoothScrolling = true
             }
         }
+        .findable(.followPresets)
+    }
+
+    /// Try a Follow preset for 10 s: everything a preset sets goes back.
+    private var followTrial: ChoiceStrip<String>.Trial {
+        let binding = $config
+        return .init(id: "follow-presets", name: { symbol in
+            switch symbol {
+            case "scope": String(localized: "Precise")
+            case "hand.raised.fingers.spread": String(localized: "Control")
+            case "wind": String(localized: "Fling")
+            default: ""
+            }
+        }, snapshot: {
+            let c = binding.wrappedValue
+            let was = Self.presets.first { $0.matches(c) }.map { p -> String in
+                switch p.symbol {
+                case "scope": String(localized: "Precise")
+                case "hand.raised.fingers.spread": String(localized: "Control")
+                default: String(localized: "Fling")
+                }
+            } ?? String(localized: "your settings", comment: "Try for 10 s: goes back to “your settings” (when they aren't a preset)")
+            return (was, {
+                binding.wrappedValue.scrollDistance = c.scrollDistance
+                binding.wrappedValue.scrollSmoothness = c.scrollSmoothness
+                binding.wrappedValue.scrollAcceleration = c.scrollAcceleration
+                binding.wrappedValue.throwEnabled = c.throwEnabled
+                binding.wrappedValue.throwAmount = c.throwAmount
+                binding.wrappedValue.smoothScrolling = c.smoothScrolling
+            })
+        })
     }
 
     var feelSection: some View {
         SectionBlock(title: "Feel") {
             ToggleRow(title: "Smooth scrolling", subtitle: "Off = plain steps, exactly like a basic mouse",
                       symbol: "water.waves", isOn: $config.smoothScrolling)
+                .findable(.smoothScrolling)
             TuningSlider(title: "Distance per notch", symbol: "arrow.up.and.down",
                          value: $config.scrollDistance, range: 1...40, step: 1,
                          format: { String(localized: "\(Int($0)) pt", comment: "Points: a distance on screen") },
                          lowLabel: "Fine", highLabel: "Far",
                          hint: .verbatim(ScrollHints.followDistance(config.scrollDistance)),
                          tint: Theme.ring, defaultValue: Self.defaults.scrollDistance)
+                .findable(.followDistance)
             TuningSlider(title: "Follow", symbol: "hand.point.up.left",
                          value: $config.scrollSmoothness, range: 0...1,
                          format: { String(localized: "\(Int(SmoothScroller.timeConstant(smoothness: $0) * 1000)) ms", comment: "Milliseconds") },
@@ -355,12 +488,14 @@ struct ScrollControls: View {
                          hint: .verbatim(ScrollHints.followSoftness(config)),
                          tint: Theme.ring, defaultValue: Self.defaults.scrollSmoothness)
                 .disabled(!config.smoothScrolling)
+                .findable(.followSoftness)
             TuningSlider(title: "Spin acceleration", symbol: "tornado",
                          value: $config.scrollAcceleration, range: 0...1,
                          format: { $0 < 0.01 ? String(localized: "Off", comment: "Slider value: spin acceleration is off") : $0.wholePercent },
                          lowLabel: "Constant", highLabel: "Spin to fly",
                          hint: .verbatim(ScrollHints.followAcceleration(config)),
                          tint: Theme.ring, defaultValue: Self.defaults.scrollAcceleration)
+                .findable(.followAcceleration)
         }
     }
 
@@ -368,6 +503,7 @@ struct ScrollControls: View {
         SectionBlock(title: "Throw") {
             ToggleRow(title: "Throw to coast", subtitle: "Spin fast and let go. The page glides and lands",
                       symbol: "paperplane.fill", isOn: $config.throwEnabled)
+                .findable(.throwToCoast)
             TuningSlider(title: "Throw distance", symbol: "ruler",
                          value: $config.throwAmount, range: 0...1,
                          format: { ScrollControls.seconds(SmoothScroller.throwDuration(speed: ThrowCurve.typicalSpeed(config), throwAmount: $0)) },
@@ -375,6 +511,7 @@ struct ScrollControls: View {
                          hint: .verbatim(ScrollHints.throwReach(config)),
                          tint: Theme.ring, defaultValue: Self.defaults.throwAmount)
                 .disabled(!config.throwEnabled)
+                .findable(.throwDistance)
         }
     }
 
@@ -389,8 +526,10 @@ struct ScrollControls: View {
         SectionBlock(title: "Direction") {
             ToggleRow(title: "Flip direction", subtitle: "Only if it scrolls the wrong way with your scroll reverser",
                       symbol: "arrow.up.arrow.down", isOn: $config.reverseScroll)
+                .findable(.flipDirection)
             ToggleRow(title: "Shift scrolls sideways", subtitle: "Hold ⇧ while spinning the ring",
                       symbol: "shift", isOn: $config.shiftScrollsHorizontally)
+                .findable(.shiftSideways)
         }
     }
 }
@@ -401,7 +540,7 @@ struct ScrollControls: View {
 struct ModePicker: View {
     @Binding var mode: ScrollMode
 
-    private static func symbol(_ m: ScrollMode) -> String {
+    static func symbol(_ m: ScrollMode) -> String {
         switch m {
         case .native: "applelogo"
         case .flywheel: "fanblades"
@@ -409,7 +548,7 @@ struct ModePicker: View {
         }
     }
 
-    private static func about(_ m: ScrollMode) -> String {
+    static func about(_ m: ScrollMode) -> String {
         switch m {
         case .native: String(localized: "Glideball steps aside and macOS scrolls the ring itself. Only the speed is adjustable.")
         case .flywheel: String(localized: "Every tick pushes the page and friction slows it down: gentle turns barely coast, hard spins fly.")
@@ -419,10 +558,15 @@ struct ModePicker: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
+            let binding = $mode
             ChoiceStrip(
                 choices: ScrollMode.allCases.map { .init(value: $0, title: .verbatim($0.title), symbol: Self.symbol($0), demo: .scroll($0)) },
                 isSelected: { $0 == mode },
-                tint: Theme.ring
+                tint: Theme.ring,
+                trial: .init(id: "scroll-mode", name: { $0.title }, snapshot: {
+                    let old = binding.wrappedValue
+                    return (old.title, { binding.wrappedValue = old })
+                })
             ) { mode = $0 }
             // The line about the mode cross-fades with a small rise.
             ZStack(alignment: .topLeading) {

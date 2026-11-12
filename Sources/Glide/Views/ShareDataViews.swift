@@ -123,6 +123,7 @@ struct ShareDataSettings: View {
                 .labelsHidden()
                 .fixedSize()
             }
+            .findable(.crashReports)
             if let id = share.installID {
                 HStack(alignment: .center, spacing: Theme.Space.symbolGap) {
                     RowSymbol(symbol: "number")
@@ -153,11 +154,13 @@ struct ShareDataSettings: View {
                 }
                 .padding(.horizontal, Theme.Space.rowHorizontal)
                 .padding(.vertical, Theme.Space.rowVertical)
+                .findable(.installID)
             }
             ActionRow(title: "What’s sent", hint: "The privacy page lists everything Glideball can send, with an example.",
                       symbol: "doc.text.magnifyingglass", external: true) {
                 NSWorkspace.shared.open(ShareData.explainer)
             }
+            .findable(.whatsSent)
         }
         if share.installID != nil || deleted != nil {
             SectionBlock(title: "What’s been sent", dividerInset: SettingsLayout.symbolInset) {
@@ -170,6 +173,7 @@ struct ShareDataSettings: View {
                             .help("Deletes the crash reports and stats this Mac has sent, and turns sharing off")
                     }
                 }
+                .findable(.deleteMyData)
             }
             .onChange(of: share.choice) { _, now in
                 if now != .nothing { deleted = nil }   // sharing again: the old result no longer applies
@@ -212,4 +216,31 @@ struct ShareDataSettings: View {
         deleted = nil
         share.deleteMyData { ok in deleted = ok }
     }
+}
+
+extension Findable {
+    static let crashReports = Findable(
+        id: "crash-reports", title: String(localized: "Crash reports and stats"),
+        detail: String(localized: "Choose whether Glideball sends crash reports, and a few anonymous stats.", comment: "Search palette: Crash reports and stats"),
+        keywords: String(localized: "privacy, analytics, telemetry, diagnostics, send, data", comment: "Search words for Crash reports and stats (comma-separated)"),
+        symbol: "heart.text.square", place: .settings(.privacy))
+    static let installID = Findable(
+        id: "install-id", title: String(localized: "Your install ID"),
+        detail: String(localized: "The random ID your reports are sent under.", comment: "Search palette: Your install ID"),
+        keywords: String(localized: "id, identifier, support", comment: "Search words for Your install ID (comma-separated)"),
+        symbol: "number", place: .settings(.privacy), sometimes: true)
+    static let whatsSent = Findable(
+        id: "whats-sent", title: String(localized: "What’s sent"),
+        detail: String(localized: "Everything Glideball can send, with an example, on the privacy page.", comment: "Search palette: What's sent"),
+        keywords: String(localized: "privacy policy, data, example", comment: "Search words for What's sent (comma-separated)"),
+        symbol: "doc.text.magnifyingglass", place: .settings(.privacy))
+    static let deleteMyData = Findable(
+        id: "delete-my-data", title: String(localized: "Delete my data"),
+        detail: String(localized: "Delete what this Mac has sent, and turn sharing off.", comment: "Search palette: Delete my data"),
+        keywords: String(localized: "erase, remove, gdpr, forget", comment: "Search words for Delete my data (comma-separated)"),
+        symbol: "trash", place: .settings(.privacy), sometimes: true)
+}
+
+extension PrivacySettingsPane {
+    static let findables: [Findable] = [.crashReports, .installID, .whatsSent, .deleteMyData]
 }

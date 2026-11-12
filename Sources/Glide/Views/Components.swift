@@ -382,8 +382,10 @@ struct SettingRow<Control: View>: View {
     var bounce: Bool? = nil
     @ViewBuilder var control: Control
     @Environment(\.rowPadding) private var padded
+    @Environment(\.findableID) private var findableID
 
     var body: some View {
+        let _ = FindableAudit.note(title, findableID)
         HStack(alignment: .center, spacing: Theme.Space.symbolGap) {
             if let symbol {
                 RowSymbol(symbol: symbol, tint: tint, bounce: bounce)
@@ -460,6 +462,10 @@ struct ToggleRow: View {
 
 /// A slider row: label and value on top, a thin system slider filled in the
 /// part's color with a small mark at the default, and a hint about now.
+///
+/// Try before you change (`TryPreview`): hold ⌥ while dragging, or click Try
+/// first, and the new value applies for ten seconds, with a countdown under
+/// the row, then goes back unless you keep it.
 struct TuningSlider: View {
     let title: LocalizedStringKey
     let symbol: String
@@ -475,25 +481,52 @@ struct TuningSlider: View {
     var tint: Color = Theme.ball
     /// Where it starts out (a mark on the track).
     var defaultValue: Double? = nil
+    /// Offers Try (off where a preview means nothing, like a volume).
+    var tryable = true
     @Environment(\.rowPadding) private var padded
+    @Environment(\.findableID) private var findableID
+    @Environment(\.isEnabled) private var enabled
     @State private var dragging = false
+    @State private var hovering = false
+    /// Try was clicked: the next drag is a preview.
+    @State private var armed = false
+    /// The ⌥ hint is showing for this drag.
+    @State private var hinting = false
+    private let preview = TryPreview.shared
+
+    /// Renders: show every slider's Try button as if hovered.
+    nonisolated(unsafe) static var sandboxTry = false
+    /// Renders: show the ⌥ hint under every slider, as on someone's first drags.
+    nonisolated(unsafe) static var sandboxHint = false
+
+    private var tryID: String { "slider:" + title.keyText }
 
     var body: some View {
+        let _ = FindableAudit.note(title, findableID)
+        let session = preview.session?.id == tryID ? preview.session : nil
+        let showHint = hinting || Self.sandboxHint
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: Theme.Space.symbolGap) {
-                RowSymbol(symbol: symbol)
+                RowSymbol(symbol: symbol, tint: session != nil ? tint : nil)
                 Text(title).font(Theme.Font.body)
                 Spacer(minLength: 8)
+                if tryable && enabled && session == nil && (hovering || armed || Self.sandboxTry) {
+                    tryButton
+                        .transition(.opacity)
+                }
                 Text(format(value))
                     .font(Theme.Font.value)
-                    .foregroundStyle(dragging ? AnyShapeStyle(tint) : AnyShapeStyle(.secondary))
+                    .foregroundStyle(dragging || session != nil ? AnyShapeStyle(tint) : AnyShapeStyle(.secondary))
                     .contentTransition(.numericText(value: value))
                     .animation(.snappy(duration: 0.18), value: value)
                     .accessibilityHidden(true)
             }
             slider
                 .padding(.leading, Theme.Space.symbolColumn + Theme.Space.symbolGap)
-            if lowLabel != nil || highLabel != nil || hint != nil {
+            if let session {
+                TryBar(session: session, tint: tint)
+                    .padding(.leading, Theme.Space.symbolColumn + Theme.Space.symbolGap)
+            } else if lowLabel != nil || highLabel != nil || hint != nil || showHint {
                 VStack(alignment: .leading, spacing: 3) {
                     if lowLabel != nil || highLabel != nil {
                         HStack {
@@ -508,6 +541,12 @@ struct TuningSlider: View {
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
+                    if showHint && tryable {
+                        Label("Hold ⌥ while you drag to try a value for 10 seconds.", systemImage: "timer")
+                            .foregroundStyle(tint)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .transition(.opacity)
+                    }
                 }
                 .font(Theme.Font.hint)
                 .padding(.leading, Theme.Space.symbolColumn + Theme.Space.symbolGap)
@@ -515,6 +554,62 @@ struct TuningSlider: View {
         }
         .padding(.horizontal, padded ? Theme.Space.rowHorizontal : 0)
         .padding(.vertical, padded ? 12 : 0)
+        .contentShape(Rectangle())
+        .onHover { hovering = $0 }
+        .animation(Theme.Motion.fade, value: hovering)
+        .animation(Theme.Motion.spring, value: session != nil)
+        .animation(Theme.Motion.fade, value: hinting)
+        .onChange(of: value) { _, v in
+            if preview.isTrying(tryID) { preview.update(id: tryID, what: format(v)) }
+        }
+        .onChange(of: preview.session == nil) { _, none in if none { armed = false } }
+    }
+
+    /// "Try": the next drag is a ten-second preview.
+    private var tryButton: some View {
+        Button {
+            armed.toggle()
+            if armed { TryHint.done() }
+        } label: {
+            Label(armed ? String(localized: "Drag to try", comment: "Try button on a slider row, after it's clicked")
+                        : String(localized: "Try", comment: "Button on a slider row: try a value for 10 seconds"),
+                  systemImage: "timer")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(armed ? AnyShapeStyle(tint) : AnyShapeStyle(.secondary))
+                .padding(.horizontal, 7)
+                .padding(.vertical, 2)
+                .background(Capsule().fill(armed ? tint.opacity(0.14) : Theme.hoverFill))
+        }
+        .buttonStyle(.plain)
+        .help("Try a value for 10 seconds, then keep it or let it go back. Holding ⌥ while you drag does the same")
+    }
+
+    /// Before the drag moves anything: with ⌥ held (or Try clicked), a preview starts,
+    /// remembering the value it goes back to. Dragging a row already on trial carries on with it.
+    private func dragBegan(from old: Double) {
+        let option = NSEvent.modifierFlags.contains(.option)
+        if tryable, option || armed || preview.isTrying(tryID) {
+            let binding = $value
+            let was = preview.isTrying(tryID) ? (preview.session?.was ?? format(old)) : format(old)
+            preview.begin(id: tryID, was: was, what: format(old), countdown: false) {
+                binding.wrappedValue = old
+            }
+            if option { TryHint.done() }
+            hinting = false
+        } else if tryable, TryHint.due {
+            hinting = true
+        }
+    }
+
+    private func dragEnded() {
+        if preview.isTrying(tryID) {
+            preview.startCountdown(id: tryID, what: format(value))
+        }
+        if hinting {
+            TryHint.shown()
+            // The hint stays a moment after you let go, then fades.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { hinting = false }
+        }
     }
 
     /// The slider's value, snapped to `step` by hand. (The system's own `step:` draws a dotted tick
@@ -539,7 +634,9 @@ struct TuningSlider: View {
     private var slider: some View {
         InstrumentSlider(value: snapping, range: range, step: step, tint: tint, defaultValue: defaultValue,
                          label: Text(title), valueText: format(value), defaultText: defaultValue.map(format),
-                         dragging: $dragging)
+                         dragging: $dragging,
+                         onDragBegan: { dragBegan(from: $0) },
+                         onDragEnded: { dragEnded() })
     }
 }
 
@@ -558,6 +655,9 @@ struct InstrumentSlider: View {
     let valueText: String
     var defaultText: String? = nil
     @Binding var dragging: Bool
+    /// A drag is starting, before it moves the value (which is passed in).
+    var onDragBegan: ((Double) -> Void)? = nil
+    var onDragEnded: (() -> Void)? = nil
     @State private var hovering = false
     @State private var lastDetent: Int?
     @FocusState private var focused: Bool
@@ -617,11 +717,18 @@ struct InstrumentSlider: View {
             .gesture(DragGesture(minimumDistance: 0)
                 .onChanged { g in
                     guard enabled else { return }
-                    if !dragging { dragging = true }
+                    if !dragging {
+                        onDragBegan?(value)
+                        dragging = true
+                    }
                     let f = min(max((g.location.x - inset) / w, 0), 1)
                     value = range.lowerBound + Double(f) * span
                 }
-                .onEnded { _ in dragging = false; lastDetent = nil })
+                .onEnded { _ in
+                    dragging = false
+                    lastDetent = nil
+                    onDragEnded?()
+                })
         }
         .frame(height: 24)
         .opacity(enabled ? 1 : 0.4)
@@ -1024,34 +1131,67 @@ struct ChoiceStrip<Value: Hashable>: View {
         var id: Value { value }
     }
 
+    /// "Try for 10 s" on a card (⌥-click, or its menu): what to call the strip's
+    /// preview, each choice's name, and a snapshot of what's set now (in words,
+    /// and how to put it back).
+    struct Trial {
+        let id: String
+        let name: (Value) -> String
+        let snapshot: () -> (was: String, restore: () -> Void)
+    }
+
     let choices: [Choice]
     /// Whether a choice is the current one (a preset is matched by what it sets, not only by having been picked).
     let isSelected: (Value) -> Bool
     let tint: Color
+    var trial: Trial? = nil
     let select: (Value) -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Namespace private var glow
     /// The card just picked by hand (its demo plays once), and a count so picking again replays it.
     @State private var picked: Value?
     @State private var pickCount = 0
+    private let preview = TryPreview.shared
 
     var body: some View {
-        HStack(spacing: 8) {
-            ForEach(choices) { c in
-                ChoiceCard(title: c.title, symbol: c.symbol, demo: c.demo, selected: isSelected(c.value), tint: tint,
-                           glow: glow, picked: picked == c.value ? pickCount : 0) {
-                    let was = isSelected(c.value)
-                    withAnimation(reduceMotion ? Theme.Motion.fade : .spring(response: 0.42, dampingFraction: 0.8)) {
-                        select(c.value)
-                    }
-                    if !was {
-                        picked = c.value
-                        pickCount += 1
-                        Sounds.shared.detent(pitch: 1.1, volume: 0.45)
+        let session = trial.flatMap { t in preview.session?.id == t.id ? preview.session : nil }
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                ForEach(choices) { c in
+                    ChoiceCard(title: c.title, symbol: c.symbol, demo: c.demo, selected: isSelected(c.value), tint: tint,
+                               glow: glow, picked: picked == c.value ? pickCount : 0,
+                               onTry: trial == nil ? nil : { tryChoice(c.value) }) {
+                        // Picking one for real while one's on trial: you've decided.
+                        if let trial, preview.isTrying(trial.id) { preview.keep() }
+                        pick(c.value)
                     }
                 }
             }
+            if let session {
+                TryBar(session: session, tint: tint)
+            }
         }
+        .animation(Theme.Motion.spring, value: session != nil)
+    }
+
+    private func pick(_ value: Value) {
+        let was = isSelected(value)
+        withAnimation(reduceMotion ? Theme.Motion.fade : .spring(response: 0.42, dampingFraction: 0.8)) {
+            select(value)
+        }
+        if !was {
+            picked = value
+            pickCount += 1
+            Sounds.shared.detent(pitch: 1.1, volume: 0.45)
+        }
+    }
+
+    /// Ten seconds of this choice, then back to what was set (unless kept).
+    private func tryChoice(_ value: Value) {
+        guard let trial else { return }
+        let snap = trial.snapshot()
+        TryPreview.shared.begin(id: trial.id, was: snap.was, what: trial.name(value), countdown: true, restore: snap.restore)
+        pick(value)
     }
 }
 
@@ -1079,6 +1219,8 @@ private struct ChoiceCard: View {
     let glow: Namespace.ID
     /// Changes each time this card is picked by hand (0: it wasn't).
     let picked: Int
+    /// Try for 10 s (⌥-click, or the card's menu), where the strip offers it.
+    var onTry: (() -> Void)? = nil
     let action: () -> Void
     @State private var hovering = false
     @State private var outline = 1.0
@@ -1090,7 +1232,9 @@ private struct ChoiceCard: View {
 
     var body: some View {
         let playing = (hovering || focused || playingOnce || ChoiceCardSandbox.hovered == symbol) && !reduceMotion
-        Button(action: action) {
+        Button {
+            if let onTry, NSEvent.modifierFlags.contains(.option) { onTry() } else { action() }
+        } label: {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 6) {
                     Image(systemName: symbol)
@@ -1149,7 +1293,14 @@ private struct ChoiceCard: View {
         .animation(Theme.Motion.spring, value: selected)
         .onChange(of: picked) { _, n in if n > 0 { pickedMoment() } }
         .onDisappear { onceWork?.cancel() }
+        .contextMenu {
+            if let onTry {
+                Button("Try for 10 s", systemImage: "timer", action: onTry)
+            }
+        }
+        .help(onTry == nil ? "" : String(localized: "⌥-click to try it for 10 seconds", comment: "Tooltip on a preset or scroll mode card"))
         .accessibilityAddTraits(selected ? .isSelected : [])
+        .accessibilityAction(named: Text("Try for 10 s")) { onTry?() }
     }
 
     /// The card gives a little and springs back, the outline draws round it, and
@@ -1289,7 +1440,27 @@ struct PointerPresetRow: View {
         .init(value: 7.5, title: LocalizedStringKey("Turbo"), symbol: "bolt", demo: .pointer(7.5)),
     ]
 
+    static let tryID = "pointer-presets"
+
+    /// A preset's name ("Turbo"), for Try's countdown and the search palette.
+    static func name(_ value: Double) -> String {
+        switch value {
+        case 1.5: String(localized: "Precise")
+        case 3: String(localized: "macOS")
+        case 5: String(localized: "Fast")
+        case 7.5: String(localized: "Turbo")
+        default: value.twoDigits
+        }
+    }
+
+    static var values: [Double] { presets.map(\.value) }
+
     var body: some View {
-        ChoiceStrip(choices: Self.presets, isSelected: { abs(speed - $0) < 0.01 }, tint: Theme.ball) { speed = $0 }
+        let binding = $speed
+        ChoiceStrip(choices: Self.presets, isSelected: { abs(speed - $0) < 0.01 }, tint: Theme.ball,
+                    trial: .init(id: Self.tryID, name: Self.name, snapshot: {
+                        let old = binding.wrappedValue
+                        return (old.twoDigits, { binding.wrappedValue = old })
+                    })) { speed = $0 }
     }
 }

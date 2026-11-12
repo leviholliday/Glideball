@@ -29,6 +29,7 @@ struct ButtonsView: View {
             }
 
             PresetStrip(model: model, preview: $preview)
+                .findable(.buttonPresets)
 
             SectionBlock(title: "Your buttons", caption: "Press a button on your trackball: its row lights up.",
                          dividerInset: ButtonRow.dividerInset) {
@@ -38,15 +39,20 @@ struct ButtonsView: View {
                               action: Binding(
                                 get: { model.config.buttons[b.index] ?? .system },
                                 set: { model.config.buttons[b.index] = $0 }))
+                        .findable(id: Findable.buttonID(b.index))
                 }
             }
 
             CombosCard(model: model)
+                .findable(.combos)
         }
         .animation(Theme.Motion.spring, value: model.assignStep)
         .onAppear {
             if let id = Self.sandboxPreview { preview = ButtonPreset.all.first { $0.id == id } }
+            takeRequest()
         }
+        // The search palette asked for a preset's preview, or a button's picker.
+        .onChange(of: PageRequests.shared.serial) { _, _ in takeRequest() }
         // While you're on this page with Glideball in front, a real button answers with a soft
         // click down and a lower one up (Sounds on), and a quick press of one of the three free
         // buttons opens its picker. Not the primary button: that's the one you click this
@@ -63,6 +69,35 @@ struct ButtonsView: View {
             }
         }
     }
+
+    private func takeRequest() {
+        let requests = PageRequests.shared
+        if let id = requests.take(\.presetPreview) {
+            withAnimation(Theme.Motion.spring) { preview = ButtonPreset.all.first { $0.id == id } }
+        }
+        if let pad = requests.take(\.buttonPicker) {
+            // After the page has scrolled to the row.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { openPad = pad }
+        }
+    }
+
+    static let findables: [Findable] = [.buttonPresets, .combos]
+}
+
+extension Findable {
+    /// A button's row (its search entries are made from what it does now: `SearchIndex`).
+    static func buttonID(_ index: Int) -> String { "button-\(index)" }
+
+    static let buttonPresets = Findable(
+        id: "button-presets", title: String(localized: "Button presets"),
+        detail: String(localized: "Set every button and a few combos at once: Browser, Media and more.", comment: "Search palette: button presets"),
+        keywords: String(localized: "preset, layout, browser, media, spaces, setup", comment: "Search words for button presets (comma-separated)"),
+        symbol: "square.grid.3x2", place: .tab(.buttons), part: .clicks)
+    static let combos = Findable(
+        id: "combos", title: String(localized: "Combos"),
+        detail: String(localized: "Press two or three buttons together for something else.", comment: "Search palette: combos"),
+        keywords: String(localized: "chord, chords, together, both buttons, combination", comment: "Search words for combos (comma-separated)"),
+        symbol: "circle.grid.2x1.fill", place: .tab(.buttons), part: .clicks)
 }
 
 // MARK: - The map

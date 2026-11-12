@@ -134,16 +134,20 @@ extension AppModel {
         case whatsNew
         /// "Glideball has a new look" (`IconChoicePrompt`), after an update from the classic icon.
         case iconChoice
+        /// Last week's recap (`RecapCenter`), once a week after a week of real use.
+        case weeklyRecap
         case smallFavor
     }
 
     /// The next thing due, if any: What's New after an update, then "Glideball
-    /// has a new look" until it's answered, then the "A small favor" card while
-    /// it's unanswered. A fresh install never gets the first two (it starts on
-    /// the Orb and this version's What's New already seen).
+    /// has a new look" until it's answered, then last week's recap if it's
+    /// due, then the "A small favor" card while it's unanswered. A fresh install
+    /// never gets the first two (it starts on the Orb and this version's What's
+    /// New already seen), nor a recap (there's no week before to look back on).
     var nextPrompt: Prompt? {
         if WhatsNew.isPending { return .whatsNew }
         if AppIconChoice.shared.promptDue { return .iconChoice }
+        if RecapCenter.shared.due(delight) != nil { return .weeklyRecap }
         if ShareData.shared.shouldAsk { return .smallFavor }
         return nil
     }
@@ -152,6 +156,7 @@ extension AppModel {
     var promptShowing: Bool {
         showingWelcomeTour || showingWhatsNew || showingIconChoice || showingSmallFavor
             || showingFeedback || showingAbout || showingShortcuts || pendingImport != nil
+            || RecapCenter.shared.showing != nil || CommandPalette.shared.isOpen
     }
 
     /// Shows the next thing due, once the window is open and nothing else is
@@ -177,6 +182,9 @@ extension AppModel {
         switch next {
         case .whatsNew: showWhatsNew()
         case .iconChoice: showingIconChoice = true
+        case .weeklyRecap:
+            guard let recap = RecapCenter.shared.due(delight) else { return nil }
+            RecapCenter.shared.show(recap, byItself: true)
         case .smallFavor: showingSmallFavor = true
         }
         return next
@@ -188,6 +196,7 @@ extension AppModel {
         // Asked for by hand: a card already up steps aside and comes back another time.
         showingSmallFavor = false
         showingIconChoice = false
+        RecapCenter.shared.close()
         showingWhatsNew = true
     }
 

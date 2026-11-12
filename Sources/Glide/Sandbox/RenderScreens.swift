@@ -546,6 +546,121 @@ extension RenderUI {
             card(BackupHistorySection(model: model, store: model.backups), width: windowSize.width, dark: dark, scale: scale)
         }
 
+        // Round 4: search, the menu-bar panel, the weekly recap, Try before you change.
+        func palette(_ query: String?, selected: Int? = nil) -> (Bool, CGFloat) -> NSBitmapImageRep? {
+            { dark, scale in
+                CommandPalette.shared.prepare(model)
+                CommandPaletteView.sandboxQuery = query
+                CommandPaletteView.sandboxSelectedIndex = selected
+                defer { CommandPaletteView.sandboxQuery = nil; CommandPaletteView.sandboxSelectedIndex = nil }
+                return mainWindow(model, tab: .overview, dark: dark, scale: scale) { CommandPaletteView(model: model) }
+            }
+        }
+        add("search", "Search (⌘K)", "The search palette, nothing typed yet: suggestions (recent picks once there are some)",
+            draw: palette(nil))
+        add("search-recent", "Search (⌘K)", "Nothing typed, after a few searches: Recent",
+            prepare: { for id in ["find:fly-glide", "cmd:precision", "color:ember", "badge:scroll-828"].reversed() { PaletteRecents.used(id) } },
+            cleanup: { UserDefaults.standard.removeObject(forKey: PaletteRecents.key) },
+            draw: palette(nil))
+        add("search-speed", "Search (⌘K)", "“speed”: Tracking speed first, then the rest, grouped",
+            draw: palette("speed"))
+        add("search-speed-number", "Search (⌘K)", "“speed 12”: set it straight away (⌥↩ tries it for 10 s)",
+            draw: palette("speed 12"))
+        add("search-moved", "Search (⌘K)", "“scroll”, the third result picked with ↓",
+            draw: palette("scroll", selected: 2))
+        add("search-buttons", "Search (⌘K)", "“mission control”: the buttons, combos and gestures that do it",
+            draw: palette("mission control"))
+        add("search-badge", "Search (⌘K)", "“eiffel”: a badge",
+            draw: palette("eiffel"))
+        add("search-nothing", "Search (⌘K)", "“dark”: nothing silly, just a line about what to try",
+            draw: palette("dark"))
+        add("search-jump", "Search (⌘K)", "After picking Precision speed: the row lit on the Pointer page (whole page; the window scrolls to it)",
+            prepare: { SettingsSpotlight.shared.show(Findable.precisionSpeed.id) }) { dark, scale in
+            fullPage(page(.pointer, model), dark: dark, scale: scale)
+        }
+        add("search-jump-settings", "Search (⌘K)", "After picking Weekly recap: Settings › Look with the row lit",
+            prepare: { SettingsSpotlight.shared.show(Findable.weeklyRecap.id) }) { dark, scale in
+            settings(.look, dark: dark, scale: scale)
+        }
+        add("menubar-panel", "Menu bar panel", "Menu bar icon opens: Panel (drawn where it opens, on glass like the popover's)") { dark, scale in
+            card(PopoverMock { MenuBarPanelView(model: model) }, width: MenuBarPanelView.width + 80, dark: dark, scale: scale)
+        }
+        add("menubar-panel-modes", "Menu bar panel", "The panel with Precision on and an app setup in effect, while rolling",
+            prepare: {
+                model.modes = Engine.Modes(precision: true, ballScrolling: false, dragLocked: false)
+                model.sandboxFrontmost(glide: false, bundleID: "com.apple.Safari")
+                DemoData.move(model.live, roll: CGVector(dx: 2.4, dy: -1.2))
+            }) { dark, scale in
+            card(PopoverMock { MenuBarPanelView(model: model) }, width: MenuBarPanelView.width + 80, dark: dark, scale: scale)
+        }
+        add("menubar-panel-paused", "Menu bar panel", "The panel while Glideball is paused",
+            prepare: { model.config.enabled = false }) { dark, scale in
+            card(PopoverMock { MenuBarPanelView(model: model) }, width: MenuBarPanelView.width + 80, dark: dark, scale: scale)
+        }
+        add("weekly-recap", "Weekly recap", "Last week's recap over the window (once a week, after a week of real use)",
+            prepare: { RecapCard.sandboxStill = true },
+            cleanup: { RecapCard.sandboxStill = false }) { dark, scale in
+            guard let recap = RecapCenter.shared.recap(for: .lastWeek, model.delight) else { return nil }
+            return mainWindow(model, tab: .overview, dark: dark, scale: scale) { RecapCard(recap: recap, model: model) }
+        }
+        add("weekly-recap-quiet", "Weekly recap", "A quieter week than the one before (said plainly), new badges",
+            prepare: { RecapCard.sandboxStill = true },
+            cleanup: { RecapCard.sandboxStill = false }) { dark, scale in
+            let start = WeeklyRecap.weekStart(containing: Date()).addingTimeInterval(-7 * 86_400)
+            let recap = WeeklyRecap(start: start,
+                                    days: [Tally(clicks: 2_400, ballMeters: 41, scrollMeters: 80), Tally(clicks: 3_100, ballMeters: 52, scrollMeters: 120),
+                                           Tally(clicks: 900, ballMeters: 12, scrollMeters: 30), Tally(), Tally(clicks: 1_800, ballMeters: 33, scrollMeters: 64),
+                                           Tally(clicks: 300, ballMeters: 4, scrollMeters: 9), Tally()],
+                                    total: Tally(clicks: 8_500, ballMeters: 142, scrollMeters: 303),
+                                    before: Tally(clicks: 11_200, ballMeters: 139, scrollMeters: 410),
+                                    newBadges: ["scroll-330", "ball-100", "clicks-10k"])
+            return mainWindow(model, tab: .overview, dark: dark, scale: scale) { RecapCard(recap: recap, model: model) }
+        }
+        add("share-card-recap", "Weekly recap", "The share picture: last week (as saved, 2x)") { _, _ in
+            guard let recap = RecapCenter.shared.recap(for: .lastWeek, model.delight) else { return nil }
+            return ShareImage.render(.recap(recap), delight: model.delight)
+        }
+        add("try-hint", "Try before you change", "Dragging a slider the first few times: the ⌥ hint, and Try on each row",
+            prepare: { TuningSlider.sandboxTry = true; TuningSlider.sandboxHint = true; InstrumentSlider.sandboxDragging = true },
+            cleanup: { TuningSlider.sandboxTry = false; TuningSlider.sandboxHint = false; InstrumentSlider.sandboxDragging = false }) { dark, scale in
+            mainWindow(model, tab: .pointer, dark: dark, scale: scale)
+        }
+        add("try-slider", "Try before you change", "Trying a tracking speed: the countdown under the row, Keep or Go Back",
+            prepare: {
+                let old = model.config.trackingSpeed
+                TryPreview.shared.begin(id: "slider:Tracking speed", was: old.twoDigits, what: "", countdown: true) { model.config.trackingSpeed = old }
+                model.config.trackingSpeed = 12.5
+                TryPreview.shared.update(id: "slider:Tracking speed", what: (12.5).twoDigits)
+                TryBar.sandboxRemaining = 6.4
+            },
+            cleanup: { TryPreview.shared.revert(); TryBar.sandboxRemaining = nil }) { dark, scale in
+            mainWindow(model, tab: .pointer, dark: dark, scale: scale)
+        }
+        add("try-preset", "Try before you change", "⌥-clicked Turbo: ten seconds of it, under the presets",
+            prepare: {
+                let old = model.config.trackingSpeed
+                TryPreview.shared.begin(id: PointerPresetRow.tryID, was: old.twoDigits, what: PointerPresetRow.name(7.5), countdown: true) {
+                    model.config.trackingSpeed = old
+                }
+                model.config.trackingSpeed = 7.5
+                TryBar.sandboxRemaining = 3.2
+            },
+            cleanup: { TryPreview.shared.revert(); TryBar.sandboxRemaining = nil }) { dark, scale in
+            fullPage(page(.pointer, model), dark: dark, scale: scale)
+        }
+        add("try-scroll-mode", "Try before you change", "Trying Follow from the mode cards",
+            prepare: {
+                let old = model.config.scrollMode
+                TryPreview.shared.begin(id: "scroll-mode", was: old.title, what: ScrollMode.follow.title, countdown: true) {
+                    model.config.scrollMode = old
+                }
+                model.config.scrollMode = .follow
+                TryBar.sandboxRemaining = 8.6
+            },
+            cleanup: { TryPreview.shared.revert(); TryBar.sandboxRemaining = nil; model.config.scrollMode = .flywheel }) { dark, scale in
+            mainWindow(model, tab: .scroll, dark: dark, scale: scale)
+        }
+
         // Glideball › Settings… (⌘,)
         for pane in SettingsPane.allCases {
             add("settings-\(pane.rawValue)", "Settings window", "Settings › \(pane.title)") { dark, scale in
@@ -896,6 +1011,8 @@ extension RenderUI {
         model.isEditingProfiles = false
         model.sandboxFrontmost(glide: false)
         model.selectedProfileID = "com.apple.Safari"
+        SettingsSpotlight.shared.clear()
+        RecapCenter.shared.close()
         DemoData.feedLiveGraphs(model.live)
     }
 }

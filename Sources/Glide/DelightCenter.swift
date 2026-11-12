@@ -162,6 +162,12 @@ final class DelightCenter {
         rebuildWeek()
     }
 
+    /// One day's totals (today's as counted so far), for the weekly recap.
+    func tally(on date: Date) -> Tally {
+        let key = Self.key(for: date)
+        return key == dayKey ? today : past[key] ?? Tally()
+    }
+
     private func rebuildWeek() {
         let cal = Calendar.current
         let now = Date()

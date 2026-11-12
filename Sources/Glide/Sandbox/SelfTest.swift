@@ -182,6 +182,201 @@ enum SelfTest {
             return "3 panels drawn (Overview, an earned badge, one to earn); 3 pictures with PNG, file, words and \(posts) post links checked"
         }
 
+        step("search index") {
+            // Every row on every page and Settings tab sits inside a `.findable`, and every
+            // Findable is drawn on its page: the index can't drift from the pages.
+            let ids = Findable.all.map(\.id)
+            let twice = Dictionary(grouping: ids, by: { $0 }).filter { $0.value.count > 1 }.keys.sorted()
+            try check(twice.isEmpty, "Findables share ids: \(twice)")
+            let known = Set(ids).union(SearchIndex.dynamicAnchors(model))
+            FindableAudit.rows = []
+            FindableAudit.anchors = []
+            FindableAudit.recording = true
+            defer { FindableAudit.recording = false }
+            let mode = model.config.scrollMode
+            for tab in GlideTab.allCases {
+                try draw(TabPage(tab: tab, model: model).frame(width: Theme.Space.contentMaxWidth), "the \(tab.rawValue) page")
+            }
+            for m in ScrollMode.allCases where m != mode {
+                model.config.scrollMode = m
+                try draw(TabPage(tab: .scroll, model: model).frame(width: Theme.Space.contentMaxWidth), "Scrolling in \(m.rawValue)")
+            }
+            model.config.scrollMode = mode
+            let width = SettingsWindowController.width
+            try draw(GeneralSettingsPane(model: model).frame(width: width), "Settings › General")
+            try draw(LookSettingsPane(model: model).frame(width: width), "Settings › Look")
+            try draw(SoundSettingsPane().frame(width: width), "Settings › Sound")
+            try draw(UpdatesSettingsPane(model: model).frame(width: width), "Settings › Updates")
+            try draw(PrivacySettingsPane().frame(width: width), "Settings › Privacy")
+            try draw(ShortcutsSettingsPane(model: model).frame(width: width), "Settings › Shortcuts")
+            FindableAudit.recording = false
+            let rows = FindableAudit.rows
+            let loose = Set(rows.filter { $0.findable == nil }.map(\.title)).sorted()
+            try check(loose.isEmpty, "rows search can't find (give each a Findable): \(loose)")
+            let unknown = Set(rows.compactMap(\.findable)).subtracting(known).sorted()
+            try check(unknown.isEmpty, "rows inside a Findable the index doesn't have: \(unknown)")
+            let undrawn = Findable.all.filter { !$0.sometimes && !FindableAudit.anchors.contains($0.id) }.map(\.id)
+            try check(undrawn.isEmpty, "Findables no page drew: \(undrawn)")
+
+            // Typing a setting's name finds it, near the top.
+            let items = SearchIndex.items(model)
+            func search(_ q: String) -> [PaletteItem] { PaletteResults.search(q, in: items, recent: []).flat }
+            for f in Findable.all where SearchIndex.present(f, model) {
+                let top = search(f.title).prefix(4).map(\.id)
+                try check(top.contains("find:" + f.id), "searching “\(f.title)” doesn't find it near the top (got \(top))")
+            }
+            // Every command has an entry (the ones shown as part of another, through it).
+            for c in Commands.all {
+                let id = SearchIndex.commandAliases[c.id] ?? c.id
+                try check(items.contains { $0.command == id || $0.command == c.id }, "the \(c.id) command has no search entry")
+            }
+            // Words people type.
+            try check(search("speed").first?.id == "find:tracking-speed", "“speed” doesn't put Tracking speed first (got \(search("speed").first?.title ?? "nothing"))")
+            try check(search("dark").isEmpty, "“dark” found \(search("dark").map(\.title))")
+            try check(search("qwzx").isEmpty, "nonsense found something")
+            try check(search("trakcing").contains { $0.id == "find:tracking-speed" }, "a typo (“trakcing”) loses Tracking speed")
+            try check(search("scrol").prefix(3).contains { $0.id == "find:scroll-mode" }, "“scrol” doesn't find Scroll mode")
+            try check(search("sensitivity").first?.id == "find:tracking-speed", "the synonym “sensitivity” doesn't find Tracking speed")
+            try check(search("pause").first?.command == "toggle", "“pause” doesn't put Pause first")
+            try check(search("speed 12").first?.id == "cmd:pointer-speed-set", "“speed 12” doesn't offer to set it")
+            try check(search("top right").contains { $0.id == "button:3" }, "“top right” doesn't find the button")
+            let badge = Milestone.all[0]
+            try check(search(badge.title).contains { $0.id == "badge:" + badge.id }, "the badge “\(badge.title)” isn't found")
+            try check(search("raycast").first?.findable == Findable.externalControl.id, "“raycast” doesn't find its switch")
+            // Nothing typed: suggestions, then what was picked lately, newest first.
+            let empty = PaletteResults.search("", in: items, recent: [])
+            try check(empty.sections.count == 1 && !empty.flat.isEmpty, "nothing typed shows no suggestions")
+            PaletteRecents.used("find:fly-glide")
+            PaletteRecents.used("cmd:precision")
+            let recent = PaletteResults.search("", in: items, recent: PaletteRecents.ids).flat.map(\.id)
+            try check(recent.prefix(2) == ["cmd:precision", "find:fly-glide"], "recent picks show as \(recent)")
+            UserDefaults.standard.removeObject(forKey: PaletteRecents.key)
+            // ⌘K and ⌘F are in the View menu.
+            let menuItems = (NSApp.mainMenu?.items ?? []).flatMap { $0.submenu?.items ?? [] }
+            for key in ["k", "f"] {
+                try check(menuItems.contains { $0.keyEquivalent == key && $0.action == #selector(AppDelegate.openSearch(_:)) }, "no ⌘\(key.uppercased()) for search")
+            }
+            CommandPalette.shared.prepare(model)
+            try draw(CommandPaletteView(model: model), "the search palette", size: RenderUI.windowSize)
+            return "\(rows.count) rows on \(GlideTab.allCases.count + 2) pages and 6 Settings tabs, all findable; \(ids.count) settings, "
+                + "\(items.count) entries, every command; typos, synonyms and “dark” checked"
+        }
+
+        step("weekly recap") {
+            // When: once a week, only after real use, never twice, never with recaps off.
+            try check(RecapCenter.isDue(enabled: true, seenWeek: "2026-10-26", lastWeek: "2026-11-02", hadRealUse: true), "a recap after a real week isn't due")
+            try check(!RecapCenter.isDue(enabled: false, seenWeek: nil, lastWeek: "2026-11-02", hadRealUse: true), "due with recaps off")
+            try check(!RecapCenter.isDue(enabled: true, seenWeek: "2026-11-02", lastWeek: "2026-11-02", hadRealUse: true), "due twice for one week")
+            try check(!RecapCenter.isDue(enabled: true, seenWeek: nil, lastWeek: "2026-11-02", hadRealUse: false), "due after a week of hardly any use")
+            // Weeks start on Monday, whatever the region says.
+            let cal = Calendar(identifier: .gregorian)
+            let thursday = try unwrap(cal.date(from: DateComponents(year: 2026, month: 11, day: 12, hour: 15)), "no date")
+            let start = WeeklyRecap.weekStart(containing: thursday)
+            try check(Calendar.current.component(.weekday, from: start) == 2 && Calendar.current.component(.day, from: start) == 9,
+                      "the week of Thu 12 Nov starts \(start)")
+            // Made from each day's totals and the badges' dates.
+            func day(_ n: Int) -> Date { Calendar.current.date(byAdding: .day, value: n, to: start)! }
+            let days: [String: Tally] = [
+                DelightCenter.key(for: day(-3)): Tally(clicks: 1_000, ballMeters: 20, scrollMeters: 30),
+                DelightCenter.key(for: day(0)): Tally(clicks: 1_500, ballMeters: 25, scrollMeters: 40),
+                DelightCenter.key(for: day(2)): Tally(clicks: 4_000, ballMeters: 60, scrollMeters: 120),
+                DelightCenter.key(for: day(6)): Tally(clicks: 50, ballMeters: 1, scrollMeters: 2),
+                DelightCenter.key(for: day(7)): Tally(clicks: 9_999),
+            ]
+            let earned = ["clicks-1k": day(1), "ball-10": day(-1), "scroll-10": day(7)]
+            let r = WeeklyRecap.make(start: start, tally: { days[DelightCenter.key(for: $0)] ?? Tally() }, earned: earned)
+            try check(r.total.clicks == 5_550 && r.before.clicks == 1_000, "the week adds up to \(r.total.clicks) clicks, the week before \(r.before.clicks)")
+            try check(r.busiestDay.map { Calendar.current.isDate($0.date, inSameDayAs: day(2)) } == true, "the busiest day isn't Wednesday")
+            try check(r.newBadges == ["clicks-1k"], "the week's badges are \(r.newBadges)")
+            try check(r.hadRealUse && r.activeDays == 2, "two real days counted as \(r.activeDays)")
+            if case .up = r.change(.clicks) {} else { throw Failure("more clicks than the week before isn't “up”") }
+            let quiet = WeeklyRecap.make(start: start, tally: { Calendar.current.isDate($0, inSameDayAs: day(-3)) ? Tally(clicks: 9_000, ballMeters: 90, scrollMeters: 90)
+                                                                 : Calendar.current.isDate($0, inSameDayAs: day(1)) ? Tally(clicks: 300, ballMeters: 2, scrollMeters: 2) : Tally() },
+                                         earned: [:])
+            try check(quiet.change(.clicks) == .down && !quiet.hadRealUse, "a quieter week reads as \(quiet.change(.clicks)), real use \(quiet.hadRealUse)")
+            // This Mac's own history: none on a fresh install, so never a recap there.
+            let due = RecapCenter.shared.due(model.delight)
+            if returning {
+                try check(due != nil, "a returning user with a month of use has no recap due")
+            } else {
+                try check(due == nil, "a fresh install has a recap due")
+            }
+            // The card, and its share picture end to end.
+            let recap = RecapCenter.shared.recap(for: .lastWeek, model.delight) ?? r
+            try draw(RecapCard(recap: recap, model: model), "the recap card", size: RenderUI.windowSize)
+            let image = try unwrap(ShareImage.render(.recap(recap), delight: model.delight), "the recap's picture didn't draw")
+            try check(image.pixelsWide == 1200 && image.pixelsHigh == 750 && !Offscreen.isBlank(image), "the recap's picture is wrong")
+            let items = try unwrap(ShareItems(card: .recap(recap), image: image, delight: model.delight), "the recap has no share items")
+            try check(!items.text.isEmpty && items.text.count <= 250, "the recap's post is \(items.text.count) characters")
+            try? FileManager.default.removeItem(at: items.file)
+            return "Mondays, real use only, once a week; sums, busiest day, badges; \(returning ? "due after a month of use" : "none on a fresh install"); card and picture drawn"
+        }
+
+        step("try before you change") {
+            let preview = TryPreview.shared
+            var value = 5.0
+            var enabled = true, connected = true
+            preview.conditions = { (enabled, connected) }
+            defer { preview.conditions = { (AppModel.shared.config.enabled, AppModel.shared.status.deviceConnected) } }
+            func start(_ id: String = "test") {
+                preview.begin(id: id, was: "5", what: "", countdown: false) { value = 5 }
+                value = 9
+            }
+            // Ten seconds after letting go, it goes back; not a moment before; never mid-drag.
+            start()
+            preview.check(now: Date().addingTimeInterval(TryPreview.seconds * 5))
+            try check(value == 9 && preview.isActive, "it went back mid-drag")
+            preview.startCountdown(id: "test", what: "9")
+            preview.check(now: Date().addingTimeInterval(TryPreview.seconds - 1))
+            try check(value == 9 && preview.isActive, "it went back early")
+            preview.check(now: Date().addingTimeInterval(TryPreview.seconds + 0.5))
+            try check(value == 5 && !preview.isActive && preview.lastEnding == .timedOut, "time's up didn't put it back")
+            // Keep keeps; Go Back (Esc) puts it back.
+            start(); preview.startCountdown(id: "test", what: "9"); preview.keep()
+            try check(value == 9 && !preview.isActive && preview.lastEnding == .kept, "Keep didn't keep")
+            start(); preview.cancel()
+            try check(value == 5 && preview.lastEnding == .cancelled, "Esc didn't put it back")
+            // Pause, unplug and quit put it back.
+            start(); enabled = false; preview.check()
+            try check(value == 5 && preview.lastEnding == .paused, "pausing didn't put it back")
+            enabled = true
+            start(); connected = false; preview.check()
+            try check(value == 5 && preview.lastEnding == .unplugged, "unplugging didn't put it back")
+            connected = true
+            start(); preview.revert(.quit)
+            try check(value == 5 && preview.lastEnding == .quit, "quitting didn't put it back")
+            // Only one at a time: trying another puts the first back.
+            start("a")
+            var other = 1.0
+            preview.begin(id: "b", was: "1", what: "", countdown: true) { other = 1 }
+            other = 2
+            try check(value == 5 && preview.isTrying("b"), "a second preview left the first one in place")
+            preview.cancel()
+            try check(other == 1, "the second preview didn't go back")
+            // Return and Enter keep, Esc goes back, nothing else answers.
+            try check(TryPreview.key(36) == .keep && TryPreview.key(76) == .keep && TryPreview.key(53) == .cancel && TryPreview.key(49) == nil,
+                      "the countdown's keys are wrong")
+            // The real thing: the tracking speed on trial, then Glideball paused.
+            preview.conditions = { (AppModel.shared.config.enabled, AppModel.shared.status.deviceConnected) }
+            let saved = model.config.trackingSpeed
+            preview.begin(id: "slider:Tracking speed", was: saved.twoDigits, what: "", countdown: true) { model.config.trackingSpeed = saved }
+            model.config.trackingSpeed = saved + 10
+            try draw(PointerView(model: model).frame(width: Theme.Space.contentMaxWidth), "the Pointer page with a speed on trial")
+            model.config.enabled = false
+            preview.check()
+            try check(model.config.trackingSpeed == saved && !preview.isActive && preview.lastEnding == .paused,
+                      "pausing left the tried speed (\(model.config.trackingSpeed), saved \(saved))")
+            model.config.enabled = true
+            return "goes back after 10 s (never mid-drag), Keep keeps, Esc, pause, unplug and quit put it back, one at a time"
+        }
+
+        step("menu bar panel") {
+            try check(MenuBarPanelController.shared.opens == .menu, "the menu-bar icon should open its menu unless the panel is picked")
+            try check(!MenuBarPanelController.shared.isOpen && !model.panelOpen, "the panel is open")
+            try draw(MenuBarPanelView(model: model), "the menu-bar panel")
+            return "the menu by default; the panel drawn, nothing open"
+        }
+
         step("welcome tour") {
             for s in WelcomeTourView.Step.allCases {
                 try draw(WelcomeTourView(model: model, step: s), "tour step \(s.rawValue + 1)", size: RenderUI.windowSize)
@@ -320,8 +515,16 @@ enum SelfTest {
                 model.showingAbout = true
                 try check(model.presentNextPrompt(ignoringWindow: true) == nil, "a prompt showed over a sheet")
                 model.showingAbout = false
+                // Last week's recap (a month of real use), on its own…
                 let third = model.presentNextPrompt(ignoringWindow: true)
-                try check(third == .smallFavor && model.showingSmallFavor, "after the icon question came \(String(describing: third))")
+                try check(third == .weeklyRecap && RecapCenter.shared.showing != nil, "after the icon question came \(String(describing: third)), not the recap")
+                try check(model.presentNextPrompt(ignoringWindow: true) == nil, "something showed on top of the recap")
+                RecapCenter.shared.close()
+                try check(RecapCenter.shared.due(model.delight) == nil, "the recap is still due after it showed")
+                shown.append("the weekly recap")
+                // …then the small favor.
+                let fourth = model.presentNextPrompt(ignoringWindow: true)
+                try check(fourth == .smallFavor && model.showingSmallFavor, "after the recap came \(String(describing: fourth))")
                 try check(model.presentNextPrompt(ignoringWindow: true) == nil, "two prompts at once")
                 shown.append("the small favor")
             } else {

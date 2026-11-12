@@ -352,7 +352,10 @@ struct YourTrackballCard: View {
         VStack(alignment: .leading, spacing: Theme.Space.section) {
             VStack(alignment: .leading, spacing: 10) {
                 SectionTitle(title: "Your trackball", caption: .verbatim(footnote)) {
-                    ShareButton(card: .overview)
+                    HStack(spacing: 8) {
+                        LastWeekButton(delight: delight)
+                        ShareButton(card: .overview)
+                    }
                 }
                 HStack(alignment: .top, spacing: 0) {
                     ForEach(Array(Metric.lifetimeOrder.enumerated()), id: \.element) { i, m in
@@ -362,11 +365,15 @@ struct YourTrackballCard: View {
                 }
                 .fixedSize(horizontal: false, vertical: true)
             }
+            .findable(.yourTrackball)
 
             WeekChart(delight: delight, metric: $metric)
+                .findable(.thisWeek)
             PersonalBests(delight: delight)
+                .findable(.personalBests)
 
             BadgesSection(delight: delight)
+                .findable(.badges)
         }
     }
 
@@ -375,6 +382,29 @@ struct YourTrackballCard: View {
         return String(localized: "Since \(first.formatted(.dateTime.month(.abbreviated).day().year())) · on this Mac only",
                       comment: "%@ is a date")
     }
+}
+
+extension Findable {
+    static let yourTrackball = Findable(
+        id: "your-trackball", title: String(localized: "Your trackball"),
+        detail: String(localized: "Everything you’ve clicked, rolled and scrolled so far, and Share….", comment: "Search palette: Your trackball (lifetime numbers)"),
+        keywords: String(localized: "lifetime, total, stats, statistics, share, history", comment: "Search words for Your trackball (comma-separated)"),
+        symbol: "chart.bar", place: .tab(.overview))
+    static let thisWeek = Findable(
+        id: "this-week", title: String(localized: "This week"),
+        detail: String(localized: "A chart of the last seven days.", comment: "Search palette: This week chart"),
+        keywords: String(localized: "chart, graph, days, history, week", comment: "Search words for This week (comma-separated)"),
+        symbol: "chart.bar.xaxis", place: .tab(.overview))
+    static let personalBests = Findable(
+        id: "personal-bests", title: String(localized: "Personal bests"),
+        detail: String(localized: "Your best day for clicks, rolling and scrolling, and your fastest spin.", comment: "Search palette: Personal bests"),
+        keywords: String(localized: "records, best, record, fastest, high score", comment: "Search words for Personal bests (comma-separated)"),
+        symbol: "trophy", place: .tab(.overview))
+    static let badges = Findable(
+        id: "badges", title: String(localized: "Badges"),
+        detail: String(localized: "Every badge, the ones you’ve earned and the next ones.", comment: "Search palette: Badges"),
+        keywords: String(localized: "achievements, milestones, awards, trophies", comment: "Search words for Badges (comma-separated)"),
+        symbol: "rosette", place: .tab(.overview), boost: 2)
 }
 
 extension Metric {

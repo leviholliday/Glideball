@@ -15,11 +15,14 @@ struct AppsView: View {
         VStack(alignment: .leading, spacing: Theme.Space.section) {
             if profiles.isEmpty {
                 emptyState
+                    .findable(.appSetups)
             } else {
                 setupList
+                    .findable(.appSetups)
                 if let id = model.selectedProfileID, profiles.contains(where: { $0.id == id }) {
                     ProfileEditor(model: model, profileID: id)
                         .id(id)
+                        .findableScope(Findable.appSetupID(id))
                 }
             }
         }
@@ -50,9 +53,12 @@ struct AppsView: View {
                             selected: p.id == model.selectedProfileID, active: p.id == activeID) {
                     withAnimation(Theme.Motion.respecting(reduceMotion, Theme.Motion.spring)) { model.selectedProfileID = p.id }
                 }
+                .findable(id: Findable.appSetupID(p.id))
             }
         }
     }
+
+    static let findables: [Findable] = [.appSetups]
 
     private var emptyState: some View {
         SectionBlock(title: "App setups") {
@@ -78,6 +84,17 @@ struct AppsView: View {
             .frame(maxWidth: .infinity)
         }
     }
+}
+
+extension Findable {
+    /// An app setup's row (search makes one entry per setup: `SearchIndex`).
+    static func appSetupID(_ profileID: String) -> String { "app-setup-\(profileID)" }
+
+    static let appSetups = Findable(
+        id: "app-setups", title: String(localized: "App setups"),
+        detail: String(localized: "Different settings for the apps you choose. Add an app here.", comment: "Search palette: App setups"),
+        keywords: String(localized: "per app, profile, profiles, application, add app, safari, chrome", comment: "Search words for App setups (comma-separated)"),
+        symbol: "macwindow", place: .tab(.apps))
 }
 
 // MARK: - The list

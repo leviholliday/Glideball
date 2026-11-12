@@ -23,6 +23,8 @@ enum ShareCard: Equatable {
     case overview
     /// One badge, and when it was earned (nil: not yet, it's the one you're working toward).
     case badge(Milestone, Date?)
+    /// A week's recap (`WeeklyRecap`).
+    case recap(WeeklyRecap)
 
     /// Points; drawn at 2x (1200 × 750 pixels).
     static let size = CGSize(width: 600, height: 375)
@@ -31,6 +33,7 @@ enum ShareCard: Equatable {
         switch self {
         case .overview: String(localized: "My Glideball", comment: "Share picture file name")
         case .badge(let m, _): String(localized: "Glideball badge – \(m.title)", comment: "Share picture file name; %@ is a badge name")
+        case .recap: String(localized: "My Glideball week", comment: "Share picture file name for the weekly recap")
         }
     }
 }
@@ -62,6 +65,7 @@ struct ShareCardView: View {
             switch card {
             case .overview: overview
             case .badge(let m, let date): badge(m, date)
+            case .recap(let recap): RecapShareContent(recap: recap) { trackball.scaleEffect(0.9) }
             }
 
             VStack {
@@ -323,6 +327,12 @@ struct ShareItems {
         case .badge(let m, .none):
             return String(localized: "I’m working toward “\(m.title)” in Glideball: \(m.detail). It’s a free Mac app for Kensington trackballs.",
                           comment: "Post text for sharing a badge not earned yet; the first %@ is the badge's name, the second what earns it")
+        case .recap(let r):
+            let clicks = Metric.clicks.format(r.total.value(.clicks))
+            let ball = Metric.ball.format(r.total.value(.ball))
+            let scroll = Metric.scroll.format(r.total.value(.scroll))
+            return String(localized: "My week with my trackball: \(clicks) clicks, \(ball) rolled and \(scroll) scrolled. Glideball counts it all; it’s a free Mac app for Kensington trackballs.",
+                          comment: "Post text for sharing the weekly recap; the first %@ is a number of clicks, the other two are distances")
         }
     }
 }

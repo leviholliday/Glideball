@@ -57,6 +57,7 @@ struct RootView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var shell = ShellState()
     private let launch = LaunchExperience.shared
+    private let spotlight = SettingsSpotlight.shared
 
     var body: some View {
         let _ = PerfProbe.count("RootView")
@@ -103,6 +104,7 @@ struct RootView: View {
                     .transition(.opacity.combined(with: .scale(scale: 1.02)))
             }
         }
+        .modifier(RecapAndSearch(model: model, primary: primary))
         // The launch animation, over everything until it hands over.
         .overlay { LaunchOverlay() }
         .animation(.smooth(duration: 0.35), value: model.showingWelcomeTour)
@@ -146,23 +148,32 @@ struct RootView: View {
         ZStack(alignment: .top) {
             // Drawn once the launch animation starts handing over.
             if launch.contentReady {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: Theme.Space.section) {
-                        StatusBanners(model: model)
-                        TabPage(tab: tab, model: model)
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: Theme.Space.section) {
+                            StatusBanners(model: model)
+                            TabPage(tab: tab, model: model)
+                        }
+                        .frame(maxWidth: Theme.Space.contentMaxWidth, alignment: .leading)
+                        .padding(.horizontal, Theme.Space.contentSide)
+                        // Full screen has no toolbar above the page: the same room, made here.
+                        .padding(.top, Theme.Space.contentTop + (model.fullScreen ? Theme.Space.fullScreenTop : 0))
+                        .padding(.bottom, 40)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        // Groups line themselves up on pixels relative to the page, which
+                        // scrolling doesn't change (the window's coordinates would, every frame).
+                        .coordinateSpace(.named(PixelGrid.page))
                     }
-                    .frame(maxWidth: Theme.Space.contentMaxWidth, alignment: .leading)
-                    .padding(.horizontal, Theme.Space.contentSide)
-                    // Full screen has no toolbar above the page: the same room, made here.
-                    .padding(.top, Theme.Space.contentTop + (model.fullScreen ? Theme.Space.fullScreenTop : 0))
-                    .padding(.bottom, 40)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    // Groups line themselves up on pixels relative to the page, which
-                    // scrolling doesn't change (the window's coordinates would, every frame).
-                    .coordinateSpace(.named(PixelGrid.page))
+                    .onScrollPhaseChange { _, phase in model.pageScrolling = phase != .idle }
+                    .scrollIndicators(.automatic)
+                    // Search found a row on this page: bring it into view as it lights up.
+                    .onChange(of: spotlight.row) { _, row in
+                        guard let row else { return }
+                        withAnimation(reduceMotion ? nil : .smooth(duration: 0.4)) {
+                            proxy.scrollTo(row, anchor: UnitPoint(x: 0.5, y: 0.3))
+                        }
+                    }
                 }
-                .onScrollPhaseChange { _, phase in model.pageScrolling = phase != .idle }
-                .scrollIndicators(.automatic)
                 .id(pageID)
                 .transition(pageTransition)
             }
@@ -213,6 +224,33 @@ struct RootView: View {
     }
 }
 
+/// The weekly recap and, over it, the search palette (⌘K, ⌘F): asked for by
+/// hand, search comes first. Only the real window's palette opens (renders
+/// draw it as an overlay of their own).
+private struct RecapAndSearch: ViewModifier {
+    let model: AppModel
+    let primary: Bool
+    private let recaps = RecapCenter.shared
+    private let palette = CommandPalette.shared
+
+    func body(content: Content) -> some View {
+        content
+            .overlay {
+                if let recap = recaps.showing {
+                    RecapCard(recap: recap, model: model)
+                        .transition(.opacity.combined(with: .scale(scale: 1.02)))
+                }
+            }
+            .overlay {
+                if palette.isOpen && primary {
+                    CommandPaletteView(model: model)
+                }
+            }
+            .animation(.smooth(duration: 0.3), value: recaps.showing)
+            .animation(.easeOut(duration: 0.16), value: palette.isOpen)
+    }
+}
+
 /// A tab's page under its header (title and one line about it).
 struct TabPage: View {
     let tab: GlideTab
@@ -233,7 +271,8 @@ struct TabPage: View {
             case .scroll: ScrollSettingsView(model: model)
             case .buttons: ButtonsView(model: model)
             case .apps: AppsView(model: model)
-            case .backup: BackupView(model: model)
+            // Its rows are found through the page's own entries (Findable.syncFindables).
+            case .backup: BackupView(model: model).findableScope(Findable.syncPage.id)
             }
         }
         .onAppear { Self.onScreen[tab, default: 0] += 1 }

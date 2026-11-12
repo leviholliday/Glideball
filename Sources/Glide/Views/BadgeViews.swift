@@ -173,7 +173,17 @@ private struct BadgeCell: View {
         .popover(isPresented: $open, arrowEdge: .bottom) {
             BadgeDetail(milestone: m, delight: delight)
         }
-        .onAppear { if BadgesSection.sandboxOpen == m.id { open = true } }
+        .onAppear {
+            if BadgesSection.sandboxOpen == m.id { open = true }
+            takeRequest()
+        }
+        // The search palette asked for this badge.
+        .onChange(of: PageRequests.shared.serial) { _, _ in takeRequest() }
+    }
+
+    private func takeRequest() {
+        guard PageRequests.shared.openBadge == milestone.id, PageRequests.shared.take(\.openBadge) != nil else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { open = true }
     }
 
     private func caption(earned: Date?, fraction: Double) -> String {

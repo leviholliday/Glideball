@@ -186,7 +186,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     @objc private func exportSettings() { showWindow(); AppModel.shared.exportSettings() }
     @objc private func importSettings() { showWindow(); AppModel.shared.importSettings() }
 
+    /// View › Search… (⌘K, ⌘F): the search palette over the main window.
+    @objc func openSearch(_ sender: Any?) { MainActor.assumeIsolated { CommandPalette.shared.toggle() } }
+
     func applicationWillTerminate(_ notification: Notification) {
+        // A value on trial goes back first, so it's never what's left saved.
+        MainActor.assumeIsolated { TryPreview.shared.revert(.quit) }
         ExternalControlCenter.shared.stop()   // status.json goes with the app
         AppModel.shared.engine.releaseHeldKeys()
         AppModel.shared.engine.releaseAll()
@@ -303,6 +308,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 showModes(AppModel.shared.modes)
             }
         } else if let item = statusItem {
+            MainActor.assumeIsolated { MenuBarPanelController.shared.close() }
             NSStatusBar.system.removeStatusItem(item)
             statusItem = nil
             precisionItem = nil
@@ -319,6 +325,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         item.button?.image?.isTemplate = true
         item.menu = menu
         statusItem = item
+        // "Menu bar icon opens: Panel" takes the clicks instead (a right-click still shows this menu).
+        MainActor.assumeIsolated { MenuBarPanelController.shared.attach(item, menu: menu) }
     }
 
     /// The menu-bar icon's menu.
@@ -410,6 +418,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let m = AppModel.shared
         return LaunchExperience.shared.show == nil && !m.showingWelcomeTour && !m.showingWhatsNew
             && !m.showingIconChoice && !m.showingSmallFavor && !m.showingShortcuts
+            && !CommandPalette.shared.isOpen && RecapCenter.shared.showing == nil
     }
 
     @objc private func checkForUpdates(_ sender: Any?) {
@@ -553,6 +562,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 item.tag = index
             }
         }
+        viewMenu.addItem(.separator())
+        AppShortcuts.addItem("search", title: String(localized: "Search…", comment: "View menu: opens the search palette"),
+                             action: #selector(openSearch), to: viewMenu, target: self)
+        AppShortcuts.addItem("find", title: String(localized: "Find a Setting…", comment: "View menu: opens the search palette"),
+                             action: #selector(openSearch), to: viewMenu, target: self)
         viewItem.submenu = viewMenu
         main.addItem(viewItem)
 

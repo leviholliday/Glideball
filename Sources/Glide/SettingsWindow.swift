@@ -30,9 +30,9 @@ enum SettingsPane: String, CaseIterable {
     }
 }
 
-/// A row Settings was opened to show (the external-control notice and What's
-/// New open General at "Allow Raycast and scripts"; What's New also points out
-/// Sounds in Look & Sound): it glows softly for a moment.
+/// A row someone was sent to (the search palette, the external-control notice
+/// and What's New): it glows softly for a moment, in Settings or in the main
+/// window (which also scrolls to it). Rows say who they are with `.findable`.
 @Observable
 final class SettingsSpotlight {
     static let shared = SettingsSpotlight()
@@ -46,6 +46,11 @@ final class SettingsSpotlight {
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) { [weak self] in
             if self?.generation == mine { self?.row = nil }
         }
+    }
+
+    func clear() {
+        generation += 1
+        row = nil
     }
 }
 
