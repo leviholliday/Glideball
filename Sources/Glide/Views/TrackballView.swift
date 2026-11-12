@@ -1,4 +1,5 @@
 import QuartzCore
+import simd
 import SwiftUI
 
 /// What the trackball picture shows, besides what the hand is doing.
@@ -40,20 +41,26 @@ struct TrackballView: View {
     var body: some View {
         let drift = reduceMotion || look != .connected ? 0 : driftFPS
         let live = feed.isActive && look == .connected
-        let interval = live ? feed.interval : 1 / max(drift, 1)
-        TimelineView(.animation(minimumInterval: interval, paused: !live && drift == 0)) { context in
+        // The ball turns smoothly (up to 30 frames a second) while it's moving; the rest follows the samples.
+        let interval = live ? min(feed.interval, 1.0 / 30) : 1 / max(drift, 1)
+        TimelineView(.animation(minimumInterval: interval, paused: !live && drift == 0)) { _ in
             let now = CACurrentMediaTime()
-            let t = context.date.timeIntervalSinceReferenceDate
             let light = live ? feed.lightLevels(at: now) : LightField.Levels()
+            // The idle drift turns the ball on top of where the hand left it. Built from the
+            // clock, never as an offset to animate: an animated jump would spin it wildly.
+            let turn = drift > 0 ? BallSpin.drift(at: now) * feed.ballOrientation(at: now) : feed.ballOrientation(at: now)
             TrackballArt(pose: TrackballPose(
                 look: look, pressed: pressed,
                 ballSpeed: live ? feed.ballSpeed : 0,
                 roll: live ? CGVector(dx: feed.rollX, dy: feed.rollY) : .zero,
                 ringRate: live ? feed.ringVelocity : 0,
                 ringAngle: feed.ringAngle(at: now),
-                ballPhase: feed.ballPhase(at: now) + (drift > 0 ? t * 0.05 : 0),
+                orientation: reduceMotion ? BallSpin.identity : turn,
                 afterglow: light.ball, afterglowDirection: light.roll,
                 comet: light.ring, cometSign: light.ringSign))
+                // Frames come from the clock: never let a surrounding animation (the sidebar's
+                // trackball growing as Overview's scrolls away) interpolate between two of them.
+                .transaction { $0.animation = nil }
         }
         .aspectRatio(1, contentMode: .fit)
         .accessibilityElement()
@@ -84,8 +91,8 @@ struct TrackballPose {
     var ringRate = 0.0
     /// Where the ring has turned to (degrees).
     var ringAngle = 0.0
-    /// How far the liquid inside the ball has turned (radians).
-    var ballPhase = 0.0
+    /// Which way the ball is turned (a real 3D turn: what's on its surface moves the way it rolls).
+    var orientation = BallSpin.identity
     /// The ball's light lingering after a roll (0…1), leaning the way it went.
     var afterglow = 0.0
     var afterglowDirection = CGVector.zero
@@ -330,7 +337,7 @@ struct TrackballArt: View {
                     .frame(width: d, height: d)
                     .offset(x: s * 0.008, y: s * 0.016)
                     .blur(radius: s * 0.016)
-                OrbBall(diameter: d, phase: pose.ballPhase, roll: rollOffset, reduceMotion: reduceMotion)
+                OrbBall(diameter: d, orientation: reduceMotion ? BallSpin.identity : pose.orientation)
                     .saturation(lit ? 1 : 0)
                     .brightness(lit ? 0.06 * pose.flare : (look == .paused ? -0.08 : -0.03))
                     .contrast(lit ? 1 : 0.9)
@@ -341,36 +348,20 @@ struct TrackballArt: View {
             .animation(Theme.Motion.pause, value: look)
         }
     }
-
-    /// How far the inner light leans the way the ball rolls (a unit-ish vector, scaled by speed).
-    private var rollOffset: CGVector {
-        let r = pose.roll
-        let len = (r.dx * r.dx + r.dy * r.dy).squareRoot()
-        guard len > 0.01, !reduceMotion else { return .zero }
-        let k = min(len / 3, 1) / len
-        return CGVector(dx: r.dx * k, dy: r.dy * k)
-    }
 }
 
-/// The ball itself: liquid under polished glass (`OrbArt`), masked to a circle.
+/// The ball itself: a colored sphere that really turns (`BallSurface`), under
+/// the icon's polished glass (`OrbArt`): its shading, rim and one highlight
+/// stay put, because the light doesn't move when the ball does.
 private struct OrbBall: View {
     let diameter: CGFloat
-    /// Turns the liquid as the ball rolls (radians).
-    let phase: Double
-    /// Leans the liquid and nudges the highlight the way the ball rolls.
-    let roll: CGVector
-    let reduceMotion: Bool
+    let orientation: BallSpin.Quaternion
 
     var body: some View {
         let layers = OrbArt.layers
         let d = diameter
         ZStack {
-            Image(decorative: layers.liquid, scale: 1)
-                .resizable()
-                .interpolation(.high)
-                .frame(width: d * OrbArt.liquidSpan, height: d * OrbArt.liquidSpan)
-                .rotationEffect(.radians(reduceMotion ? 0 : phase))
-                .offset(x: roll.dx * d * 0.16, y: roll.dy * d * 0.16)
+            BallSurface(orientation: orientation)
             Image(decorative: layers.glass, scale: 1)
                 .resizable()
                 .interpolation(.high)
@@ -381,11 +372,98 @@ private struct OrbBall: View {
             Image(decorative: layers.highlight, scale: 1)
                 .resizable()
                 .interpolation(.high)
-                .offset(x: roll.dx * d * 0.03, y: roll.dy * d * 0.03)
         }
         .frame(width: d, height: d)
         .compositingGroup()
         .clipShape(Circle())
+    }
+}
+
+/// The ball's surface: soft pools of the orb's colors and a scatter of bright
+/// flecks, placed all the way round a sphere, turned by `orientation` and drawn
+/// back to front, each foreshortened as it nears the edge. At rest it's close to
+/// the icon (cyan on top, magenta low on the left, violet on the right); rolled,
+/// every pool and fleck travels the way the real ball's surface did.
+struct BallSurface: View {
+    let orientation: BallSpin.Quaternion
+
+    /// A spot on the ball: its center (unit vector, ball space at rest: x right, y up,
+    /// z toward you), its angular radius (radians), its color and strength.
+    struct Spot {
+        let at: SIMD3<Double>
+        let radius: Double
+        let color: Color
+        let strength: Double
+        /// A fleck: a crisper edge.
+        var fleck = false
+    }
+
+    static var spots: [Spot] {
+        let white = Color.white
+        func v(_ x: Double, _ y: Double, _ z: Double) -> SIMD3<Double> { simd_normalize(SIMD3(x, y, z)) }
+        var out: [Spot] = [
+            // The front, as the icon has it.
+            Spot(at: v(-0.05, 0.8, 0.6), radius: 0.88, color: Theme.orbCyan, strength: 1),
+            Spot(at: v(0.18, 0.52, 0.83), radius: 0.34, color: white, strength: 0.42),
+            Spot(at: v(-0.48, -0.55, 0.68), radius: 0.62, color: Theme.orbMagenta, strength: 0.95),
+            Spot(at: v(0.66, -0.3, 0.69), radius: 0.56, color: Theme.orbViolet, strength: 0.9),
+            Spot(at: v(-0.82, 0.12, 0.56), radius: 0.46, color: Theme.orbBlue, strength: 0.9),
+            // Round the back and sides, so rolling always brings something new up.
+            Spot(at: v(0.3, 0.15, -0.94), radius: 0.62, color: Theme.orbMagenta, strength: 0.95),
+            Spot(at: v(-0.55, -0.35, -0.76), radius: 0.6, color: Theme.orbCyan, strength: 0.9),
+            Spot(at: v(0.72, 0.62, -0.3), radius: 0.55, color: Theme.orbViolet, strength: 0.9),
+            Spot(at: v(0.08, -0.97, -0.2), radius: 0.55, color: Theme.orbCyan, strength: 0.85),
+            Spot(at: v(0.97, -0.05, 0.1), radius: 0.4, color: Theme.orbMagenta, strength: 0.8),
+            Spot(at: v(-0.4, 0.86, -0.32), radius: 0.45, color: Theme.orbMagenta, strength: 0.75),
+            Spot(at: v(-0.98, -0.1, -0.15), radius: 0.4, color: Theme.orbViolet, strength: 0.8),
+        ]
+        // Flecks, spread evenly (a Fibonacci sphere): what makes the turn easy to follow.
+        let n = 16
+        for i in 0..<n {
+            let y = 1 - (Double(i) + 0.5) / Double(n) * 2
+            let r = (1 - y * y).squareRoot()
+            let a = Double(i) * 2.39996 + 0.6
+            let tint: Color = i % 3 == 0 ? Theme.orbCyan.mix(with: white, by: 0.35) : i % 5 == 0 ? Theme.orbMagenta : white
+            out.append(Spot(at: SIMD3(r * cos(a), y, r * sin(a)), radius: i % 4 == 0 ? 0.11 : 0.08,
+                            color: tint, strength: tint == white ? 0.62 : 0.85, fleck: true))
+        }
+        return out
+    }
+
+    var body: some View {
+        let spots = Self.spots
+        let q = orientation
+        Canvas { ctx, size in
+            let rad = Double(min(size.width, size.height)) / 2
+            let c = CGPoint(x: size.width / 2, y: size.height / 2)
+            // The ball's own deep blue under everything.
+            ctx.fill(Path(ellipseIn: CGRect(x: c.x - rad, y: c.y - rad, width: rad * 2, height: rad * 2)),
+                     with: .radialGradient(Gradient(colors: [Theme.orbBlue, Theme.orbBlue.mix(with: Theme.orbViolet, by: 0.45)]),
+                                           center: c, startRadius: 0, endRadius: rad))
+            let placed = spots.map { (spot: $0, p: q.act($0.at)) }.sorted { $0.p.z < $1.p.z }
+            for (spot, p) in placed {
+                let s = sin(spot.radius)
+                // Fades out as it goes round the edge; skipped once it's behind.
+                let edge = (p.z + s * 0.7) / (0.22 + s * 0.7)
+                guard edge > 0 else { continue }
+                let fade = min(1, edge * edge * (3 - 2 * min(edge, 1)))
+                let center = CGPoint(x: c.x + p.x * rad * cos(spot.radius * 0.35), y: c.y - p.y * rad * cos(spot.radius * 0.35))
+                let r = rad * s
+                var g = ctx
+                g.translateBy(x: center.x, y: center.y)
+                g.rotate(by: .radians(atan2(-p.y, p.x)))
+                g.scaleBy(x: max(p.z, 0.12), y: 1)      // foreshortened toward the edge
+                g.opacity = spot.strength * fade
+                let stops: [Gradient.Stop] = spot.fleck
+                    ? [.init(color: spot.color, location: 0), .init(color: spot.color.opacity(0.6), location: 0.4),
+                       .init(color: spot.color.opacity(0), location: 1)]
+                    : [.init(color: spot.color, location: 0), .init(color: spot.color.opacity(0.88), location: 0.42),
+                       .init(color: spot.color.opacity(0), location: 1)]
+                g.fill(Path(ellipseIn: CGRect(x: -r, y: -r, width: r * 2, height: r * 2)),
+                       with: .radialGradient(Gradient(stops: stops), center: .zero, startRadius: 0, endRadius: r))
+            }
+        }
+        .allowsHitTesting(false)
     }
 }
 

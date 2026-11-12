@@ -186,7 +186,7 @@ struct IntroScene: View {   // internal: drawn by --render-ui and --self-test to
         let v = (x - ballX(t - 0.03, width: width)) / 0.03          // sides a second
         p.ballOffset = CGSize(width: x, height: 0)
         p.ballOpacity = LaunchMath.span(t, 0.5, 0.95)
-        p.ballPhase = x / TrackballArt.ballRadius * 0.5
+        p.orientation = BallSpin.rolled(x / TrackballArt.ballRadius)
         p.roll = CGVector(dx: min(3, v * 2.2), dy: 0)
         p.ballSpeed = min(4, abs(v) * 3)
         // The ring: ticks arrive clockwise, then spin up and settle, warming pink while they're fast.
@@ -268,7 +268,7 @@ struct SplashScene: View {   // internal: drawn by --render-ui and --self-test t
             p.ringOpacity = p.bodyOpacity
             p.ballOpacity = LaunchMath.span(t, 0, 0.18)
             p.ballOffset = CGSize(width: x, height: 0)
-            p.ballPhase = x / TrackballArt.ballRadius * 0.5
+            p.orientation = BallSpin.rolled(x / TrackballArt.ballRadius)
             p.roll = CGVector(dx: min(3, v * 1.2), dy: 0)
             p.ballSpeed = min(4, abs(v) * 2)
             p.ringAngle = 40 * LaunchMath.easeOut(LaunchMath.span(t, 0.3, 0.8))

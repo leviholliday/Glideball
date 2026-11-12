@@ -212,6 +212,9 @@ extension RenderUI {
         add("trackball-states", "Trackball", "The trackball in each state") { dark, scale in
             card(TrackballStates(), width: 1000, dark: dark, scale: scale)
         }
+        add("trackball-rolling", "Trackball", "The ball turning as it rolls: right, then away from you, a quarter turn in steps, large and small") { dark, scale in
+            card(TrackballRolling(), width: 1000, dark: dark, scale: scale)
+        }
 
         // The Welcome Tour, every step, over the window.
         for step in WelcomeTourView.Step.allCases {
@@ -460,6 +463,29 @@ extension RenderUI {
                     TrackballView(feed: LiveFeed(), pressed: [], look: .connected).frame(width: 300, height: 300)
                     TrackballView(feed: DemoData.movingFeed(roll: CGVector(dx: -1.5, dy: 2), ring: -12), pressed: [1], look: .connected)
                         .frame(width: 230, height: 230)
+                }
+            }
+        }
+    }
+
+    /// Frames of the ball rolling right and rolling away (up the screen), a sixteenth of a turn apart.
+    struct TrackballRolling: View {
+        var body: some View {
+            VStack(alignment: .leading, spacing: 14) {
+                ForEach([("Rolling right →", CGVector(dx: 1, dy: 0)), ("Rolling away from you ↑", CGVector(dx: 0, dy: -1))], id: \.0) { title, dir in
+                    Text(verbatim: title).font(.system(size: 12, weight: .semibold))
+                    HStack(spacing: 10) {
+                        ForEach(0..<5) { i in
+                            TrackballArt(pose: TrackballPose(orientation: BallSpin.rolled(Double(i) * .pi / 8, direction: dir)))
+                                .frame(width: 180, height: 180)
+                        }
+                    }
+                    HStack(spacing: 10) {
+                        ForEach(0..<9) { i in
+                            TrackballArt(pose: TrackballPose(orientation: BallSpin.rolled(Double(i) * .pi / 8, direction: dir)))
+                                .frame(width: 60, height: 60)
+                        }
+                    }
                 }
             }
         }
