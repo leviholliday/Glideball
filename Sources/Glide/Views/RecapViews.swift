@@ -198,8 +198,9 @@ struct RecapCard: View {
                         Text(verbatim: m.title)
                             .font(.system(size: 10.5, weight: .medium))
                             .lineLimit(2)
+                            .minimumScaleFactor(0.8)
                             .multilineTextAlignment(.center)
-                            .frame(width: 76)
+                            .frame(width: 92)
                     }
                     .scaleEffect(reduceMotion ? 1 : 0.85 + 0.15 * reveal)
                     .opacity(0.3 + 0.7 * reveal)
