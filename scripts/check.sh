@@ -29,7 +29,7 @@ VERBOSE=0
 for arg in "$@"; do
   case $arg in
     -v|--verbose) VERBOSE=1 ;;
-    -h|--help) sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,23p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) print -u2 "unknown option: $arg"; exit 64 ;;
   esac
 done
