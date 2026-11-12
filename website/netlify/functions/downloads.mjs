@@ -6,7 +6,7 @@
 // which keeps well inside GitHub's API limits.
 
 const REPO = "leviholliday/glideball";
-const SHOW_FROM = 200;
+const SHOW_FROM = 350;
 // Fetched by the app, not by people: Glideball-update.zip is what the in-app
 // updater downloads, Glide.zip is what Glide 2.7.1 and older update from.
 const NOT_COUNTED = new Set(["Glideball-update.zip", "Glide.zip"]);
