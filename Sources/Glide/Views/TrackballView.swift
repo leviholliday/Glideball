@@ -122,6 +122,8 @@ struct TrackballPose {
 struct TrackballArt: View {
     let pose: TrackballPose
     var reduceMotion = false
+    /// A ball color other than the one in use (the render's sheet of every color); nil follows Settings.
+    var theme: BallTheme? = nil
 
     static let ballRadius = 0.262
     /// The fine colored line at the ring's outer edge.
@@ -157,6 +159,7 @@ struct TrackballArt: View {
     }
 
     private var look: TrackballLook { pose.look }
+    private var colors: BallTheme { theme ?? BallTheme.current }
     private var lit: Bool { look == .connected }
     private var speed: Double { min(pose.ballSpeed / 4, 1) }
     private var spin: Double { min(abs(pose.ringRate) / 14, 1) }
@@ -252,8 +255,7 @@ struct TrackballArt: View {
     }
 
     private var ringGradient: LinearGradient {
-        LinearGradient(colors: [Color(red: 0.36, green: 0.68, blue: 1.0), Color(red: 0.42, green: 0.45, blue: 1.0),
-                                Color(red: 0.58, green: 0.33, blue: 0.97)],
+        LinearGradient(colors: colors.ringLine,
                        startPoint: UnitPoint(x: 0.35, y: 0), endPoint: UnitPoint(x: 0.65, y: 1))
     }
 
@@ -329,14 +331,14 @@ struct TrackballArt: View {
             ZStack {
                 // The light the ball throws into the well: blue, a little more as it rolls.
                 Circle()
-                    .fill(RadialGradient(colors: [Theme.orbBlue.opacity(0.45), Theme.orbViolet.opacity(0.14), .clear],
+                    .fill(RadialGradient(colors: [colors.glow[1].opacity(0.45), colors.glow[2].opacity(0.14), .clear],
                                          center: .center, startRadius: d * 0.45, endRadius: d * (0.78 + 0.08 * speed)))
                     .frame(width: d * 1.7, height: d * 1.7)
                     .opacity(lit ? 0.75 + 0.25 * speed + 0.4 * pose.flare : 0)
                 // Afterglow: the ball's light lingers a moment the way it rolled.
                 if lit && pose.afterglow > 0.01 && !reduceMotion {
                     Circle()
-                        .fill(RadialGradient(colors: [Theme.orbCyan.opacity(0.7), Theme.ball.opacity(0.3), .clear],
+                        .fill(RadialGradient(colors: [colors.glow[0].opacity(0.7), colors.glow[1].opacity(0.3), .clear],
                                              center: .center, startRadius: 0, endRadius: d * 0.62))
                         .frame(width: d * 1.3, height: d * 1.3)
                         .offset(x: pose.afterglowDirection.dx * d * 0.2 * pose.afterglow,
@@ -350,7 +352,7 @@ struct TrackballArt: View {
                     .frame(width: d, height: d)
                     .offset(x: s * 0.008, y: s * 0.016)
                     .blur(radius: s * 0.016)
-                OrbBall(diameter: d, orientation: reduceMotion ? BallSpin.identity : pose.orientation)
+                OrbBall(diameter: d, orientation: reduceMotion ? BallSpin.identity : pose.orientation, theme: colors)
                     .saturation(lit ? 1 : 0)
                     .brightness(lit ? 0.06 * pose.flare : (look == .paused ? -0.08 : -0.03))
                     .contrast(lit ? 1 : 0.9)
@@ -369,12 +371,13 @@ struct TrackballArt: View {
 private struct OrbBall: View {
     let diameter: CGFloat
     let orientation: BallSpin.Quaternion
+    let theme: BallTheme
 
     var body: some View {
-        let layers = OrbArt.layers
+        let layers = OrbArt.layers(for: theme.palette)
         let d = diameter
         ZStack {
-            BallSurface(orientation: orientation)
+            BallSurface(orientation: orientation, theme: theme)
             Image(decorative: layers.glass, scale: 1)
                 .resizable()
                 .interpolation(.high)
@@ -399,6 +402,8 @@ private struct OrbBall: View {
 /// every pool and fleck travels the way the real ball's surface did.
 struct BallSurface: View {
     let orientation: BallSpin.Quaternion
+    /// Whose colors the pools and flecks take (Settings › Look › Ball color).
+    var theme: BallTheme = .current
 
     /// A spot on the ball: its center (unit vector, ball space at rest: x right, y up,
     /// z toward you), its angular radius (radians), its color and strength.
@@ -411,24 +416,25 @@ struct BallSurface: View {
         var fleck = false
     }
 
-    static var spots: [Spot] {
+    static func spots(_ theme: BallTheme) -> [Spot] {
         let white = Color.white
+        let cyan = theme.glow[0], blue = theme.glow[1], violet = theme.glow[2], magenta = theme.glow[3]
         func v(_ x: Double, _ y: Double, _ z: Double) -> SIMD3<Double> { simd_normalize(SIMD3(x, y, z)) }
         var out: [Spot] = [
             // The front, as the icon has it.
-            Spot(at: v(-0.05, 0.8, 0.6), radius: 0.88, color: Theme.orbCyan, strength: 1),
+            Spot(at: v(-0.05, 0.8, 0.6), radius: 0.88, color: cyan, strength: 1),
             Spot(at: v(0.18, 0.52, 0.83), radius: 0.34, color: white, strength: 0.42),
-            Spot(at: v(-0.48, -0.55, 0.68), radius: 0.62, color: Theme.orbMagenta, strength: 0.95),
-            Spot(at: v(0.66, -0.3, 0.69), radius: 0.56, color: Theme.orbViolet, strength: 0.9),
-            Spot(at: v(-0.82, 0.12, 0.56), radius: 0.46, color: Theme.orbBlue, strength: 0.9),
+            Spot(at: v(-0.48, -0.55, 0.68), radius: 0.62, color: magenta, strength: 0.95),
+            Spot(at: v(0.66, -0.3, 0.69), radius: 0.56, color: violet, strength: 0.9),
+            Spot(at: v(-0.82, 0.12, 0.56), radius: 0.46, color: blue, strength: 0.9),
             // Round the back and sides, so rolling always brings something new up.
-            Spot(at: v(0.3, 0.15, -0.94), radius: 0.62, color: Theme.orbMagenta, strength: 0.95),
-            Spot(at: v(-0.55, -0.35, -0.76), radius: 0.6, color: Theme.orbCyan, strength: 0.9),
-            Spot(at: v(0.72, 0.62, -0.3), radius: 0.55, color: Theme.orbViolet, strength: 0.9),
-            Spot(at: v(0.08, -0.97, -0.2), radius: 0.55, color: Theme.orbCyan, strength: 0.85),
-            Spot(at: v(0.97, -0.05, 0.1), radius: 0.4, color: Theme.orbMagenta, strength: 0.8),
-            Spot(at: v(-0.4, 0.86, -0.32), radius: 0.45, color: Theme.orbMagenta, strength: 0.75),
-            Spot(at: v(-0.98, -0.1, -0.15), radius: 0.4, color: Theme.orbViolet, strength: 0.8),
+            Spot(at: v(0.3, 0.15, -0.94), radius: 0.62, color: magenta, strength: 0.95),
+            Spot(at: v(-0.55, -0.35, -0.76), radius: 0.6, color: cyan, strength: 0.9),
+            Spot(at: v(0.72, 0.62, -0.3), radius: 0.55, color: violet, strength: 0.9),
+            Spot(at: v(0.08, -0.97, -0.2), radius: 0.55, color: cyan, strength: 0.85),
+            Spot(at: v(0.97, -0.05, 0.1), radius: 0.4, color: magenta, strength: 0.8),
+            Spot(at: v(-0.4, 0.86, -0.32), radius: 0.45, color: magenta, strength: 0.75),
+            Spot(at: v(-0.98, -0.1, -0.15), radius: 0.4, color: violet, strength: 0.8),
         ]
         // Flecks, spread evenly (a Fibonacci sphere): what makes the turn easy to follow.
         let n = 16
@@ -436,7 +442,7 @@ struct BallSurface: View {
             let y = 1 - (Double(i) + 0.5) / Double(n) * 2
             let r = (1 - y * y).squareRoot()
             let a = Double(i) * 2.39996 + 0.6
-            let tint: Color = i % 3 == 0 ? Theme.orbCyan.mix(with: white, by: 0.35) : i % 5 == 0 ? Theme.orbMagenta : white
+            let tint: Color = i % 3 == 0 ? cyan.mix(with: white, by: 0.35) : i % 5 == 0 ? magenta : white
             out.append(Spot(at: SIMD3(r * cos(a), y, r * sin(a)), radius: i % 4 == 0 ? 0.11 : 0.08,
                             color: tint, strength: tint == white ? 0.62 : 0.85, fleck: true))
         }
@@ -444,14 +450,15 @@ struct BallSurface: View {
     }
 
     var body: some View {
-        let spots = Self.spots
+        let spots = Self.spots(theme)
+        let blue = theme.glow[1], violet = theme.glow[2]
         let q = orientation
         Canvas { ctx, size in
             let rad = Double(min(size.width, size.height)) / 2
             let c = CGPoint(x: size.width / 2, y: size.height / 2)
             // The ball's own deep blue under everything.
             ctx.fill(Path(ellipseIn: CGRect(x: c.x - rad, y: c.y - rad, width: rad * 2, height: rad * 2)),
-                     with: .radialGradient(Gradient(colors: [Theme.orbBlue, Theme.orbBlue.mix(with: Theme.orbViolet, by: 0.45)]),
+                     with: .radialGradient(Gradient(colors: [blue, blue.mix(with: violet, by: 0.45)]),
                                            center: c, startRadius: 0, endRadius: rad))
             let placed = spots.map { (spot: $0, p: q.act($0.at)) }.sorted { $0.p.z < $1.p.z }
             for (spot, p) in placed {

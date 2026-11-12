@@ -98,7 +98,6 @@
 "Restored your previous settings" = "Seus ajustes anteriores foram restaurados";
 
 /* Toast; the name of a button preset */
-"Applied “Spaces + Wispr Flow”" = "“Espaços + Wispr Flow” aplicado";
 
 /* ---- AppProfile.swift ---- */
 
@@ -527,7 +526,6 @@
 
 "Open apps" = "Apps abertos";
 
-"No other open apps" = "Nenhum outro app aberto";
 
 "Choose from Applications…" = "Escolher em Aplicativos…";
 
@@ -596,15 +594,11 @@
 
 "Now press a keyboard shortcut" = "Agora pressione um atalho de teclado";
 
-"Or choose an action from the menu. Esc cancels." = "Ou escolha uma ação no menu. Esc cancela.";
 
-"No combos yet. Use Quick assign and hold two or three buttons together." = "Nenhum combo ainda. Use a Atribuição rápida e segure dois ou três botões juntos.";
 
 "Delete combo" = "Apagar combo";
 
-"Buttons in a combo wait a split second (up to 0.16 s for three) to see if their partners join. Buttons not in any combo respond instantly." = "Botões de um combo esperam uma fração de segundo (até 0,16 s para três) para ver se os parceiros se juntam. Botões fora de qualquer combo respondem na hora.";
 
-"New combo" = "Novo combo";
 
 "That combo already exists" = "Esse combo já existe";
 
@@ -676,7 +670,6 @@
 "Press a button on your trackball: its row lights up." = "Pressione um botão do trackball: a linha dele acende.";
 
 /* Button preset name */
-"Spaces + Wispr Flow" = "Espaços + Wispr Flow";
 
 "Top buttons switch Spaces; bottom left + both top buttons hold ⌃Space for Wispr Flow." = "Os botões de cima trocam de Espaço; inferior esquerdo + os dois de cima seguram ⌃Space para o Wispr Flow.";
 
@@ -692,9 +685,7 @@
 
 "Your primary click stays a left click, so Glideball can never lock you out." = "Seu clique principal continua sendo um clique esquerdo, então o Glideball nunca te deixa sem controle.";
 
-"Type a shortcut…  esc to cancel" = "Digite um atalho…  esc para cancelar";
 
-"Record custom shortcut…" = "Gravar atalho personalizado…";
 
 /* ---- Components.swift ---- */
 
@@ -1645,10 +1636,8 @@
 "Install %@…" = "Instalar %@…";
 "Just the Expert Mouse for now. Turn this on to try Glideball with Kensington’s other trackballs." = "Por enquanto, só o Expert Mouse. Ative isto para testar o Glideball com os outros trackballs da Kensington.";
 "Keep the classic one" = "Manter o clássico";
-"Language and performance" = "Idioma e desempenho";
 "Learn more" = "Saiba mais";
 "Lets Raycast and scripts pause Glideball, switch modes and change the pointer speed. It stays off unless you turn it on." = "Permite que Raycast e scripts pausem o Glideball, troquem de modo e mudem a velocidade do ponteiro. Fica desativado, a menos que você ative.";
-"Look & Sound" = "Aparência e som";
 "No icon in the menu bar. Open Glideball from the Dock to change things." = "Sem ícone na barra de menus. Abra o Glideball pelo Dock para mudar as coisas.";
 "No pause shortcut. You can still pause Glideball from its menu-bar icon or the switch in the sidebar." = "Sem atalho de pausa. Você ainda pode pausar o Glideball pelo ícone na barra de menus ou pelo botão na barra lateral.";
 "No shortcuts match “%@”." = "Nenhum atalho corresponde a “%@”.";
@@ -1656,7 +1645,6 @@
 "Not Now" = "Agora Não";
 "Off unless you pick something. Never your name, what you type or which apps you use." = "Desativado, a menos que você escolha algo. Nunca seu nome, o que você digita ou quais apps você usa.";
 "Open Settings" = "Abrir Ajustes";
-"Opening Glideball" = "Abrindo o Glideball";
 "Opens in your browser" = "Abre no seu navegador";
 "Opens this version’s notes on the Glideball website" = "Abre as notas desta versão no site do Glideball";
 "Orb" = "Orb";
@@ -1689,7 +1677,6 @@
 "What’s been sent" = "O que foi enviado";
 "What’s new in this version" = "Novidades desta versão";
 "What’s sent" = "O que é enviado";
-"Works with" = "Funciona com";
 "You get new versions as soon as they’re out, before everyone else. They’ve had less testing, so you may hit bugs." = "Você recebe as versões novas assim que saem, antes de todo mundo. Elas tiveram menos testes, então você pode encontrar bugs.";
 "You get new versions once they’ve settled. Turn this on to try them early, while I’m still testing." = "Você recebe as versões novas depois que se estabilizam. Ative para testá-las antes, enquanto ainda estou testando.";
 "Your version" = "Sua versão";
@@ -1730,3 +1717,262 @@
 "They work in every app, even with the window closed." = "Funcionam em qualquer app, mesmo com a janela fechada.";
 "Your trackball goes back to plain macOS. Closing the window keeps Glideball running." = "Seu trackball volta ao funcionamento normal do macOS. Fechar só a janela mantém o Glideball funcionando.";
 "⌘Q quits straight away. Turn asking back on in Settings › General." = "⌘Q encerra na hora. Ative a pergunta de novo em Ajustes › Geral.";
+
+/* Round 3: action picker, presets, ball colors, settings, badges and sharing */
+"%@ of %@" = "%@ de %@";
+"%@ so far on this Mac" = "%@ até agora neste Mac";
+"%@, choose what this does" = "%@, escolha o que isso faz";
+"%lld of %lld badges" = "%lld de %lld medalhas";
+"%lld of %lld done" = "%lld de %lld concluídos";
+"%lld of %lld earned. Click one to see what’s behind it." = "%lld de %lld conquistadas. Clique em uma para ver o que há por trás.";
+"%lld to try" = "%lld para experimentar";
+"12,000 clicks, about as many pecks as a woodpecker makes in a day" = "12.000 cliques, mais ou menos as bicadas que um pica-pau dá em um dia";
+"250,000 clicks" = "250.000 cliques";
+"525,600 clicks, one for every minute in a year" = "525.600 cliques, um para cada minuto de um ano";
+"5K" = "5K";
+"86,400 clicks, one for every second in a day" = "86.400 cliques, um para cada segundo de um dia";
+"A day of seconds" = "Um dia de segundos";
+"A mile" = "Uma milha";
+"A normal click." = "Um clique normal.";
+"A soft glow when you roll, spin or click, easy to ignore." = "Um brilho suave quando você rola, gira ou clica, fácil de ignorar.";
+"A year of minutes" = "Um ano de minutos";
+"Add a combo" = "Adicionar um combo";
+"Add a combo on the Buttons tab." = "Adicione um combo na aba Botões.";
+"Add an app on the Apps tab." = "Adicione um app na aba Apps.";
+"Add one below, or use Quick assign and hold the buttons together." = "Adicione um abaixo, ou use a Atribuição rápida e segure os botões juntos.";
+"Already in Use" = "Já em uso";
+"Any app, open or not." = "Qualquer app, aberto ou não.";
+"Applied “%@”" = "“%@” aplicada";
+"Apply %@" = "Aplicar %@";
+"Apply a preset on the Buttons tab." = "Aplique uma predefinição na aba Botões.";
+"Apps and tools" = "Apps e ferramentas";
+"Ask before quitting" = "Perguntar antes de encerrar";
+"Back in browsers, Finder and most apps, like a mouse’s side button." = "Voltar em navegadores, no Finder e na maioria dos apps, como o botão lateral de um mouse.";
+"Back with the keyboard shortcut, for apps that ignore the mouse button." = "Voltar com o atalho de teclado, para apps que ignoram o botão do mouse.";
+"Back, forward and tabs" = "Voltar, avançar e abas";
+"Badge earned" = "Medalha conquistada";
+"Ball color" = "Cor da bola";
+"Before preset" = "Antes da predefinição";
+"Bottom" = "Embaixo";
+"Brings back the tab you just closed." = "Traz de volta a aba que você acabou de fechar.";
+"Browser" = "Navegador";
+"Burj Khalifa" = "Burj Khalifa";
+"Button presses on the Buttons page" = "Cliques nos botões na página Botões";
+"Changes %lld buttons" = "Altera %lld botões";
+"Changes 1 button" = "Altera 1 botão";
+"Choose" = "Escolher";
+"Choose an Action" = "Escolha uma ação";
+"Choose an App" = "Escolha um app";
+"Choose an action for a button on the Buttons tab." = "Escolha uma ação para um botão na aba Botões.";
+"Choose an app…" = "Escolher um app…";
+"Choose the app this button should open." = "Escolha o app que este botão deve abrir.";
+"Choose what they do" = "Escolha o que eles fazem";
+"Choose what this button does" = "Escolha o que este botão faz";
+"Choose what this does" = "Escolha o que isso faz";
+"Classic red" = "Vermelho clássico";
+"Clear the search" = "Limpar a busca";
+"Click a button here, or press it on your trackball, to choose what it does." = "Clique em um botão aqui, ou pressione-o no seu trackball, para escolher o que ele faz.";
+"Click with ⇧ held: selects everything in between." = "Clique com ⇧ pressionado: seleciona tudo o que está no meio.";
+"Click with ⌃ held: the other way to right-click." = "Clique com ⌃ pressionado: a outra forma de fazer clique direito.";
+"Click with ⌘ held: opens links in a background tab." = "Clique com ⌘ pressionado: abre links em uma aba em segundo plano.";
+"Click with ⌥ held." = "Clique com ⌥ pressionado.";
+"Closes the tab or window in front." = "Fecha a aba ou a janela da frente.";
+"Colors the trackball everywhere in Glideball, and the light it throws. Ball blue, ring pink and buttons amber stay the same in charts and badges, so they always mean the same thing." = "Colore o trackball em todo o Glideball, e a luz que ele projeta. O azul da bola, o rosa do anel e o âmbar dos botões continuam os mesmos em gráficos e medalhas, para sempre significarem a mesma coisa.";
+"Combo maker" = "Criador de combos";
+"Copied. Paste it anywhere." = "Copiado. Cole onde quiser.";
+"Copies what’s selected." = "Copia o que está selecionado.";
+"Couldn’t save it: %@" = "Não foi possível salvar: %@";
+"Current" = "Atual";
+"Cuts what’s selected." = "Recorta o que está selecionado.";
+"Deep sea" = "Mar profundo";
+"Does it again after an undo." = "Refaz depois de um desfazer.";
+"Drag to capture part of the screen." = "Arraste para capturar parte da tela.";
+"Earned %@" = "Conquistada em %@";
+"Edge of space" = "Beira do espaço";
+"Editing" = "Edição";
+"Ember" = "Brasa";
+"Emoji & Symbols" = "Emoji e símbolos";
+"Empire State" = "Empire State";
+"Esc cancels." = "Esc cancela.";
+"Find" = "Buscar";
+"Forest" = "Floresta";
+"Forward in browsers, Finder and most apps." = "Avançar em navegadores, no Finder e na maioria dos apps.";
+"Forward with the keyboard shortcut." = "Avançar com o atalho de teclado.";
+"Full" = "Cheio";
+"Full Screen" = "Tela cheia";
+"Gave a button something new to do" = "Deu uma nova função a um botão";
+"Gave an app its own setup" = "Deu a um app sua própria configuração";
+"Gave the ball a color of your own" = "Deu à bola uma cor só sua";
+"Glideball badge – %@" = "Medalha do Glideball – %@";
+"Goes back a song." = "Volta uma música.";
+"Golden Gate" = "Golden Gate";
+"Graphite" = "Grafite";
+"Half marathon" = "Meia maratona";
+"Hold it and roll the ball to scroll in any direction." = "Segure e role a bola para rolar em qualquer direção.";
+"Hold the keys down while the button is held" = "Mantenha as teclas pressionadas enquanto o botão estiver pressionado";
+"Hold the modifiers (⌘ ⌥ ⌃ ⇧), then press the key. Esc cancels." = "Segure os modificadores (⌘ ⌥ ⌃ ⇧) e pressione a tecla. Esc cancela.";
+"Holds your shortcut while the button is down." = "Mantém seu atalho pressionado enquanto o botão estiver pressionado.";
+"Holds ⌃Space while the button is down, for push-to-talk dictation." = "Mantém ⌃Espaço pressionado enquanto o botão estiver pressionado, para ditado push-to-talk.";
+"Icon and celebrations" = "Ícone e comemorações";
+"In use" = "Em uso";
+"Jumps back to the app you were just using." = "Volta para o app que você estava usando agora há pouco.";
+"Keeps your buttons" = "Mantém seus botões";
+"Keyboard shortcut" = "Atalho de teclado";
+"Last Used App" = "Último app usado";
+"Light" = "Luz";
+"Light and motion" = "Luz e movimento";
+"Light colors work best at the top, deep ones at the bottom." = "Cores claras ficam melhores no alto, as escuras embaixo.";
+"Lock Screen" = "Bloquear tela";
+"Locks your Mac straight away." = "Bloqueia seu Mac na hora.";
+"Made to measure" = "Sob medida";
+"Made your first combo" = "Fez seu primeiro combo";
+"Make a picture of your numbers to share" = "Faça uma imagem dos seus números para compartilhar";
+"Makes the page bigger." = "Deixa a página maior.";
+"Makes the page smaller." = "Deixa a página menor.";
+"Media" = "Mídia";
+"Middle" = "Meio";
+"Milestones and records" = "Marcos e recordes";
+"Minimize Window" = "Minimizar janela";
+"Modes on and off" = "Modos ligados e desligados";
+"Mount Fuji" = "Monte Fuji";
+"Moves to the tab on the left." = "Vai para a aba da esquerda.";
+"Moves to the tab on the right." = "Vai para a aba da direita.";
+"Mute" = "Silenciar";
+"Mutes or unmutes your Mac." = "Silencia ou reativa o som do seu Mac.";
+"My Glideball" = "Meu Glideball";
+"My trackball, so far" = "Meu trackball, até agora";
+"New badges arrived, and you’d already earned %lld" = "Chegaram medalhas novas, e você já tinha conquistado %lld";
+"New job" = "Emprego novo";
+"Next Tab" = "Próxima aba";
+"Next Track" = "Próxima faixa";
+"Next: %@" = "Próximo: %@";
+"No combos yet." = "Nenhum combo ainda.";
+"No open app called “%@”. Choose it from Applications instead." = "Nenhum app aberto chamado “%@”. Escolha-o em Aplicativos.";
+"Nothing called “%@”. Try another word, or record it as a keyboard shortcut." = "Nada chamado “%@”. Tente outra palavra, ou grave como atalho de teclado.";
+"Now" = "Agora";
+"Ocean" = "Oceano";
+"Open %@" = "Abrir %@";
+"Open an app" = "Abrir um app";
+"Opening and quitting" = "Abrir e encerrar";
+"Opens Spotlight to search your Mac." = "Abre o Spotlight para buscar no seu Mac.";
+"Opens a new tab." = "Abre uma nova aba.";
+"Opens an app, or brings it to the front." = "Abre um app, ou o traz para a frente.";
+"Opens links in a new tab in most browsers." = "Abre links em uma nova aba na maioria dos navegadores.";
+"Opens the app, or brings it to the front." = "Abre o app, ou o traz para a frente.";
+"Opens the emoji picker where you’re typing." = "Abre o seletor de emoji onde você está digitando.";
+"Opens the menu for what’s under the pointer." = "Abre o menu do que está sob o ponteiro.";
+"Opens the screenshot and screen recording tools." = "Abre as ferramentas de captura e gravação de tela.";
+"Or choose an action:" = "Ou escolha uma ação:";
+"Out of the box" = "De fábrica";
+"Pastes what you copied." = "Cola o que você copiou.";
+"Pause and resume" = "Pausar e retomar";
+"Pick a ball color in Settings › Look." = "Escolha uma cor de bola em Ajustes › Aparência.";
+"Picks up what’s under the pointer; press again or click to drop it." = "Pega o que está sob o ponteiro; pressione de novo ou clique para soltar.";
+"Play a sound for" = "Tocar um som para";
+"Play or Pause" = "Reproduzir ou pausar";
+"Plays or pauses music and videos." = "Reproduz ou pausa músicas e vídeos.";
+"Pointer and scrolling modes" = "Modos de ponteiro e rolagem";
+"Press a trackball button (or two or three together), then the keyboard shortcut it should send" = "Pressione um botão do trackball (ou dois ou três juntos) e depois o atalho de teclado que ele deve enviar";
+"Press any keys and this button sends them." = "Pressione teclas quaisquer e este botão as envia.";
+"Press once to slow the pointer, again to go back." = "Pressione uma vez para desacelerar o ponteiro, de novo para voltar.";
+"Press the keys" = "Pressione as teclas";
+"Press two or three buttons together to do something else. Buttons in a combo wait a split second (up to 0.16 s for three) to see if their partners join; buttons not in any combo respond instantly." = "Pressione dois ou três botões juntos para fazer outra coisa. Botões de um combo esperam uma fração de segundo (até 0,16 s para três) para ver se os parceiros se juntam; botões fora de qualquer combo respondem na hora.";
+"Preview" = "Pré-visualização";
+"Previewing a preset. Nothing changes until you apply it." = "Pré-visualizando uma predefinição. Nada muda até você aplicá-la.";
+"Previous Tab" = "Aba anterior";
+"Previous Track" = "Faixa anterior";
+"Quarter million" = "Um quarto de milhão";
+"Quick Assign" = "Atribuição rápida";
+"Quiet" = "Silencioso";
+"Quitting asks first, since your trackball goes back to plain macOS until Glideball opens again." = "Encerrar pergunta antes, porque seu trackball volta ao macOS comum até o Glideball abrir de novo.";
+"Ready-made" = "Pronto para usar";
+"Recent" = "Recentes";
+"Record a shortcut…" = "Gravar um atalho…";
+"Reload" = "Recarregar";
+"Reloads the page." = "Recarrega a página.";
+"Reopen Closed Tab" = "Reabrir aba fechada";
+"Right click with ⌃ held." = "Clique direito com ⌃ pressionado.";
+"Rolled a 5K (5 km)" = "Rolou um 5K (5 km)";
+"Rolled a half marathon (21.1 km)" = "Rolou uma meia maratona (21,1 km)";
+"Rolled a mile (1.6 km)" = "Rolou uma milha (1,6 km)";
+"Rolled an ultramarathon (100 km)" = "Rolou uma ultramaratona (100 km)";
+"Rolled the length of the Golden Gate Bridge (2.7 km)" = "Rolou o comprimento da ponte Golden Gate (2,7 km)";
+"Save" = "Salvar";
+"Save as PNG…" = "Salvar como PNG…";
+"Saves the document in front." = "Salva o documento da frente.";
+"Screenshot" = "Captura de tela";
+"Screenshot and Recording" = "Captura e gravação de tela";
+"Scroll sampler" = "Amostra de rolagem";
+"Scrolled as deep as the Mariana Trench (10,935 m)" = "Rolou tão fundo quanto a Fossa das Marianas (10.935 m)";
+"Scrolled the height of Mount Fuji (3,776 m)" = "Rolou a altura do Monte Fuji (3.776 m)";
+"Scrolled the height of the Burj Khalifa (828 m)" = "Rolou a altura do Burj Khalifa (828 m)";
+"Scrolled the height of the Empire State Building (443 m)" = "Rolou a altura do Empire State Building (443 m)";
+"Scrolled up to the edge of space (100 km)" = "Rolou até a beira do espaço (100 km)";
+"Search actions" = "Buscar ações";
+"Search open apps" = "Buscar apps abertos";
+"Searches the page or document." = "Procura na página ou no documento.";
+"Selects everything." = "Seleciona tudo.";
+"Sends the window in front to the Dock." = "Manda a janela da frente para o Dock.";
+"Sets all your buttons and a few combos at once. You can undo it." = "Define todos os seus botões e alguns combos de uma vez. Dá para desfazer.";
+"Setting up and exploring" = "Configurar e explorar";
+"Share your Glideball" = "Compartilhe seu Glideball";
+"Shows every open window and your Spaces." = "Mostra todas as janelas abertas e seus Espaços.";
+"Shows the windows of the app in front." = "Mostra as janelas do app da frente.";
+"Skips to the next song." = "Pula para a próxima música.";
+"Slider and switch ticks" = "Cliques de controles deslizantes e interruptores";
+"Slides to the Space on the left." = "Desliza para o Espaço da esquerda.";
+"Slides to the Space on the right." = "Desliza para o Espaço da direita.";
+"Slows the pointer while you hold the button, for fine work." = "Desacelera o ponteiro enquanto você segura o botão, para trabalhos de precisão.";
+"Spaces" = "Espaços";
+"Spaces, Mission Control and windows" = "Espaços, Mission Control e janelas";
+"Stock" = "Original";
+"Suggested" = "Sugeridas";
+"Sunset" = "Pôr do sol";
+"Tap the buttons that go together" = "Toque nos botões que andam juntos";
+"The button does nothing at all." = "O botão não faz nada.";
+"The full show: the light fills the window as you use the trackball." = "O show completo: a luz preenche a janela enquanto você usa o trackball.";
+"The picture is made on your Mac. It only goes somewhere if you share it." = "A imagem é feita no seu Mac. Ela só vai a algum lugar se você compartilhar.";
+"The room lights up with your hand: blue when you roll, pink when you spin, amber when you click." = "A sala se ilumina com a sua mão: azul quando você rola, rosa quando gira, âmbar quando clica.";
+"The window stays still and dark. The trackball itself still answers your hand." = "A janela fica parada e escura. O trackball em si continua respondendo à sua mão.";
+"Top" = "Alto";
+"Top buttons switch Spaces. Both together open Mission Control; bottom right with top right shows the app’s windows." = "Os botões de cima trocam de Espaço. Os dois juntos abrem o Mission Control; inferior direito com superior direito mostra as janelas do app.";
+"Top left copies, top right pastes. Both together undo; bottom right with top right redoes." = "Superior esquerdo copia, superior direito cola. Os dois juntos desfazem; inferior direito com superior direito refaz.";
+"Top left goes back, top right goes forward. Combos open, close and reopen tabs." = "Superior esquerdo volta, superior direito avança. Combos abrem, fecham e reabrem abas.";
+"Top left plays or pauses, top right skips ahead. Both together go back a track; bottom right with top right mutes." = "Superior esquerdo reproduz ou pausa, superior direito avança. Os dois juntos voltam uma faixa; inferior direito com superior direito silencia.";
+"Trackballs and other apps" = "Trackballs e outros apps";
+"Tried a button preset" = "Experimentou uma predefinição de botões";
+"Tried all three ways to scroll" = "Experimentou as três formas de rolar";
+"True colors" = "Cores verdadeiras";
+"Try Flywheel, Follow and Native on the Scrolling tab." = "Experimente Inércia, Seguir e Nativo na aba Rolagem.";
+"Try it" = "Experimente";
+"Turn it off" = "Desligar";
+"Turns full screen on or off for the window in front." = "Liga ou desliga a tela cheia da janela da frente.";
+"Turns the sound down a step." = "Baixa o som um nível.";
+"Turns the sound up a step." = "Sobe o som um nível.";
+"Two or three of them." = "Dois ou três deles.";
+"Ultra" = "Ultra";
+"Undoes the last change." = "Desfaz a última alteração.";
+"Use This Shortcut" = "Usar este atalho";
+"Volume" = "Volume";
+"Volume Down" = "Diminuir volume";
+"Volume Up" = "Aumentar volume";
+"What the trackball does out of the box: right click, middle click and Back. No combos." = "O que o trackball faz de fábrica: clique direito, clique do meio e Voltar. Sem combos.";
+"Whatever this button does without Glideball." = "O que este botão fizer sem o Glideball.";
+"Where Glideball shows" = "Onde o Glideball aparece";
+"Woodpecker" = "Pica-pau";
+"Your buttons already match it." = "Seus botões já são assim.";
+"Your own keyboard shortcut." = "Seu próprio atalho de teclado.";
+"Zoom In" = "Aumentar zoom";
+"Zoom Out" = "Diminuir zoom";
+"adds %lld combos" = "adiciona %lld combos";
+"choose" = "escolher";
+"clicks" = "cliques";
+"close" = "fechar";
+"keyboard shortcut keys" = "atalho de teclado teclas gravar";
+"move" = "mover";
+"open launch application" = "abrir iniciar executar aplicativo app";
+"removes your %lld combos" = "remove seus %lld combos";
+"replaces your %lld combos with %lld" = "troca seus %lld combos por %lld";
+"rolled" = "rolado";
+"scrolled" = "rolado na tela";
+"⌘Q quits straight away. Your trackball goes back to plain macOS until Glideball opens again." = "⌘Q encerra na hora. Seu trackball volta ao macOS comum até o Glideball abrir de novo.";

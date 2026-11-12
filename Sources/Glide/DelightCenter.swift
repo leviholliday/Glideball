@@ -93,6 +93,33 @@ final class DelightCenter {
             fresh.seedChecklist(from: config)
             ledger = fresh
         }
+        // What's already true counts for the setup badges (earned quietly at the next tick).
+        ledger.explored.formUnion(Self.explorations(in: config, checklist: ledger.checklist))
+    }
+
+    /// Things the settings show were already tried: the scroll mode in use, and the
+    /// checklist's button, combo and app setup.
+    private static func explorations(in config: GlideConfig, checklist: Set<ChecklistItem>) -> Set<Exploration> {
+        var out: Set<Exploration> = [.scroll(config.scrollMode)]
+        if checklist.contains(.button) || config.buttons.contains(where: { $0.key != 0 && $0.value != .system }) { out.insert(.button) }
+        if checklist.contains(.combo) { out.insert(.combo) }
+        if checklist.contains(.app) || !config.appProfiles.isEmpty { out.insert(.app) }
+        return out
+    }
+
+    /// Something was tried that a setup badge counts (a preset, a ball color).
+    func explored(_ item: Exploration) {
+        let events = explore([item])
+        if !events.isEmpty {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in self?.celebrate(events) }
+        }
+    }
+
+    private func explore(_ items: Set<Exploration>) -> [DelightEvent] {
+        let before = ledger
+        let events = ledger.explore(items, lifetime: lifetime, now: Date())
+        if ledger != before { saveLedger() }
+        return events
     }
 
     private func saveLedger() {
@@ -169,7 +196,13 @@ final class DelightCenter {
 
     /// Called with every local settings change.
     func configChanged(from old: GlideConfig, to new: GlideConfig) {
-        let events = ledger.complete(ChecklistItem.completed(from: old, to: new))
+        let steps = ChecklistItem.completed(from: old, to: new)
+        var tried: Set<Exploration> = [.scroll(new.scrollMode)]
+        if steps.contains(.button), new.buttons.contains(where: { $0.key != 0 && $0.value != .system }) { tried.insert(.button) }
+        if steps.contains(.combo) { tried.insert(.combo) }
+        if steps.contains(.app) { tried.insert(.app) }
+        let badges = explore(tried)
+        let events = ledger.complete(steps) + badges
         if !events.isEmpty {
             saveLedger()
             // Let the change itself land first.
@@ -250,6 +283,7 @@ final class DelightCenter {
         case .checklistStep(let item): item.doneTitle
         case .checklistDone: String(localized: "Glideball is all yours")
         case .welcome(let n): String(localized: "Glideball now keeps your records: \(n) badges already earned")
+        case .catchUp(let n): String(localized: "New badges arrived, and you’d already earned \(n)", comment: "Toast after an update adds badges")
         }
     }
 
@@ -262,7 +296,7 @@ final class DelightCenter {
             String(localized: "\(ledger.checklist.count) of \(ChecklistItem.allCases.count) on Make it yours",
                    comment: "“Make it yours” is the setup checklist on Overview")
         case .checklistDone: String(localized: "Every part of your trackball is set up.")
-        case .welcome: String(localized: "See them on Overview")
+        case .welcome, .catchUp: String(localized: "See them on Overview")
         }
     }
 
@@ -273,7 +307,7 @@ final class DelightCenter {
         case .record(let k, _): k.symbol
         case .checklistStep: "checkmark.circle.fill"
         case .checklistDone: "sparkles"
-        case .welcome: "trophy.fill"
+        case .welcome, .catchUp: "trophy.fill"
         }
     }
 

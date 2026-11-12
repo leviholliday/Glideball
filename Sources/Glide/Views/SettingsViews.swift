@@ -118,24 +118,32 @@ private struct RowPicker<Value: Hashable, Options: View>: View {
 
 // MARK: - General
 
-/// Settings › General: how Glideball starts and shows itself, its language and
-/// how much it animates, and what else it works with.
+/// Settings › General: opening and quitting, where Glideball shows, which
+/// trackballs it works with, its language, and what else may control it.
 struct GeneralSettingsPane: View {
     @Bindable var model: AppModel
+    @Bindable private var launch = LaunchExperience.shared
 
     var body: some View {
         SettingsPage {
-            SectionBlock(title: "Opening Glideball", dividerInset: SettingsLayout.symbolInset) {
+            SectionBlock(title: "Opening and quitting", dividerInset: SettingsLayout.symbolInset) {
                 SettingsToggle(title: "Open at login", hint: loginHint, symbol: "power",
                                isOn: Binding(get: { model.launchAtLogin }, set: { model.setLaunchAtLogin($0) }))
+                SettingsRow(title: "When Glideball opens", hint: launchHint, symbol: "play.circle") {
+                    RowPicker(title: "When Glideball opens", selection: $launch.style) {
+                        ForEach(LaunchExperience.Style.allCases) { style in
+                            Text(verbatim: style.title).tag(style)
+                        }
+                    }
+                }
+                SettingsToggle(title: "Ask before quitting", hint: quitHint, symbol: "xmark.circle", isOn: $model.confirmQuit)
+            }
+            SectionBlock(title: "Where Glideball shows", dividerInset: SettingsLayout.symbolInset) {
                 SettingsToggle(title: "Menu bar icon", hint: menuBarHint, symbol: "menubar.rectangle", isOn: $model.menuBarIcon)
                 SettingsToggle(title: "Show in Dock and app switcher", hint: dockHint, symbol: "dock.rectangle", isOn: $model.showInDock)
-            }
-            SectionBlock(title: "Language and performance", dividerInset: SettingsLayout.symbolInset) {
                 LanguageRow()
-                PerformanceRow(model: model)
             }
-            SectionBlock(title: "Works with", dividerInset: SettingsLayout.symbolInset) {
+            SectionBlock(title: "Trackballs and other apps", dividerInset: SettingsLayout.symbolInset) {
                 SettingsToggle(title: "Other Kensington trackballs", hint: otherTrackballsHint, symbol: "computermouse",
                                isOn: $model.otherTrackballs)
                 SettingsToggle(title: "Allow Raycast and scripts", hint: externalHint, symbol: "link",
@@ -148,6 +156,20 @@ struct GeneralSettingsPane: View {
         model.launchAtLogin
             ? String(localized: "Glideball starts quietly when you log in, so your trackball is ready straight away.")
             : String(localized: "You’ll open Glideball yourself after logging in. Until then, your trackball works like plain macOS.")
+    }
+
+    private var launchHint: String {
+        switch launch.style {
+        case .animation: String(localized: "A short animation over the window, a different one each time. Click or press Esc to skip it.")
+        case .fade: String(localized: "The Glideball mark shows for a moment, then the window fades in.")
+        case .none: String(localized: "The window opens straight away, with no animation.")
+        }
+    }
+
+    private var quitHint: String {
+        model.confirmQuit
+            ? String(localized: "Quitting asks first, since your trackball goes back to plain macOS until Glideball opens again.")
+            : String(localized: "⌘Q quits straight away. Your trackball goes back to plain macOS until Glideball opens again.")
     }
 
     private var menuBarHint: String {
@@ -236,39 +258,46 @@ struct LanguageRow: View {
     }
 }
 
-// MARK: - Look & Sound
+// MARK: - Look
 
-/// Settings › Look & Sound: the app icon, what plays when Glideball opens,
-/// celebrations, and the one Sounds switch with a preview of each sound.
+/// Settings › Look: the ball's color, how strongly the window's light answers
+/// the trackball and how much it animates, the app icon, and celebrations.
 struct LookSettingsPane: View {
     @Bindable var model: AppModel
-    @Bindable private var launch = LaunchExperience.shared
     private let icons = AppIconChoice.shared
-    @State private var soundsOn = Sounds.shared.enabled
 
     var body: some View {
         SettingsPage {
-            SectionBlock(title: "Look", dividerInset: SettingsLayout.symbolInset) {
+            PlainSection(title: "Ball color",
+                         caption: "Colors the trackball everywhere in Glideball, and the light it throws. Ball blue, ring pink and buttons amber stay the same in charts and badges, so they always mean the same thing.") {
+                BallColorPicker()
+            }
+            SectionBlock(title: "Light and motion", dividerInset: SettingsLayout.symbolInset) {
+                TuningSlider(title: "Light", symbol: "sun.max", value: $model.lightIntensity, range: 0...1, step: 0.05,
+                             format: { lightLabel($0) }, lowLabel: "Off", highLabel: "Full",
+                             hint: .verbatim(lightHint), tint: Theme.ball, defaultValue: 0.6)
+                PerformanceRow(model: model)
+            }
+            SectionBlock(title: "Icon and celebrations", dividerInset: SettingsLayout.symbolInset) {
                 SettingsRow(title: "App icon", hint: iconHint, symbol: "app.badge") {
                     AppIconPicker()
-                }
-                SettingsRow(title: "When Glideball opens", hint: launchHint, symbol: "play.circle") {
-                    RowPicker(title: "When Glideball opens", selection: $launch.style) {
-                        ForEach(LaunchExperience.Style.allCases) { style in
-                            Text(verbatim: style.title).tag(style)
-                        }
-                    }
                 }
                 SettingsToggle(title: "Celebrations", hint: celebrationsHint, symbol: "party.popper",
                                isOn: Bindable(model.delight).celebrationsOn)
             }
-            SectionBlock(title: "Sound", dividerInset: SettingsLayout.symbolInset) {
-                SettingsToggle(title: "Sounds", hint: soundsHint, symbol: soundsOn ? "speaker.wave.2" : "speaker.slash",
-                               isOn: $soundsOn, spotlight: "sounds")
-                SoundPreviewRow()
-            }
         }
-        .onChange(of: soundsOn) { _, on in Sounds.shared.enabled = on }
+    }
+
+    private func lightLabel(_ v: Double) -> String {
+        v < 0.01 ? String(localized: "Off", comment: "Light strength: none") : v.wholePercent
+    }
+
+    private var lightHint: String {
+        let v = model.lightIntensity
+        if v < 0.01 { return String(localized: "The window stays still and dark. The trackball itself still answers your hand.") }
+        if v < 0.4 { return String(localized: "A soft glow when you roll, spin or click, easy to ignore.") }
+        if v < 0.8 { return String(localized: "The room lights up with your hand: blue when you roll, pink when you spin, amber when you click.") }
+        return String(localized: "The full show: the light fills the window as you use the trackball.")
     }
 
     private var iconHint: String {
@@ -278,18 +307,149 @@ struct LookSettingsPane: View {
         }
     }
 
-    private var launchHint: String {
-        switch launch.style {
-        case .animation: String(localized: "A short animation over the window, a different one each time. Click or press Esc to skip it.")
-        case .fade: String(localized: "The Glideball mark shows for a moment, then the window fades in.")
-        case .none: String(localized: "The window opens straight away, with no animation.")
-        }
-    }
-
     private var celebrationsHint: String {
         model.delight.celebrationsOn
             ? String(localized: "A toast and a little confetti when you reach a milestone or set a personal best.")
             : String(localized: "No toasts or confetti. Your badges and records are still kept on the Overview page.")
+    }
+}
+
+/// The ball colors as little balls to click, and Custom with three color wells.
+struct BallColorPicker: View {
+    private let store = BallThemeStore.shared
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 8), spacing: 6) {
+                ForEach(BallTheme.curated) { theme in
+                    swatch(theme, selected: store.theme.id == theme.id)
+                }
+                swatch(BallTheme.custom(store.custom), selected: store.theme.id == "custom")
+            }
+            if store.theme.id == "custom" {
+                HStack(spacing: 18) {
+                    well(0, String(localized: "Top", comment: "Custom ball color: the top of the ball"))
+                    well(1, String(localized: "Middle", comment: "Custom ball color"))
+                    well(2, String(localized: "Bottom", comment: "Custom ball color: the bottom of the ball"))
+                    Spacer(minLength: 0)
+                    Text("Light colors work best at the top, deep ones at the bottom.")
+                        .font(Theme.Font.hint)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: 220, alignment: .trailing)
+                        .multilineTextAlignment(.trailing)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .groupBackground()
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .animation(Theme.Motion.spring, value: store.theme.id)
+    }
+
+    private func swatch(_ theme: BallTheme, selected: Bool) -> some View {
+        Button {
+            store.choose(theme.id)
+            Sounds.shared.detent(pitch: 1.1, volume: 0.45)
+        } label: {
+            VStack(spacing: 6) {
+                OrbSwatch(palette: theme.palette, size: 44)
+                    .padding(4)
+                    .overlay {
+                        Circle().strokeBorder(selected ? Theme.ball : .clear, lineWidth: 2)
+                    }
+                    .shadow(color: selected ? theme.glow[1].opacity(0.55) : .clear, radius: 8)
+                Text(verbatim: theme.title)
+                    .font(.system(size: 10.5, weight: selected ? .semibold : .regular))
+                    .foregroundStyle(selected ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 6)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(HoverButtonStyle(radius: 10))
+        .help(theme.title)
+        .accessibilityLabel(Text(verbatim: theme.title))
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    private func well(_ i: Int, _ label: String) -> some View {
+        HStack(spacing: 6) {
+            ColorPicker(selection: Binding(get: { store.custom[i].color },
+                                           set: { store.setCustom(i, to: OrbRGB(NSColor($0))) }),
+                        supportsOpacity: false) { Text(verbatim: label) }
+                .labelsHidden()
+            Text(verbatim: label).font(Theme.Font.hint).foregroundStyle(.secondary)
+        }
+    }
+}
+
+/// A little ball in a palette: the orb's layers, small, standing still.
+struct OrbSwatch: View {
+    let palette: OrbPalette
+    var size: CGFloat = 44
+    var pixels = 120
+
+    var body: some View {
+        let layers = OrbArt.layers(for: palette, pixels: pixels)
+        ZStack {
+            Image(decorative: layers.liquid, scale: 1)
+                .resizable()
+                .frame(width: size * OrbArt.liquidSpan, height: size * OrbArt.liquidSpan)
+            Image(decorative: layers.glass, scale: 1).resizable()
+            Image(decorative: layers.glow, scale: 1).resizable().blendMode(.plusLighter)
+            Image(decorative: layers.highlight, scale: 1).resizable()
+        }
+        .frame(width: size, height: size)
+        .compositingGroup()
+        .clipShape(Circle())
+        .shadow(color: .black.opacity(0.35), radius: 2, y: 1.5)
+        .accessibilityHidden(true)
+    }
+}
+
+// MARK: - Sound
+
+/// Settings › Sound: the one Sounds switch, how loud, which kinds play, and a
+/// preview of each.
+struct SoundSettingsPane: View {
+    @State private var soundsOn = Sounds.shared.enabled
+    @State private var volume = Sounds.shared.volume
+    @State private var kinds: [SoundKind: Bool] = Dictionary(uniqueKeysWithValues: SoundKind.allCases.map { ($0, Sounds.shared.isOn($0)) })
+
+    var body: some View {
+        SettingsPage {
+            SectionBlock(title: "Sounds", dividerInset: SettingsLayout.symbolInset) {
+                SettingsToggle(title: "Sounds", hint: soundsHint, symbol: soundsOn ? "speaker.wave.2" : "speaker.slash",
+                               isOn: $soundsOn, spotlight: "sounds")
+                TuningSlider(title: "Volume", symbol: "speaker.wave.1", value: $volume, range: 0.1...1, step: 0.05,
+                             format: { $0.wholePercent }, lowLabel: "Quiet", highLabel: "Full",
+                             hint: "Never louder than your Mac’s own volume.", tint: Theme.ball, defaultValue: 1)
+                    .disabled(!soundsOn)
+            }
+            SectionBlock(title: "Play a sound for", dividerInset: SettingsLayout.symbolInset) {
+                ForEach(SoundKind.allCases) { kind in
+                    SettingsRow(title: .verbatim(kind.title), symbol: kind.symbol) {
+                        Toggle(isOn: Binding(get: { kinds[kind] ?? true }, set: { kinds[kind] = $0; Sounds.shared.set(kind, on: $0) })) {
+                            Text(verbatim: kind.title)
+                        }
+                        .toggleStyle(.switch)
+                        .controlSize(.small)
+                        .labelsHidden()
+                    }
+                }
+            }
+            .disabled(!soundsOn)
+            .opacity(soundsOn ? 1 : 0.55)
+            SectionBlock(title: "Preview", dividerInset: SettingsLayout.symbolInset) {
+                SoundPreviewRow()
+            }
+        }
+        .onChange(of: soundsOn) { _, on in Sounds.shared.enabled = on }
+        .onChange(of: volume) { _, v in Sounds.shared.volume = v }
     }
 
     private var soundsHint: String {
@@ -298,7 +458,6 @@ struct LookSettingsPane: View {
             : String(localized: "Glideball stays silent, including the chime after an update.")
     }
 }
-
 /// "Hear them": each sound once, even with Sounds off, so you can decide.
 private struct SoundPreviewRow: View {
     @State private var playing: Sound?

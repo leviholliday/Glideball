@@ -144,6 +144,17 @@ enum SelfTest {
             return "\(SettingsPane.allCases.count) tabs drawn, never shown"
         }
 
+        step("share pictures") {
+            // The way Share… makes them in the app: drawn offscreen, never shown.
+            let overview = try unwrap(ShareImage.render(.overview, delight: model.delight), "the share picture didn't draw")
+            try check(!Offscreen.isBlank(overview), "the share picture is blank")
+            let m = Milestone.all[0]
+            let badge = try unwrap(ShareImage.render(.badge(m, Date()), delight: model.delight), "the badge picture didn't draw")
+            try check(!Offscreen.isBlank(badge), "the badge picture is blank")
+            try check(ShareImage.png(overview)?.isEmpty == false, "the share picture has no PNG")
+            return "\(overview.pixelsWide)×\(overview.pixelsHigh) and a badge, PNG ready"
+        }
+
         step("welcome tour") {
             for s in WelcomeTourView.Step.allCases {
                 try draw(WelcomeTourView(model: model, step: s), "tour step \(s.rawValue + 1)", size: RenderUI.windowSize)

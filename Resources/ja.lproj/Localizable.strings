@@ -98,7 +98,6 @@
 "Restored your previous settings" = "以前の設定に戻しました";
 
 /* Toast; the name of a button preset */
-"Applied “Spaces + Wispr Flow”" = "「操作スペース + Wispr Flow」を適用しました";
 
 /* ---- AppProfile.swift ---- */
 
@@ -527,7 +526,6 @@
 
 "Open apps" = "開いているApp";
 
-"No other open apps" = "ほかに開いているAppはありません";
 
 "Choose from Applications…" = "アプリケーションから選択…";
 
@@ -596,15 +594,11 @@
 
 "Now press a keyboard shortcut" = "次にキーボードショートカットを押してください";
 
-"Or choose an action from the menu. Esc cancels." = "またはメニューから操作を選択します。Escでキャンセルします。";
 
-"No combos yet. Use Quick assign and hold two or three buttons together." = "まだコンボはありません。クイック割り当てで2〜3個のボタンを同時に押してください。";
 
 "Delete combo" = "コンボを削除";
 
-"Buttons in a combo wait a split second (up to 0.16 s for three) to see if their partners join. Buttons not in any combo respond instantly." = "コンボに含まれるボタンは、ほかのボタンが一緒に押されるかをほんの一瞬（3つなら最大0.16秒）待ちます。コンボに含まれないボタンはすぐに反応します。";
 
-"New combo" = "新規コンボ";
 
 "That combo already exists" = "そのコンボはすでにあります";
 
@@ -676,7 +670,6 @@
 "Press a button on your trackball: its row lights up." = "トラックボールのボタンを押すと、その行が光ります。";
 
 /* Button preset name */
-"Spaces + Wispr Flow" = "操作スペース + Wispr Flow";
 
 "Top buttons switch Spaces; bottom left + both top buttons hold ⌃Space for Wispr Flow." = "上のボタンで操作スペースを切り替え、左下+上の2つのボタンでWispr Flow用の⌃Spaceを押し続けます。";
 
@@ -692,9 +685,7 @@
 
 "Your primary click stays a left click, so Glideball can never lock you out." = "メインのクリックは左クリックのままなので、Glideで操作不能になることはありません。";
 
-"Type a shortcut…  esc to cancel" = "ショートカットを入力…  escでキャンセル";
 
-"Record custom shortcut…" = "カスタムショートカットを記録…";
 
 /* ---- Components.swift ---- */
 
@@ -1645,10 +1636,8 @@
 "Install %@…" = "%@をインストール…";
 "Just the Expert Mouse for now. Turn this on to try Glideball with Kensington’s other trackballs." = "今のところExpert Mouseのみです。オンにすると、Kensingtonのほかのトラックボールでも試せます。";
 "Keep the classic one" = "クラシックのままにする";
-"Language and performance" = "言語とパフォーマンス";
 "Learn more" = "詳しく見る";
 "Lets Raycast and scripts pause Glideball, switch modes and change the pointer speed. It stays off unless you turn it on." = "RaycastとスクリプトからGlideballの一時停止、モードの切り替え、ポインタ速度の変更ができるようになります。オンにしない限りオフのままです。";
-"Look & Sound" = "外観とサウンド";
 "No icon in the menu bar. Open Glideball from the Dock to change things." = "メニューバーにアイコンは表示されません。変更するにはDockからGlideballを開いてください。";
 "No pause shortcut. You can still pause Glideball from its menu-bar icon or the switch in the sidebar." = "一時停止のショートカットはありません。メニューバーアイコンやサイドバーのスイッチから一時停止できます。";
 "No shortcuts match “%@”." = "「%@」に一致するショートカットはありません。";
@@ -1656,7 +1645,6 @@
 "Not Now" = "今はしない";
 "Off unless you pick something. Never your name, what you type or which apps you use." = "選ばない限りオフです。お名前、入力内容、使っているAppは送信されません。";
 "Open Settings" = "設定を開く";
-"Opening Glideball" = "Glideballの起動";
 "Opens in your browser" = "ブラウザで開きます";
 "Opens this version’s notes on the Glideball website" = "このバージョンのリリースノートをGlideballのWebサイトで開きます";
 "Orb" = "Orb";
@@ -1689,7 +1677,6 @@
 "What’s been sent" = "送信された内容";
 "What’s new in this version" = "このバージョンの新機能";
 "What’s sent" = "送信される内容";
-"Works with" = "対応デバイス";
 "You get new versions as soon as they’re out, before everyone else. They’ve had less testing, so you may hit bugs." = "新しいバージョンが出るとすぐに、ほかの人より先に受け取れます。テストが少ないため、不具合が出ることがあります。";
 "You get new versions once they’ve settled. Turn this on to try them early, while I’m still testing." = "新しいバージョンは、安定してから届きます。オンにすると、私がまだテストしている段階で先に試せます。";
 "Your version" = "お使いのバージョン";
@@ -1730,3 +1717,262 @@
 "They work in every app, even with the window closed." = "ウインドウを閉じていても、どのアプリでも使えます。";
 "Your trackball goes back to plain macOS. Closing the window keeps Glideball running." = "トラックボールは通常のmacOSの動作に戻ります。ウインドウを閉じるだけなら、Glideballは動き続けます。";
 "⌘Q quits straight away. Turn asking back on in Settings › General." = "⌘Qですぐに終了します。確認は「設定」›「一般」でまた有効にできます。";
+
+/* Round 3: action picker, presets, ball colors, settings, badges and sharing */
+"%@ of %@" = "%@ / %@";
+"%@ so far on this Mac" = "これまでに %@（このMacで）";
+"%@, choose what this does" = "%@、動作を選んでください";
+"%lld of %lld badges" = "%lld / %lld 個のバッジ";
+"%lld of %lld done" = "%lld / %lld 完了";
+"%lld of %lld earned. Click one to see what’s behind it." = "%lld / %lld 個獲得。クリックすると、中身が見られます。";
+"%lld to try" = "あと %lld 個";
+"12,000 clicks, about as many pecks as a woodpecker makes in a day" = "12,000クリック。キツツキが1日につつく回数くらい";
+"250,000 clicks" = "250,000クリック";
+"525,600 clicks, one for every minute in a year" = "525,600クリック。1年の分の数だけ";
+"5K" = "5K";
+"86,400 clicks, one for every second in a day" = "86,400クリック。1日の秒の数だけ";
+"A day of seconds" = "秒で一日";
+"A mile" = "1マイル";
+"A normal click." = "ふつうのクリックです。";
+"A soft glow when you roll, spin or click, easy to ignore." = "転がしたり回したりクリックしたりすると、やさしく光ります。気にならない程度です。";
+"A year of minutes" = "分で一年";
+"Add a combo" = "コンボを追加";
+"Add a combo on the Buttons tab." = "「ボタン」タブでコンボを追加してください。";
+"Add an app on the Apps tab." = "「App」タブでAppを追加してください。";
+"Add one below, or use Quick assign and hold the buttons together." = "下から追加するか、クイック割り当てを使ってボタンを同時に押してください。";
+"Already in Use" = "使用中";
+"Any app, open or not." = "開いているかどうかに関係なく、どんなAppでも。";
+"Applied “%@”" = "「%@」を適用しました";
+"Apply %@" = "%@を適用";
+"Apply a preset on the Buttons tab." = "「ボタン」タブでプリセットを適用してください。";
+"Apps and tools" = "Appとツール";
+"Ask before quitting" = "終了する前に確認する";
+"Back in browsers, Finder and most apps, like a mouse’s side button." = "ブラウザ、Finder、ほとんどのAppで「戻る」。マウスのサイドボタンと同じです。";
+"Back with the keyboard shortcut, for apps that ignore the mouse button." = "キーボードショートカットで「戻る」。マウスのボタンに反応しないApp向けです。";
+"Back, forward and tabs" = "戻る、進む、タブ";
+"Badge earned" = "バッジを獲得";
+"Ball color" = "ボールの色";
+"Before preset" = "プリセット適用前";
+"Bottom" = "下";
+"Brings back the tab you just closed." = "閉じたばかりのタブを開き直します。";
+"Browser" = "ブラウザ";
+"Burj Khalifa" = "ブルジュ・ハリファ";
+"Button presses on the Buttons page" = "「ボタン」ページでのボタン操作";
+"Changes %lld buttons" = "%lld個のボタンを変更";
+"Changes 1 button" = "1個のボタンを変更";
+"Choose" = "選ぶ";
+"Choose an Action" = "操作を選ぶ";
+"Choose an App" = "Appを選ぶ";
+"Choose an action for a button on the Buttons tab." = "「ボタン」タブで、ボタンに割り当てる操作を選んでください。";
+"Choose an app…" = "Appを選ぶ…";
+"Choose the app this button should open." = "このボタンで開くAppを選んでください。";
+"Choose what they do" = "動作を選ぶ";
+"Choose what this button does" = "このボタンの動作を選ぶ";
+"Choose what this does" = "動作を選ぶ";
+"Classic red" = "クラシックレッド";
+"Clear the search" = "検索をクリア";
+"Click a button here, or press it on your trackball, to choose what it does." = "ここでボタンをクリックするか、トラックボールのボタンを押して、動作を選んでください。";
+"Click with ⇧ held: selects everything in between." = "⇧を押しながらクリック：間にあるものをすべて選択します。";
+"Click with ⌃ held: the other way to right-click." = "⌃を押しながらクリック：右クリックのもうひとつの方法です。";
+"Click with ⌘ held: opens links in a background tab." = "⌘を押しながらクリック：リンクをバックグラウンドのタブで開きます。";
+"Click with ⌥ held." = "⌥を押しながらクリック。";
+"Closes the tab or window in front." = "手前のタブまたはウインドウを閉じます。";
+"Colors the trackball everywhere in Glideball, and the light it throws. Ball blue, ring pink and buttons amber stay the same in charts and badges, so they always mean the same thing." = "Glideball全体のトラックボールと、そこから放たれる光に色をつけます。ボールの青、リングのピンク、ボタンのアンバーは、グラフやバッジでも変わらないので、いつも同じ意味で使えます。";
+"Combo maker" = "コンボメーカー";
+"Copied. Paste it anywhere." = "コピーしました。どこにでもペーストできます。";
+"Copies what’s selected." = "選択中のものをコピーします。";
+"Couldn’t save it: %@" = "保存できませんでした：%@";
+"Current" = "現在";
+"Cuts what’s selected." = "選択中のものをカットします。";
+"Deep sea" = "深海";
+"Does it again after an undo." = "取り消しをやり直します。";
+"Drag to capture part of the screen." = "ドラッグして画面の一部をキャプチャします。";
+"Earned %@" = "%@に獲得";
+"Edge of space" = "宇宙の入口";
+"Editing" = "編集";
+"Ember" = "熾火";
+"Emoji & Symbols" = "絵文字と記号";
+"Empire State" = "エンパイア・ステート";
+"Esc cancels." = "Escでキャンセルします。";
+"Find" = "検索";
+"Forest" = "森";
+"Forward in browsers, Finder and most apps." = "ブラウザ、Finder、ほとんどのAppで「進む」。";
+"Forward with the keyboard shortcut." = "キーボードショートカットで「進む」。";
+"Full" = "フル";
+"Full Screen" = "フルスクリーン";
+"Gave a button something new to do" = "ボタンに新しい役割を与えた";
+"Gave an app its own setup" = "Appに専用の設定を作った";
+"Gave the ball a color of your own" = "ボールに自分だけの色をつけた";
+"Glideball badge – %@" = "Glideballのバッジ – %@";
+"Goes back a song." = "ひとつ前の曲に戻ります。";
+"Golden Gate" = "ゴールデンゲート";
+"Graphite" = "グラファイト";
+"Half marathon" = "ハーフマラソン";
+"Hold it and roll the ball to scroll in any direction." = "押したままボールを転がすと、どの方向にもスクロールできます。";
+"Hold the keys down while the button is held" = "ボタンを押している間、キーを押したままにする";
+"Hold the modifiers (⌘ ⌥ ⌃ ⇧), then press the key. Esc cancels." = "修飾キー（⌘ ⌥ ⌃ ⇧）を押してから、キーを押してください。Escでキャンセルします。";
+"Holds your shortcut while the button is down." = "ボタンを押している間、ショートカットを押したままにします。";
+"Holds ⌃Space while the button is down, for push-to-talk dictation." = "ボタンを押している間⌃Spaceを押し続けます。プッシュトゥトークの音声入力向けです。";
+"Icon and celebrations" = "アイコンとお祝い";
+"In use" = "使用中";
+"Jumps back to the app you were just using." = "さっきまで使っていたAppに戻ります。";
+"Keeps your buttons" = "ボタンはそのまま";
+"Keyboard shortcut" = "キーボードショートカット";
+"Last Used App" = "直前に使ったApp";
+"Light" = "光";
+"Light and motion" = "光と動き";
+"Light colors work best at the top, deep ones at the bottom." = "明るい色は上に、濃い色は下に置くときれいです。";
+"Lock Screen" = "画面をロック";
+"Locks your Mac straight away." = "Macをすぐにロックします。";
+"Made to measure" = "オーダーメイド";
+"Made your first combo" = "はじめてのコンボを作った";
+"Make a picture of your numbers to share" = "数字を画像にしてシェアしよう";
+"Makes the page bigger." = "ページを大きくします。";
+"Makes the page smaller." = "ページを小さくします。";
+"Media" = "メディア";
+"Middle" = "中";
+"Milestones and records" = "マイルストーンと記録";
+"Minimize Window" = "ウインドウをしまう";
+"Modes on and off" = "モードのオン・オフ";
+"Mount Fuji" = "富士山";
+"Moves to the tab on the left." = "左のタブに移動します。";
+"Moves to the tab on the right." = "右のタブに移動します。";
+"Mute" = "ミュート";
+"Mutes or unmutes your Mac." = "Macのミュートをオン・オフします。";
+"My Glideball" = "マイGlideball";
+"My trackball, so far" = "これまでの私のトラックボール";
+"New badges arrived, and you’d already earned %lld" = "新しいバッジが届きました。すでに%lld個を獲得済みです";
+"New job" = "新しい仕事";
+"Next Tab" = "次のタブ";
+"Next Track" = "次のトラック";
+"Next: %@" = "次：%@";
+"No combos yet." = "コンボはまだありません。";
+"No open app called “%@”. Choose it from Applications instead." = "「%@」という名前の開いているAppはありません。代わりに「アプリケーション」から選んでください。";
+"Nothing called “%@”. Try another word, or record it as a keyboard shortcut." = "「%@」は見つかりませんでした。別の言葉を試すか、キーボードショートカットとして記録してください。";
+"Now" = "いま";
+"Ocean" = "海";
+"Open %@" = "%@を開く";
+"Open an app" = "Appを開く";
+"Opening and quitting" = "開く・終了する";
+"Opens Spotlight to search your Mac." = "Spotlightを開いて、Macを検索します。";
+"Opens a new tab." = "新しいタブを開きます。";
+"Opens an app, or brings it to the front." = "Appを開くか、最前面に表示します。";
+"Opens links in a new tab in most browsers." = "ほとんどのブラウザで、リンクを新しいタブで開きます。";
+"Opens the app, or brings it to the front." = "Appを開くか、最前面に表示します。";
+"Opens the emoji picker where you’re typing." = "入力中の場所で絵文字ピッカーを開きます。";
+"Opens the menu for what’s under the pointer." = "ポインタの下にあるものに対するメニューを開きます。";
+"Opens the screenshot and screen recording tools." = "スクリーンショットと画面収録のツールを開きます。";
+"Or choose an action:" = "または操作を選ぶ：";
+"Out of the box" = "初期設定";
+"Pastes what you copied." = "コピーしたものをペーストします。";
+"Pause and resume" = "一時停止と再開";
+"Pick a ball color in Settings › Look." = "「設定」›「外観」でボールの色を選んでください。";
+"Picks up what’s under the pointer; press again or click to drop it." = "ポインタの下にあるものをつかみます。もう一度押すかクリックすると離します。";
+"Play a sound for" = "サウンドを鳴らす対象";
+"Play or Pause" = "再生／一時停止";
+"Plays or pauses music and videos." = "音楽やビデオを再生または一時停止します。";
+"Pointer and scrolling modes" = "ポインタとスクロールのモード";
+"Press a trackball button (or two or three together), then the keyboard shortcut it should send" = "トラックボールのボタンを押し（2〜3個同時でもOK）、続けて送信するキーボードショートカットを押してください";
+"Press any keys and this button sends them." = "キーを押すと、このボタンがそれを送信します。";
+"Press once to slow the pointer, again to go back." = "1回押すとポインタが遅くなり、もう1回押すと元に戻ります。";
+"Press the keys" = "キーを押してください";
+"Press two or three buttons together to do something else. Buttons in a combo wait a split second (up to 0.16 s for three) to see if their partners join; buttons not in any combo respond instantly." = "2〜3個のボタンを同時に押すと、別の操作ができます。コンボに含まれるボタンは、ほかのボタンが加わるかをほんの一瞬（3つなら最大0.16秒）待ちます。コンボに含まれないボタンはすぐに反応します。";
+"Preview" = "プレビュー";
+"Previewing a preset. Nothing changes until you apply it." = "プリセットをプレビュー中です。適用するまで何も変わりません。";
+"Previous Tab" = "前のタブ";
+"Previous Track" = "前のトラック";
+"Quarter million" = "25万";
+"Quick Assign" = "クイック割り当て";
+"Quiet" = "静か";
+"Quitting asks first, since your trackball goes back to plain macOS until Glideball opens again." = "終了する前に確認します。Glideballをもう一度開くまで、トラックボールは通常のmacOSの動作に戻るためです。";
+"Ready-made" = "既製品";
+"Recent" = "最近";
+"Record a shortcut…" = "ショートカットを記録…";
+"Reload" = "再読み込み";
+"Reloads the page." = "ページを再読み込みします。";
+"Reopen Closed Tab" = "閉じたタブを開き直す";
+"Right click with ⌃ held." = "⌃を押しながら右クリック。";
+"Rolled a 5K (5 km)" = "5K（5 km）を転がした";
+"Rolled a half marathon (21.1 km)" = "ハーフマラソン（21.1 km）を転がした";
+"Rolled a mile (1.6 km)" = "1マイル（1.6 km）を転がした";
+"Rolled an ultramarathon (100 km)" = "ウルトラマラソン（100 km）を転がした";
+"Rolled the length of the Golden Gate Bridge (2.7 km)" = "ゴールデンゲートブリッジの長さ（2.7 km）を転がした";
+"Save" = "保存";
+"Save as PNG…" = "PNGとして保存…";
+"Saves the document in front." = "最前面の書類を保存します。";
+"Screenshot" = "スクリーンショット";
+"Screenshot and Recording" = "スクリーンショットと画面収録";
+"Scroll sampler" = "スクロール見本";
+"Scrolled as deep as the Mariana Trench (10,935 m)" = "マリアナ海溝の深さ（10,935 m）までスクロールした";
+"Scrolled the height of Mount Fuji (3,776 m)" = "富士山の高さ（3,776 m）までスクロールした";
+"Scrolled the height of the Burj Khalifa (828 m)" = "ブルジュ・ハリファの高さ（828 m）までスクロールした";
+"Scrolled the height of the Empire State Building (443 m)" = "エンパイア・ステート・ビルの高さ（443 m）までスクロールした";
+"Scrolled up to the edge of space (100 km)" = "宇宙の入口（100 km）までスクロールした";
+"Search actions" = "操作を検索";
+"Search open apps" = "開いているAppを検索";
+"Searches the page or document." = "ページや書類の中を検索します。";
+"Selects everything." = "すべてを選択します。";
+"Sends the window in front to the Dock." = "最前面のウインドウをDockにしまいます。";
+"Sets all your buttons and a few combos at once. You can undo it." = "すべてのボタンといくつかのコンボを一度に設定します。元に戻せます。";
+"Setting up and exploring" = "設定と探索";
+"Share your Glideball" = "Glideballをシェア";
+"Shows every open window and your Spaces." = "開いているすべてのウインドウと操作スペースを表示します。";
+"Shows the windows of the app in front." = "最前面のAppのウインドウを表示します。";
+"Skips to the next song." = "次の曲に進みます。";
+"Slider and switch ticks" = "スライダとスイッチのカチッという音";
+"Slides to the Space on the left." = "左の操作スペースに移動します。";
+"Slides to the Space on the right." = "右の操作スペースに移動します。";
+"Slows the pointer while you hold the button, for fine work." = "ボタンを押している間ポインタが遅くなり、細かい作業がしやすくなります。";
+"Spaces" = "操作スペース";
+"Spaces, Mission Control and windows" = "操作スペース、Mission Control、ウインドウ";
+"Stock" = "初期設定";
+"Suggested" = "おすすめ";
+"Sunset" = "夕焼け";
+"Tap the buttons that go together" = "セットで使うボタンをクリックしてください";
+"The button does nothing at all." = "ボタンは何もしません。";
+"The full show: the light fills the window as you use the trackball." = "フルショー：トラックボールを使うと、光がウインドウいっぱいに広がります。";
+"The picture is made on your Mac. It only goes somewhere if you share it." = "画像はあなたのMacの中で作られます。シェアしたときだけ外に出ます。";
+"The room lights up with your hand: blue when you roll, pink when you spin, amber when you click." = "手の動きに合わせて部屋が光ります。転がすと青、回すとピンク、クリックするとアンバーです。";
+"The window stays still and dark. The trackball itself still answers your hand." = "ウインドウは静かで暗いままです。トラックボール自体は、これまでどおり反応します。";
+"Top" = "上";
+"Top buttons switch Spaces. Both together open Mission Control; bottom right with top right shows the app’s windows." = "上のボタンで操作スペースを切り替えます。2つ同時でMission Control、右下と右上で最前面のAppのウインドウを表示します。";
+"Top left copies, top right pastes. Both together undo; bottom right with top right redoes." = "左上でコピー、右上でペースト。2つ同時で取り消し、右下と右上でやり直しです。";
+"Top left goes back, top right goes forward. Combos open, close and reopen tabs." = "左上で戻る、右上で進む。コンボでタブを開く、閉じる、開き直すができます。";
+"Top left plays or pauses, top right skips ahead. Both together go back a track; bottom right with top right mutes." = "左上で再生／一時停止、右上で次へ。2つ同時で前のトラックに戻り、右下と右上でミュートします。";
+"Trackballs and other apps" = "トラックボールとほかのApp";
+"Tried a button preset" = "ボタンのプリセットを試した";
+"Tried all three ways to scroll" = "スクロールの3つの方法をすべて試した";
+"True colors" = "本当の色";
+"Try Flywheel, Follow and Native on the Scrolling tab." = "「スクロール」タブでフライホイール、追従、ネイティブを試してください。";
+"Try it" = "試してみよう";
+"Turn it off" = "オフにする";
+"Turns full screen on or off for the window in front." = "最前面のウインドウのフルスクリーンをオン・オフします。";
+"Turns the sound down a step." = "音量をひとつ下げます。";
+"Turns the sound up a step." = "音量をひとつ上げます。";
+"Two or three of them." = "2つか3つ同時に。";
+"Ultra" = "ウルトラ";
+"Undoes the last change." = "直前の変更を取り消します。";
+"Use This Shortcut" = "このショートカットを使う";
+"Volume" = "音量";
+"Volume Down" = "音量を下げる";
+"Volume Up" = "音量を上げる";
+"What the trackball does out of the box: right click, middle click and Back. No combos." = "トラックボールの初期設定：右クリック、中クリック、戻る。コンボはありません。";
+"Whatever this button does without Glideball." = "Glideballなしでこのボタンが行う動作そのまま。";
+"Where Glideball shows" = "Glideballを表示する場所";
+"Woodpecker" = "キツツキ";
+"Your buttons already match it." = "ボタンはすでにこの設定と同じです。";
+"Your own keyboard shortcut." = "あなた自身のキーボードショートカット。";
+"Zoom In" = "拡大";
+"Zoom Out" = "縮小";
+"adds %lld combos" = "%lld個のコンボを追加";
+"choose" = "選択";
+"clicks" = "クリック";
+"close" = "閉じる";
+"keyboard shortcut keys" = "キーボード ショートカット キー 記録";
+"move" = "移動";
+"open launch application" = "開く 起動 アプリケーション App";
+"removes your %lld combos" = "%lld個のコンボを削除";
+"replaces your %lld combos with %lld" = "%lld個のコンボを%lld個に置き換え";
+"rolled" = "転がした距離";
+"scrolled" = "スクロールした距離";
+"⌘Q quits straight away. Your trackball goes back to plain macOS until Glideball opens again." = "⌘Qはすぐに終了します。Glideballをもう一度開くまで、トラックボールは通常のmacOSの動作に戻ります。";

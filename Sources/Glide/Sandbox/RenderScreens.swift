@@ -208,6 +208,100 @@ extension RenderUI {
             mainWindow(model, tab: .pointer, dark: dark, scale: scale)
         }
 
+        // Round 3: the action picker, presets, ball colors, badges and sharing. Popovers are
+        // separate windows a render can't draw, so the picker and the badge details are drawn
+        // where they'd open, on a glass card like the popover's.
+        add("buttons-picker", "Buttons and picker", "The action picker open on the top-right button",
+            prepare: { model.config.buttons[3] = .shortcut(.nextSpace) }) { dark, scale in
+            mainWindow(model, tab: .buttons, dark: dark, scale: scale) {
+                PopoverMock(alignment: .topTrailing, top: 168, side: 36) {
+                    ActionPickerPanel(current: .shortcut(.nextSpace), button: 3) { _ in }
+                }
+            }
+        }
+        add("buttons-picker-search", "Buttons and picker", "The picker, searching “tab”",
+            prepare: { ActionPickerPanel.sandboxQuery = "tab" },
+            cleanup: { ActionPickerPanel.sandboxQuery = nil }) { dark, scale in
+            card(PopoverMock { ActionPickerPanel(current: .back, button: 3) { _ in } }, width: 470, dark: dark, scale: scale)
+        }
+        add("buttons-picker-nothing", "Buttons and picker", "The picker, a search that finds nothing",
+            prepare: { ActionPickerPanel.sandboxQuery = "teleport" },
+            cleanup: { ActionPickerPanel.sandboxQuery = nil }) { dark, scale in
+            card(PopoverMock { ActionPickerPanel(current: .back, button: 3) { _ in } }, width: 470, dark: dark, scale: scale)
+        }
+        add("buttons-picker-record", "Buttons and picker", "The picker recording a shortcut",
+            prepare: { ActionPickerPanel.sandboxRecording = true },
+            cleanup: { ActionPickerPanel.sandboxRecording = false }) { dark, scale in
+            card(PopoverMock { ActionPickerPanel(current: .back, button: 3) { _ in } }, width: 470, dark: dark, scale: scale)
+        }
+        add("buttons-preset-preview", "Buttons and picker", "Previewing the Browser preset (map, cards and Apply)",
+            prepare: { ButtonsView.sandboxPreview = "browser" },
+            cleanup: { ButtonsView.sandboxPreview = nil }) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale)
+        }
+        add("buttons-preset-applied", "Buttons and picker", "The Media preset in use",
+            prepare: { model.config.apply(ButtonPreset.all.first { $0.id == "media" }!) },
+            cleanup: { model.config.buttons = DemoData.config.buttons; model.config.chords = DemoData.config.chords }) { dark, scale in
+            mainWindow(model, tab: .buttons, dark: dark, scale: scale)
+        }
+        add("buttons-new-combo", "Buttons and picker", "Adding a combo: two pads picked",
+            prepare: { NewComboRow.sandboxPicked = [1, 2] },
+            cleanup: { NewComboRow.sandboxPicked = nil }) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale)
+        }
+        add("apps-add-picker", "Buttons and picker", "Add App… (the same picker, for apps)") { dark, scale in
+            card(PopoverMock {
+                SearchPickerPanel(placeholder: String(localized: "Search open apps", comment: "Add App picker search field"),
+                                  sections: { _ in DemoData.addAppSections() }, emptyText: { _ in "" }, width: 340, height: 400)
+            }, width: 410, dark: dark, scale: scale)
+        }
+        add("ball-colors", "Ball colors", "The trackball in every ball color") { dark, scale in
+            card(BallThemeSheet(), width: 1000, dark: dark, scale: scale)
+        }
+        add("settings-look-custom", "Settings window", "Look with a custom ball color (three wells)",
+            prepare: { BallThemeStore.shared.choose("custom") },
+            cleanup: { BallThemeStore.shared.choose("orb") }) { dark, scale in
+            settings(.look, dark: dark, scale: scale)
+        }
+        for theme in ["ember", "ocean", "classic"] {
+            add("overview-theme-\(theme)", "Ball colors", "Overview with the \(theme) ball color (the whole window recolored)",
+                prepare: { BallThemeStore.shared.choose(theme) },
+                cleanup: { BallThemeStore.shared.choose("orb") }) { dark, scale in
+                mainWindow(model, tab: .overview, dark: dark, scale: scale)
+            }
+        }
+        add("badges", "Badges and sharing", "Badges on Overview: four groups, the next one in each showing progress") { dark, scale in
+            card(BadgesSection(delight: model.delight), width: windowSize.width - Theme.Space.sidebarWidth, dark: dark, scale: scale)
+        }
+        add("badge-detail", "Badges and sharing", "A badge's details: earned, and one still to earn") { dark, scale in
+            card(HStack(alignment: .top, spacing: 24) {
+                PopoverMock { BadgeDetail(milestone: Milestone.all.first { $0.id == "scroll-828" }!, delight: model.delight) }
+                PopoverMock { BadgeDetail(milestone: Milestone.all.first { $0.id == "scroll-3776" }!, delight: model.delight) }
+                PopoverMock { BadgeDetail(milestone: Milestone.all.first { $0.id == "setup-scroll-modes" }!, delight: model.delight) }
+            }, width: 1060, dark: dark, scale: scale)
+        }
+        add("share-panel", "Badges and sharing", "Share… from Overview: the picture and what to do with it",
+            prepare: { SharePanel.sandboxImage = ShareImage.render(.overview, delight: model.delight) },
+            cleanup: { SharePanel.sandboxImage = nil }) { dark, scale in
+            card(PopoverMock { SharePanel(card: .overview) }, width: 500, dark: dark, scale: scale)
+        }
+        add("share-card-overview", "Badges and sharing", "The share picture: your numbers (as saved, 2x)") { dark, scale in
+            Offscreen.render(ShareCardView(card: .overview, delight: model.delight), size: NSSize(width: ShareCard.size.width, height: ShareCard.size.height),
+                             chrome: .plain, appearance: NSAppearance(named: .darkAqua), scale: scale)
+        }
+        add("share-card-badge", "Badges and sharing", "The share picture: a badge (as saved, 2x)") { dark, scale in
+            let m = Milestone.all.first { $0.id == "scroll-828" }!
+            return Offscreen.render(ShareCardView(card: .badge(m, model.delight.ledger.earned[m.id] ?? Date()), delight: model.delight),
+                                    size: NSSize(width: ShareCard.size.width, height: ShareCard.size.height),
+                                    chrome: .plain, appearance: NSAppearance(named: .darkAqua), scale: scale)
+        }
+        add("share-card-theme", "Badges and sharing", "The share picture in the Sunset ball color",
+            prepare: { BallThemeStore.shared.choose("sunset") },
+            cleanup: { BallThemeStore.shared.choose("orb") }) { dark, scale in
+            Offscreen.render(ShareCardView(card: .overview, delight: model.delight), size: NSSize(width: ShareCard.size.width, height: ShareCard.size.height),
+                             chrome: .plain, appearance: NSAppearance(named: .darkAqua), scale: scale)
+        }
+
         // The trackball hero in every state, at the sidebar's size and large (the tour's).
         add("trackball-states", "Trackball", "The trackball in each state") { dark, scale in
             card(TrackballStates(), width: 1000, dark: dark, scale: scale)
@@ -516,6 +610,63 @@ extension RenderUI {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    /// A popover's content as it looks open: on glass, with the popover's
+    /// rounded corners and shadow. Placed in a corner of whatever it's over.
+    struct PopoverMock<Content: View>: View {
+        var alignment: Alignment = .center
+        var top: CGFloat = 0
+        var side: CGFloat = 0
+        @ViewBuilder var content: Content
+
+        var body: some View {
+            let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
+            content
+                .background { Color.clear.glassEffect(.regular, in: shape) }
+                .clipShape(shape)
+                .overlay { shape.strokeBorder(Theme.groupBorder, lineWidth: 1) }
+                .shadow(color: .black.opacity(0.3), radius: 24, y: 10)
+                .padding(.top, top)
+                .padding(alignment == .topTrailing ? .trailing : .leading, side)
+                .frame(maxWidth: alignment == .center ? nil : .infinity, maxHeight: alignment == .center ? nil : .infinity,
+                       alignment: alignment)
+        }
+    }
+
+    /// Every ball color, as the trackball in it and its little swatch.
+    struct BallThemeSheet: View {
+        var body: some View {
+            let themes = BallTheme.curated + [BallTheme.custom(BallThemeStore.shared.custom)]
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(220), spacing: 18), count: 4), alignment: .leading, spacing: 18) {
+                ForEach(themes) { theme in
+                    VStack(spacing: 8) {
+                        ThemedTrackball(theme: theme)
+                            .frame(width: 170, height: 170)
+                            .padding(.vertical, 10)
+                            .frame(maxWidth: .infinity)
+                            .background(RoundedRectangle(cornerRadius: Theme.Radius.stage, style: .continuous).fill(Theme.stage))
+                        HStack(spacing: 8) {
+                            OrbSwatch(palette: theme.palette, size: 22)
+                            Text(verbatim: theme.title).font(.system(size: 12, weight: .medium))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// The trackball drawn in a theme other than the one in use (for the sheet above).
+    struct ThemedTrackball: View {
+        let theme: BallTheme
+        var body: some View {
+            ZStack {
+                Circle()
+                    .fill(RadialGradient(colors: [theme.glow[1].opacity(0.5), theme.glow[2].opacity(0.18), .clear],
+                                         center: .center, startRadius: 10, endRadius: 100))
+                TrackballArt(pose: TrackballPose(), theme: theme)
             }
         }
     }

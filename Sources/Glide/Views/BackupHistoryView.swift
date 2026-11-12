@@ -361,6 +361,7 @@ private struct BackupRow: View {
         case .daily: "sun.horizon"
         case .beforeImport: "square.and.arrow.down"
         case .beforeRestore: "arrow.uturn.backward"
+        case .beforePreset: "square.grid.2x2"
         case .manual: "hand.tap"
         }
     }
@@ -370,6 +371,7 @@ private struct BackupRow: View {
         case .daily: nil
         case .beforeImport: String(localized: "Before import", comment: "Kind of backup")
         case .beforeRestore: String(localized: "Before restore", comment: "Kind of backup")
+        case .beforePreset: String(localized: "Before preset", comment: "Kind of backup: saved just before a button preset was applied")
         case .manual: String(localized: "Saved by you", comment: "Kind of backup")
         }
     }

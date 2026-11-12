@@ -56,7 +56,7 @@ struct RootView: View {
 
     var body: some View {
         NavigationSplitView(columnVisibility: .constant(.all)) {
-            Sidebar(model: model, compact: shell.heroOnScreen && tab == .overview,
+            Sidebar(model: model, compact: shell.heroOnScreen && (tab == .overview || tab == .buttons),
                     tab: Binding(get: { tab }, set: { if let t = $0 { select(t) } }))
                 .navigationSplitViewColumnWidth(Theme.Space.sidebarWidth)
         } detail: {

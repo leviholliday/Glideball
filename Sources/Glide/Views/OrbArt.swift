@@ -12,6 +12,10 @@ import Foundation
 /// shading, refraction, rim and Fresnel), whatever light that can't reach
 /// added on top, and the highlight. Rolling the ball then only moves the
 /// liquid underneath and nudges the highlight: a few cheap image transforms.
+///
+/// The colors come from the ball color in use (`BallTheme`, Theme.swift): the
+/// default Orb paints exactly the icon's ball; another theme the same shading
+/// in its own colors. Each palette's layers are made once and kept.
 enum OrbArt {
     struct Layers {
         /// The liquid, covering `liquidSpan` × the ball's diameter so it can turn and shift under the glass.
@@ -29,7 +33,27 @@ enum OrbArt {
     /// Pixels across the ball. Enough for a 230 pt trackball on a 2x screen.
     static let size = 320
 
-    static let layers: Layers = make(size)
+    /// The layers for the ball color in use.
+    static var layers: Layers { layers(for: BallTheme.current.palette) }
+
+    private static let lock = NSLock()
+    nonisolated(unsafe) private static var cache: [String: Layers] = [:]
+    nonisolated(unsafe) private static var order: [String] = []
+
+    /// A palette's layers at `pixels` across (made once, then kept; the last few are kept).
+    static func layers(for palette: OrbPalette, pixels: Int = size) -> Layers {
+        let key = "\(palette.hashValue)-\(pixels)"
+        lock.lock()
+        if let hit = cache[key] { lock.unlock(); return hit }
+        lock.unlock()
+        let made = make(pixels, Colors(palette))
+        lock.lock()
+        cache[key] = made
+        order.append(key)
+        if order.count > 24 { cache[order.removeFirst()] = nil }
+        lock.unlock()
+        return made
+    }
 
     // MARK: Shading (a straight port of make-icon.swift, orb-b at large sizes)
 
@@ -40,6 +64,7 @@ enum OrbArt {
     private static func dot(_ a: V3, _ b: V3) -> Double { a.x * b.x + a.y * b.y + a.z * b.z }
     private static func norm(_ a: V3) -> V3 { mul(a, 1 / dot(a, a).squareRoot()) }
     private static func rgb(_ r: Double, _ g: Double, _ b: Double) -> V3 { V3(x: pow(r, 2.2), y: pow(g, 2.2), z: pow(b, 2.2)) }
+    private static func rgb(_ c: OrbRGB) -> V3 { rgb(c.r, c.g, c.b) }
     private static func mix(_ a: V3, _ b: V3, _ t: Double) -> V3 { add(a, mul(sub(b, a), t)) }
     private static func clamp01(_ v: Double) -> Double { min(1, max(0, v)) }
     private static func smooth(_ e0: Double, _ e1: Double, _ v: Double) -> Double {
@@ -51,58 +76,60 @@ enum OrbArt {
         pow(max(0, v < 0.8 ? v : 0.8 + 0.2 * (1 - exp(-(v - 0.8) / 0.2))), 1 / 2.2)
     }
 
-    private static let cCyan = rgb(0.24, 0.80, 1.00)
-    private static let cIce = rgb(0.52, 0.93, 1.00)
-    private static let cBlue = rgb(0.20, 0.40, 1.00)
-    private static let cDeepBlue = rgb(0.13, 0.22, 0.90)
-    private static let cViolet = rgb(0.42, 0.20, 0.92)
-    private static let cMagenta = rgb(0.98, 0.32, 0.86)
-    private static let cLilac = rgb(0.80, 0.58, 1.00)
-    private static let cRimDark = rgb(0.09, 0.05, 0.30)
+    /// A palette in linear light, by the names the icon's shading uses.
+    private struct Colors {
+        let cyan, ice, blue, deepBlue, violet, magenta, lilac, rimDark, shade, backRim, sky: V3
+        init(_ p: OrbPalette) {
+            cyan = rgb(p.light); ice = rgb(p.ice); blue = rgb(p.mid); deepBlue = rgb(p.deep)
+            violet = rgb(p.low); magenta = rgb(p.accent); lilac = rgb(p.lilac); rimDark = rgb(p.rim)
+            shade = rgb(p.shade); backRim = rgb(p.backRim); sky = rgb(p.sky)
+        }
+    }
+
     private static let light = norm(V3(x: -0.52, y: 0.62, z: 0.59))
     private static let halfway = norm(add(light, V3(x: 0, y: 0, z: 1)))
 
     /// The colored liquid inside the ball, in ball space (unit disc, y up).
-    private static func liquid(_ qx: Double, _ qy: Double) -> V3 {
+    private static func liquid(_ qx: Double, _ qy: Double, _ k: Colors) -> V3 {
         let wx = qx + 0.16 * sin(2.6 * qy + 0.8) + 0.05 * sin(5.3 * qy - 1.3)
         let wy = qy + 0.13 * sin(2.3 * qx - 0.5) + 0.045 * cos(4.9 * qx + 0.9)
         let t = smooth(-0.95, 0.9, wy)
-        var c = t < 0.5 ? mix(cViolet, cBlue, t / 0.5) : mix(cBlue, cCyan, (t - 0.5) / 0.5)
-        c = mix(c, cDeepBlue, 0.45 * gauss(wx + 0.62, wy - 0.02, 0.34))
-        c = mix(c, cBlue, 0.55 * gauss(wx - 0.62, wy - 0.42, 0.38))
-        c = mix(c, cIce, 0.55 * gauss(wx + 0.08, wy - 0.52, 0.36))
-        c = mix(c, cLilac, 0.38 * gauss(wx - 0.52, wy + 0.04, 0.34))
-        c = mix(c, cMagenta, 0.88 * gauss(wx + 0.40, wy + 0.52, 0.40))
+        var c = t < 0.5 ? mix(k.violet, k.blue, t / 0.5) : mix(k.blue, k.cyan, (t - 0.5) / 0.5)
+        c = mix(c, k.deepBlue, 0.45 * gauss(wx + 0.62, wy - 0.02, 0.34))
+        c = mix(c, k.blue, 0.55 * gauss(wx - 0.62, wy - 0.42, 0.38))
+        c = mix(c, k.ice, 0.55 * gauss(wx + 0.08, wy - 0.52, 0.36))
+        c = mix(c, k.lilac, 0.38 * gauss(wx - 0.52, wy + 0.04, 0.34))
+        c = mix(c, k.magenta, 0.88 * gauss(wx + 0.40, wy + 0.52, 0.40))
         return c
     }
 
     /// The icon's ball color at a point (without the highlight), and how much
     /// of the liquid the shading lets through there.
-    private static func ball(_ bx: Double, _ by: Double) -> (color: V3, through: Double) {
+    private static func ball(_ bx: Double, _ by: Double, _ k: Colors) -> (color: V3, through: Double) {
         let r = min(1, (bx * bx + by * by).squareRoot())
         let z = max(0, 1 - r * r).squareRoot()
         let n = V3(x: bx, y: by, z: z)
-        let k = 0.80 + 0.20 * z
-        var c = liquid(bx * k, by * k)
-        c = mix(c, liquid(bx * 0.55 - 0.08, by * 0.55 + 0.05), 0.16 * z)
+        let kz = 0.80 + 0.20 * z
+        var c = liquid(bx * kz, by * kz, k)
+        c = mix(c, liquid(bx * 0.55 - 0.08, by * 0.55 + 0.05, k), 0.16 * z)
         let diff = max(0, dot(n, light))
         var through = (0.18 + 0.95 * diff) * (0.85 + 0.30 * z)
         c = mul(c, through)
-        c = add(c, mul(rgb(0.30, 0.14, 0.70), 0.22 * (1 - diff)))
-        c = add(c, mul(cLilac, 0.14 * gauss(bx - 0.36, by + 0.44, 0.36)))
+        c = add(c, mul(k.shade, 0.22 * (1 - diff)))
+        c = add(c, mul(k.lilac, 0.14 * gauss(bx - 0.36, by + 0.44, 0.36)))
         let rim = pow(1 - z, 2.0)
         let shadowSide = clamp01(0.5 - 0.5 * (bx * light.x + by * light.y) / max(r, 1e-6) * 1.4)
         let rimMix = rim * (0.30 + 0.50 * shadowSide)
-        c = mix(c, cRimDark, rimMix)
+        c = mix(c, k.rimDark, rimMix)
         through *= 1 - rimMix
-        let env = mix(rgb(0.03, 0.02, 0.08), rgb(0.62, 0.82, 1.0), smooth(0.0, 0.9, 0.75 * n.y - 0.45 * n.x))
+        let env = mix(rgb(0.03, 0.02, 0.08), k.sky, smooth(0.0, 0.9, 0.75 * n.y - 0.45 * n.x))
         let f = 0.02 + 0.55 * pow(1 - z, 4)
         c = add(mul(c, 1 - f), mul(env, f))
         through *= 1 - f
         let br = smooth(0.80, 0.985, r) * clamp01((bx - by) / 1.414 / max(r, 1e-6))
-        c = add(c, mul(rgb(0.55, 0.35, 0.95), br * 0.22))
+        c = add(c, mul(k.backRim, br * 0.22))
         let toward = (bx * light.x + by * light.y) / max(r, 1e-6) / (light.x * light.x + light.y * light.y).squareRoot()
-        c = add(c, mul(rgb(0.62, 0.85, 1.0), 0.24 * smooth(0.968, 0.994, r) * smooth(-0.1, 0.9, toward)))
+        c = add(c, mul(k.sky, 0.24 * smooth(0.968, 0.994, r) * smooth(-0.1, 0.9, toward)))
         return (c, through)
     }
 
@@ -115,7 +142,7 @@ enum OrbArt {
 
     // MARK: Splitting it into layers
 
-    private static func make(_ n: Int) -> Layers {
+    private static func make(_ n: Int, _ k: Colors) -> Layers {
         let m = Int((Double(n) * liquidSpan).rounded())
         var liquidPx = [UInt8](repeating: 255, count: m * m * 4)
         var glassPx = [UInt8](repeating: 0, count: n * n * 4)
@@ -129,7 +156,7 @@ enum OrbArt {
             let qy = liquidSpan * (1 - (Double(j) + 0.5) / Double(m) * 2)
             for i in 0..<m {
                 let qx = liquidSpan * ((Double(i) + 0.5) / Double(m) * 2 - 1)
-                let c = liquid(qx, qy)
+                let c = liquid(qx, qy, k)
                 let o = (j * m + i) * 4
                 liquidPx[o] = byte(tone(c.x)); liquidPx[o + 1] = byte(tone(c.y)); liquidPx[o + 2] = byte(tone(c.z))
             }
@@ -145,21 +172,21 @@ enum OrbArt {
                 // A little past the edge too, so the circular mask's soft edge has color under it.
                 let s = rr > 1 ? 1 / rr : 1
                 let x = bx * s * 0.999, y = by * s * 0.999
-                let (c, through) = ball(x, y)
+                let (c, through) = ball(x, y, k)
                 let target = [tone(c.x), tone(c.y), tone(c.z)]
-                let flat = liquid(x, y)
+                let flat = liquid(x, y, k)
                 let under = [tone(flat.x), tone(flat.y), tone(flat.z)]
                 // How much the glass covers: the shading's, or more where the icon is darker than the bare liquid.
                 var alpha = 1 - min(1, pow(max(through, 0), 1 / 2.2))
-                for k in 0..<3 where under[k] > 0.001 {
-                    alpha = max(alpha, 1 - target[k] / under[k])
+                for ch in 0..<3 where under[ch] > 0.001 {
+                    alpha = max(alpha, 1 - target[ch] / under[ch])
                 }
                 alpha = min(1, max(0, alpha))
                 var glassColor = [0.0, 0.0, 0.0], extra = [0.0, 0.0, 0.0]
-                for k in 0..<3 {
-                    let wanted = alpha > 0.001 ? (target[k] - (1 - alpha) * under[k]) / alpha : 0
-                    glassColor[k] = min(1, max(0, wanted))
-                    extra[k] = max(0, target[k] - (alpha * glassColor[k] + (1 - alpha) * under[k]))
+                for ch in 0..<3 {
+                    let wanted = alpha > 0.001 ? (target[ch] - (1 - alpha) * under[ch]) / alpha : 0
+                    glassColor[ch] = min(1, max(0, wanted))
+                    extra[ch] = max(0, target[ch] - (alpha * glassColor[ch] + (1 - alpha) * under[ch]))
                 }
                 // Premultiplied.
                 glassPx[o] = byte(glassColor[0] * alpha); glassPx[o + 1] = byte(glassColor[1] * alpha)

@@ -35,8 +35,36 @@ struct KeyShortcut: Codable, Hashable {
     static let newTab         = make(kVK_ANSI_T, "T", .maskCommand)
     static let closeTab       = make(kVK_ANSI_W, "W", .maskCommand)
     static let spotlight      = make(kVK_Space, "Space", .maskCommand)
+    static let cut            = make(kVK_ANSI_X, "X", .maskCommand)
+    static let redo           = make(kVK_ANSI_Z, "Z", [.maskCommand, .maskShift])
+    static let selectAll      = make(kVK_ANSI_A, "A", .maskCommand)
+    static let save           = make(kVK_ANSI_S, "S", .maskCommand)
+    static let find           = make(kVK_ANSI_F, "F", .maskCommand)
+    static let reopenTab      = make(kVK_ANSI_T, "T", [.maskCommand, .maskShift])
+    static let nextTab        = make(kVK_Tab, "⇥", .maskControl)
+    static let previousTab    = make(kVK_Tab, "⇥", [.maskControl, .maskShift])
+    static let reload         = make(kVK_ANSI_R, "R", .maskCommand)
+    static let zoomIn         = make(kVK_ANSI_Equal, "=", .maskCommand)
+    static let zoomOut        = make(kVK_ANSI_Minus, "-", .maskCommand)
+    static let minimize       = make(kVK_ANSI_M, "M", .maskCommand)
+    static let fullScreen     = make(kVK_ANSI_F, "F", [.maskControl, .maskCommand])
+    static let lastApp        = make(kVK_Tab, "⇥", .maskCommand)
+    static let screenshot     = make(kVK_ANSI_4, "4", [.maskCommand, .maskShift])
+    static let screenshotTools = make(kVK_ANSI_5, "5", [.maskCommand, .maskShift])
+    static let emoji          = make(kVK_Space, "Space", [.maskControl, .maskCommand])
+    static let lockScreen     = make(kVK_ANSI_Q, "Q", [.maskControl, .maskCommand])
     /// Wispr Flow's configured push-to-talk shortcut. It remains held while speaking.
     static let wisprFlow      = make(kVK_Space, "Space", .maskControl)
+}
+
+/// The keyboard's media keys (macOS's NX_KEYTYPE_* numbers).
+enum MediaKey: Int, Codable, Hashable, CaseIterable {
+    case volumeUp = 0
+    case volumeDown = 1
+    case mute = 7
+    case playPause = 16
+    case next = 17
+    case previous = 18
 }
 
 /// What a physical trackball button does.
@@ -55,6 +83,8 @@ enum ButtonAction: Codable, Hashable {
     case precisionToggle   // press: precision on, press again: off
     case ballScrollHold    // while held, rolling the ball scrolls and the cursor stays put
     case dragLock          // press: left button goes down and stays; press again (or click) lets go
+    case media(MediaKey)   // play/pause, next track, volume… (the keyboard's media keys)
+    case openApp(bundleID: String)   // opens (or brings forward) an app
 
     struct Preset: Identifiable {
         /// Shown in menus (localized).
@@ -64,7 +94,8 @@ enum ButtonAction: Codable, Hashable {
         var id: String { title }
     }
 
-    // Titles are display text only — what's saved is the action itself.
+    // Titles are display text only — what's saved is the action itself. The picker
+    // (ActionCatalog.swift) adds a category, a line about each and search words.
     static let presets: [Preset] = [
         .init(title: String(localized: "Default", comment: "Button action: what the button normally does"), symbol: "arrow.uturn.backward", action: .system),
         .init(title: String(localized: "Left click"), symbol: "cursorarrow.click", action: .leftClick),
@@ -77,19 +108,43 @@ enum ButtonAction: Codable, Hashable {
         .init(title: String(localized: "Option-click"), symbol: "option", action: .modifiedClick(button: 0, modifiers: CGEventFlags.maskAlternate.rawValue)),
         .init(title: String(localized: "Back", comment: "Browser back: what the top-right button does by default"), symbol: "chevron.backward", action: .back),
         .init(title: String(localized: "Forward", comment: "Browser forward"), symbol: "chevron.forward", action: .forward),
+        .init(title: String(localized: "Browser Back"), symbol: "arrow.backward.circle", action: .shortcut(.browserBack)),
+        .init(title: String(localized: "Browser Forward"), symbol: "arrow.forward.circle", action: .shortcut(.browserForward)),
+        .init(title: String(localized: "New Tab"), symbol: "plus.square.on.square", action: .shortcut(.newTab)),
+        .init(title: String(localized: "Close Tab"), symbol: "xmark.square", action: .shortcut(.closeTab)),
+        .init(title: String(localized: "Reopen Closed Tab"), symbol: "arrow.uturn.backward.square", action: .shortcut(.reopenTab)),
+        .init(title: String(localized: "Next Tab"), symbol: "arrow.right.square", action: .shortcut(.nextTab)),
+        .init(title: String(localized: "Previous Tab"), symbol: "arrow.left.square", action: .shortcut(.previousTab)),
+        .init(title: String(localized: "Reload"), symbol: "arrow.clockwise", action: .shortcut(.reload)),
+        .init(title: String(localized: "Zoom In"), symbol: "plus.magnifyingglass", action: .shortcut(.zoomIn)),
+        .init(title: String(localized: "Zoom Out"), symbol: "minus.magnifyingglass", action: .shortcut(.zoomOut)),
         .init(title: String(localized: "Previous Space", comment: "Mission Control: switch to the Space on the left"), symbol: "rectangle.lefthalf.inset.filled.arrow.left", action: .shortcut(.previousSpace)),
         .init(title: String(localized: "Next Space", comment: "Mission Control: switch to the Space on the right"), symbol: "rectangle.righthalf.inset.filled.arrow.right", action: .shortcut(.nextSpace)),
         .init(title: String(localized: "Mission Control"), symbol: "rectangle.3.group", action: .shortcut(.missionControl)),
         .init(title: String(localized: "App Exposé"), symbol: "macwindow.on.rectangle", action: .shortcut(.appExpose)),
-        .init(title: String(localized: "Browser Back"), symbol: "arrow.backward.circle", action: .shortcut(.browserBack)),
-        .init(title: String(localized: "Browser Forward"), symbol: "arrow.forward.circle", action: .shortcut(.browserForward)),
+        .init(title: String(localized: "Last Used App", comment: "Button action: switch back to the app used before this one (⌘⇥)"), symbol: "arrow.left.arrow.right.square", action: .shortcut(.lastApp)),
+        .init(title: String(localized: "Minimize Window"), symbol: "minus.rectangle", action: .shortcut(.minimize)),
+        .init(title: String(localized: "Full Screen"), symbol: "arrow.up.left.and.arrow.down.right", action: .shortcut(.fullScreen)),
         .init(title: String(localized: "Spotlight"), symbol: "magnifyingglass", action: .shortcut(.spotlight)),
+        .init(title: String(localized: "Lock Screen"), symbol: "lock", action: .shortcut(.lockScreen)),
         .init(title: "Wispr Flow", symbol: "waveform", action: .holdShortcut(.wisprFlow)),
         .init(title: String(localized: "Copy"), symbol: "doc.on.doc", action: .shortcut(.copy)),
         .init(title: String(localized: "Paste"), symbol: "doc.on.clipboard", action: .shortcut(.paste)),
+        .init(title: String(localized: "Cut"), symbol: "scissors", action: .shortcut(.cut)),
         .init(title: String(localized: "Undo"), symbol: "arrow.uturn.backward.circle", action: .shortcut(.undo)),
-        .init(title: String(localized: "New Tab"), symbol: "plus.square.on.square", action: .shortcut(.newTab)),
-        .init(title: String(localized: "Close Tab"), symbol: "xmark.square", action: .shortcut(.closeTab)),
+        .init(title: String(localized: "Redo"), symbol: "arrow.uturn.forward.circle", action: .shortcut(.redo)),
+        .init(title: String(localized: "Select All"), symbol: "selection.pin.in.out", action: .shortcut(.selectAll)),
+        .init(title: String(localized: "Save"), symbol: "square.and.arrow.down", action: .shortcut(.save)),
+        .init(title: String(localized: "Find"), symbol: "text.magnifyingglass", action: .shortcut(.find)),
+        .init(title: String(localized: "Screenshot"), symbol: "camera.viewfinder", action: .shortcut(.screenshot)),
+        .init(title: String(localized: "Screenshot and Recording"), symbol: "record.circle", action: .shortcut(.screenshotTools)),
+        .init(title: String(localized: "Emoji & Symbols"), symbol: "face.smiling", action: .shortcut(.emoji)),
+        .init(title: String(localized: "Play or Pause"), symbol: "playpause", action: .media(.playPause)),
+        .init(title: String(localized: "Next Track"), symbol: "forward", action: .media(.next)),
+        .init(title: String(localized: "Previous Track"), symbol: "backward", action: .media(.previous)),
+        .init(title: String(localized: "Volume Up"), symbol: "speaker.wave.3", action: .media(.volumeUp)),
+        .init(title: String(localized: "Volume Down"), symbol: "speaker.wave.1", action: .media(.volumeDown)),
+        .init(title: String(localized: "Mute"), symbol: "speaker.slash", action: .media(.mute)),
         .init(title: String(localized: "Precision (hold)"), symbol: "scope", action: .precisionHold),
         .init(title: String(localized: "Precision (toggle)"), symbol: "dot.circle.viewfinder", action: .precisionToggle),
         .init(title: String(localized: "Scroll with ball (hold)"), symbol: "arrow.up.and.down.and.arrow.left.and.right", action: .ballScrollHold),
@@ -97,17 +152,25 @@ enum ButtonAction: Codable, Hashable {
         .init(title: String(localized: "Do nothing"), symbol: "nosign", action: .disabled),
     ]
 
+    /// Display names of apps chosen for "Open an app", by bundle ID (set by the app
+    /// at launch: Config.swift is also built on its own by the simulators).
+    nonisolated(unsafe) static var appName: (String) -> String? = { _ in nil }
+
     var title: String {
         if let p = Self.presets.first(where: { $0.action == self }) { return p.title }
         switch self {
         case .shortcut(let s), .holdShortcut(let s): return s.display
+        case .openApp(let id):
+            let name = Self.appName(id) ?? id
+            return String(localized: "Open \(name)", comment: "Button action: opens an app; %@ is the app’s name")
         default: break
         }
         return String(localized: "Custom", comment: "Button action that isn't one of the presets")
     }
 
     var symbol: String {
-        Self.presets.first(where: { $0.action == self })?.symbol ?? "keyboard"
+        if case .openApp = self { return "app" }
+        return Self.presets.first(where: { $0.action == self })?.symbol ?? "keyboard"
     }
 
     var detail: String? {
@@ -116,6 +179,27 @@ enum ButtonAction: Codable, Hashable {
         default: break
         }
         return nil
+    }
+}
+
+extension ButtonAction {
+    /// What a button does without Glideball: 0 left click, 1 right click, 2 middle click, 3 back.
+    static func normal(for button: Int) -> ButtonAction {
+        switch button {
+        case 0: .leftClick
+        case 1: .rightClick
+        case 2: .middleClick
+        case 3: .back
+        default: .system
+        }
+    }
+
+    /// Does what the button does anyway ("Default", or the same click spelled out).
+    func isNormal(for button: Int) -> Bool { self == .system || self == Self.normal(for: button) }
+
+    /// Does the same thing on this button as `other`.
+    func sameEffect(as other: ButtonAction, on button: Int) -> Bool {
+        self == other || (isNormal(for: button) && other.isNormal(for: button))
     }
 }
 
@@ -398,6 +482,84 @@ extension GlideConfig {
     var hasSpacesAndWisprFlow: Bool {
         Self.spacesAndWisprFlowButtons.allSatisfy { buttons[$0.key] == $0.value }
             && chords.contains { $0.buttons == Self.spacesAndWisprFlowChord.buttons && $0.action == Self.spacesAndWisprFlowChord.action }
+    }
+}
+
+/// A ready-made set for the Buttons page: what the three free buttons do, and
+/// its combos. Choosing one sets all of it at once (the bottom-left button always
+/// stays a left click); Undo and the backup history put back what was there.
+struct ButtonPreset: Identifiable, Equatable {
+    let id: String
+    let title: String
+    let detail: String
+    let symbol: String
+    /// Buttons 1–3; any left out do their normal click.
+    let buttons: [Int: ButtonAction]
+    let chords: [Chord]
+
+    static let all: [ButtonPreset] = [
+        .init(id: "stock", title: String(localized: "Stock", comment: "Button preset: what the trackball does out of the box"),
+              detail: String(localized: "What the trackball does out of the box: right click, middle click and Back. No combos.",
+                             comment: "Button preset description"),
+              symbol: "shippingbox", buttons: [:], chords: []),
+        .init(id: "spaces", title: String(localized: "Spaces", comment: "Button preset name (macOS Spaces)"),
+              detail: String(localized: "Top buttons switch Spaces. Both together open Mission Control; bottom right with top right shows the app’s windows.",
+                             comment: "Button preset description"),
+              symbol: "rectangle.split.3x1",
+              buttons: [2: .shortcut(.previousSpace), 3: .shortcut(.nextSpace)],
+              chords: [Chord(buttons: [2, 3], action: .shortcut(.missionControl)),
+                       Chord(buttons: [1, 3], action: .shortcut(.appExpose))]),
+        .init(id: "browser", title: String(localized: "Browser", comment: "Button preset name"),
+              detail: String(localized: "Top left goes back, top right goes forward. Combos open, close and reopen tabs.",
+                             comment: "Button preset description"),
+              symbol: "safari",
+              buttons: [2: .back, 3: .forward],
+              chords: [Chord(buttons: [2, 3], action: .shortcut(.newTab)),
+                       Chord(buttons: [1, 3], action: .shortcut(.closeTab)),
+                       Chord(buttons: [1, 2], action: .shortcut(.reopenTab))]),
+        .init(id: "editing", title: String(localized: "Editing", comment: "Button preset name"),
+              detail: String(localized: "Top left copies, top right pastes. Both together undo; bottom right with top right redoes.",
+                             comment: "Button preset description"),
+              symbol: "doc.on.clipboard",
+              buttons: [2: .shortcut(.copy), 3: .shortcut(.paste)],
+              chords: [Chord(buttons: [2, 3], action: .shortcut(.undo)),
+                       Chord(buttons: [1, 3], action: .shortcut(.redo))]),
+        .init(id: "media", title: String(localized: "Media", comment: "Button preset name: music and video controls"),
+              detail: String(localized: "Top left plays or pauses, top right skips ahead. Both together go back a track; bottom right with top right mutes.",
+                             comment: "Button preset description"),
+              symbol: "music.note",
+              buttons: [2: .media(.playPause), 3: .media(.next)],
+              chords: [Chord(buttons: [2, 3], action: .media(.previous)),
+                       Chord(buttons: [1, 3], action: .media(.mute))]),
+        .init(id: "wispr", title: "Spaces + Wispr Flow",
+              detail: String(localized: "Top buttons switch Spaces; bottom left + both top buttons hold ⌃Space for Wispr Flow."),
+              symbol: "waveform",
+              buttons: GlideConfig.spacesAndWisprFlowButtons, chords: [GlideConfig.spacesAndWisprFlowChord]),
+    ]
+
+    /// Whether a button would do something different with this preset.
+    func changes(_ button: Int, from current: ButtonAction) -> Bool {
+        !action(for: button).sameEffect(as: current, on: button)
+    }
+
+    /// What each button does with this preset (0…3).
+    func action(for button: Int) -> ButtonAction { button == 0 ? .system : buttons[button] ?? .system }
+}
+
+extension GlideConfig {
+    /// Sets every button and combo to the preset's.
+    mutating func apply(_ preset: ButtonPreset) {
+        buttons = preset.buttons
+        chords = preset.chords.map { Chord(buttons: $0.buttons, action: $0.action) }   // fresh ids
+    }
+
+    /// The preset these buttons and combos match exactly, if any.
+    var matchingPreset: ButtonPreset? {
+        let mine = buttons.filter { $0.key != 0 && !$0.value.isNormal(for: $0.key) }
+        let myChords = Set(chords.map { "\($0.buttons)\($0.action)" })
+        return ButtonPreset.all.first { p in
+            p.buttons == mine && Set(p.chords.map { "\($0.buttons)\($0.action)" }) == myChords
+        }
     }
 }
 

@@ -66,7 +66,7 @@ enum WhatsNew {
                          title: String(localized: "Settings get their own window", comment: "What's New 2.10 item title"),
                          text: String(localized: "Glideball › Settings (⌘,) has everything that used to sit at the bottom of Overview, plus a new set of soft sounds you can turn off with one switch.",
                                       comment: "What's New 2.10 item"),
-                         art: .symbol("gearshape", nil), showMe: .settings(.look, spotlight: "sounds")),
+                         art: .symbol("gearshape", nil), showMe: .settings(.sound, spotlight: "sounds")),
                     Item(id: "speed",
                          title: String(localized: "Pausing puts your speed back", comment: "What's New 2.10 item title"),
                          text: String(localized: "When you pause or quit Glideball, your trackball goes back to exactly the tracking speed in System Settings, so it always feels the same.",

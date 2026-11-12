@@ -161,39 +161,55 @@ private struct AddAppMenu: View {
             guard app.activationPolicy == .regular, app.processIdentifier != me,
                   let id = app.bundleIdentifier, !taken.contains(id), seen.insert(id).inserted else { return nil }
             let icon = (app.icon?.copy() as? NSImage) ?? NSImage()
-            icon.size = NSSize(width: 16, height: 16)
+            icon.size = NSSize(width: 32, height: 32)
             return Candidate(bundleID: id, name: app.localizedName ?? id, icon: icon)
         }
         .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
+    @State private var open = false
+
     var body: some View {
-        let menu = Menu {
-            let apps = candidates
-            Section("Open apps") {
-                if apps.isEmpty {
-                    Text("No other open apps")
-                }
-                ForEach(apps, id: \.bundleID) { app in
-                    Button {
-                        withAnimation(Theme.Motion.spring) { model.addProfile(bundleID: app.bundleID, name: app.name) }
-                    } label: {
-                        Label { Text(app.name) } icon: { Image(nsImage: app.icon) }
-                    }
-                }
-            }
-            Divider()
-            Button("Choose from Applications…", action: chooseApp)
+        let button = Button {
+            open = true
         } label: {
             Label("Add App…", systemImage: "plus")
         }
-        .menuStyle(.button)
-        .fixedSize()
-        if prominent {
-            menu.controlSize(.large)
-        } else {
-            menu.controlSize(.small)
+        .popover(isPresented: $open, arrowEdge: .bottom) {
+            SearchPickerPanel(placeholder: String(localized: "Search open apps", comment: "Add App picker search field"),
+                              sections: sections,
+                              emptyText: { q in String(localized: "No open app called “\(q)”. Choose it from Applications instead.",
+                                                       comment: "Add App picker: nothing found; %@ is what was typed") },
+                              width: 340, height: 400)
         }
+        if prominent {
+            button.controlSize(.large)
+        } else {
+            button.controlSize(.small)
+        }
+    }
+
+    private func sections(_ query: String) -> [PickerSection] {
+        let q = query.trimmingCharacters(in: .whitespaces)
+        let apps = candidates.filter { q.isEmpty || $0.name.range(of: q, options: [.caseInsensitive, .diacriticInsensitive]) != nil }
+        var out: [PickerSection] = []
+        if !apps.isEmpty {
+            out.append(PickerSection(id: "open", title: String(localized: "Open apps"), entries: apps.map { app in
+                PickerEntry(id: app.bundleID, title: app.name, icon: .image(app.icon)) {
+                    open = false
+                    withAnimation(Theme.Motion.spring) { model.addProfile(bundleID: app.bundleID, name: app.name) }
+                }
+            }))
+        }
+        out.append(PickerSection(id: "more", entries: [
+            PickerEntry(id: "choose", title: String(localized: "Choose from Applications…"),
+                        detail: String(localized: "Any app, open or not.", comment: "Add App picker"),
+                        icon: .symbol("folder"), opensMore: true) {
+                open = false
+                DispatchQueue.main.async { chooseApp() }
+            },
+        ]))
+        return out
     }
 
     private func chooseApp() {
