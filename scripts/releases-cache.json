@@ -1,5 +1,13 @@
 [
  {
+  "body": "More light, more life. Same layout as beta 8.\n• The trackball now lights the window: roll and it warms blue, spin the ring and pink sweeps through, click and amber flashes. It goes still the moment you stop.\n• Overview is an instrument cluster: a big live trackball inside three gauges that fill toward your best day.\n• Sliders tick as you drag, scroll modes and presets show a little demo when you hover them, and each page has one small moment of its own.\n• Panels have depth again, and the type is bigger.\n• If the light is too much, Settings › General › Performance › Minimal turns it off.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `ea8d2487eb8ddb9fa5af11a97ce5de2cfeb25df1d5318de160b5d40dabee3731`",
+  "date": "2026-11-11T21:18:48Z",
+  "name": "Glideball 2.10 beta 9",
+  "prerelease": true,
+  "tag": "v2.10-beta.9",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.9"
+ },
+ {
   "body": "This one is a new look for the whole app. Your settings are all still here.\n• A sidebar, with your trackball at the top. Roll the ball, turn the ring or press a button and it moves with you.\n• Every page is redrawn, and each slider now says what its current setting does.\n• Settings has five tabs now, including Look & Sound (new soft sounds with one switch, and a choice between the new icon and the classic one).\n• After an update you'll see What's New once. It's also under Help.\n• New: Settings › General › Allow Raycast and scripts. It's off unless you turn it on.\n• If anything looks off or feels worse than before, please tell me. That's what the beta is for.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `fd5c3069e48545459465bea782102cb9edbfaf07ad8c44a03662d46b7880fe14`",
   "date": "2026-11-11T16:43:45Z",
   "name": "Glideball 2.10 beta 8",
