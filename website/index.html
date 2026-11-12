@@ -12,7 +12,7 @@
   <meta name="google-site-verification" content="JtQEDIbASJat7QjyKVsECUtNOLmuwnuhqjlxrOLVW-o">
   <meta name="msvalidate.01" content="F87F244FC698BE26AE27B1340A7701B4">
   <meta name="color-scheme" content="dark">
-  <meta name="theme-color" content="#0b0b10">
+  <meta name="theme-color" content="#08090d">
 
   <link rel="icon" href="/favicon.ico" sizes="48x48">
   <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png?v=3">
@@ -34,7 +34,9 @@
   <meta name="twitter:image" content="https://glideball.netlify.app/assets/og.png?v=3">
 
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="home.css">
   <script src="app.js" defer></script>
+  <script src="home.js" defer></script>
   <script src="privacy.js" defer></script>
 
   <script type="application/ld+json">
@@ -244,6 +246,8 @@
     <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.4 4.4L19 7.5"/></symbol>
     <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m0 0-5.5-5.5M19 12l-5.5 5.5"/></symbol>
     <symbol id="i-sync" viewBox="0 0 24 24"><path d="M19.5 9A8 8 0 0 0 5.2 7.4M4.5 15a8 8 0 0 0 14.3 1.6"/><path d="M19.8 4.5V9h-4.5M4.2 19.5V15h4.5"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.6"/><path d="M8.2 10.5V8a3.8 3.8 0 0 1 7.6 0v2.5"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5m0 0-6 6m6-6 6 6"/></symbol>
   </svg>
 
   <a class="skip" href="#main">Skip to content</a>
@@ -283,133 +287,165 @@
   <!-- /site-nav -->
 
   <main id="main">
-    <!-- Hero -->
-    <section class="hero" id="top" aria-labelledby="hero-h">
-      <div class="wrap hero-grid">
-        <div class="hero-copy">
-          <p class="hero-kicker">A free, open-source KensingtonWorks alternative</p>
-          <h1 class="wordmark" id="hero-h">Glideball</h1>
-          <p class="tagline">A smoother scroll ring and a faster pointer for your Kensington&nbsp;trackball.</p>
-          <p class="lede">Glideball is a free Mac app for Kensington trackballs. It lets the pointer go faster than macOS allows, makes the scroll ring scroll smoothly, and lets you choose what each button does. There's no driver to install and no account to make.</p>
-          <div class="cta-row">
-            <a class="btn btn-primary btn-lg" href="/download/">
-              <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
-              <span>Download for Mac</span>
-            </a>
-            <a class="btn btn-secondary btn-lg" href="https://github.com/leviholliday/glideball">
-              <svg class="icon" aria-hidden="true"><use href="#i-github"/></svg>
-              <span>Open source on GitHub</span>
-            </a>
-          </div>
-          <p class="fine"><span>Free and open source (MIT)</span> · <span>macOS 26 Tahoe or later</span> · <span>Apple silicon &amp; Intel</span><span data-downloads hidden> · <b data-downloads-n></b> downloads</span></p>
-          <p class="fine">Apple hasn't notarized Glideball, so you'll approve it once in System Settings. <a href="#install">Here's how</a>.</p>
-          <p class="fine">It's built on the wired Kensington Expert Mouse, and other Kensington trackballs work if you turn on <a href="/trackballs/">Other Kensington trackballs</a> in Settings.</p>
+    <!-- Hero: the page is lit by the trackball, and the trackball is a toy. -->
+    <section class="hero" id="top" aria-labelledby="hero-h" data-light>
+      <div class="wrap hero-copy">
+        <p class="eyebrow hero-eyebrow"><span class="eyebrow-tick" aria-hidden="true"></span>A free, open-source KensingtonWorks alternative</p>
+        <p class="display"><span class="display-1">Spin it.</span> <span class="display-2">Feel it glide.</span></p>
+        <h1 class="hero-h" id="hero-h">A smoother scroll ring and a faster pointer for your Kensington&nbsp;trackball.</h1>
+        <div class="cta-row">
+          <a class="btn btn-primary btn-lg" href="/download/">
+            <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+            <span>Download for Mac</span>
+          </a>
+          <a class="btn btn-glass btn-lg" href="https://github.com/leviholliday/glideball">
+            <svg class="icon" aria-hidden="true"><use href="#i-github"/></svg>
+            <span>Open source on GitHub</span>
+          </a>
         </div>
-
-        <div class="tb" data-tb>
-          <div class="tb-stage" role="img" aria-label="A Kensington trackball drawn in Glideball's colors: a glossy ball inside a fine scroll ring with tick marks, and a button in each corner.">
-            <div class="tb-body">
-              <svg class="tb-pads" viewBox="0 0 100 100" focusable="false">
-                <defs>
-                  <linearGradient id="tb-pf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".115"/><stop offset="1" stop-color="#fff" stop-opacity=".065"/></linearGradient>
-                  <linearGradient id="tb-ps" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset="1" stop-color="#fff" stop-opacity=".04"/></linearGradient>
-                  <linearGradient id="tb-pa" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffcc73"/><stop offset="1" stop-color="#ffb340"/></linearGradient>
-                  <filter id="tb-pb" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2"/></filter>
-                  <mask id="tb-hole" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100"><rect width="100" height="100" fill="#fff"/><circle cx="50" cy="50" r="42.7" fill="#000"/></mask>
-                </defs>
-              <g class="tb-pad tb-tl" data-pad>
-                <path class="tb-pad-glow" d="M21.8 3.8H43.6A4.5 4.5 0 0 1 48.1 8.3V43.6A4.5 4.5 0 0 1 43.6 48.1H8.3A4.5 4.5 0 0 1 3.8 43.6V21.8A18 18 0 0 1 21.8 3.8Z" filter="url(#tb-pb)"/>
-                <g mask="url(#tb-hole)">
-                  <path class="tb-pad-base" d="M21.8 3.8H43.6A4.5 4.5 0 0 1 48.1 8.3V43.6A4.5 4.5 0 0 1 43.6 48.1H8.3A4.5 4.5 0 0 1 3.8 43.6V21.8A18 18 0 0 1 21.8 3.8Z"/>
-                  <path class="tb-pad-on" d="M21.8 3.8H43.6A4.5 4.5 0 0 1 48.1 8.3V43.6A4.5 4.5 0 0 1 43.6 48.1H8.3A4.5 4.5 0 0 1 3.8 43.6V21.8A18 18 0 0 1 21.8 3.8Z"/>
-                </g>
-              </g>
-              <g class="tb-pad tb-tr" data-pad>
-                <path class="tb-pad-glow" d="M56.4 3.8H78.2A18 18 0 0 1 96.2 21.8V43.6A4.5 4.5 0 0 1 91.7 48.1H56.4A4.5 4.5 0 0 1 51.9 43.6V8.3A4.5 4.5 0 0 1 56.4 3.8Z" filter="url(#tb-pb)"/>
-                <g mask="url(#tb-hole)">
-                  <path class="tb-pad-base" d="M56.4 3.8H78.2A18 18 0 0 1 96.2 21.8V43.6A4.5 4.5 0 0 1 91.7 48.1H56.4A4.5 4.5 0 0 1 51.9 43.6V8.3A4.5 4.5 0 0 1 56.4 3.8Z"/>
-                  <path class="tb-pad-on" d="M56.4 3.8H78.2A18 18 0 0 1 96.2 21.8V43.6A4.5 4.5 0 0 1 91.7 48.1H56.4A4.5 4.5 0 0 1 51.9 43.6V8.3A4.5 4.5 0 0 1 56.4 3.8Z"/>
-                </g>
-              </g>
-              <g class="tb-pad tb-bl" data-pad>
-                <path class="tb-pad-glow" d="M8.3 51.9H43.6A4.5 4.5 0 0 1 48.1 56.4V91.7A4.5 4.5 0 0 1 43.6 96.2H21.8A18 18 0 0 1 3.8 78.2V56.4A4.5 4.5 0 0 1 8.3 51.9Z" filter="url(#tb-pb)"/>
-                <g mask="url(#tb-hole)">
-                  <path class="tb-pad-base" d="M8.3 51.9H43.6A4.5 4.5 0 0 1 48.1 56.4V91.7A4.5 4.5 0 0 1 43.6 96.2H21.8A18 18 0 0 1 3.8 78.2V56.4A4.5 4.5 0 0 1 8.3 51.9Z"/>
-                  <path class="tb-pad-on" d="M8.3 51.9H43.6A4.5 4.5 0 0 1 48.1 56.4V91.7A4.5 4.5 0 0 1 43.6 96.2H21.8A18 18 0 0 1 3.8 78.2V56.4A4.5 4.5 0 0 1 8.3 51.9Z"/>
-                </g>
-              </g>
-              <g class="tb-pad tb-br" data-pad>
-                <path class="tb-pad-glow" d="M56.4 51.9H91.7A4.5 4.5 0 0 1 96.2 56.4V78.2A18 18 0 0 1 78.2 96.2H56.4A4.5 4.5 0 0 1 51.9 91.7V56.4A4.5 4.5 0 0 1 56.4 51.9Z" filter="url(#tb-pb)"/>
-                <g mask="url(#tb-hole)">
-                  <path class="tb-pad-base" d="M56.4 51.9H91.7A4.5 4.5 0 0 1 96.2 56.4V78.2A18 18 0 0 1 78.2 96.2H56.4A4.5 4.5 0 0 1 51.9 91.7V56.4A4.5 4.5 0 0 1 56.4 51.9Z"/>
-                  <path class="tb-pad-on" d="M56.4 51.9H91.7A4.5 4.5 0 0 1 96.2 56.4V78.2A18 18 0 0 1 78.2 96.2H56.4A4.5 4.5 0 0 1 51.9 91.7V56.4A4.5 4.5 0 0 1 56.4 51.9Z"/>
-                </g>
-              </g>
-              </svg>
-              <div class="tb-well"></div>
-              <svg class="tb-edge" viewBox="0 0 100 100" focusable="false">
-                <defs>
-                  <linearGradient id="tb-rg" x1=".35" y1="0" x2=".65" y2="1">
-                    <stop offset="0" stop-color="#5cadff"/>
-                    <stop offset=".5" stop-color="#6b73ff"/>
-                    <stop offset="1" stop-color="#9455f8"/>
-                  </linearGradient>
-                  <linearGradient id="tb-rc" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".7"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
-                  <filter id="tb-rb" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2.4"/></filter>
-                </defs>
-                <circle cx="50" cy="50" r="37.8" fill="none" stroke="url(#tb-rg)" stroke-width="3.8" opacity=".38" filter="url(#tb-rb)"/>
-                <circle cx="50" cy="50" r="31.1" fill="none" stroke="#fff" stroke-opacity=".06" stroke-width=".3"/>
-                <circle cx="50" cy="50" r="37.8" fill="none" stroke="url(#tb-rg)" stroke-width=".85"/>
-                <path d="M13.03 42.14A37.8 37.8 0 0 1 46.05 12.41" fill="none" stroke="url(#tb-rc)" stroke-width=".6" stroke-linecap="round"/>
-              </svg>
-              <div class="tb-glow"></div>
-              <svg class="tb-ticks" viewBox="0 0 100 100" focusable="false">
-                <path class="tb-t tb-t-minor" d="M53.42 17.48L53.73 14.50M56.80 18.01L57.42 15.08M60.10 18.90L61.03 16.05M63.30 20.13L64.52 17.39M69.22 23.55L70.98 21.12M71.88 25.70L73.89 23.47M74.30 28.12L76.53 26.11M76.45 30.78L78.88 29.02M79.87 36.70L82.61 35.48M81.10 39.90L83.95 38.97M81.99 43.20L84.92 42.58M82.52 46.58L85.50 46.27M82.52 53.42L85.50 53.73M81.99 56.80L84.92 57.42M81.10 60.10L83.95 61.03M79.87 63.30L82.61 64.52M76.45 69.22L78.88 70.98M74.30 71.88L76.53 73.89M71.88 74.30L73.89 76.53M69.22 76.45L70.98 78.88M63.30 79.87L64.52 82.61M60.10 81.10L61.03 83.95M56.80 81.99L57.42 84.92M53.42 82.52L53.73 85.50M46.58 82.52L46.27 85.50M43.20 81.99L42.58 84.92M39.90 81.10L38.97 83.95M36.70 79.87L35.48 82.61M30.78 76.45L29.02 78.88M28.12 74.30L26.11 76.53M25.70 71.88L23.47 73.89M23.55 69.22L21.12 70.98M20.13 63.30L17.39 64.52M18.90 60.10L16.05 61.03M18.01 56.80L15.08 57.42M17.48 53.42L14.50 53.73M17.48 46.58L14.50 46.27M18.01 43.20L15.08 42.58M18.90 39.90L16.05 38.97M20.13 36.70L17.39 35.48M23.55 30.78L21.12 29.02M25.70 28.12L23.47 26.11M28.12 25.70L26.11 23.47M30.78 23.55L29.02 21.12M36.70 20.13L35.48 17.39M39.90 18.90L38.97 16.05M43.20 18.01L42.58 15.08M46.58 17.48L46.27 14.50"/>
-                <path class="tb-t tb-t-major" d="M50.00 18.00L50.00 13.80M66.00 22.29L68.10 18.65M77.71 34.00L81.35 31.90M82.00 50.00L86.20 50.00M77.71 66.00L81.35 68.10M66.00 77.71L68.10 81.35M50.00 82.00L50.00 86.20M34.00 77.71L31.90 81.35M22.29 66.00L18.65 68.10M18.00 50.00L13.80 50.00M22.29 34.00L18.65 31.90M34.00 22.29L31.90 18.65"/>
-                <g class="tb-sweep">
-                  <circle cx="50" cy="50" r="37.8" pathLength="360" stroke-dasharray="70 290" stroke-dashoffset="-290" stroke-opacity=".3"/>
-                  <circle cx="50" cy="50" r="37.8" pathLength="360" stroke-dasharray="36 324" stroke-dashoffset="-324" stroke-opacity=".6"/>
-                  <circle cx="50" cy="50" r="37.8" pathLength="360" stroke-dasharray="10 350" stroke-dashoffset="-350" stroke="#fff" stroke-opacity=".95"/>
-                </g>
-                <g class="tb-hot">
-                  <path class="tb-t-minor" d="M53.42 17.48L53.73 14.50M56.80 18.01L57.42 15.08M60.10 18.90L61.03 16.05M63.30 20.13L64.52 17.39M69.22 23.55L70.98 21.12M71.88 25.70L73.89 23.47M74.30 28.12L76.53 26.11M76.45 30.78L78.88 29.02M79.87 36.70L82.61 35.48M81.10 39.90L83.95 38.97M81.99 43.20L84.92 42.58M82.52 46.58L85.50 46.27M82.52 53.42L85.50 53.73M81.99 56.80L84.92 57.42M81.10 60.10L83.95 61.03M79.87 63.30L82.61 64.52M76.45 69.22L78.88 70.98M74.30 71.88L76.53 73.89M71.88 74.30L73.89 76.53M69.22 76.45L70.98 78.88M63.30 79.87L64.52 82.61M60.10 81.10L61.03 83.95M56.80 81.99L57.42 84.92M53.42 82.52L53.73 85.50M46.58 82.52L46.27 85.50M43.20 81.99L42.58 84.92M39.90 81.10L38.97 83.95M36.70 79.87L35.48 82.61M30.78 76.45L29.02 78.88M28.12 74.30L26.11 76.53M25.70 71.88L23.47 73.89M23.55 69.22L21.12 70.98M20.13 63.30L17.39 64.52M18.90 60.10L16.05 61.03M18.01 56.80L15.08 57.42M17.48 53.42L14.50 53.73M17.48 46.58L14.50 46.27M18.01 43.20L15.08 42.58M18.90 39.90L16.05 38.97M20.13 36.70L17.39 35.48M23.55 30.78L21.12 29.02M25.70 28.12L23.47 26.11M28.12 25.70L26.11 23.47M30.78 23.55L29.02 21.12M36.70 20.13L35.48 17.39M39.90 18.90L38.97 16.05M43.20 18.01L42.58 15.08M46.58 17.48L46.27 14.50"/>
-                  <path class="tb-t-major" d="M50.00 18.00L50.00 13.80M66.00 22.29L68.10 18.65M77.71 34.00L81.35 31.90M82.00 50.00L86.20 50.00M77.71 66.00L81.35 68.10M66.00 77.71L68.10 81.35M50.00 82.00L50.00 86.20M34.00 77.71L31.90 81.35M22.29 66.00L18.65 68.10M18.00 50.00L13.80 50.00M22.29 34.00L18.65 31.90M34.00 22.29L31.90 18.65"/>
-                </g>
-              </svg>
-              <div class="tb-ball">
-                <div class="tb-cast"></div>
-                <div class="tb-orb">
-                  <div class="tb-liquid"></div>
-                  <div class="tb-shade"></div>
-                  <div class="tb-rim"></div>
-                  <div class="tb-spec"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <p class="tb-hint" aria-hidden="true">Move the pointer, scroll, or press a corner.</p>
-        </div>
+        <p class="trust"><span>Free and open source (MIT)</span><span>macOS 26 Tahoe or later</span><span>Apple silicon &amp; Intel</span><span data-downloads hidden><b data-downloads-n></b> downloads</span></p>
       </div>
 
+      <!-- The hero object: a big trackball you can play with, labelled like an exploded diagram. -->
+      <div class="hx" data-hx>
+        <div class="aurora" aria-hidden="true">
+          <span class="au au-base"></span>
+          <span class="au au-ball"></span>
+          <span class="au au-ring"></span>
+          <span class="au au-btn"></span>
+        </div>
+        <div class="hx-rings" aria-hidden="true"></div>
+        <svg class="hx-lines" viewBox="0 0 1180 640" aria-hidden="true" focusable="false">
+          <g class="hx-line hx-line-tl" data-line="tl"><path d="M222 92H318L378 122"/><circle cx="378" cy="122" r="3"/></g>
+          <g class="hx-line hx-line-bl" data-line="bl"><path d="M222 548H318L378 518"/><circle cx="378" cy="518" r="3"/></g>
+          <g class="hx-line hx-line-tr" data-line="tr"><path d="M958 92H862L802 122"/><circle cx="802" cy="122" r="3"/></g>
+          <g class="hx-line hx-line-br" data-line="br"><path d="M958 548H862L802 518"/><circle cx="802" cy="518" r="3"/></g>
+          <g class="hx-line hx-line-ball" data-line="ball"><path d="M222 320H446"/><circle cx="446" cy="320" r="3"/></g>
+          <g class="hx-line hx-line-ring" data-line="ring"><path d="M958 320H818"/><circle cx="818" cy="320" r="3"/></g>
+        </svg>
+
+        <div class="tb" data-tb>
+          <div class="tb-stage" data-tb-stage>
+            <div class="tb-body"></div>
+            <svg class="tb-pads" viewBox="0 0 100 100" focusable="false" aria-hidden="true">
+              <defs>
+                <linearGradient id="tb-pf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset="1" stop-color="#fff" stop-opacity=".055"/></linearGradient>
+                <linearGradient id="tb-ps" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".2"/><stop offset="1" stop-color="#fff" stop-opacity=".04"/></linearGradient>
+                <linearGradient id="tb-pa" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd27e"/><stop offset="1" stop-color="#ffaa2e"/></linearGradient>
+                <filter id="tb-pb" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.6"/></filter>
+                <mask id="tb-hole-tl" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100"><rect width="100" height="100" fill="#fff"/><circle cx="50" cy="50" r="42.7" fill="#000"/></mask><mask id="tb-hole-tr" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100"><rect width="100" height="100" fill="#fff"/><circle cx="50" cy="50" r="42.7" fill="#000"/></mask><mask id="tb-hole-bl" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100"><rect width="100" height="100" fill="#fff"/><circle cx="50" cy="50" r="42.7" fill="#000"/></mask><mask id="tb-hole-br" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100"><rect width="100" height="100" fill="#fff"/><circle cx="50" cy="50" r="42.7" fill="#000"/></mask>
+              </defs>
+              <g class="tb-pad" data-pad-art="tl"><path class="tb-pad-glow" d="M21.8 3.8H43.6A4.5 4.5 0 0 1 48.1 8.3V43.6A4.5 4.5 0 0 1 43.6 48.1H8.3A4.5 4.5 0 0 1 3.8 43.6V21.8A18 18 0 0 1 21.8 3.8Z" filter="url(#tb-pb)"/><g mask="url(#tb-hole-tl)"><path class="tb-pad-base" d="M21.8 3.8H43.6A4.5 4.5 0 0 1 48.1 8.3V43.6A4.5 4.5 0 0 1 43.6 48.1H8.3A4.5 4.5 0 0 1 3.8 43.6V21.8A18 18 0 0 1 21.8 3.8Z"/><path class="tb-pad-on" d="M21.8 3.8H43.6A4.5 4.5 0 0 1 48.1 8.3V43.6A4.5 4.5 0 0 1 43.6 48.1H8.3A4.5 4.5 0 0 1 3.8 43.6V21.8A18 18 0 0 1 21.8 3.8Z"/></g></g>
+              <g class="tb-pad" data-pad-art="tr"><path class="tb-pad-glow" d="M56.4 3.8H78.2A18 18 0 0 1 96.2 21.8V43.6A4.5 4.5 0 0 1 91.7 48.1H56.4A4.5 4.5 0 0 1 51.9 43.6V8.3A4.5 4.5 0 0 1 56.4 3.8Z" filter="url(#tb-pb)"/><g mask="url(#tb-hole-tr)"><path class="tb-pad-base" d="M56.4 3.8H78.2A18 18 0 0 1 96.2 21.8V43.6A4.5 4.5 0 0 1 91.7 48.1H56.4A4.5 4.5 0 0 1 51.9 43.6V8.3A4.5 4.5 0 0 1 56.4 3.8Z"/><path class="tb-pad-on" d="M56.4 3.8H78.2A18 18 0 0 1 96.2 21.8V43.6A4.5 4.5 0 0 1 91.7 48.1H56.4A4.5 4.5 0 0 1 51.9 43.6V8.3A4.5 4.5 0 0 1 56.4 3.8Z"/></g></g>
+              <g class="tb-pad" data-pad-art="bl"><path class="tb-pad-glow" d="M8.3 51.9H43.6A4.5 4.5 0 0 1 48.1 56.4V91.7A4.5 4.5 0 0 1 43.6 96.2H21.8A18 18 0 0 1 3.8 78.2V56.4A4.5 4.5 0 0 1 8.3 51.9Z" filter="url(#tb-pb)"/><g mask="url(#tb-hole-bl)"><path class="tb-pad-base" d="M8.3 51.9H43.6A4.5 4.5 0 0 1 48.1 56.4V91.7A4.5 4.5 0 0 1 43.6 96.2H21.8A18 18 0 0 1 3.8 78.2V56.4A4.5 4.5 0 0 1 8.3 51.9Z"/><path class="tb-pad-on" d="M8.3 51.9H43.6A4.5 4.5 0 0 1 48.1 56.4V91.7A4.5 4.5 0 0 1 43.6 96.2H21.8A18 18 0 0 1 3.8 78.2V56.4A4.5 4.5 0 0 1 8.3 51.9Z"/></g></g>
+              <g class="tb-pad" data-pad-art="br"><path class="tb-pad-glow" d="M56.4 51.9H91.7A4.5 4.5 0 0 1 96.2 56.4V78.2A18 18 0 0 1 78.2 96.2H56.4A4.5 4.5 0 0 1 51.9 91.7V56.4A4.5 4.5 0 0 1 56.4 51.9Z" filter="url(#tb-pb)"/><g mask="url(#tb-hole-br)"><path class="tb-pad-base" d="M56.4 51.9H91.7A4.5 4.5 0 0 1 96.2 56.4V78.2A18 18 0 0 1 78.2 96.2H56.4A4.5 4.5 0 0 1 51.9 91.7V56.4A4.5 4.5 0 0 1 56.4 51.9Z"/><path class="tb-pad-on" d="M56.4 51.9H91.7A4.5 4.5 0 0 1 96.2 56.4V78.2A18 18 0 0 1 78.2 96.2H56.4A4.5 4.5 0 0 1 51.9 91.7V56.4A4.5 4.5 0 0 1 56.4 51.9Z"/></g></g>
+            </svg>
+            <div class="tb-well"></div>
+            <svg class="tb-edge" viewBox="0 0 100 100" focusable="false" aria-hidden="true">
+              <defs>
+                <linearGradient id="tb-rg" x1=".35" y1="0" x2=".65" y2="1">
+                  <stop offset="0" stop-color="#5cadff"/>
+                  <stop offset=".5" stop-color="#6b73ff"/>
+                  <stop offset="1" stop-color="#9455f8"/>
+                </linearGradient>
+                <linearGradient id="tb-rc" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+                <filter id="tb-rb" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2.4"/></filter>
+              </defs>
+              <circle cx="50" cy="50" r="37.8" fill="none" stroke="url(#tb-rg)" stroke-width="3.8" opacity=".42" filter="url(#tb-rb)"/>
+              <circle cx="50" cy="50" r="31.1" fill="none" stroke="#fff" stroke-opacity=".06" stroke-width=".3"/>
+              <circle cx="50" cy="50" r="37.8" fill="none" stroke="url(#tb-rg)" stroke-width=".85"/>
+              <path d="M13.03 42.14A37.8 37.8 0 0 1 46.05 12.41" fill="none" stroke="url(#tb-rc)" stroke-width=".6" stroke-linecap="round"/>
+            </svg>
+            <div class="tb-glow"></div>
+            <svg class="tb-ticks" viewBox="0 0 100 100" focusable="false" aria-hidden="true">
+              <defs>
+                <path id="tb-minor" d="M53.42 17.48L53.73 14.50M56.80 18.01L57.42 15.08M60.10 18.90L61.03 16.05M63.30 20.13L64.52 17.39M69.22 23.55L70.98 21.12M71.88 25.70L73.89 23.47M74.30 28.12L76.53 26.11M76.45 30.78L78.88 29.02M79.87 36.70L82.61 35.48M81.10 39.90L83.95 38.97M81.99 43.20L84.92 42.58M82.52 46.58L85.50 46.27M82.52 53.42L85.50 53.73M81.99 56.80L84.92 57.42M81.10 60.10L83.95 61.03M79.87 63.30L82.61 64.52M76.45 69.22L78.88 70.98M74.30 71.88L76.53 73.89M71.88 74.30L73.89 76.53M69.22 76.45L70.98 78.88M63.30 79.87L64.52 82.61M60.10 81.10L61.03 83.95M56.80 81.99L57.42 84.92M53.42 82.52L53.73 85.50M46.58 82.52L46.27 85.50M43.20 81.99L42.58 84.92M39.90 81.10L38.97 83.95M36.70 79.87L35.48 82.61M30.78 76.45L29.02 78.88M28.12 74.30L26.11 76.53M25.70 71.88L23.47 73.89M23.55 69.22L21.12 70.98M20.13 63.30L17.39 64.52M18.90 60.10L16.05 61.03M18.01 56.80L15.08 57.42M17.48 53.42L14.50 53.73M17.48 46.58L14.50 46.27M18.01 43.20L15.08 42.58M18.90 39.90L16.05 38.97M20.13 36.70L17.39 35.48M23.55 30.78L21.12 29.02M25.70 28.12L23.47 26.11M28.12 25.70L26.11 23.47M30.78 23.55L29.02 21.12M36.70 20.13L35.48 17.39M39.90 18.90L38.97 16.05M43.20 18.01L42.58 15.08M46.58 17.48L46.27 14.50"/>
+                <path id="tb-major" d="M50.00 18.00L50.00 13.80M66.00 22.29L68.10 18.65M77.71 34.00L81.35 31.90M82.00 50.00L86.20 50.00M77.71 66.00L81.35 68.10M66.00 77.71L68.10 81.35M50.00 82.00L50.00 86.20M34.00 77.71L31.90 81.35M22.29 66.00L18.65 68.10M18.00 50.00L13.80 50.00M22.29 34.00L18.65 31.90M34.00 22.29L31.90 18.65"/>
+              </defs>
+              <use class="tb-t tb-t-minor" href="#tb-minor"/>
+              <use class="tb-t tb-t-major" href="#tb-major"/>
+              <g class="tb-sweep">
+                <circle cx="50" cy="50" r="37.8" pathLength="360" stroke-dasharray="70 290" stroke-dashoffset="-290" stroke-opacity=".3"/>
+                <circle cx="50" cy="50" r="37.8" pathLength="360" stroke-dasharray="36 324" stroke-dashoffset="-324" stroke-opacity=".6"/>
+                <circle cx="50" cy="50" r="37.8" pathLength="360" stroke-dasharray="10 350" stroke-dashoffset="-350" stroke="#fff" stroke-opacity=".95"/>
+              </g>
+              <g class="tb-hot">
+                <use class="tb-t-minor" href="#tb-minor"/>
+                <use class="tb-t-major" href="#tb-major"/>
+              </g>
+            </svg>
+            <div class="tb-ball">
+              <div class="tb-cast"></div>
+              <div class="tb-orb">
+                <div class="tb-liquid" data-tb-liquid></div>
+                <div class="tb-tint"></div>
+                <div class="tb-shade"></div>
+                <div class="tb-rim"></div>
+                <div class="tb-spec"></div>
+              </div>
+            </div>
+
+            <!-- What you can grab: the ring, the ball, and four buttons. -->
+            <div class="tb-ringhit" data-tb-ring role="button" tabindex="0" aria-label="Scroll ring. Drag around it and let go, or press the up and down arrow keys, to scroll the page."></div>
+            <div class="tb-ballhit" data-tb-ball role="button" tabindex="0" aria-label="The ball. Drag it and let go, or press the arrow keys, to roll it."></div>
+            <button class="tb-key tb-key-tl" type="button" data-pad="tl"><span class="sr-only">Top left button: <span data-pad-name="tl">Mission Control</span></span></button>
+            <button class="tb-key tb-key-tr" type="button" data-pad="tr"><span class="sr-only">Top right button: <span data-pad-name="tr">Next Space</span></span></button>
+            <button class="tb-key tb-key-bl" type="button" data-pad="bl"><span class="sr-only">Bottom left button: Left click</span></button>
+            <button class="tb-key tb-key-br" type="button" data-pad="br"><span class="sr-only">Bottom right button: <span data-pad-name="br">Right click</span></span></button>
+          </div>
+        </div>
+
+        <!-- Callouts -->
+        <p class="hx-chip hx-chip-l hx-c-tl" data-chip="tl"><span class="kc kc-tl" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="hx-chip-t"><b data-pad-name="tl">Mission Control</b><small>Top left</small></span></p>
+        <p class="hx-chip hx-chip-l hx-c-ball" data-chip="ball"><span class="hx-glyph hx-glyph-ball" aria-hidden="true"></span><span class="hx-chip-t"><b>Drag the ball</b><small>It rolls and coasts</small></span></p>
+        <p class="hx-chip hx-chip-l hx-c-bl" data-chip="bl"><span class="kc kc-bl" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="hx-chip-t"><b>Left click</b><small>Bottom left, always</small></span></p>
+        <p class="hx-chip hx-chip-r hx-c-tr" data-chip="tr"><span class="kc kc-tr" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="hx-chip-t"><b data-pad-name="tr">Next Space</b><small>Top right</small></span></p>
+        <p class="hx-chip hx-chip-r hx-c-ring" data-chip="ring"><span class="hx-glyph hx-glyph-ring" aria-hidden="true"></span><span class="hx-chip-t"><b>Flick the ring</b><small>It scrolls this page</small></span></p>
+        <p class="hx-chip hx-chip-r hx-c-br" data-chip="br"><span class="kc kc-br" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="hx-chip-t"><b data-pad-name="br">Right click</b><small>Bottom right</small></span></p>
+
+        <p class="tb-now" data-tb-now aria-hidden="true"><span class="tb-now-dot" aria-hidden="true"></span><span data-tb-now-text>Drag the ball, flick the ring, or press a corner.</span></p>
+        <p class="sr-only" aria-live="polite" data-tb-live></p>
+      </div>
+
+      <!-- Honest numbers -->
       <div class="wrap">
-        <ul class="facts" aria-label="Highlights">
-          <li><strong>No driver to install</strong><span>macOS still moves the cursor; Glideball just adjusts it.</span></li>
-          <li><strong>Only your trackball</strong><span>Your trackpad and other mice keep their settings.</span></li>
-          <li><strong>One shortcut to pause</strong><span>⌃⌥⌘G pauses it from anywhere.</span></li>
-          <li><strong>No tracking in the app</strong><span>No account, and crash reports only if you say yes.</span></li>
+        <p class="lede hero-intro">Glideball is a free Mac app for Kensington trackballs. It lets the pointer go faster than macOS allows, makes the scroll ring scroll smoothly, and lets you choose what each button does. There's no driver to install and no account to make.</p>
+        <ul class="stats" aria-label="Glideball in numbers">
+          <li class="stat card lit reveal">
+            <span class="stat-n" data-odo>0</span>
+            <span class="stat-l">drivers to install</span>
+            <span class="stat-s">macOS still moves the cursor; Glideball just adjusts it.</span>
+          </li>
+          <li class="stat card lit reveal">
+            <span class="stat-n" data-odo>$0</span>
+            <span class="stat-l">free and open source (MIT)</span>
+            <span class="stat-s">No account to make.</span>
+          </li>
+          <li class="stat card lit reveal">
+            <span class="stat-n" data-odo>1</span>
+            <span class="stat-l">shortcut to pause it</span>
+            <span class="stat-s"><span class="keys" aria-hidden="true"><kbd>⌃</kbd><kbd>⌥</kbd><kbd>⌘</kbd><kbd>G</kbd></span><span class="sr-only">Control Option Command G</span> pauses it from anywhere.</span>
+          </li>
+          <li class="stat card lit reveal">
+            <span class="stat-n" data-odo>9</span>
+            <span class="stat-l">languages</span>
+            <span class="stat-s">It follows your Mac's language.</span>
+          </li>
         </ul>
+        <p class="fine hero-fine">Apple hasn't notarized Glideball, so you'll approve it once in System Settings. <a href="#install">Here's how</a>. It's built on the wired Kensington Expert Mouse, and other Kensington trackballs work if you turn on <a href="/trackballs/">Other Kensington trackballs</a> in Settings.</p>
       </div>
     </section>
 
     <!-- Feel it -->
-    <section class="section" id="demo" aria-labelledby="demo-h">
+    <section class="section feel" id="demo" aria-labelledby="demo-h" data-mc="Feel it" data-part="ring">
       <div class="wrap">
-        <header class="sec-head">
+        <header class="sec-head center reveal">
+          <p class="eyebrow eyebrow-ring"><span class="eyebrow-tick" aria-hidden="true"></span>Try it here</p>
           <h2 id="demo-h">Feel the difference before you&nbsp;download.</h2>
           <p>Scroll the list with a mouse wheel or trackpad, or drag and flick it, then flip the switch to compare. It's easiest to feel with a real scroll wheel.</p>
         </header>
 
-        <div class="demo" data-demo>
+        <div class="demo card lit reveal" data-demo>
           <div class="fw-viewport" tabindex="0" role="group" aria-label="Demo list" aria-describedby="fw-help" data-fw-viewport>
             <ol class="fw-track" aria-hidden="true" data-fw-track></ol>
             <div class="fw-scrollbar" aria-hidden="true"><div class="fw-thumb" data-fw-thumb></div></div>
@@ -418,14 +454,14 @@
 
           <div class="demo-side">
             <div class="demo-controls">
-              <fieldset class="seg">
+              <fieldset class="seg seg-ring">
                 <legend class="sr-only">Scrolling style</legend>
                 <input type="radio" name="fw-mode" id="fw-plain" value="plain">
                 <label for="fw-plain">Plain wheel</label>
                 <input type="radio" name="fw-mode" id="fw-fly" value="flywheel" checked>
                 <label for="fw-fly">Flywheel</label>
               </fieldset>
-              <button class="btn btn-secondary btn-sm" type="button" data-fw-spin>
+              <button class="btn btn-glass btn-sm needs-js" type="button" data-fw-spin>
                 <svg class="icon" aria-hidden="true"><use href="#i-sync"/></svg>
                 <span>Simulate a spin</span>
               </button>
@@ -463,11 +499,12 @@
 
     <!-- The three parts -->
     <div id="features" class="parts">
-      <section class="section part part-ball" id="pointer" aria-labelledby="pointer-h">
+      <!-- Ball -->
+      <section class="section part part-ball" id="pointer" aria-labelledby="pointer-h" data-mc="Ball" data-part="ball">
         <div class="wrap part-grid">
-          <div class="part-copy">
-            <p class="part-tag"><span class="dot dot-ball" aria-hidden="true"></span>Ball</p>
-            <h2 id="pointer-h">A faster trackball pointer than macOS&nbsp;allows.</h2>
+          <div class="part-copy reveal">
+            <p class="eyebrow eyebrow-ball"><span class="eyebrow-tick" aria-hidden="true"></span>Ball</p>
+            <h2 id="pointer-h">A faster trackball pointer <span class="lit-ball">than macOS&nbsp;allows.</span></h2>
             <p class="body">The tracking speed slider in System Settings stops at 3. Glideball goes way past that, so one flick of the ball gets you across a big display, and slow rolls are still precise.</p>
             <ul class="points">
               <li><strong>Only your trackball.</strong> Your trackpad and other mice keep their own settings.</li>
@@ -475,20 +512,72 @@
               <li><strong>Presets or fine control.</strong> Pick Precise, macOS, Fast or Turbo, or set it anywhere in between.</li>
             </ul>
           </div>
-          <figure class="shot">
-            <picture>
-              <source type="image/webp" srcset="assets/screens/pointer-960.webp?v=332b54a0 960w, assets/screens/pointer-1600.webp?v=332b54a0 1600w" sizes="(min-width: 1000px) 640px, 92vw">
-              <img src="assets/screens/pointer-1200.png?v=332b54a0" width="1960" height="1360" loading="lazy" decoding="async" alt="Glideball's Pointer tab: the Tracking speed slider at 5.5, which is 1.8 times System Settings' fastest speed, presets for Precise, macOS, Fast and Turbo, and the response curve above the dashed no-acceleration line.">
-            </picture>
+
+          <figure class="win win-ball reveal" data-tilt>
+            <div class="win-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+            <div class="win-body">
+              <div class="win-side" aria-hidden="true">
+                <img src="/assets/icon-256.webp?v=3" width="72" height="72" alt="" loading="lazy" decoding="async">
+                <p class="win-dev">Kensington Expert Mouse</p>
+                <ul><li>Overview</li><li class="on">Pointer</li><li>Scrolling</li><li>Buttons</li><li>Apps</li><li>Sync</li></ul>
+              </div>
+              <div class="win-main">
+                <p class="win-title">Pointer</p>
+                <p class="win-sub">How fast the cursor moves when you roll the ball.</p>
+                <div class="win-group">
+                  <div class="win-row win-slider">
+                    <label for="pt-speed">Tracking speed</label>
+                    <output class="win-val" for="pt-speed" data-pt-val>7.5</output>
+                    <input type="range" id="pt-speed" min="0.5" max="80" step="0.5" value="7.5" data-pt-speed aria-describedby="pt-hint">
+                    <p class="win-hint" id="pt-hint" data-pt-hint>2.5× System Settings’ fastest speed.</p>
+                  </div>
+                </div>
+                <div class="win-presets" role="group" aria-label="Presets" data-pt-presets>
+                  <button type="button" data-pt-preset="1.5" aria-pressed="false">Precise</button>
+                  <button type="button" data-pt-preset="3" aria-pressed="false">macOS</button>
+                  <button type="button" data-pt-preset="5" aria-pressed="false">Fast</button>
+                  <button type="button" data-pt-preset="7.5" aria-pressed="true">Turbo</button>
+                </div>
+                <svg class="win-curve" viewBox="0 0 300 110" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                  <path class="curve-grid" d="M0 27.5H300M0 55H300M0 82.5H300M100 0V110M200 0V110"/>
+                  <path class="curve-flat" d="M0 108L300 96"/>
+                  <path class="curve-fill" data-pt-fill d="M0.0 108.0L10.0 107.0L20.0 105.7L30.0 104.1L40.0 102.2L50.0 100.1L60.0 97.7L70.0 95.0L80.0 92.1L90.0 88.8L100.0 85.3L110.0 81.6L120.0 77.5L130.0 73.2L140.0 68.6L150.0 63.8L160.0 58.6L170.0 53.2L180.0 47.5L190.0 41.6L200.0 35.3L210.0 28.8L220.0 22.1L230.0 15.0L240.0 7.7L250.0 2.0L260.0 2.0L270.0 2.0L280.0 2.0L290.0 2.0L300.0 2.0L300 110L0 110Z"/>
+                  <path class="curve-line" data-pt-line d="M0.0 108.0L10.0 107.0L20.0 105.7L30.0 104.1L40.0 102.2L50.0 100.1L60.0 97.7L70.0 95.0L80.0 92.1L90.0 88.8L100.0 85.3L110.0 81.6L120.0 77.5L130.0 73.2L140.0 68.6L150.0 63.8L160.0 58.6L170.0 53.2L180.0 47.5L190.0 41.6L200.0 35.3L210.0 28.8L220.0 22.1L230.0 15.0L240.0 7.7L250.0 2.0L260.0 2.0L270.0 2.0L280.0 2.0L290.0 2.0L300.0 2.0"/>
+                </svg>
+              </div>
+            </div>
+            <figcaption class="sr-only">A working copy of Glideball's Pointer tab: the Tracking speed slider, its hint, the four presets and the response curve.</figcaption>
           </figure>
+        </div>
+
+        <!-- Toy: the same flick, two speeds, three displays -->
+        <div class="wrap">
+          <div class="toy toy-ball card lit reveal" data-flick>
+            <div class="toy-head">
+              <p class="toy-title"><span class="dot dot-ball" aria-hidden="true"></span>One flick, three displays</p>
+              <button class="btn btn-ball btn-sm needs-js" type="button" data-flick-go>Flick the ball</button>
+            </div>
+            <div class="lanes">
+              <div class="lane" data-lane="mac">
+                <p class="lane-l">System Settings’ fastest</p>
+                <div class="screens" aria-hidden="true"><span></span><span></span><span></span><i class="cursor" data-cursor></i></div>
+              </div>
+              <div class="lane lane-gb" data-lane="gb">
+                <p class="lane-l">Glideball at <b data-flick-name>Fast</b></p>
+                <div class="screens" aria-hidden="true"><span></span><span></span><span></span><i class="cursor" data-cursor></i></div>
+              </div>
+            </div>
+            <p class="toy-note" data-flick-note aria-live="polite">Same flick of the ball. Change the speed above and flick again.</p>
+          </div>
         </div>
       </section>
 
-      <section class="section part part-ring" id="scroll" aria-labelledby="scroll-h">
-        <div class="wrap part-grid">
-          <div class="part-copy">
-            <p class="part-tag"><span class="dot dot-ring" aria-hidden="true"></span>Ring</p>
-            <h2 id="scroll-h">Make the Kensington scroll ring feel the way you&nbsp;want.</h2>
+      <!-- Ring -->
+      <section class="section part part-ring" id="scroll" aria-labelledby="scroll-h" data-mc="Ring" data-part="ring">
+        <div class="wrap part-grid part-grid-flip">
+          <div class="part-copy reveal">
+            <p class="eyebrow eyebrow-ring"><span class="eyebrow-tick" aria-hidden="true"></span>Ring</p>
+            <h2 id="scroll-h">Make the Kensington scroll ring <span class="lit-ring">feel the way you&nbsp;want.</span></h2>
             <p class="body">There are three scroll modes, and you can switch between them any time. They only change your trackball, not your trackpad or other mice.</p>
             <ul class="points">
               <li><strong>Native.</strong> macOS scrolls the ring the way it always has, and you can turn the wheel speed up for the trackball alone.</li>
@@ -496,20 +585,46 @@
               <li><strong>Follow.</strong> The page follows the ring notch for notch and stops when you stop. If you want, a real flick can still coast.</li>
             </ul>
           </div>
-          <figure class="shot">
-            <picture>
-              <source type="image/webp" srcset="assets/screens/scrolling-960.webp?v=ffa172b5 960w, assets/screens/scrolling-1600.webp?v=ffa172b5 1600w" sizes="(min-width: 1000px) 640px, 92vw">
-              <img src="assets/screens/scrolling-1200.png?v=ffa172b5" width="1960" height="1360" loading="lazy" decoding="async" alt="Glideball's Scrolling tab with Flywheel chosen next to Native and Follow, and the Flywheel sliders: slow-turn distance, spin power, fast-spin reach and glide.">
-            </picture>
+
+          <figure class="win win-ring reveal" data-tilt>
+            <div class="win-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+            <div class="win-body">
+              <div class="win-side" aria-hidden="true">
+                <img src="/assets/icon-256.webp?v=3" width="72" height="72" alt="" loading="lazy" decoding="async">
+                <p class="win-dev">Kensington Expert Mouse</p>
+                <ul><li>Overview</li><li>Pointer</li><li class="on">Scrolling</li><li>Buttons</li><li>Apps</li><li>Sync</li></ul>
+              </div>
+              <div class="win-main">
+                <p class="win-title">Scrolling</p>
+                <p class="win-sub">How the page moves when you turn the scroll ring.</p>
+                <p class="win-label" id="rm-l">Scroll mode</p>
+                <div class="win-modes" role="radiogroup" aria-labelledby="rm-l" data-rm>
+                  <button type="button" role="radio" aria-checked="false" data-rm-mode="native">Native</button>
+                  <button type="button" role="radio" aria-checked="true" data-rm-mode="flywheel">Flywheel</button>
+                  <button type="button" role="radio" aria-checked="false" data-rm-mode="follow">Follow</button>
+                </div>
+                <p class="win-hint" data-rm-hint>Every tick pushes the page and friction slows it down: gentle turns barely coast, hard spins fly.</p>
+                <div class="rt" data-rt>
+                  <div class="rt-page" aria-hidden="true"><ol class="rt-track" data-rt-track></ol></div>
+                  <div class="rt-knob" data-rt-knob role="button" tabindex="0" aria-label="A scroll ring. Drag around it, or press the up and down arrow keys, to scroll the list.">
+                    <svg viewBox="0 0 100 100" aria-hidden="true" focusable="false"><defs><radialGradient id="rt-orb" cx=".36" cy=".3" r=".8"><stop offset="0" stop-color="#d4f6ff"/><stop offset=".22" stop-color="#55d4ff"/><stop offset=".6" stop-color="#5a6cff"/><stop offset="1" stop-color="#b048d8"/></radialGradient></defs><circle class="rt-ring" cx="50" cy="50" r="38"/><use class="rt-ticks" href="#tb-major" data-rt-ticks/><circle class="rt-ball" cx="50" cy="50" r="24"/></svg>
+                  </div>
+                </div>
+                <svg class="rt-trace" viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path class="rt-trace-ticks" data-rt-ticksline d="M0 60"/><path class="rt-trace-line" data-rt-line d="M0 60"/></svg>
+                <div class="rt-foot needs-js"><button class="btn btn-ring btn-sm" type="button" data-rt-spin>Spin it</button><span class="rt-legend"><i class="rt-k-ring"></i>The page <i class="rt-k-tick"></i>Ring notches</span></div>
+              </div>
+            </div>
+            <figcaption class="sr-only">A working copy of Glideball's Scrolling tab: pick Native, Flywheel or Follow, then turn the small ring to see how the same spin moves the list.</figcaption>
           </figure>
         </div>
       </section>
 
-      <section class="section part part-buttons" id="buttons" aria-labelledby="buttons-h">
+      <!-- Buttons -->
+      <section class="section part part-buttons" id="buttons" aria-labelledby="buttons-h" data-mc="Buttons" data-part="buttons">
         <div class="wrap part-grid">
-          <div class="part-copy">
-            <p class="part-tag"><span class="dot dot-buttons" aria-hidden="true"></span>Buttons</p>
-            <h2 id="buttons-h">Remap the buttons, or press two at once for something&nbsp;else.</h2>
+          <div class="part-copy reveal">
+            <p class="eyebrow eyebrow-buttons"><span class="eyebrow-tick" aria-hidden="true"></span>Buttons</p>
+            <h2 id="buttons-h">Remap the buttons, or press two at once <span class="lit-buttons">for something&nbsp;else.</span></h2>
             <p class="body">Each button can be a click, a keyboard shortcut, Mission Control, a Space switch and more. Press two or three together and that combo gets its own action too. Setting one up takes two presses.</p>
             <ul class="points">
               <li><strong>Quick assign.</strong> Press a trackball button, then the shortcut you want it to send. That's it.</li>
@@ -517,68 +632,154 @@
               <li><strong>Your main click stays put.</strong> The bottom-left button is always a left click, so you can't lock yourself out.</li>
             </ul>
           </div>
-          <figure class="shot">
-            <picture>
-              <source type="image/webp" srcset="assets/screens/buttons-960.webp?v=7f77309e 960w, assets/screens/buttons-1600.webp?v=7f77309e 1600w" sizes="(min-width: 1000px) 640px, 92vw">
-              <img src="assets/screens/buttons-1200.png?v=7f77309e" width="1960" height="1360" loading="lazy" decoding="async" alt="Glideball's Buttons tab: Quick assign, what each of the four buttons does (the bottom-left one stays a left click), and the button combos.">
-            </picture>
+
+          <figure class="win win-buttons reveal" data-tilt>
+            <div class="win-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+            <div class="win-body">
+              <div class="win-side" aria-hidden="true">
+                <img src="/assets/icon-256.webp?v=3" width="72" height="72" alt="" loading="lazy" decoding="async">
+                <p class="win-dev">Kensington Expert Mouse</p>
+                <ul><li>Overview</li><li>Pointer</li><li>Scrolling</li><li class="on">Buttons</li><li>Apps</li><li>Sync</li></ul>
+              </div>
+              <div class="win-main">
+                <p class="win-title">Buttons</p>
+                <p class="win-sub">What each button does, and combos you press together.</p>
+                <p class="win-label">Your buttons</p>
+                <div class="win-group win-keys" data-keys>
+                  <div class="win-key" data-key-row="bl">
+                    <button class="kc-btn" type="button" data-press="bl"><span class="kc kc-bl" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="sr-only">Press bottom left</span></button>
+                    <p class="win-key-t"><b>Bottom left</b><small>Stays a left click, so you can't lock yourself out.</small></p>
+                    <span class="win-fixed">Left click <svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg></span>
+                  </div>
+                  <div class="win-key" data-key-row="br">
+                    <button class="kc-btn" type="button" data-press="br"><span class="kc kc-br" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="sr-only">Press bottom right</span></button>
+                    <p class="win-key-t"><b>Bottom right</b><small>Normally: Right click</small></p>
+                    <select class="win-select" aria-label="Bottom right does" data-assign="br"></select>
+                  </div>
+                  <div class="win-key" data-key-row="tl">
+                    <button class="kc-btn" type="button" data-press="tl"><span class="kc kc-tl" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="sr-only">Press top left</span></button>
+                    <p class="win-key-t"><b>Top left</b><small>Normally: Middle click</small></p>
+                    <select class="win-select" aria-label="Top left does" data-assign="tl"></select>
+                  </div>
+                  <div class="win-key" data-key-row="tr">
+                    <button class="kc-btn" type="button" data-press="tr"><span class="kc kc-tr" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="sr-only">Press top right</span></button>
+                    <p class="win-key-t"><b>Top right</b><small>Normally: Back</small></p>
+                    <select class="win-select" aria-label="Top right does" data-assign="tr"></select>
+                  </div>
+                </div>
+                <p class="win-label">Combos</p>
+                <div class="win-group win-combos">
+                  <div class="win-combo" data-combo-row="br+tr"><span class="pill-k">Bottom right</span><span class="plus" aria-hidden="true">+</span><span class="pill-k">Top right</span><span class="win-combo-a">Mission Control</span></div>
+                  <div class="win-combo" data-combo-row="tl+tr"><span class="pill-k">Top left</span><span class="plus" aria-hidden="true">+</span><span class="pill-k">Top right</span><span class="win-combo-a">Spotlight</span></div>
+                </div>
+              </div>
+            </div>
+            <figcaption class="sr-only">A working copy of Glideball's Buttons tab. Pick what each button does, then press its square to try it here on the page. The big trackball at the top of the page uses the same setup.</figcaption>
           </figure>
         </div>
       </section>
     </div>
 
     <!-- Live overview and earned rewards -->
-    <section class="section live" aria-labelledby="dash-h">
+    <section class="section live" aria-labelledby="dash-h" data-mc="Your trackball" data-part="ball">
       <div class="wrap">
-        <header class="sec-head">
+        <header class="sec-head center reveal">
+          <p class="eyebrow"><span class="eyebrow-tick" aria-hidden="true"></span>Overview</p>
           <h2 id="dash-h">See what your trackball is doing, live.</h2>
           <p>The Overview tab graphs ball speed and scroll-ring activity as they happen, lights up each button as you press it, and keeps a tally of your day: clicks, distance rolled, distance scrolled.</p>
         </header>
-        <figure class="shot shot-wide">
-          <picture>
-            <source type="image/webp" srcset="assets/screens/overview-960.webp?v=365ab2ce 960w, assets/screens/overview-1600.webp?v=365ab2ce 1600w" sizes="(min-width: 1120px) 1040px, 92vw">
-            <img src="assets/screens/overview-1200.png?v=365ab2ce" width="1960" height="1360" loading="lazy" decoding="async" alt="Glideball's Overview tab, with the live trackball in the sidebar: today's clicks, distance rolled and distance scrolled, and the Live activity graph of ball speed and scroll ring.">
-          </picture>
+        <figure class="win win-live reveal" data-tilt data-live>
+          <div class="win-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+          <div class="win-body">
+            <div class="win-side" aria-hidden="true">
+              <img src="/assets/icon-256.webp?v=3" width="72" height="72" alt="" loading="lazy" decoding="async">
+              <p class="win-dev">Kensington Expert Mouse</p>
+              <ul><li class="on">Overview</li><li>Pointer</li><li>Scrolling</li><li>Buttons</li><li>Apps</li><li>Sync</li></ul>
+            </div>
+            <div class="win-main">
+              <p class="win-title">Overview</p>
+              <p class="win-sub">How your trackball’s doing today, and everything it’s done so far.</p>
+              <div class="lv">
+                <div class="lv-dial" aria-hidden="true">
+                  <span class="lv-glow lv-glow-ball"></span>
+                  <span class="lv-glow lv-glow-ring"></span>
+                  <span class="lv-glow lv-glow-amber"></span>
+                  <svg viewBox="0 0 240 240" focusable="false">
+                    <g class="lv-g lv-g-buttons" data-lv-gauge="clicks">
+                      <circle class="lv-track" cx="120" cy="120" r="113" pathLength="100"/>
+                      <circle class="lv-arc" cx="120" cy="120" r="113" pathLength="100" data-lv-arc/>
+                      <circle class="lv-best" cx="120" cy="120" r="113" pathLength="100"/>
+                    </g>
+                    <g class="lv-g lv-g-ball" data-lv-gauge="ball">
+                      <circle class="lv-track" cx="120" cy="120" r="101" pathLength="100"/>
+                      <circle class="lv-arc" cx="120" cy="120" r="101" pathLength="100" data-lv-arc/>
+                      <circle class="lv-best" cx="120" cy="120" r="101" pathLength="100"/>
+                    </g>
+                    <g class="lv-g lv-g-ring" data-lv-gauge="scrolled">
+                      <circle class="lv-track" cx="120" cy="120" r="89" pathLength="100"/>
+                      <circle class="lv-arc" cx="120" cy="120" r="89" pathLength="100" data-lv-arc/>
+                      <circle class="lv-best" cx="120" cy="120" r="89" pathLength="100"/>
+                    </g>
+                    <circle class="lv-well" cx="120" cy="120" r="78"/>
+                    <circle class="lv-ringline" cx="120" cy="120" r="69"/>
+                    <g class="lv-ticks" transform="translate(30 30) scale(1.8)"><g data-lv-ticks><use href="#tb-minor"/><use href="#tb-major"/></g></g>
+                  </svg>
+                  <span class="lv-ball"><span class="lv-spec"></span></span>
+                </div>
+                <dl class="lv-stats">
+                  <div class="lv-stat lv-s-buttons"><dt><span class="dot dot-buttons" aria-hidden="true"></span>Clicks today</dt><dd><output data-lv-out="clicks">2,140</output></dd><dd class="lv-bestline">Best <span data-lv-bestout="clicks">3,780</span><b class="lv-new" data-lv-new="clicks">New best</b></dd></div>
+                  <div class="lv-stat lv-s-ball"><dt><span class="dot dot-ball" aria-hidden="true"></span>Ball rolled</dt><dd><output data-lv-out="ball">41.0</output> <small>m</small></dd><dd class="lv-bestline">Best <span data-lv-bestout="ball">66.7</span> m<b class="lv-new" data-lv-new="ball">New best</b></dd></div>
+                  <div class="lv-stat lv-s-ring"><dt><span class="dot dot-ring" aria-hidden="true"></span>Scrolled</dt><dd><output data-lv-out="scrolled">63.0</output> <small>m</small></dd><dd class="lv-bestline">Best <span data-lv-bestout="scrolled">118</span> m<b class="lv-new" data-lv-new="scrolled">New best</b></dd></div>
+                </dl>
+              </div>
+              <div class="lv-head">
+                <p class="win-label">Live activity</p>
+                <p class="lv-legend"><span class="dot dot-ball" aria-hidden="true"></span>Ball speed <b data-lv-bs>0.0 in/s</b><span class="dot dot-ring" aria-hidden="true"></span>Scroll ring <b data-lv-rs>0 notches/s</b></p>
+              </div>
+              <div class="lv-chart"><canvas data-lv-chart aria-hidden="true"></canvas></div>
+              <p class="win-hint">This starts from an example day. Move the pointer, scroll and click anywhere on this page to add to it.</p>
+            </div>
+          </div>
+          <figcaption class="sr-only">A working copy of Glideball's Overview tab: three gauges around the trackball for clicks, distance rolled and distance scrolled today, each filling toward your best, and a live chart of ball speed and scroll-ring activity. It starts from an example day and counts your pointer, scrolling and clicks on this page.</figcaption>
         </figure>
-        <div class="earned">
-          <p>It also keeps your records and lifetime totals, and gives you a badge when you pass a real milestone, like these. Make it yours ticks off each thing you set up, and none of it nags.</p>
-          <ul class="badges">
-            <li><span class="dot dot-ring" aria-hidden="true"></span><strong>Eiffel Tower</strong><span>Scrolled the height of the Eiffel Tower (330 m)</span></li>
-            <li><span class="dot dot-ball" aria-hidden="true"></span><strong>One lap</strong><span>Rolled one lap of a running track (400 m)</span></li>
-            <li><span class="dot dot-buttons" aria-hidden="true"></span><strong>A thousand clicks</strong><span>1,000 clicks</span></li>
-          </ul>
-        </div>
+        <p class="earned-intro reveal">It also keeps your records and lifetime totals, and gives you a badge when you pass a real milestone, like these. Make it yours ticks off each thing you set up, and none of it nags.</p>
+        <ul class="badges">
+          <li class="badge badge-ring card lit reveal"><span class="badge-art" aria-hidden="true"><span class="badge-glyph"></span></span><strong>Eiffel Tower</strong><span>Scrolled the height of the Eiffel Tower (330 m)</span></li>
+          <li class="badge badge-ball card lit reveal"><span class="badge-art" aria-hidden="true"><span class="badge-glyph"></span></span><strong>One lap</strong><span>Rolled one lap of a running track (400 m)</span></li>
+          <li class="badge badge-buttons card lit reveal"><span class="badge-art" aria-hidden="true"><span class="badge-glyph"></span></span><strong>A thousand clicks</strong><span>1,000 clicks</span></li>
+          <li class="badge badge-yours card lit reveal"><span class="badge-art" aria-hidden="true"><svg viewBox="0 0 48 48" focusable="false"><circle class="ring-bg" cx="24" cy="24" r="19"/><circle class="ring-fill" cx="24" cy="24" r="19" pathLength="100"/></svg><b>3/5</b></span><strong>Make it yours</strong><span>Set your pointer speed, pick how scrolling feels, map a button…</span></li>
+        </ul>
       </div>
     </section>
 
     <!-- Modes & apps -->
-    <section class="section" id="modes" aria-labelledby="modes-h">
+    <section class="section" id="modes" aria-labelledby="modes-h" data-mc="Modes and apps">
       <div class="wrap">
-        <header class="sec-head">
+        <header class="sec-head reveal">
           <h2 id="modes-h">A different setup for every&nbsp;app.</h2>
           <p>Pick an app and give it its own pointer speed, scrolling, buttons and combos. Glideball switches when that app comes to the front, and switches back when you leave it.</p>
         </header>
         <div class="trio">
-          <article>
+          <article class="card lit reveal">
             <h3>Precision</h3>
             <p>Slows the pointer down for fine work. Hold a button for it, or press once to turn it on and again to turn it off.</p>
           </article>
-          <article>
+          <article class="card lit reveal">
             <h3>Scroll with ball</h3>
             <p>Roll the ball to scroll in any direction, sideways too. The pointer stays where it is.</p>
           </article>
-          <article>
+          <article class="card lit reveal">
             <h3>Drag lock</h3>
             <p>Holds the click down for you, so you can drag without keeping a finger on the button. Click again to let go.</p>
           </article>
         </div>
-        <p class="trio-note">You can put each of these on a button or a keyboard shortcut.</p>
+        <p class="trio-note reveal">You can put each of these on a button or a keyboard shortcut.</p>
       </div>
     </section>
 
     <!-- Sync -->
     <section class="section section-tight" aria-labelledby="sync-h">
-      <div class="wrap split">
+      <div class="wrap split reveal">
         <h2 id="sync-h">The same setup on every Mac you use.</h2>
         <div class="split-body">
           <p>Turn on sync and your other Macs get the same setup through your own iCloud Drive, with no account to make. You can also export your settings to a file and import them on another Mac.</p>
@@ -588,34 +789,34 @@
     </section>
 
     <!-- Safety -->
-    <section class="section" aria-labelledby="safety-h">
+    <section class="section" aria-labelledby="safety-h" data-mc="Safety">
       <div class="wrap">
-        <header class="sec-head">
+        <header class="sec-head reveal">
           <h2 id="safety-h">Is Glideball safe to use?</h2>
           <p>I built it so a bad setting can't leave you stuck, and so your trackball goes back to normal whenever Glideball isn't running.</p>
         </header>
-        <div class="group safety">
-          <article>
+        <div class="safety">
+          <article class="card lit reveal">
             <h3>Instant pause <span class="keys" aria-hidden="true"><kbd>⌃</kbd><kbd>⌥</kbd><kbd>⌘</kbd><kbd>G</kbd></span></h3>
             <p>Press <span class="sr-only">Control Option Command G</span><span aria-hidden="true">⌃⌥⌘G</span> from anywhere and Glideball steps aside. Press it again to turn it back on.</p>
           </article>
-          <article>
+          <article class="card lit reveal">
             <h3>Fails safe</h3>
             <p>If you pause or quit Glideball, or it doesn't have permission, your buttons and scrolling work the way macOS normally does.</p>
           </article>
-          <article>
+          <article class="card lit reveal">
             <h3>No driver</h3>
             <p>It's a regular app, not a driver or system extension. macOS keeps control of the trackball the whole time.</p>
           </article>
-          <article>
+          <article class="card lit reveal">
             <h3>Open source</h3>
             <p>MIT licensed. You can read every line on <a href="https://github.com/leviholliday/glideball">GitHub</a>.</p>
           </article>
-          <article>
+          <article class="card lit reveal">
             <h3>Private</h3>
             <p>The app has no tracking. It sends crash reports or stats only if you say yes, and otherwise only goes online to check GitHub for updates, to sync through your own iCloud Drive if you turn that on, and to send feedback when you press Send.</p>
           </article>
-          <article>
+          <article class="card lit reveal">
             <h3>Checked updates</h3>
             <p>Updates install in one click. Glideball won't install a download that isn't signed with the same certificate as the app you already have.</p>
           </article>
@@ -624,9 +825,9 @@
     </section>
 
     <!-- Install -->
-    <section class="section" id="install" aria-labelledby="install-h">
+    <section class="section" id="install" aria-labelledby="install-h" data-mc="Install">
       <div class="wrap">
-        <header class="sec-head">
+        <header class="sec-head reveal">
           <h2 id="install-h">How to install&nbsp;Glideball</h2>
           <p>Glideball isn't on the App Store, so the first launch takes one extra step. Here's exactly what you'll see.</p>
         </header>
@@ -668,21 +869,21 @@
         </ol>
         <!-- /install-steps -->
 
-        <div class="previews" id="linux-windows">
+        <div class="previews reveal" id="linux-windows">
           <div class="previews-head">
             <h3>Linux and Windows <span class="tag">Preview</span></h3>
             <p>These are early versions with the same scroll feel, buttons, combos and settings files as the Mac app. I haven't tested them on a real trackball yet, so expect rough edges, and please <a href="/feedback/">tell me</a> how they go.</p>
           </div>
-          <div class="group previews-list">
-            <div>
+          <div class="previews-list">
+            <div class="card">
               <h4>Linux</h4>
               <p>Ubuntu 24.04+, Fedora 39+ or similar. Unpack it and run <code>./install.sh</code>. It asks for your password once so Glideball can read the trackball. With the <code>.deb</code>, run <code>systemctl --user enable --now glideball</code>.</p>
-              <p class="previews-links"><a class="btn btn-secondary btn-sm" href="/download/linux">Download for Linux</a> <a href="/download/linux-deb">.deb</a></p>
+              <p class="previews-links"><a class="btn btn-glass btn-sm" href="/download/linux">Download for Linux</a> <a href="/download/linux-deb">.deb</a></p>
             </div>
-            <div>
+            <div class="card">
               <h4>Windows</h4>
               <p>Windows 10 or 11. Windows may show a SmartScreen warning because the app isn't signed. Choose <b>More info › Run anyway</b>.</p>
-              <p class="previews-links"><a class="btn btn-secondary btn-sm" href="/download/windows">Download for Windows</a> <a href="/download/windows-arm">ARM</a></p>
+              <p class="previews-links"><a class="btn btn-glass btn-sm" href="/download/windows">Download for Windows</a> <a href="/download/windows-arm">ARM</a></p>
             </div>
           </div>
         </div>
@@ -690,21 +891,23 @@
     </section>
 
     <!-- Who makes it -->
-    <section class="section" id="about" aria-labelledby="about-h">
-      <div class="wrap narrow about">
-        <h2 id="about-h">Who makes Glideball?</h2>
-        <p>I'm Levi. I'm a student, and I make Glideball on my own, alongside a few other projects.</p>
-        <p>I started it after I got a new Kensington trackball. I installed Kensington's app and driver and started trying things out, but it didn't do most of what I wanted, and I had a hard time finding my way around it. So I started building my own. If you're curious how the two compare, there's a <a href="/kensingtonworks-alternative/">side-by-side comparison</a>.</p>
-        <p>If something breaks or doesn't feel right, or you have an idea, <a href="/feedback/">let me know</a>.</p>
-        <p class="support">Glideball is free whether or not you give anything. If you'd like to help me out, you can <a href="https://venmo.com/code?user_id=3866596929963831322&amp;created=1793653243" rel="noopener">send a little through Venmo</a>. It's completely optional, and the app never asks.</p>
-        <p class="signature">Levi</p>
+    <section class="section" id="about" aria-labelledby="about-h" data-mc="Who makes it">
+      <div class="wrap">
+        <div class="note reveal">
+          <h2 id="about-h">Who makes Glideball?</h2>
+          <p>I'm Levi. I'm a student, and I make Glideball on my own, alongside a few other projects.</p>
+          <p>I started it after I got a new Kensington trackball. I installed Kensington's app and driver and started trying things out, but it didn't do most of what I wanted, and I had a hard time finding my way around it. So I started building my own. If you're curious how the two compare, there's a <a href="/kensingtonworks-alternative/">side-by-side comparison</a>.</p>
+          <p>If something breaks or doesn't feel right, or you have an idea, <a href="/feedback/">let me know</a>.</p>
+          <p class="signature">Levi</p>
+          <p class="support">Glideball is free whether or not you give anything. If you'd like to help me out, you can <a href="https://venmo.com/code?user_id=3866596929963831322&amp;created=1793653243" rel="noopener">send a little through Venmo</a>. It's completely optional, and the app never asks.</p>
+        </div>
       </div>
     </section>
 
     <!-- FAQ -->
-    <section class="section" id="faq" aria-labelledby="faq-h">
+    <section class="section" id="faq" aria-labelledby="faq-h" data-mc="Questions">
       <div class="wrap narrow">
-        <h2 id="faq-h">Questions about Glideball</h2>
+        <h2 id="faq-h" class="reveal">Questions about Glideball</h2>
         <div class="faq">
           <details>
             <summary>Is there a KensingtonWorks alternative for Mac?</summary>
@@ -764,10 +967,10 @@
 
     <!-- Closing -->
     <section class="section closing" aria-labelledby="final-h">
-      <div class="wrap closing-inner">
+      <div class="wrap closing-inner reveal">
         <picture>
           <source srcset="assets/icon-256.webp?v=3" type="image/webp">
-          <img src="assets/icon-256.png?v=3" width="88" height="88" alt="" loading="lazy">
+          <img src="assets/icon-256.png?v=3" width="120" height="120" alt="" loading="lazy">
         </picture>
         <h2 id="final-h">Give it a try.</h2>
         <p>Free for macOS&nbsp;26 Tahoe or later. Apple&nbsp;silicon&nbsp;&amp;&nbsp;Intel.</p>
@@ -776,7 +979,7 @@
             <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
             <span>Download for Mac</span>
           </a>
-          <a class="btn btn-secondary btn-lg" href="https://github.com/leviholliday/glideball">
+          <a class="btn btn-glass btn-lg" href="https://github.com/leviholliday/glideball">
             <svg class="icon" aria-hidden="true"><use href="#i-github"/></svg>
             <span>Open source on GitHub</span>
           </a>
@@ -784,6 +987,31 @@
       </div>
     </section>
   </main>
+
+  <!-- The ball follows you: a small trackball whose ring is how far down the page you are. -->
+  <a class="dock" href="#top" data-dock hidden>
+    <span class="sr-only">Back to top</span>
+    <svg class="dock-ring" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><circle class="dock-track" cx="24" cy="24" r="21"/><circle class="dock-prog" cx="24" cy="24" r="21" pathLength="100" data-dock-prog/></svg>
+    <span class="dock-ball" aria-hidden="true"></span>
+    <svg class="dock-up icon" aria-hidden="true"><use href="#i-up"/></svg>
+  </a>
+
+  <!-- On-page versions of what the buttons do. Filled in by home.js. -->
+  <div class="mc" data-mc-layer hidden>
+    <div class="mc-inner" role="dialog" aria-modal="true" aria-labelledby="mc-title">
+      <p class="mc-title" id="mc-title" data-mc-title>Mission Control</p>
+      <input class="mc-search" type="search" placeholder="Search this page" aria-label="Search this page" data-mc-search hidden>
+      <ul class="mc-grid" data-mc-grid></ul>
+      <p class="mc-hint">Pick a section, or press Esc.</p>
+    </div>
+  </div>
+  <div class="ctx" role="menu" aria-label="Right click" data-ctx hidden>
+    <a role="menuitem" href="/download/">Download for Mac</a>
+    <a role="menuitem" href="#install">How to install</a>
+    <a role="menuitem" href="#faq">Questions</a>
+    <hr>
+    <a role="menuitem" href="#top">Back to top</a>
+  </div>
 
   <!-- site-footer -->
   <footer class="footer">
