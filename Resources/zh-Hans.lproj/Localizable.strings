@@ -1465,7 +1465,6 @@
 "What each button does, and combos you press together." = "每个按钮的作用，以及同时按下的组合键。";
 "Different settings for the apps you choose." = "为你选择的 App 使用不同的设置。";
 "Keep your settings the same on all your Macs, and back them up." = "让所有 Mac 上的设置保持一致，并进行备份。";
-"%@ (⌘%lld)" = "%1$@（⌘%2$lld）";
 "Glideball is on" = "Glideball 已开启";
 "Resume" = "恢复";
 "Your trackball works like a plain mouse until you turn Glideball back on." = "在你重新开启 Glideball 之前，轨迹球会像普通鼠标一样工作。";
@@ -1701,11 +1700,9 @@
 "Your best day shows here after a few days" = "几天后，这里会显示你最好的一天";
 "Your best day yet" = "你迄今最好的一天";
 "against your best day" = "与你最好的一天相比";
-"Asks first: press ⌘Q again to quit." = "会先确认：再按一次 ⌘Q 即可退出。";
 "Change in Settings…" = "在设置中更改…";
 "Click the list, then spin the ring." = "先点按列表，再转动滚动环。";
 "Click to try it" = "点按以试用";
-"Don’t ask again" = "不再询问";
 "Glideball’s shortcuts, all in one place." = "Glideball 的所有快捷键都在这里。";
 "Keyboard Shortcuts" = "键盘快捷键";
 "Keyboard shortcuts (this list)" = "键盘快捷键（此列表）";
@@ -1713,10 +1710,8 @@
 "No shortcut" = "无快捷键";
 "Quit Glideball?" = "退出 Glideball？";
 "Quit" = "退出";
-"Stay" = "留下";
 "They work in every app, even with the window closed." = "在任何 App 中都能用，即使窗口已关闭。";
 "Your trackball goes back to plain macOS. Closing the window keeps Glideball running." = "你的轨迹球会恢复为 macOS 的默认行为。只关闭窗口的话，Glideball 会继续运行。";
-"⌘Q quits straight away. Turn asking back on in Settings › General." = "⌘Q 会直接退出。可以在“设置”›“通用”中重新打开确认。";
 
 /* Round 3: action picker, presets, ball colors, settings, badges and sharing */
 "%@ of %@" = "%@ / %@";
@@ -2037,3 +2032,23 @@
 "You’ll get a notification at 15% and again at 5%. It only works with wireless trackballs that report their battery, and I haven’t been able to test it on one yet." = "电量为 15% 时会通知，5% 时再通知一次。仅适用于会报告电量的无线轨迹球，而且我还没能在真机上测试过。";
 "Zoom and history" = "缩放和历史记录";
 "hold roll swipe direction" = "按住 滚动 滑动 方向";
+
+/* Fix round after 2.10 beta 10: quit card, sharing, shortcuts, sidebar */
+"%@ (⇧%lld or ⌘%lld)" = "%1$@（⇧%2$lld 或 ⌘%3$lld）";
+"%@. ⌘1–⌘%lld work too, even while you’re typing." = "%@。⌘1–⌘%lld 也可以用，打字时也行。";
+"Always quit" = "总是退出";
+"Asks first: Return or ⌘Q again quits." = "会先确认：按 Return 或再按一次 ⌘Q 退出。";
+"Copies the picture and opens %@ to paste it into a post" = "拷贝图片并打开 %@，粘贴到帖子里即可";
+"Couldn’t save it to Downloads. Try Save as PNG… instead." = "无法存储到“下载”。试试“存储为 PNG…”。";
+"Hide this. It won’t come back" = "隐藏。不会再出现";
+"I just earned “%@” in Glideball: %@. It’s a free Mac app for Kensington trackballs." = "我刚在 Glideball 获得了“%@”：%@。这是一款适用于 Kensington 轨迹球的免费 Mac App。";
+"I’m working toward “%@” in Glideball: %@. It’s a free Mac app for Kensington trackballs." = "我正在 Glideball 里冲刺“%@”：%@。这是一款适用于 Kensington 轨迹球的免费 Mac App。";
+"My trackball so far: %@ clicks, %@ rolled and %@ scrolled. Glideball counts it all; it’s a free Mac app for Kensington trackballs." = "我的轨迹球到目前为止：点按 %@ 次，滚球 %@，滚动 %@。Glideball 全都记着；这是一款适用于 Kensington 轨迹球的免费 Mac App。";
+"Or ⌘/ from the Help menu." = "或者从“帮助”菜单按 ⌘/。";
+"Pages" = "页面";
+"Picture copied. Paste it into the post." = "图片已拷贝。粘贴到帖子里即可。";
+"Post on" = "发布到";
+"Quits now and stops asking. Turn asking back on in Settings › General." = "立即退出，以后不再询问。可以在“设置”›“通用”中重新打开确认。";
+"Saved to Downloads. Instagram only takes uploads from its app or site." = "已存储到“下载”。Instagram 只接受从它的 App 或网站上传。";
+"Saves the picture to Downloads and opens Instagram" = "将图片存储到“下载”并打开 Instagram";
+"Working toward" = "下一个目标";

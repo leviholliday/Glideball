@@ -4,16 +4,25 @@ import UniformTypeIdentifiers
 
 // "Share…": a picture of how you're doing with Glideball (your numbers, or a
 // badge), with the trackball in your ball color and Glideball's name and
-// website small at the bottom. It's drawn on this Mac with the same offscreen
-// renderer `--render-ui` uses (Offscreen.swift), and only goes anywhere if you
-// share it, copy it or save it. Nothing is uploaded.
+// website small at the bottom. It's drawn on this Mac with SwiftUI's
+// ImageRenderer, and only goes anywhere if you share it, copy it or save it.
+// Nothing is uploaded: the X, LinkedIn, Facebook and Instagram buttons copy the
+// picture and open that site's own composer in the browser, where you paste it.
+//
+// 2.10 beta 10 crashed on a badge's Share…: the picture was drawn with the
+// offscreen-window renderer (Offscreen.swift), which turns the run loop while it
+// settles. Swapping the badge popover's content for the share panel makes AppKit
+// animate the popover's resize in a nested run loop of its own; our drawing ran
+// inside that one and closed a window whose display-cycle observer AppKit was
+// about to call (EXC_BAD_ACCESS at 0 in __CFRunLoopDoObservers). ImageRenderer
+// draws in one synchronous pass: no window, no run-loop turn.
 
 /// What a share picture shows.
 enum ShareCard: Equatable {
     /// Lifetime numbers.
     case overview
-    /// One badge, and when it was earned.
-    case badge(Milestone, Date)
+    /// One badge, and when it was earned (nil: not yet, it's the one you're working toward).
+    case badge(Milestone, Date?)
 
     /// Points; drawn at 2x (1200 × 750 pixels).
     static let size = CGSize(width: 600, height: 375)
@@ -73,6 +82,7 @@ struct ShareCardView: View {
             }
         }
         .frame(width: size.width, height: size.height)
+        .clipped()
         .foregroundStyle(.white)
         .environment(\.colorScheme, .dark)
     }
@@ -134,18 +144,24 @@ struct ShareCardView: View {
         return base + " · " + compare
     }
 
-    private func badge(_ m: Milestone, _ date: Date) -> some View {
+    private func badge(_ m: Milestone, _ date: Date?) -> some View {
         HStack(spacing: 34) {
             ZStack {
                 trackball.opacity(0.9)
-                BadgeTile(milestone: m, earned: true, size: 92)
+                BadgeTile(milestone: m, earned: date != nil, size: 92)
                     .shadow(color: .black.opacity(0.5), radius: 16, y: 8)
                     .offset(x: 62, y: 58)
             }
             VStack(alignment: .leading, spacing: 8) {
-                Text("Badge earned", comment: "Share picture heading for a badge")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(m.color.mix(with: .white, by: 0.3))
+                Group {
+                    if date != nil {
+                        Text("Badge earned", comment: "Share picture heading for a badge")
+                    } else {
+                        Text("Working toward", comment: "Share picture heading for a badge that isn't earned yet")
+                    }
+                }
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(m.color.mix(with: .white, by: 0.3))
                 Text(verbatim: m.title)
                     .font(.system(size: 34, weight: .bold, design: .rounded))
                     .lineLimit(2)
@@ -154,10 +170,12 @@ struct ShareCardView: View {
                     .font(.system(size: 14))
                     .foregroundStyle(.white.opacity(0.75))
                     .fixedSize(horizontal: false, vertical: true)
-                Text(verbatim: date.formatted(date: .long, time: .omitted))
-                    .font(.system(size: 11.5, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.5))
-                    .padding(.top, 2)
+                if let date {
+                    Text(verbatim: date.formatted(date: .long, time: .omitted))
+                        .font(.system(size: 11.5, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.5))
+                        .padding(.top, 2)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -170,9 +188,17 @@ struct ShareCardView: View {
 /// Draws a share picture to a bitmap, on this Mac.
 @MainActor
 enum ShareImage {
+    /// One synchronous SwiftUI pass (no window, no run-loop turn), so it's safe from
+    /// anywhere: inside a popover that's resizing, during an animation, at launch.
     static func render(_ card: ShareCard, delight: DelightCenter) -> NSBitmapImageRep? {
-        Offscreen.render(ShareCardView(card: card, delight: delight), size: NSSize(width: ShareCard.size.width, height: ShareCard.size.height),
-                         chrome: .plain, appearance: NSAppearance(named: .darkAqua), scale: 2, settle: 0.05)
+        let renderer = ImageRenderer(content: ShareCardView(card: card, delight: delight))
+        renderer.proposedSize = ProposedViewSize(ShareCard.size)
+        renderer.scale = 2
+        renderer.isOpaque = true
+        guard let cg = renderer.cgImage else { return nil }
+        let rep = NSBitmapImageRep(cgImage: cg)
+        rep.size = ShareCard.size
+        return rep
     }
 
     static func png(_ rep: NSBitmapImageRep) -> Data? { rep.representation(using: .png, properties: [:]) }
@@ -180,9 +206,124 @@ enum ShareImage {
     /// A copy in the temporary folder, for the share sheet (most services want a file).
     static func temporaryFile(_ rep: NSBitmapImageRep, name: String) -> URL? {
         guard let data = png(rep) else { return nil }
-        let safe = name.replacingOccurrences(of: "/", with: "-")
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent(safe).appendingPathExtension("png")
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(safeName(name)).appendingPathExtension("png")
         do { try data.write(to: url, options: .atomic); return url } catch { return nil }
+    }
+
+    static func safeName(_ name: String) -> String {
+        name.replacingOccurrences(of: "/", with: "-").replacingOccurrences(of: ":", with: "-")
+    }
+
+    /// Puts the picture on the clipboard (PNG, and TIFF for apps that only take that).
+    @discardableResult
+    static func copy(_ rep: NSBitmapImageRep) -> Bool {
+        guard let data = png(rep) else { return false }
+        let pb = NSPasteboard.general
+        pb.clearContents()
+        pb.setData(data, forType: .png)
+        if let tiff = rep.tiffRepresentation { pb.setData(tiff, forType: .tiff) }
+        return true
+    }
+
+    /// Saves the picture in `folder` (Downloads) under a name that isn't taken yet.
+    static func save(_ rep: NSBitmapImageRep, name: String, in folder: URL?) -> URL? {
+        guard let data = png(rep), let folder else { return nil }
+        var url = folder.appendingPathComponent(safeName(name)).appendingPathExtension("png")
+        var n = 2
+        while FileManager.default.fileExists(atPath: url.path) {
+            url = folder.appendingPathComponent("\(safeName(name)) \(n)").appendingPathExtension("png")
+            n += 1
+        }
+        do { try data.write(to: url, options: .withoutOverwriting); return url } catch { return nil }
+    }
+
+    static var downloads: URL? {
+        // `--self-test` and `--render-ui` never write outside their temp folder.
+        Sandbox.isActive ? Sandbox.folder : FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
+    }
+}
+
+/// The sites the share panel opens a post on. None of them takes a picture by
+/// link, so each button copies the picture first and opens the site's own
+/// composer in the browser, with words filled in where the site allows it.
+/// Glideball itself sends nothing anywhere.
+enum SocialSite: String, CaseIterable, Identifiable {
+    case x, linkedIn, facebook, instagram
+    var id: String { rawValue }
+
+    /// Brand names, never translated.
+    var name: String {
+        switch self {
+        case .x: "X"
+        case .linkedIn: "LinkedIn"
+        case .facebook: "Facebook"
+        case .instagram: "Instagram"
+        }
+    }
+
+    /// The page that opens in the browser, with `text` filled in where the site takes it.
+    func composer(text: String) -> URL {
+        var c: URLComponents
+        switch self {
+        case .x:
+            c = URLComponents(string: "https://x.com/intent/post")!
+            c.queryItems = [URLQueryItem(name: "text", value: text), URLQueryItem(name: "url", value: SiteLinks.base)]
+        case .linkedIn:
+            // LinkedIn's share link only takes a page, not words; its composer takes both.
+            c = URLComponents(string: "https://www.linkedin.com/feed/")!
+            c.queryItems = [URLQueryItem(name: "shareActive", value: "true"),
+                            URLQueryItem(name: "text", value: text + " " + SiteLinks.base)]
+        case .facebook:
+            // Facebook's sharer takes a link and no words.
+            c = URLComponents(string: "https://www.facebook.com/sharer/sharer.php")!
+            c.queryItems = [URLQueryItem(name: "u", value: SiteLinks.base)]
+        case .instagram:
+            // Instagram takes posts only from its own app and site, as uploads.
+            c = URLComponents(string: "https://www.instagram.com/")!
+        }
+        // A + in the words must stay a +, not become a space.
+        c.percentEncodedQuery = c.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
+        return c.url!
+    }
+}
+
+/// Everything Share… hands out for one picture: the PNG, a file for the share
+/// sheet, the words for a post and each site's composer. Built in one place so
+/// the self-test can check the whole set.
+@MainActor
+struct ShareItems {
+    let png: Data
+    let file: URL
+    let text: String
+    let composers: [SocialSite: URL]
+
+    init?(card: ShareCard, image: NSBitmapImageRep, delight: DelightCenter) {
+        guard let png = ShareImage.png(image), let file = ShareImage.temporaryFile(image, name: card.fileName) else { return nil }
+        self.png = png
+        self.file = file
+        text = Self.postText(card, delight: delight)
+        var c: [SocialSite: URL] = [:]
+        for site in SocialSite.allCases { c[site] = site.composer(text: text) }
+        composers = c
+    }
+
+    /// A short post made from the picture's own numbers.
+    static func postText(_ card: ShareCard, delight: DelightCenter) -> String {
+        switch card {
+        case .overview:
+            let t = delight.lifetime
+            let clicks = Metric.clicks.format(t.value(.clicks))
+            let ball = Metric.ball.format(t.value(.ball))
+            let scroll = Metric.scroll.format(t.value(.scroll))
+            return String(localized: "My trackball so far: \(clicks) clicks, \(ball) rolled and \(scroll) scrolled. Glideball counts it all; it’s a free Mac app for Kensington trackballs.",
+                          comment: "Post text for sharing your numbers; the first %@ is a number of clicks, the other two are distances")
+        case .badge(let m, .some):
+            return String(localized: "I just earned “\(m.title)” in Glideball: \(m.detail). It’s a free Mac app for Kensington trackballs.",
+                          comment: "Post text for sharing a badge; the first %@ is the badge's name, the second what earned it")
+        case .badge(let m, .none):
+            return String(localized: "I’m working toward “\(m.title)” in Glideball: \(m.detail). It’s a free Mac app for Kensington trackballs.",
+                          comment: "Post text for sharing a badge not earned yet; the first %@ is the badge's name, the second what earns it")
+        }
     }
 }
 
@@ -205,8 +346,9 @@ struct ShareButton: View {
     }
 }
 
-/// The picture, and what to do with it: Share… (the system share sheet),
-/// Copy, or Save as PNG.
+/// The picture, and what to do with it: Share… (the system share sheet), Copy,
+/// Save as PNG, or a post on X, LinkedIn, Facebook or Instagram. Its size never
+/// changes once it's open (a popover that resizes animates in a nested run loop).
 struct SharePanel: View {
     let card: ShareCard
     /// Back to whatever opened it (a badge's details), if anything.
@@ -215,8 +357,14 @@ struct SharePanel: View {
     @State private var done: String?
     @State private var anchor = AnchorHolder()
 
-    /// Renders: the picture, drawn beforehand (a render can't draw one inside another).
+    /// Renders: the picture, drawn beforehand.
     nonisolated(unsafe) static var sandboxImage: NSBitmapImageRep?
+    /// Renders: the note a site's button leaves, as if it had been clicked.
+    nonisolated(unsafe) static var sandboxDone: String?
+    /// The self-test: how many pictures panels have drawn.
+    nonisolated(unsafe) static var drawnCount = 0
+
+    static let width: CGFloat = 420
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -276,17 +424,41 @@ struct SharePanel: View {
             .disabled(image == nil)
             .controlSize(.regular)
 
-            if let done {
-                Label(done, systemImage: "checkmark.circle.fill")
+            HStack(spacing: 6) {
+                Text("Post on", comment: "Share panel: before the X, LinkedIn, Facebook and Instagram buttons")
                     .font(Theme.Font.hint)
-                    .foregroundStyle(Theme.ok)
-                    .transition(.opacity)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .fixedSize()
+                ForEach(SocialSite.allCases) { site in
+                    Button(site.name) { post(site) }
+                        .controlSize(.small)
+                        .help(site == .instagram
+                              ? String(localized: "Saves the picture to Downloads and opens Instagram")
+                              : String(localized: "Copies the picture and opens \(site.name) to paste it into a post",
+                                       comment: "Share panel button tooltip; %@ is X, LinkedIn or Facebook"))
+                }
+                Spacer(minLength: 0)
             }
+            .disabled(image == nil)
+
+            // Room for one line of news is always there, so the popover never resizes.
+            Group {
+                if let done {
+                    Label(done, systemImage: "checkmark.circle.fill")
+                        .font(Theme.Font.hint)
+                        .foregroundStyle(Theme.ok)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .transition(.opacity)
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 30, alignment: .topLeading)
         }
         .padding(18)
-        .frame(width: 420)
+        .frame(width: Self.width)
         .onAppear {
-            if let ready = Self.sandboxImage { image = ready } else { DispatchQueue.main.async { draw() } }
+            if let ready = Self.sandboxImage { image = ready; done = Self.sandboxDone } else { draw() }
         }
     }
 
@@ -295,21 +467,23 @@ struct SharePanel: View {
     private func draw() {
         guard image == nil else { return }
         image = ShareImage.render(card, delight: delight)
+        Self.drawnCount += 1
+    }
+
+    private func items() -> ShareItems? {
+        guard let image else { return nil }
+        return ShareItems(card: card, image: image, delight: delight)
     }
 
     private func share() {
-        guard let image, let url = ShareImage.temporaryFile(image, name: card.fileName), let view = anchor.view else { return }
-        let picker = NSSharingServicePicker(items: [url])
+        guard let items = items(), let view = anchor.view, view.window != nil else { return }
+        let picker = NSSharingServicePicker(items: [items.file])
         picker.show(relativeTo: view.bounds, of: view, preferredEdge: .minY)
     }
 
     private func copy() {
-        guard let image, let data = ShareImage.png(image) else { return }
-        let pb = NSPasteboard.general
-        pb.clearContents()
-        pb.setData(data, forType: .png)
-        if let tiff = image.tiffRepresentation { pb.setData(tiff, forType: .tiff) }
-        withAnimation(Theme.Motion.fade) { done = String(localized: "Copied. Paste it anywhere.") }
+        guard let image, ShareImage.copy(image) else { return }
+        say(String(localized: "Copied. Paste it anywhere."))
     }
 
     private func save() {
@@ -320,10 +494,30 @@ struct SharePanel: View {
         guard panel.runModal() == .OK, let url = panel.url else { return }
         do {
             try data.write(to: url, options: .atomic)
-            withAnimation(Theme.Motion.fade) { done = String(localized: "Saved “\(url.deletingPathExtension().lastPathComponent)”") }
+            say(String(localized: "Saved “\(url.deletingPathExtension().lastPathComponent)”"))
         } catch {
-            withAnimation(Theme.Motion.fade) { done = String(localized: "Couldn’t save it: \(error.localizedDescription)") }
+            say(String(localized: "Couldn’t save it: \(error.localizedDescription)"))
         }
+    }
+
+    /// Copies the picture (and for Instagram saves it to Downloads), then opens the site's composer.
+    private func post(_ site: SocialSite) {
+        guard let image, let items = items() else { return }
+        ShareImage.copy(image)
+        if site == .instagram {
+            guard ShareImage.save(image, name: card.fileName, in: ShareImage.downloads) != nil else {
+                return say(String(localized: "Couldn’t save it to Downloads. Try Save as PNG… instead."))
+            }
+            say(String(localized: "Saved to Downloads. Instagram only takes uploads from its app or site."))
+        } else {
+            say(String(localized: "Picture copied. Paste it into the post."))
+        }
+        guard !Sandbox.isActive, let url = items.composers[site] else { return }
+        NSWorkspace.shared.open(url)
+    }
+
+    private func say(_ text: String) {
+        withAnimation(Theme.Motion.fade) { done = text }
     }
 }
 

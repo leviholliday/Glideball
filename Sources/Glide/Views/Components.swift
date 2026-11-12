@@ -214,6 +214,7 @@ private struct GroupBackground: ViewModifier {
     @Environment(\.displayScale) private var scale
 
     func body(content: Content) -> some View {
+        let _ = PerfProbe.count("Group")
         content
             .background { SurfaceShape(radius: radius, pixel: 1 / max(scale, 1)) }
             .modifier(Spotlight(radius: radius))
@@ -224,6 +225,10 @@ private struct GroupBackground: ViewModifier {
 /// A raised surface, lit from the top left (where the trackball is): a fill a
 /// shade brighter at the top, a 1 px edge brightest toward the light, an inner
 /// highlight along the top, and two soft layered shadows.
+///
+/// Drawn once into a single bitmap (with room around it for the shadows) and
+/// then only moved: scrolling a page full of these used to redo two blurred
+/// shadows, three gradients and two strokes per surface on every frame.
 struct SurfaceShape: View {
     var radius: CGFloat = Theme.Radius.group
     var pixel: CGFloat = 0.5
@@ -231,8 +236,17 @@ struct SurfaceShape: View {
     var raised = false
 
     var body: some View {
+        // Room for the shadows past the surface: the bigger one's radius plus its offset.
+        let room: CGFloat = raised ? 44 : 24
+        surface
+            .padding(room)
+            .drawingGroup()
+            .padding(-room)
+    }
+
+    private var surface: some View {
         let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
-        shape
+        return shape
             .fill(LinearGradient(colors: [Theme.surfaceTop, Theme.surfaceBottom], startPoint: .top, endPoint: .bottom))
             .shadow(color: Theme.surfaceShadow, radius: raised ? 3 : 1.5, x: 0, y: raised ? 2 : 1)
             .shadow(color: Theme.surfaceShadow.opacity(0.7), radius: raised ? 26 : 14, x: raised ? 4 : 2, y: raised ? 14 : 7)
@@ -256,11 +270,21 @@ struct SurfaceShape: View {
 /// A soft light that follows the pointer along a surface's edge (and a whisper
 /// across its face) while hovering. Driven by pointer moves only: it stops when
 /// the pointer does, and it's off with Reduce Motion or Increase Contrast.
+///
+/// Scrolling moves the page under a still pointer, which reads as hovering
+/// too. Those updates are ignored (the pointer itself didn't move), and the
+/// light goes out until the pointer moves again, so a scroll never redraws it.
 struct Spotlight: ViewModifier {
     var radius: CGFloat = Theme.Radius.group
     @State private var point: CGPoint?
+    /// Where the pointer was on screen at the last update (not drawn, so changing it redraws nothing).
+    @State private var last = PointerMemory()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorSchemeContrast) private var contrast
+
+    final class PointerMemory {
+        var screen: CGPoint?
+    }
 
     func body(content: Content) -> some View {
         content
@@ -282,8 +306,18 @@ struct Spotlight: ViewModifier {
             }
             .onContinuousHover(coordinateSpace: .local) { phase in
                 switch phase {
-                case .active(let p): point = p
-                case .ended: withAnimation(.easeOut(duration: 0.25)) { point = nil }
+                case .active(let p):
+                    let screen = NSEvent.mouseLocation
+                    defer { last.screen = screen }
+                    if let was = last.screen, abs(was.x - screen.x) < 0.01, abs(was.y - screen.y) < 0.01 {
+                        // The page moved, not the pointer: a scroll.
+                        if point != nil { point = nil }
+                        return
+                    }
+                    point = p
+                case .ended:
+                    last.screen = nil
+                    withAnimation(.easeOut(duration: 0.25)) { point = nil }
                 }
             }
     }
@@ -292,6 +326,12 @@ struct Spotlight: ViewModifier {
 /// Nudges a view (by less than a pixel) so its top-left corner sits on the pixel grid. Text above
 /// a group has fractional heights, so on a 1x screen a group can start half a pixel in; its edge
 /// and its hairlines would then straddle two pixels and draw faint. At 2x this does nothing much.
+///
+/// It measures against the page (`PixelGrid.page`, set on the scrolling page's
+/// content, which itself sits on whole pixels), not the window: in the window's
+/// coordinates every group moved on every frame of a scroll, and this ran for
+/// each of them each time. Outside a page (a sheet, Settings) the name isn't
+/// there and SwiftUI measures in the window, as before.
 private struct PixelAligned: ViewModifier {
     @Environment(\.displayScale) private var scale
     @State private var nudge = CGSize.zero
@@ -299,7 +339,7 @@ private struct PixelAligned: ViewModifier {
     func body(content: Content) -> some View {
         content
             .offset(nudge)
-            .onGeometryChange(for: CGPoint.self) { $0.frame(in: .global).origin } action: { origin in
+            .onGeometryChange(for: CGPoint.self) { $0.frame(in: .named(PixelGrid.page)).origin } action: { origin in
                 let s = max(scale, 1)
                 // `origin` already includes the current nudge.
                 let x = origin.x - nudge.width, y = origin.y - nudge.height
@@ -311,6 +351,11 @@ private struct PixelAligned: ViewModifier {
 
 extension View {
     func pixelAligned() -> some View { modifier(PixelAligned()) }
+}
+
+enum PixelGrid {
+    /// The coordinate space of a scrolling page's content.
+    static let page = "GlidePage"
 }
 
 // MARK: - Rows

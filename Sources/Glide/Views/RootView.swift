@@ -49,15 +49,20 @@ enum GlideTab: String, CaseIterable, Identifiable {
 /// content on the plain window background.
 struct RootView: View {
     @Bindable var model: AppModel
+    /// The real main window's (not a picture --render-ui or the self-test draws).
+    var primary = false
     @State private var tab: GlideTab = GlideTab(rawValue: UserDefaults.standard.string(forKey: "GlideInitialTab") ?? "") ?? .overview
+    /// A new one for every page change, so the page fading in is always a new view (see `select`).
+    @State private var pageID = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var shell = ShellState()
     private let launch = LaunchExperience.shared
 
     var body: some View {
+        let _ = PerfProbe.count("RootView")
         NavigationSplitView(columnVisibility: .constant(.all)) {
-            Sidebar(model: model, compact: shell.heroOnScreen && (tab == .overview || tab == .buttons),
-                    tab: Binding(get: { tab }, set: { if let t = $0 { select(t) } }))
+            // `tab` is the one source of truth; the rows select on the press itself.
+            Sidebar(model: model, tab: tab, select: select)
                 .navigationSplitViewColumnWidth(Theme.Space.sidebarWidth)
         } detail: {
             content
@@ -113,10 +118,19 @@ struct RootView: View {
         .sheet(isPresented: $model.showingShortcuts) {
             ShortcutsSheet(model: model)
         }
-        .onChange(of: model.requestedTab) { _, requested in
-            guard let requested else { return }
-            select(requested)
+        // Pages asked for come straight here (`AppModel.requestTab`). Only the main
+        // window's RootView takes them; the pictures --render-ui makes don't.
+        .onAppear {
+            guard primary else { return }
+            model.showTab = { select($0) }
+            if let wanted = model.requestedTab { model.requestedTab = nil; select(wanted) }
+        }
+        .onDisappear { if primary { model.showTab = nil } }
+        // One asked for while this wasn't there yet (the window built after a glideball:// link).
+        .onChange(of: model.requestedTab) { _, _ in
+            guard primary, let wanted = model.requestedTab else { return }
             model.requestedTab = nil
+            select(wanted)
         }
         // Drop a settings file anywhere on the window to preview it.
         .dropDestination(for: URL.self) { urls, _ in
@@ -139,12 +153,17 @@ struct RootView: View {
                     }
                     .frame(maxWidth: Theme.Space.contentMaxWidth, alignment: .leading)
                     .padding(.horizontal, Theme.Space.contentSide)
-                    .padding(.top, Theme.Space.contentTop)
+                    // Full screen has no toolbar above the page: the same room, made here.
+                    .padding(.top, Theme.Space.contentTop + (model.fullScreen ? Theme.Space.fullScreenTop : 0))
                     .padding(.bottom, 40)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    // Groups line themselves up on pixels relative to the page, which
+                    // scrolling doesn't change (the window's coordinates would, every frame).
+                    .coordinateSpace(.named(PixelGrid.page))
                 }
+                .onScrollPhaseChange { _, phase in model.pageScrolling = phase != .idle }
                 .scrollIndicators(.automatic)
-                .id(tab)
+                .id(pageID)
                 .transition(pageTransition)
             }
         }
@@ -179,9 +198,18 @@ struct RootView: View {
         return .asymmetric(insertion: .opacity.combined(with: .offset(y: Theme.Motion.tabRise)), removal: .opacity)
     }
 
+    /// Any number of times, in any order, mid-transition or not: the last one asked for wins.
+    ///
+    /// Every change is a new page identity (`pageID`, not the tab): going back to a
+    /// page that's still fading out (Overview, Pointer, Overview inside 0.18 s) makes
+    /// a fresh page instead of reviving the half-faded copy that's on its way out.
     private func select(_ new: GlideTab) {
         guard new != tab else { return }
-        withAnimation(reduceMotion ? Theme.Motion.fade : Theme.Motion.tabChange) { tab = new }
+        model.pageScrolling = false   // the new page starts still
+        withAnimation(reduceMotion ? Theme.Motion.fade : Theme.Motion.tabChange) {
+            tab = new
+            pageID &+= 1
+        }
     }
 }
 
@@ -190,7 +218,13 @@ struct TabPage: View {
     let tab: GlideTab
     let model: AppModel
 
+    /// The self-test: how many copies of each page are in the window right now
+    /// (more than one page only while one fades into another).
+    nonisolated(unsafe) static var onScreen: [GlideTab: Int] = [:]
+    static var showing: [GlideTab] { onScreen.filter { $0.value > 0 }.map(\.key) }
+
     var body: some View {
+        let _ = PerfProbe.count("TabPage")
         VStack(alignment: .leading, spacing: Theme.Space.section) {
             PageHeader(title: .verbatim(tab.title), subtitle: .verbatim(tab.summary))
             switch tab {
@@ -202,34 +236,97 @@ struct TabPage: View {
             case .backup: BackupView(model: model)
             }
         }
+        .onAppear { Self.onScreen[tab, default: 0] += 1 }
+        .onDisappear { Self.onScreen[tab, default: 0] -= 1 }
     }
 }
 
 // MARK: - Sidebar
 
+/// The trackball, the six pages and the footer, on the sidebar's glass.
+///
+/// The pages used to be a `List` (an NSTableView underneath) with a selection
+/// binding rebuilt on every redraw, so there were two selections, the table's and
+/// ours, and the sidebar is redrawn right as you click (the trackball picture above
+/// the rows lights the pad you press; Overview's trackball stepping down redraws it
+/// too). A redraw landing inside the table's own mouse tracking could put the old
+/// page back, and a click on a window that wasn't in front only brought it forward.
+/// These rows are plain views over the one `tab`: a press selects at once, every
+/// time, mid-transition or not, and the click that brings the window forward counts.
 private struct Sidebar: View {
     @Bindable var model: AppModel
-    /// Overview's big trackball is on screen: this one steps down to a small status light.
-    var compact = false
-    @Binding var tab: GlideTab?
+    let tab: GlideTab
+    let select: (GlideTab) -> Void
+    @Environment(ShellState.self) private var shell: ShellState?
 
     var body: some View {
-        List(selection: $tab) {
-            ForEach(GlideTab.allCases) { t in
-                Label(t.title, systemImage: t.symbol)
-                    .tag(t)
-                    .help(String(localized: "\(t.title) (⌘\(t.order + 1))", comment: "Sidebar tooltip: a tab's name and its shortcut"))
+        // Overview's big trackball is on screen: this one steps down to a small status light.
+        let compact = (shell?.heroOnScreen ?? false) && (tab == .overview || tab == .buttons)
+        VStack(spacing: 0) {
+            SidebarHero(model: model, compact: compact, fullScreen: model.fullScreen)
+                .padding(.bottom, 6)
+            VStack(spacing: 0) {
+                ForEach(GlideTab.allCases) { t in
+                    SidebarRow(tab: t, selected: t == tab) { select(t) }
+                }
             }
-        }
-        .listStyle(.sidebar)
-        .scrollDisabled(true)
-        .toolbar(removing: .sidebarToggle)
-        .safeAreaInset(edge: .top, spacing: 6) {
-            SidebarHero(model: model, compact: compact)
-        }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+            .padding(.horizontal, 10)
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("Pages")
+            Spacer(minLength: 0)
             SidebarFooter(model: model)
         }
+        .toolbar(removing: .sidebarToggle)
+    }
+}
+
+/// One page in the sidebar, drawn like the system's sidebar rows. Selects on
+/// the press (as Finder's sidebar does), so a trackball that drifts a little
+/// while clicking still lands, and it takes the click that brings the window forward.
+private struct SidebarRow: View {
+    let tab: GlideTab
+    let selected: Bool
+    let action: () -> Void
+    @State private var hovering = false
+    @State private var pressed = false
+    @Environment(\.appearsActive) private var appearsActive
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: tab.symbol)
+                .font(.system(size: 14))
+                .foregroundStyle(.primary.opacity(0.85))
+                .frame(width: 22)
+            Text(verbatim: tab.title)
+                .font(.system(size: 13))
+                .lineLimit(1)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 8)
+        .frame(height: 32)
+        .background {
+            let shape = RoundedRectangle(cornerRadius: 9, style: .continuous)
+            if selected {
+                shape.fill(Theme.sidebarSelection.opacity(appearsActive ? 1 : 0.7))
+            } else if hovering || pressed {
+                shape.fill(Theme.hoverFill)
+            }
+        }
+        .contentShape(Rectangle())
+        .gesture(DragGesture(minimumDistance: 0)
+            .onChanged { _ in
+                guard !pressed else { return }
+                pressed = true
+                action()
+            }
+            .onEnded { _ in pressed = false })
+        .allowsWindowActivationEvents(true)
+        .onHover { hovering = $0 }
+        .help(String(localized: "\(tab.title) (⇧\(tab.order + 1) or ⌘\(tab.order + 1))", comment: "Sidebar tooltip: a page's name and its two shortcuts"))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: tab.title))
+        .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
+        .accessibilityAction { action() }
     }
 }
 
@@ -237,9 +334,11 @@ private struct Sidebar: View {
 private struct SidebarHero: View {
     let model: AppModel
     var compact = false
+    var fullScreen = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
+        let _ = PerfProbe.count("SidebarHero")
         let status = SidebarStatus(model)
         VStack(spacing: 10) {
             TrackballView(feed: model.live, pressed: model.pressed, look: TrackballLook.of(model),
@@ -287,7 +386,8 @@ private struct SidebarHero: View {
         }
         .padding(.horizontal, 12)
         // Up into the empty title bar a little, closer under the traffic lights.
-        .padding(.top, -10)
+        // (Full screen has no title bar: room of its own instead.)
+        .padding(.top, fullScreen ? Theme.Space.fullScreenTop : -10)
     }
 }
 
@@ -427,7 +527,7 @@ private struct ActiveProfileBadge: View {
     var body: some View {
         Button {
             model.selectedProfileID = profile.id
-            model.requestedTab = .apps
+            model.requestTab(.apps)
         } label: {
             HStack(spacing: 6) {
                 AppIcon(bundleID: profile.bundleID, size: 16)

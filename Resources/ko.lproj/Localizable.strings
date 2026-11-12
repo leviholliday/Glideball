@@ -1465,7 +1465,6 @@
 "What each button does, and combos you press together." = "각 버튼이 하는 일과 함께 누르는 콤보예요.";
 "Different settings for the apps you choose." = "선택한 앱마다 다른 설정이에요.";
 "Keep your settings the same on all your Macs, and back them up." = "모든 Mac에서 설정을 똑같이 유지하고 백업해요.";
-"%@ (⌘%lld)" = "%1$@(⌘%2$lld)";
 "Glideball is on" = "Glideball 켜짐";
 "Resume" = "다시 시작";
 "Your trackball works like a plain mouse until you turn Glideball back on." = "Glideball을 다시 켤 때까지 트랙볼은 일반 마우스처럼 작동해요.";
@@ -1701,11 +1700,9 @@
 "Your best day shows here after a few days" = "며칠 지나면 여기에 최고의 날이 표시됩니다";
 "Your best day yet" = "지금까지 최고의 날";
 "against your best day" = "최고의 날과 비교";
-"Asks first: press ⌘Q again to quit." = "먼저 확인: 종료하려면 ⌘Q를 한 번 더 누르세요.";
 "Change in Settings…" = "설정에서 변경…";
 "Click the list, then spin the ring." = "목록을 클릭한 다음 링을 돌려 보세요.";
 "Click to try it" = "클릭해서 사용해 보기";
-"Don’t ask again" = "다시 묻지 않기";
 "Glideball’s shortcuts, all in one place." = "Glideball의 단축키를 한곳에서 볼 수 있습니다.";
 "Keyboard Shortcuts" = "키보드 단축키";
 "Keyboard shortcuts (this list)" = "키보드 단축키(이 목록)";
@@ -1713,10 +1710,8 @@
 "No shortcut" = "단축키 없음";
 "Quit Glideball?" = "Glideball을 종료할까요?";
 "Quit" = "종료";
-"Stay" = "계속 사용";
 "They work in every app, even with the window closed." = "창을 닫아도 모든 앱에서 작동합니다.";
 "Your trackball goes back to plain macOS. Closing the window keeps Glideball running." = "트랙볼이 기본 macOS 동작으로 돌아갑니다. 창만 닫으면 Glideball은 계속 실행됩니다.";
-"⌘Q quits straight away. Turn asking back on in Settings › General." = "⌘Q로 바로 종료합니다. 설정 › 일반에서 다시 확인하도록 켤 수 있습니다.";
 
 /* Round 3: action picker, presets, ball colors, settings, badges and sharing */
 "%@ of %@" = "%@ / %@";
@@ -2037,3 +2032,23 @@
 "You’ll get a notification at 15% and again at 5%. It only works with wireless trackballs that report their battery, and I haven’t been able to test it on one yet." = "15%일 때 알림을 보내고 5%일 때 한 번 더 보냅니다. 배터리 잔량을 알려 주는 무선 트랙볼에서만 작동하며, 아직 실제 기기에서 테스트해 보지 못했습니다.";
 "Zoom and history" = "확대/축소와 방문 기록";
 "hold roll swipe direction" = "누르기 굴리기 스와이프 방향";
+
+/* Fix round after 2.10 beta 10: quit card, sharing, shortcuts, sidebar */
+"%@ (⇧%lld or ⌘%lld)" = "%1$@ (⇧%2$lld 또는 ⌘%3$lld)";
+"%@. ⌘1–⌘%lld work too, even while you’re typing." = "%@. ⌘1–⌘%lld도 쓸 수 있어요. 입력 중에도 돼요.";
+"Always quit" = "항상 종료";
+"Asks first: Return or ⌘Q again quits." = "먼저 물어봐요: Return이나 ⌘Q를 한 번 더 누르면 종료해요.";
+"Copies the picture and opens %@ to paste it into a post" = "사진을 복사하고 %@을(를) 열어요. 게시물에 붙여넣으세요";
+"Couldn’t save it to Downloads. Try Save as PNG… instead." = "다운로드에 저장하지 못했어요. PNG로 저장…을 사용해 보세요.";
+"Hide this. It won’t come back" = "숨기기. 다시 나타나지 않아요";
+"I just earned “%@” in Glideball: %@. It’s a free Mac app for Kensington trackballs." = "Glideball에서 “%@” 배지를 받았어요: %@. Kensington 트랙볼용 무료 Mac 앱이에요.";
+"I’m working toward “%@” in Glideball: %@. It’s a free Mac app for Kensington trackballs." = "Glideball에서 “%@” 배지를 향해 가고 있어요: %@. Kensington 트랙볼용 무료 Mac 앱이에요.";
+"My trackball so far: %@ clicks, %@ rolled and %@ scrolled. Glideball counts it all; it’s a free Mac app for Kensington trackballs." = "지금까지 내 트랙볼: 클릭 %@번, 볼 %@, 스크롤 %@. Glideball이 다 세어 줘요. Kensington 트랙볼용 무료 Mac 앱이에요.";
+"Or ⌘/ from the Help menu." = "또는 도움말 메뉴에서 ⌘/.";
+"Pages" = "페이지";
+"Picture copied. Paste it into the post." = "사진을 복사했어요. 게시물에 붙여넣으세요.";
+"Post on" = "게시할 곳";
+"Quits now and stops asking. Turn asking back on in Settings › General." = "지금 종료하고 더 이상 묻지 않아요. 설정 › 일반에서 다시 확인하도록 켤 수 있어요.";
+"Saved to Downloads. Instagram only takes uploads from its app or site." = "다운로드에 저장했어요. Instagram은 앱이나 웹사이트에서 올린 것만 받아요.";
+"Saves the picture to Downloads and opens Instagram" = "사진을 다운로드에 저장하고 Instagram을 열어요";
+"Working toward" = "다음 목표";

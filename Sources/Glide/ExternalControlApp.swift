@@ -59,7 +59,7 @@ final class AppCommandTarget: CommandTarget {
     func openTab(_ tab: CommandWindowTab?) {
         delegate?.showWindow()
         guard let tab else { return }
-        model.requestedTab = switch tab {
+        let page: GlideTab = switch tab {
         case .overview: .overview
         case .pointer: .pointer
         case .scrolling: .scroll
@@ -67,6 +67,7 @@ final class AppCommandTarget: CommandTarget {
         case .apps: .apps
         case .sync: .backup
         }
+        model.requestTab(page)
     }
 
     func openSettings(_ tab: CommandSettingsTab?) {

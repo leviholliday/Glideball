@@ -188,11 +188,17 @@ private struct BadgeCell: View {
 struct BadgeDetail: View {
     let milestone: Milestone
     let delight: DelightCenter
-    @State private var sharing = false
+    @State private var sharing: Bool
+
+    init(milestone: Milestone, delight: DelightCenter, sharing: Bool = false) {
+        self.milestone = milestone
+        self.delight = delight
+        _sharing = State(initialValue: sharing)
+    }
 
     var body: some View {
         if sharing {
-            SharePanel(card: .badge(milestone, delight.ledger.earned[milestone.id] ?? Date()), back: { sharing = false })
+            SharePanel(card: .badge(milestone, delight.ledger.earned[milestone.id]), back: { sharing = false })
         } else {
             details
         }
@@ -245,7 +251,8 @@ struct BadgeDetail: View {
             }
             if earned != nil {
                 Button {
-                    withAnimation(Theme.Motion.fade) { sharing = true }
+                    // No animation: the popover resizes once, straight to the panel's size.
+                    sharing = true
                 } label: {
                     Label("Share…", systemImage: "square.and.arrow.up")
                 }

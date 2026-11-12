@@ -62,7 +62,21 @@ final class AppModel {
     // the UI should switch to (e.g. after double-clicking a settings file).
     var toast: Toast?
     var pendingImport: PendingImport?
+    /// A page asked for before the main window's content was there to show it.
+    /// Use `requestTab`, which goes straight to the window when it can.
     var requestedTab: GlideTab?
+    /// The main window's page switcher, while its content exists (set by its RootView).
+    @ObservationIgnored var showTab: ((GlideTab) -> Void)?
+
+    /// Shows a page in the main window: the sidebar's rows, ⇧1…⇧6, ⌘1…⌘6, the View
+    /// menu, glideball://open and the buttons that lead to a page all come here.
+    /// Straight to the window (a request left in an observed property for the window
+    /// to notice could be missed when a second one came quickly after it).
+    func requestTab(_ tab: GlideTab) {
+        if let showTab { showTab(tab) } else { requestedTab = tab }
+    }
+    /// The main window is full screen (no toolbar: the layout makes its own room at the top).
+    var fullScreen = false
     /// The Send Feedback sheet over the main window.
     var showingFeedback = false
     /// The About & Help sheet over the main window.
@@ -583,7 +597,7 @@ final class AppModel {
             }
             _ = try file.validatedConfig()
             pendingImport = PendingImport(fileName: url.deletingPathExtension().lastPathComponent, file: file)
-            requestedTab = .backup
+            requestTab(.backup)
         } catch {
             show(.init(symbol: "exclamationmark.triangle.fill",
                        text: String(localized: "That doesn’t look like a Glideball settings file."), isError: true))
@@ -688,7 +702,7 @@ final class AppModel {
         }
     }
 
-    /// ⌘Q asks first (`QuitConfirm`). Per-Mac; "Don't ask again" turns it off,
+    /// ⌘Q asks first (`QuitConfirm`). Per-Mac; the card's "Always quit" turns it off,
     /// Settings › General turns it back on.
     static let confirmQuitKey = "GlideConfirmQuit"
     var confirmQuit = UserDefaults.standard.object(forKey: AppModel.confirmQuitKey) as? Bool ?? true {
@@ -703,6 +717,9 @@ final class AppModel {
     private(set) var windowVisible = false
     @ObservationIgnored private var samplerInterval = 0.0
     @ObservationIgnored private var lastDelightTick = 0.0
+    /// The page is scrolling: today's numbers and the badges hold still (for up to a
+    /// couple of seconds) so the gauges, charts and badge grid aren't rebuilt mid-scroll.
+    @ObservationIgnored var pageScrolling = false
     @ObservationIgnored private var lastClickCount = Int.max
     @ObservationIgnored private var lastSave = 0.0
 
@@ -759,10 +776,12 @@ final class AppModel {
         if s.totals.clicks > lastClickCount { live.pulseClick() }
         lastClickCount = s.totals.clicks
         // Totals tick up with every click and scroll; the tiles don't need more than a few updates a second.
-        if s.totals != totals, now - lastTotalsPublish > 0.25 { lastTotalsPublish = now; totals = s.totals }
+        // While the page scrolls, a few times less often (scrolling with the ring changes them all the time).
+        let wait = pageScrolling ? 2.0 : 0.25
+        if s.totals != totals, now - lastTotalsPublish > wait { lastTotalsPublish = now; totals = s.totals }
 
         if now - lastSave > 10 { lastSave = now; saveTotals() }
-        if now - lastDelightTick >= 1 {
+        if now - lastDelightTick >= (pageScrolling ? 3 : 1) {
             lastDelightTick = now
             delight.tick(totals: s.totals, peaks: engine.telemetry.takePeaks())
         }

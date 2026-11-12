@@ -12,7 +12,7 @@ struct OverviewView: View {
             TodayCluster(model: model)
             LiveActivity(feed: model.live)
             if model.delight.checklistVisible {
-                MakeItYoursCard(delight: model.delight, trackballFound: model.status.deviceConnected) { model.requestedTab = $0 }
+                MakeItYoursCard(delight: model.delight, trackballFound: model.status.deviceConnected) { model.requestTab($0) }
                     .transition(.opacity)
             }
             YourTrackballCard(delight: model.delight)
@@ -204,6 +204,9 @@ private struct GaugeArc: View {
         let color = metric.color
         let record = fraction >= 1
         ZStack {
+            // The arc, its glow and its head drawn into one bitmap (with room for the glow):
+            // a page scrolling past moves it, and the blur and shadow aren't redone each frame.
+            ZStack {
             // The track.
             Circle()
                 .trim(from: 0, to: Self.span)
@@ -229,6 +232,10 @@ private struct GaugeArc: View {
                     .offset(x: r)
                     .rotationEffect(.degrees(360 * fill))
             }
+            }
+            .padding(width * 6)
+            .drawingGroup()
+            .padding(-width * 6)
             // A record: a band of light runs the whole way round, once.
             if sweeping || moment {
                 let p = moment ? 0.55 : sweep
@@ -550,16 +557,75 @@ struct LiveChart: View {
 // MARK: - Settings pointer
 
 /// Where the General card used to be: the settings live in Glideball ›
-/// Settings… (⌘,), so point people there.
+/// Settings… (⌘,), so point people there, for a while. It goes away by itself
+/// (`SettingsHintMemory`) or with its ×, and never comes back.
 private struct SettingsHint: View {
+    @State private var gone = !SettingsHintMemory.isDue()
+
     var body: some View {
-        RowGroup {
-            SettingRow(title: "Looking for Open at login, Language, Updates or Keyboard shortcuts? They've moved to Settings. Press ⌘, any time Glideball is in front.",
-                       hint: "Closing this window keeps Glideball running. Click Glideball in the Dock to bring it back, or press ⌘Q to quit. Your trackball then goes back to normal.",
-                       symbol: "gearshape") {
-                Button("Settings…") { (NSApp.delegate as? AppDelegate)?.showSettings() }
-                    .controlSize(.small)
+        if !gone {
+            RowGroup {
+                SettingRow(title: "Looking for Open at login, Language, Updates or Keyboard shortcuts? They've moved to Settings. Press ⌘, any time Glideball is in front.",
+                           hint: "Closing this window keeps Glideball running. Click Glideball in the Dock to bring it back, or press ⌘Q to quit. Your trackball then goes back to normal.",
+                           symbol: "gearshape") {
+                    HStack(spacing: 6) {
+                        Button("Settings…") { (NSApp.delegate as? AppDelegate)?.showSettings() }
+                            .controlSize(.small)
+                        IconButton(symbol: "xmark", help: "Hide this. It won’t come back", size: 22) {
+                            SettingsHintMemory.dismiss()
+                            withAnimation(Theme.Motion.fade) { gone = true }
+                        }
+                    }
+                }
             }
+            .onAppear { SettingsHintMemory.seen() }
+            .transition(.opacity)
         }
+    }
+}
+
+/// When the Settings hint on Overview stops showing: once it's been seen on
+/// five different days, or two weeks after it was first shown, whichever comes
+/// first, or when its × is clicked. After that it's gone for good on this Mac.
+enum SettingsHintMemory {
+    static let firstShownKey = "GlideSettingsHintFirstShown"
+    static let daysKey = "GlideSettingsHintDays"
+    static let goneKey = "GlideSettingsHintGone"
+    static let maxDays = 5
+    static let maxAge: TimeInterval = 14 * 24 * 3600
+
+    /// The pure rule: still showing, given when it was first shown and the days it's been seen on.
+    static func isDue(firstShown: Date?, days: [String], gone: Bool, today: String, now: Date) -> Bool {
+        if gone { return false }
+        if let first = firstShown, now.timeIntervalSince(first) >= maxAge { return false }
+        // Seen on five days already: today can still be one of them, never a sixth.
+        return days.count < maxDays || days.contains(today)
+    }
+
+    static func isDue(now: Date = Date(), defaults: UserDefaults = .standard) -> Bool {
+        let due = isDue(firstShown: defaults.object(forKey: firstShownKey) as? Date,
+                        days: defaults.stringArray(forKey: daysKey) ?? [],
+                        gone: defaults.bool(forKey: goneKey), today: dayKey(now), now: now)
+        // Once it's gone it stays gone, whatever the clock does later.
+        if !due, !defaults.bool(forKey: goneKey) { defaults.set(true, forKey: goneKey) }
+        return due
+    }
+
+    /// It was on screen today.
+    static func seen(now: Date = Date(), defaults: UserDefaults = .standard) {
+        if defaults.object(forKey: firstShownKey) == nil { defaults.set(now, forKey: firstShownKey) }
+        var days = defaults.stringArray(forKey: daysKey) ?? []
+        let today = dayKey(now)
+        if !days.contains(today) {
+            days.append(today)
+            defaults.set(days, forKey: daysKey)
+        }
+    }
+
+    static func dismiss(defaults: UserDefaults = .standard) { defaults.set(true, forKey: goneKey) }
+
+    static func dayKey(_ date: Date) -> String {
+        let c = Calendar.current.dateComponents([.year, .month, .day], from: date)
+        return "\(c.year ?? 0)-\(c.month ?? 0)-\(c.day ?? 0)"
     }
 }

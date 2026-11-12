@@ -23,20 +23,10 @@ struct ShortcutsSheet: View {
         }
     }
 
+    /// Straight from the registry (`AppShortcuts`), so a new shortcut shows up here by itself.
     private var inWindow: [Item] {
-        [
-            Item(title: String(localized: "Switch pages"),
-                 detail: ListFormatter.localizedString(byJoining: GlideTab.allCases.map(\.title)),
-                 keys: ["⌘", "1–\(GlideTab.allCases.count)"]),
-            Item(title: String(localized: "Settings"), keys: ["⌘", ","]),
-            Item(title: String(localized: "Export Settings…"), keys: ["⌘", "E"]),
-            Item(title: String(localized: "Import Settings…"), keys: ["⌘", "O"]),
-            Item(title: String(localized: "Keyboard shortcuts (this list)"), keys: ["?"]),
-            Item(title: String(localized: "Close the window (Glideball keeps running)"), keys: ["⌘", "W"]),
-            Item(title: String(localized: "Quit Glideball"),
-                 detail: model.confirmQuit ? String(localized: "Asks first: press ⌘Q again to quit.") : nil,
-                 keys: ["⌘", "Q"]),
-        ]
+        _ = model.confirmQuit   // the Quit line's detail follows this setting
+        return AppShortcuts.listed.map { Item(title: $0.title, detail: $0.detail, keys: $0.keys) }
     }
 
     var body: some View {
