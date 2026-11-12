@@ -1662,7 +1662,7 @@
 "Search shortcuts" = "ショートカットを検索";
 "Sent. Thank you!" = "送信しました。ありがとうございます！";
 "Sent. Thanks, %@!" = "送信しました。ありがとうございます、%@さん！";
-"Soft tones when you pause, switch a mode, save a change or reach a milestone, and a chime after an update. Never when your Mac is muted." = "一時停止、モードの切り替え、変更の保存、マイルストーン達成のときにやわらかい音が鳴り、アップデート後にはチャイムが鳴ります。Macがミュートのときは鳴りません。";
+"Soft tones when you pause, switch a mode, assign a button or reach a milestone, and a chime after an update. Never when your Mac is muted." = "一時停止、モードの切り替え、ボタンの割り当て、マイルストーン達成のときにやわらかい音が鳴り、アップデート後にはチャイムが鳴ります。Macがミュートのときは鳴りません。";
 "Something tried to control Glideball" = "何かがGlideballを操作しようとしました";
 "Sound" = "サウンド";
 "Sounds" = "サウンド";

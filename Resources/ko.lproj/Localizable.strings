@@ -1662,7 +1662,7 @@
 "Search shortcuts" = "단축키 검색";
 "Sent. Thank you!" = "전송했어요. 고마워요!";
 "Sent. Thanks, %@!" = "전송했어요. 고마워요, %@님!";
-"Soft tones when you pause, switch a mode, save a change or reach a milestone, and a chime after an update. Never when your Mac is muted." = "일시 정지하거나, 모드를 바꾸거나, 변경 사항을 저장하거나, 마일스톤을 달성할 때 부드러운 소리가 나고, 업데이트 후에는 알림음이 울려요. Mac이 음소거 상태일 때는 나지 않아요.";
+"Soft tones when you pause, switch a mode, assign a button or reach a milestone, and a chime after an update. Never when your Mac is muted." = "일시 정지하거나, 모드를 바꾸거나, 버튼을 지정하거나, 마일스톤을 달성할 때 부드러운 소리가 나고, 업데이트 후에는 알림음이 울려요. Mac이 음소거 상태일 때는 나지 않아요.";
 "Something tried to control Glideball" = "무언가가 Glideball을 제어하려고 했어요";
 "Sound" = "사운드";
 "Sounds" = "사운드";

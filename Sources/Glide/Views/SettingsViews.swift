@@ -454,7 +454,7 @@ struct SoundSettingsPane: View {
 
     private var soundsHint: String {
         soundsOn
-            ? String(localized: "Soft tones when you pause, switch a mode, save a change or reach a milestone, and a chime after an update. Never when your Mac is muted.")
+            ? String(localized: "Soft tones when you pause, switch a mode, assign a button or reach a milestone, and a chime after an update. Never when your Mac is muted.")
             : String(localized: "Glideball stays silent, including the chime after an update.")
     }
 }
@@ -465,7 +465,7 @@ private struct SoundPreviewRow: View {
     private let sounds: [(Sound, LocalizedStringKey)] = [
         (.resume, LocalizedStringKey("Resume")), (.pause, LocalizedStringKey("Pause")),
         (.modeOn, LocalizedStringKey("Mode on")), (.modeOff, LocalizedStringKey("Mode off")),
-        (.tick, LocalizedStringKey("Saved")), (.milestone, LocalizedStringKey("Milestone")),
+        (.tick, LocalizedStringKey("Assign")), (.milestone, LocalizedStringKey("Milestone")),
         (.milestoneBig, LocalizedStringKey("Big milestone")),
     ]
 

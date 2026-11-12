@@ -1662,7 +1662,7 @@
 "Search shortcuts" = "搜索快捷键";
 "Sent. Thank you!" = "已发送。谢谢！";
 "Sent. Thanks, %@!" = "已发送。谢谢你，%@！";
-"Soft tones when you pause, switch a mode, save a change or reach a milestone, and a chime after an update. Never when your Mac is muted." = "暂停、切换模式、存储更改或达成里程碑时会播放柔和的提示音，更新后会响起一声提示音。Mac 静音时不会发声。";
+"Soft tones when you pause, switch a mode, assign a button or reach a milestone, and a chime after an update. Never when your Mac is muted." = "暂停、切换模式、分配按键或达成里程碑时会播放柔和的提示音，更新后会响起一声提示音。Mac 静音时不会发声。";
 "Something tried to control Glideball" = "有东西试图控制 Glideball";
 "Sound" = "声音";
 "Sounds" = "声音";
