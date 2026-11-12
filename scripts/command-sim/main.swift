@@ -39,6 +39,13 @@ final class FakeApp: CommandTarget {
     var pointerSpeed: Double { speed }
     func setPointerSpeed(_ s: Double) { speed = s; changes.append("speed \(s)") }
 
+    var gestures = true
+    var gesturesEnabled: Bool { gestures }
+    func setGesturesEnabled(_ on: Bool) { gestures = on; changes.append("gestures \(on)") }
+    var perDisplay = false
+    var perDisplaySpeed: Bool { perDisplay }
+    func setPerDisplaySpeed(_ on: Bool) { perDisplay = on; changes.append("per-display \(on)") }
+
     var appSetups: [CommandAppSetup] { setups }
     var pinnedAppSetup: String? { pinned }
     var activeAppSetupName: String? { setups.first { $0.bundleID == pinned }?.name }
@@ -90,12 +97,12 @@ do {
     check(Set(ids).count == ids.count, "command ids are unique")
     check(Commands.all.allSatisfy { !$0.title.isEmpty }, "every command has a title")
     for id in ["pause", "resume", "toggle", "precision", "ball-scroll", "drag-lock", "scroll-mode", "pointer-speed",
-               "app-setup", "open", "settings", "check-for-updates", "feedback"] {
+               "app-setup", "open", "settings", "check-for-updates", "feedback", "gestures", "per-display-speed"] {
         check(Commands.command(id) != nil, "registry has \(id)")
     }
     let fromURLs = Set(Commands.all.filter { $0.reach != .appOnly }.map(\.id))
     check(fromURLs == ["pause", "resume", "toggle", "precision", "scroll-mode", "pointer-speed", "app-setup",
-                       "open", "settings", "check-for-updates"], "exactly the agreed commands are reachable by URL: \(fromURLs.sorted())")
+                       "open", "settings", "check-for-updates", "per-display-speed"], "exactly the agreed commands are reachable by URL: \(fromURLs.sorted())")
     let navigation = Set(Commands.all.filter { $0.reach == .urlNavigation }.map(\.id))
     check(navigation == ["open", "settings"], "only open and settings work without the switch")
 
@@ -114,6 +121,18 @@ do {
     check(!Commands.run("no-such-command", on: app), "an unknown id does nothing")
     check(Commands.command("pointer-speed")!.state(app) == "4", "speed state reads 4")
     check(Commands.command("app-setup")!.state(app) == "automatic", "app-setup state reads automatic")
+    // Gestures: app only (it changes what buttons do); off twice stays off.
+    check(Commands.command("gestures")!.reach == .appOnly, "gestures can't be switched from a URL")
+    check(Commands.command("gestures")!.state(app) == "on", "gestures state reads on")
+    Commands.run("gestures", .off, on: app)
+    check(!app.gesturesEnabled && Commands.command("gestures")!.state(app) == "off", "gestures off")
+    let n = app.changes.count
+    Commands.run("gestures", .off, on: app)
+    check(app.changes.count == n, "gestures off twice changes nothing")
+    Commands.run("gestures", .toggle, on: app)
+    check(app.gesturesEnabled, "gestures toggle turns them back on")
+    Commands.run("per-display-speed", .on, on: app)
+    check(app.perDisplaySpeed && Commands.command("per-display-speed")!.state(app) == "on", "per-display speed on")
 }
 
 // MARK: - Good URLs, switch on

@@ -337,6 +337,8 @@ extension ButtonAction {
         case .precisionToggle: "precisionToggle"
         case .ballScrollHold: "ballScrollHold"
         case .dragLock: "dragLock"
+        case .mediaKey: "mediaKey"
+        case .gesture: "gesture"
         }
     }
 }

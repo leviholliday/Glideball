@@ -25,6 +25,15 @@ final class Engine {
         /// Every Kensington pointing device connected, supported or not, by name and
         /// product ID. Only for the opt-in settings stats (see `ShareData`).
         var kensingtonModels: [Model] = []
+        /// How the device in use is connected: USB cable, Bluetooth, or a 2.4 GHz receiver.
+        /// nil when it can't be told (or no trackball is connected).
+        var connection: DeviceConnection?
+        /// The device in use's battery, 0…100. nil when unknown, wired, or "Other
+        /// Kensington trackballs" is off (wireless models are only read with it on).
+        var batteryPercent: Int?
+        /// The key (`DisplayKey`) of the display the pointer was last seen on, while
+        /// per-display speeds are on; nil otherwise.
+        var pointerDisplay: String?
 
         struct Model: Hashable, Comparable {
             var name: String
@@ -38,6 +47,8 @@ final class Engine {
         var precision = false
         var ballScrolling = false
         var dragLocked = false
+        /// A gesture button is held (the pointer is frozen until it lifts).
+        var gestureHeld = false
     }
 
     let telemetry = Telemetry()
@@ -61,6 +72,7 @@ final class Engine {
         case precision    // a Precision (hold) button: slow until it lifts
         case ballScroll   // a Scroll-with-ball button: the ball scrolls until it lifts
         case dragButton   // the press that started a drag lock
+        case gesture      // a gesture hold: drags and the release belong to `gestures`
     }
     private enum Phase { case down, up, drag }
     private var overrides: [Int64: Override] = [:]
@@ -115,6 +127,17 @@ final class Engine {
     private var holdStart: CFTimeInterval = 0
     private var holdReleasedChecks = 0
     private var holdFailsafe: Timer?
+    // Gesture buttons (Gestures.swift). Input thread only.
+    private let gestures = GestureMachine()
+    private var gestureFrozen = false          // a gesture hold has the pointer frozen
+    // Per-display pointer speed (DisplayTracking.swift). Input thread only.
+    private var displayTracker = DisplayTracker()
+    // Wireless models: connection type and battery, per HID device (DeviceBattery.swift).
+    private var hidDevices: [Int: IOHIDDevice] = [:]
+    private var transports: [Int: String] = [:]
+    private var registryBattery: [Int: Int] = [:]
+    private var hidBattery: [Int: Int] = [:]
+    private var maintainTicks = 0
 
     init(config: GlideConfig) {
         self.config = config
@@ -155,6 +178,8 @@ final class Engine {
                 || config.precisionSpeed != self.config.precisionSpeed
                 || config.scrollMode != self.config.scrollMode
                 || config.nativeScrollSpeed != self.config.nativeScrollSpeed
+                || config.displaySpeeds != self.config.displaySpeeds
+            let watchingBefore = self.watchingDisplays
             self.config = config
             self.scroller.config = config
             if wasEnabled && !config.enabled {
@@ -162,11 +187,45 @@ final class Engine {
             } else {
                 self.dropOrphanedModes()
             }
+            if self.watchingDisplays && !watchingBefore {
+                // Just switched on: find the display the pointer is on now, not at its next move.
+                self.displayTracker.setRegions(self.displayTracker.regions, pointer: CGEvent(source: nil)?.location)
+            }
             if pointerChanged { self.applyPointer() }
+            self.publish()
         }
     }
 
     func reapplyPointer() { perform { self.applyPointer() } }
+
+    /// The connected displays changed (one appeared, went away or moved). Main thread → input thread.
+    func setDisplays(_ regions: [DisplayRegion]) {
+        perform {
+            guard regions != self.displayTracker.regions else { return }
+            if self.displayTracker.setRegions(regions, pointer: CGEvent(source: nil)?.location) {
+                self.applyPointer()
+            }
+            self.publish()
+        }
+    }
+
+    /// Per-display speeds are on and there's a display to tell apart from another.
+    private var watchingDisplays: Bool {
+        config.enabled && config.displaySpeeds.isActive && displayTracker.needsWatching
+    }
+
+    /// Called from the trackball's own movement reports: at most every 50 ms,
+    /// one location read and a rectangle test; a full lookup (and a new speed)
+    /// only when the pointer has crossed onto another display.
+    private func watchDisplay(now: CFTimeInterval) {
+        guard watchingDisplays, displayTracker.due(now: now),
+              let point = CGEvent(source: nil)?.location else { return }
+        if displayTracker.update(point: point) {
+            diagnostics.record("pointer moved to another display")
+            applyPointer()
+            publish()
+        }
+    }
 
     /// "Other Kensington trackballs" adds Kensington's other pointing devices. Takes effect
     /// immediately: devices are re-sorted and pointer speeds re-applied.
@@ -179,6 +238,7 @@ final class Engine {
             self.syncTap()
             self.pointer.devicesChanged()
             self.applyPointer()
+            self.refreshBatteries()
             self.publish()
         }
     }
@@ -302,6 +362,7 @@ final class Engine {
     func endBallScrollLatch() {
         perform {
             if self.ballScrollLatched { self.endBallScroll(latched: true, glide: false) }
+            self.cancelGesture(.sleep)   // a held gesture freezes the cursor too
         }
     }
 
@@ -374,14 +435,22 @@ final class Engine {
         syncTap()   // also re-enables it if macOS ever switched it off while a trackball is connected
         applyPointer()
         diagnostics.flush()
+        // Wireless models' battery: once a minute, and only for one that's battery powered.
+        maintainTicks += 1
+        if maintainTicks % 30 == 0 { refreshBatteries() }
         publish()
+    }
+
+    /// The tracking speed right now (precedence: `PointerSpeed.effective`).
+    private var effectiveTrackingSpeed: Double {
+        PointerSpeed.effective(config, display: displayTracker.current, precision: precisionActive)
     }
 
     private func applyPointer() {
         guard !handedBack else { return }
         // Paused: the trackball gets macOS's own speeds back (cheap once done).
         guard config.enabled else { return pointer.restoreAll() }
-        pointer.apply(.init(trackingSpeed: precisionActive ? config.precisionSpeed : config.trackingSpeed,
+        pointer.apply(.init(trackingSpeed: effectiveTrackingSpeed,
                             scrollSpeed: config.scrollMode == .native ? config.nativeScrollSpeed : nil,
                             betaProgram: betaProgram))
     }
@@ -399,6 +468,15 @@ final class Engine {
             .map { Status.Model(name: $0.displayName, productID: $0.productID ?? 0) }).sorted()
         s.tapActive = tap.map { CGEvent.tapIsEnabled(tap: $0) } ?? false
         s.listening = hid != nil
+        if let (k, identity) = devices.filter({ deviceSupported[$0.key] == true })
+            .min(by: { ($0.value.kind == .expertMouse ? 0 : 1, $0.value.displayName) < ($1.value.kind == .expertMouse ? 0 : 1, $1.value.displayName) }) {
+            s.connection = DeviceConnection.classify(transport: transports[k], name: identity.name, productID: identity.productID)
+            // Wireless models are only read with "Other Kensington trackballs" on (untested hardware).
+            if betaProgram, s.connection?.isWireless == true {
+                s.batteryPercent = hidBattery[k] ?? registryBattery[k]
+            }
+        }
+        s.pointerDisplay = config.displaySpeeds.enabled ? displayTracker.current : nil
         guard s != status else { return }
         status = s
         DispatchQueue.main.async { self.onStatus?(s) }
@@ -461,11 +539,20 @@ final class Engine {
         let k = Self.key(device)
         devices[k] = nil
         deviceSupported[k] = nil
+        hidBattery[k] = nil
+        registryBattery[k] = nil
+        transports[k] = DeviceBattery.transport(device)
+        if Self.identity(of: device).vendorID == DeviceIdentity.kensingtonVendorID {
+            hidDevices[k] = device   // only Kensington's, for the battery check
+        }
         if isSupported(device) {
             pointer.devicesChanged()
             // The HID service appears slightly after the device; apply twice to be sure.
             for delay in [0.3, 1.5] {
-                let t = Timer(timeInterval: delay, repeats: false) { [unowned self] _ in self.applyPointer() }
+                let t = Timer(timeInterval: delay, repeats: false) { [unowned self] _ in
+                    self.applyPointer()
+                    if delay > 1 { self.refreshBatteries() }   // registry properties can arrive late too
+                }
                 RunLoop.current.add(t, forMode: .common)
             }
         }
@@ -474,15 +561,32 @@ final class Engine {
     }
 
     private func deviceRemoved(_ device: IOHIDDevice) {
-        if deviceSupported[Self.key(device)] == true {
+        let k = Self.key(device)
+        if deviceSupported[k] == true {
             // Unplugged mid-hold: its button releases will never come.
             hidButtonsDown.removeAll()
-            releaseModes()
+            releaseModes(.unplug)
         }
-        devices[Self.key(device)] = nil
-        deviceSupported[Self.key(device)] = nil
+        devices[k] = nil
+        deviceSupported[k] = nil
+        hidDevices[k] = nil
+        transports[k] = nil
+        hidBattery[k] = nil
+        registryBattery[k] = nil
         syncTap()
         publish()
+    }
+
+    /// Reads `BatteryPercent` from the registry for supported wireless Kensingtons,
+    /// only with "Other Kensington trackballs" on. Read-only; never touches the device.
+    private func refreshBatteries() {
+        guard betaProgram else { return }
+        for (k, device) in hidDevices where deviceSupported[k] == true {
+            let identity = devices[k] ?? Self.identity(of: device)
+            guard DeviceConnection.classify(transport: transports[k], name: identity.name,
+                                            productID: identity.productID)?.isWireless == true else { continue }
+            registryBattery[k] = DeviceBattery.registryPercent(device)
+        }
     }
 
     private func hidValue(_ value: IOHIDValue) {
@@ -506,10 +610,25 @@ final class Engine {
         switch (page, usage) {
         case (kHIDPage_GenericDesktop, kHIDUsage_GD_X):
             telemetry.addBall(dx: v, dy: 0)
-            if ballScrolling { scroller.addBallDelta(dx: Double(v) * ballSign, dy: 0) }
+            let now = CACurrentMediaTime()
+            // A held gesture takes the ball (even over Scroll with ball): see GestureRoute.
+            if gestures.isHeld { applyGesture(gestures.ball(dx: Double(v), dy: 0, now: now)) }
+            else if ballScrolling { scroller.addBallDelta(dx: Double(v) * ballSign, dy: 0) }
+            watchDisplay(now: now)
         case (kHIDPage_GenericDesktop, kHIDUsage_GD_Y):
             telemetry.addBall(dx: 0, dy: v)
-            if ballScrolling { scroller.addBallDelta(dx: 0, dy: Double(v) * ballSign) }
+            let now = CACurrentMediaTime()
+            if gestures.isHeld { applyGesture(gestures.ball(dx: 0, dy: Double(v), now: now)) }
+            else if ballScrolling { scroller.addBallDelta(dx: 0, dy: Double(v) * ballSign) }
+            watchDisplay(now: now)
+        case let (p, u) where DeviceBattery.isBatteryUsage(page: p, usage: u):
+            let k = Self.key(device)
+            let level = DeviceBattery.percent(value: v, logicalMin: IOHIDElementGetLogicalMin(element),
+                                              logicalMax: IOHIDElementGetLogicalMax(element))
+            if let level, hidBattery[k] != level {
+                hidBattery[k] = level
+                publish()
+            }
         case (kHIDPage_GenericDesktop, kHIDUsage_GD_Wheel) where v != 0:
             telemetry.addNotch(direction: v)
             hidWheel(v)
@@ -611,6 +730,8 @@ final class Engine {
         let pass = Unmanaged.passUnretained(event)
         switch type {
         case .tapDisabledByTimeout, .tapDisabledByUserInput:
+            // A gesture's release may have gone by while the tap was off: free the pointer now.
+            cancelGesture(.tapDisabled)
             syncTap()
             if let moveTap { CGEvent.tapEnable(tap: moveTap, enable: true) }
             return pass
@@ -739,6 +860,9 @@ final class Engine {
         let pass = Unmanaged.passUnretained(event)
         let button = event.getIntegerValueField(.mouseEventButtonNumber)
 
+        // Any other press during a gesture hold means the release isn't a tap.
+        if phase == .down, gestures.isHeld { gestures.otherPress(Int(button)) }
+
         // Drag lock: any click (from any mouse) lets go — and that's all it does.
         // (A press that may be the start of a Drag lock combo waits for the
         // combo; if it turns out to be a lone click, `press` lets go instead.)
@@ -813,6 +937,16 @@ final class Engine {
                 guard phase == .drag, dragLocked else { return nil }
                 Self.retarget(event, to: 0, .drag)
                 return pass
+            case .gesture:
+                if phase == .up {
+                    let effects = gestures.release(button: Int(button), now: CACurrentMediaTime())
+                    // A combo gesture ends with its first button up; the others finish silently.
+                    for (b, other) in overrides {
+                        if case .gesture = other { overrides[b] = .swallow }
+                    }
+                    applyGesture(effects)
+                }
+                return nil   // drags never reach apps: the pointer is frozen and the ball is the gesture's
             }
         }
         guard phase == .down, config.enabled, isKensingtonPress(button) else { return pass }
@@ -867,7 +1001,20 @@ final class Engine {
         pendingTimer = nil
         let pressedButtons = pending
         pending = []
-        let action = chord.action
+        var action = chord.action
+        if case .gesture(let g) = action {
+            let buttons = pressedButtons.map(\.button)
+            switch gestureRoute(action, buttons: buttons) {
+            case .begin:
+                beginGesture(g, buttons: buttons)
+                return
+            case .tapInstead(let tap):
+                action = tap   // a combo with the primary button, or gestures can't work: the tap, now
+            case .ignore, .notGesture:
+                for b in buttons where !(gestures.hold?.buttons.contains(Int(b)) ?? false) { overrides[b] = .swallow }
+                return
+            }
+        }
         if beginMode(action, buttons: pressedButtons.map(\.button)) { return }
         if case .holdShortcut(let shortcut) = action {
             // Keep Flow's shortcut down until a button in the chord is released.
@@ -912,8 +1059,13 @@ final class Engine {
         // Keep the primary click available even if a stale preference says
         // otherwise, so Glide can never make the mouse unusable.
         if button == 0 { return pass }
+        return pressAction(config.buttons[Int(button)] ?? .system, event, button: button)
+    }
+
+    /// Does `action` for a press of `button` (never the primary button).
+    private func pressAction(_ action: ButtonAction, _ event: CGEvent, button: Int64) -> Unmanaged<CGEvent>? {
+        let pass = Unmanaged.passUnretained(event)
         let target: Int64
-        let action = config.buttons[Int(button)] ?? .system
         if beginMode(action, buttons: [button]) { return nil }
         switch action {
         case .system: return pass
@@ -941,6 +1093,25 @@ final class Engine {
             return pass
         case .precisionHold, .precisionToggle, .ballScrollHold, .dragLock:
             return nil   // handled by `beginMode`
+        case .mediaKey(let key):
+            overrides[button] = .swallow
+            keyQueue.async { Self.postMediaKey(key) }
+            return nil
+        case .gesture(let g):
+            switch gestureRoute(action, buttons: [button]) {
+            case .begin:
+                beginGesture(g, buttons: [button])
+                return nil
+            case .tapInstead(let tap):
+                return pressAction(tap, event, button: button)   // `tapAction` is never a gesture
+            case .ignore:
+                // Another gesture is held. A repeat press of the held button itself (its
+                // release was lost) keeps the hold's override, so its next release still ends it.
+                if !(gestures.hold?.buttons.contains(Int(button)) ?? false) { overrides[button] = .swallow }
+                return nil
+            case .notGesture:
+                return pass
+            }
         }
         if target == button { return pass }
         overrides[button] = .remap(target, [])
@@ -1007,8 +1178,13 @@ final class Engine {
         ballScrolling = true
         // Ball forward counts as "wheel up"; with natural scrolling the page follows the ball.
         ballSign = Self.naturalScrolling ? 1 : -1
-        _ = CGAssociateMouseAndMouseCursorPosition(0)   // the cursor stays put
+        syncFreeze()   // the cursor stays put
         scroller.beginBall()
+    }
+
+    /// The cursor is frozen while Scroll with ball or a gesture hold has it, and only then.
+    private func syncFreeze() {
+        _ = CGAssociateMouseAndMouseCursorPosition((ballScrolling || gestureFrozen) ? 0 : 1)
     }
 
     /// Ends the hold (or the latch). The ball stops scrolling once neither is left.
@@ -1022,9 +1198,10 @@ final class Engine {
             }
         }
         guard !ballScrollHeld, !ballScrollLatched else { return }
-        _ = CGAssociateMouseAndMouseCursorPosition(1)
-        guard ballScrolling else { return }
+        let wasScrolling = ballScrolling
         ballScrolling = false
+        syncFreeze()   // free, unless a gesture hold still has it
+        guard wasScrolling else { return }
         scroller.endBall(glide: glide)
         publishModes()
     }
@@ -1114,10 +1291,14 @@ final class Engine {
     }
 
     private func checkHolds() {
-        guard precisionHeld || ballScrollHeld else {   // a keyboard latch is never a lost hold
+        guard precisionHeld || ballScrollHeld || gestures.isHeld else {   // a keyboard latch is never a lost hold
             holdFailsafe?.invalidate()
             holdFailsafe = nil
             return
+        }
+        // A gesture hold never outlasts `GestureTuning.maxHold`, whatever HID says.
+        if let h = gestures.hold, CACurrentMediaTime() - h.start >= gestures.tuning.maxHold {
+            cancelGesture(.timeout)
         }
         let lost: Bool
         if hidButtonSeen {
@@ -1130,11 +1311,83 @@ final class Engine {
         diagnostics.record("hold failsafe: button release never arrived")
         if ballScrollHeld { endBallScroll(latched: false, glide: false) }
         if precisionHeld { endPrecisionHold() }
+        cancelGesture(.lostRelease)
+    }
+
+    // MARK: Gestures (Gestures.swift decides; this carries it out)
+
+    private func gestureRoute(_ action: ButtonAction, buttons: [Int64]) -> GestureRoute {
+        GestureRoute.decide(action: action, buttons: buttons.map { Int($0) }, enabled: config.gesturesEnabled,
+                            canReadBall: tap != nil && canReadBall, gestureHeld: gestures.isHeld)
+    }
+
+    private func beginGesture(_ gesture: ButtonGesture, buttons: [Int64]) {
+        let effects = gestures.begin(buttons: buttons.map { Int($0) }, gesture: gesture, now: CACurrentMediaTime())
+        guard !effects.isEmpty else {
+            for b in buttons { overrides[b] = .swallow }   // refused: the press and its release do nothing
+            return
+        }
+        for b in buttons { overrides[b] = .gesture }
+        diagnostics.record("gesture hold on \(buttons)")
+        applyGesture(effects)
+        startHoldFailsafe()
+    }
+
+    /// Ends a gesture hold that won't get its release (or shouldn't wait for it).
+    /// The buttons' releases, when they come, do nothing.
+    private func cancelGesture(_ reason: GestureCancel) {
+        let effects = gestures.cancel(reason)
+        for (b, o) in overrides {
+            if case .gesture = o { overrides[b] = .swallow }
+        }
+        guard !effects.isEmpty else { return }
+        diagnostics.record("gesture ended: \(reason.rawValue)")
+        applyGesture(effects)
+    }
+
+    private func applyGesture(_ effects: [GestureEffect]) {
+        for effect in effects {
+            switch effect {
+            case .freeze(let on):
+                gestureFrozen = on
+                syncFreeze()
+                publishModes()
+            case .fire(let action, let direction):
+                diagnostics.record("gesture \(direction.rawValue)")
+                keyQueue.async { Self.perform(action) }
+            case .tap(let action, let buttons):
+                performTap(action, buttons: buttons)
+            }
+        }
+    }
+
+    /// A gesture button's tap, after its release.
+    private func performTap(_ action: ButtonAction, buttons: [Int]) {
+        switch action {
+        case .system:
+            // The button's own click (a combo has none). Never the primary button.
+            guard buttons.count == 1, let b = buttons.first, b != 0 else { return }
+            keyQueue.async { Self.click(button: Int64(b)) }
+        case .precisionToggle:
+            precisionToggled.toggle()
+            precisionManual = false
+            applyPointer()
+            publishModes()
+        case .dragLock:
+            // Like the keyboard's: a click (or another tap) drops it.
+            if dragLocked { endDragLock() } else { beginDragLock(manual: true) }
+            publishModes()
+        case .disabled, .precisionHold, .ballScrollHold, .gesture:
+            return
+        default:
+            keyQueue.async { Self.perform(action) }
+        }
     }
 
     /// Ends everything at once (pause, ⌃⌥⌘G, quit, unplug). Input thread.
-    private func releaseModes() {
+    private func releaseModes(_ reason: GestureCancel = .pause) {
         cancelModifierWait(silently: true)
+        cancelGesture(reason)
         if ballScrolling { scroller.cancelBall() }
         ballScrolling = false
         ballScrollHeld = false
@@ -1174,7 +1427,8 @@ final class Engine {
     }
 
     private func publishModes() {
-        let m = Modes(precision: precisionActive, ballScrolling: ballScrolling, dragLocked: dragLocked)
+        let m = Modes(precision: precisionActive, ballScrolling: ballScrolling, dragLocked: dragLocked,
+                      gestureHeld: gestures.isHeld)
         guard m != modes else { return }
         modes = m
         DispatchQueue.main.async { self.onModes?(m) }
@@ -1204,7 +1458,9 @@ final class Engine {
         switch action {
         case .system, .disabled: return
         case .precisionHold, .precisionToggle, .ballScrollHold, .dragLock: return   // stateful: `beginMode`
+        case .gesture: return                                                       // stateful: `beginGesture`
         case .shortcut(let s), .holdShortcut(let s): send(s); return
+        case .mediaKey(let key): postMediaKey(key); return
         case .modifiedClick(let b, let mods): button = Int64(b); flags = CGEventFlags(rawValue: mods)
         case .leftClick: button = 0
         case .rightClick: button = 1
@@ -1212,6 +1468,11 @@ final class Engine {
         case .back: button = 3
         case .forward: button = 4
         }
+        click(button: button, flags: flags)
+    }
+
+    /// A quick press and release of `button` at the cursor, marked as Glide's own.
+    static func click(button: Int64, flags: CGEventFlags = []) {
         let loc = CGEvent(source: nil)?.location ?? .zero
         let cgButton = CGMouseButton(rawValue: UInt32(button)) ?? .center
         for down in [true, false] {
@@ -1225,6 +1486,21 @@ final class Engine {
             e.setIntegerValueField(.eventSourceUserData, value: syntheticTag)
             e.flags = flags
             e.post(tap: .cghidEventTap)
+        }
+    }
+
+    /// Presses and releases a media key the way Apple's keyboards do: a system-defined
+    /// event (subtype 8, NX_SUBTYPE_AUX_CONTROL_BUTTONS) with the key type and state in data1.
+    static func postMediaKey(_ key: MediaKey) {
+        for down in [true, false] {
+            let state = down ? 0xA : 0xB   // NX_KEYDOWN, NX_KEYUP
+            guard let event = NSEvent.otherEvent(with: .systemDefined, location: .zero,
+                                                 modifierFlags: NSEvent.ModifierFlags(rawValue: UInt(state << 8)),
+                                                 timestamp: 0, windowNumber: 0, context: nil, subtype: 8,
+                                                 data1: Int(key.keyType) << 16 | state << 8, data2: -1),
+                  let cg = event.cgEvent else { continue }
+            cg.setIntegerValueField(.eventSourceUserData, value: syntheticTag)
+            cg.post(tap: .cghidEventTap)
         }
     }
 
