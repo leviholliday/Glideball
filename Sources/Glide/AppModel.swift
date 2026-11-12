@@ -237,6 +237,7 @@ final class AppModel {
     @ObservationIgnored private var applyingRemoteConfig = false
 
     private init() {
+        ActionCatalog.install()
         let cfg = GlideConfig.load()
         config = cfg
         let front = NSWorkspace.shared.frontmostApplication
@@ -518,15 +519,18 @@ final class AppModel {
         show(.init(symbol: "arrow.down.doc.fill", text: String(localized: "Imported “\(pending.fileName)”"), action: .undoImport))
     }
 
-    /// The Buttons tab's "Spaces + Wispr Flow" preset: one click, and Undo in
-    /// the toast (like an import) puts back what was there.
-    func applySpacesAndWisprFlow() {
+    /// A button preset from the Buttons tab: one click sets every button and
+    /// combo. What was there is saved first (a "Before preset" backup), and Undo
+    /// in the toast (like an import) puts it back.
+    func applyPreset(_ preset: ButtonPreset) {
         var updated = config
-        updated.applySpacesAndWisprFlow()
+        updated.apply(preset)
         guard updated != config else { return }
+        backups.checkpoint(config, kind: .beforePreset)
         configBeforeImport = config
         config = updated
-        show(.init(symbol: "wand.and.stars", text: String(localized: "Applied “Spaces + Wispr Flow”", comment: "Toast; the name of a button preset"),
+        delight.explored(.preset)
+        show(.init(symbol: preset.symbol, text: String(localized: "Applied “\(preset.title)”", comment: "Toast; the name of a button preset"),
                    action: .undoImport))
     }
 
@@ -582,6 +586,15 @@ final class AppModel {
             guard performance != oldValue else { return }
             UserDefaults.standard.set(performance.rawValue, forKey: PerformanceMode.defaultsKey)
             updateSampling()
+        }
+    }
+    /// How strongly the window's light answers the trackball, 0 (off) … 1 (full).
+    /// Per Mac (Settings › Look › Light).
+    static let lightIntensityKey = "GlideLightIntensity"
+    var lightIntensity: Double = UserDefaults.standard.object(forKey: AppModel.lightIntensityKey) as? Double ?? 0.6 {
+        didSet {
+            guard lightIntensity != oldValue else { return }
+            UserDefaults.standard.set(lightIntensity, forKey: Self.lightIntensityKey)
         }
     }
     /// The window is the one being used (observed, so the background can drift more slowly otherwise).

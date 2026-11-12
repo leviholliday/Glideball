@@ -351,7 +351,9 @@ struct YourTrackballCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Space.section) {
             VStack(alignment: .leading, spacing: 10) {
-                SectionTitle(title: "Your trackball", caption: .verbatim(footnote))
+                SectionTitle(title: "Your trackball", caption: .verbatim(footnote)) {
+                    ShareButton(card: .overview)
+                }
                 HStack(alignment: .top, spacing: 0) {
                     ForEach(Array(Metric.lifetimeOrder.enumerated()), id: \.element) { i, m in
                         if i > 0 { Hairline(vertical: true).padding(.horizontal, 20) }
@@ -364,9 +366,7 @@ struct YourTrackballCard: View {
             WeekChart(delight: delight, metric: $metric)
             PersonalBests(delight: delight)
 
-            SectionBlock(title: "Badges", caption: "\(delight.ledger.earned.count) of \(Milestone.all.count)") {
-                ForEach(Metric.lifetimeOrder) { m in BadgeRow(metric: m, delight: delight) }
-            }
+            BadgesSection(delight: delight)
         }
     }
 
@@ -539,110 +539,4 @@ private struct PersonalBests: View {
         .frame(minHeight: 36)
         .accessibilityElement(children: .combine)
     }
-}
-
-private struct BadgeRow: View {
-    let metric: Metric
-    let delight: DelightCenter
-
-    var body: some View {
-        let list = Milestone.all.filter { $0.metric == metric }
-        let next = list.first { delight.ledger.earned[$0.id] == nil }
-        HStack(alignment: .top, spacing: 0) {
-            ForEach(list) { m in
-                BadgeView(milestone: m, earned: delight.ledger.earned[m.id],
-                          progress: m.id == next?.id ? delight.lifetime.value(metric) / m.threshold : nil)
-                    .frame(maxWidth: .infinity)
-            }
-            // Keep the columns lined up between rows of different lengths.
-            ForEach(list.count..<Self.columns, id: \.self) { _ in Color.clear.frame(maxWidth: .infinity, maxHeight: 1) }
-        }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 14)
-    }
-
-    static let columns = Metric.allCases.map { m in Milestone.all.filter { $0.metric == m }.count }.max() ?? 6
-}
-
-private struct BadgeView: View {
-    let milestone: Milestone
-    let earned: Date?
-    /// Set for the next badge to earn in its row: how far along you are.
-    let progress: Double?
-    @State private var hovering = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    var body: some View {
-        let m = milestone
-        let color = m.metric.color
-        VStack(spacing: 5) {
-            ZStack {
-                if earned != nil {
-                    // A lit tile: the part's color glowing from inside, light catching the top edge.
-                    let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    shape.fill(RadialGradient(colors: [color.mix(with: .white, by: 0.35), color, color.mix(with: .black, by: 0.25)],
-                                              center: UnitPoint(x: 0.35, y: 0.25), startRadius: 1, endRadius: 40))
-                        .shadow(color: color.opacity(0.55), radius: hovering ? 12 : 7, y: 2)
-                    shape.strokeBorder(LinearGradient(colors: [.white.opacity(0.6), .white.opacity(0.05)],
-                                                      startPoint: .top, endPoint: .bottom), lineWidth: 1)
-                } else {
-                    // Locked: a dim, empty tile; the next one shows how far along you are.
-                    let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    shape.fill(Theme.groupFill)
-                    shape.strokeBorder(Theme.groupBorder, lineWidth: 1)
-                    if let progress {
-                        shape.inset(by: 1.5)
-                            .trim(from: 0, to: max(0.02, min(progress, 1)))
-                            .stroke(color, style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                            .shadow(color: color.opacity(0.6), radius: 3)
-                    }
-                }
-                Image(systemName: m.symbol)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(earned != nil ? AnyShapeStyle(.white) : AnyShapeStyle(.tertiary))
-                    .shadow(color: earned != nil ? .black.opacity(0.25) : .clear, radius: 1, y: 1)
-                    .symbolEffect(.bounce, value: earned != nil)
-            }
-            .frame(width: 44, height: 44)
-            .overlay(alignment: .topTrailing) {
-                if let earned, Date().timeIntervalSince(earned) < 24 * 3600 {
-                    Text("New", comment: "On a badge earned in the last day")
-                        .font(.system(size: 9, weight: .semibold))
-                        .padding(.horizontal, 4).padding(.vertical, 1)
-                        .background(Capsule().fill(Theme.windowBackground))
-                        .pixelBorder(Capsule(), color)
-                        .foregroundStyle(color)
-                        .offset(x: 10, y: -4)
-                }
-            }
-            .scaleEffect(hovering && !reduceMotion ? 1.06 : 1)
-
-            Text(m.title)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(earned != nil ? .primary : .secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-            Text(caption)
-                .font(.system(size: 10, weight: .medium))
-                .monospacedDigit()
-                .foregroundStyle(.tertiary)
-                .lineLimit(1)
-        }
-        .opacity(earned == nil && progress == nil ? 0.75 : 1)
-        .onHover { h in withAnimation(Theme.Motion.spring) { hovering = h } }
-        .help(earned.map { String(localized: "\(m.detail), earned \($0.formatted(date: .abbreviated, time: .omitted))",
-                                  comment: "Badge tooltip: what earns it, then the date") }
-              ?? String(localized: "Goal: \(m.detail)", comment: "Badge tooltip: what earns it"))
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(earned != nil ? String(localized: "\(m.title). \(m.detail). Earned", comment: "Badge name, then what earns it")
-                                          : String(localized: "\(m.title). \(m.detail). Not yet earned", comment: "Badge name, then what earns it"))
-    }
-
-    private var caption: String {
-        if let earned { return earned.formatted(.dateTime.month(.abbreviated).day()) }
-        if let progress { return min(progress, 0.99).wholePercent }
-        return m.metric == .clicks ? Int(m.threshold).formatted() : Tally.shortDistance(m.threshold)
-    }
-
-    private var m: Milestone { milestone }
 }

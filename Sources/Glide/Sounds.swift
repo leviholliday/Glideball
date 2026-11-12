@@ -15,6 +15,46 @@ enum Sound: String, CaseIterable {
     case hello
 }
 
+/// The kinds of sound that have their own switch in Settings › Sound (under the one
+/// "Sounds" switch, which still turns everything off). "Saved" and the hello chord
+/// after an update follow the "Sounds" switch only.
+enum SoundKind: String, CaseIterable, Identifiable {
+    case pauseResume, modes, ticks, milestones, buttons
+    var id: String { rawValue }
+
+    var defaultsKey: String { "GlideSoundKind-" + rawValue }
+
+    var title: String {
+        switch self {
+        case .pauseResume: String(localized: "Pause and resume", comment: "Sound kind")
+        case .modes: String(localized: "Modes on and off", comment: "Sound kind: Precision, Scroll with ball, Drag lock")
+        case .ticks: String(localized: "Slider and switch ticks", comment: "Sound kind")
+        case .milestones: String(localized: "Milestones and records", comment: "Sound kind")
+        case .buttons: String(localized: "Button presses on the Buttons page", comment: "Sound kind")
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .pauseResume: "playpause"
+        case .modes: "scope"
+        case .ticks: "slider.horizontal.3"
+        case .milestones: "trophy"
+        case .buttons: "circle.grid.2x2"
+        }
+    }
+
+    /// Which kind a sound is (nil: only the main switch).
+    init?(_ sound: Sound) {
+        switch sound {
+        case .resume, .pause: self = .pauseResume
+        case .modeOn, .modeOff: self = .modes
+        case .milestone, .milestoneBig: self = .milestones
+        case .tick, .hello: return nil
+        }
+    }
+}
+
 /// `Sounds.shared.play(.resume)`. Safe to call from anywhere, never blocks: the
 /// work happens on a private serial queue. Never two at once (a new sound fades
 /// the ringing one out over ~15 ms and then starts; the same sound twice within
@@ -54,6 +94,23 @@ final class Sounds: @unchecked Sendable {
         return on
     }
 
+    /// How loud every sound plays, 0…1 (Settings › Sound › Volume). 1 by default:
+    /// the sounds are already made quiet (peaks around −14 dBFS).
+    static let volumeKey = "GlideSoundVolume"
+    var volume: Double {
+        get { min(max(UserDefaults.standard.object(forKey: Self.volumeKey) as? Double ?? 1, 0), 1) }
+        set { UserDefaults.standard.set(min(max(newValue, 0), 1), forKey: Self.volumeKey) }
+    }
+
+    /// One kind's own switch (on by default).
+    func isOn(_ kind: SoundKind) -> Bool {
+        UserDefaults.standard.object(forKey: kind.defaultsKey) as? Bool ?? true
+    }
+
+    func set(_ kind: SoundKind, on: Bool) {
+        UserDefaults.standard.set(on, forKey: kind.defaultsKey)
+    }
+
     private static let fade = 0.015
     private static let repeatWindow = 0.080
 
@@ -77,6 +134,7 @@ final class Sounds: @unchecked Sendable {
     /// of whatever was just done).
     func play(_ sound: Sound, quietAfter: TimeInterval = 0) {
         guard enabled else { return }
+        if let kind = SoundKind(sound), !isOn(kind) { return }
         play(sound, quietAfter: quietAfter, preview: false)
     }
 
@@ -127,8 +185,9 @@ final class Sounds: @unchecked Sendable {
     /// clicks and its release answers lower. Rate-limited (one every 45 ms at most), so
     /// a fast drag never chatters; on the same "Sounds" switch; silent when muted. The
     /// little audio engine behind it stops itself a second after the last tick.
-    func detent(pitch: Double, volume: Float = 0.3) {
-        guard enabled, !silentRun else { return }
+    func detent(pitch: Double, volume: Float = 0.3, kind: SoundKind = .ticks) {
+        guard enabled, !silentRun, isOn(kind) else { return }
+        let volume = volume * Float(self.volume)
         let requested = ProcessInfo.processInfo.systemUptime
         queue.async { [self] in
             guard requested - lastDetent >= 0.045, !LaunchExperience.systemOutputMuted else { return }
@@ -174,7 +233,7 @@ final class Sounds: @unchecked Sendable {
     }
 
     private func start(_ player: AVAudioPlayer) {
-        player.volume = 1
+        player.volume = Float(volume)
         player.currentTime = 0
         player.play()
         current = player

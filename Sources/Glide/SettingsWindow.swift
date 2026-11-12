@@ -5,12 +5,13 @@ import SwiftUI
 /// The tabs of Glideball › Settings… (⌘,). The raw value is what's saved, and
 /// what `glideball://settings?tab=` uses (Commands.swift).
 enum SettingsPane: String, CaseIterable {
-    case general, look, updates, privacy, shortcuts
+    case general, look, sound, updates, privacy, shortcuts
 
     var title: String {
         switch self {
         case .general: String(localized: "General", comment: "Settings tab")
-        case .look: String(localized: "Look & Sound", comment: "Settings tab: app icon, animations and sounds")
+        case .look: String(localized: "Look", comment: "Settings tab: ball color, light, app icon")
+        case .sound: String(localized: "Sound", comment: "Settings tab: sounds")
         case .updates: String(localized: "Updates", comment: "Settings tab")
         case .privacy: String(localized: "Privacy", comment: "Settings tab")
         case .shortcuts: String(localized: "Shortcuts", comment: "Settings tab: keyboard shortcuts")
@@ -21,6 +22,7 @@ enum SettingsPane: String, CaseIterable {
         switch self {
         case .general: "gearshape"
         case .look: "paintpalette"
+        case .sound: "speaker.wave.2"
         case .updates: "arrow.down.circle"
         case .privacy: "hand.raised"
         case .shortcuts: "command"
@@ -245,6 +247,7 @@ final class SettingsWindowController: NSWindowController, NSToolbarDelegate {
         switch pane {
         case .general: GeneralSettingsPane(model: model)
         case .look: LookSettingsPane(model: model)
+        case .sound: SoundSettingsPane()
         case .updates: UpdatesSettingsPane(model: model)
         case .privacy: PrivacySettingsPane()
         case .shortcuts: ShortcutsSettingsPane(model: model)

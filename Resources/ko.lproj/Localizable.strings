@@ -98,7 +98,6 @@
 "Restored your previous settings" = "이전 설정을 복원했어요";
 
 /* Toast; the name of a button preset */
-"Applied “Spaces + Wispr Flow”" = "“스페이스 + Wispr Flow” 적용함";
 
 /* ---- AppProfile.swift ---- */
 
@@ -527,7 +526,6 @@
 
 "Open apps" = "열려 있는 앱";
 
-"No other open apps" = "열려 있는 다른 앱 없음";
 
 "Choose from Applications…" = "응용 프로그램에서 선택…";
 
@@ -596,15 +594,11 @@
 
 "Now press a keyboard shortcut" = "이제 키보드 단축키를 누르세요";
 
-"Or choose an action from the menu. Esc cancels." = "또는 메뉴에서 동작을 선택하세요. Esc를 누르면 취소돼요.";
 
-"No combos yet. Use Quick assign and hold two or three buttons together." = "아직 콤보가 없어요. 빠른 지정을 사용해 버튼 두세 개를 함께 누르세요.";
 
 "Delete combo" = "콤보 삭제";
 
-"Buttons in a combo wait a split second (up to 0.16 s for three) to see if their partners join. Buttons not in any combo respond instantly." = "콤보에 포함된 버튼은 함께 눌리는 버튼이 있는지 잠깐(버튼 3개면 최대 0.16초) 기다려요. 콤보에 없는 버튼은 즉시 반응해요.";
 
-"New combo" = "새 콤보";
 
 "That combo already exists" = "이미 있는 콤보예요";
 
@@ -676,7 +670,6 @@
 "Press a button on your trackball: its row lights up." = "트랙볼의 버튼을 누르면 해당 행이 빛나요.";
 
 /* Button preset name */
-"Spaces + Wispr Flow" = "스페이스 + Wispr Flow";
 
 "Top buttons switch Spaces; bottom left + both top buttons hold ⌃Space for Wispr Flow." = "위쪽 버튼으로 스페이스를 전환하고, 왼쪽 아래 + 위쪽 두 버튼으로 Wispr Flow용 ⌃Space를 누르고 있어요.";
 
@@ -692,9 +685,7 @@
 
 "Your primary click stays a left click, so Glideball can never lock you out." = "주 클릭은 항상 왼쪽 클릭으로 유지되므로 Glideball 때문에 조작이 막힐 일은 없어요.";
 
-"Type a shortcut…  esc to cancel" = "단축키 입력…  esc로 취소";
 
-"Record custom shortcut…" = "사용자 설정 단축키 기록…";
 
 /* ---- Components.swift ---- */
 
@@ -1646,10 +1637,8 @@
 "Install %@…" = "%@ 설치…";
 "Just the Expert Mouse for now. Turn this on to try Glideball with Kensington’s other trackballs." = "지금은 Expert Mouse만 지원해요. 이 옵션을 켜면 Kensington의 다른 트랙볼에서도 Glideball을 써 볼 수 있어요.";
 "Keep the classic one" = "클래식 아이콘 유지";
-"Language and performance" = "언어 및 성능";
 "Learn more" = "더 알아보기";
 "Lets Raycast and scripts pause Glideball, switch modes and change the pointer speed. It stays off unless you turn it on." = "Raycast와 스크립트로 Glideball을 일시 정지하고, 모드를 바꾸고, 포인터 속도를 조절할 수 있게 해요. 직접 켜기 전에는 꺼져 있어요.";
-"Look & Sound" = "모양 및 사운드";
 "No icon in the menu bar. Open Glideball from the Dock to change things." = "메뉴 막대에 아이콘이 없어요. 설정을 바꾸려면 Dock에서 Glideball을 여세요.";
 "No pause shortcut. You can still pause Glideball from its menu-bar icon or the switch in the sidebar." = "일시 정지 단축키가 없어요. 메뉴 막대 아이콘이나 사이드바의 스위치로 Glideball을 일시 정지할 수 있어요.";
 "No shortcuts match “%@”." = "“%@”와(과) 일치하는 단축키가 없어요.";
@@ -1657,7 +1646,6 @@
 "Not Now" = "나중에";
 "Off unless you pick something. Never your name, what you type or which apps you use." = "직접 선택하지 않으면 꺼져 있어요. 이름, 입력한 내용, 사용하는 앱은 절대 보내지 않아요.";
 "Open Settings" = "설정 열기";
-"Opening Glideball" = "Glideball 열기";
 "Opens in your browser" = "브라우저에서 열려요";
 "Opens this version’s notes on the Glideball website" = "Glideball 웹사이트에서 이 버전의 릴리스 노트를 열어요";
 "Orb" = "Orb";
@@ -1690,7 +1678,6 @@
 "What’s been sent" = "지금까지 보낸 내용";
 "What’s new in this version" = "이 버전의 새로운 기능";
 "What’s sent" = "보내는 내용";
-"Works with" = "지원 기기";
 "You get new versions as soon as they’re out, before everyone else. They’ve had less testing, so you may hit bugs." = "새 버전이 나오자마자 다른 사람보다 먼저 받아요. 테스트를 덜 거친 버전이라 버그가 있을 수 있어요.";
 "You get new versions once they’ve settled. Turn this on to try them early, while I’m still testing." = "새 버전은 안정된 뒤에 받아요. 제가 아직 테스트하는 중에 먼저 써 보려면 이 옵션을 켜세요.";
 "Your version" = "내 버전";
@@ -1715,3 +1702,262 @@
 "Your best day shows here after a few days" = "며칠 지나면 여기에 최고의 날이 표시됩니다";
 "Your best day yet" = "지금까지 최고의 날";
 "against your best day" = "최고의 날과 비교";
+
+/* Round 3: action picker, presets, ball colors, settings, badges and sharing */
+"%@ of %@" = "%@ / %@";
+"%@ so far on this Mac" = "이 Mac에서 지금까지 %@";
+"%@, choose what this does" = "%@, 동작을 골라 보세요";
+"%lld of %lld badges" = "배지 %lld / %lld개";
+"%lld of %lld done" = "%lld / %lld 완료";
+"%lld of %lld earned. Click one to see what’s behind it." = "%lld / %lld개 획득. 하나를 클릭하면 숨은 이야기를 볼 수 있어요.";
+"%lld to try" = "해볼 것 %lld개";
+"12,000 clicks, about as many pecks as a woodpecker makes in a day" = "클릭 12,000번, 딱따구리가 하루에 쪼는 횟수쯤";
+"250,000 clicks" = "클릭 250,000번";
+"525,600 clicks, one for every minute in a year" = "클릭 525,600번, 1년의 분마다 한 번씩";
+"5K" = "5K";
+"86,400 clicks, one for every second in a day" = "클릭 86,400번, 하루의 초마다 한 번씩";
+"A day of seconds" = "하루는 초 단위로";
+"A mile" = "1마일";
+"A normal click." = "평범한 클릭이에요.";
+"A soft glow when you roll, spin or click, easy to ignore." = "굴리거나 돌리거나 클릭할 때 은은하게 빛나요. 신경 쓰이지 않을 정도예요.";
+"A year of minutes" = "1년은 분 단위로";
+"Add a combo" = "콤보 추가";
+"Add a combo on the Buttons tab." = "버튼 탭에서 콤보를 추가하세요.";
+"Add an app on the Apps tab." = "앱 탭에서 앱을 추가하세요.";
+"Add one below, or use Quick assign and hold the buttons together." = "아래에서 추가하거나, 빠른 지정을 쓰고 버튼을 함께 누르세요.";
+"Already in Use" = "사용 중";
+"Any app, open or not." = "열려 있든 아니든 모든 앱.";
+"Applied “%@”" = "“%@” 적용됨";
+"Apply %@" = "%@ 적용";
+"Apply a preset on the Buttons tab." = "버튼 탭에서 프리셋을 적용하세요.";
+"Apps and tools" = "앱과 도구";
+"Ask before quitting" = "종료 전에 확인";
+"Back in browsers, Finder and most apps, like a mouse’s side button." = "브라우저, Finder, 대부분의 앱에서 뒤로 가기. 마우스 옆 버튼과 같아요.";
+"Back with the keyboard shortcut, for apps that ignore the mouse button." = "마우스 버튼을 무시하는 앱을 위해 키보드 단축키로 뒤로 가기.";
+"Back, forward and tabs" = "뒤로, 앞으로, 탭";
+"Badge earned" = "배지 획득";
+"Ball color" = "볼 색상";
+"Before preset" = "프리셋 적용 전";
+"Bottom" = "아래";
+"Brings back the tab you just closed." = "방금 닫은 탭을 다시 열어요.";
+"Browser" = "브라우저";
+"Burj Khalifa" = "부르즈 할리파";
+"Button presses on the Buttons page" = "버튼 페이지에서 버튼 누르기";
+"Changes %lld buttons" = "버튼 %lld개 변경";
+"Changes 1 button" = "버튼 1개 변경";
+"Choose" = "선택";
+"Choose an Action" = "동작 선택";
+"Choose an App" = "앱 선택";
+"Choose an action for a button on the Buttons tab." = "버튼 탭에서 버튼의 동작을 고르세요.";
+"Choose an app…" = "앱 선택…";
+"Choose the app this button should open." = "이 버튼으로 열 앱을 고르세요.";
+"Choose what they do" = "동작 고르기";
+"Choose what this button does" = "이 버튼의 동작 고르기";
+"Choose what this does" = "동작 고르기";
+"Classic red" = "클래식 레드";
+"Clear the search" = "검색 지우기";
+"Click a button here, or press it on your trackball, to choose what it does." = "여기서 버튼을 클릭하거나 트랙볼에서 눌러서 동작을 고르세요.";
+"Click with ⇧ held: selects everything in between." = "⇧를 누른 채 클릭: 그 사이의 모든 것을 선택해요.";
+"Click with ⌃ held: the other way to right-click." = "⌃를 누른 채 클릭: 오른쪽 클릭의 또 다른 방법이에요.";
+"Click with ⌘ held: opens links in a background tab." = "⌘를 누른 채 클릭: 링크를 백그라운드 탭에서 열어요.";
+"Click with ⌥ held." = "⌥를 누른 채 클릭.";
+"Closes the tab or window in front." = "맨 앞의 탭이나 윈도우를 닫아요.";
+"Colors the trackball everywhere in Glideball, and the light it throws. Ball blue, ring pink and buttons amber stay the same in charts and badges, so they always mean the same thing." = "Glideball 전체의 트랙볼과 그 빛에 색을 입혀요. 볼 파란색, 링 분홍색, 버튼 호박색은 차트와 배지에서도 그대로여서 항상 같은 뜻이에요.";
+"Combo maker" = "콤보 메이커";
+"Copied. Paste it anywhere." = "복사됨. 어디에든 붙여넣으세요.";
+"Copies what’s selected." = "선택한 항목을 복사해요.";
+"Couldn’t save it: %@" = "저장하지 못했어요: %@";
+"Current" = "현재";
+"Cuts what’s selected." = "선택한 항목을 오려둬요.";
+"Deep sea" = "깊은 바다";
+"Does it again after an undo." = "실행 취소한 것을 다시 실행해요.";
+"Drag to capture part of the screen." = "드래그해서 화면의 일부를 캡처해요.";
+"Earned %@" = "%@에 획득";
+"Edge of space" = "우주의 가장자리";
+"Editing" = "편집";
+"Ember" = "불씨";
+"Emoji & Symbols" = "이모지 및 기호";
+"Empire State" = "엠파이어 스테이트";
+"Esc cancels." = "Esc 키로 취소해요.";
+"Find" = "찾기";
+"Forest" = "숲";
+"Forward in browsers, Finder and most apps." = "브라우저, Finder, 대부분의 앱에서 앞으로 가기.";
+"Forward with the keyboard shortcut." = "키보드 단축키로 앞으로 가기.";
+"Full" = "전체";
+"Full Screen" = "전체 화면";
+"Gave a button something new to do" = "버튼에 새 역할을 줬어요";
+"Gave an app its own setup" = "앱에 전용 구성을 만들었어요";
+"Gave the ball a color of your own" = "볼에 나만의 색을 입혔어요";
+"Glideball badge – %@" = "Glideball 배지 – %@";
+"Goes back a song." = "이전 곡으로 돌아가요.";
+"Golden Gate" = "골든 게이트";
+"Graphite" = "그래파이트";
+"Half marathon" = "하프 마라톤";
+"Hold it and roll the ball to scroll in any direction." = "누른 채 볼을 굴리면 어느 방향으로든 스크롤해요.";
+"Hold the keys down while the button is held" = "버튼을 누르고 있는 동안 키를 계속 눌러요";
+"Hold the modifiers (⌘ ⌥ ⌃ ⇧), then press the key. Esc cancels." = "수정자 키(⌘ ⌥ ⌃ ⇧)를 누른 다음 키를 누르세요. Esc 키로 취소해요.";
+"Holds your shortcut while the button is down." = "버튼을 누르고 있는 동안 단축키를 계속 눌러요.";
+"Holds ⌃Space while the button is down, for push-to-talk dictation." = "버튼을 누르고 있는 동안 ⌃Space를 눌러요. 푸시투토크 받아쓰기용이에요.";
+"Icon and celebrations" = "아이콘과 축하 효과";
+"In use" = "사용 중";
+"Jumps back to the app you were just using." = "방금 쓰던 앱으로 돌아가요.";
+"Keeps your buttons" = "버튼은 그대로";
+"Keyboard shortcut" = "키보드 단축키";
+"Last Used App" = "마지막에 사용한 앱";
+"Light" = "빛";
+"Light and motion" = "빛과 움직임";
+"Light colors work best at the top, deep ones at the bottom." = "밝은 색은 위쪽에, 짙은 색은 아래쪽에 잘 어울려요.";
+"Lock Screen" = "화면 잠금";
+"Locks your Mac straight away." = "Mac을 바로 잠가요.";
+"Made to measure" = "맞춤 제작";
+"Made your first combo" = "첫 콤보를 만들었어요";
+"Make a picture of your numbers to share" = "내 숫자를 그림으로 만들어 공유하기";
+"Makes the page bigger." = "페이지를 크게 해요.";
+"Makes the page smaller." = "페이지를 작게 해요.";
+"Media" = "미디어";
+"Middle" = "중간";
+"Milestones and records" = "이정표와 기록";
+"Minimize Window" = "윈도우 최소화";
+"Modes on and off" = "모드 켜기와 끄기";
+"Mount Fuji" = "후지산";
+"Moves to the tab on the left." = "왼쪽 탭으로 이동해요.";
+"Moves to the tab on the right." = "오른쪽 탭으로 이동해요.";
+"Mute" = "음소거";
+"Mutes or unmutes your Mac." = "Mac을 음소거하거나 음소거를 해제해요.";
+"My Glideball" = "나의 Glideball";
+"My trackball, so far" = "지금까지의 내 트랙볼";
+"New badges arrived, and you’d already earned %lld" = "새 배지가 도착했어요. 이미 %lld개를 획득했네요";
+"New job" = "새 일자리";
+"Next Tab" = "다음 탭";
+"Next Track" = "다음 트랙";
+"Next: %@" = "다음: %@";
+"No combos yet." = "아직 콤보가 없어요.";
+"No open app called “%@”. Choose it from Applications instead." = "“%@”라는 이름의 열린 앱이 없어요. 대신 응용 프로그램에서 고르세요.";
+"Nothing called “%@”. Try another word, or record it as a keyboard shortcut." = "“%@”에 해당하는 항목이 없어요. 다른 단어를 써 보거나 키보드 단축키로 기록하세요.";
+"Now" = "지금";
+"Ocean" = "바다";
+"Open %@" = "%@ 열기";
+"Open an app" = "앱 열기";
+"Opening and quitting" = "열기와 종료";
+"Opens Spotlight to search your Mac." = "Spotlight를 열어 Mac을 검색해요.";
+"Opens a new tab." = "새 탭을 열어요.";
+"Opens an app, or brings it to the front." = "앱을 열거나 맨 앞으로 가져와요.";
+"Opens links in a new tab in most browsers." = "대부분의 브라우저에서 링크를 새 탭으로 열어요.";
+"Opens the app, or brings it to the front." = "앱을 열거나 맨 앞으로 가져와요.";
+"Opens the emoji picker where you’re typing." = "입력 중인 곳에서 이모지 선택기를 열어요.";
+"Opens the menu for what’s under the pointer." = "포인터 아래에 있는 항목의 메뉴를 열어요.";
+"Opens the screenshot and screen recording tools." = "스크린샷 및 화면 기록 도구를 열어요.";
+"Or choose an action:" = "또는 동작 고르기:";
+"Out of the box" = "기본 상태";
+"Pastes what you copied." = "복사한 것을 붙여넣어요.";
+"Pause and resume" = "일시 정지와 재개";
+"Pick a ball color in Settings › Look." = "설정 › 모양에서 볼 색상을 고르세요.";
+"Picks up what’s under the pointer; press again or click to drop it." = "포인터 아래의 것을 집어요. 다시 누르거나 클릭하면 놓아요.";
+"Play a sound for" = "사운드 재생 대상";
+"Play or Pause" = "재생 또는 일시 정지";
+"Plays or pauses music and videos." = "음악과 비디오를 재생하거나 일시 정지해요.";
+"Pointer and scrolling modes" = "포인터 및 스크롤 모드";
+"Press a trackball button (or two or three together), then the keyboard shortcut it should send" = "트랙볼 버튼을 누르세요(두세 개를 함께 눌러도 돼요). 그다음 보낼 키보드 단축키를 누르세요";
+"Press any keys and this button sends them." = "아무 키나 누르면 이 버튼이 그 키를 보내요.";
+"Press once to slow the pointer, again to go back." = "한 번 누르면 포인터가 느려지고, 다시 누르면 원래대로 돌아가요.";
+"Press the keys" = "키를 누르세요";
+"Press two or three buttons together to do something else. Buttons in a combo wait a split second (up to 0.16 s for three) to see if their partners join; buttons not in any combo respond instantly." = "버튼 두세 개를 함께 눌러 다른 동작을 해보세요. 콤보에 포함된 버튼은 함께 눌리는 버튼이 있는지 잠깐(버튼 3개면 최대 0.16초) 기다려요. 콤보에 없는 버튼은 즉시 반응해요.";
+"Preview" = "미리보기";
+"Previewing a preset. Nothing changes until you apply it." = "프리셋을 미리 보는 중이에요. 적용하기 전에는 아무것도 바뀌지 않아요.";
+"Previous Tab" = "이전 탭";
+"Previous Track" = "이전 트랙";
+"Quarter million" = "25만";
+"Quick Assign" = "빠른 지정";
+"Quiet" = "조용히";
+"Quitting asks first, since your trackball goes back to plain macOS until Glideball opens again." = "종료하기 전에 확인해요. Glideball을 다시 열 때까지 트랙볼이 기본 macOS 동작으로 돌아가기 때문이에요.";
+"Ready-made" = "기성품";
+"Recent" = "최근";
+"Record a shortcut…" = "단축키 기록…";
+"Reload" = "다시 로드";
+"Reloads the page." = "페이지를 다시 로드해요.";
+"Reopen Closed Tab" = "닫은 탭 다시 열기";
+"Right click with ⌃ held." = "⌃를 누른 채 오른쪽 클릭.";
+"Rolled a 5K (5 km)" = "5K(5 km)를 굴렸어요";
+"Rolled a half marathon (21.1 km)" = "하프 마라톤(21.1 km)을 굴렸어요";
+"Rolled a mile (1.6 km)" = "1마일(1.6 km)을 굴렸어요";
+"Rolled an ultramarathon (100 km)" = "울트라 마라톤(100 km)을 굴렸어요";
+"Rolled the length of the Golden Gate Bridge (2.7 km)" = "금문교의 길이(2.7 km)를 굴렸어요";
+"Save" = "저장";
+"Save as PNG…" = "PNG로 저장…";
+"Saves the document in front." = "맨 앞의 문서를 저장해요.";
+"Screenshot" = "스크린샷";
+"Screenshot and Recording" = "스크린샷 및 화면 기록";
+"Scroll sampler" = "스크롤 맛보기";
+"Scrolled as deep as the Mariana Trench (10,935 m)" = "마리아나 해구 깊이(10,935 m)만큼 스크롤했어요";
+"Scrolled the height of Mount Fuji (3,776 m)" = "후지산 높이(3,776 m)만큼 스크롤했어요";
+"Scrolled the height of the Burj Khalifa (828 m)" = "부르즈 할리파 높이(828 m)만큼 스크롤했어요";
+"Scrolled the height of the Empire State Building (443 m)" = "엠파이어 스테이트 빌딩 높이(443 m)만큼 스크롤했어요";
+"Scrolled up to the edge of space (100 km)" = "우주의 가장자리(100 km)까지 스크롤했어요";
+"Search actions" = "동작 검색";
+"Search open apps" = "열린 앱 검색";
+"Searches the page or document." = "페이지나 문서에서 검색해요.";
+"Selects everything." = "모두 선택해요.";
+"Sends the window in front to the Dock." = "맨 앞의 윈도우를 Dock으로 보내요.";
+"Sets all your buttons and a few combos at once. You can undo it." = "모든 버튼과 몇 가지 콤보를 한 번에 설정해요. 되돌릴 수 있어요.";
+"Setting up and exploring" = "설정하고 둘러보기";
+"Share your Glideball" = "내 Glideball 공유";
+"Shows every open window and your Spaces." = "열린 모든 윈도우와 스페이스를 보여줘요.";
+"Shows the windows of the app in front." = "맨 앞 앱의 윈도우를 보여줘요.";
+"Skips to the next song." = "다음 곡으로 넘어가요.";
+"Slider and switch ticks" = "슬라이더와 스위치 틱";
+"Slides to the Space on the left." = "왼쪽 스페이스로 이동해요.";
+"Slides to the Space on the right." = "오른쪽 스페이스로 이동해요.";
+"Slows the pointer while you hold the button, for fine work." = "버튼을 누르고 있는 동안 포인터가 느려져서 세밀한 작업에 좋아요.";
+"Spaces" = "스페이스";
+"Spaces, Mission Control and windows" = "스페이스, Mission Control, 윈도우";
+"Stock" = "기본 상태";
+"Suggested" = "추천";
+"Sunset" = "노을";
+"Tap the buttons that go together" = "함께 쓰는 버튼을 클릭하세요";
+"The button does nothing at all." = "이 버튼은 아무것도 하지 않아요.";
+"The full show: the light fills the window as you use the trackball." = "풀 쇼: 트랙볼을 쓰는 동안 빛이 윈도우를 가득 채워요.";
+"The picture is made on your Mac. It only goes somewhere if you share it." = "그림은 내 Mac에서 만들어져요. 공유할 때만 어딘가로 가요.";
+"The room lights up with your hand: blue when you roll, pink when you spin, amber when you click." = "손의 움직임에 따라 방이 밝아져요. 굴리면 파랑, 돌리면 분홍, 클릭하면 호박색이에요.";
+"The window stays still and dark. The trackball itself still answers your hand." = "윈도우는 조용하고 어두운 채로 있어요. 트랙볼은 여전히 손에 반응해요.";
+"Top" = "위";
+"Top buttons switch Spaces. Both together open Mission Control; bottom right with top right shows the app’s windows." = "위쪽 버튼은 스페이스를 전환해요. 둘을 함께 누르면 Mission Control, 오른쪽 아래와 오른쪽 위를 함께 누르면 앱의 윈도우를 보여줘요.";
+"Top left copies, top right pastes. Both together undo; bottom right with top right redoes." = "왼쪽 위는 복사, 오른쪽 위는 붙여넣기. 둘을 함께 누르면 실행 취소, 오른쪽 아래와 오른쪽 위를 함께 누르면 다시 실행해요.";
+"Top left goes back, top right goes forward. Combos open, close and reopen tabs." = "왼쪽 위는 뒤로, 오른쪽 위는 앞으로. 콤보로 탭을 열고, 닫고, 다시 열어요.";
+"Top left plays or pauses, top right skips ahead. Both together go back a track; bottom right with top right mutes." = "왼쪽 위는 재생 또는 일시 정지, 오른쪽 위는 다음으로 넘기기. 둘을 함께 누르면 이전 트랙, 오른쪽 아래와 오른쪽 위를 함께 누르면 음소거해요.";
+"Trackballs and other apps" = "트랙볼과 다른 앱";
+"Tried a button preset" = "버튼 프리셋을 써봤어요";
+"Tried all three ways to scroll" = "스크롤 세 가지 방식을 모두 써봤어요";
+"True colors" = "진짜 색깔";
+"Try Flywheel, Follow and Native on the Scrolling tab." = "스크롤 탭에서 플라이휠, 따라가기, 네이티브를 써보세요.";
+"Try it" = "해보기";
+"Turn it off" = "끄기";
+"Turns full screen on or off for the window in front." = "맨 앞 윈도우의 전체 화면을 켜거나 꺼요.";
+"Turns the sound down a step." = "소리를 한 단계 줄여요.";
+"Turns the sound up a step." = "소리를 한 단계 높여요.";
+"Two or three of them." = "두세 개를 함께.";
+"Ultra" = "울트라";
+"Undoes the last change." = "마지막 변경을 취소해요.";
+"Use This Shortcut" = "이 단축키 사용";
+"Volume" = "음량";
+"Volume Down" = "음량 줄이기";
+"Volume Up" = "음량 높이기";
+"What the trackball does out of the box: right click, middle click and Back. No combos." = "트랙볼의 기본 동작: 오른쪽 클릭, 가운데 클릭, 뒤로. 콤보는 없어요.";
+"Whatever this button does without Glideball." = "Glideball이 없을 때 이 버튼이 하는 동작 그대로예요.";
+"Where Glideball shows" = "Glideball이 보이는 곳";
+"Woodpecker" = "딱따구리";
+"Your buttons already match it." = "버튼이 이미 이 설정과 같아요.";
+"Your own keyboard shortcut." = "나만의 키보드 단축키.";
+"Zoom In" = "확대";
+"Zoom Out" = "축소";
+"adds %lld combos" = "콤보 %lld개 추가";
+"choose" = "선택";
+"clicks" = "클릭";
+"close" = "닫기";
+"keyboard shortcut keys" = "키보드 단축키 키 기록";
+"move" = "이동";
+"open launch application" = "열기 실행 응용 프로그램 앱";
+"removes your %lld combos" = "콤보 %lld개 삭제";
+"replaces your %lld combos with %lld" = "콤보 %lld개를 %lld개로 교체";
+"rolled" = "굴린 거리";
+"scrolled" = "스크롤한 거리";
+"⌘Q quits straight away. Your trackball goes back to plain macOS until Glideball opens again." = "⌘Q는 바로 종료해요. Glideball을 다시 열 때까지 트랙볼이 기본 macOS 동작으로 돌아가요.";

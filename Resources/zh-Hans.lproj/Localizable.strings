@@ -98,7 +98,6 @@
 "Restored your previous settings" = "已恢复你之前的设置";
 
 /* Toast; the name of a button preset */
-"Applied “Spaces + Wispr Flow”" = "已应用“空间 + Wispr Flow”";
 
 /* ---- AppProfile.swift ---- */
 
@@ -527,7 +526,6 @@
 
 "Open apps" = "已打开的 App";
 
-"No other open apps" = "没有其他已打开的 App";
 
 "Choose from Applications…" = "从“应用程序”中选取…";
 
@@ -596,15 +594,11 @@
 
 "Now press a keyboard shortcut" = "现在按下键盘快捷键";
 
-"Or choose an action from the menu. Esc cancels." = "或从菜单中选择一个操作。按 Esc 取消。";
 
-"No combos yet. Use Quick assign and hold two or three buttons together." = "还没有组合键。使用快速分配，同时按住两三个按钮。";
 
 "Delete combo" = "删除组合键";
 
-"Buttons in a combo wait a split second (up to 0.16 s for three) to see if their partners join. Buttons not in any combo respond instantly." = "组合键中的按钮会稍等片刻（三键组合最多 0.16 秒），看同伴是否一起按下。不在任何组合键中的按钮会立即响应。";
 
-"New combo" = "新组合键";
 
 "That combo already exists" = "该组合键已存在";
 
@@ -676,7 +670,6 @@
 "Press a button on your trackball: its row lights up." = "按下轨迹球上的按钮，对应的行会亮起。";
 
 /* Button preset name */
-"Spaces + Wispr Flow" = "空间 + Wispr Flow";
 
 "Top buttons switch Spaces; bottom left + both top buttons hold ⌃Space for Wispr Flow." = "上方按钮切换空间；左下 + 两个上方按钮按住 ⌃Space 来使用 Wispr Flow。";
 
@@ -692,9 +685,7 @@
 
 "Your primary click stays a left click, so Glideball can never lock you out." = "你的主点按始终是左键点按，因此 Glideball 永远不会让你失去控制。";
 
-"Type a shortcut…  esc to cancel" = "输入快捷键…  按 esc 取消";
 
-"Record custom shortcut…" = "录制自定快捷键…";
 
 /* ---- Components.swift ---- */
 
@@ -1646,10 +1637,8 @@
 "Install %@…" = "安装 %@…";
 "Just the Expert Mouse for now. Turn this on to try Glideball with Kensington’s other trackballs." = "目前仅支持 Expert Mouse。开启后，可以在 Kensington 的其他轨迹球上试用 Glideball。";
 "Keep the classic one" = "保留经典图标";
-"Language and performance" = "语言与性能";
 "Learn more" = "进一步了解";
 "Lets Raycast and scripts pause Glideball, switch modes and change the pointer speed. It stays off unless you turn it on." = "允许 Raycast 和脚本暂停 Glideball、切换模式以及更改指针速度。除非你开启，否则它保持关闭。";
-"Look & Sound" = "外观与声音";
 "No icon in the menu bar. Open Glideball from the Dock to change things." = "菜单栏中没有图标。如需更改设置，请从程序坞打开 Glideball。";
 "No pause shortcut. You can still pause Glideball from its menu-bar icon or the switch in the sidebar." = "没有暂停快捷键。你仍可通过菜单栏图标或边栏中的开关暂停 Glideball。";
 "No shortcuts match “%@”." = "没有与“%@”匹配的快捷键。";
@@ -1657,7 +1646,6 @@
 "Not Now" = "以后再说";
 "Off unless you pick something. Never your name, what you type or which apps you use." = "除非你选择，否则保持关闭。绝不会发送你的姓名、输入内容或所用的 App。";
 "Open Settings" = "打开设置";
-"Opening Glideball" = "打开 Glideball";
 "Opens in your browser" = "在浏览器中打开";
 "Opens this version’s notes on the Glideball website" = "在 Glideball 网站上打开此版本的说明";
 "Orb" = "Orb";
@@ -1690,7 +1678,6 @@
 "What’s been sent" = "已发送的内容";
 "What’s new in this version" = "此版本的新功能";
 "What’s sent" = "发送的内容";
-"Works with" = "适用设备";
 "You get new versions as soon as they’re out, before everyone else. They’ve had less testing, so you may hit bugs." = "新版本一发布你就能收到，比其他人更早。这些版本经过的测试较少，所以可能会遇到问题。";
 "You get new versions once they’ve settled. Turn this on to try them early, while I’m still testing." = "新版本稳定后你才会收到。开启后可以在我还在测试时提前试用。";
 "Your version" = "你的版本";
@@ -1715,3 +1702,262 @@
 "Your best day shows here after a few days" = "几天后，这里会显示你最好的一天";
 "Your best day yet" = "你迄今最好的一天";
 "against your best day" = "与你最好的一天相比";
+
+/* Round 3: action picker, presets, ball colors, settings, badges and sharing */
+"%@ of %@" = "%@ / %@";
+"%@ so far on this Mac" = "在这台 Mac 上已累计 %@";
+"%@, choose what this does" = "%@，选择它的作用";
+"%lld of %lld badges" = "%lld / %lld 枚徽章";
+"%lld of %lld done" = "已完成 %lld / %lld";
+"%lld of %lld earned. Click one to see what’s behind it." = "已获得 %lld / %lld。点按一枚，看看背后的故事。";
+"%lld to try" = "还有 %lld 项可试";
+"12,000 clicks, about as many pecks as a woodpecker makes in a day" = "点按 12,000 次，差不多是啄木鸟一天啄的次数";
+"250,000 clicks" = "点按 250,000 次";
+"525,600 clicks, one for every minute in a year" = "点按 525,600 次，一年中每分钟一次";
+"5K" = "5K";
+"86,400 clicks, one for every second in a day" = "点按 86,400 次，一天中每秒一次";
+"A day of seconds" = "一天的秒数";
+"A mile" = "一英里";
+"A normal click." = "普通的点按。";
+"A soft glow when you roll, spin or click, easy to ignore." = "滚动、转动或点按时泛起一层柔光，很容易忽略。";
+"A year of minutes" = "一年的分钟";
+"Add a combo" = "添加组合键";
+"Add a combo on the Buttons tab." = "在“按钮”标签页中添加一个组合键。";
+"Add an app on the Apps tab." = "在“App”标签页中添加一个 App。";
+"Add one below, or use Quick assign and hold the buttons together." = "在下方添加，或使用快速分配并同时按住按钮。";
+"Already in Use" = "已在使用";
+"Any app, open or not." = "任何 App，无论是否已打开。";
+"Applied “%@”" = "已应用“%@”";
+"Apply %@" = "应用%@";
+"Apply a preset on the Buttons tab." = "在“按钮”标签页中应用一个预设。";
+"Apps and tools" = "App 和工具";
+"Ask before quitting" = "退出前询问";
+"Back in browsers, Finder and most apps, like a mouse’s side button." = "在浏览器、访达和大多数 App 中后退，就像鼠标的侧键。";
+"Back with the keyboard shortcut, for apps that ignore the mouse button." = "用键盘快捷键后退，适用于忽略鼠标按键的 App。";
+"Back, forward and tabs" = "后退、前进和标签页";
+"Badge earned" = "已获得徽章";
+"Ball color" = "球的颜色";
+"Before preset" = "应用预设前";
+"Bottom" = "底部";
+"Brings back the tab you just closed." = "重新打开刚关闭的标签页。";
+"Browser" = "浏览器";
+"Burj Khalifa" = "哈利法塔";
+"Button presses on the Buttons page" = "在“按钮”页面按下按钮";
+"Changes %lld buttons" = "更改 %lld 个按钮";
+"Changes 1 button" = "更改 1 个按钮";
+"Choose" = "选取";
+"Choose an Action" = "选取一个操作";
+"Choose an App" = "选取一个 App";
+"Choose an action for a button on the Buttons tab." = "在“按钮”标签页中为按钮选取一个操作。";
+"Choose an app…" = "选取 App…";
+"Choose the app this button should open." = "选取此按钮要打开的 App。";
+"Choose what they do" = "选择它们的作用";
+"Choose what this button does" = "选择此按钮的作用";
+"Choose what this does" = "选择它的作用";
+"Classic red" = "经典红";
+"Clear the search" = "清除搜索";
+"Click a button here, or press it on your trackball, to choose what it does." = "在这里点按一个按钮，或在轨迹球上按下它，来选择它的作用。";
+"Click with ⇧ held: selects everything in between." = "按住 ⇧ 点按：选中中间的所有内容。";
+"Click with ⌃ held: the other way to right-click." = "按住 ⌃ 点按：右键点按的另一种方式。";
+"Click with ⌘ held: opens links in a background tab." = "按住 ⌘ 点按：在后台标签页中打开链接。";
+"Click with ⌥ held." = "按住 ⌥ 点按。";
+"Closes the tab or window in front." = "关闭最前面的标签页或窗口。";
+"Colors the trackball everywhere in Glideball, and the light it throws. Ball blue, ring pink and buttons amber stay the same in charts and badges, so they always mean the same thing." = "为 Glideball 中各处的轨迹球及其投射的光着色。球的蓝色、环的粉色和按钮的琥珀色在图表和徽章中保持不变，因此始终代表同样的含义。";
+"Combo maker" = "组合键达人";
+"Copied. Paste it anywhere." = "已拷贝。可粘贴到任何地方。";
+"Copies what’s selected." = "拷贝所选内容。";
+"Couldn’t save it: %@" = "无法存储：%@";
+"Current" = "当前";
+"Cuts what’s selected." = "剪切所选内容。";
+"Deep sea" = "深海";
+"Does it again after an undo." = "撤销后重做。";
+"Drag to capture part of the screen." = "拖移以截取屏幕的一部分。";
+"Earned %@" = "获得于 %@";
+"Edge of space" = "太空边缘";
+"Editing" = "编辑";
+"Ember" = "余烬";
+"Emoji & Symbols" = "表情与符号";
+"Empire State" = "帝国大厦";
+"Esc cancels." = "按 Esc 键取消。";
+"Find" = "查找";
+"Forest" = "森林";
+"Forward in browsers, Finder and most apps." = "在浏览器、访达和大多数 App 中前进。";
+"Forward with the keyboard shortcut." = "用键盘快捷键前进。";
+"Full" = "完整";
+"Full Screen" = "全屏幕";
+"Gave a button something new to do" = "给按钮分配了新任务";
+"Gave an app its own setup" = "给 App 做了专属配置";
+"Gave the ball a color of your own" = "给球换上了自己的颜色";
+"Glideball badge – %@" = "Glideball 徽章 – %@";
+"Goes back a song." = "回到上一首歌。";
+"Golden Gate" = "金门大桥";
+"Graphite" = "石墨";
+"Half marathon" = "半程马拉松";
+"Hold it and roll the ball to scroll in any direction." = "按住并滚动球，即可向任意方向滚动。";
+"Hold the keys down while the button is held" = "按住按钮期间，一直按住这些键";
+"Hold the modifiers (⌘ ⌥ ⌃ ⇧), then press the key. Esc cancels." = "按住修饰键（⌘ ⌥ ⌃ ⇧），然后按下按键。按 Esc 键取消。";
+"Holds your shortcut while the button is down." = "按住按钮期间，一直按住你的快捷键。";
+"Holds ⌃Space while the button is down, for push-to-talk dictation." = "按住按钮期间一直按住 ⌃Space，用于按键说话式听写。";
+"Icon and celebrations" = "图标与庆祝";
+"In use" = "使用中";
+"Jumps back to the app you were just using." = "回到你刚刚使用的 App。";
+"Keeps your buttons" = "保留你的按钮";
+"Keyboard shortcut" = "键盘快捷键";
+"Last Used App" = "上次使用的 App";
+"Light" = "光线";
+"Light and motion" = "光与动效";
+"Light colors work best at the top, deep ones at the bottom." = "浅色放在上方效果最好，深色放在下方。";
+"Lock Screen" = "锁定屏幕";
+"Locks your Mac straight away." = "立即锁定你的 Mac。";
+"Made to measure" = "量身定制";
+"Made your first combo" = "做出了第一个组合键";
+"Make a picture of your numbers to share" = "把你的数字做成图片来分享";
+"Makes the page bigger." = "放大页面。";
+"Makes the page smaller." = "缩小页面。";
+"Media" = "媒体";
+"Middle" = "中部";
+"Milestones and records" = "里程碑与纪录";
+"Minimize Window" = "最小化窗口";
+"Modes on and off" = "模式开与关";
+"Mount Fuji" = "富士山";
+"Moves to the tab on the left." = "切换到左边的标签页。";
+"Moves to the tab on the right." = "切换到右边的标签页。";
+"Mute" = "静音";
+"Mutes or unmutes your Mac." = "将你的 Mac 静音或取消静音。";
+"My Glideball" = "我的 Glideball";
+"My trackball, so far" = "我的轨迹球，截至目前";
+"New badges arrived, and you’d already earned %lld" = "新徽章已送达，其中 %lld 枚你早已获得";
+"New job" = "新工作";
+"Next Tab" = "下一个标签页";
+"Next Track" = "下一首";
+"Next: %@" = "下一项：%@";
+"No combos yet." = "还没有组合键。";
+"No open app called “%@”. Choose it from Applications instead." = "没有名为“%@”的已打开 App。请改从“应用程序”中选取。";
+"Nothing called “%@”. Try another word, or record it as a keyboard shortcut." = "没有叫“%@”的项目。换个词试试，或将它录制为键盘快捷键。";
+"Now" = "现在";
+"Ocean" = "海洋";
+"Open %@" = "打开%@";
+"Open an app" = "打开一个 App";
+"Opening and quitting" = "打开与退出";
+"Opens Spotlight to search your Mac." = "打开聚焦来搜索你的 Mac。";
+"Opens a new tab." = "打开新标签页。";
+"Opens an app, or brings it to the front." = "打开一个 App，或将它带到最前面。";
+"Opens links in a new tab in most browsers." = "在大多数浏览器中，在新标签页中打开链接。";
+"Opens the app, or brings it to the front." = "打开该 App，或将它带到最前面。";
+"Opens the emoji picker where you’re typing." = "在你输入的位置打开表情选取器。";
+"Opens the menu for what’s under the pointer." = "打开指针下方内容的菜单。";
+"Opens the screenshot and screen recording tools." = "打开截屏和屏幕录制工具。";
+"Or choose an action:" = "或选择一个操作：";
+"Out of the box" = "开箱即用";
+"Pastes what you copied." = "粘贴你拷贝的内容。";
+"Pause and resume" = "暂停与继续";
+"Pick a ball color in Settings › Look." = "在“设置”›“外观”中选取球的颜色。";
+"Picks up what’s under the pointer; press again or click to drop it." = "拾起指针下方的内容；再按一次或点按即可放下。";
+"Play a sound for" = "播放声音的场合";
+"Play or Pause" = "播放或暂停";
+"Plays or pauses music and videos." = "播放或暂停音乐和视频。";
+"Pointer and scrolling modes" = "指针与滚动模式";
+"Press a trackball button (or two or three together), then the keyboard shortcut it should send" = "按下轨迹球按钮（或同时按下两三个），然后按下它要发送的键盘快捷键";
+"Press any keys and this button sends them." = "按下任意按键，此按钮就会发送它们。";
+"Press once to slow the pointer, again to go back." = "按一次让指针变慢，再按一次恢复。";
+"Press the keys" = "按下按键";
+"Press two or three buttons together to do something else. Buttons in a combo wait a split second (up to 0.16 s for three) to see if their partners join; buttons not in any combo respond instantly." = "同时按下两三个按钮来执行其他操作。组合键中的按钮会稍等片刻（三键组合最多 0.16 秒），看同伴是否一起按下；不在任何组合键中的按钮会立即响应。";
+"Preview" = "预览";
+"Previewing a preset. Nothing changes until you apply it." = "正在预览预设。在你应用之前不会有任何更改。";
+"Previous Tab" = "上一个标签页";
+"Previous Track" = "上一首";
+"Quarter million" = "二十五万";
+"Quick Assign" = "快速分配";
+"Quiet" = "安静";
+"Quitting asks first, since your trackball goes back to plain macOS until Glideball opens again." = "退出前会先询问，因为在 Glideball 再次打开之前，你的轨迹球会恢复为普通的 macOS 行为。";
+"Ready-made" = "现成的";
+"Recent" = "最近";
+"Record a shortcut…" = "录制快捷键…";
+"Reload" = "重新载入";
+"Reloads the page." = "重新载入页面。";
+"Reopen Closed Tab" = "重新打开已关闭的标签页";
+"Right click with ⌃ held." = "按住 ⌃ 右键点按。";
+"Rolled a 5K (5 km)" = "滚过了 5K（5 公里）";
+"Rolled a half marathon (21.1 km)" = "滚过了半程马拉松（21.1 公里）";
+"Rolled a mile (1.6 km)" = "滚过了一英里（1.6 公里）";
+"Rolled an ultramarathon (100 km)" = "滚过了超级马拉松（100 公里）";
+"Rolled the length of the Golden Gate Bridge (2.7 km)" = "滚过了金门大桥的长度（2.7 公里）";
+"Save" = "存储";
+"Save as PNG…" = "存储为 PNG…";
+"Saves the document in front." = "存储最前面的文稿。";
+"Screenshot" = "屏幕截图";
+"Screenshot and Recording" = "截屏与录制";
+"Scroll sampler" = "滚动尝鲜";
+"Scrolled as deep as the Mariana Trench (10,935 m)" = "滚动到了马里亚纳海沟的深度（10,935 米）";
+"Scrolled the height of Mount Fuji (3,776 m)" = "滚动了富士山的高度（3,776 米）";
+"Scrolled the height of the Burj Khalifa (828 m)" = "滚动了哈利法塔的高度（828 米）";
+"Scrolled the height of the Empire State Building (443 m)" = "滚动了帝国大厦的高度（443 米）";
+"Scrolled up to the edge of space (100 km)" = "滚动到了太空边缘（100 公里）";
+"Search actions" = "搜索操作";
+"Search open apps" = "搜索已打开的 App";
+"Searches the page or document." = "在页面或文稿中搜索。";
+"Selects everything." = "选中全部内容。";
+"Sends the window in front to the Dock." = "将最前面的窗口收到程序坞。";
+"Sets all your buttons and a few combos at once. You can undo it." = "一次设定好你所有的按钮和几个组合键。可以撤销。";
+"Setting up and exploring" = "设置与探索";
+"Share your Glideball" = "分享你的 Glideball";
+"Shows every open window and your Spaces." = "显示所有已打开的窗口和你的空间。";
+"Shows the windows of the app in front." = "显示最前面 App 的窗口。";
+"Skips to the next song." = "跳到下一首歌。";
+"Slider and switch ticks" = "滑块和开关的滴答声";
+"Slides to the Space on the left." = "滑到左边的空间。";
+"Slides to the Space on the right." = "滑到右边的空间。";
+"Slows the pointer while you hold the button, for fine work." = "按住按钮期间指针变慢，适合精细操作。";
+"Spaces" = "空间";
+"Spaces, Mission Control and windows" = "空间、调度中心和窗口";
+"Stock" = "原厂设置";
+"Suggested" = "推荐";
+"Sunset" = "日落";
+"Tap the buttons that go together" = "点按一起使用的按钮";
+"The button does nothing at all." = "此按钮什么也不做。";
+"The full show: the light fills the window as you use the trackball." = "完整体验：使用轨迹球时，光会铺满整个窗口。";
+"The picture is made on your Mac. It only goes somewhere if you share it." = "图片在你的 Mac 上生成。只有你分享时，它才会去别的地方。";
+"The room lights up with your hand: blue when you roll, pink when you spin, amber when you click." = "房间随你的手亮起：滚动时是蓝色，转动时是粉色，点按时是琥珀色。";
+"The window stays still and dark. The trackball itself still answers your hand." = "窗口保持静止和暗色。轨迹球本身仍会响应你的手。";
+"Top" = "顶部";
+"Top buttons switch Spaces. Both together open Mission Control; bottom right with top right shows the app’s windows." = "上方的按钮切换空间。同时按下两个会打开调度中心；右下加右上会显示该 App 的窗口。";
+"Top left copies, top right pastes. Both together undo; bottom right with top right redoes." = "左上拷贝，右上粘贴。同时按下两个会撤销；右下加右上会重做。";
+"Top left goes back, top right goes forward. Combos open, close and reopen tabs." = "左上后退，右上前进。组合键可以打开、关闭和重新打开标签页。";
+"Top left plays or pauses, top right skips ahead. Both together go back a track; bottom right with top right mutes." = "左上播放或暂停，右上跳到下一首。同时按下两个会回到上一首；右下加右上会静音。";
+"Trackballs and other apps" = "轨迹球和其他 App";
+"Tried a button preset" = "试过了按钮预设";
+"Tried all three ways to scroll" = "试过了三种滚动方式";
+"True colors" = "本色";
+"Try Flywheel, Follow and Native on the Scrolling tab." = "在“滚动”标签页中试试飞轮、跟随和原生。";
+"Try it" = "试一试";
+"Turn it off" = "关闭它";
+"Turns full screen on or off for the window in front." = "打开或关闭最前面窗口的全屏幕。";
+"Turns the sound down a step." = "把声音调小一档。";
+"Turns the sound up a step." = "把声音调大一档。";
+"Two or three of them." = "其中两个或三个。";
+"Ultra" = "超级";
+"Undoes the last change." = "撤销上一次更改。";
+"Use This Shortcut" = "使用此快捷键";
+"Volume" = "音量";
+"Volume Down" = "调低音量";
+"Volume Up" = "调高音量";
+"What the trackball does out of the box: right click, middle click and Back. No combos." = "轨迹球的开箱即用设置：右键点按、中键点按和后退。没有组合键。";
+"Whatever this button does without Glideball." = "没有 Glideball 时，此按钮本来的作用。";
+"Where Glideball shows" = "Glideball 显示的位置";
+"Woodpecker" = "啄木鸟";
+"Your buttons already match it." = "你的按钮已经和它一致。";
+"Your own keyboard shortcut." = "你自己的键盘快捷键。";
+"Zoom In" = "放大";
+"Zoom Out" = "缩小";
+"adds %lld combos" = "添加 %lld 个组合键";
+"choose" = "选取";
+"clicks" = "点按";
+"close" = "关闭";
+"keyboard shortcut keys" = "键盘快捷键 按键 录制";
+"move" = "移动";
+"open launch application" = "打开 启动 应用程序 App";
+"removes your %lld combos" = "移除你的 %lld 个组合键";
+"replaces your %lld combos with %lld" = "将你的 %lld 个组合键替换为 %lld 个";
+"rolled" = "滚过";
+"scrolled" = "滚动了";
+"⌘Q quits straight away. Your trackball goes back to plain macOS until Glideball opens again." = "⌘Q 会立即退出。在 Glideball 再次打开之前，你的轨迹球会恢复为普通的 macOS 行为。";

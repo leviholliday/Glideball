@@ -46,11 +46,14 @@ enum DemoData {
         ledger.started = cal.date(byAdding: .day, value: -30, to: now)
         let earned = ["scroll-10": 29, "scroll-93": 27, "scroll-330": 22, "scroll-1k": 12,
                       "ball-10": 29, "ball-100": 27, "ball-400": 21, "ball-1k": 6,
-                      "clicks-100": 30, "clicks-1k": 29, "clicks-10k": 25]
+                      "clicks-100": 30, "clicks-1k": 29, "clicks-10k": 25, "clicks-12k": 24,
+                      "scroll-443": 18, "scroll-828": 14, "setup-button": 28, "setup-combo": 26, "setup-app": 20]
         for (id, back) in earned { ledger.earned[id] = cal.date(byAdding: .day, value: -back, to: now) }
         ledger.records = [RecordKind.spin.rawValue: 38, RecordKind.flick.rawValue: 2.4, RecordKind.roll.rawValue: 21]
         for k in RecordKind.allCases { ledger.recordDates[k.rawValue] = cal.date(byAdding: .day, value: -4, to: now) }
         ledger.checklist = [.speed, .scroll, .button]
+        ledger.explored = [.button, .combo, .app, .scrollFlywheel, .scrollFollow]
+        ledger.knownBadges = Set(Milestone.all.map(\.id))
         if let data = try? JSONEncoder().encode(ledger) { d.set(data, forKey: DelightCenter.ledgerKey) }
 
         // Settings › Privacy: crash reports on, with an install ID.
@@ -175,6 +178,20 @@ enum DemoData {
             live.push(ball: ball, notch: abs(ring), rollX: roll.dx, rollY: roll.dy, ringVelocity: ring, dt: 0.05, interval: 0.05)
         }
         return live
+    }
+
+    /// Add App…'s picker with a few open apps (icons of whatever's installed on the Mac that renders).
+    @MainActor static func addAppSections() -> [PickerSection] {
+        let apps = [("com.apple.Notes", "Notes"), ("com.apple.Music", "Music"), ("com.figma.Desktop", "Figma"),
+                    ("com.apple.Terminal", "Terminal"), ("com.spotify.client", "Spotify")]
+        let entries = apps.map { id, name in
+            let icon = ActionCatalog.appIcon(id) ?? NSWorkspace.shared.icon(for: .application)
+            return PickerEntry(id: id, title: name, icon: .image(icon)) {}
+        }
+        return [PickerSection(id: "open", title: String(localized: "Open apps"), entries: entries),
+                PickerSection(id: "more", entries: [PickerEntry(id: "choose", title: String(localized: "Choose from Applications…"),
+                                                                detail: String(localized: "Any app, open or not.", comment: "Add App picker"),
+                                                                icon: .symbol("folder"), opensMore: true) {}])]
     }
 
     /// A small deterministic random number generator.

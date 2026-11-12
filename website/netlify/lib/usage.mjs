@@ -51,7 +51,7 @@ export const PERFORMANCE = ["smooth", "efficient", "minimal"];
 export const POINTER_SPEEDS = ["<2", "2-4", "4-8", "8-16", "16-32", "32+"];
 export const ACTION_TYPES = [
   "system", "leftClick", "rightClick", "middleClick", "back", "forward", "shortcut", "holdShortcut",
-  "modifiedClick", "disabled", "precisionHold", "precisionToggle", "ballScrollHold", "dragLock",
+  "modifiedClick", "disabled", "precisionHold", "precisionToggle", "ballScrollHold", "dragLock", "media", "openApp",
 ];
 export const ARCHES = ["arm64", "x86_64"];
 

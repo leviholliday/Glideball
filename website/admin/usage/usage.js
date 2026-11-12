@@ -127,6 +127,7 @@ const ACTION = {
   back: "Back", forward: "Forward", shortcut: "Keyboard shortcut", holdShortcut: "Held shortcut",
   modifiedClick: "Modifier-click", disabled: "Do nothing", precisionHold: "Precision (hold)",
   precisionToggle: "Precision (toggle)", ballScrollHold: "Scroll with ball", dragLock: "Drag lock",
+  media: "Media key", openApp: "Open an app",
 };
 const SPEED = { "<2": "Under 2", "2-4": "2 to 4", "4-8": "4 to 8", "8-16": "8 to 16", "16-32": "16 to 32", "32+": "32 or more" };
 

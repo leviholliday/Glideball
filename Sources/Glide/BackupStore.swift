@@ -27,6 +27,7 @@ final class BackupStore {
         case daily
         case beforeImport = "before import"
         case beforeRestore = "before restore"
+        case beforePreset = "before preset"
         case manual = "saved by you"
     }
 

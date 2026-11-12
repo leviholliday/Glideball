@@ -102,52 +102,179 @@ struct Tally: Equatable {
 
 // MARK: - Milestones
 
+/// Badges are grouped by the part they're about (clicks are the buttons, the
+/// ball, the ring), plus a few for setting Glideball up and trying things.
+enum BadgeGroup: String, CaseIterable, Identifiable {
+    case clicks, ball, scroll, setup
+    var id: String { rawValue }
+
+    var metric: Metric? {
+        switch self {
+        case .clicks: .clicks
+        case .ball: .ball
+        case .scroll: .scroll
+        case .setup: nil
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .clicks: String(localized: "Clicks", comment: "Badge group")
+        case .ball: String(localized: "Ball", comment: "Badge group: the trackball's ball")
+        case .scroll: String(localized: "Scroll ring", comment: "Badge group")
+        case .setup: String(localized: "Setting up and exploring", comment: "Badge group")
+        }
+    }
+}
+
+/// Things you can try in Glideball that a setup badge counts. Each is a real
+/// thing you did, saved once (`DelightLedger.explored`).
+enum Exploration: String, Codable, CaseIterable {
+    case button, combo, app, scrollFlywheel, scrollFollow, scrollNative, preset, ballColor
+
+    static func scroll(_ mode: ScrollMode) -> Exploration {
+        switch mode {
+        case .flywheel: .scrollFlywheel
+        case .follow: .scrollFollow
+        case .native: .scrollNative
+        }
+    }
+}
+
 struct Milestone: Identifiable, Equatable {
     let id: String
-    let metric: Metric
+    let group: BadgeGroup
     let threshold: Double
     let title: String
+    /// What earned it, as a sentence ("Scrolled the height of Everest (8,849 m)").
     let detail: String
     let symbol: String
+    /// How to earn it, for setup badges ("Try Flywheel, Follow and Native").
+    var hint: String? = nil
+    /// The explorations a setup badge counts (it's earned when `threshold` of them are done).
+    var counts: [Exploration] = []
+
+    var metric: Metric? { group.metric }
+
+    private static func clicks(_ id: String, _ n: Double, _ title: String, _ detail: String, _ symbol: String) -> Milestone {
+        Milestone(id: id, group: .clicks, threshold: n, title: title, detail: detail, symbol: symbol)
+    }
+    private static func ball(_ id: String, _ m: Double, _ title: String, _ detail: String, _ symbol: String) -> Milestone {
+        Milestone(id: id, group: .ball, threshold: m, title: title, detail: detail, symbol: symbol)
+    }
+    private static func scroll(_ id: String, _ m: Double, _ title: String, _ detail: String, _ symbol: String) -> Milestone {
+        Milestone(id: id, group: .scroll, threshold: m, title: title, detail: detail, symbol: symbol)
+    }
+
+    /// The badges from before 2.11, which a Mac had a chance to earn as they happened.
+    static let originalIDs: Set<String> = [
+        "scroll-10", "scroll-93", "scroll-330", "scroll-1k", "scroll-8849", "scroll-42k",
+        "ball-10", "ball-100", "ball-400", "ball-1k", "ball-10k", "ball-42k",
+        "clicks-100", "clicks-1k", "clicks-10k", "clicks-100k", "clicks-1m",
+    ]
 
     static let all: [Milestone] = [
-        .init(id: "scroll-10", metric: .scroll, threshold: 10, title: String(localized: "First ten metres", comment: "Badge name"),
-              detail: String(localized: "Scrolled 10 m", comment: "What earns the badge"), symbol: "arrow.down.to.line"),
-        .init(id: "scroll-93", metric: .scroll, threshold: 93, title: String(localized: "Lady Liberty", comment: "Badge name"),
-              detail: String(localized: "Scrolled the height of the Statue of Liberty (93 m)", comment: "What earns the badge"), symbol: "building.columns"),
-        .init(id: "scroll-330", metric: .scroll, threshold: 330, title: String(localized: "Eiffel Tower", comment: "Badge name"),
-              detail: String(localized: "Scrolled the height of the Eiffel Tower (330 m)", comment: "What earns the badge"), symbol: "building.2"),
-        .init(id: "scroll-1k", metric: .scroll, threshold: 1_000, title: String(localized: "First kilometre", comment: "Badge name"),
-              detail: String(localized: "Scrolled 1 km", comment: "What earns the badge"), symbol: "flag"),
-        .init(id: "scroll-8849", metric: .scroll, threshold: 8_849, title: String(localized: "Summit", comment: "Badge name"),
-              detail: String(localized: "Scrolled the height of Everest (8,849 m)", comment: "What earns the badge"), symbol: "mountain.2"),
-        .init(id: "scroll-42k", metric: .scroll, threshold: 42_195, title: String(localized: "Scroll marathon", comment: "Badge name"),
-              detail: String(localized: "Scrolled a marathon (42.2 km)", comment: "What earns the badge"), symbol: "medal"),
+        clicks("clicks-100", 100, String(localized: "Warmed up", comment: "Badge name"),
+               String(localized: "100 clicks", comment: "What earns the badge"), "hand.tap"),
+        clicks("clicks-1k", 1_000, String(localized: "A thousand clicks", comment: "Badge name"),
+               String(localized: "1,000 clicks", comment: "What earns the badge"), "cursorarrow.click"),
+        clicks("clicks-10k", 10_000, String(localized: "Ten thousand", comment: "Badge name"),
+               String(localized: "10,000 clicks", comment: "What earns the badge"), "cursorarrow.click.2"),
+        clicks("clicks-12k", 12_000, String(localized: "Woodpecker", comment: "Badge name"),
+               String(localized: "12,000 clicks, about as many pecks as a woodpecker makes in a day", comment: "What earns the badge"), "bird"),
+        clicks("clicks-86k", 86_400, String(localized: "A day of seconds", comment: "Badge name"),
+               String(localized: "86,400 clicks, one for every second in a day", comment: "What earns the badge"), "clock"),
+        clicks("clicks-100k", 100_000, String(localized: "Click legend", comment: "Badge name"),
+               String(localized: "100,000 clicks", comment: "What earns the badge"), "star.circle"),
+        clicks("clicks-250k", 250_000, String(localized: "Quarter million", comment: "Badge name"),
+               String(localized: "250,000 clicks", comment: "What earns the badge"), "star.leadinghalf.filled"),
+        clicks("clicks-525k", 525_600, String(localized: "A year of minutes", comment: "Badge name"),
+               String(localized: "525,600 clicks, one for every minute in a year", comment: "What earns the badge"), "calendar"),
+        clicks("clicks-1m", 1_000_000, String(localized: "One million", comment: "Badge name"),
+               String(localized: "1,000,000 clicks", comment: "What earns the badge"), "crown"),
 
-        .init(id: "ball-10", metric: .ball, threshold: 10, title: String(localized: "Rolling", comment: "Badge name"),
-              detail: String(localized: "Rolled the ball 10 m", comment: "What earns the badge"), symbol: "circle.circle"),
-        .init(id: "ball-100", metric: .ball, threshold: 100, title: String(localized: "Pitch length", comment: "Badge name"),
-              detail: String(localized: "Rolled the length of a football pitch (100 m)", comment: "What earns the badge"), symbol: "sportscourt"),
-        .init(id: "ball-400", metric: .ball, threshold: 400, title: String(localized: "One lap", comment: "Badge name"),
-              detail: String(localized: "Rolled one lap of a running track (400 m)", comment: "What earns the badge"), symbol: "figure.run"),
-        .init(id: "ball-1k", metric: .ball, threshold: 1_000, title: String(localized: "Kilometre roller", comment: "Badge name"),
-              detail: String(localized: "Rolled the ball 1 km", comment: "What earns the badge"), symbol: "flag.checkered"),
-        .init(id: "ball-10k", metric: .ball, threshold: 10_000, title: String(localized: "10K", comment: "Badge name"),
-              detail: String(localized: "Rolled the ball 10 km", comment: "What earns the badge"), symbol: "medal"),
-        .init(id: "ball-42k", metric: .ball, threshold: 42_195, title: String(localized: "Ball marathon", comment: "Badge name"),
-              detail: String(localized: "Rolled a marathon (42.2 km)", comment: "What earns the badge"), symbol: "trophy"),
+        ball("ball-10", 10, String(localized: "Rolling", comment: "Badge name"),
+             String(localized: "Rolled the ball 10 m", comment: "What earns the badge"), "circle.circle"),
+        ball("ball-100", 100, String(localized: "Pitch length", comment: "Badge name"),
+             String(localized: "Rolled the length of a football pitch (100 m)", comment: "What earns the badge"), "sportscourt"),
+        ball("ball-400", 400, String(localized: "One lap", comment: "Badge name"),
+             String(localized: "Rolled one lap of a running track (400 m)", comment: "What earns the badge"), "figure.run"),
+        ball("ball-1k", 1_000, String(localized: "Kilometre roller", comment: "Badge name"),
+             String(localized: "Rolled the ball 1 km", comment: "What earns the badge"), "flag.checkered"),
+        ball("ball-1609", 1_609, String(localized: "A mile", comment: "Badge name"),
+             String(localized: "Rolled a mile (1.6 km)", comment: "What earns the badge"), "road.lanes"),
+        ball("ball-2737", 2_737, String(localized: "Golden Gate", comment: "Badge name"),
+             String(localized: "Rolled the length of the Golden Gate Bridge (2.7 km)", comment: "What earns the badge"), "water.waves"),
+        ball("ball-5k", 5_000, String(localized: "5K", comment: "Badge name: a 5 km run"),
+             String(localized: "Rolled a 5K (5 km)", comment: "What earns the badge"), "shoeprints.fill"),
+        ball("ball-10k", 10_000, String(localized: "10K", comment: "Badge name"),
+             String(localized: "Rolled the ball 10 km", comment: "What earns the badge"), "medal"),
+        ball("ball-21k", 21_097, String(localized: "Half marathon", comment: "Badge name"),
+             String(localized: "Rolled a half marathon (21.1 km)", comment: "What earns the badge"), "figure.run.circle"),
+        ball("ball-42k", 42_195, String(localized: "Ball marathon", comment: "Badge name"),
+             String(localized: "Rolled a marathon (42.2 km)", comment: "What earns the badge"), "trophy"),
+        ball("ball-100k", 100_000, String(localized: "Ultra", comment: "Badge name: an ultramarathon"),
+             String(localized: "Rolled an ultramarathon (100 km)", comment: "What earns the badge"), "flame"),
 
-        .init(id: "clicks-100", metric: .clicks, threshold: 100, title: String(localized: "Warmed up", comment: "Badge name"),
-              detail: String(localized: "100 clicks", comment: "What earns the badge"), symbol: "hand.tap"),
-        .init(id: "clicks-1k", metric: .clicks, threshold: 1_000, title: String(localized: "A thousand clicks", comment: "Badge name"),
-              detail: String(localized: "1,000 clicks", comment: "What earns the badge"), symbol: "cursorarrow.click"),
-        .init(id: "clicks-10k", metric: .clicks, threshold: 10_000, title: String(localized: "Ten thousand", comment: "Badge name"),
-              detail: String(localized: "10,000 clicks", comment: "What earns the badge"), symbol: "cursorarrow.click.2"),
-        .init(id: "clicks-100k", metric: .clicks, threshold: 100_000, title: String(localized: "Click legend", comment: "Badge name"),
-              detail: String(localized: "100,000 clicks", comment: "What earns the badge"), symbol: "star.circle"),
-        .init(id: "clicks-1m", metric: .clicks, threshold: 1_000_000, title: String(localized: "One million", comment: "Badge name"),
-              detail: String(localized: "1,000,000 clicks", comment: "What earns the badge"), symbol: "crown"),
+        scroll("scroll-10", 10, String(localized: "First ten metres", comment: "Badge name"),
+               String(localized: "Scrolled 10 m", comment: "What earns the badge"), "arrow.down.to.line"),
+        scroll("scroll-93", 93, String(localized: "Lady Liberty", comment: "Badge name"),
+               String(localized: "Scrolled the height of the Statue of Liberty (93 m)", comment: "What earns the badge"), "building.columns"),
+        scroll("scroll-330", 330, String(localized: "Eiffel Tower", comment: "Badge name"),
+               String(localized: "Scrolled the height of the Eiffel Tower (330 m)", comment: "What earns the badge"), "building.2"),
+        scroll("scroll-443", 443, String(localized: "Empire State", comment: "Badge name"),
+               String(localized: "Scrolled the height of the Empire State Building (443 m)", comment: "What earns the badge"), "building"),
+        scroll("scroll-828", 828, String(localized: "Burj Khalifa", comment: "Badge name"),
+               String(localized: "Scrolled the height of the Burj Khalifa (828 m)", comment: "What earns the badge"), "arrow.up.to.line"),
+        scroll("scroll-1k", 1_000, String(localized: "First kilometre", comment: "Badge name"),
+               String(localized: "Scrolled 1 km", comment: "What earns the badge"), "flag"),
+        scroll("scroll-3776", 3_776, String(localized: "Mount Fuji", comment: "Badge name"),
+               String(localized: "Scrolled the height of Mount Fuji (3,776 m)", comment: "What earns the badge"), "snowflake"),
+        scroll("scroll-8849", 8_849, String(localized: "Summit", comment: "Badge name"),
+               String(localized: "Scrolled the height of Everest (8,849 m)", comment: "What earns the badge"), "mountain.2"),
+        scroll("scroll-10935", 10_935, String(localized: "Deep sea", comment: "Badge name"),
+               String(localized: "Scrolled as deep as the Mariana Trench (10,935 m)", comment: "What earns the badge"), "water.waves.and.arrow.down"),
+        scroll("scroll-42k", 42_195, String(localized: "Scroll marathon", comment: "Badge name"),
+               String(localized: "Scrolled a marathon (42.2 km)", comment: "What earns the badge"), "medal"),
+        scroll("scroll-100k", 100_000, String(localized: "Edge of space", comment: "Badge name"),
+               String(localized: "Scrolled up to the edge of space (100 km)", comment: "What earns the badge"), "moon.stars"),
+
+        Milestone(id: "setup-button", group: .setup, threshold: 1, title: String(localized: "New job", comment: "Badge name: gave a button a new job"),
+                  detail: String(localized: "Gave a button something new to do", comment: "What earns the badge"), symbol: "button.programmable",
+                  hint: String(localized: "Choose an action for a button on the Buttons tab.", comment: "How to earn a badge"), counts: [.button]),
+        Milestone(id: "setup-combo", group: .setup, threshold: 1, title: String(localized: "Combo maker", comment: "Badge name"),
+                  detail: String(localized: "Made your first combo", comment: "What earns the badge"), symbol: "square.on.square",
+                  hint: String(localized: "Add a combo on the Buttons tab.", comment: "How to earn a badge"), counts: [.combo]),
+        Milestone(id: "setup-app", group: .setup, threshold: 1, title: String(localized: "Made to measure", comment: "Badge name: an app setup"),
+                  detail: String(localized: "Gave an app its own setup", comment: "What earns the badge"), symbol: "square.grid.2x2",
+                  hint: String(localized: "Add an app on the Apps tab.", comment: "How to earn a badge"), counts: [.app]),
+        Milestone(id: "setup-scroll-modes", group: .setup, threshold: 3, title: String(localized: "Scroll sampler", comment: "Badge name"),
+                  detail: String(localized: "Tried all three ways to scroll", comment: "What earns the badge"), symbol: "arrow.up.and.down.circle",
+                  hint: String(localized: "Try Flywheel, Follow and Native on the Scrolling tab.", comment: "How to earn a badge"),
+                  counts: [.scrollFlywheel, .scrollFollow, .scrollNative]),
+        Milestone(id: "setup-preset", group: .setup, threshold: 1, title: String(localized: "Ready-made", comment: "Badge name: used a button preset"),
+                  detail: String(localized: "Tried a button preset", comment: "What earns the badge"), symbol: "wand.and.stars",
+                  hint: String(localized: "Apply a preset on the Buttons tab.", comment: "How to earn a badge"), counts: [.preset]),
+        Milestone(id: "setup-color", group: .setup, threshold: 1, title: String(localized: "True colors", comment: "Badge name: picked a ball color"),
+                  detail: String(localized: "Gave the ball a color of your own", comment: "What earns the badge"), symbol: "paintpalette",
+                  hint: String(localized: "Pick a ball color in Settings › Look.", comment: "How to earn a badge"), counts: [.ballColor]),
     ]
+
+    /// How far along a badge is, in its own unit (metres, clicks, or things tried).
+    func progress(lifetime: Tally, explored: Set<Exploration>) -> Double {
+        if let metric { return lifetime.value(metric) }
+        return Double(counts.filter(explored.contains).count)
+    }
+
+    /// The goal in short, for a locked badge's caption ("8.8 km", "100k").
+    var shortGoal: String {
+        switch group {
+        case .clicks: Int(threshold).formatted(.number.notation(.compactName))
+        case .ball, .scroll: Tally.shortDistance(threshold)
+        case .setup: threshold > 1 ? String(localized: "\(Int(threshold)) to try", comment: "Badge caption: how many things to try")
+                                   : String(localized: "Try it", comment: "Badge caption: a setup badge not yet earned")
+        }
+    }
 }
 
 // MARK: - Real-world comparisons
@@ -365,15 +492,17 @@ enum DelightEvent: Equatable {
     case checklistDone
     /// The first run with records: badges already earned before this existed.
     case welcome(Int)
+    /// New badges arrived with an update, and this many were already earned.
+    case catchUp(Int)
 
     /// Higher shows first when several happen at once.
     var priority: Int {
         switch self {
         case .checklistDone: 6
-        case .milestone(let m): 4 + (m.threshold >= 1_000 ? 1 : 0)
+        case .milestone(let m): 4 + (m.group != .setup && m.threshold >= 1_000 ? 1 : 0)
         case .dayRecord: 3
         case .record: 2
-        case .welcome: 1
+        case .welcome, .catchUp: 1
         case .checklistStep: 0
         }
     }
@@ -381,8 +510,9 @@ enum DelightEvent: Equatable {
     /// Big moments get confetti; small ones just a toast.
     var isBig: Bool {
         switch self {
-        case .milestone, .checklistDone, .dayRecord, .record: true
-        case .checklistStep, .welcome: false
+        case .milestone(let m): m.group != .setup
+        case .checklistDone, .dayRecord, .record: true
+        case .checklistStep, .welcome, .catchUp: false
         }
     }
 }
@@ -400,6 +530,36 @@ struct DelightLedger: Codable, Equatable {
     var checklist: Set<ChecklistItem> = []
     var checklistDismissed = false
     var checklistCelebrated = false
+    /// Things tried that setup badges count (2.11).
+    var explored: Set<Exploration> = []
+    /// The badges this Mac has known about (2.11): one that arrives with an update
+    /// and is already earned is earned quietly, then mentioned once. Nil before 2.11.
+    var knownBadges: Set<String>?
+
+    init() {}
+
+    private enum CodingKeys: String, CodingKey {
+        case earned, records, recordDates, celebratedOn, started, checklist, checklistDismissed, checklistCelebrated,
+             explored, knownBadges
+    }
+
+    // Missing keys (a ledger from an older Glideball) fall back to empty.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        earned = try c.decodeIfPresent([String: Date].self, forKey: .earned) ?? [:]
+        records = try c.decodeIfPresent([String: Double].self, forKey: .records) ?? [:]
+        recordDates = try c.decodeIfPresent([String: Date].self, forKey: .recordDates) ?? [:]
+        celebratedOn = try c.decodeIfPresent([String: String].self, forKey: .celebratedOn) ?? [:]
+        started = try c.decodeIfPresent(Date.self, forKey: .started)
+        checklist = try c.decodeIfPresent(Set<ChecklistItem>.self, forKey: .checklist) ?? []
+        checklistDismissed = try c.decodeIfPresent(Bool.self, forKey: .checklistDismissed) ?? false
+        checklistCelebrated = try c.decodeIfPresent(Bool.self, forKey: .checklistCelebrated) ?? false
+        // An exploration this version doesn't know (from a newer one) is skipped, not fatal.
+        explored = Set((try? c.decodeIfPresent([String].self, forKey: .explored))??.compactMap(Exploration.init(rawValue:)) ?? [])
+        knownBadges = try c.decodeIfPresent(Set<String>.self, forKey: .knownBadges)
+    }
+
+    func progress(_ m: Milestone, lifetime: Tally) -> Double { m.progress(lifetime: lifetime, explored: explored) }
 
     /// Records settle for this long before beating one is celebrated.
     static let settleTime: TimeInterval = 2 * 24 * 3600
@@ -429,8 +589,9 @@ struct DelightLedger: Codable, Equatable {
         // First run: what's already been done is earned quietly, then acknowledged once.
         guard let started else {
             self.started = now
+            knownBadges = Set(Milestone.all.map(\.id))
             var count = 0
-            for m in Milestone.all where lifetime.value(m.metric) >= m.threshold {
+            for m in Milestone.all where progress(m, lifetime: lifetime) >= m.threshold {
                 earned[m.id] = now
                 count += 1
             }
@@ -446,7 +607,18 @@ struct DelightLedger: Codable, Equatable {
         }
 
         var events: [DelightEvent] = []
-        for m in Milestone.all where earned[m.id] == nil && lifetime.value(m.metric) >= m.threshold {
+        // Badges that came with an update: any already earned are earned quietly, and mentioned once.
+        let known = knownBadges ?? Milestone.originalIDs
+        if known.count != Milestone.all.count || !Milestone.all.allSatisfy({ known.contains($0.id) }) {
+            var caught = 0
+            for m in Milestone.all where !known.contains(m.id) && earned[m.id] == nil && progress(m, lifetime: lifetime) >= m.threshold {
+                earned[m.id] = now
+                caught += 1
+            }
+            knownBadges = Set(Milestone.all.map(\.id))
+            if caught > 0 { events.append(.catchUp(caught)) }
+        }
+        for m in Milestone.all where earned[m.id] == nil && progress(m, lifetime: lifetime) >= m.threshold {
             earned[m.id] = now
             events.append(.milestone(m))
         }
@@ -489,6 +661,21 @@ struct DelightLedger: Codable, Equatable {
         }
         if checklistDismissed { return [] }
         return ChecklistItem.allCases.filter(fresh.contains).map { .checklistStep($0) }
+    }
+
+    /// Records things tried; returns the setup badges that just became earned.
+    /// (Before the first evaluation, nothing is celebrated: that run earns them quietly.)
+    mutating func explore(_ items: Set<Exploration>, lifetime: Tally, now: Date) -> [DelightEvent] {
+        let fresh = items.subtracting(explored)
+        guard !fresh.isEmpty else { return [] }
+        explored.formUnion(fresh)
+        guard started != nil, knownBadges != nil else { return [] }
+        var events: [DelightEvent] = []
+        for m in Milestone.all where m.group == .setup && earned[m.id] == nil && progress(m, lifetime: lifetime) >= m.threshold {
+            earned[m.id] = now
+            events.append(.milestone(m))
+        }
+        return events
     }
 
     /// Seeds the checklist for someone who used Glide before it existed.

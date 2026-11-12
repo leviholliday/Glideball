@@ -933,6 +933,10 @@ final class Engine {
             overrides[button] = .heldShortcut(shortcut)
             keyQueue.async { Self.sendDown(shortcut) }
             return nil
+        case .media, .openApp:
+            overrides[button] = .swallow
+            keyQueue.async { Self.perform(action) }
+            return nil
         case .modifiedClick(let b, let mods):
             let flags = CGEventFlags(rawValue: mods)
             overrides[button] = .remap(Int64(b), flags)
@@ -1205,6 +1209,13 @@ final class Engine {
         case .system, .disabled: return
         case .precisionHold, .precisionToggle, .ballScrollHold, .dragLock: return   // stateful: `beginMode`
         case .shortcut(let s), .holdShortcut(let s): send(s); return
+        case .media(let key): sendMedia(key); return
+        case .openApp(let id):
+            DispatchQueue.main.async {
+                guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: id) else { return }
+                NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
+            }
+            return
         case .modifiedClick(let b, let mods): button = Int64(b); flags = CGEventFlags(rawValue: mods)
         case .leftClick: button = 0
         case .rightClick: button = 1
@@ -1234,6 +1245,22 @@ final class Engine {
     static func send(_ s: KeyShortcut) {
         sendDown(s)
         sendUp(s)
+    }
+
+    /// A media key press and release, as the keyboard's own media keys send them
+    /// (a system-defined event, subtype 8, with the key and its state in data1).
+    static func sendMedia(_ key: MediaKey) {
+        for down in [true, false] {
+            let state = down ? 0xA : 0xB
+            let data1 = (key.rawValue << 16) | (state << 8)
+            guard let event = NSEvent.otherEvent(with: .systemDefined, location: .zero,
+                                                 modifierFlags: NSEvent.ModifierFlags(rawValue: UInt(state << 8)),
+                                                 timestamp: 0, windowNumber: 0, context: nil,
+                                                 subtype: 8, data1: data1, data2: -1),
+                  let cg = event.cgEvent else { continue }
+            cg.setIntegerValueField(.eventSourceUserData, value: syntheticTag)
+            cg.post(tap: .cghidEventTap)
+        }
     }
 
     static func sendDown(_ s: KeyShortcut) {

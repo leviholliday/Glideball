@@ -232,8 +232,7 @@ struct TrackballArt: View {
     }
 
     private var ringGradient: LinearGradient {
-        LinearGradient(colors: [Color(red: 0.36, green: 0.68, blue: 1.0), Color(red: 0.42, green: 0.45, blue: 1.0),
-                                Color(red: 0.58, green: 0.33, blue: 0.97)],
+        LinearGradient(colors: BallTheme.current.ringLine,
                        startPoint: UnitPoint(x: 0.35, y: 0), endPoint: UnitPoint(x: 0.65, y: 1))
     }
 

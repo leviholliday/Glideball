@@ -29,13 +29,24 @@ enum Theme {
     /// Neither good nor bad: paused, off.
     static let idle = Color(nsColor: .tertiaryLabelColor)
 
-    // MARK: The orb (icon, trackball art and the website hero only)
+    // MARK: The orb (the trackball's ball, and the light it throws)
 
-    static let orbCyan = Color(hex: 0x35D6FF)
-    static let orbBlue = Color(hex: 0x3D6BFF)
-    static let orbViolet = Color(hex: 0x8A5CFF)
-    static let orbMagenta = Color(hex: 0xF056D8)
-    static let orb: [Color] = [orbCyan, orbBlue, orbViolet, orbMagenta]
+    // These four follow the ball color chosen in Settings › Look (`BallTheme`,
+    // below): the ball itself (OrbArt), the light it throws into the well, the
+    // room's aurora (Atmosphere) and every glow that comes from the orb read
+    // them here, so a theme recolors all of it at once. The names are the
+    // default Orb's; in another theme they're its light, mid, deep and accent
+    // colors. The app icon is a separate choice and never changes with them.
+    //
+    // The part colors above (ball blue, ring pink, buttons amber) do NOT
+    // change with a theme: they carry meaning in charts, gauges, badges and
+    // the press highlight, and stay the same so they always read the same.
+
+    static var orbCyan: Color { BallTheme.current.glow[0] }
+    static var orbBlue: Color { BallTheme.current.glow[1] }
+    static var orbViolet: Color { BallTheme.current.glow[2] }
+    static var orbMagenta: Color { BallTheme.current.glow[3] }
+    static var orb: [Color] { BallTheme.current.glow }
 
     // MARK: Surfaces and text
 
@@ -196,6 +207,141 @@ enum Theme {
 
     static func dynamic(light: UInt32, dark: UInt32) -> Color {
         Color(nsColor: NSColor(name: nil) { isDark($0) ? NSColor(srgbHex: dark) : NSColor(srgbHex: light) })
+    }
+}
+
+// MARK: - Ball color
+
+/// One linear-light color for the orb's shading (OrbArt), 0…1 per channel.
+struct OrbRGB: Equatable, Hashable, Codable {
+    var r, g, b: Double
+
+    /// From display (sRGB) values.
+    init(_ r: Double, _ g: Double, _ b: Double) { self.r = r; self.g = g; self.b = b }
+
+    init(hex: UInt32) {
+        self.init(Double((hex >> 16) & 0xFF) / 255, Double((hex >> 8) & 0xFF) / 255, Double(hex & 0xFF) / 255)
+    }
+
+    init(_ color: NSColor) {
+        let c = color.usingColorSpace(.sRGB) ?? NSColor(srgbRed: 0.3, green: 0.5, blue: 1, alpha: 1)
+        self.init(Double(c.redComponent), Double(c.greenComponent), Double(c.blueComponent))
+    }
+
+    func mix(_ o: OrbRGB, _ t: Double) -> OrbRGB { OrbRGB(r + (o.r - r) * t, g + (o.g - g) * t, b + (o.b - b) * t) }
+    func scaled(_ k: Double) -> OrbRGB { OrbRGB(r * k, g * k, b * k) }
+    var color: Color { Color(.sRGB, red: r, green: g, blue: b) }
+    var nsColor: NSColor { NSColor(srgbRed: r, green: g, blue: b, alpha: 1) }
+    var hex: String { String(format: "%02X%02X%02X", Int(r * 255 + 0.5), Int(g * 255 + 0.5), Int(b * 255 + 0.5)) }
+}
+
+/// The colors the orb is painted with, by their role in the icon's shading
+/// (`OrbArt.liquid` and `ball`). The default Orb uses the icon's exact values;
+/// other themes derive the supporting ones from four.
+struct OrbPalette: Equatable, Hashable {
+    var light, ice, mid, deep, low, accent, lilac, rim, shade, backRim, sky: OrbRGB
+
+    /// The icon's own (Theme's Orb).
+    static let orb = OrbPalette(light: .init(0.24, 0.80, 1.00), ice: .init(0.52, 0.93, 1.00), mid: .init(0.20, 0.40, 1.00),
+                                deep: .init(0.13, 0.22, 0.90), low: .init(0.42, 0.20, 0.92), accent: .init(0.98, 0.32, 0.86),
+                                lilac: .init(0.80, 0.58, 1.00), rim: .init(0.09, 0.05, 0.30), shade: .init(0.30, 0.14, 0.70),
+                                backRim: .init(0.55, 0.35, 0.95), sky: .init(0.62, 0.82, 1.0))
+
+    /// A palette from four colors: the top of the ball (light), its body (mid),
+    /// the bottom (low) and a splash of accent at the bottom left.
+    static func from(light: OrbRGB, mid: OrbRGB, low: OrbRGB, accent: OrbRGB) -> OrbPalette {
+        let white = OrbRGB(1, 1, 1)
+        return OrbPalette(light: light, ice: light.mix(white, 0.4), mid: mid, deep: mid.scaled(0.7).mix(low, 0.3),
+                          low: low, accent: accent, lilac: low.mix(white, 0.45), rim: low.scaled(0.28),
+                          shade: low.scaled(0.75), backRim: low.mix(white, 0.3), sky: light.mix(white, 0.55))
+    }
+}
+
+/// A ball color: the orb's palette, and the four colors its light throws
+/// (`Theme.orbCyan`… for the aurora and glows).
+struct BallTheme: Identifiable, Equatable {
+    let id: String
+    let title: String
+    let palette: OrbPalette
+
+    /// The light it throws: light, mid, low, accent.
+    var glow: [Color] {
+        if id == "orb" { return [Color(hex: 0x35D6FF), Color(hex: 0x3D6BFF), Color(hex: 0x8A5CFF), Color(hex: 0xF056D8)] }
+        let p = palette
+        return [p.light.color, p.mid.color, p.low.mix(p.mid, 0.25).color, p.accent.color]
+    }
+
+    /// The fine colored line at the trackball ring's outer edge, top to bottom.
+    var ringLine: [Color] {
+        if id == "orb" {
+            return [Color(red: 0.36, green: 0.68, blue: 1.0), Color(red: 0.42, green: 0.45, blue: 1.0), Color(red: 0.58, green: 0.33, blue: 0.97)]
+        }
+        let p = palette, white = OrbRGB(1, 1, 1)
+        return [p.light.mix(white, 0.15).color, p.mid.mix(white, 0.15).color, p.low.mix(white, 0.3).color]
+    }
+
+    private static func make(_ id: String, _ title: String, _ light: UInt32, _ mid: UInt32, _ low: UInt32, _ accent: UInt32) -> BallTheme {
+        BallTheme(id: id, title: title, palette: .from(light: OrbRGB(hex: light), mid: OrbRGB(hex: mid),
+                                                        low: OrbRGB(hex: low), accent: OrbRGB(hex: accent)))
+    }
+
+    static let orb = BallTheme(id: "orb", title: String(localized: "Orb", comment: "Ball color: the default, like the app icon"), palette: .orb)
+
+    /// The curated themes, in the order Settings shows them.
+    static let curated: [BallTheme] = [
+        orb,
+        make("ember", String(localized: "Ember", comment: "Ball color"), 0xFFC24D, 0xFF6A1F, 0xB0141E, 0xFF3D73),
+        make("sunset", String(localized: "Sunset", comment: "Ball color"), 0xFFC873, 0xFF6B66, 0x7A2FA6, 0xFF5FB4),
+        make("ocean", String(localized: "Ocean", comment: "Ball color"), 0x4DF2E6, 0x0D8CD9, 0x142E99, 0x66FFB3),
+        make("forest", String(localized: "Forest", comment: "Ball color"), 0xB8F26B, 0x26A659, 0x0D4D40, 0xF2CC4D),
+        make("graphite", String(localized: "Graphite", comment: "Ball color: greys"), 0xDDE0E6, 0x80858F, 0x383A42, 0xB3B8C2),
+        make("classic", String(localized: "Classic red", comment: "Ball color: like the red ball the Expert Mouse comes with"),
+             0xFF6B57, 0xD9141A, 0x73050D, 0xFF4033),
+    ]
+
+    /// A theme from three colors picked in Settings: top, middle, bottom.
+    static func custom(_ colors: [OrbRGB]) -> BallTheme {
+        let c = colors.count >= 3 ? colors : [OrbRGB(hex: 0xFFE070), OrbRGB(hex: 0x2EC99A), OrbRGB(hex: 0x2B3A9E)]
+        return BallTheme(id: "custom", title: String(localized: "Custom", comment: "Ball color: your own colors"),
+                         palette: .from(light: c[0], mid: c[1], low: c[2], accent: c[1].mix(c[0], 0.5).mix(OrbRGB(1, 1, 1), 0.2)))
+    }
+
+    /// The theme in use (`BallThemeStore`).
+    static var current: BallTheme { BallThemeStore.shared.theme }
+}
+
+/// Which ball color this Mac uses (Settings › Look › Ball color), and the
+/// three colors of a custom one. Per Mac, like the app icon.
+@Observable
+final class BallThemeStore {
+    static let shared = BallThemeStore()
+    static let themeKey = "GlideBallTheme"
+    static let customKey = "GlideBallThemeCustom"
+
+    private(set) var theme: BallTheme
+    private(set) var custom: [OrbRGB]
+
+    private init() {
+        let d = UserDefaults.standard
+        let saved = (d.stringArray(forKey: Self.customKey) ?? []).compactMap { UInt32($0, radix: 16).map(OrbRGB.init(hex:)) }
+        let colors = saved.count == 3 ? saved : [OrbRGB(hex: 0xFFE070), OrbRGB(hex: 0x2EC99A), OrbRGB(hex: 0x2B3A9E)]
+        custom = colors
+        let id = d.string(forKey: Self.themeKey) ?? "orb"
+        theme = id == "custom" ? BallTheme.custom(colors) : BallTheme.curated.first { $0.id == id } ?? .orb
+    }
+
+    func choose(_ id: String) {
+        theme = id == "custom" ? BallTheme.custom(custom) : BallTheme.curated.first { $0.id == id } ?? .orb
+        UserDefaults.standard.set(theme.id, forKey: Self.themeKey)
+        if theme.id != "orb" { AppModel.shared.delight.explored(.ballColor) }
+    }
+
+    /// Changes one of the custom colors (0 top, 1 middle, 2 bottom) and uses the custom theme.
+    func setCustom(_ index: Int, to color: OrbRGB) {
+        guard custom.indices.contains(index), custom[index] != color else { return }
+        custom[index] = color
+        UserDefaults.standard.set(custom.map(\.hex), forKey: Self.customKey)
+        choose("custom")
     }
 }
 
