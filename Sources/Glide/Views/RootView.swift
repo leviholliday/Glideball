@@ -110,6 +110,9 @@ struct RootView: View {
         .sheet(isPresented: $model.showingAbout) {
             AboutView(model: model)
         }
+        .sheet(isPresented: $model.showingShortcuts) {
+            ShortcutsSheet(model: model)
+        }
         .onChange(of: model.requestedTab) { _, requested in
             guard let requested else { return }
             select(requested)
