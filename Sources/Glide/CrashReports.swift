@@ -66,7 +66,7 @@ enum CrashReports {
     /// The part of one .ips report that's sent, or nil if it isn't a crash of
     /// this app (a hang, another app with the same name, something unreadable).
     static func read(_ url: URL, date: Date, installID: String) -> Report? {
-        guard let data = try? Data(contentsOf: url), data.count < 8_000_000,
+        guard let data = try? SafeRead.data(url, limit: 8_000_000),
               let text = String(data: data, encoding: .utf8),
               let newline = text.firstIndex(of: "\n"),
               let header = json(String(text[..<newline])),
@@ -116,7 +116,9 @@ enum CrashReports {
     // MARK: Taking out what isn't needed
 
     private static func json(_ s: String) -> [String: Any]? {
-        (try? JSONSerialization.jsonObject(with: Data(s.utf8))) as? [String: Any]
+        let data = Data(s.utf8)
+        guard (try? SafeRead.checkDepth(data)) != nil else { return nil }   // deep nesting overflows the stack
+        return (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
     }
 
     private static func osNumber(_ s: String) -> String? {
@@ -142,14 +144,21 @@ enum CrashReports {
     static func scrub(_ s: String, max: Int) -> String {
         // Invisible characters first (control, zero-width, right-to-left marks),
         // so none can split a path or an address to slip it past what follows.
-        var out = String(String.UnicodeScalarView(s.unicodeScalars.filter { !isInvisible($0) }))
+        // Then far more than can survive the cut to `max` below, but not megabytes: the
+        // replacements take seconds on a few MB (scripts/file-fuzz). Replacements shorten
+        // text 50 times over only for made-up input, never for a real report.
+        var out = String(String.UnicodeScalarView(s.unicodeScalars.lazy.filter { !isInvisible($0) }.prefix(max * 50)))
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         if home.count > 1 { out = out.replacingOccurrences(of: home, with: "~", options: .caseInsensitive) }
         // macOS folders match in any case (/users/jane is /Users/jane), and a drive's
         // name can have spaces in it ("Jane's Passport"): all of it, up to the next folder.
         for (pattern, replacement) in [(#"/(Users|home)/[^/\s:")]+"#, "/$1/~"),
                                        (#"/Volumes/[^/\n]+"#, "/Volumes/~"),
-                                       (#"[^\s@'"<>()]+@[^\s@'"<>()]+\.[A-Za-z]{2,}"#, "(email)")] {
+                                       // An address only starts where a run of address characters
+                                       // does (the lookbehind), and `++` never backtracks: the same
+                                       // matches as `[^…]+@…`, but linear, where that took minutes on
+                                       // a few MB without spaces (scripts/file-fuzz).
+                                       (#"(?<![^\s@'"<>()])[^\s@'"<>()]++@[^\s@'"<>()]+\.[A-Za-z]{2,}"#, "(email)")] {
             out = out.replacingOccurrences(of: pattern, with: replacement, options: [.regularExpression, .caseInsensitive])
         }
         for name in [NSUserName(), NSFullUserName()] where name.count >= 3 {

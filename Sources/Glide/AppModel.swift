@@ -586,16 +586,7 @@ final class AppModel {
     /// Reads a settings file and shows what it contains — nothing changes until confirmed.
     func previewImport(_ url: URL) {
         do {
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            let data = try Data(contentsOf: url)
-            let file: GlideSettingsFile
-            if let iso = try? decoder.decode(GlideSettingsFile.self, from: data) {
-                file = iso
-            } else {
-                file = try JSONDecoder().decode(GlideSettingsFile.self, from: data)   // older files
-            }
-            _ = try file.validatedConfig()
+            let file = try GlideSettingsFile.read(from: url)   // checked by scripts/file-fuzz
             pendingImport = PendingImport(fileName: url.deletingPathExtension().lastPathComponent, file: file)
             requestTab(.backup)
         } catch {
@@ -796,10 +787,8 @@ final class AppModel {
     }
 
     private static func loadTotals() -> Telemetry.Totals {
-        guard let d = UserDefaults.standard.dictionary(forKey: todayKey) else { return .init() }
-        return .init(clicks: d["clicks"] as? Int ?? 0,
-                     ballCounts: d["ball"] as? Double ?? 0,
-                     scrollPoints: d["scroll"] as? Double ?? 0)
+        guard let d = SavedDayTotals(UserDefaults.standard.object(forKey: todayKey)) else { return .init() }
+        return .init(clicks: d.clicks, ballCounts: d.ballCounts, scrollPoints: d.scrollPoints)
     }
 
     @ObservationIgnored private var totalsDay = AppModel.todayKey

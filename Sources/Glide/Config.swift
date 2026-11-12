@@ -433,6 +433,8 @@ struct GlideConfig: Codable, Equatable {
         // Newer fields: anything unreadable means the default, never a lost settings file.
         gesturesEnabled = (try? c.decodeIfPresent(Bool.self, forKey: .gesturesEnabled)) ?? d.gesturesEnabled
         displaySpeeds = (try? c.decodeIfPresent(DisplaySpeeds.self, forKey: .displaySpeeds)) ?? d.displaySpeeds
+        // Whatever the file said, only values the app's own controls allow (see `ConfigLimits`).
+        self = clamped()
     }
 
     private static let key = "GlideConfig"
@@ -723,7 +725,8 @@ extension GlideConfig {
         if local.displaySpeeds.enabled || !local.displaySpeeds.speeds.isEmpty { kept = kept || out.displaySpeeds != local.displaySpeeds }
         out.displaySpeeds = local.displaySpeeds
         out.gesturesEnabled = local.gesturesEnabled
-        return (out, kept)
+        // Both sides are within limits, but together they can hold more combos than one may.
+        return (out.clamped(), kept)
     }
 }
 
@@ -734,6 +737,109 @@ enum GlideSettingsFileError: LocalizedError {
         switch self {
         case .unsupportedVersion(let version):
             String(localized: "This settings file uses unsupported version \(version).")
+        }
+    }
+}
+
+extension GlideSettingsFile {
+    /// The largest settings file Glideball reads. A real one is a few KB; even 500
+    /// app setups with their own buttons stay well under a megabyte.
+    static let maxFileBytes = 4_000_000
+
+    /// A settings file chosen to import: read (see `SafeRead`), decoded and its
+    /// version checked. Throws for anything that isn't one Glideball can use.
+    static func read(from url: URL) throws -> GlideSettingsFile {
+        let file = try decode(SafeRead.data(url, limit: maxFileBytes, followSymlinks: true))
+        _ = try file.validatedConfig()
+        return file
+    }
+
+    /// ISO 8601 dates (what Glideball writes), else an older file's numeric ones.
+    static func decode(_ data: Data) throws -> GlideSettingsFile {
+        try SafeRead.checkDepth(data)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        if let iso = try? decoder.decode(GlideSettingsFile.self, from: data) { return iso }
+        return try JSONDecoder().decode(GlideSettingsFile.self, from: data)
+    }
+}
+
+/// Reads a file that something other than this Glideball may have put there
+/// (a settings file, a backup, another Mac's sync files, a crash report) without
+/// trusting it: only a regular file, never a folder, a device or a pipe (which can
+/// block a read forever), never one bigger than `limit`, and with `followSymlinks`
+/// off, never through a symbolic link (which could point anywhere on the disk).
+enum SafeRead {
+    struct Refused: LocalizedError {
+        let reason: String
+        var errorDescription: String? { reason }
+    }
+
+    static func data(_ url: URL, limit: Int, followSymlinks: Bool = false) throws -> Data {
+        // O_NONBLOCK: opening a pipe never waits for a writer (it's refused below anyway).
+        let fd = open(url.path, O_RDONLY | O_NONBLOCK | O_CLOEXEC | (followSymlinks ? 0 : O_NOFOLLOW))
+        guard fd >= 0 else {
+            throw CocoaError(errno == ENOENT ? .fileReadNoSuchFile : .fileReadUnknown, userInfo: [NSFilePathErrorKey: url.path])
+        }
+        let handle = FileHandle(fileDescriptor: fd, closeOnDealloc: true)
+        var info = stat()
+        guard fstat(fd, &info) == 0, info.st_mode & S_IFMT == S_IFREG else { throw Refused(reason: "not a regular file") }
+        guard info.st_size <= limit else { throw Refused(reason: "too large") }
+        // A regular file: blocking reads again (an iCloud file not yet downloaded waits for its data).
+        _ = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) & ~O_NONBLOCK)
+        let data = try handle.read(upToCount: limit + 1) ?? Data()
+        guard data.count <= limit else { throw Refused(reason: "too large") }
+        return data
+    }
+
+    /// `s` cut to at most `bytes` of UTF-8, on a character boundary where it can be,
+    /// else a scalar boundary (one "character" can be megabytes of combining marks).
+    static func clip(_ s: String, bytes: Int) -> String {
+        guard s.utf8.count > bytes else { return s }
+        var out = "", used = 0
+        for c in s {
+            let n = c.utf8.count
+            if used + n > bytes {
+                if out.isEmpty {   // one huge character: as many of its scalars as fit
+                    var scalars = String.UnicodeScalarView()
+                    for u in c.unicodeScalars {
+                        used += String(u).utf8.count
+                        if used > bytes { break }
+                        scalars.append(u)
+                    }
+                    return String(scalars)
+                }
+                break
+            }
+            out.append(c)
+            used += n
+        }
+        return out
+    }
+
+    /// Deeper than any settings file Glideball writes (about 15 levels: a gesture's
+    /// shortcut in an app setup's button), shallow enough that decoding the nested
+    /// actions recursively fits a background thread's 512 KB stack.
+    static let maxJSONDepth = 64
+
+    /// Throws if `data`'s JSON nests deeper than `maxJSONDepth` (`[` and `{`, outside strings).
+    /// Without this, a file of gestures nested inside gestures overflows the stack while
+    /// decoding (the sync queue's, at about 150 levels) and Glideball crashes.
+    static func checkDepth(_ data: Data) throws {
+        var depth = 0, inString = false, escaped = false
+        for byte in data {
+            if inString {
+                if escaped { escaped = false } else if byte == UInt8(ascii: "\\") { escaped = true } else if byte == UInt8(ascii: "\"") { inString = false }
+                continue
+            }
+            switch byte {
+            case UInt8(ascii: "\""): inString = true
+            case UInt8(ascii: "["), UInt8(ascii: "{"):
+                depth += 1
+                if depth > maxJSONDepth { throw Refused(reason: "nested too deeply") }
+            case UInt8(ascii: "]"), UInt8(ascii: "}"): depth -= 1
+            default: break
+            }
         }
     }
 }
@@ -975,4 +1081,183 @@ struct DisplaySpeeds: Codable, Equatable {
 
     /// Worth watching which display the pointer is on at all.
     var isActive: Bool { enabled && !speeds.isEmpty }
+}
+
+// MARK: - Limits
+
+/// The ranges the app's own controls allow. Every config that comes from outside
+/// (a settings file, a backup, another Mac through sync, UserDefaults) and every
+/// config handed to the engine goes through `GlideConfig.clamped()`, so a broken
+/// or hostile file can never put NaN, infinity or a huge number into the scroll
+/// engine or IOKit, map a button to a number macOS doesn't have, or set a global
+/// shortcut that would swallow ordinary typing. A value already in range is left
+/// exactly as it is, so clamping a normal config changes nothing.
+enum ConfigLimits {
+    static let trackingSpeed = 0.5...80.0
+    static let precisionSpeed = 0.25...3.0
+    static let nativeScrollSpeed = 0.0...5.0
+    static let flyDistance = 1.0...20.0
+    static let flyAcceleration = 0.0...1.5
+    static let unit = 0.0...1.0             // glide, reach, smoothness, acceleration, throw
+    static let scrollDistance = 1.0...40.0
+    static let ballScrollSpeed = 0.25...4.0
+    /// macOS's mouse button numbers (CGMouseButton goes up to 31).
+    static let buttonNumber = 0...31
+    static let maxChords = 64
+    static let maxAppProfiles = 500
+    static let maxDisplays = 64
+    static let maxNameLength = 256
+    /// The modifier bits a shortcut may carry (⇧ ⌃ ⌥ ⌘, fn and caps lock).
+    static let modifierMask: UInt64 = CGEventFlags([.maskShift, .maskControl, .maskAlternate, .maskCommand,
+                                                    .maskSecondaryFn, .maskAlphaShift]).rawValue
+
+    /// `value` inside `range`; NaN becomes `fallback` (the default), ±infinity the nearer end.
+    static func clamp(_ value: Double, _ range: ClosedRange<Double>, fallback: Double) -> Double {
+        guard !value.isNaN else { return min(max(fallback, range.lowerBound), range.upperBound) }
+        return min(max(value, range.lowerBound), range.upperBound)
+    }
+
+    static func trimmed(_ s: String) -> String {
+        // By bytes: one "character" can be megabytes of combining marks (scripts/file-fuzz).
+        SafeRead.clip(s, bytes: maxNameLength)
+    }
+}
+
+extension KeyShortcut {
+    func clamped() -> KeyShortcut {
+        KeyShortcut(keyCode: keyCode, modifiers: modifiers & ConfigLimits.modifierMask,
+                    keyName: ConfigLimits.trimmed(keyName))
+    }
+}
+
+extension ButtonAction {
+    /// This action with every number inside its limits, or nil if it can't be made sensible
+    /// (a click on a button number macOS doesn't have). A gesture inside a gesture
+    /// (only a hand-made file can say that) is dropped.
+    func clamped(insideGesture: Bool = false) -> ButtonAction? {
+        switch self {
+        case .shortcut(let s): return .shortcut(s.clamped())
+        case .holdShortcut(let s): return .holdShortcut(s.clamped())
+        case .modifiedClick(let b, let mods):
+            guard ConfigLimits.buttonNumber.contains(b) else { return nil }
+            return .modifiedClick(button: b, modifiers: mods & ConfigLimits.modifierMask)
+        case .openApp(let id):
+            guard !id.isEmpty, id.utf8.count <= ConfigLimits.maxNameLength else { return nil }
+            return self
+        case .gesture(var g):
+            guard !insideGesture else { return nil }
+            for d in GestureDirection.allCases {
+                if let step = g[d] {
+                    g[d] = step.action.clamped(insideGesture: true).map { GestureStep($0, repeats: step.repeats) }
+                }
+            }
+            g.tap = g.tap.clamped(insideGesture: true) ?? .system
+            return .gesture(g)
+        default:
+            return self
+        }
+    }
+}
+
+extension GlobalShortcuts {
+    func clamped() -> GlobalShortcuts {
+        var out = self
+        for action in Action.allCases {
+            guard let s = self[action]?.clamped() else { continue }
+            // Without ⌘, ⌃ or ⌥ the key would stop working everywhere else (the app refuses
+            // to record one, see `refusal`): a file can't set one either. Pause keeps its default.
+            if s.flags.intersection([.maskCommand, .maskControl, .maskAlternate]).isEmpty {
+                out[action] = action == .pause ? GlobalShortcuts.defaultPause : nil
+            } else {
+                out[action] = s
+            }
+        }
+        return out
+    }
+}
+
+extension ScrollSettings {
+    func clamped() -> ScrollSettings {
+        var c = GlideConfig()
+        c.scrollSettings = self
+        return c.clampedScroll().scrollSettings
+    }
+}
+
+extension GlideConfig {
+    fileprivate func clampedScroll() -> GlideConfig {
+        let d = GlideConfig()
+        var c = self
+        c.nativeScrollSpeed = ConfigLimits.clamp(nativeScrollSpeed, ConfigLimits.nativeScrollSpeed, fallback: d.nativeScrollSpeed)
+        c.flyDistance = ConfigLimits.clamp(flyDistance, ConfigLimits.flyDistance, fallback: d.flyDistance)
+        c.flyAcceleration = ConfigLimits.clamp(flyAcceleration, ConfigLimits.flyAcceleration, fallback: d.flyAcceleration)
+        c.flyGlide = ConfigLimits.clamp(flyGlide, ConfigLimits.unit, fallback: d.flyGlide)
+        c.flyReach = ConfigLimits.clamp(flyReach, ConfigLimits.unit, fallback: d.flyReach)
+        c.scrollDistance = ConfigLimits.clamp(scrollDistance, ConfigLimits.scrollDistance, fallback: d.scrollDistance)
+        c.scrollSmoothness = ConfigLimits.clamp(scrollSmoothness, ConfigLimits.unit, fallback: d.scrollSmoothness)
+        c.scrollAcceleration = ConfigLimits.clamp(scrollAcceleration, ConfigLimits.unit, fallback: d.scrollAcceleration)
+        c.throwAmount = ConfigLimits.clamp(throwAmount, ConfigLimits.unit, fallback: d.throwAmount)
+        return c
+    }
+
+    static func clampedButtons(_ map: [Int: ButtonAction]) -> [Int: ButtonAction] {
+        var out: [Int: ButtonAction] = [:]
+        for (b, a) in map where ConfigLimits.buttonNumber.contains(b) {
+            if let a = a.clamped() { out[b] = a }
+        }
+        return out
+    }
+
+    static func clampedChords(_ chords: [Chord]) -> [Chord] {
+        var out: [Chord] = []
+        for chord in chords.prefix(ConfigLimits.maxChords) {
+            let buttons = Array(Set(chord.buttons.filter { ConfigLimits.buttonNumber.contains($0) })).sorted()
+            guard buttons.count >= 2, let action = chord.action.clamped() else { continue }
+            var c = chord
+            c.buttons = buttons
+            c.action = action
+            out.append(c)
+        }
+        return out
+    }
+
+    /// This config with every value inside the limits the app's controls allow (see `ConfigLimits`).
+    func clamped() -> GlideConfig {
+        let d = GlideConfig()
+        var c = clampedScroll()
+        c.trackingSpeed = ConfigLimits.clamp(trackingSpeed, ConfigLimits.trackingSpeed, fallback: d.trackingSpeed)
+        c.precisionSpeed = ConfigLimits.clamp(precisionSpeed, ConfigLimits.precisionSpeed, fallback: d.precisionSpeed)
+        c.ballScrollSpeed = ConfigLimits.clamp(ballScrollSpeed, ConfigLimits.ballScrollSpeed, fallback: d.ballScrollSpeed)
+        c.buttons = Self.clampedButtons(buttons)
+        c.chords = Self.clampedChords(chords)
+        c.globalShortcuts = globalShortcuts.clamped()
+        var speeds: [String: Double] = [:]
+        for (k, v) in displaySpeeds.speeds.sorted(by: { $0.key < $1.key }).prefix(ConfigLimits.maxDisplays)
+        where !v.isNaN && !k.isEmpty && k.utf8.count <= ConfigLimits.maxNameLength {
+            speeds[k] = ConfigLimits.clamp(v, ConfigLimits.trackingSpeed, fallback: d.trackingSpeed)
+        }
+        c.displaySpeeds.speeds = speeds
+        var names: [String: String] = [:]
+        for (k, v) in displaySpeeds.names.sorted(by: { $0.key < $1.key }).prefix(ConfigLimits.maxDisplays)
+        where !k.isEmpty && k.utf8.count <= ConfigLimits.maxNameLength {
+            names[k] = ConfigLimits.trimmed(v)
+        }
+        c.displaySpeeds.names = names
+        var seen = Set<String>()
+        c.appProfiles = []
+        for var p in appProfiles {
+            guard c.appProfiles.count < ConfigLimits.maxAppProfiles else { break }
+            guard !p.bundleID.isEmpty, p.bundleID.utf8.count <= ConfigLimits.maxNameLength,
+                  seen.insert(p.bundleID).inserted else { continue }
+            p.name = ConfigLimits.trimmed(p.name)
+            if let s = p.trackingSpeed {
+                p.trackingSpeed = s.isNaN ? nil : ConfigLimits.clamp(s, ConfigLimits.trackingSpeed, fallback: d.trackingSpeed)
+            }
+            p.scroll = p.scroll?.clamped()
+            p.buttons = p.buttons.map(Self.clampedButtons)
+            p.chords = p.chords.map(Self.clampedChords)
+            c.appProfiles.append(p)
+        }
+        return c
+    }
 }

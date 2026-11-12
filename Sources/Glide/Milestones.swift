@@ -33,10 +33,45 @@ enum Metric: String, CaseIterable, Identifiable, Codable {
 
     func format(_ v: Double) -> String {
         switch self {
-        case .clicks: Int(v.rounded()).formatted()
+        // Not Int(v): a number past Int's range (from damaged saved totals) would crash.
+        case .clicks: Int(exactly: v.rounded()).map { $0.formatted() } ?? v.formatted(.number.precision(.fractionLength(0)))
         case .scroll, .ball: Tally.distance(v)
         }
     }
+}
+
+/// One day's saved totals ("GlideTotals-yyyy-MM-dd" in UserDefaults), read
+/// without trusting them: a damaged or hand-edited value becomes something
+/// sensible instead of crashing the click counter or the history sums.
+struct SavedDayTotals: Equatable {
+    var clicks = 0
+    var ballCounts = 0.0
+    var scrollPoints = 0.0
+
+    /// Far more than anyone does in a day (about 1,000 clicks a minute around the clock;
+    /// 25,000 km of ball or ring), small enough that years of days add up without overflow.
+    static let maxClicks = 1_500_000
+    static let maxCounts = 4e12
+
+    init(clicks: Int = 0, ballCounts: Double = 0, scrollPoints: Double = 0) {
+        self.clicks = clicks
+        self.ballCounts = ballCounts
+        self.scrollPoints = scrollPoints
+    }
+
+    /// The saved dictionary, or nil if `value` isn't one.
+    init?(_ value: Any?) {
+        guard let d = value as? [String: Any] else { return nil }
+        func number(_ key: String, max: Double) -> Double {
+            guard let n = (d[key] as? NSNumber)?.doubleValue, n.isFinite, n > 0 else { return 0 }
+            return min(n, max)
+        }
+        clicks = Int(number("clicks", max: Double(Self.maxClicks)))
+        ballCounts = number("ball", max: Self.maxCounts)
+        scrollPoints = number("scroll", max: Self.maxCounts)
+    }
+
+    var tally: Tally { Tally(clicks: clicks, ballCounts: ballCounts, scrollPoints: scrollPoints) }
 }
 
 /// A day's — or a lifetime's — activity in the units people read.
@@ -71,7 +106,10 @@ struct Tally: Equatable {
     }
 
     static func + (a: Tally, b: Tally) -> Tally {
-        Tally(clicks: a.clicks + b.clicks, ballMeters: a.ballMeters + b.ballMeters,
+        // Saturating: totals are display numbers, never worth a crash.
+        let clicks = a.clicks.addingReportingOverflow(b.clicks)
+        return Tally(clicks: clicks.overflow ? (b.clicks < 0 ? .min : .max) : clicks.partialValue,
+                     ballMeters: a.ballMeters + b.ballMeters,
               scrollMeters: a.scrollMeters + b.scrollMeters)
     }
 
@@ -334,14 +372,14 @@ enum Landmarks {
         case .ball: list = lengths
         case .clicks: return nil
         }
-        guard meters >= 1, let smallest = list.first else { return nil }
+        guard meters >= 1, meters.isFinite, let smallest = list.first else { return nil }
         if meters < smallest.meters {
             return smallest.part(Int((meters / smallest.meters * 100).rounded(.down)))
         }
         let mark = list.last { $0.meters <= meters } ?? smallest
         let ratio = meters / mark.meters
         if ratio < 1.1 { return mark.whole }
-        return mark.times(ratio < 10 ? ratio.formatted(.number.precision(.fractionLength(1))) : Int(ratio).formatted())
+        return mark.times(ratio < 10 ? ratio.formatted(.number.precision(.fractionLength(1))) : Int(exactly: ratio.rounded(.towardZero)).map { $0.formatted() } ?? ratio.formatted(.number.precision(.fractionLength(0))))
     }
 }
 
