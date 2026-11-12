@@ -347,26 +347,43 @@ private struct ProgressHeader: View {
 struct YourTrackballCard: View {
     let delight: DelightCenter
     @State private var metric: Metric = .scroll
+    @Environment(\.pageWidth) private var pageWidth
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Space.section) {
-            VStack(alignment: .leading, spacing: 10) {
-                SectionTitle(title: "Your trackball", caption: .verbatim(footnote)) {
-                    ShareButton(card: .overview)
-                }
-                HStack(alignment: .top, spacing: 0) {
-                    ForEach(Array(Metric.lifetimeOrder.enumerated()), id: \.element) { i, m in
-                        if i > 0 { Hairline(vertical: true).padding(.horizontal, 20) }
-                        LifetimeStat(metric: m, delight: delight)
+            // Very wide: lifetime, the week and the bests side by side. Two columns: lifetime
+            // over the week on the left, the bests on the right. Narrow: one under another.
+            let layout = pageWidth == .triple ? AnyLayout(ColumnGrid(columns: 3))
+                                              : AnyLayout(SplitColumns(wide: pageWidth.isWide, share: 0.56))
+            layout {
+                VStack(alignment: .leading, spacing: 10) {
+                    SectionTitle(title: "Your trackball", caption: .verbatim(footnote)) {
+                        ShareButton(card: .overview)
                     }
+                    lifetime
                 }
-                .fixedSize(horizontal: false, vertical: true)
+                WeekChart(delight: delight, metric: $metric)
+                PersonalBests(delight: delight)
+                    .pageColumn(.trailing)
             }
 
-            WeekChart(delight: delight, metric: $metric)
-            PersonalBests(delight: delight)
-
             BadgesSection(delight: delight)
+        }
+    }
+
+    /// The three lifetime numbers in a row, or one under another in a narrow column.
+    private var lifetime: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: 0) {
+                ForEach(Array(Metric.lifetimeOrder.enumerated()), id: \.element) { i, m in
+                    if i > 0 { Hairline(vertical: true).padding(.horizontal, 20) }
+                    LifetimeStat(metric: m, delight: delight)
+                }
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 14) {
+                ForEach(Metric.lifetimeOrder) { m in LifetimeStat(metric: m, delight: delight) }
+            }
         }
     }
 

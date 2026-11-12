@@ -20,15 +20,20 @@ struct ButtonsView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Theme.Space.section) {
+        // Wide: the map on the left, staying in view; Quick Assign, presets, the list and combos on the right.
+        // (The map and its labels need about 570 pt, so two columns wait for a roomy page.)
+        PageColumns(share: 0.54, from: .roomy) {
             ButtonMap(model: model, openPad: $openPad, preview: preview)
+                .pageSticky(from: .roomy)
 
             if model.assignStep != .idle {
                 AssignPanel(model: model)
                     .transition(.opacity.combined(with: .move(edge: .top)))
+                    .pageColumn(.trailing)
             }
 
             PresetStrip(model: model, preview: $preview)
+                .pageColumn(.trailing)
 
             SectionBlock(title: "Your buttons", caption: "Press a button on your trackball: its row lights up.",
                          dividerInset: ButtonRow.dividerInset) {
@@ -40,8 +45,10 @@ struct ButtonsView: View {
                                 set: { model.config.buttons[b.index] = $0 }))
                 }
             }
+            .pageColumn(.trailing)
 
             CombosCard(model: model)
+                .pageColumn(.trailing)
         }
         .animation(Theme.Motion.spring, value: model.assignStep)
         .onAppear {
@@ -78,9 +85,11 @@ struct ButtonMap: View {
     let preview: ButtonPreset?
     @Environment(ShellState.self) private var shell: ShellState?
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.pageWidth) private var pageWidth
 
     var body: some View {
-        let side: CGFloat = 214
+        // Larger beside the list on a wide page (PageLayout.swift).
+        let side: CGFloat = pageWidth == .triple ? 260 : 214
         VStack(alignment: .leading, spacing: Theme.Space.titleToGroup) {
             SectionTitle(title: nil, caption: preview == nil
                          ? "Click a button here, or press it on your trackball, to choose what it does."

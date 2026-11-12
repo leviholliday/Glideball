@@ -8,7 +8,8 @@ struct PointerView: View {
     private static let defaults = GlideConfig()
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Theme.Space.section) {
+        // Wide: how it feels (and the presets) on the left, the curve and each display's speed on the right.
+        PageColumns {
             SectionBlock(title: "Feel",
                          caption: "Applies only to the Expert Mouse; your other mice and trackpad keep their own settings. macOS still moves the cursor itself, so there's no added lag.") {
                 TuningSlider(title: "Tracking speed", symbol: "gauge.with.dots.needle.67percent",
@@ -24,6 +25,7 @@ struct PointerView: View {
             }
 
             ResponseCurve(model: model)
+                .pageColumn(.trailing)
 
             SectionBlock(title: "Precision mode",
                          caption: "Set a button to Precision in Buttons. Hold it (or toggle it on) and the cursor slows to this speed for fine work, then snaps back.") {
@@ -36,6 +38,7 @@ struct PointerView: View {
             }
 
             DisplaySpeedsSection(model: model)
+                .pageColumn(.trailing)
         }
     }
 }

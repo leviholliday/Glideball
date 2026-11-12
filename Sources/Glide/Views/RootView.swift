@@ -56,6 +56,9 @@ struct RootView: View {
     @State private var pageID = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var shell = ShellState()
+    /// How many columns the page has room for (PageLayout.swift), from the detail area's width.
+    @State private var pageWidth: PageWidth = .single
+    @State private var widthKnown = false
     private let launch = LaunchExperience.shared
 
     var body: some View {
@@ -154,12 +157,11 @@ struct RootView: View {
                         StatusBanners(model: model)
                         TabPage(tab: tab, model: model)
                     }
-                    .frame(maxWidth: Theme.Space.contentMaxWidth, alignment: .leading)
-                    .padding(.horizontal, Theme.Space.contentSide)
+                    // One column on the left, or two or three centered once the window is wide.
+                    .pageFrame(pageWidth)
                     // Full screen has no toolbar above the page: the same room, made here.
                     .padding(.top, Theme.Space.contentTop + (model.fullScreen ? Theme.Space.fullScreenTop : 0))
                     .padding(.bottom, 40)
-                    .frame(maxWidth: .infinity, alignment: .leading)
                     // Groups line themselves up on pixels relative to the page, which
                     // scrolling doesn't change (the window's coordinates would, every frame).
                     .coordinateSpace(.named(PixelGrid.page))
@@ -171,6 +173,14 @@ struct RootView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Measured here, once, outside the page: the callback only runs when the class
+        // changes (never while scrolling), and a new page starts with the right one.
+        .onGeometryChange(for: PageWidth.self) { PageGrid.width(forDetail: $0.size.width) } action: { new in
+            PageGrid.measured = new
+            // The first one (the window opening) just is; later ones glide from one arrangement to the other.
+            guard widthKnown else { pageWidth = new; widthKnown = true; return }
+            withAnimation(Theme.Motion.respecting(reduceMotion, Theme.Motion.spring)) { pageWidth = new }
+        }
         .overlay(alignment: .topTrailing) {
             if model.delight.showSaved {
                 SavedPill()
