@@ -229,7 +229,15 @@ enum RenderUI {
     }
 
     /// A whole tab, top to bottom (what scrolling would show), without the sidebar: the content column at its full width.
-    static func fullPage<V: View>(_ page: V, dark: Bool, scale: CGFloat) -> NSBitmapImageRep? {
+    /// `detail`: the window's detail area this wide instead (a wide window's columns, PageLayout.swift).
+    static func fullPage<V: View>(_ page: V, dark: Bool, scale: CGFloat, detail: CGFloat? = nil) -> NSBitmapImageRep? {
+        if let detail {
+            let view = page
+                .pageFrame(PageGrid.width(forDetail: detail))
+                .padding(.vertical, 24)
+                .background(GlideBackground())
+            return Offscreen.renderTall(view, width: detail, appearance: appearance(dark), scale: scale)
+        }
         let view = page
             .frame(width: Theme.Space.contentMaxWidth, alignment: .leading)
             .padding(.horizontal, Theme.Space.contentSide)

@@ -66,6 +66,14 @@ struct StaticAtmosphere: View, Equatable {
                 glow(Theme.orbCyan, dark ? 0.16 : 0.16, at: CGPoint(x: c.x - 40, y: c.y - 70), size: CGSize(width: 420, height: 360))
                 glow(Theme.orbViolet, dark ? 0.24 : 0.13, at: CGPoint(x: c.x + 330, y: c.y - 170), size: CGSize(width: 1100, height: 520))
                 glow(Theme.orbMagenta, dark ? 0.11 : 0.07, at: CGPoint(x: c.x + 120, y: c.y + 330), size: CGSize(width: 620, height: 520))
+                // A wide window (full screen on a big display): the light carries on across
+                // the top, softer, so the far side is still the same room.
+                if anchor == nil, geo.size.width > 1500 {
+                    glow(Theme.orbViolet, dark ? 0.15 : 0.08, at: CGPoint(x: geo.size.width * 0.66, y: -60),
+                         size: CGSize(width: geo.size.width * 0.75, height: 560))
+                    glow(Theme.orbBlue, dark ? 0.09 : 0.05, at: CGPoint(x: geo.size.width - 140, y: geo.size.height * 0.55),
+                         size: CGSize(width: 900, height: 900))
+                }
                 RingTexture(center: c, dark: dark)
                     .opacity(strength)
                 Grain(dark: dark)

@@ -52,6 +52,34 @@ extension RenderUI {
             }
         }
 
+        // Wide windows (PageLayout.swift): every tab in full screen on a 1440 × 900, 1920 × 1080
+        // and 2560 × 1440 display, as it opens and top to bottom (the detail area that wide).
+        for (w, h) in [(1440.0, 900.0), (1920, 1080), (2560, 1440)] {
+            for (tab, name) in tabs {
+                add("wide-\(Int(w))-\(name)", "Wide windows", "\(tab.rawValue) in full screen at \(Int(w)) × \(Int(h))") { dark, scale in
+                    mainWindow(model, tab: tab, dark: dark, scale: scale, size: NSSize(width: w, height: h), fullScreen: true) { EmptyView() }
+                }
+            }
+            for (tab, name) in tabs {
+                add("wide-\(Int(w))-\(name)-page", "Wide windows (scrolled)", "\(tab.rawValue), whole page, \(Int(w)) wide") { dark, scale in
+                    fullPage(page(tab, model), dark: dark, scale: scale, detail: w - Theme.Space.sidebarWidth)
+                }
+            }
+        }
+
+        // A big window that isn't full screen (toolbar and all), and an ultrawide display.
+        // 1220 is just past where pages go to two columns.
+        for (w, h) in [(1220.0, 800.0), (1440, 900)] {
+            for (tab, name) in tabs {
+                add("wide-window-\(Int(w))-\(name)", "Wide windows", "\(tab.rawValue) in a \(Int(w)) × \(Int(h)) window") { dark, scale in
+                    mainWindow(model, tab: tab, dark: dark, scale: scale, size: NSSize(width: w, height: h))
+                }
+            }
+        }
+        add("wide-3440-overview", "Wide windows", "Overview in full screen at 3440 × 1440") { dark, scale in
+            mainWindow(model, tab: .overview, dark: dark, scale: scale, size: NSSize(width: 3440, height: 1440), fullScreen: true) { EmptyView() }
+        }
+
         // The Scrolling tab in its other two modes (the plain "scrolling" shows Flywheel).
         for (mode, name) in [(ScrollMode.native, "scrolling-native"), (.follow, "scrolling-follow")] {
             add("\(name)-page", "Whole tabs (scrolled)", "Scrolling in \(mode.rawValue) mode, whole page",
@@ -334,6 +362,15 @@ extension RenderUI {
         add("buttons-gesture-combo", "Gestures", "A combo as a gesture: top left + top right with the Tabs set, its compass under the combo",
             prepare: gestureCombo, cleanup: restoreButtons) { dark, scale in
             fullPage(page(.buttons, model), dark: dark, scale: scale)
+        }
+        // The same two on a wide page (PageLayout.swift): the map on the left, the editors on the right.
+        add("buttons-gesture-page-1920", "Gestures", "Gesture buttons with their editors, whole page, 1920 wide",
+            prepare: gestureButtons, cleanup: restoreButtons) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale, detail: 1920 - Theme.Space.sidebarWidth)
+        }
+        add("buttons-gesture-combo-1920", "Gestures", "A combo as a gesture, whole page, 1920 wide",
+            prepare: gestureCombo, cleanup: restoreButtons) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale, detail: 1920 - Theme.Space.sidebarWidth)
         }
         add("buttons-gesture-combo-held", "Gestures", "Holding the top two together, rolling right: armed ring, page edge, Next Tab just fired",
             prepare: { gestureCombo(); hold(.right, fired: .some(.right), buttons: [2, 3]) },

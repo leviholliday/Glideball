@@ -22,11 +22,13 @@ struct BackupView: View {
     @Bindable var model: AppModel
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Theme.Space.section) {
+        // Wide: sync, export and import on the left, the backups list on the right.
+        PageColumns {
             SyncSection(model: model, sync: model.sync)
             ExportSection(model: model)
             ImportSection(model: model)
             BackupHistorySection(model: model, store: model.backups)
+                .pageColumn(.trailing)
             Text(versionLine)
                 .font(Theme.Font.hint)
                 .foregroundStyle(.tertiary)

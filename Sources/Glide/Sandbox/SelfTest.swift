@@ -127,6 +127,30 @@ enum SelfTest {
             return "\(GlideTab.allCases.count) tabs drawn"
         }
 
+        // Every tab laid out at three window widths: one column as the window opens,
+        // two columns in a big window, three-wide on a 2560 display (PageLayout.swift).
+        step("wide layouts") {
+            let widths: [(NSSize, Offscreen.Chrome, (PageWidth) -> Bool, String)] = [
+                (RenderUI.windowSize, .mainWindow, { $0 == .single }, "one column"),
+                (NSSize(width: 1440, height: 900), .mainWindow, { $0 == .double || $0 == .roomy }, "two columns"),
+                (NSSize(width: 2560, height: 1440), .mainWindowFullScreen, { $0 == .triple }, "three-wide"),
+            ]
+            for (size, chrome, expected, what) in widths {
+                for tab in GlideTab.allCases {
+                    UserDefaults.standard.set(tab.rawValue, forKey: "GlideInitialTab")
+                    PageGrid.measured = nil
+                    // Laid out, not drawn (the tabs step above draws them): quick at any size.
+                    let (window, _) = Offscreen.host(RootView(model: model), size: size, chrome: chrome, appearance: nil, settle: 0.02)
+                    window.contentView = nil
+                    window.close()
+                    let got = try unwrap(PageGrid.measured, "\(tab.rawValue) at \(Int(size.width)) never measured its width")
+                    try check(expected(got), "\(tab.rawValue) at \(Int(size.width)) wide is \(got), not \(what)")
+                }
+            }
+            UserDefaults.standard.removeObject(forKey: "GlideInitialTab")
+            return "\(GlideTab.allCases.count) tabs × \(widths.count) widths"
+        }
+
         step("settings window") {
             let controller = SettingsWindowController()
             let window = try unwrap(controller.window, "no Settings window")

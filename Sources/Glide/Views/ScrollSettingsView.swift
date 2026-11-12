@@ -12,7 +12,8 @@ struct ScrollSettingsView: View {
 
     var body: some View {
         let controls = ScrollControls(config: $model.config)
-        VStack(alignment: .leading, spacing: Theme.Space.section) {
+        // Wide: the mode and its controls on the left, "Try it here" and the mode's charts on the right.
+        PageColumns {
             PlainSection(title: "Scroll mode",
                          caption: TryHint.due ? "⌥-click a mode to try it for 10 seconds first." : nil) {
                 ModePicker(mode: $model.config.scrollMode)
@@ -37,6 +38,7 @@ struct ScrollSettingsView: View {
             // One "Try it here" for every mode: it stays put while the mode changes.
             TryItArea(feed: model.live)
                 .findable(.tryItHere)
+                .pageColumn(.trailing)
 
             Group {
                 switch model.config.scrollMode {
@@ -56,8 +58,12 @@ struct ScrollSettingsView: View {
             }
             .transition(reduceMotion ? .opacity
                         : .asymmetric(insertion: .opacity.combined(with: .offset(y: 14)), removal: .opacity))
+            .pageColumn(.trailing)
 
-            if model.config.scrollMode != .native { controls.directionSection }
+            if model.config.scrollMode != .native {
+                controls.directionSection
+                    .pageColumn(.trailing)
+            }
 
             SectionBlock(title: "Scroll with the ball",
                          caption: "Set a button to “Scroll with ball” in Buttons. While you hold it, rolling the ball scrolls in any direction and the cursor stays put. Let go mid-roll and the page glides briefly.") {
@@ -68,6 +74,7 @@ struct ScrollSettingsView: View {
                              tint: Theme.ball, defaultValue: Self.defaults.ballScrollSpeed)
                     .findable(.ballScrollSpeed)
             }
+            .pageColumn(.trailing)
         }
         .animation(Theme.Motion.respecting(reduceMotion, Theme.Motion.spring), value: model.config.scrollMode)
     }

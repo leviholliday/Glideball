@@ -9,14 +9,19 @@ struct OverviewView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Space.section + 8) {
-            TodayCluster(model: model)
-                .findable(.today)
-            LiveActivity(feed: model.live)
-                .findable(.liveActivity)
-            if model.delight.checklistVisible {
-                MakeItYoursCard(delight: model.delight, trackballFound: model.status.deviceConnected) { model.requestTab($0) }
-                    .transition(.opacity)
-                    .findable(.makeItYours)
+            // Wide: the instrument cluster on the left, what's live and what's next on the right.
+            PageColumns(share: 0.55, spacing: Theme.Space.section + 8) {
+                TodayCluster(model: model)
+                    .findable(.today)
+                LiveActivity(feed: model.live)
+                    .findable(.liveActivity)
+                    .pageColumn(.trailing)
+                if model.delight.checklistVisible {
+                    MakeItYoursCard(delight: model.delight, trackballFound: model.status.deviceConnected) { model.requestTab($0) }
+                        .transition(.opacity)
+                        .findable(.makeItYours)
+                        .pageColumn(.trailing)
+                }
             }
             YourTrackballCard(delight: model.delight)
             SettingsHint()
@@ -76,6 +81,7 @@ struct TodayCluster: View {
     let model: AppModel
     @Environment(ShellState.self) private var shell: ShellState?
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.pageWidth) private var pageWidth
 
     /// Renders: draw this part's record moment part-way through (there's no clock in a picture).
     nonisolated(unsafe) static var sandboxRecordMoment: Metric?
@@ -85,6 +91,13 @@ struct TodayCluster: View {
     var body: some View {
         let dial: CGFloat = 368
         ViewThatFits(in: .horizontal) {
+            // A wide page's column has room for a larger instrument (never on a narrow one).
+            if pageWidth.isWide {
+                HStack(alignment: .center, spacing: 32) {
+                    gauge(dial * 1.18)
+                    stats
+                }
+            }
             HStack(alignment: .center, spacing: 28) {
                 gauge(dial)
                 stats

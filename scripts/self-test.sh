@@ -18,7 +18,7 @@ EXE=$(scripts/sandbox-app.sh)
 
 rc=0
 for mode in "" --returning; do
-  # perl's alarm is a second, outside limit in case the app's own watchdog can't fire.
-  perl -e 'alarm shift; exec @ARGV' 30 "$EXE" --self-test ${mode:+$mode} || rc=1
+  # perl's alarm (90 s) is a second, outside limit, past the app's own 60 s, in case the app's own watchdog can't fire.
+  perl -e 'alarm shift; exec @ARGV' 90 "$EXE" --self-test ${mode:+$mode} || rc=1
 done
 exit $rc

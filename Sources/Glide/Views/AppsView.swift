@@ -12,7 +12,8 @@ struct AppsView: View {
     private var profiles: [AppProfile] { model.config.appProfiles }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Theme.Space.section) {
+        // Wide: the list on the left, the selected setup's editor on the right.
+        PageColumns(share: 0.42) {
             if profiles.isEmpty {
                 emptyState
                     .findable(.appSetups)
@@ -23,6 +24,7 @@ struct AppsView: View {
                     ProfileEditor(model: model, profileID: id)
                         .id(id)
                         .findableScope(Findable.appSetupID(id))
+                        .pageColumn(.trailing)
                 }
             }
         }
