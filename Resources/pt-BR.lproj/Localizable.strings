@@ -1993,14 +1993,11 @@
 "Battery %@" = "Bateria %@";
 "Bluetooth" = "Bluetooth";
 "Connect another display to set a speed for each." = "Conecte outra tela para definir uma velocidade para cada uma.";
-"Fires once per hold. Click to keep going for as long as you roll." = "Dispara uma vez por toque segurado. Clique para continuar enquanto você rolar.";
 "Gesture" = "Gesto";
 "Hold and roll" = "Segurar e rolar";
 "Hold the button and roll the ball: a different action each way." = "Segure o botão e role a bola: uma ação diferente para cada lado.";
-"Hold this button and roll the ball. Each way does something the moment you roll a few millimeters; a quick press does the tap." = "Segure este botão e role a bola. Cada lado faz algo assim que você rola alguns milímetros; um clique rápido faz o toque.";
 "Hold this button on your trackball and roll." = "Segure este botão do trackball e role.";
 "Hold top right and roll: sideways switches Spaces, up opens Mission Control, down shows the app’s windows. Hold top left and roll for volume and tracks. A quick press still does what it did." = "Segure o superior direito e role: para os lados troca de Space, para cima abre o Mission Control, para baixo mostra as janelas do app. Segure o superior esquerdo e role para volume e faixas. Um clique rápido continua fazendo o que fazia.";
-"Keeps going for as long as you keep rolling. Click to fire once per hold instead." = "Continua enquanto você rolar. Clique para disparar só uma vez por toque segurado.";
 "Main display" = "Tela principal";
 "Nothing really happens while you try, so roll as much as you like." = "Nada acontece de verdade enquanto você testa, então role à vontade.";
 "Now roll the ball, or let go for the tap." = "Agora role a bola, ou solte para o toque.";
@@ -2439,3 +2436,23 @@
 /* Search words for sharing a setup and importing KensingtonWorks' settings */
 "share, send, link, qr code, picture, friend" = "compartilhar, enviar, link, código qr, imagem, amigo";
 "kensingtonworks, trackballworks, import, switch, move over" = "kensingtonworks, trackballworks, importar, trocar, migrar";
+/* Chained gestures, gestures on combos, gesture distance */
+"A gesture can’t use the bottom-left button, your primary click" = "Um gesto não pode usar o botão inferior esquerdo, seu clique principal";
+"A wider dead zone and a clearer roll before anything fires, so a shaky press stays a tap." = "Uma zona morta maior e um giro mais claro antes de algo disparar, para que um toque trêmulo continue sendo um toque.";
+"Distance" = "Distância";
+"Each time you roll" = "Cada vez que rola";
+"Fires each time you roll this way, even several times in one hold, mixed with the other directions." = "Dispara cada vez que você rola para este lado, até várias vezes no mesmo toque, misturado com os outros lados.";
+"Fires once per hold, however far you roll." = "Dispara uma vez por toque, não importa quanto você role.";
+"Gesture distance" = "Distância dos gestos";
+"Hold the buttons together and roll the ball: a different action each way." = "Segure os botões juntos e role a bola: uma ação diferente para cada lado.";
+"Hold these buttons together and roll the ball. Each way does something the moment you roll a few millimeters, as many times as you like in one hold; a quick press does the tap." = "Segure estes botões juntos e role a bola. Cada lado faz algo assim que você rola alguns milímetros, quantas vezes quiser no mesmo toque; um clique rápido faz o toque.";
+"Hold these buttons together on your trackball and roll." = "Segure estes botões juntos no trackball e role.";
+"Hold this button and roll the ball. Each way does something the moment you roll a few millimeters, as many times as you like in one hold; a quick press does the tap." = "Segure este botão e role a bola. Cada lado faz algo assim que você rola alguns milímetros, quantas vezes quiser no mesmo toque; um clique rápido faz o toque.";
+"How far you roll before a direction fires. Short suits small, quick rolls; Long ignores more by accident." = "Quanto você rola antes de um lado disparar. Curto combina com giros pequenos e rápidos; Longo ignora mais giros acidentais.";
+"How far you roll before a direction fires: about 2, 3 or 4.5 mm. A gesture can have its own." = "Quanto você rola antes de um lado disparar: cerca de 2, 3 ou 4,5 mm. Cada gesto pode ter a sua.";
+"Includes your primary click, so this combo does the gesture’s tap instead of a gesture." = "Inclui seu clique principal, então este combo faz o toque do gesto em vez de um gesto.";
+"Keeps going for as long as you keep rolling." = "Continua enquanto você continuar rolando.";
+"Like Other Gestures" = "Igual aos outros gestos";
+"Like Other Gestures (%@)" = "Igual aos outros gestos (%@)";
+"Steady hands" = "Mãos trêmulas";
+"What fired in this hold" = "O que disparou neste toque";

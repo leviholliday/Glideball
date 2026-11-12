@@ -214,18 +214,25 @@ final class SettingsSync {
         // button became a plain click). Keep this Mac's, and write them back for the
         // Macs that do know them (as version 2, which the older one then leaves alone).
         var keptNewer = false
+        var keptTuning = false
         if file.settings.writtenBy == nil {
             let merged = config.keepingNewerFeatures(from: local)
             config = merged.config
             keptNewer = merged.kept
+        } else if GlideSettingsFile.predatesGestureTuning(file.settings.writtenBy) {
+            // A 2.10 beta that knew gestures but not "Once per hold" or gesture
+            // distance wrote these: put back what it couldn't carry, quietly.
+            let merged = config.keepingGestureTuning(from: local)
+            config = merged.config
+            keptTuning = merged.kept
         }
         if Self.syncable(config) != Self.syncable(local) {
             config.enabled = local.enabled   // the pause switch stays per-Mac
             self.local = config
             onRemoteConfig(config)
         }
-        if keptNewer {
-            noticeOlderMac(gestures: local.anyAction(\.isGesture))
+        if keptNewer || keptTuning {
+            if keptNewer { noticeOlderMac(gestures: local.anyAction(\.isGesture)) }
             pendingChangeAt = Date()
             upload()
             return

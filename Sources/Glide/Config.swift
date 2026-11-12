@@ -411,6 +411,10 @@ struct GlideConfig: Codable, Equatable {
 
     /// Gesture buttons are on. Off: each one just does its tap action.
     var gesturesEnabled = true
+    /// How far a gesture rolls before a direction fires (a gesture can have its own).
+    var gestureDistance: GestureDistance = .normal
+    /// "Steady hands": a wider dead zone, so a wobble never counts as a roll.
+    var gestureSteadyHands = false
     /// An optional pointer speed for each display (see `DisplaySpeeds` for the precedence).
     var displaySpeeds = DisplaySpeeds()
 
@@ -444,6 +448,8 @@ struct GlideConfig: Codable, Equatable {
         globalShortcuts = try c.decodeIfPresent(GlobalShortcuts.self, forKey: .globalShortcuts) ?? d.globalShortcuts
         // Newer fields: anything unreadable means the default, never a lost settings file.
         gesturesEnabled = (try? c.decodeIfPresent(Bool.self, forKey: .gesturesEnabled)) ?? d.gesturesEnabled
+        gestureDistance = (try? c.decodeIfPresent(GestureDistance.self, forKey: .gestureDistance)) ?? d.gestureDistance
+        gestureSteadyHands = (try? c.decodeIfPresent(Bool.self, forKey: .gestureSteadyHands)) ?? d.gestureSteadyHands
         displaySpeeds = (try? c.decodeIfPresent(DisplaySpeeds.self, forKey: .displaySpeeds)) ?? d.displaySpeeds
     }
 
@@ -735,7 +741,107 @@ extension GlideConfig {
         if local.displaySpeeds.enabled || !local.displaySpeeds.speeds.isEmpty { kept = kept || out.displaySpeeds != local.displaySpeeds }
         out.displaySpeeds = local.displaySpeeds
         out.gesturesEnabled = local.gesturesEnabled
+        // Gestures it dropped came back whole from `local`; any it kept lack the newer fields too.
+        let tuned = out.keepingGestureTuning(from: local)
+        return (tuned.config, kept || tuned.kept)
+    }
+
+    /// Settings written by a Glideball that knew gestures but not chained gestures,
+    /// gesture distance and Steady hands (2.10 betas before `GlideSettingsFile.gestureTuningSince`),
+    /// merged with this Mac's (`local`). It read and wrote back the gestures without
+    /// those fields, so it could never have set them: the global distance and Steady
+    /// hands stay this Mac's; a gesture on the same button (or combo) gets this Mac's
+    /// distance back, and each direction this Mac had as "Once per hold" gets that back
+    /// when the older one left its action alone. Returns whether anything came back.
+    func keepingGestureTuning(from local: GlideConfig) -> (config: GlideConfig, kept: Bool) {
+        var out = self
+        var kept = false
+        func restore(_ incoming: ButtonAction, _ mine: ButtonAction?) -> ButtonAction {
+            guard case .gesture(var g) = incoming, case .gesture(let m)? = mine else { return incoming }
+            let before = g
+            if g.distance == nil { g.distance = m.distance }
+            for d in GestureDirection.allCases {
+                if let s = g[d], let ms = m[d], s.action == ms.action, !s.repeats, !s.once, ms.once { g[d]?.once = true }
+            }
+            if g != before { kept = true }
+            return .gesture(g)
+        }
+        func merge(_ buttons: inout [Int: ButtonAction], _ mine: [Int: ButtonAction]) {
+            for (b, a) in buttons { buttons[b] = restore(a, mine[b]) }
+        }
+        func merge(_ chords: inout [Chord], _ mine: [Chord]) {
+            for i in chords.indices {
+                let m = mine.first { $0.id == chords[i].id } ?? mine.first { $0.buttons == chords[i].buttons }
+                chords[i].action = restore(chords[i].action, m?.action)
+            }
+        }
+        merge(&out.buttons, local.buttons)
+        merge(&out.chords, local.chords)
+        for i in out.appProfiles.indices {
+            guard let mine = local.appProfiles.first(where: { $0.bundleID == out.appProfiles[i].bundleID }) else { continue }
+            if var b = out.appProfiles[i].buttons, let mb = mine.buttons {
+                merge(&b, mb)
+                out.appProfiles[i].buttons = b
+            }
+            if var c = out.appProfiles[i].chords, let mc = mine.chords {
+                merge(&c, mc)
+                out.appProfiles[i].chords = c
+            }
+        }
+        if out.gestureDistance != local.gestureDistance || out.gestureSteadyHands != local.gestureSteadyHands {
+            kept = kept || local.anyAction(\.isGesture)
+        }
+        out.gestureDistance = local.gestureDistance
+        out.gestureSteadyHands = local.gestureSteadyHands
         return (out, kept)
+    }
+}
+
+extension GlideSettingsFile {
+    /// The first Glideball that writes chained gestures' field ("Once per hold"),
+    /// a gesture's own distance, and the gesture distance and Steady hands settings.
+    static let gestureTuningSince = "2.10-beta.12"
+
+    /// Written by a Glideball that would have dropped those fields (no `writtenBy`
+    /// at all is older still, before 2.10: see `keepingNewerFeatures`).
+    static func predatesGestureTuning(_ writtenBy: String?) -> Bool {
+        guard let writtenBy else { return true }
+        guard let v = SettingsVersion(writtenBy), let since = SettingsVersion(gestureTuningSince) else { return false }
+        return v < since
+    }
+}
+
+/// "2.10", "2.10.1", "2.10-beta.12", in order (a beta before its release). Just
+/// enough for `predatesGestureTuning`; anything unreadable is nil (and so never older).
+struct SettingsVersion: Comparable {
+    let numbers: [Int]
+    let beta: Int?
+
+    init?(_ text: String) {
+        let parts = text.split(separator: "-", maxSplits: 1)
+        guard let core = parts.first else { return nil }
+        let nums = core.split(separator: ".", omittingEmptySubsequences: false).map { Int($0) }
+        guard !nums.isEmpty, nums.allSatisfy({ $0 != nil }) else { return nil }
+        numbers = nums.map { $0! }
+        if parts.count == 2 {
+            let label = parts[1].lowercased()
+            guard label.hasPrefix("beta"), let n = Int(label.dropFirst(4).drop { $0 == "." || $0 == " " }) else { return nil }
+            beta = n
+        } else {
+            beta = nil
+        }
+    }
+
+    static func < (a: SettingsVersion, b: SettingsVersion) -> Bool {
+        for i in 0..<max(a.numbers.count, b.numbers.count) {
+            let x = i < a.numbers.count ? a.numbers[i] : 0, y = i < b.numbers.count ? b.numbers[i] : 0
+            if x != y { return x < y }
+        }
+        switch (a.beta, b.beta) {
+        case let (x?, y?): return x < y
+        case (.some, nil): return true
+        default: return false
+        }
     }
 }
 
@@ -797,23 +903,51 @@ enum GestureDirection: String, Codable, CaseIterable {
     case up, down, left, right
 }
 
-/// What one direction of a gesture does.
+/// What one direction of a gesture does, fired one of three ways (`mode`): each
+/// time you roll that way (the default: chained, as many as you like in one hold),
+/// continuously as you roll (`repeats`), or once per hold (`once`).
 struct GestureStep: Codable, Hashable {
     var action: ButtonAction
     /// Continuous: fires again for every further stretch of rolling (volume, say),
     /// and rolling back fires the opposite direction (if that one repeats too).
-    /// Otherwise it fires once per hold.
     var repeats = false
+    /// At most once per hold (how every one-shot direction worked before chained
+    /// gestures). Written only when on, so a Glideball that doesn't know it reads
+    /// the same step and fires it once per hold anyway.
+    var once = false
 
-    init(_ action: ButtonAction, repeats: Bool = false) {
+    enum Mode: String, CaseIterable {
+        case chain, continuous, once
+    }
+
+    var mode: Mode {
+        get { repeats ? .continuous : once ? .once : .chain }
+        set {
+            repeats = newValue == .continuous
+            once = newValue == .once
+        }
+    }
+
+    init(_ action: ButtonAction, repeats: Bool = false, once: Bool = false) {
         self.action = action
         self.repeats = repeats
+        self.once = once && !repeats
     }
+
+    private enum CodingKeys: String, CodingKey { case action, repeats, once }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         action = try c.decode(ButtonAction.self, forKey: .action)   // unknown: the whole step is skipped
         repeats = (try? c.decodeIfPresent(Bool.self, forKey: .repeats)) ?? false
+        once = !repeats && ((try? c.decodeIfPresent(Bool.self, forKey: .once)) ?? false)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(action, forKey: .action)
+        try c.encode(repeats, forKey: .repeats)
+        if once { try c.encode(true, forKey: .once) }
     }
 
     /// The action as a gesture fires it, or nil if it can't be fired mid-gesture.
@@ -837,14 +971,17 @@ struct ButtonGesture: Codable, Hashable {
     var right: GestureStep?
     /// A press and release without rolling past the threshold. `.system` is the button's own click.
     var tap: ButtonAction = .system
+    /// This gesture's own distance; nil follows `GlideConfig.gestureDistance`.
+    var distance: GestureDistance?
 
     init(up: GestureStep? = nil, down: GestureStep? = nil, left: GestureStep? = nil, right: GestureStep? = nil,
-         tap: ButtonAction = .system) {
+         tap: ButtonAction = .system, distance: GestureDistance? = nil) {
         self.up = up
         self.down = down
         self.left = left
         self.right = right
         self.tap = tap
+        self.distance = distance
     }
 
     /// Spaces left and right, Mission Control up, App Exposé down; a tap is the button's own click.
@@ -860,11 +997,11 @@ struct ButtonGesture: Codable, Hashable {
                                      right: GestureStep(.media(.next)),
                                      tap: .media(.playPause))
 
-    /// Tabs: left and right move between them, up opens one, down closes one.
+    /// Tabs: left and right move between them (a tab each time you roll), up opens one, down closes one.
     static let tabs = ButtonGesture(up: GestureStep(.shortcut(.newTab)),
                                     down: GestureStep(.shortcut(.closeTab)),
-                                    left: GestureStep(.shortcut(.previousTab), repeats: true),
-                                    right: GestureStep(.shortcut(.nextTab), repeats: true))
+                                    left: GestureStep(.shortcut(.previousTab)),
+                                    right: GestureStep(.shortcut(.nextTab)))
 
     /// Zoom in and out as you roll up and down; left and right go back and forward.
     static let zoom = ButtonGesture(up: GestureStep(.shortcut(.zoomIn), repeats: true),
@@ -884,6 +1021,7 @@ struct ButtonGesture: Codable, Hashable {
         func applied(to current: ButtonGesture) -> ButtonGesture {
             var g = gesture
             if !ownTap { g.tap = current.tap }
+            g.distance = current.distance
             return g
         }
 
@@ -944,7 +1082,7 @@ struct ButtonGesture: Codable, Hashable {
 
     // A newer Glideball may write actions or fields this one doesn't know: skip
     // just that direction (or use the plain click for the tap), never the whole button.
-    private enum CodingKeys: String, CodingKey { case up, down, left, right, tap }
+    private enum CodingKeys: String, CodingKey { case up, down, left, right, tap, distance }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -954,6 +1092,21 @@ struct ButtonGesture: Codable, Hashable {
         left = step(.left)
         right = step(.right)
         tap = (try? c.decodeIfPresent(ButtonAction.self, forKey: .tap)) ?? .system
+        distance = (try? c.decodeIfPresent(GestureDistance.self, forKey: .distance)) ?? nil
+    }
+}
+
+/// How far the ball rolls before a gesture's direction fires (`GestureTuning.for`).
+enum GestureDistance: String, Codable, CaseIterable, Identifiable {
+    case short, normal, long
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .short: String(localized: "Short", comment: "Gesture distance: a short roll fires a direction")
+        case .normal: String(localized: "Normal", comment: "Gesture distance")
+        case .long: String(localized: "Long", comment: "Gesture distance: a longer roll fires a direction")
+        }
     }
 }
 

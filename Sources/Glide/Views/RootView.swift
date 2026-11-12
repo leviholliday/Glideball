@@ -180,6 +180,7 @@ struct RootView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .overlay { GestureArmedEdge(model: model) }   // a held gesture: the page is lit at its edge
         .overlay(alignment: .topTrailing) {
             if model.delight.showSaved {
                 SavedPill()

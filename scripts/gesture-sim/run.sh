@@ -9,5 +9,6 @@ swiftc -O -swift-version 5 -o "$OUT" \
   Sources/Glide/Gestures.swift \
   Sources/Glide/Config.swift \
   Sources/Glide/AppProfile.swift \
+  Sources/Glide/ImportSafety.swift \
   scripts/gesture-sim/main.swift
 "$OUT"

@@ -121,9 +121,10 @@ extension ButtonAction {
             guard !nested else { return nil }
             var out = ButtonGesture()
             for d in GestureDirection.allCases {
-                if let step = g[d], let a = step.action.sanitized(nested: true) { out[d] = GestureStep(a, repeats: step.repeats) }
+                if let step = g[d], let a = step.action.sanitized(nested: true) { out[d] = GestureStep(a, repeats: step.repeats, once: step.once) }
             }
             out.tap = g.tap.sanitized(nested: true) ?? .system
+            out.distance = g.distance
             return .gesture(out)
         case .system, .leftClick, .rightClick, .middleClick, .back, .forward, .disabled,
              .precisionHold, .precisionToggle, .ballScrollHold, .dragLock, .media:

@@ -1993,14 +1993,11 @@
 "Battery %@" = "Batería %@";
 "Bluetooth" = "Bluetooth";
 "Connect another display to set a speed for each." = "Conecta otra pantalla para darle a cada una su velocidad.";
-"Fires once per hold. Click to keep going for as long as you roll." = "Se activa una vez por pulsación. Haz clic para que siga mientras ruedes.";
 "Gesture" = "Gesto";
 "Hold and roll" = "Mantener y rodar";
 "Hold the button and roll the ball: a different action each way." = "Mantén el botón y rueda la bola: una acción distinta en cada dirección.";
-"Hold this button and roll the ball. Each way does something the moment you roll a few millimeters; a quick press does the tap." = "Mantén este botón y rueda la bola. Cada dirección hace algo en cuanto ruedas unos milímetros; una pulsación rápida hace el toque.";
 "Hold this button on your trackball and roll." = "Mantén este botón del trackball y rueda.";
 "Hold top right and roll: sideways switches Spaces, up opens Mission Control, down shows the app’s windows. Hold top left and roll for volume and tracks. A quick press still does what it did." = "Mantén arriba a la derecha y rueda: a los lados cambia de Space, arriba abre Mission Control, abajo muestra las ventanas de la app. Mantén arriba a la izquierda y rueda para volumen y pistas. Una pulsación rápida sigue haciendo lo de antes.";
-"Keeps going for as long as you keep rolling. Click to fire once per hold instead." = "Sigue mientras sigas rodando. Haz clic para que se active solo una vez por pulsación.";
 "Main display" = "Pantalla principal";
 "Nothing really happens while you try, so roll as much as you like." = "Mientras pruebas no pasa nada de verdad, así que rueda todo lo que quieras.";
 "Now roll the ball, or let go for the tap." = "Ahora rueda la bola, o suelta para el toque.";
@@ -2439,3 +2436,23 @@
 /* Search words for sharing a setup and importing KensingtonWorks' settings */
 "share, send, link, qr code, picture, friend" = "compartir, enviar, enlace, código qr, imagen, amigo";
 "kensingtonworks, trackballworks, import, switch, move over" = "kensingtonworks, trackballworks, importar, cambiar, migrar";
+/* Chained gestures, gestures on combos, gesture distance */
+"A gesture can’t use the bottom-left button, your primary click" = "Un gesto no puede usar el botón de abajo a la izquierda, tu clic principal";
+"A wider dead zone and a clearer roll before anything fires, so a shaky press stays a tap." = "Una zona muerta más amplia y un giro más claro antes de que algo se active, para que una pulsación temblorosa siga siendo un toque.";
+"Distance" = "Distancia";
+"Each time you roll" = "Cada vez que ruedas";
+"Fires each time you roll this way, even several times in one hold, mixed with the other directions." = "Se activa cada vez que ruedas en esta dirección, incluso varias veces en una pulsación, mezclado con las otras direcciones.";
+"Fires once per hold, however far you roll." = "Se activa una vez por pulsación, por mucho que ruedes.";
+"Gesture distance" = "Distancia del gesto";
+"Hold the buttons together and roll the ball: a different action each way." = "Mantén los botones juntos y rueda la bola: una acción distinta en cada dirección.";
+"Hold these buttons together and roll the ball. Each way does something the moment you roll a few millimeters, as many times as you like in one hold; a quick press does the tap." = "Mantén estos botones juntos y rueda la bola. Cada dirección hace algo en cuanto ruedas unos milímetros, tantas veces como quieras en una pulsación; una pulsación rápida hace el toque.";
+"Hold these buttons together on your trackball and roll." = "Mantén estos botones juntos en tu trackball y rueda.";
+"Hold this button and roll the ball. Each way does something the moment you roll a few millimeters, as many times as you like in one hold; a quick press does the tap." = "Mantén este botón y rueda la bola. Cada dirección hace algo en cuanto ruedas unos milímetros, tantas veces como quieras en una pulsación; una pulsación rápida hace el toque.";
+"How far you roll before a direction fires. Short suits small, quick rolls; Long ignores more by accident." = "Cuánto ruedas antes de que se active una dirección. Corto va bien para giros pequeños y rápidos; Largo ignora más giros accidentales.";
+"How far you roll before a direction fires: about 2, 3 or 4.5 mm. A gesture can have its own." = "Cuánto ruedas antes de que se active una dirección: unos 2, 3 o 4,5 mm. Cada gesto puede tener la suya.";
+"Includes your primary click, so this combo does the gesture’s tap instead of a gesture." = "Incluye tu clic principal, así que esta combinación hace el toque del gesto en lugar de un gesto.";
+"Keeps going for as long as you keep rolling." = "Sigue mientras sigas rodando.";
+"Like Other Gestures" = "Como los demás gestos";
+"Like Other Gestures (%@)" = "Como los demás gestos (%@)";
+"Steady hands" = "Pulso tembloroso";
+"What fired in this hold" = "Lo que se activó en esta pulsación";

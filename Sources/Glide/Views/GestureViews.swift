@@ -85,28 +85,45 @@ final class GestureFlashClock {
 
 // MARK: - The editor
 
-/// Under a gesture button's row: what each way does, the tap, sets, and Try it.
+/// Under a gesture button's (or combo's) row: what each way does, the tap, sets,
+/// distance, and Try it.
 struct GestureEditor: View {
     let model: AppModel?
-    let button: Int
+    /// The button, or the combo's buttons (sorted).
+    let buttons: [Int]
     @Binding var gesture: ButtonGesture
 
     @State private var trying = false
     @State private var clock = GestureFlashClock()
     @State private var tryEnd: Task<Void, Never>?
+    /// What this hold has fired so far, in order (Try it shows it as a trail).
+    @State private var trail: [Engine.GestureFlash] = []
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// Renders: draw it in its "Try it" state.
+    /// Renders: draw it in its "Try it" state, with this trail.
     nonisolated(unsafe) static var sandboxTrying = false
+    nonisolated(unsafe) static var sandboxTrail: [Engine.GestureFlash]?
 
+    init(model: AppModel?, button: Int, gesture: Binding<ButtonGesture>) {
+        self.init(model: model, buttons: [button], gesture: gesture)
+    }
+
+    init(model: AppModel?, buttons: [Int], gesture: Binding<ButtonGesture>) {
+        self.model = model
+        self.buttons = buttons.sorted()
+        _gesture = gesture
+    }
+
+    private var isCombo: Bool { buttons.count > 1 }
     private var modes: Engine.Modes { model?.modes ?? Engine.Modes() }
-    private var held: Bool { modes.gestureHeld && modes.gestureButtons == [button] }
+    private var held: Bool { modes.gestureHeld && modes.gestureButtons == buttons }
     private var leaning: GestureDirection? { held ? modes.gestureDirection : nil }
     private var flash: Engine.GestureFlash? {
-        guard let f = clock.current(modes), f.buttons == [button] else { return nil }
+        guard let f = clock.current(modes), f.buttons == buttons else { return nil }
         return f
     }
     private var isTrying: Bool { trying || Self.sandboxTrying }
+    private var shownTrail: [Engine.GestureFlash] { (Self.sandboxTrail ?? trail).filter { $0.buttons == buttons } }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -123,7 +140,7 @@ struct GestureEditor: View {
                 VStack(alignment: .leading, spacing: 16) {
                     compass.frame(maxWidth: .infinity)
                     HStack(alignment: .top, spacing: 28) {
-                        tapBlock
+                        VStack(alignment: .leading, spacing: 12) { tapBlock; distanceBlock }
                         VStack(alignment: .leading, spacing: 12) { setsBlock; tryButton }
                     }
                 }
@@ -142,14 +159,20 @@ struct GestureEditor: View {
         .animation(Theme.Motion.spring, value: isTrying)
         .animation(reduceMotion ? nil : Theme.Motion.pressIn, value: leaning)
         .onChange(of: modes.gestureFlash) { _, f in
-            if f?.buttons == [button] { clock.show(f) }
+            guard let f, f.buttons == buttons else { return }
+            clock.show(f)
+            // A new hold starts a new trail; a chain adds to it (the last eight).
+            if f.direction == nil || f.chain <= 1 { trail = [f] } else { trail = Array((trail + [f]).suffix(8)) }
         }
         .onDisappear { if trying { stopTrying() } }
     }
 
     private var explanation: String {
-        String(localized: "Hold this button and roll the ball. Each way does something the moment you roll a few millimeters; a quick press does the tap.",
-               comment: "Gesture editor, under a gesture button's row")
+        isCombo
+            ? String(localized: "Hold these buttons together and roll the ball. Each way does something the moment you roll a few millimeters, as many times as you like in one hold; a quick press does the tap.",
+                     comment: "Gesture editor, under a combo's row")
+            : String(localized: "Hold this button and roll the ball. Each way does something the moment you roll a few millimeters, as many times as you like in one hold; a quick press does the tap.",
+                     comment: "Gesture editor, under a gesture button's row")
     }
 
     // MARK: Compass
@@ -180,25 +203,32 @@ struct GestureEditor: View {
             direction: d,
             step: Binding(get: { gesture[d] }, set: { gesture[d] = $0 }),
             lit: leaning == d,
-            fired: flash != nil && flash?.direction == d)
+            fired: flash != nil && flash?.direction == d,
+            fireSeq: flash?.direction == d ? flash?.seq ?? 0 : 0)
     }
 
-    // MARK: Tap, sets, Try it
+    // MARK: Tap, sets, distance, Try it
 
     private var side: some View {
         VStack(alignment: .leading, spacing: 14) {
             tapBlock
             setsBlock
+            distanceBlock
             tryButton
         }
+    }
+
+    /// What the tap does as shown: a button's own click by name; a combo has none.
+    private var tapShown: ButtonAction {
+        guard gesture.tap == .system else { return gesture.tap }
+        return isCombo ? .disabled : ButtonAction.normal(for: buttons[0])
     }
 
     private var tapBlock: some View {
             VStack(alignment: .leading, spacing: 5) {
                 Text("Tap").font(.system(size: 12, weight: .semibold))
                 HStack(spacing: 8) {
-                    ActionPickerButton(action: gesture.tap == .system ? ButtonAction.normal(for: button) : gesture.tap,
-                                       button: button, purpose: .gestureTap) { gesture.tap = $0 }
+                    ActionPickerButton(action: tapShown, button: isCombo ? nil : buttons[0], purpose: .gestureTap) { gesture.tap = $0 }
                         .overlay {
                             RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous)
                                 .strokeBorder(Theme.buttons, lineWidth: 1.5)
@@ -241,6 +271,32 @@ struct GestureEditor: View {
             }
     }
 
+    /// This gesture's own distance, or the one all gestures use (the Gestures settings below the buttons).
+    private var distanceBlock: some View {
+        let general = model?.config.gestureDistance ?? .normal
+        return HStack(spacing: 6) {
+            Text("Distance").font(.system(size: 12, weight: .semibold))
+            Menu {
+                Picker(selection: Binding(get: { gesture.distance }, set: { gesture.distance = $0 })) {
+                    Text(String(localized: "Like Other Gestures (\(general.title))", comment: "Gesture distance menu: follow the setting for all gestures; %@ is that setting (Short, Normal, Long)"))
+                        .tag(GestureDistance?.none)
+                    Divider()
+                    ForEach(GestureDistance.allCases) { d in
+                        Text(verbatim: d.title).tag(GestureDistance?.some(d))
+                    }
+                } label: { EmptyView() }
+                .pickerStyle(.inline)
+            } label: {
+                Text(verbatim: gesture.distance?.title ?? String(localized: "Like Other Gestures", comment: "Gesture distance: follows the setting for all gestures"))
+                    .font(.system(size: 11.5, weight: .medium))
+            }
+            .menuStyle(.button)
+            .buttonStyle(.borderless)
+            .fixedSize()
+            .help("How far you roll before a direction fires. Short suits small, quick rolls; Long ignores more by accident.")
+        }
+    }
+
     @ViewBuilder
     private var tryButton: some View {
             if !isTrying, model != nil {
@@ -256,24 +312,27 @@ struct GestureEditor: View {
 
     private var tryBanner: some View {
         let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
-        return HStack(alignment: .center, spacing: 12) {
-            Image(systemName: held ? (leaning?.arrow ?? "hand.point.up.left.fill") : "hand.point.up.left")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(Theme.buttons)
-                .frame(width: 24)
-                .contentTransition(.symbolEffect(.replace))
-            VStack(alignment: .leading, spacing: 2) {
-                Text(verbatim: tryLine)
-                    .font(.system(size: 13, weight: .semibold))
-                    .contentTransition(.opacity)
-                Text("Nothing really happens while you try, so roll as much as you like.")
-                    .font(Theme.Font.hint)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .center, spacing: 12) {
+                Image(systemName: held ? (leaning?.arrow ?? "hand.point.up.left.fill") : "hand.point.up.left")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(Theme.buttons)
+                    .frame(width: 24)
+                    .contentTransition(.symbolEffect(.replace))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(verbatim: tryLine)
+                        .font(.system(size: 13, weight: .semibold))
+                        .contentTransition(.opacity)
+                    Text("Nothing really happens while you try, so roll as much as you like.")
+                        .font(Theme.Font.hint)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                Button("Done") { stopTrying() }
+                    .controlSize(.small)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            Button("Done") { stopTrying() }
-                .controlSize(.small)
+            if !shownTrail.isEmpty { trailView }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 9)
@@ -281,6 +340,42 @@ struct GestureEditor: View {
             shape.fill(Theme.buttons.opacity(0.10))
                 .pixelBorder(shape, Theme.buttons.opacity(0.45))
         }
+    }
+
+    /// What this hold fired, in order: a chip per command, the newest lit.
+    private var trailView: some View {
+        let items = shownTrail
+        return FlowLayout(spacing: 4, lineSpacing: 4) {
+            ForEach(Array(items.enumerated()), id: \.element.seq) { i, f in
+                if i > 0 {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(.tertiary)
+                        .frame(height: 20)
+                }
+                let newest = i == items.count - 1
+                HStack(spacing: 4) {
+                    Image(systemName: f.direction?.arrow ?? "hand.tap")
+                        .font(.system(size: 9.5, weight: .bold))
+                    Text(verbatim: (f.direction == nil ? model.flatMap { $0.action(for: f) }?.title
+                                                       : gesture[f.direction!]?.action.title) ?? "")
+                        .font(.system(size: 11, weight: .medium))
+                        .lineLimit(1)
+                }
+                .foregroundStyle(newest ? AnyShapeStyle(Color.black.opacity(0.78)) : AnyShapeStyle(.primary))
+                .padding(.horizontal, 7)
+                .padding(.vertical, 3)
+                .background {
+                    Capsule().fill(newest ? AnyShapeStyle(Theme.buttons) : AnyShapeStyle(Theme.groupFill))
+                        .pixelBorder(Capsule(), newest ? .clear : Theme.groupBorder)
+                }
+                .shadow(color: newest ? Theme.buttons.opacity(0.5) : .clear, radius: 5)
+                .transition(.opacity.combined(with: .scale(scale: 0.85)))
+            }
+        }
+        .animation(reduceMotion ? nil : Theme.Motion.bounce, value: items.last?.seq)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text("What fired in this hold", comment: "Try it: the chain of commands one hold fired"))
     }
 
     /// Talks about now: what to do, which way you're rolling, what just fired.
@@ -293,11 +388,14 @@ struct GestureEditor: View {
         }
         if held, let d = leaning { return d.rollTitle + "…" }
         if held { return String(localized: "Now roll the ball, or let go for the tap.") }
-        return String(localized: "Hold this button on your trackball and roll.", comment: "Try it, waiting for a hold")
+        return isCombo
+            ? String(localized: "Hold these buttons together on your trackball and roll.", comment: "Try it, waiting for a combo's hold")
+            : String(localized: "Hold this button on your trackball and roll.", comment: "Try it, waiting for a hold")
     }
 
     private func startTrying() {
         trying = true
+        trail = []
         model?.setGesturePractice(true)
         // The engine ends it after two minutes; end it here a little before, so the two agree.
         tryEnd?.cancel()
@@ -311,16 +409,45 @@ struct GestureEditor: View {
     private func stopTrying() {
         tryEnd?.cancel()
         trying = false
+        trail = []
         model?.setGesturePractice(false)
     }
 }
 
-/// One direction: an arrow, what it does (a picker), and whether it repeats as you roll.
+extension GestureStep.Mode {
+    var title: String {
+        switch self {
+        case .chain: String(localized: "Each time you roll", comment: "Gesture direction: fires every time you roll that way, many times in one hold")
+        case .continuous: String(localized: "Repeats as you roll", comment: "Gesture direction: fires again for each stretch of rolling")
+        case .once: String(localized: "Once per hold", comment: "Gesture direction: fires once")
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .chain: "link"
+        case .continuous: "repeat"
+        case .once: "1.circle"
+        }
+    }
+
+    var help: String {
+        switch self {
+        case .chain: String(localized: "Fires each time you roll this way, even several times in one hold, mixed with the other directions.")
+        case .continuous: String(localized: "Keeps going for as long as you keep rolling.")
+        case .once: String(localized: "Fires once per hold, however far you roll.")
+        }
+    }
+}
+
+/// One direction: an arrow, what it does (a picker), and how it fires.
 private struct GestureDirectionCell: View {
     let direction: GestureDirection
     @Binding var step: GestureStep?
     let lit: Bool
     let fired: Bool
+    /// Changes with every fire of this direction, so each one in a chain flashes.
+    let fireSeq: Int
 
     var body: some View {
         VStack(spacing: 4) {
@@ -337,25 +464,32 @@ private struct GestureDirectionCell: View {
                     .shadow(color: Theme.buttons.opacity(fired ? 0.8 : lit ? 0.4 : 0), radius: fired ? 10 : 5)
                     .allowsHitTesting(false)
             }
-            .scaleEffect(fired ? 1.06 : 1)
-            .animation(fired ? Theme.Motion.bounce : Theme.Motion.pressOut, value: fired)
+            .keyframeAnimator(initialValue: 1.0, trigger: fireSeq) { content, scale in
+                content.scaleEffect(scale)
+            } keyframes: { _ in
+                SpringKeyframe(1.08, duration: 0.1)
+                SpringKeyframe(1.0, duration: 0.3)
+            }
 
-            if let s = step, s.action.repeatsWell {
-                Button {
-                    step?.repeats.toggle()
+            if let s = step {
+                let modes: [GestureStep.Mode] = s.action.repeatsWell ? [.chain, .continuous, .once] : [.chain, .once]
+                Menu {
+                    Picker(selection: Binding(get: { s.mode }, set: { step?.mode = $0 })) {
+                        ForEach(modes, id: \.self) { m in
+                            Label(m.title, systemImage: m.symbol).tag(m)
+                        }
+                    } label: { EmptyView() }
+                    .pickerStyle(.inline)
                 } label: {
-                    Label(s.repeats ? String(localized: "Repeats as you roll", comment: "Gesture direction: fires again for each stretch of rolling")
-                                    : String(localized: "Once per hold", comment: "Gesture direction: fires once"),
-                          systemImage: s.repeats ? "repeat" : "1.circle")
+                    Label(s.mode.title, systemImage: s.mode.symbol)
                         .font(.system(size: 10.5, weight: .medium))
-                        .foregroundStyle(s.repeats ? AnyShapeStyle(Theme.buttons) : AnyShapeStyle(.secondary))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .contentShape(Rectangle())
+                        .foregroundStyle(s.mode == .once ? AnyShapeStyle(.secondary) : AnyShapeStyle(Theme.buttons))
                 }
-                .buttonStyle(HoverButtonStyle(radius: 6))
-                .help(s.repeats ? String(localized: "Keeps going for as long as you keep rolling. Click to fire once per hold instead.")
-                                : String(localized: "Fires once per hold. Click to keep going for as long as you roll."))
+                .menuStyle(.button)
+                .buttonStyle(.borderless)
+                .menuIndicator(.hidden)
+                .fixedSize()
+                .help(s.mode.help)
             }
         }
         .accessibilityElement(children: .contain)
@@ -410,9 +544,10 @@ struct GestureBall: View {
 
 // MARK: - On any trackball picture
 
-/// Laid over a trackball picture while a gesture is held: four chevrons around
-/// the ball (the way you're rolling lit amber) and, for a moment after one
-/// fires, what it did on a small glass label.
+/// Laid over a trackball picture while a gesture is held: a soft amber ring
+/// around the ball (armed: the pointer is held still and the ball is the
+/// gesture's), four chevrons (the way you're rolling lit amber) and, for a moment
+/// after one fires, what it did on a small label.
 struct GestureHeldOverlay: View {
     let model: AppModel
     @State private var clock = GestureFlashClock()
@@ -424,6 +559,8 @@ struct GestureHeldOverlay: View {
             let flash = clock.current(modes)
             ZStack {
                 if modes.gestureHeld {
+                    GestureArmedRing(size: s, pulse: flash?.seq ?? 0)
+                        .transition(.opacity.combined(with: .scale(scale: 0.94)))
                     ForEach(GestureDirection.allCases, id: \.self) { d in
                         let on = modes.gestureDirection == d || flash?.direction == d
                         Image(systemName: "chevron.\(d.rawValue)")
@@ -462,6 +599,52 @@ struct GestureHeldOverlay: View {
         .allowsHitTesting(false)
         .onChange(of: model.modes.gestureFlash) { _, f in clock.show(f) }
         .accessibilityHidden(true)
+    }
+}
+
+/// The "armed" ring: soft amber light around the ball while a gesture is held,
+/// brightening for a beat each time a direction fires.
+struct GestureArmedRing: View {
+    let size: CGFloat
+    /// Changes with every fire.
+    var pulse: Int = 0
+
+    var body: some View {
+        Circle()
+            .strokeBorder(
+                AngularGradient(colors: [Theme.buttons.opacity(0.9), Theme.buttons.opacity(0.35), Theme.buttons.opacity(0.9),
+                                         Theme.buttons.opacity(0.35), Theme.buttons.opacity(0.9)], center: .center),
+                lineWidth: max(1.5, size * 0.012))
+            .shadow(color: Theme.buttons.opacity(0.7), radius: size * 0.05)
+            .shadow(color: Theme.buttons.opacity(0.35), radius: size * 0.12)
+            .frame(width: size * 0.86, height: size * 0.86)   // just outside the scroll ring, inside the pads
+            .keyframeAnimator(initialValue: 1.0, trigger: pulse) { content, glow in
+                content.brightness((glow - 1) * 2).scaleEffect(glow)
+            } keyframes: { _ in
+                SpringKeyframe(1.035, duration: 0.08)
+                SpringKeyframe(1.0, duration: 0.35)
+            }
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+    }
+}
+
+/// Around the page while a gesture is held: a soft amber edge, so it's clear at a
+/// glance why the pointer stands still.
+struct GestureArmedEdge: View {
+    let model: AppModel
+
+    var body: some View {
+        let held = model.modes.gestureHeld
+        RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .strokeBorder(Theme.buttons.opacity(0.55), lineWidth: 1.5)
+            .shadow(color: Theme.buttons.opacity(0.6), radius: 10)
+            .blur(radius: 0.5)
+            .padding(3)
+            .opacity(held ? 1 : 0)
+            .animation(held ? Theme.Motion.pressIn : Theme.Motion.fade, value: held)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
     }
 }
 

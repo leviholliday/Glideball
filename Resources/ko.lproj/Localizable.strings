@@ -1993,14 +1993,11 @@
 "Battery %@" = "배터리 %@";
 "Bluetooth" = "Bluetooth";
 "Connect another display to set a speed for each." = "디스플레이를 하나 더 연결하면 각각 속도를 설정할 수 있습니다.";
-"Fires once per hold. Click to keep going for as long as you roll." = "누르고 있는 동안 한 번만 실행됩니다. 클릭하면 굴리는 동안 계속 실행됩니다.";
 "Gesture" = "제스처";
 "Hold and roll" = "누른 채로 굴리기";
 "Hold the button and roll the ball: a different action each way." = "버튼을 누른 채 볼을 굴리면 방향마다 다른 동작을 합니다.";
-"Hold this button and roll the ball. Each way does something the moment you roll a few millimeters; a quick press does the tap." = "이 버튼을 누른 채 볼을 굴리세요. 몇 밀리미터만 굴려도 그 방향의 동작이 바로 실행되고, 짧게 누르면 탭 동작이 실행됩니다.";
 "Hold this button on your trackball and roll." = "트랙볼의 이 버튼을 누른 채 굴려 보세요.";
 "Hold top right and roll: sideways switches Spaces, up opens Mission Control, down shows the app’s windows. Hold top left and roll for volume and tracks. A quick press still does what it did." = "오른쪽 위를 누른 채 굴리기: 좌우로 Space 전환, 위로 Mission Control, 아래로 앱 윈도우 보기. 왼쪽 위를 누른 채 굴리면 음량과 트랙. 짧게 누르면 원래 하던 동작을 그대로 합니다.";
-"Keeps going for as long as you keep rolling. Click to fire once per hold instead." = "굴리는 동안 계속 실행됩니다. 클릭하면 누를 때마다 한 번만 실행됩니다.";
 "Main display" = "주 디스플레이";
 "Nothing really happens while you try, so roll as much as you like." = "시험하는 동안에는 실제로 아무 일도 일어나지 않으니 마음껏 굴려 보세요.";
 "Now roll the ball, or let go for the tap." = "이제 볼을 굴리거나, 손을 떼서 탭을 실행하세요.";
@@ -2439,3 +2436,23 @@
 /* Search words for sharing a setup and importing KensingtonWorks' settings */
 "share, send, link, qr code, picture, friend" = "공유, 보내기, 링크, qr 코드, 사진, 친구";
 "kensingtonworks, trackballworks, import, switch, move over" = "kensingtonworks, trackballworks, 가져오기, 전환, 옮기기";
+/* Chained gestures, gestures on combos, gesture distance */
+"A gesture can’t use the bottom-left button, your primary click" = "제스처에는 왼쪽 아래 버튼(기본 클릭)을 쓸 수 없습니다";
+"A wider dead zone and a clearer roll before anything fires, so a shaky press stays a tap." = "데드 존을 넓히고 확실히 굴려야 실행되므로, 손이 떨려도 누르기만 하면 탭 동작으로 남습니다.";
+"Distance" = "거리";
+"Each time you roll" = "굴릴 때마다";
+"Fires each time you roll this way, even several times in one hold, mixed with the other directions." = "이 방향으로 굴릴 때마다 실행됩니다. 한 번 누르는 동안 여러 번, 다른 방향과 섞어서도 실행됩니다.";
+"Fires once per hold, however far you roll." = "얼마나 굴려도 누를 때마다 한 번만 실행됩니다.";
+"Gesture distance" = "제스처 거리";
+"Hold the buttons together and roll the ball: a different action each way." = "버튼을 함께 누른 채 볼을 굴리면 방향마다 다른 동작을 합니다.";
+"Hold these buttons together and roll the ball. Each way does something the moment you roll a few millimeters, as many times as you like in one hold; a quick press does the tap." = "이 버튼들을 함께 누른 채 볼을 굴리세요. 몇 밀리미터만 굴려도 그 방향의 동작이 바로 실행되고, 한 번 누르는 동안 몇 번이든 쓸 수 있습니다. 짧게 누르면 탭 동작이 실행됩니다.";
+"Hold these buttons together on your trackball and roll." = "트랙볼의 이 버튼들을 함께 누른 채 굴려 보세요.";
+"Hold this button and roll the ball. Each way does something the moment you roll a few millimeters, as many times as you like in one hold; a quick press does the tap." = "이 버튼을 누른 채 볼을 굴리세요. 몇 밀리미터만 굴려도 그 방향의 동작이 바로 실행되고, 한 번 누르는 동안 몇 번이든 쓸 수 있습니다. 짧게 누르면 탭 동작이 실행됩니다.";
+"How far you roll before a direction fires. Short suits small, quick rolls; Long ignores more by accident." = "방향이 실행되기까지 굴리는 거리입니다. 짧게는 작고 빠른 움직임에, 길게는 실수로 굴린 것을 더 많이 무시합니다.";
+"How far you roll before a direction fires: about 2, 3 or 4.5 mm. A gesture can have its own." = "방향이 실행되기까지 굴리는 거리입니다: 약 2, 3, 4.5mm. 제스처마다 따로 정할 수도 있습니다.";
+"Includes your primary click, so this combo does the gesture’s tap instead of a gesture." = "기본 클릭이 포함되어 있어서 이 콤보는 제스처 대신 제스처의 탭 동작을 실행합니다.";
+"Keeps going for as long as you keep rolling." = "계속 굴리는 동안 계속 실행됩니다.";
+"Like Other Gestures" = "다른 제스처와 같게";
+"Like Other Gestures (%@)" = "다른 제스처와 같게(%@)";
+"Steady hands" = "손떨림 보정";
+"What fired in this hold" = "이번에 누르는 동안 실행된 동작";

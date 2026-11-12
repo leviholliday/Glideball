@@ -97,7 +97,8 @@ struct AssignPanel: View {
                             Text("Or choose an action:")
                                 .font(Theme.Font.hint)
                                 .foregroundStyle(.secondary)
-                            ActionPickerButton(action: nil, button: buttons.count == 1 ? buttons.first : nil) {
+                            ActionPickerButton(action: nil, button: buttons.count == 1 ? buttons.first : nil,
+                                               comboButtons: buttons.count > 1 ? buttons.sorted() : nil) {
                                 model.finishAssign($0)
                             }
                             Spacer(minLength: 0)
@@ -147,12 +148,14 @@ struct AssignPanel: View {
     }
 }
 
-/// Saved multi-button combos, each with the same picker as a button, and a
-/// clear way to make a new one.
+/// Saved multi-button combos, each with the same picker as a button (Gesture
+/// included, under the same compass editor), and a clear way to make a new one.
 struct CombosCard: View {
     @Binding var chords: [Chord]
     /// Nil where the page already titles it (an app setup's Combos area).
     var title: LocalizedStringKey? = "Combos"
+    /// For a gesture combo's editor (what's held right now, Try it).
+    var model: AppModel? = nil
 
     init(chords: Binding<[Chord]>, title: LocalizedStringKey? = "Combos") {
         _chords = chords
@@ -161,6 +164,12 @@ struct CombosCard: View {
 
     init(model: AppModel) {
         _chords = Binding(get: { model.config.chords }, set: { model.config.chords = $0 })
+        self.model = model
+    }
+
+    private func actionBinding(_ id: UUID) -> Binding<ButtonAction> {
+        Binding(get: { chords.first { $0.id == id }?.action ?? .disabled },
+                set: { new in if let i = chords.firstIndex(where: { $0.id == id }) { chords[i].action = new } })
     }
 
     var body: some View {
@@ -171,22 +180,41 @@ struct CombosCard: View {
                            symbol: "square.on.square")
             }
             ForEach(chords) { chord in
-                HStack(spacing: 10) {
-                    ButtonChips(buttons: chord.buttons)
-                    Image(systemName: "arrow.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(.tertiary)
-                    ActionPickerButton(action: chord.action) { action in
-                        if let i = chords.firstIndex(where: { $0.id == chord.id }) {
-                            chords[i].action = action
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(spacing: 10) {
+                        ButtonChips(buttons: chord.buttons)
+                        Image(systemName: "arrow.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(.tertiary)
+                        ActionPickerButton(action: chord.action, comboButtons: chord.buttons) { action in
+                            if let i = chords.firstIndex(where: { $0.id == chord.id }) {
+                                chords[i].action = action
+                            }
+                        }
+                        Spacer(minLength: 8)
+                        IconButton(symbol: "trash", help: "Delete combo", size: 24) {
+                            withAnimation(Theme.Motion.spring) { chords.removeAll { $0.id == chord.id } }
                         }
                     }
-                    Spacer(minLength: 8)
-                    IconButton(symbol: "trash", help: "Delete combo", size: 24) {
-                        withAnimation(Theme.Motion.spring) { chords.removeAll { $0.id == chord.id } }
+                    .padding(.horizontal, Theme.Space.rowHorizontal)
+                    .padding(.vertical, 8)
+                    .frame(minHeight: Theme.Space.rowMinHeight)
+                    if case .gesture(let g) = chord.action {
+                        if chord.buttons.contains(0) {
+                            // Gestures never use the primary button (see GestureRoute.decide): say what happens instead.
+                            Label("Includes your primary click, so this combo does the gesture’s tap instead of a gesture.",
+                                  systemImage: "info.circle")
+                                .font(Theme.Font.hint)
+                                .foregroundStyle(.secondary)
+                                .padding(.leading, ButtonRow.dividerInset)
+                                .padding(.trailing, Theme.Space.rowHorizontal)
+                                .padding(.bottom, 10)
+                        } else {
+                            GestureEditor(model: model, buttons: chord.buttons,
+                                          gesture: Binding(get: { g }, set: { actionBinding(chord.id).wrappedValue = .gesture($0) }))
+                                .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
                     }
                 }
-                .padding(.horizontal, Theme.Space.rowHorizontal)
-                .padding(.vertical, 8)
-                .frame(minHeight: Theme.Space.rowMinHeight)
+                .animation(Theme.Motion.spring, value: chord.action.isGesture)
             }
             NewComboRow(chords: $chords)
         }
@@ -206,7 +234,9 @@ struct NewComboRow: View {
 
     private var sorted: [Int] { picked.sorted() }
     private var duplicate: Bool { chords.contains { $0.buttons == sorted } }
-    private var canAdd: Bool { picked.count >= 2 && !duplicate }
+    /// Gestures never use the primary button (see GestureRoute.decide).
+    private var gestureWithPrimary: Bool { action.isGesture && picked.contains(0) }
+    private var canAdd: Bool { picked.count >= 2 && !duplicate && !gestureWithPrimary }
 
     var body: some View {
         Group {
@@ -226,7 +256,7 @@ struct NewComboRow: View {
                             }
                             .frame(minHeight: 22)
                             step(2, String(localized: "Choose what they do", comment: "New combo, step 2"), done: false)
-                            ActionPickerButton(action: action) { action = $0 }
+                            ActionPickerButton(action: action, comboButtons: picked.count >= 2 ? sorted : [1, 2]) { action = $0 }
                         }
                         Spacer(minLength: 0)
                     }
@@ -234,6 +264,13 @@ struct NewComboRow: View {
                         if duplicate {
                             Label {
                                 Text("That combo already exists")
+                            } icon: {
+                                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Theme.warn)
+                            }
+                            .font(Theme.Font.hint)
+                        } else if gestureWithPrimary {
+                            Label {
+                                Text("A gesture can’t use the bottom-left button, your primary click")
                             } icon: {
                                 Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Theme.warn)
                             }

@@ -273,15 +273,22 @@ extension RenderUI {
             model.config.buttons = DemoData.config.buttons
             model.config.chords = DemoData.config.chords
         }
-        func hold(_ direction: GestureDirection?, fired: GestureDirection?? = nil, tapped: Bool = false) {
+        func hold(_ direction: GestureDirection?, fired: GestureDirection?? = nil, tapped: Bool = false, buttons: [Int] = [3], chain: Int = 1) {
             var m = Engine.Modes()
             m.gestureHeld = !tapped
-            m.gestureButtons = tapped ? [] : [3]
+            m.gestureButtons = tapped ? [] : buttons
             m.gestureDirection = direction
-            if let fired { m.gestureFlash = Engine.GestureFlash(seq: 1, direction: fired, buttons: [3]) }
+            if let fired { m.gestureFlash = Engine.GestureFlash(seq: chain, direction: fired, buttons: buttons, chain: fired == nil ? 0 : chain) }
             model.modes = m
-            if !tapped { model.pressed = [3] }
+            if !tapped { model.pressed = Set(buttons) }
             GestureFlashClock.sandboxHold = true
+        }
+        func gestureCombo() {
+            model.config.chords = DemoData.config.chords + [Chord(buttons: [2, 3], action: .gesture(.tabs))]
+        }
+        /// Left, up, left, left in one hold of top right: the chain Try it shows.
+        let chainTrail: [Engine.GestureFlash] = [GestureDirection.left, .up, .left, .left].enumerated().map {
+            Engine.GestureFlash(seq: $0.offset + 1, direction: $0.element, buttons: [3], chain: $0.offset + 1)
         }
         add("buttons-gesture-page", "Gestures", "Top right and top left as gestures: the editor under each row",
             prepare: gestureButtons, cleanup: restoreButtons) { dark, scale in
@@ -323,6 +330,28 @@ extension RenderUI {
         add("buttons-picker-gesture-direction", "Gestures", "The picker for a gesture's direction (only quick actions)") { dark, scale in
             card(PopoverMock { ActionPickerPanel(current: .shortcut(.nextSpace), purpose: .gestureDirection) { _ in } },
                  width: 470, dark: dark, scale: scale)
+        }
+        add("buttons-gesture-combo", "Gestures", "A combo as a gesture: top left + top right with the Tabs set, its compass under the combo",
+            prepare: gestureCombo, cleanup: restoreButtons) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale)
+        }
+        add("buttons-gesture-combo-held", "Gestures", "Holding the top two together, rolling right: armed ring, page edge, Next Tab just fired",
+            prepare: { gestureCombo(); hold(.right, fired: .some(.right), buttons: [2, 3]) },
+            cleanup: { restoreButtons(); GestureFlashClock.sandboxHold = false }) { dark, scale in
+            mainWindow(model, tab: .buttons, dark: dark, scale: scale)
+        }
+        add("buttons-gesture-chain-try", "Gestures", "Try it with a chain: left, up, left, left in one hold, the trail of what would have fired",
+            prepare: { gestureButtons(); hold(.left, fired: .some(.left), chain: 4); GestureEditor.sandboxTrying = true; GestureEditor.sandboxTrail = chainTrail },
+            cleanup: { restoreButtons(); GestureFlashClock.sandboxHold = false; GestureEditor.sandboxTrying = false; GestureEditor.sandboxTrail = nil }) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale)
+        }
+        add("buttons-gesture-armed", "Gestures", "Armed: top right held, the ball still (nothing fired yet): ring on the sidebar ball and the map, page edge lit",
+            prepare: { gestureButtons(); hold(nil) },
+            cleanup: { restoreButtons(); GestureFlashClock.sandboxHold = false }) { dark, scale in
+            mainWindow(model, tab: .buttons, dark: dark, scale: scale)
+        }
+        add("buttons-picker-combo-gesture", "Gestures", "The picker for a combo: Gesture (hold and roll) at the top") { dark, scale in
+            card(PopoverMock { ActionPickerPanel(current: .shortcut(.missionControl), comboButtons: [2, 3]) { _ in } }, width: 470, dark: dark, scale: scale)
         }
         add("buttons-preset-gestures", "Gestures", "Previewing the Gestures preset",
             prepare: { ButtonsView.sandboxPreview = "gestures" },

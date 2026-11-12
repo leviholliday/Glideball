@@ -1993,14 +1993,11 @@
 "Battery %@" = "バッテリー %@";
 "Bluetooth" = "Bluetooth";
 "Connect another display to set a speed for each." = "ディスプレイをもう1台つなぐと、それぞれに速度を設定できます。";
-"Fires once per hold. Click to keep going for as long as you roll." = "押している間に1回だけ実行します。クリックすると、転がしている間ずっと続けます。";
 "Gesture" = "ジェスチャ";
 "Hold and roll" = "押したまま転がす";
 "Hold the button and roll the ball: a different action each way." = "ボタンを押したままボールを転がすと、方向ごとに別の操作をします。";
-"Hold this button and roll the ball. Each way does something the moment you roll a few millimeters; a quick press does the tap." = "このボタンを押したままボールを転がします。数ミリ転がした瞬間にその方向の操作が実行され、素早く押すとタップの操作になります。";
 "Hold this button on your trackball and roll." = "トラックボールのこのボタンを押したまま転がしてください。";
 "Hold top right and roll: sideways switches Spaces, up opens Mission Control, down shows the app’s windows. Hold top left and roll for volume and tracks. A quick press still does what it did." = "右上を押したまま転がす：左右で操作スペースを切り替え、上で Mission Control、下でAppのウインドウを表示。左上を押したまま転がすと音量と曲送り。素早く押すと今までどおりの操作です。";
-"Keeps going for as long as you keep rolling. Click to fire once per hold instead." = "転がしている間ずっと続けます。クリックすると、押している間に1回だけにします。";
 "Main display" = "メインディスプレイ";
 "Nothing really happens while you try, so roll as much as you like." = "試している間は実際には何も起きないので、好きなだけ転がしてください。";
 "Now roll the ball, or let go for the tap." = "ボールを転がすか、離してタップにします。";
@@ -2439,3 +2436,23 @@
 /* Search words for sharing a setup and importing KensingtonWorks' settings */
 "share, send, link, qr code, picture, friend" = "共有, 送信, リンク, qrコード, 画像, 友達, きょうゆう, share, send, link, qr code, picture, friend";
 "kensingtonworks, trackballworks, import, switch, move over" = "kensingtonworks, trackballworks, 読み込む, 移行, 乗り換え, インポート, import, switch, move over";
+/* Chained gestures, gestures on combos, gesture distance */
+"A gesture can’t use the bottom-left button, your primary click" = "ジェスチャには左下のボタン（メインのクリック）を使えません";
+"A wider dead zone and a clearer roll before anything fires, so a shaky press stays a tap." = "デッドゾーンを広げ、はっきり転がしたときだけ反応するので、手が震えても押すだけならタップのままです。";
+"Distance" = "距離";
+"Each time you roll" = "転がすたびに";
+"Fires each time you roll this way, even several times in one hold, mixed with the other directions." = "この方向に転がすたびに実行されます。1回押している間に何度でも、ほかの方向と組み合わせても実行できます。";
+"Fires once per hold, however far you roll." = "どれだけ転がしても、押すごとに1回だけ実行されます。";
+"Gesture distance" = "ジェスチャの距離";
+"Hold the buttons together and roll the ball: a different action each way." = "ボタンを同時に押したままボールを転がすと、方向ごとに別の操作をします。";
+"Hold these buttons together and roll the ball. Each way does something the moment you roll a few millimeters, as many times as you like in one hold; a quick press does the tap." = "これらのボタンを同時に押したままボールを転がします。数ミリ転がした瞬間にその方向の操作が実行され、1回押している間に何度でも使えます。素早く押すとタップの操作になります。";
+"Hold these buttons together on your trackball and roll." = "トラックボールのこれらのボタンを同時に押したまま転がしてください。";
+"Hold this button and roll the ball. Each way does something the moment you roll a few millimeters, as many times as you like in one hold; a quick press does the tap." = "このボタンを押したままボールを転がします。数ミリ転がした瞬間にその方向の操作が実行され、1回押している間に何度でも使えます。素早く押すとタップの操作になります。";
+"How far you roll before a direction fires. Short suits small, quick rolls; Long ignores more by accident." = "方向が実行されるまでに転がす距離です。「短い」は小さく素早い動きに、「長い」は意図しない動きを無視しやすくなります。";
+"How far you roll before a direction fires: about 2, 3 or 4.5 mm. A gesture can have its own." = "方向が実行されるまでに転がす距離です（約2、3、4.5 mm）。ジェスチャごとに設定することもできます。";
+"Includes your primary click, so this combo does the gesture’s tap instead of a gesture." = "メインのクリックを含むため、このコンボはジェスチャではなくジェスチャのタップの操作を実行します。";
+"Keeps going for as long as you keep rolling." = "転がし続けている間、続けて実行されます。";
+"Like Other Gestures" = "ほかのジェスチャと同じ";
+"Like Other Gestures (%@)" = "ほかのジェスチャと同じ（%@）";
+"Steady hands" = "手の震えに配慮";
+"What fired in this hold" = "この押下で実行された操作";

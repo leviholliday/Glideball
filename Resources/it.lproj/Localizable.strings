@@ -1993,14 +1993,11 @@
 "Battery %@" = "Batteria %@";
 "Bluetooth" = "Bluetooth";
 "Connect another display to set a speed for each." = "Collega un altro monitor per impostare una velocità per ciascuno.";
-"Fires once per hold. Click to keep going for as long as you roll." = "Scatta una volta per pressione. Fai clic per continuare finché fai rotolare.";
 "Gesture" = "Gesto";
 "Hold and roll" = "Tieni premuto e fai rotolare";
 "Hold the button and roll the ball: a different action each way." = "Tieni premuto il tasto e fai rotolare la sfera: un’azione diversa per ogni direzione.";
-"Hold this button and roll the ball. Each way does something the moment you roll a few millimeters; a quick press does the tap." = "Tieni premuto questo tasto e fai rotolare la sfera. Ogni direzione agisce appena fai rotolare di qualche millimetro; una pressione breve fa il tocco.";
 "Hold this button on your trackball and roll." = "Tieni premuto questo tasto della trackball e fai rotolare.";
 "Hold top right and roll: sideways switches Spaces, up opens Mission Control, down shows the app’s windows. Hold top left and roll for volume and tracks. A quick press still does what it did." = "Tieni premuto in alto a destra e fai rotolare: di lato cambia Space, in su apre Mission Control, in giù mostra le finestre dell’app. Tieni premuto in alto a sinistra per volume e brani. Una pressione breve fa ancora quello che faceva.";
-"Keeps going for as long as you keep rolling. Click to fire once per hold instead." = "Continua finché fai rotolare. Fai clic per farlo scattare una sola volta per pressione.";
 "Main display" = "Monitor principale";
 "Nothing really happens while you try, so roll as much as you like." = "Mentre provi non succede davvero nulla, quindi fai rotolare quanto vuoi.";
 "Now roll the ball, or let go for the tap." = "Ora fai rotolare la sfera, o rilascia per il tocco.";
@@ -2439,3 +2436,23 @@
 /* Search words for sharing a setup and importing KensingtonWorks' settings */
 "share, send, link, qr code, picture, friend" = "condividi, invia, link, codice qr, immagine, amico";
 "kensingtonworks, trackballworks, import, switch, move over" = "kensingtonworks, trackballworks, importa, passare, migrare";
+/* Chained gestures, gestures on combos, gesture distance */
+"A gesture can’t use the bottom-left button, your primary click" = "Un gesto non può usare il tasto in basso a sinistra, il tuo clic principale";
+"A wider dead zone and a clearer roll before anything fires, so a shaky press stays a tap." = "Una zona morta più ampia e una rotazione più netta prima che qualcosa scatti, così una pressione incerta resta un tocco.";
+"Distance" = "Distanza";
+"Each time you roll" = "Ogni volta che fai rotolare";
+"Fires each time you roll this way, even several times in one hold, mixed with the other directions." = "Scatta ogni volta che fai rotolare in questa direzione, anche più volte per pressione, insieme alle altre direzioni.";
+"Fires once per hold, however far you roll." = "Scatta una volta per pressione, per quanto tu faccia rotolare.";
+"Gesture distance" = "Distanza dei gesti";
+"Hold the buttons together and roll the ball: a different action each way." = "Tieni premuti i tasti insieme e fai rotolare la sfera: un’azione diversa per ogni direzione.";
+"Hold these buttons together and roll the ball. Each way does something the moment you roll a few millimeters, as many times as you like in one hold; a quick press does the tap." = "Tieni premuti questi tasti insieme e fai rotolare la sfera. Ogni direzione agisce appena fai rotolare di qualche millimetro, tutte le volte che vuoi per pressione; una pressione breve fa il tocco.";
+"Hold these buttons together on your trackball and roll." = "Tieni premuti insieme questi tasti della trackball e fai rotolare.";
+"Hold this button and roll the ball. Each way does something the moment you roll a few millimeters, as many times as you like in one hold; a quick press does the tap." = "Tieni premuto questo tasto e fai rotolare la sfera. Ogni direzione agisce appena fai rotolare di qualche millimetro, tutte le volte che vuoi per pressione; una pressione breve fa il tocco.";
+"How far you roll before a direction fires. Short suits small, quick rolls; Long ignores more by accident." = "Quanto fai rotolare prima che una direzione scatti. Breve va bene per movimenti piccoli e rapidi; Lungo ignora più movimenti involontari.";
+"How far you roll before a direction fires: about 2, 3 or 4.5 mm. A gesture can have its own." = "Quanto fai rotolare prima che una direzione scatti: circa 2, 3 o 4,5 mm. Ogni gesto può avere la sua.";
+"Includes your primary click, so this combo does the gesture’s tap instead of a gesture." = "Include il tuo clic principale, quindi questa combo fa il tocco del gesto invece di un gesto.";
+"Keeps going for as long as you keep rolling." = "Continua finché continui a far rotolare.";
+"Like Other Gestures" = "Come gli altri gesti";
+"Like Other Gestures (%@)" = "Come gli altri gesti (%@)";
+"Steady hands" = "Mano incerta";
+"What fired in this hold" = "Cosa è scattato in questa pressione";
