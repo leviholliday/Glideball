@@ -16,6 +16,8 @@ struct SyncDevice: Identifiable, Equatable {
     let name: String
     let lastSeen: Date
     let isThisMac: Bool
+    /// The Glideball it last synced with; nil for one before 2.10 (which doesn't say).
+    var appVersion: String? = nil
 }
 
 /// Keeps Glide's settings the same on all of the user's Macs.
@@ -54,9 +56,13 @@ final class SettingsSync {
         static let deviceID = "GlideDeviceID"
         static let lastStamp = "GlideSyncLastStamp"
         static let pendingChangeAt = "GlideSyncPendingChangeAt"
+        static let olderMacNoticed = "GlideSyncOlderMacNoticed"
     }
 
     private let onRemoteConfig: (GlideConfig) -> Void
+    /// Once ever, on the main thread: another Mac is on a Glideball too old to carry
+    /// some of these settings (true: gestures among them). Set by the app.
+    @ObservationIgnored var onOlderMac: ((Bool) -> Void)?
     private let folder: URL
     private let defaults: UserDefaults
     private let deviceID: String
@@ -203,13 +209,40 @@ final class SettingsSync {
         uploadWork?.cancel()
         pendingChangeAt = nil
         lastStamp = file.stamp
-        if Self.syncable(file.settings.config) != Self.syncable(local) {
-            var config = file.settings.config
+        var config = file.settings.config
+        // Written by a Glideball before 2.10: it dropped what it didn't know (a gesture
+        // button became a plain click). Keep this Mac's, and write them back for the
+        // Macs that do know them (as version 2, which the older one then leaves alone).
+        var keptNewer = false
+        if file.settings.writtenBy == nil {
+            let merged = config.keepingNewerFeatures(from: local)
+            config = merged.config
+            keptNewer = merged.kept
+        }
+        if Self.syncable(config) != Self.syncable(local) {
             config.enabled = local.enabled   // the pause switch stays per-Mac
             self.local = config
             onRemoteConfig(config)
         }
+        if keptNewer {
+            noticeOlderMac(gestures: local.anyAction(\.isGesture))
+            pendingChangeAt = Date()
+            upload()
+            return
+        }
         markSynced(didSync: true)
+    }
+
+    /// Tells the user, once ever, that another Mac's Glideball is too old for some settings.
+    private func noticeOlderMac(gestures: Bool) {
+        guard !defaults.bool(forKey: Keys.olderMacNoticed) else { return }
+        defaults.set(true, forKey: Keys.olderMacNoticed)
+        onOlderMac?(gestures)
+    }
+
+    /// Another Mac that synced in the last month is on a Glideball before 2.10.
+    private var olderMacAround: Bool {
+        devices.contains { !$0.isThisMac && $0.appVersion == nil && $0.lastSeen > Date().addingTimeInterval(-30 * 86_400) }
     }
 
     /// Writes this Mac's settings to iCloud Drive, unless another Mac's newer edit got there first.
@@ -220,6 +253,8 @@ final class SettingsSync {
         let changedAt = pendingChangeAt
         let file = SharedFile(settings: GlideSettingsFile(config: Self.syncable(local)),
                               updatedAt: changedAt ?? Date(), deviceID: deviceID, deviceName: deviceName)
+        // A version 2 file is one an older Glideball won't touch, so it stops syncing there.
+        if file.settings.version > 1, olderMacAround { noticeOlderMac(gestures: local.anyAction(\.isGesture)) }
         let known = lastStamp
         setStatus(.syncing)
         io.async { [self] in
@@ -350,13 +385,14 @@ final class SettingsSync {
             guard case .data(let data)? = try? Self.read(url),
                   let beat = try? Self.decoder.decode(Heartbeat.self, from: data) else { return nil }
             let id = url.deletingPathExtension().lastPathComponent
-            return SyncDevice(id: id, name: beat.name, lastSeen: beat.lastSeen, isThisMac: id == deviceID)
+            return SyncDevice(id: id, name: beat.name, lastSeen: beat.lastSeen, isThisMac: id == deviceID,
+                              appVersion: beat.appVersion)
         }
         .sorted { $0.lastSeen > $1.lastSeen }
     }
 
     private func writeHeartbeat() throws {
-        let beat = Heartbeat(name: deviceName, lastSeen: Date())
+        let beat = Heartbeat(name: deviceName, lastSeen: Date(), appVersion: GlideSettingsFile.appVersion)
         try Self.write(Self.encoder.encode(beat), to: devicesURL.appendingPathComponent("\(deviceID).json"))
     }
 
@@ -420,6 +456,8 @@ private extension SettingsSync {
     struct Heartbeat: Codable {
         let name: String
         let lastSeen: Date
+        /// Written since 2.10; a heartbeat without it is from an older Glideball.
+        var appVersion: String?
     }
 
     enum RemoteState {

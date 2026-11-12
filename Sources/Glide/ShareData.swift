@@ -339,6 +339,7 @@ extension ButtonAction {
         case .dragLock: "dragLock"
         case .media: "media"
         case .openApp: "openApp"
+        case .gesture: "gesture"
         }
     }
 }

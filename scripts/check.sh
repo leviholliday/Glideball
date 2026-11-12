@@ -11,6 +11,8 @@
 #   scroll-sim   scripts/scroll-sim/run.sh       the scroll engine, on synthetic ticks
 #   backup-sim   scripts/backup-sim/run.sh       backup retention over 18 months
 #   command-sim  scripts/command-sim/run.sh      glideball:// URLs, good and hostile, and status.json
+#   gesture-sim  scripts/gesture-sim/run.sh      gesture buttons, including unplug/pause mid-gesture
+#   device-sim   scripts/device-sim/run.sh       per-display speed, connection types, battery notices
 #   l10n         scripts/l10n/check.py           every translation complete, no repeated keys
 #   website      the website's function tests    (npm ci first if website/node_modules is missing)
 #   admin        the admin site's tests          its proxy against the real admin function, its pages and policy
@@ -27,7 +29,7 @@ VERBOSE=0
 for arg in "$@"; do
   case $arg in
     -v|--verbose) VERBOSE=1 ;;
-    -h|--help) sed -n '2,23p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) print -u2 "unknown option: $arg"; exit 64 ;;
   esac
 done
@@ -75,6 +77,8 @@ built=$?
 run scroll-sim "scroll engine simulator" scripts/scroll-sim/run.sh
 run backup-sim "backup retention simulator" scripts/backup-sim/run.sh
 run command-sim "glideball:// URLs and status.json, good and hostile" scripts/command-sim/run.sh
+run gesture-sim "gesture buttons: scripted, hostile and random events" scripts/gesture-sim/run.sh
+run device-sim "per-display speed, connection types, low-battery notices" scripts/device-sim/run.sh
 run l10n "translations: complete, no repeated keys" python3 scripts/l10n/check.py
 
 website_tests() (   # a subshell: the cd stays in here

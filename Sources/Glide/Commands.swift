@@ -49,6 +49,14 @@ protocol CommandTarget: AnyObject {
     var pointerSpeed: Double { get }
     func setPointerSpeed(_ speed: Double)
 
+    /// Gesture buttons on (off: each does its tap action). The main setup's switch.
+    var gesturesEnabled: Bool { get }
+    func setGesturesEnabled(_ on: Bool)
+
+    /// Per-display pointer speeds on (each display that has one uses it).
+    var perDisplaySpeed: Bool { get }
+    func setPerDisplaySpeed(_ on: Bool)
+
     var appSetups: [CommandAppSetup] { get }
     /// The setup chosen with `app-setup`, or nil when setups follow the app in front.
     var pinnedAppSetup: String? { get }
@@ -194,6 +202,13 @@ enum Commands {
                 },
                 state: { speedText($0.pointerSpeed) }),
 
+        // Changes what buttons do, so never from a URL (see DEVELOPING.md, "Why the list is this short").
+        switchCommand(id: "gestures", title: String(localized: "Gestures", comment: "Hold a button and roll the ball"), reach: .appOnly,
+                      get: { $0.gesturesEnabled }, set: { $0.setGesturesEnabled($1) }),
+        // Only picks between pointer speeds the user set, like pointer-speed: fine from a URL.
+        switchCommand(id: "per-display-speed", title: String(localized: "Pointer speed per display"), reach: .url,
+                      get: { $0.perDisplaySpeed }, set: { $0.setPerDisplaySpeed($1) }),
+
         Command(id: "app-setup", title: String(localized: "Use an app setup"),
                 parameter: CommandParameter(key: "name", kind: .setupName, fallback: nil),
                 reach: .url,
@@ -263,6 +278,26 @@ enum Commands {
                     return true
                 },
                 state: { $0.isOn(mode) ? "on" : "off" })
+    }
+
+    /// An on/off setting: `state=on|off|toggle` (toggle when left out); "on" twice stays on.
+    private static func switchCommand(id: String, title: String, reach: Command.Reach,
+                                      get: @escaping (CommandTarget) -> Bool,
+                                      set: @escaping (CommandTarget, Bool) -> Void) -> Command {
+        Command(id: id, title: title,
+                parameter: CommandParameter(key: "state", kind: .onOffToggle, fallback: .toggle),
+                reach: reach,
+                perform: { target, argument, done in
+                    let new: Bool = switch argument {
+                    case .on: true
+                    case .off: false
+                    default: !get(target)
+                    }
+                    if new != get(target) { set(target, new) }
+                    done?(get(target))
+                    return true
+                },
+                state: { get($0) ? "on" : "off" })
     }
 
     private static func pauseState(_ target: CommandTarget) -> String? { target.isPaused ? "paused" : "running" }

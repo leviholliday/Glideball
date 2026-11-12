@@ -119,6 +119,9 @@ struct TodayCluster: View {
                 ClusterStat(metric: m, value: value(m), best: best(m), fraction: fraction(m),
                             moment: Self.sandboxRecordMoment == m, partial: { value(m, scaled: $0) })
             }
+            // How the trackball is connected, and its battery, when known.
+            let device = ConnectionDetail(connection: model.shownConnection, battery: model.shownBattery, size: 12, symbol: true)
+            if !device.isEmpty { device }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

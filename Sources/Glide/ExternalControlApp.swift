@@ -45,6 +45,12 @@ final class AppCommandTarget: CommandTarget {
     var pointerSpeed: Double { model.config.trackingSpeed }
     func setPointerSpeed(_ speed: Double) { model.config.trackingSpeed = speed }
 
+    var gesturesEnabled: Bool { model.config.gesturesEnabled }
+    func setGesturesEnabled(_ on: Bool) { model.config.gesturesEnabled = on }
+
+    var perDisplaySpeed: Bool { model.config.displaySpeeds.enabled }
+    func setPerDisplaySpeed(_ on: Bool) { model.config.displaySpeeds.enabled = on }
+
     var appSetups: [CommandAppSetup] { model.config.appProfiles.map { CommandAppSetup(bundleID: $0.bundleID, name: $0.name) } }
     var pinnedAppSetup: String? { model.pinnedProfileID }
     var activeAppSetupName: String? { model.activeProfile?.name }

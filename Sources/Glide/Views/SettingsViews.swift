@@ -146,6 +146,8 @@ struct GeneralSettingsPane: View {
             SectionBlock(title: "Trackballs and other apps", dividerInset: SettingsLayout.symbolInset) {
                 SettingsToggle(title: "Other Kensington trackballs", hint: otherTrackballsHint, symbol: "computermouse",
                                isOn: $model.otherTrackballs)
+                SettingsToggle(title: "Low battery alerts", hint: lowBatteryHint, symbol: "battery.25percent",
+                               isOn: $model.lowBatteryAlerts)
                 SettingsToggle(title: "Allow Raycast and scripts", hint: externalHint, symbol: "link",
                                isOn: $model.allowExternalControl, link: SiteLinks.help, spotlight: "external-control")
             }
@@ -188,6 +190,12 @@ struct GeneralSettingsPane: View {
         model.otherTrackballs
             ? String(localized: "Glideball also works with Kensington’s other trackballs. I haven’t tuned it on them yet, so you may hit bugs.")
             : String(localized: "Just the Expert Mouse for now. Turn this on to try Glideball with Kensington’s other trackballs.")
+    }
+
+    private var lowBatteryHint: String {
+        model.lowBatteryAlerts
+            ? String(localized: "You’ll get a notification at 15% and again at 5%. It only works with wireless trackballs that report their battery, and I haven’t been able to test it on one yet.")
+            : String(localized: "A notification when a wireless trackball’s battery runs low. It only works with models that report their battery, and I haven’t been able to test it on one yet.")
     }
 
     private var externalHint: String {

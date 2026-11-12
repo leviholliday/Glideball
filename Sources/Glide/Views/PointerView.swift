@@ -34,6 +34,8 @@ struct PointerView: View {
                              hint: .verbatim(PointerHints.precision(model.config.precisionSpeed, tracking: model.config.trackingSpeed)),
                              tint: Theme.ball, defaultValue: Self.defaults.precisionSpeed)
             }
+
+            DisplaySpeedsSection(model: model)
         }
     }
 }

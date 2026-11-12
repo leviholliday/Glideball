@@ -296,7 +296,13 @@ struct ActionPickerPanel: View {
     let current: ButtonAction?
     /// The button this is for (its suggestions, and what "Default" means); nil for a combo.
     var button: Int? = nil
+    /// What it's choosing: a button's action, one direction of a gesture, or a gesture's tap.
+    var purpose: Purpose = .button
     let pick: (ButtonAction) -> Void
+
+    enum Purpose {
+        case button, gestureDirection, gestureTap
+    }
 
     @State private var recording = false
     @State private var holdKeys = false
@@ -324,7 +330,7 @@ struct ActionPickerPanel: View {
     }
 
     private func choose(_ action: ButtonAction) {
-        ActionCatalog.remember(action)
+        if !action.isGesture { ActionCatalog.remember(action) }
         pick(action)
         dismiss()
     }
@@ -346,18 +352,25 @@ struct ActionPickerPanel: View {
 
     private func sections(_ query: String) -> [PickerSection] {
         let q = query.trimmingCharacters(in: .whitespaces)
-        var catalog = ActionCatalog.all
+        var catalog = ActionCatalog.all.filter { allowed($0.action) }
         if button == nil { catalog.removeAll { $0.action == .system } }   // a combo has no "normal"
         var out: [PickerSection] = []
+        let gesture = gestureEntry(q)
 
         if q.isEmpty {
             // What it does now, then what was chosen lately (or a few good first picks), then everything.
-            if let current {
+            if let current, !current.isGesture {
                 out.append(PickerSection(id: "now", title: String(localized: "Now", comment: "Action picker group: what the button does now"),
                                          entries: [entry(ActionCatalog.item(for: current), section: "now")]))
             }
-            let recent = ActionCatalog.recents.filter { $0 != current && (button != nil || $0 != .system) }
-            let top = recent.isEmpty ? ActionCatalog.suggestions(forButton: button).filter { $0 != current } : recent
+            // A gesture is a different kind of choice: right at the top, under what it does now.
+            if let gesture {
+                out.append(PickerSection(id: "gesture", title: String(localized: "Hold and roll", comment: "Action picker group: gesture buttons"),
+                                         entries: [gesture]))
+            }
+            let recent = ActionCatalog.recents.filter { $0 != current && (button != nil || $0 != .system) && allowed($0) }
+            let top = recent.isEmpty ? ActionCatalog.suggestions(forButton: purpose == .button ? button : nil)
+                .filter { $0 != current && allowed($0) } : recent
             if !top.isEmpty {
                 out.append(PickerSection(id: "top", title: recent.isEmpty ? String(localized: "Suggested", comment: "Action picker group")
                                                                           : String(localized: "Recent", comment: "Action picker group"),
@@ -374,8 +387,10 @@ struct ActionPickerPanel: View {
             let found = catalog.map { ($0, $0.score(q)) }.filter { $0.1 > 0 }
                 .enumerated().sorted { $0.element.1 != $1.element.1 ? $0.element.1 > $1.element.1 : $0.offset < $1.offset }
                 .map(\.element.0)
-            if !found.isEmpty {
-                out.append(PickerSection(id: "found", entries: found.map { entry($0, section: "found") }))
+            var entries = found.map { entry($0, section: "found") }
+            if let gesture { entries.insert(gesture, at: 0) }
+            if !entries.isEmpty {
+                out.append(PickerSection(id: "found", entries: entries))
             }
         }
 
@@ -398,6 +413,32 @@ struct ActionPickerPanel: View {
             out.append(PickerSection(id: "apps", title: String(localized: "Open an app", comment: "Action picker group"), entries: [app]))
         }
         return out
+    }
+
+    /// Whether this choice can be made here: a gesture's direction fires a quick
+    /// press (no modes, no held keys), and a gesture's tap can't be held or be another gesture.
+    private func allowed(_ action: ButtonAction) -> Bool {
+        switch purpose {
+        case .button: true
+        case .gestureDirection: action == .disabled || GestureStep(action).firable != nil
+        case .gestureTap: !action.isGesture && action != .precisionHold && action != .ballScrollHold
+        }
+    }
+
+    /// "Gesture": offered for the three free buttons (never the primary one, never a combo),
+    /// and only when choosing what a button does. Search finds it by its own words.
+    private func gestureEntry(_ q: String) -> PickerEntry? {
+        guard purpose == .button, let button, button != 0 else { return nil }
+        let title = String(localized: "Gesture", comment: "Action picker: hold the button and roll the ball")
+        let detail = String(localized: "Hold the button and roll the ball: a different action each way.", comment: "Action picker: Gesture")
+        let words = title + " " + detail + " " + String(localized: "hold roll swipe direction", comment: "Action picker: extra search words for Gesture")
+        if !q.isEmpty, !q.split(separator: " ").allSatisfy({ words.range(of: $0, options: [.caseInsensitive, .diacriticInsensitive]) != nil }) {
+            return nil
+        }
+        let isGesture = current?.isGesture ?? false
+        return PickerEntry(id: "gesture", title: title, detail: detail,
+                           icon: .symbol("dot.arrowtriangles.up.right.down.left.circle"), isCurrent: isGesture,
+                           activate: { choose(.gesture(ButtonGesture.keeping(current ?? .system))) })
     }
 
     // MARK: Choosing an app
@@ -512,6 +553,9 @@ struct ActionPickerButton: View {
     var button: Int? = nil
     /// Lets the page open it (the trackball map, a real button press). Optional.
     var isPresented: Binding<Bool>? = nil
+    var purpose: ActionPickerPanel.Purpose = .button
+    /// The keys a shortcut sends, beside its name (off where space is tight).
+    var showsKeys = true
     let onPick: (ButtonAction) -> Void
 
     @State private var open = false
@@ -522,7 +566,7 @@ struct ActionPickerButton: View {
             shown.wrappedValue = true
         } label: {
             if let action {
-                ActionLabel(action: action)
+                ActionLabel(action: action, showsKeys: showsKeys)
             } else {
                 HStack(spacing: 6) {
                     Image(systemName: "square.grid.2x2").font(.system(size: 11.5, weight: .medium))
@@ -537,7 +581,7 @@ struct ActionPickerButton: View {
         .accessibilityLabel(Text("\(action?.title ?? String(localized: "Nothing chosen")), choose what this does",
                                  comment: "Spoken: a button’s current action, then what clicking does"))
         .popover(isPresented: shown, arrowEdge: .bottom) {
-            ActionPickerPanel(current: action, button: button) { new in onPick(new) }
+            ActionPickerPanel(current: action, button: button, purpose: purpose) { new in onPick(new) }
         }
     }
 }
@@ -546,6 +590,7 @@ struct ActionPickerButton: View {
 struct ActionLabel: View {
     let action: ButtonAction
     var chevron = true
+    var showsKeys = true
 
     var body: some View {
         HStack(spacing: 6) {
@@ -559,7 +604,7 @@ struct ActionLabel: View {
             Text(verbatim: action.title)
                 .font(.system(size: 12, weight: .medium))
                 .lineLimit(1)
-            if let d = action.detail, action.title != d {
+            if showsKeys, let d = action.detail, action.title != d {
                 Text(verbatim: d).font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(1)
             }
             if chevron {

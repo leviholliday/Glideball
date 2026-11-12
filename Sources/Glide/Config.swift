@@ -85,6 +85,9 @@ enum ButtonAction: Codable, Hashable {
     case dragLock          // press: left button goes down and stays; press again (or click) lets go
     case media(MediaKey)   // play/pause, next track, volume… (the keyboard's media keys)
     case openApp(bundleID: String)   // opens (or brings forward) an app
+    /// Hold the button and roll the ball: each direction does something, a plain
+    /// tap does `tap`. The pointer stays put while it's held. Never on the primary button.
+    indirect case gesture(ButtonGesture)
 
     struct Preset: Identifiable {
         /// Shown in menus (localized).
@@ -149,6 +152,8 @@ enum ButtonAction: Codable, Hashable {
         .init(title: String(localized: "Precision (toggle)"), symbol: "dot.circle.viewfinder", action: .precisionToggle),
         .init(title: String(localized: "Scroll with ball (hold)"), symbol: "arrow.up.and.down.and.arrow.left.and.right", action: .ballScrollHold),
         .init(title: String(localized: "Drag lock"), symbol: "hand.draw", action: .dragLock),
+        .init(title: String(localized: "Gesture", comment: "Button action: hold the button and roll the ball up, down, left or right"),
+              symbol: "dot.arrowtriangles.up.right.down.left.circle", action: .gesture(.standard)),
         .init(title: String(localized: "Do nothing"), symbol: "nosign", action: .disabled),
     ]
 
@@ -163,6 +168,7 @@ enum ButtonAction: Codable, Hashable {
         case .openApp(let id):
             let name = Self.appName(id) ?? id
             return String(localized: "Open \(name)", comment: "Button action: opens an app; %@ is the app’s name")
+        case .gesture: return String(localized: "Gesture", comment: "Button action: hold the button and roll the ball up, down, left or right")
         default: break
         }
         return String(localized: "Custom", comment: "Button action that isn't one of the presets")
@@ -170,6 +176,7 @@ enum ButtonAction: Codable, Hashable {
 
     var symbol: String {
         if case .openApp = self { return "app" }
+        if case .gesture = self { return "dot.arrowtriangles.up.right.down.left.circle" }
         return Self.presets.first(where: { $0.action == self })?.symbol ?? "keyboard"
     }
 
@@ -390,6 +397,11 @@ struct GlideConfig: Codable, Equatable {
     /// System-wide keyboard shortcuts (pause, and switching Glide's modes).
     var globalShortcuts = GlobalShortcuts()
 
+    /// Gesture buttons are on. Off: each one just does its tap action.
+    var gesturesEnabled = true
+    /// An optional pointer speed for each display (see `DisplaySpeeds` for the precedence).
+    var displaySpeeds = DisplaySpeeds()
+
     init() {}
 
     // Missing keys fall back to defaults so new settings never wipe old ones.
@@ -418,6 +430,9 @@ struct GlideConfig: Codable, Equatable {
         chords = try c.decodeLenientChords(forKey: .chords) ?? d.chords
         appProfiles = try c.decodeIfPresent([AppProfile].self, forKey: .appProfiles) ?? d.appProfiles
         globalShortcuts = try c.decodeIfPresent(GlobalShortcuts.self, forKey: .globalShortcuts) ?? d.globalShortcuts
+        // Newer fields: anything unreadable means the default, never a lost settings file.
+        gesturesEnabled = (try? c.decodeIfPresent(Bool.self, forKey: .gesturesEnabled)) ?? d.gesturesEnabled
+        displaySpeeds = (try? c.decodeIfPresent(DisplaySpeeds.self, forKey: .displaySpeeds)) ?? d.displaySpeeds
     }
 
     private static let key = "GlideConfig"
@@ -531,6 +546,16 @@ struct ButtonPreset: Identifiable, Equatable {
               buttons: [2: .media(.playPause), 3: .media(.next)],
               chords: [Chord(buttons: [2, 3], action: .media(.previous)),
                        Chord(buttons: [1, 3], action: .media(.mute))]),
+        .init(id: "gestures", title: String(localized: "Gestures", comment: "Button preset name: hold a button and roll the ball"),
+              detail: String(localized: "Hold top right and roll: sideways switches Spaces, up opens Mission Control, down shows the app’s windows. Hold top left and roll for volume and tracks. A quick press still does what it did.",
+                             comment: "Button preset description"),
+              symbol: "dot.arrowtriangles.up.right.down.left.circle",
+              buttons: [2: .gesture(ButtonGesture(up: GestureStep(.media(.volumeUp), repeats: true),
+                                                  down: GestureStep(.media(.volumeDown), repeats: true),
+                                                  left: GestureStep(.media(.previous)),
+                                                  right: GestureStep(.media(.next)))),
+                        3: .gesture(.standard)],
+              chords: []),
         .init(id: "wispr", title: "Spaces + Wispr Flow",
               detail: String(localized: "Top buttons switch Spaces; bottom left + both top buttons hold ⌃Space for Wispr Flow."),
               symbol: "waveform",
@@ -563,9 +588,18 @@ extension GlideConfig {
     }
 }
 
-/// Portable, versioned settings file used by Glide's import and export controls.
+/// Portable, versioned settings file used by Glide's import and export controls,
+/// the backups and sync.
+///
+/// `version` is also the guard against older Glideballs. Every Glideball since 2.0
+/// refuses a file whose version isn't the one it knows (1): it won't import it,
+/// and sync neither adopts it nor writes over it ("saved by a newer version").
+/// So a file is written as version 2 only when its settings use something an
+/// older Glideball would drop on the way back (`GlideConfig.requiredFileVersion`);
+/// everything else stays version 1, and older Macs keep syncing as before.
 struct GlideSettingsFile: Codable {
-    static let currentVersion = 1
+    /// The newest version this Glideball reads (and writes, when it has to).
+    static let currentVersion = 2
     static let fileExtension = "glide-settings"
     let version: Int
     let config: GlideConfig
@@ -573,19 +607,123 @@ struct GlideSettingsFile: Codable {
     /// Optional so files from before these fields existed still open.
     var exportedAt: Date?
     var exportedFrom: String?
+    /// The Glideball that wrote it ("2.10"). Glideballs before this one don't
+    /// write it, so a file without it came from one of them (see `keepingNewerFeatures`).
+    var writtenBy: String?
 
     init(config: GlideConfig, exportedFrom: String? = Host.current().localizedName) {
-        version = Self.currentVersion
+        version = config.requiredFileVersion
         self.config = config
         exportedAt = Date()
         self.exportedFrom = exportedFrom
+        writtenBy = Self.appVersion
+    }
+
+    static var appVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "2.10"
     }
 
     func validatedConfig() throws -> GlideConfig {
-        guard version == Self.currentVersion else {
+        guard (1...Self.currentVersion).contains(version) else {
             throw GlideSettingsFileError.unsupportedVersion(version)
         }
         return config
+    }
+}
+
+extension ButtonAction {
+    /// Added after 2.9: a Glideball before this one drops it when reading settings.
+    var isNewerFeature: Bool {
+        switch self {
+        case .gesture, .media, .openApp: true
+        default: false
+        }
+    }
+
+    var isGesture: Bool { if case .gesture = self { true } else { false } }
+
+    /// As a gesture direction, whether "keep going as you roll" makes sense for it
+    /// (volume, zoom, tabs, undo), rather than once per hold (Mission Control).
+    var repeatsWell: Bool {
+        switch self {
+        case .media(let k): k != .playPause && k != .mute
+        case .back, .forward: true
+        case .shortcut(let s):
+            [KeyShortcut.zoomIn, .zoomOut, .nextTab, .previousTab, .undo, .redo, .browserBack, .browserForward,
+             .nextSpace, .previousSpace].contains { $0.sameKeys(as: s) }
+                || !ButtonAction.presets.contains { $0.action == self }   // your own shortcut: your call
+        default: false
+        }
+    }
+
+    /// Chosen for a direction, it starts out continuous (volume and zoom do; the rest fire once).
+    var repeatsByDefault: Bool {
+        switch self {
+        case .media(.volumeUp), .media(.volumeDown): true
+        case .shortcut(let s): s.sameKeys(as: .zoomIn) || s.sameKeys(as: .zoomOut)
+        default: false
+        }
+    }
+}
+
+extension GlideConfig {
+    /// 2 when these settings use something an older Glideball would drop if it read
+    /// them and wrote them back (gesture buttons, per-display speeds, media keys,
+    /// "Open an app"): the file then says so, and older Glideballs leave it alone.
+    var requiredFileVersion: Int { usesNewerFeatures ? 2 : 1 }
+
+    var usesNewerFeatures: Bool {
+        anyAction(\.isNewerFeature) || displaySpeeds.enabled || !displaySpeeds.speeds.isEmpty
+    }
+
+    /// Whether any button or combo, in the main setup or an app setup, does `test`.
+    func anyAction(_ test: (ButtonAction) -> Bool) -> Bool {
+        func any(_ buttons: [Int: ButtonAction]?, _ chords: [Chord]?) -> Bool {
+            (buttons ?? [:]).values.contains(where: test) || (chords ?? []).contains { test($0.action) }
+        }
+        return any(buttons, chords) || appProfiles.contains { any($0.buttons, $0.chords) }
+    }
+
+    /// Settings written by an older Glideball (`self`), merged with this Mac's
+    /// (`local`): what the older one couldn't carry is put back from `local`.
+    /// Newer buttons it dropped come back where it left the button unset, combos it
+    /// dropped come back, and per-display speeds and the gestures switch, which it
+    /// never knew, stay this Mac's. Anything it set explicitly wins. Returns the
+    /// merged settings and whether a gesture (or another newer button) had to be kept.
+    func keepingNewerFeatures(from local: GlideConfig) -> (config: GlideConfig, kept: Bool) {
+        var out = self
+        var kept = false
+        func merge(_ incoming: inout [Int: ButtonAction], _ mine: [Int: ButtonAction]) {
+            for (b, a) in mine where a.isNewerFeature && incoming[b] == nil {
+                incoming[b] = a
+                kept = true
+            }
+        }
+        func merge(_ incoming: inout [Chord], _ mine: [Chord]) {
+            for c in mine where c.action.isNewerFeature && !incoming.contains(where: { $0.id == c.id || $0.buttons == c.buttons }) {
+                incoming.append(c)
+                kept = true
+            }
+        }
+        merge(&out.buttons, local.buttons)
+        merge(&out.chords, local.chords)
+        for i in out.appProfiles.indices {
+            guard let mine = local.appProfiles.first(where: { $0.bundleID == out.appProfiles[i].bundleID }) else { continue }
+            if let mb = mine.buttons, out.appProfiles[i].buttons != nil {
+                var b = out.appProfiles[i].buttons ?? [:]
+                merge(&b, mb)
+                out.appProfiles[i].buttons = b
+            }
+            if let mc = mine.chords, out.appProfiles[i].chords != nil {
+                var c = out.appProfiles[i].chords ?? []
+                merge(&c, mc)
+                out.appProfiles[i].chords = c
+            }
+        }
+        if local.displaySpeeds.enabled || !local.displaySpeeds.speeds.isEmpty { kept = kept || out.displaySpeeds != local.displaySpeeds }
+        out.displaySpeeds = local.displaySpeeds
+        out.gesturesEnabled = local.gesturesEnabled
+        return (out, kept)
     }
 }
 
@@ -637,4 +775,204 @@ extension GlideConfig {
             .init(symbol: "square.grid.2x2", title: String(localized: "App setups"), value: appProfilesSummary),
         ]
     }
+}
+
+// MARK: - Media keys, gestures and per-display speed
+
+/// Which way the ball rolled while a gesture button was held. "Up" is rolling
+/// the top of the ball away from you: the way the pointer would have gone up.
+enum GestureDirection: String, Codable, CaseIterable {
+    case up, down, left, right
+}
+
+/// What one direction of a gesture does.
+struct GestureStep: Codable, Hashable {
+    var action: ButtonAction
+    /// Continuous: fires again for every further stretch of rolling (volume, say),
+    /// and rolling back fires the opposite direction (if that one repeats too).
+    /// Otherwise it fires once per hold.
+    var repeats = false
+
+    init(_ action: ButtonAction, repeats: Bool = false) {
+        self.action = action
+        self.repeats = repeats
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        action = try c.decode(ButtonAction.self, forKey: .action)   // unknown: the whole step is skipped
+        repeats = (try? c.decodeIfPresent(Bool.self, forKey: .repeats)) ?? false
+    }
+
+    /// The action as a gesture fires it, or nil if it can't be fired mid-gesture.
+    /// Everything fires as a quick press and release: a gesture never holds a key,
+    /// a mode or a button down, so letting go (or a pause, unplug or quit) has
+    /// nothing to undo.
+    var firable: ButtonAction? {
+        switch action {
+        case .holdShortcut(let s): .shortcut(s)
+        case .shortcut, .media, .openApp, .leftClick, .rightClick, .middleClick, .back, .forward, .modifiedClick: action
+        case .system, .disabled, .precisionHold, .precisionToggle, .ballScrollHold, .dragLock, .gesture: nil
+        }
+    }
+}
+
+/// A gesture button: hold it and roll the ball one of four ways, or tap it.
+struct ButtonGesture: Codable, Hashable {
+    var up: GestureStep?
+    var down: GestureStep?
+    var left: GestureStep?
+    var right: GestureStep?
+    /// A press and release without rolling past the threshold. `.system` is the button's own click.
+    var tap: ButtonAction = .system
+
+    init(up: GestureStep? = nil, down: GestureStep? = nil, left: GestureStep? = nil, right: GestureStep? = nil,
+         tap: ButtonAction = .system) {
+        self.up = up
+        self.down = down
+        self.left = left
+        self.right = right
+        self.tap = tap
+    }
+
+    /// Spaces left and right, Mission Control up, App Exposé down; a tap is the button's own click.
+    static let standard = ButtonGesture(up: GestureStep(.shortcut(.missionControl)),
+                                        down: GestureStep(.shortcut(.appExpose)),
+                                        left: GestureStep(.shortcut(.previousSpace)),
+                                        right: GestureStep(.shortcut(.nextSpace)))
+
+    /// Volume up and down as you roll, Previous / Next Track left and right; a tap plays or pauses.
+    static let media = ButtonGesture(up: GestureStep(.media(.volumeUp), repeats: true),
+                                     down: GestureStep(.media(.volumeDown), repeats: true),
+                                     left: GestureStep(.media(.previous)),
+                                     right: GestureStep(.media(.next)),
+                                     tap: .media(.playPause))
+
+    /// Tabs: left and right move between them, up opens one, down closes one.
+    static let tabs = ButtonGesture(up: GestureStep(.shortcut(.newTab)),
+                                    down: GestureStep(.shortcut(.closeTab)),
+                                    left: GestureStep(.shortcut(.previousTab), repeats: true),
+                                    right: GestureStep(.shortcut(.nextTab), repeats: true))
+
+    /// Zoom in and out as you roll up and down; left and right go back and forward.
+    static let zoom = ButtonGesture(up: GestureStep(.shortcut(.zoomIn), repeats: true),
+                                    down: GestureStep(.shortcut(.zoomOut), repeats: true),
+                                    left: GestureStep(.back),
+                                    right: GestureStep(.forward))
+
+    /// A ready-made set of four directions, for the gesture editor.
+    struct Suggestion: Identifiable {
+        let id: String
+        let title: String
+        let symbol: String
+        let gesture: ButtonGesture
+        /// The set comes with its own tap (Volume: play or pause); otherwise the tap stays.
+        var ownTap = false
+
+        func applied(to current: ButtonGesture) -> ButtonGesture {
+            var g = gesture
+            if !ownTap { g.tap = current.tap }
+            return g
+        }
+
+        func matches(_ g: ButtonGesture) -> Bool {
+            GestureDirection.allCases.allSatisfy { g[$0] == gesture[$0] } && (!ownTap || g.tap == gesture.tap)
+        }
+    }
+
+    static var suggestions: [Suggestion] {
+        [
+            .init(id: "spaces", title: String(localized: "Spaces", comment: "Gesture set: switch Spaces, Mission Control, App Exposé"),
+                  symbol: "rectangle.split.3x1", gesture: .standard),
+            .init(id: "media", title: String(localized: "Volume and music", comment: "Gesture set: volume up/down, previous/next track, tap plays"),
+                  symbol: "speaker.wave.2", gesture: .media, ownTap: true),
+            .init(id: "tabs", title: String(localized: "Tabs", comment: "Gesture set: previous/next tab, new tab, close tab"),
+                  symbol: "square.on.square", gesture: .tabs),
+            .init(id: "zoom", title: String(localized: "Zoom and history", comment: "Gesture set: zoom in/out, back/forward"),
+                  symbol: "plus.magnifyingglass", gesture: .zoom),
+        ]
+    }
+
+    /// Turning a button into a gesture keeps what it did as the tap.
+    static func keeping(_ previous: ButtonAction) -> ButtonGesture {
+        if case .gesture(let old) = previous { return old }
+        var g = ButtonGesture.standard
+        g.tap = previous
+        return g
+    }
+
+    subscript(direction: GestureDirection) -> GestureStep? {
+        get {
+            switch direction {
+            case .up: up
+            case .down: down
+            case .left: left
+            case .right: right
+            }
+        }
+        set {
+            switch direction {
+            case .up: up = newValue
+            case .down: down = newValue
+            case .left: left = newValue
+            case .right: right = newValue
+            }
+        }
+    }
+
+    /// The tap as it's performed: a held action can't be held after the release,
+    /// so a held shortcut is a quick press, and held modes (or another gesture) do nothing.
+    var tapAction: ButtonAction {
+        switch tap {
+        case .holdShortcut(let s): .shortcut(s)
+        case .precisionHold, .ballScrollHold, .gesture: .disabled
+        default: tap
+        }
+    }
+
+    // A newer Glideball may write actions or fields this one doesn't know: skip
+    // just that direction (or use the plain click for the tap), never the whole button.
+    private enum CodingKeys: String, CodingKey { case up, down, left, right, tap }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        func step(_ key: CodingKeys) -> GestureStep? { (try? c.decodeIfPresent(GestureStep.self, forKey: key)) ?? nil }
+        up = step(.up)
+        down = step(.down)
+        left = step(.left)
+        right = step(.right)
+        tap = (try? c.decodeIfPresent(ButtonAction.self, forKey: .tap)) ?? .system
+    }
+}
+
+/// An optional pointer speed for each display, used while the pointer is on it.
+///
+/// Precedence, highest first: Precision (while on), an app setup's own pointer
+/// speed, this display's speed (when `enabled` and it has one), the main speed.
+/// `GlideConfig.resolved(for:)` switches this off when the app setup in front has
+/// its own speed, so the engine only has to look here.
+struct DisplaySpeeds: Codable, Equatable {
+    var enabled = false
+    /// Display key (`DisplayKey`) → tracking speed.
+    var speeds: [String: Double] = [:]
+    /// Display key → its name when last seen, so a display that isn't connected can still be named.
+    var names: [String: String] = [:]
+
+    init() {}
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        enabled = (try? c.decodeIfPresent(Bool.self, forKey: .enabled)) ?? false
+        speeds = ((try? c.decodeIfPresent([String: Double].self, forKey: .speeds)) ?? [:]).filter { $0.value.isFinite && $0.value > 0 }
+        names = (try? c.decodeIfPresent([String: String].self, forKey: .names)) ?? [:]
+    }
+
+    /// The speed for the display the pointer is on, or nil to use the main speed.
+    func speed(for display: String?) -> Double? {
+        guard enabled, let display else { return nil }
+        return speeds[display]
+    }
+
+    /// Worth watching which display the pointer is on at all.
+    var isActive: Bool { enabled && !speeds.isEmpty }
 }
