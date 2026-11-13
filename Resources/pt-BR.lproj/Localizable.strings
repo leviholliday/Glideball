@@ -1628,6 +1628,7 @@
 "I read every report myself. If I have a question, I’ll write to %@." = "Eu leio todos os relatos pessoalmente. Se eu tiver uma dúvida, escrevo para %@.";
 "Ideas, bugs and questions come straight to me." = "Ideias, bugs e dúvidas chegam direto até mim.";
 "If Glideball crashes, it sends where in its code it happened and your versions. Nothing else." = "Se o Glideball travar, ele envia em que parte do código aconteceu e suas versões. Mais nada.";
+"If Glideball crashes, it sends where in its code it happened and your versions." = "Se o Glideball travar, ele envia em que parte do código aconteceu e suas versões.";
 "If I ever need it for support, I’ll ask you for it. I can’t tell whose it is otherwise." = "Se eu precisar dele para suporte, vou pedir a você. Sem isso, não tenho como saber de quem é.";
 "If that was you (from Raycast, say), turn it on in Settings › General." = "Se foi você (pelo Raycast, por exemplo), ative em Ajustes › Geral.";
 "In Glideball’s window" = "Na janela do Glideball";

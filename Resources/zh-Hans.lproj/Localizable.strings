@@ -1628,6 +1628,7 @@
 "I read every report myself. If I have a question, I’ll write to %@." = "每份报告我都会亲自阅读。如果我有问题，会写信到 %@。";
 "Ideas, bugs and questions come straight to me." = "想法、问题和疑问都会直接送到我这里。";
 "If Glideball crashes, it sends where in its code it happened and your versions. Nothing else." = "如果 Glideball 崩溃，会发送问题出在代码的哪个位置以及你的版本信息，不会发送其他任何内容。";
+"If Glideball crashes, it sends where in its code it happened and your versions." = "如果 Glideball 崩溃，会发送问题出在代码的哪个位置以及你的版本信息。";
 "If I ever need it for support, I’ll ask you for it. I can’t tell whose it is otherwise." = "如果需要提供支持，我会向你询问它。否则我无法知道它属于谁。";
 "If that was you (from Raycast, say), turn it on in Settings › General." = "如果这是你做的（例如通过 Raycast），请在“设置 › 通用”中开启。";
 "In Glideball’s window" = "在 Glideball 窗口中";

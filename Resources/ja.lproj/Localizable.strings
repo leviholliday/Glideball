@@ -1628,6 +1628,7 @@
 "I read every report myself. If I have a question, I’ll write to %@." = "レポートはすべて自分で読んでいます。質問があれば、%@にメールします。";
 "Ideas, bugs and questions come straight to me." = "アイデア、不具合、質問は直接私に届きます。";
 "If Glideball crashes, it sends where in its code it happened and your versions. Nothing else." = "Glideballがクラッシュすると、コードのどこで起きたかとバージョン情報を送信します。それ以外は送りません。";
+"If Glideball crashes, it sends where in its code it happened and your versions." = "Glideballがクラッシュすると、コードのどこで起きたかとバージョン情報を送信します。";
 "If I ever need it for support, I’ll ask you for it. I can’t tell whose it is otherwise." = "サポートで必要になったときは、お願いします。それ以外では、誰のものかわかりません。";
 "If that was you (from Raycast, say), turn it on in Settings › General." = "操作した覚えがあれば（たとえばRaycastから）、「設定」›「一般」でオンにしてください。";
 "In Glideball’s window" = "Glideballのウインドウ内";

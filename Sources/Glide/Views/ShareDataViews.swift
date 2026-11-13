@@ -289,7 +289,9 @@ struct SendPreviewView: View {
                     .foregroundStyle(.secondary)
             case .crashes, .crashesAndStats:
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("If Glideball crashes, it sends where in its code it happened and your versions. Nothing else.")
+                    Text(choice == .crashes
+                         ? "If Glideball crashes, it sends where in its code it happened and your versions. Nothing else."
+                         : "If Glideball crashes, it sends where in its code it happened and your versions.")
                         .font(Theme.Font.hint)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
