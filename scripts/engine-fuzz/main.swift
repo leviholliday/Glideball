@@ -605,6 +605,9 @@ final class World {
         if let m = io.moveTap { io.tapEnable(m, false) }
         _ = engine.handle(.tapDisabledByTimeout, e)
         graceUntil = io.clock + 1.0
+        // While the tap was off the pointer moved freely (never stuck); a hold that's still
+        // on keeps it where it is now, rather than jumping it back.
+        if io.frozen { io.anchorExpect = io.cursor }
     }
 
     /// Other mice and the trackpad: what went in comes out, once, unchanged.
@@ -1375,6 +1378,14 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
     // that; these pin the interface orders (aux first, aux second, aux never removed).
     gestureCases.append(("still listed during its own removal callback: not connected", [GlideConfig()],
                          [.unplug(0), .wait(1), .replug, .kBall(3, 0), .unplug(0), .wait(1), .replug, .kBall(3, 0), .kBall(2, 1), .unplug(2), .reconcile, .wait(1)]))
+    // The pointer held in any app (beta 13): it stays put, in front and behind; with the tap
+    // switched off it moves freely, and a hold still on keeps it where it went.
+    var scrollHold = GlideConfig()
+    scrollHold.buttons[4] = .ballScrollHold
+    gestureCases.append(("Scroll with ball, another app in front: the pointer stays put", [scrollHold],
+                         [.front(1), .kPress(4, hidFirst: true), .kBall(30, 5), .kBall(-12, 9), .kRelease(4, hidFirst: true), .kBall(5, 0)]))
+    gestureCases.append(("Scroll with ball, the tap switched off mid-roll: no jump back after", [scrollHold],
+                         [.kPress(4, hidFirst: true), .tapOff(1), .kBall(1, 0), .wait(1.2), .kBall(0, 0), .kBall(4, 0)] + up(4)))
     gestureCases.append(("replugged with new IDs, old ones still listed dead: connected, then not", [holdKey],
                          [.unplug(3), .replug, .reconcile, .wait(1)] + down(3) + [.unplug(1), .reconcile, .wait(1)] + settle))
     let older: [(String, [GlideConfig], [Op])] = [

@@ -957,6 +957,9 @@ final class Engine {
         case .tapDisabledByTimeout, .tapDisabledByUserInput:
             // A gesture's release may have gone by while the tap was off: free the pointer now.
             cancelGesture(.tapDisabled)
+            // The pointer moved freely while the tap was off; a hold still on (a keyboard
+            // Scroll with ball) keeps it where it is now instead of pulling it back.
+            if anchor != nil { otherMovedSinceAnchor = true }
             appButtons = io.buttonsDown()   // what went by while it was off
             syncTap()
             if let moveTap { io.tapEnable(moveTap, true) }
