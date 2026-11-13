@@ -1128,6 +1128,8 @@ struct ChoiceStrip<Value: Hashable>: View {
         let title: LocalizedStringKey
         let symbol: String
         var demo: ChoiceDemo? = nil
+        /// One plain line under the title (Settings › Privacy's choices).
+        var detail: LocalizedStringKey? = nil
         var id: Value { value }
     }
 
@@ -1156,9 +1158,9 @@ struct ChoiceStrip<Value: Hashable>: View {
     var body: some View {
         let session = trial.flatMap { t in preview.session?.id == t.id ? preview.session : nil }
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
+            HStack(alignment: .top, spacing: 8) {
                 ForEach(choices) { c in
-                    ChoiceCard(title: c.title, symbol: c.symbol, demo: c.demo, selected: isSelected(c.value), tint: tint,
+                    ChoiceCard(title: c.title, symbol: c.symbol, demo: c.demo, detail: c.detail, selected: isSelected(c.value), tint: tint,
                                glow: glow, picked: picked == c.value ? pickCount : 0,
                                onTry: trial == nil ? nil : { tryChoice(c.value) }) {
                         // Picking one for real while one's on trial: you've decided.
@@ -1167,6 +1169,9 @@ struct ChoiceStrip<Value: Hashable>: View {
                     }
                 }
             }
+            // Never squeezed shorter than they need (a crowded tour step), and cards with
+            // a line of detail all as tall as the tallest.
+            .fixedSize(horizontal: false, vertical: true)
             if let session {
                 TryBar(session: session, tint: tint)
             }
@@ -1191,6 +1196,7 @@ struct ChoiceStrip<Value: Hashable>: View {
         guard let trial else { return }
         let snap = trial.snapshot()
         TryPreview.shared.begin(id: trial.id, was: snap.was, what: trial.name(value), countdown: true, restore: snap.restore)
+        TryHint.done()   // they know the trick now: the pages' ⌥ captions go
         pick(value)
     }
 }
@@ -1214,6 +1220,7 @@ private struct ChoiceCard: View {
     let title: LocalizedStringKey
     let symbol: String
     let demo: ChoiceDemo?
+    var detail: LocalizedStringKey? = nil
     let selected: Bool
     let tint: Color
     let glow: Namespace.ID
@@ -1235,15 +1242,16 @@ private struct ChoiceCard: View {
         Button {
             if let onTry, NSEvent.modifierFlags.contains(.option) { onTry() } else { action() }
         } label: {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 6) {
+            VStack(alignment: .leading, spacing: detail == nil ? 8 : 4) {
+                HStack(alignment: detail == nil ? .center : .firstTextBaseline, spacing: 6) {
                     Image(systemName: symbol)
                         .font(.system(size: 13, weight: selected ? .semibold : .regular))
                         .foregroundStyle(selected ? AnyShapeStyle(tint) : AnyShapeStyle(.secondary))
                     Text(title)
                         .font(.system(size: 13, weight: selected ? .semibold : .regular))
-                        .lineLimit(1)
+                        .lineLimit(detail == nil ? 1 : 2)
                         .minimumScaleFactor(0.8)
+                        .fixedSize(horizontal: false, vertical: detail != nil)
                     Spacer(minLength: 0)
                     if selected {
                         Image(systemName: "checkmark.circle.fill")
@@ -1251,6 +1259,12 @@ private struct ChoiceCard: View {
                             .foregroundStyle(tint)
                             .transition(reduceMotion ? .opacity : .scale(scale: 0.4).combined(with: .opacity))
                     }
+                }
+                if let detail {
+                    Text(detail)
+                        .font(Theme.Font.hint)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 if let demo {
                     DemoView(demo: demo, tint: selected || playing ? tint : Color.secondary, playing: playing,
@@ -1262,7 +1276,7 @@ private struct ChoiceCard: View {
             .foregroundStyle(.primary)
             .padding(.horizontal, 11)
             .padding(.vertical, demo == nil ? 8 : 10)
-            .frame(maxWidth: .infinity, minHeight: 34, alignment: .leading)
+            .frame(maxWidth: .infinity, minHeight: 34, maxHeight: detail == nil ? nil : .infinity, alignment: detail == nil ? .leading : .topLeading)
             .background {
                 let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
                 SurfaceShape(radius: 10)

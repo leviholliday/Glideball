@@ -428,14 +428,24 @@ struct WelcomeTourView: View {
             VStack(alignment: .leading, spacing: 14) {
                 header("Pick a pointer speed", "Roll the ball after each one to feel the difference.")
                 PointerPresetRow(speed: $model.config.trackingSpeed)
-                Text("How far the cursor travels when you roll the ball. macOS stops at its own setting; Glideball goes past it.")
-                    .font(Theme.Font.hint)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                // While a speed's on trial its countdown says what's happening, in this line's place.
+                if !TryPreview.shared.isTrying(PointerPresetRow.tryID) {
+                    Text("How far the cursor travels when you roll the ball. macOS stops at its own setting; Glideball goes past it.")
+                        .font(Theme.Font.hint)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .transition(.opacity)
+                }
+                optionTip
                 Spacer(minLength: 0)
-                // The ball and ring answer as you try them.
-                stage(150, look: TrackballLook.of(model))
-                    .frame(maxWidth: .infinity)
+                // The ball and ring answer as you try them. (Smaller in a small window
+                // while a speed's on trial, so the footer always has room.)
+                ViewThatFits(in: .vertical) {
+                    stage(150, look: TrackballLook.of(model))
+                    stage(104, look: TrackballLook.of(model))
+                    stage(72, look: TrackballLook.of(model))
+                }
+                .frame(maxWidth: .infinity)
                 Spacer(minLength: 0)
                 Text("Fine-tune both later in the Pointer and Scrolling tabs.")
                     .font(Theme.Font.hint)
@@ -445,6 +455,28 @@ struct WelcomeTourView: View {
             .frame(maxWidth: .infinity)
         }
         .padding(.top, 8)
+    }
+
+    /// Try before you keep: ⌥-click a speed right here (the presets' countdown shows under
+    /// them, which is the only answer it needs), and the same on every slider later.
+    private var optionTip: some View {
+        HStack(alignment: .center, spacing: 10) {
+            KeyCap(label: "⌥")
+                .foregroundStyle(Theme.ball)
+            Text("Hold ⌥ and click a speed to try it for 10 seconds before you keep it. It works while dragging any slider, too.")
+                .font(Theme.Font.hint)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Theme.ball.opacity(0.07))
+                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Theme.ball.opacity(0.22), lineWidth: 0.5))
+        }
+        .accessibilityElement(children: .combine)
     }
 
     private var modeHint: String {

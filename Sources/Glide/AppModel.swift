@@ -148,6 +148,12 @@ final class AppModel {
         }
     }
 
+    /// "Menu bar icon style": Mono (a template, like Apple's icons) or Color (the
+    /// ball in the ball color). Per-Mac. The icon follows it (AppDelegate tracks it).
+    var menuBarIconStyle: MenuBarIcon.Style = MenuBarIcon.Style.saved {
+        didSet { UserDefaults.standard.set(menuBarIconStyle.rawValue, forKey: MenuBarIcon.Style.defaultsKey) }
+    }
+
     /// Show Glideball in the Dock and the ⌘-Tab switcher. Off = it runs purely in the
     /// background and is reopened from its menu-bar icon. Per-Mac.
     static var showInDockSaved: Bool {

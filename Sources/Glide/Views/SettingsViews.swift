@@ -141,6 +141,18 @@ struct GeneralSettingsPane: View {
             SectionBlock(title: "Where Glideball shows", dividerInset: SettingsLayout.symbolInset) {
                 SettingsToggle(title: "Menu bar icon", hint: menuBarHint, symbol: "menubar.rectangle", isOn: $model.menuBarIcon)
                     .findable(.menuBarIcon)
+                SettingsRow(title: "Menu bar icon style", hint: menuBarStyleHint, symbol: "paintpalette") {
+                    HStack(spacing: 10) {
+                        MenuBarIconPreview(style: model.menuBarIconStyle)
+                        RowPicker(title: "Menu bar icon style", selection: $model.menuBarIconStyle) {
+                            ForEach(MenuBarIcon.Style.allCases) { style in
+                                Text(verbatim: style.title).tag(style)
+                            }
+                        }
+                    }
+                }
+                .disabled(!model.menuBarIcon)
+                .findable(.menuBarIconStyle)
                 SettingsRow(title: "Menu bar icon opens", hint: menuBarOpensHint, symbol: "rectangle.topthird.inset.filled") {
                     RowPicker(title: "Menu bar icon opens", selection: $panel.opens) {
                         ForEach(MenuBarClick.allCases) { c in
@@ -166,6 +178,16 @@ struct GeneralSettingsPane: View {
                                isOn: $model.allowExternalControl, link: SiteLinks.help)
                     .findable(.externalControl)
             }
+        }
+    }
+
+    private var menuBarStyleHint: String {
+        guard model.menuBarIcon else {
+            return String(localized: "Turn on the menu bar icon to choose how it looks.", comment: "Settings › General hint")
+        }
+        switch model.menuBarIconStyle {
+        case .mono: return String(localized: "One color that matches the menu bar, like Apple’s own icons.", comment: "Settings › General hint: menu bar icon style Mono")
+        case .color: return String(localized: "The ball shows in your ball color, which you pick in Look.", comment: "Settings › General hint: menu bar icon style Color")
         }
     }
 
@@ -252,6 +274,11 @@ extension Findable {
         detail: String(localized: "Show or hide Glideball’s icon in the menu bar.", comment: "Search palette: Menu bar icon"),
         keywords: String(localized: "status bar, status item, top bar, tray", comment: "Search words for Menu bar icon (comma-separated)"),
         symbol: "menubar.rectangle", place: .settings(.general))
+    static let menuBarIconStyle = Findable(
+        id: "menu-bar-icon-style", title: String(localized: "Menu bar icon style"),
+        detail: String(localized: "A one-color icon like Apple’s, or the ball in your ball color.", comment: "Search palette: Menu bar icon style"),
+        keywords: String(localized: "status bar, icon, color, colour, mono, template, tray", comment: "Search words for Menu bar icon style (comma-separated)"),
+        symbol: "paintpalette", place: .settings(.general))
     static let menuBarOpens = Findable(
         id: "menu-bar-opens", title: String(localized: "Menu bar icon opens"),
         detail: String(localized: "A menu, or a small panel with the trackball and quick controls.", comment: "Search palette: Menu bar icon opens"),
@@ -285,8 +312,24 @@ extension Findable {
 }
 
 extension GeneralSettingsPane {
-    static let findables: [Findable] = [.openAtLogin, .launchStyle, .askBeforeQuitting, .menuBarIcon, .menuBarOpens,
+    static let findables: [Findable] = [.openAtLogin, .launchStyle, .askBeforeQuitting, .menuBarIcon, .menuBarIconStyle, .menuBarOpens,
                                         .showInDock, .language, .otherTrackballs, .lowBattery, .externalControl]
+}
+
+/// The menu-bar icon as it looks now, on a little piece of menu bar.
+struct MenuBarIconPreview: View {
+    let style: MenuBarIcon.Style
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        let image = MenuBarIcon.image(.on, style: style, theme: BallThemeStore.shared.theme)
+        Image(nsImage: image)
+            .renderingMode(style == .mono ? .template : .original)
+            .foregroundStyle(.primary)
+            .frame(width: 30, height: 22)
+            .background(RoundedRectangle(cornerRadius: 5, style: .continuous).fill(Color.primary.opacity(0.07)))
+            .accessibilityHidden(true)
+    }
 }
 
 /// How much the window animates: Smoothest, Efficient (the default) or Minimal.

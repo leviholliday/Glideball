@@ -549,6 +549,36 @@ extension RenderUI {
             }
         }
 
+        add("tour-4-option-try", "Welcome Tour", "Pick a speed: the ⌥ tip, after ⌥-clicking Turbo (its countdown under the presets)",
+            prepare: {
+                let old = model.config.trackingSpeed
+                TryPreview.shared.begin(id: PointerPresetRow.tryID, was: old.twoDigits, what: PointerPresetRow.name(7.5), countdown: true) {
+                    model.config.trackingSpeed = old
+                }
+                model.config.trackingSpeed = 7.5
+                TryBar.sandboxRemaining = 7.2
+            },
+            cleanup: { TryPreview.shared.revert(); TryBar.sandboxRemaining = nil }) { dark, scale in
+            mainWindow(model, tab: .overview, dark: dark, scale: scale) {
+                WelcomeTourView(model: model, step: .tryIt)
+            }
+        }
+
+        add("min-size-tour-4-option-try", "Smallest window", "Pick a speed with Turbo on trial, at the minimum size",
+            prepare: {
+                let old = model.config.trackingSpeed
+                TryPreview.shared.begin(id: PointerPresetRow.tryID, was: old.twoDigits, what: PointerPresetRow.name(7.5), countdown: true) {
+                    model.config.trackingSpeed = old
+                }
+                model.config.trackingSpeed = 7.5
+                TryBar.sandboxRemaining = 7.2
+            },
+            cleanup: { TryPreview.shared.revert(); TryBar.sandboxRemaining = nil }) { dark, scale in
+            mainWindow(model, tab: .overview, dark: dark, scale: scale, size: AppDelegate.mainWindowMinSize) {
+                WelcomeTourView(model: model, step: .tryIt)
+            }
+        }
+
         // What's New after an update (the 2.10 entry), over the window.
         add("whats-new", "What’s New", "What’s New in this version",
             prepare: { model.showingWhatsNew = true }) { dark, scale in
@@ -647,6 +677,9 @@ extension RenderUI {
         add("search-jump-settings", "Search (⌘K)", "After picking Weekly recap: Settings › Look with the row lit",
             prepare: { SettingsSpotlight.shared.show(Findable.weeklyRecap.id) }) { dark, scale in
             settings(.look, dark: dark, scale: scale)
+        }
+        add("menubar-icons", "Menu bar panel", "The menu-bar icon in every state, Mono and Color, on light and dark menu bars at 1x and 2x, beside Apple’s glyphs") { dark, _ in
+            menuBarIconSheet(dark: dark)
         }
         add("menubar-panel", "Menu bar panel", "Menu bar icon opens: Panel (drawn where it opens, on glass like the popover's)") { dark, scale in
             card(PopoverMock { MenuBarPanelView(model: model) }, width: MenuBarPanelView.width + 80, dark: dark, scale: scale)
@@ -748,9 +781,24 @@ extension RenderUI {
             }) { dark, scale in
             settings(.look, dark: dark, scale: scale)
         }
-        add("settings-privacy-deleted", "Settings window", "Privacy, just after Delete My Data",
-            prepare: { ShareDataSettings.sandboxDeleted = true },
-            cleanup: { ShareDataSettings.sandboxDeleted = nil }) { dark, scale in
+        // (`settings-privacy` is the demo's choice: Crash reports only, with an install ID, nothing sent yet.)
+        let demoShare = { ShareData.shared.sandboxSet(.crashes, installID: DemoData.installID, lastSent: nil) }
+        add("settings-privacy-deleted", "Settings window", "Privacy, just after Delete My Data (sharing off, the ID gone)",
+            prepare: {
+                ShareData.shared.sandboxSet(.nothing, installID: nil, lastSent: nil)
+                ShareDataSettings.sandboxDeleted = true
+            },
+            cleanup: { ShareDataSettings.sandboxDeleted = nil; demoShare() }) { dark, scale in
+            settings(.privacy, dark: dark, scale: scale)
+        }
+        add("settings-privacy-nothing", "Settings window", "Privacy with Nothing picked, on a Mac that never shared",
+            prepare: { ShareData.shared.sandboxSet(.nothing, installID: nil, lastSent: nil) },
+            cleanup: demoShare) { dark, scale in
+            settings(.privacy, dark: dark, scale: scale)
+        }
+        add("settings-privacy-stats", "Settings window", "Privacy with crash reports and stats: every field and its value, last sent this morning",
+            prepare: { ShareData.shared.sandboxSet(.crashesAndStats, installID: DemoData.installID, lastSent: Date().addingTimeInterval(-3 * 3600)) },
+            cleanup: demoShare) { dark, scale in
             settings(.privacy, dark: dark, scale: scale)
         }
         add("settings-shortcuts-search", "Settings window", "Shortcuts, searching “scroll”",

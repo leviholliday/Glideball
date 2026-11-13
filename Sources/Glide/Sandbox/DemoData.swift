@@ -9,6 +9,9 @@ import Carbon.HIToolbox
 /// they load anyone's settings.
 @MainActor
 enum DemoData {
+    /// The demo Mac's install ID (Settings › Privacy), the same in every picture.
+    static let installID = RandomID.format(Array(0..<20).map { UInt8(($0 * 37 + 11) % 256) })
+
     static let today = Telemetry.Totals(clicks: 2_140,
                                         ballCounts: 41.0 / Tally.metersPerBallCount,
                                         scrollPoints: 63.0 / Tally.metersPerScrollPoint)
@@ -59,7 +62,7 @@ enum DemoData {
         // Settings › Privacy: crash reports on, with an install ID.
         d.set(ShareChoice.crashes.rawValue, forKey: ShareData.choiceKey)
         d.set(true, forKey: ShareData.askedKey)
-        d.set(RandomID.format(Array(0..<20).map { UInt8(($0 * 37 + 11) % 256) }), forKey: ShareData.installIDKey)
+        d.set(installID, forKey: ShareData.installIDKey)
 
         // Feedback: the name and email someone filled in last time.
         d.set("Sam Rivera", forKey: "GlideFeedbackName")

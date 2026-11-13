@@ -51,6 +51,7 @@ final class ShareData {
     static let installIDKey = "GlideShareInstallID"
     static let lastStatsDayKey = "GlideShareLastStatsDay"
     static let crashesSinceKey = "GlideShareCrashesSince"
+    static let lastSentKey = "GlideShareLastSent"
 
     /// The privacy page's part about this.
     static let explainer = URL(string: "https://glideball.netlify.app/privacy/#app-data")!
@@ -76,6 +77,8 @@ final class ShareData {
     /// Made the first time the person says yes to anything; gone after Delete my data.
     private(set) var installID: String?
     private(set) var deleting = false
+    /// When this Mac last sent something (stats or a crash report), as far as it knows.
+    private(set) var lastSent: Date?
 
     @ObservationIgnored private let defaults = UserDefaults.standard
     @ObservationIgnored private var timer: Timer?
@@ -87,6 +90,29 @@ final class ShareData {
         asked = defaults.bool(forKey: Self.askedKey)
         // (Anything not in today's form, from a test build say, is replaced when next needed.)
         installID = defaults.string(forKey: Self.installIDKey).flatMap { RandomID.isValid($0) ? $0 : nil }
+        lastSent = defaults.object(forKey: Self.lastSentKey) as? Date ?? defaults.string(forKey: Self.lastStatsDayKey).flatMap {
+            // Before this was kept: the day of the last stats ping.
+            let f = DateFormatter()
+            f.locale = Locale(identifier: "en_US_POSIX")
+            f.timeZone = TimeZone(identifier: "UTC")
+            f.dateFormat = "yyyy-MM-dd"
+            return f.date(from: $0)
+        }
+    }
+
+    /// `--render-ui`: a choice as if made a while ago (`lastSent` that long back), or back to a fresh Mac.
+    func sandboxSet(_ choice: ShareChoice, installID: String?, lastSent: Date?) {
+        guard Sandbox.isActive else { return }
+        self.installID = installID
+        self.choice = choice
+        self.installID = installID ?? (choice == .nothing ? nil : self.installID)
+        self.lastSent = lastSent
+    }
+
+    /// Something went in (main thread).
+    private func sent() {
+        lastSent = Date()
+        defaults.set(lastSent, forKey: Self.lastSentKey)
     }
 
     /// Whether the card should be offered: never answered, on a Mac that
@@ -217,6 +243,7 @@ final class ShareData {
                 self?.sendingStats = false
                 // Sent, or turned down for good (a 4xx): either way, not again today.
                 if ok != nil { self?.defaults.set(day, forKey: Self.lastStatsDayKey) }
+                if ok == true { self?.sent() }
             }
         }
     }
@@ -256,6 +283,7 @@ final class ShareData {
         guard let report = CrashReports.read(next.url, date: next.date, installID: installID),
               let body = try? JSONEncoder().encode(report) else { return done() }
         Self.send("/api/crash", method: "POST", body: body) { [weak self] ok, _ in
+            if ok == true { DispatchQueue.main.async { self?.sent() } }
             if ok != nil { return done() }
             DispatchQueue.main.async { self?.lookingForCrashes = false }   // offline: next time
         }
@@ -276,7 +304,8 @@ final class ShareData {
                 guard ok == true else { return done(false) }
                 self.choice = .nothing
                 self.installID = nil
-                for key in [Self.installIDKey, Self.lastStatsDayKey, Self.crashesSinceKey] { self.defaults.removeObject(forKey: key) }
+                self.lastSent = nil
+                for key in [Self.installIDKey, Self.lastStatsDayKey, Self.crashesSinceKey, Self.lastSentKey] { self.defaults.removeObject(forKey: key) }
                 done(true)
             }
         }
@@ -341,5 +370,136 @@ extension ButtonAction {
         case .openApp: "openApp"
         case .gesture: "gesture"
         }
+    }
+}
+
+// MARK: - What this sends (Settings › Privacy)
+
+/// Settings › Privacy's "What this sends": the fields of the real payloads
+/// with this Mac's real values, made by encoding the very structs that are
+/// sent (`ShareData.stats` and `CrashReports.Report.example`) and labelling
+/// each key. A key without a label still shows (raw), and the self-test fails
+/// until it has one, so the preview can't leave anything out or drift.
+struct SendPreview {
+    struct Field: Identifiable, Equatable {
+        /// The payload keys this line covers.
+        let keys: [String]
+        let label: String
+        let value: String
+        var id: String { keys.joined(separator: "+") }
+    }
+
+    /// What a crash report carries (empty for Nothing).
+    var crash: [Field] = []
+    /// What the daily stats carry (empty unless stats are on).
+    var stats: [Field] = []
+
+    static func make(_ choice: ShareChoice, model: AppModel, installID: String?) -> SendPreview {
+        let id = installID ?? "GB-…"
+        var p = SendPreview()
+        if choice.sendsCrashes { p.crash = fields(of: CrashReports.Report.example(installID: id), labels: crashLabels) }
+        if choice.sendsStats { p.stats = fields(of: ShareData.shared.stats(model, installID: id), labels: statsLabels) }
+        return p
+    }
+
+    /// A payload's top-level keys and values, as JSON has them.
+    static func json<T: Encodable>(_ payload: T) -> [String: Any] {
+        guard let data = try? JSONEncoder().encode(payload),
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return [:] }
+        return object
+    }
+
+    typealias Label = (keys: [String], label: String, value: ([String: Any]) -> String)
+
+    /// Lines in order for the keys the labels know, then any key they don't (raw).
+    static func fields<T: Encodable>(of payload: T, labels: [Label]) -> [Field] {
+        let json = json(payload)
+        var out: [Field] = []
+        var covered = Set<String>()
+        for l in labels where l.keys.allSatisfy({ json[$0] != nil }) {
+            out.append(Field(keys: l.keys, label: l.label, value: l.value(json)))
+            covered.formUnion(l.keys)
+        }
+        for key in json.keys.sorted() where !covered.contains(key) {
+            out.append(Field(keys: [key], label: key, value: json[key].map { "\($0)" } ?? ""))
+        }
+        return out
+    }
+
+    // MARK: Labels
+
+    private static func string(_ j: [String: Any], _ k: String) -> String { j[k] as? String ?? (j[k]).map { "\($0)" } ?? "" }
+    private static func onOff(_ j: [String: Any], _ k: String) -> String {
+        (j[k] as? Bool ?? false) ? String(localized: "On", comment: "Privacy preview: a switch that's on")
+                                 : String(localized: "Off", comment: "Privacy preview: a switch that's off")
+    }
+    private static func count(_ j: [String: Any], _ k: String) -> String { ((j[k] as? Int) ?? 0).formatted() }
+
+    // (Shortened: the whole ID is just below, under Your install ID.)
+    private static let installID: Label = (["installId"], String(localized: "Install ID", comment: "Privacy preview: field"), { j in
+        let id = string(j, "installId")
+        return id.count > 16 ? id.prefix(7) + "…" + id.suffix(4) : id
+    })
+    private static let version: Label = (["version", "build"], String(localized: "Glideball", comment: "Privacy preview: field, the app's version"), { j in
+        String(localized: "\(string(j, "version")) (build \(string(j, "build")))", comment: "Privacy preview: version and build, like “2.10 (build 512)”")
+    })
+    private static let os: Label = (["os"], String(localized: "macOS", comment: "Privacy preview: field"), { string($0, "os") })
+    private static let arch: Label = (["arch"], String(localized: "Chip", comment: "Privacy preview: field, Apple silicon or Intel"), { j in
+        string(j, "arch") == "arm64" ? String(localized: "Apple silicon") : String(localized: "Intel")
+    })
+
+    static let crashLabels: [Label] = [
+        installID, version, os, arch,
+        (["crashedAt", "exception", "signal", "termination", "reason"],
+         String(localized: "The crash", comment: "Privacy preview: field"),
+         { _ in String(localized: "When it happened, and the error macOS gave", comment: "Privacy preview: what a crash report says about the crash") }),
+        (["ownImage", "frames"],
+         String(localized: "Where", comment: "Privacy preview: field, where in the code it crashed"),
+         { _ in String(localized: "Function names in Glideball’s own code", comment: "Privacy preview: a crash report's stack") }),
+    ]
+
+    static let statsLabels: [Label] = [
+        installID, version, os, arch,
+        (["lang"], String(localized: "Language", comment: "Privacy preview: field"), { j in
+            let code = string(j, "lang")
+            return Locale.current.localizedString(forIdentifier: code) ?? code
+        }),
+        (["trackballs"], String(localized: "Trackballs", comment: "Privacy preview: field, the Kensington trackballs connected"), { j in
+            let names = (j["trackballs"] as? [[String: Any]] ?? []).compactMap { $0["name"] as? String }
+            return names.isEmpty ? String(localized: "None connected", comment: "Privacy preview: no trackball") : names.formatted(.list(type: .and))
+        }),
+        (["scrollMode"], String(localized: "Scroll mode", comment: "Privacy preview: field"), { j in
+            ScrollMode(rawValue: string(j, "scrollMode"))?.title ?? string(j, "scrollMode")
+        }),
+        (["pointerSpeed"], String(localized: "Pointer speed", comment: "Privacy preview: field"), { j in
+            let range = string(j, "pointerSpeed").split(separator: "-").map(String.init)
+            return range.count == 2
+                ? String(localized: "Between \(range[0]) and \(range[1])", comment: "Privacy preview: the pointer speed's range, like “Between 4 and 8”")
+                : string(j, "pointerSpeed")
+        }),
+        (["performance"], String(localized: "Performance", comment: "Privacy preview: field"), { j in
+            PerformanceMode(rawValue: string(j, "performance"))?.title ?? string(j, "performance")
+        }),
+        (["beta"], String(localized: "Other Kensington trackballs"), { onOff($0, "beta") }),
+        (["earlyUpdates"], String(localized: "Early updates"), { onOff($0, "earlyUpdates") }),
+        (["appProfiles"], String(localized: "App setups", comment: "Privacy preview: field, how many"), { count($0, "appProfiles") }),
+        (["combos"], String(localized: "Combos", comment: "Privacy preview: field, how many"), { count($0, "combos") }),
+        (["buttons"], String(localized: "Button actions", comment: "Privacy preview: field"), { j in
+            let n = (j["buttons"] as? [String: Int] ?? [:]).values.reduce(0, +)
+            return String(localized: "\(n) set, by kind only, never the keys", comment: "Privacy preview: how many button actions; %lld is a number")
+        }),
+    ]
+}
+
+extension CrashReports.Report {
+    /// A report with this Mac's versions and placeholders where a real crash fills
+    /// in what happened: the same struct, so the same keys, as a real one.
+    static func example(installID: String) -> CrashReports.Report {
+        let app = ShareData.appInfo
+        return CrashReports.Report(installId: installID, crashedAt: ISO8601DateFormatter().string(from: Date()),
+                                   version: app["version"] ?? "?", build: app["build"] ?? "0", os: ShareData.osVersion,
+                                   arch: ShareData.arch, exception: "EXC_BAD_ACCESS", signal: "SIGSEGV", termination: "",
+                                   reason: "", ownImage: CrashReports.executableName,
+                                   frames: [.init(image: CrashReports.executableName, symbol: "Engine.handle", offset: 0)])
     }
 }

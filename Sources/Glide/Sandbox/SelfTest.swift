@@ -767,6 +767,32 @@ enum SelfTest {
             return "five days or two weeks, whichever first, or ×; never comes back"
         }
 
+        step("privacy preview") {
+            // Settings › Privacy's "What this sends" lists exactly the keys of what's really sent:
+            // each key once, every one labelled (an unlabelled key would show raw), none made up.
+            let id = RandomID.make() ?? "GB-TEST"
+            let crash = CrashReports.Report.example(installID: id)
+            let stats = ShareData.shared.stats(model, installID: id)
+            let payloads: [(String, [String: Any], [SendPreview.Field], [SendPreview.Label])] = [
+                ("crash report", SendPreview.json(crash), SendPreview.fields(of: crash, labels: SendPreview.crashLabels), SendPreview.crashLabels),
+                ("stats", SendPreview.json(stats), SendPreview.fields(of: stats, labels: SendPreview.statsLabels), SendPreview.statsLabels),
+            ]
+            for (name, json, fields, labels) in payloads {
+                let listed = fields.flatMap(\.keys)
+                let labelled = labels.flatMap(\.keys)
+                try check(!json.isEmpty, "the \(name) didn't encode")
+                try check(listed.count == Set(listed).count, "the \(name) preview lists a key twice: \(listed)")
+                try check(Set(listed) == Set(json.keys), "the \(name) preview lists \(listed.sorted()), but it sends \(json.keys.sorted())")
+                try check(Set(labelled) == Set(json.keys),
+                          "the \(name)'s labels cover \(labelled.sorted()), but it sends \(json.keys.sorted()) (a key without a label shows raw)")
+            }
+            let nothing = SendPreview.make(.nothing, model: model, installID: id)
+            try check(nothing.crash.isEmpty && nothing.stats.isEmpty, "Nothing previews something being sent")
+            let crashes = SendPreview.make(.crashes, model: model, installID: id)
+            try check(!crashes.crash.isEmpty && crashes.stats.isEmpty, "Crash reports only previews stats")
+            return "crash report \(payloads[0].1.count) keys, stats \(payloads[1].1.count) keys, all labelled"
+        }
+
         step("crash report scrubbing") {
             // The same cases as the server's (website/tests/usage.test.mjs), so neither can be got round.
             let cases: [(String, String)] = [

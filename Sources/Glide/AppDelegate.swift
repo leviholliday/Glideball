@@ -306,7 +306,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         if AppModel.showMenuBarIcon {
             if statusItem == nil {
                 setUpStatusItem()
-                showModes(AppModel.shared.modes)
+                statusIconKey = nil
+                refreshStatusIcon()
             }
         } else if let item = statusItem {
             MainActor.assumeIsolated { MenuBarPanelController.shared.close() }
@@ -322,10 +323,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         // `--self-test` builds the menu but puts nothing in the menu bar.
         guard !Sandbox.isActive else { return }
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        item.button?.image = NSImage(systemSymbolName: "cursorarrow.click", accessibilityDescription: "Glideball")
-        item.button?.image?.isTemplate = true
         item.menu = menu
         statusItem = item
+        statusIconKey = nil
+        trackStatusIcon()
         // "Menu bar icon opens: Panel" takes the clicks instead (a right-click still shows this menu).
         MainActor.assumeIsolated { MenuBarPanelController.shared.attach(item, menu: menu) }
     }
@@ -362,10 +363,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     private func showModes(_ modes: Engine.Modes) {
-        let symbol = modes.dragLocked ? "hand.draw.fill" : modes.precision ? "scope" : "cursorarrow.click"
-        statusItem?.button?.image = NSImage(systemSymbolName: symbol, accessibilityDescription: "Glideball")
-        statusItem?.button?.image?.isTemplate = true
-        precisionItem?.state = modes.precision ? .on : .off
+        refreshStatusIcon()
+    }
+
+    /// What the icon shows now (MenuBarIcon.swift): redrawn only when this changes.
+    private var statusIconKey: String?
+    private var trackingStatusIcon = false
+
+    /// Keeps the icon in step with pause, the trackball, modes, an update, the
+    /// icon style and the ball color, whatever changes them.
+    private func trackStatusIcon() {
+        guard !trackingStatusIcon else { return refreshStatusIcon() }
+        trackingStatusIcon = true
+        withObservationTracking {
+            refreshStatusIcon()
+        } onChange: { [weak self] in
+            DispatchQueue.main.async {
+                self?.trackingStatusIcon = false
+                if self?.statusItem != nil { self?.trackStatusIcon() }
+            }
+        }
+    }
+
+    private func refreshStatusIcon() {
+        let model = AppModel.shared
+        let state = MenuBarIcon.state(of: model)
+        let update = model.updates.available != nil
+        let style = model.menuBarIconStyle
+        let theme = BallThemeStore.shared.theme
+        precisionItem?.state = model.modes.precision ? .on : .off
+        let key = "\(state.rawValue) \(update) \(style.rawValue) \(style == .color ? theme.palette.hashValue : 0)"
+        guard let button = statusItem?.button, key != statusIconKey else { return }
+        statusIconKey = key
+        button.image = MenuBarIcon.image(state, update: update, style: style, theme: theme)
+        button.setAccessibilityLabel(MenuBarIcon.description(state, update: update))
     }
 
     @objc private func showGlide(_ sender: Any?) {
