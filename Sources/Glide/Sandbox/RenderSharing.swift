@@ -111,9 +111,9 @@ extension RenderUI {
             guard let m = Milestone.all.first(where: { model.delight.ledger.earned[$0.id] != nil }) ?? Milestone.all.first else { return nil }
             return ShareImage.render(.badge(m, model.delight.ledger.earned[m.id] ?? Date()), delight: model.delight)
         }
-        add("settings-general-sharing", "Settings › General with a name typed (the Sharing group at the bottom)",
+        add("settings-sharing-named", "Settings › Sharing with a name typed",
             prepare: { useSharingName("Levi") }) { dark, scale in
-            card(GeneralSettingsPane(model: model), width: 640, dark: dark, scale: scale)
+            settings(.sharing, dark: dark, scale: scale)
         }
         add("tour-name-filled", "The tour's name step with a name typed",
             prepare: { useSharingName("Levi") }) { dark, scale in

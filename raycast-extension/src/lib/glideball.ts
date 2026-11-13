@@ -159,7 +159,7 @@ export type GlideURL =
   | { command: "scroll-mode"; mode: ScrollMode }
   | { command: "pointer-speed"; value: number }
   | { command: "open"; tab?: "overview" | "pointer" | "scrolling" | "buttons" | "apps" | "sync" }
-  | { command: "settings"; tab?: "general" | "updates" | "privacy" | "shortcuts" };
+  | { command: "settings"; tab?: "general" | "trackball" | "sharing" | "updates" | "privacy" | "shortcuts" };
 
 export function urlFor(u: GlideURL): string {
   const query = (key: string, value: string) => `?${key}=${encodeURIComponent(value)}`;

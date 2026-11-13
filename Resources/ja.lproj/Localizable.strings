@@ -1932,7 +1932,6 @@
 "Top left copies, top right pastes. Both together undo; bottom right with top right redoes." = "左上でコピー、右上でペースト。2つ同時で取り消し、右下と右上でやり直しです。";
 "Top left goes back, top right goes forward. Combos open, close and reopen tabs." = "左上で戻る、右上で進む。コンボでタブを開く、閉じる、開き直すができます。";
 "Top left plays or pauses, top right skips ahead. Both together go back a track; bottom right with top right mutes." = "左上で再生／一時停止、右上で次へ。2つ同時で前のトラックに戻り、右下と右上でミュートします。";
-"Trackballs and other apps" = "トラックボールとほかのApp";
 "Tried a button preset" = "ボタンのプリセットを試した";
 "Tried all three ways to scroll" = "スクロールの3つの方法をすべて試した";
 "True colors" = "本当の色";
@@ -2559,3 +2558,10 @@
 "Connection details copied" = "接続の詳細をコピーしました";
 "Copy connection details" = "接続の詳細をコピー";
 "What Glideball and macOS each say about your trackball right now." = "Glideball と macOS がそれぞれ今トラックボールをどう認識しているか。";
+"Connection" = "接続";
+"Connection details" = "接続の詳細";
+"Glideball doesn’t see a trackball right now." = "Glideball は今、トラックボールを認識していません。";
+"Glideball sees %@ right now." = "Glideball は今 %@ を認識しています。";
+"If that’s wrong, copy the details and paste them into Send Feedback." = "違っている場合は、詳細をコピーして「フィードバックを送信」に貼り付けてください。";
+"Other apps" = "ほかのアプリ";
+"connected, not connected, unplugged, usb, hub, diagnostics, support" = "接続, 未接続, 取り外し, usb, ハブ, 診断, サポート";

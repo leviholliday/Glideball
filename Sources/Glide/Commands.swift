@@ -23,7 +23,7 @@ enum CommandWindowTab: String, CaseIterable {
 
 /// The Settings window's tabs, by the names commands use (the app maps them to `SettingsPane`).
 enum CommandSettingsTab: String, CaseIterable {
-    case general, look, sound, updates, privacy, shortcuts
+    case general, trackball, look, sound, sharing, updates, privacy, shortcuts
 }
 
 /// An app setup a command can switch to.

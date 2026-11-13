@@ -5,11 +5,13 @@ import SwiftUI
 /// The tabs of Glideball › Settings… (⌘,). The raw value is what's saved, and
 /// what `glideball://settings?tab=` uses (Commands.swift).
 enum SettingsPane: String, CaseIterable {
-    case general, look, sound, updates, privacy, shortcuts
+    case general, trackball, look, sound, sharing, updates, privacy, shortcuts
 
     var title: String {
         switch self {
         case .general: String(localized: "General", comment: "Settings tab")
+        case .trackball: String(localized: "Trackball", comment: "Settings tab: other trackballs, battery, connection")
+        case .sharing: String(localized: "Sharing", comment: "Settings tab: your name on what you share")
         case .look: String(localized: "Look", comment: "Settings tab: ball color, light, app icon")
         case .sound: String(localized: "Sound", comment: "Settings tab: sounds")
         case .updates: String(localized: "Updates", comment: "Settings tab")
@@ -21,6 +23,8 @@ enum SettingsPane: String, CaseIterable {
     var symbol: String {
         switch self {
         case .general: "gearshape"
+        case .trackball: "computermouse"
+        case .sharing: "square.and.arrow.up"
         case .look: "paintpalette"
         case .sound: "speaker.wave.2"
         case .updates: "arrow.down.circle"
@@ -59,10 +63,14 @@ final class SettingsSpotlight {
 /// it, eases it to the new tab's height (its top edge stays put), then fades the
 /// new tab in with a small rise. Escape closes it. One instance, kept while
 /// Glideball runs; it works with the main window closed and with no Dock icon.
-final class SettingsWindowController: NSWindowController, NSToolbarDelegate {
+final class SettingsWindowController: NSWindowController, NSToolbarDelegate, NSWindowDelegate {
     static let lastPaneKey = "GlideSettingsPane"
     /// Every tab is this wide; only the height changes.
-    static let width: CGFloat = 620
+    static let width: CGFloat = 640
+    /// Room kept free above and below the window on its screen.
+    static let screenMargin: CGFloat = 24
+    /// Renders: pretend the screen's usable height is this (a 13-inch laptop, a 1080p display).
+    nonisolated(unsafe) static var sandboxScreenHeight: CGFloat?
 
     private(set) var current: SettingsPane
     private var pages: [SettingsPane: NSHostingView<AnyView>] = [:]
@@ -84,6 +92,7 @@ final class SettingsWindowController: NSWindowController, NSToolbarDelegate {
         window.collectionBehavior.insert([.fullScreenAuxiliary, .moveToActiveSpace])
         window.contentView = container
         super.init(window: window)
+        window.delegate = self
         let toolbar = NSToolbar(identifier: "GlideSettings")
         toolbar.delegate = self
         toolbar.displayMode = .iconAndLabel
@@ -138,14 +147,18 @@ final class SettingsWindowController: NSWindowController, NSToolbarDelegate {
     // MARK: Pages
 
     /// Each tab is made once and kept, so a half-typed search or a result line stays put.
+    /// The content scrolls inside the window when it's taller than the screen allows
+    /// (`maxContentHeight`); a tab that fits never shows a scroll bar.
     private func page(_ pane: SettingsPane) -> NSHostingView<AnyView> {
         if let made = pages[pane] { return made }
-        let content = Self.view(for: pane, model: AppModel.shared)
-            .frame(width: Self.width, alignment: .topLeading)
-            .fixedSize(horizontal: false, vertical: true)
-            .onGeometryChange(for: CGFloat.self, of: { $0.size.height }) { [weak self] height in
-                self?.heightChanged(pane, to: height)
-            }
+        let content = SettingsScroller {
+            Self.view(for: pane, model: AppModel.shared)
+                .frame(maxWidth: .infinity, alignment: .topLeading)   // a scroll bar takes its room from here
+                .fixedSize(horizontal: false, vertical: true)
+                .onGeometryChange(for: CGFloat.self, of: { $0.size.height }) { [weak self] height in
+                    self?.heightChanged(pane, to: height)
+                }
+        }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(GlideBackground(anchor: UnitPoint(x: 0.12, y: -0.08), strength: 0.7))
         let view = NSHostingView(rootView: AnyView(content))
@@ -164,13 +177,44 @@ final class SettingsWindowController: NSWindowController, NSToolbarDelegate {
         return measured
     }
 
-    /// The window's frame for a content height, its top edge where it is now.
+    /// The screen's usable area (below the menu bar, above the Dock) the window is on.
+    private var visibleFrame: NSRect? {
+        guard let w = window else { return nil }
+        var visible = (w.screen ?? NSScreen.main ?? NSScreen.screens.first)?.visibleFrame
+        if let h = Self.sandboxScreenHeight, var v = visible {
+            v.origin.y = v.maxY - h
+            v.size.height = h
+            visible = v
+        }
+        return visible
+    }
+
+    /// The tallest a tab's content can be on this screen: the window never runs off it
+    /// (Levi, beta 13: General's Sharing group was below the bottom of his 1080p display).
+    var maxContentHeight: CGFloat {
+        guard let w = window, let visible = visibleFrame else { return .greatestFiniteMagnitude }
+        let chrome = w.frame.height - w.contentLayoutRect.height
+        return max(visible.height - chrome - 2 * Self.screenMargin, 240)
+    }
+
+    /// The window's frame for a content height (capped to the screen), its top edge where
+    /// it is now, moved up if its bottom would leave the screen.
     private func frame(forContentHeight h: CGFloat) -> NSRect? {
         guard let w = window else { return nil }
-        var frame = w.frameRect(forContentRect: NSRect(x: 0, y: 0, width: Self.width, height: max(h, 80)))
+        var frame = w.frameRect(forContentRect: NSRect(x: 0, y: 0, width: Self.width, height: min(max(h, 80), maxContentHeight)))
         frame.origin.x = w.frame.origin.x
         frame.origin.y = w.frame.maxY - frame.height
+        if let visible = visibleFrame, frame.minY < visible.minY + Self.screenMargin {
+            frame.origin.y = min(visible.minY + Self.screenMargin, visible.maxY - frame.height)
+        }
         return frame
+    }
+
+    /// Moved to another screen (or the screen changed): fit it again.
+    func windowDidChangeScreen(_ notification: Notification) {
+        guard !switching, let w = window, let h = heights[current], let target = frame(forContentHeight: h),
+              abs(target.height - w.frame.height) > 0.5 || abs(target.minY - w.frame.minY) > 0.5 else { return }
+        w.setFrame(target, display: true)
     }
 
     /// Shows `pane`. Animated: the old tab goes, the window eases to the new one's
@@ -251,11 +295,32 @@ final class SettingsWindowController: NSWindowController, NSToolbarDelegate {
     private static func view(for pane: SettingsPane, model: AppModel) -> some View {
         switch pane {
         case .general: GeneralSettingsPane(model: model)
+        case .trackball: TrackballSettingsPane(model: model)
+        case .sharing: SharingSettingsPane()
         case .look: LookSettingsPane(model: model)
         case .sound: SoundSettingsPane()
         case .updates: UpdatesSettingsPane(model: model)
         case .privacy: PrivacySettingsPane()
         case .shortcuts: ShortcutsSettingsPane(model: model)
+        }
+    }
+}
+
+/// A tab's content in a scroll view that only scrolls when it has to, and scrolls a row
+/// someone was sent to (the search palette) into view.
+private struct SettingsScroller<Content: View>: View {
+    @ViewBuilder var content: Content
+    private let spot = SettingsSpotlight.shared
+
+    var body: some View {
+        ScrollViewReader { proxy in
+            ScrollView(.vertical) { content }
+                .scrollBounceBehavior(.basedOnSize)
+                .scrollIndicators(.automatic)
+                .onChange(of: spot.row) { _, row in
+                    guard let row else { return }
+                    withAnimation(Theme.Motion.fade) { proxy.scrollTo(row, anchor: UnitPoint(x: 0.5, y: 0.3)) }
+                }
         }
     }
 }

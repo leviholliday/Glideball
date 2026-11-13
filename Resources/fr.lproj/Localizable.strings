@@ -1932,7 +1932,6 @@
 "Top left copies, top right pastes. Both together undo; bottom right with top right redoes." = "En haut à gauche copie, en haut à droite colle. Les deux ensemble annulent ; en bas à droite avec en haut à droite rétablit.";
 "Top left goes back, top right goes forward. Combos open, close and reopen tabs." = "En haut à gauche revient en arrière, en haut à droite avance. Les combos ouvrent, ferment et rouvrent des onglets.";
 "Top left plays or pauses, top right skips ahead. Both together go back a track; bottom right with top right mutes." = "En haut à gauche lit ou met en pause, en haut à droite passe à la suite. Les deux ensemble reviennent d’une piste ; en bas à droite avec en haut à droite coupe le son.";
-"Trackballs and other apps" = "Trackballs et autres apps";
 "Tried a button preset" = "A essayé un préréglage de boutons";
 "Tried all three ways to scroll" = "A essayé les trois façons de défiler";
 "True colors" = "Vraies couleurs";
@@ -2559,3 +2558,10 @@
 "Connection details copied" = "Détails de connexion copiés";
 "Copy connection details" = "Copier les détails de connexion";
 "What Glideball and macOS each say about your trackball right now." = "Ce que Glideball et macOS disent chacun de votre trackball en ce moment.";
+"Connection" = "Connexion";
+"Connection details" = "Détails de connexion";
+"Glideball doesn’t see a trackball right now." = "Glideball ne voit aucun trackball pour le moment.";
+"Glideball sees %@ right now." = "Glideball voit en ce moment : %@.";
+"If that’s wrong, copy the details and paste them into Send Feedback." = "Si c’est faux, copiez les détails et collez-les dans Envoyer un commentaire.";
+"Other apps" = "Autres apps";
+"connected, not connected, unplugged, usb, hub, diagnostics, support" = "connecté, non connecté, débranché, usb, hub, diagnostic, assistance";

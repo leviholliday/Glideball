@@ -1932,7 +1932,6 @@
 "Top left copies, top right pastes. Both together undo; bottom right with top right redoes." = "Superior esquerdo copia, superior direito cola. Os dois juntos desfazem; inferior direito com superior direito refaz.";
 "Top left goes back, top right goes forward. Combos open, close and reopen tabs." = "Superior esquerdo volta, superior direito avança. Combos abrem, fecham e reabrem abas.";
 "Top left plays or pauses, top right skips ahead. Both together go back a track; bottom right with top right mutes." = "Superior esquerdo reproduz ou pausa, superior direito avança. Os dois juntos voltam uma faixa; inferior direito com superior direito silencia.";
-"Trackballs and other apps" = "Trackballs e outros apps";
 "Tried a button preset" = "Experimentou uma predefinição de botões";
 "Tried all three ways to scroll" = "Experimentou as três formas de rolar";
 "True colors" = "Cores verdadeiras";
@@ -2559,3 +2558,10 @@
 "Connection details copied" = "Detalhes da conexão copiados";
 "Copy connection details" = "Copiar detalhes da conexão";
 "What Glideball and macOS each say about your trackball right now." = "O que o Glideball e o macOS dizem agora sobre seu trackball.";
+"Connection" = "Conexão";
+"Connection details" = "Detalhes da conexão";
+"Glideball doesn’t see a trackball right now." = "O Glideball não está vendo nenhum trackball agora.";
+"Glideball sees %@ right now." = "O Glideball está vendo agora: %@.";
+"If that’s wrong, copy the details and paste them into Send Feedback." = "Se estiver errado, copie os detalhes e cole em Enviar feedback.";
+"Other apps" = "Outros apps";
+"connected, not connected, unplugged, usb, hub, diagnostics, support" = "conectado, não conectado, desconectado, usb, hub, diagnóstico, suporte";

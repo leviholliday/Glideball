@@ -2,7 +2,7 @@ import Foundation
 import Observation
 
 /// The name someone may put on what they share ("Levi’s Glideball setup"). Optional,
-/// asked for in the Welcome Tour and changed in Settings › General › Sharing.
+/// asked for in the Welcome Tour and changed in Settings › Sharing.
 ///
 /// Where it lives and where it never goes:
 ///  - In this Mac's UserDefaults only (three keys below). It isn't part of

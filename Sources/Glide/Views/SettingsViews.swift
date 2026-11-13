@@ -167,18 +167,11 @@ struct GeneralSettingsPane: View {
                 LanguageRow()
                     .findable(.language)
             }
-            SectionBlock(title: "Trackballs and other apps", dividerInset: SettingsLayout.symbolInset) {
-                SettingsToggle(title: "Other Kensington trackballs", hint: otherTrackballsHint, symbol: "computermouse",
-                               isOn: $model.otherTrackballs)
-                    .findable(.otherTrackballs)
-                SettingsToggle(title: "Low battery alerts", hint: lowBatteryHint, symbol: "battery.25percent",
-                               isOn: $model.lowBatteryAlerts)
-                    .findable(.lowBattery)
+            SectionBlock(title: "Other apps", dividerInset: SettingsLayout.symbolInset) {
                 SettingsToggle(title: "Allow Raycast and scripts", hint: externalHint, symbol: "link",
                                isOn: $model.allowExternalControl, link: SiteLinks.help)
                     .findable(.externalControl)
             }
-            SharingNameSection()   // SharingNameSettings.swift
         }
     }
 
@@ -234,6 +227,55 @@ struct GeneralSettingsPane: View {
             : String(localized: "Glideball runs in the background. Open it from its menu-bar icon, which stays on while this is off.")
     }
 
+    private var externalHint: String {
+        model.allowExternalControl
+            ? String(localized: "Raycast and scripts can pause Glideball, switch modes and change the pointer speed with glideball:// links.")
+            : String(localized: "Lets Raycast and scripts pause Glideball, switch modes and change the pointer speed. It stays off unless you turn it on.")
+    }
+}
+
+/// Settings › Trackball: which trackballs Glideball works with, their battery, and what
+/// Glideball and macOS each say about the connection (moved out of General in beta 14).
+struct TrackballSettingsPane: View {
+    @Bindable var model: AppModel
+    @State private var copied = false
+
+    var body: some View {
+        SettingsPage {
+            SectionBlock(title: "Trackballs", dividerInset: SettingsLayout.symbolInset) {
+                SettingsToggle(title: "Other Kensington trackballs", hint: otherTrackballsHint, symbol: "computermouse",
+                               isOn: $model.otherTrackballs)
+                    .findable(.otherTrackballs)
+                SettingsToggle(title: "Low battery alerts", hint: lowBatteryHint, symbol: "battery.25percent",
+                               isOn: $model.lowBatteryAlerts)
+                    .findable(.lowBattery)
+            }
+            SectionBlock(title: "Connection", dividerInset: SettingsLayout.symbolInset) {
+                SettingsRow(title: "Connection details", hint: connectionHint, symbol: "cable.connector") {
+                    Button {
+                        model.copyConnectionDetails(toast: false)
+                        copied = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { copied = false }
+                    } label: {
+                        Label(copied ? "Copied" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc")
+                            .contentTransition(.symbolEffect(.replace))
+                    }
+                    .buttonStyle(ChipButtonStyle())
+                    .help("What Glideball and macOS each say about your trackball right now.")
+                }
+                .findable(.connectionDetails)
+            }
+        }
+    }
+
+    private var connectionHint: String {
+        let s = model.status
+        let now = s.deviceConnected
+            ? String(localized: "Glideball sees \(s.deviceName ?? "Kensington Expert Mouse") right now.", comment: "Settings › Trackball hint; %@ is the trackball's name")
+            : String(localized: "Glideball doesn’t see a trackball right now.", comment: "Settings › Trackball hint")
+        return now + " " + String(localized: "If that’s wrong, copy the details and paste them into Send Feedback.", comment: "Settings › Trackball hint")
+    }
+
     private var otherTrackballsHint: String {
         model.otherTrackballs
             ? String(localized: "Glideball also works with Kensington’s other trackballs. I haven’t tuned it on them yet, so you may hit bugs.")
@@ -246,11 +288,18 @@ struct GeneralSettingsPane: View {
             : String(localized: "A notification when a wireless trackball’s battery runs low. It only works with models that report their battery, and I haven’t been able to test it on one yet.")
     }
 
-    private var externalHint: String {
-        model.allowExternalControl
-            ? String(localized: "Raycast and scripts can pause Glideball, switch modes and change the pointer speed with glideball:// links.")
-            : String(localized: "Lets Raycast and scripts pause Glideball, switch modes and change the pointer speed. It stays off unless you turn it on.")
+    static let findables: [Findable] = [.otherTrackballs, .lowBattery, .connectionDetails]
+}
+
+/// Settings › Sharing: the name that goes on what you share (moved out of General in beta 14).
+struct SharingSettingsPane: View {
+    var body: some View {
+        SettingsPage {
+            SharingNameSection()   // SharingNameSettings.swift
+        }
     }
+
+    static let findables: [Findable] = [.sharingName, .sharingNamePictures, .sharingNameLinks]
 }
 
 // What search finds in General (each row above carries its own).
@@ -299,12 +348,17 @@ extension Findable {
         id: "other-trackballs", title: String(localized: "Other Kensington trackballs"),
         detail: String(localized: "Try Glideball with Kensington trackballs besides the Expert Mouse.", comment: "Search palette: Other Kensington trackballs"),
         keywords: String(localized: "slimblade, orbit, trackball, beta, device, support", comment: "Search words for Other Kensington trackballs (comma-separated)"),
-        symbol: "computermouse", place: .settings(.general))
+        symbol: "computermouse", place: .settings(.trackball))
     static let lowBattery = Findable(
         id: "low-battery", title: String(localized: "Low battery alerts"),
         detail: String(localized: "A notification when a wireless trackball runs low.", comment: "Search palette: Low battery alerts"),
         keywords: String(localized: "battery, wireless, bluetooth, notification, charge", comment: "Search words for Low battery alerts (comma-separated)"),
-        symbol: "battery.25percent", place: .settings(.general))
+        symbol: "battery.25percent", place: .settings(.trackball))
+    static let connectionDetails = Findable(
+        id: "connection-details", title: String(localized: "Connection details"),
+        detail: String(localized: "What Glideball and macOS each say about your trackball right now.", comment: "Search palette: Connection details"),
+        keywords: String(localized: "connected, not connected, unplugged, usb, hub, diagnostics, support", comment: "Search words for Connection details (comma-separated)"),
+        symbol: "cable.connector", place: .settings(.trackball))
     static let externalControl = Findable(
         id: "external-control", title: String(localized: "Allow Raycast and scripts"),
         detail: String(localized: "Let Raycast and glideball:// links pause Glideball and change modes.", comment: "Search palette: Allow Raycast and scripts"),
@@ -314,8 +368,7 @@ extension Findable {
 
 extension GeneralSettingsPane {
     static let findables: [Findable] = [.openAtLogin, .launchStyle, .askBeforeQuitting, .menuBarIcon, .menuBarIconStyle, .menuBarOpens,
-                                        .showInDock, .language, .otherTrackballs, .lowBattery, .externalControl,
-                                        .sharingName, .sharingNamePictures, .sharingNameLinks]
+                                        .showInDock, .language, .externalControl]
 }
 
 /// The menu-bar icon as it looks now, on a little piece of menu bar.

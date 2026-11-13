@@ -1932,7 +1932,6 @@
 "Top left copies, top right pastes. Both together undo; bottom right with top right redoes." = "左上拷贝，右上粘贴。同时按下两个会撤销；右下加右上会重做。";
 "Top left goes back, top right goes forward. Combos open, close and reopen tabs." = "左上后退，右上前进。组合键可以打开、关闭和重新打开标签页。";
 "Top left plays or pauses, top right skips ahead. Both together go back a track; bottom right with top right mutes." = "左上播放或暂停，右上跳到下一首。同时按下两个会回到上一首；右下加右上会静音。";
-"Trackballs and other apps" = "轨迹球和其他 App";
 "Tried a button preset" = "试过了按钮预设";
 "Tried all three ways to scroll" = "试过了三种滚动方式";
 "True colors" = "本色";
@@ -2559,3 +2558,10 @@
 "Connection details copied" = "已拷贝连接详细信息";
 "Copy connection details" = "拷贝连接详细信息";
 "What Glideball and macOS each say about your trackball right now." = "Glideball 和 macOS 此刻各自对你的轨迹球的识别情况。";
+"Connection" = "连接";
+"Connection details" = "连接详细信息";
+"Glideball doesn’t see a trackball right now." = "Glideball 目前没有检测到轨迹球。";
+"Glideball sees %@ right now." = "Glideball 目前检测到 %@。";
+"If that’s wrong, copy the details and paste them into Send Feedback." = "如果不对，请拷贝详细信息并粘贴到“发送反馈”中。";
+"Other apps" = "其他 App";
+"connected, not connected, unplugged, usb, hub, diagnostics, support" = "已连接, 未连接, 拔出, usb, 集线器, 诊断, 支持";

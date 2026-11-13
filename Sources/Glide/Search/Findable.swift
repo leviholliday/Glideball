@@ -48,7 +48,7 @@ struct Findable: Identifiable, Sendable, Equatable {
     static var all: [Findable] {
         OverviewView.findables + PointerView.findables + ScrollSettingsView.findables + ButtonsView.findables
             + AppsView.findables + Findable.syncFindables
-            + GeneralSettingsPane.findables + LookSettingsPane.findables + SoundSettingsPane.findables
+            + GeneralSettingsPane.findables + TrackballSettingsPane.findables + SharingSettingsPane.findables + LookSettingsPane.findables + SoundSettingsPane.findables
             + UpdatesSettingsPane.findables + PrivacySettingsPane.findables + ShortcutsSettingsPane.findables
     }
 

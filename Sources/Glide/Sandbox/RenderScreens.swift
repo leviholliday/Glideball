@@ -801,6 +801,23 @@ extension RenderUI {
             cleanup: demoShare) { dark, scale in
             settings(.privacy, dark: dark, scale: scale)
         }
+        // Small screens: the window never runs off the screen, and a taller tab scrolls inside.
+        // 860: a 13-inch laptop's 1470 × 956 points less the menu bar and Dock; 985: a 1080p display's.
+        for (h, label) in [(860.0, "laptop"), (985.0, "1080p")] {
+            let screen = { SettingsWindowController.sandboxScreenHeight = h }
+            let reset = { SettingsWindowController.sandboxScreenHeight = nil }
+            for pane in [SettingsPane.general, .look, .privacy, .shortcuts] {
+                add("settings-\(label)-\(pane.rawValue)", "Settings window", "Settings › \(pane.title) on a screen \(Int(h)) points tall",
+                    prepare: screen, cleanup: reset) { dark, scale in
+                    settings(pane, dark: dark, scale: scale)
+                }
+            }
+            add("settings-\(label)-privacy-stats", "Settings window", "Privacy with stats on (its tallest) on a screen \(Int(h)) points tall: it scrolls",
+                prepare: { screen(); ShareData.shared.sandboxSet(.crashesAndStats, installID: DemoData.installID, lastSent: Date().addingTimeInterval(-3 * 3600)) },
+                cleanup: { reset(); demoShare() }) { dark, scale in
+                settings(.privacy, dark: dark, scale: scale)
+            }
+        }
         add("settings-shortcuts-search", "Settings window", "Shortcuts, searching “scroll”",
             prepare: { ShortcutsSettingsPane.sandboxSearch = "scroll" },
             cleanup: { ShortcutsSettingsPane.sandboxSearch = "" }) { dark, scale in

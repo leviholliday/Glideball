@@ -381,6 +381,8 @@ enum SelfTest {
             model.config.scrollMode = mode
             let width = SettingsWindowController.width
             try draw(GeneralSettingsPane(model: model).frame(width: width), "Settings › General")
+            try draw(TrackballSettingsPane(model: model).frame(width: width), "Settings › Trackball")
+            try draw(SharingSettingsPane().frame(width: width), "Settings › Sharing")
             try draw(LookSettingsPane(model: model).frame(width: width), "Settings › Look")
             try draw(SoundSettingsPane().frame(width: width), "Settings › Sound")
             try draw(UpdatesSettingsPane(model: model).frame(width: width), "Settings › Updates")

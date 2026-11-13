@@ -1932,7 +1932,6 @@
 "Top left copies, top right pastes. Both together undo; bottom right with top right redoes." = "왼쪽 위는 복사, 오른쪽 위는 붙여넣기. 둘을 함께 누르면 실행 취소, 오른쪽 아래와 오른쪽 위를 함께 누르면 다시 실행해요.";
 "Top left goes back, top right goes forward. Combos open, close and reopen tabs." = "왼쪽 위는 뒤로, 오른쪽 위는 앞으로. 콤보로 탭을 열고, 닫고, 다시 열어요.";
 "Top left plays or pauses, top right skips ahead. Both together go back a track; bottom right with top right mutes." = "왼쪽 위는 재생 또는 일시 정지, 오른쪽 위는 다음으로 넘기기. 둘을 함께 누르면 이전 트랙, 오른쪽 아래와 오른쪽 위를 함께 누르면 음소거해요.";
-"Trackballs and other apps" = "트랙볼과 다른 앱";
 "Tried a button preset" = "버튼 프리셋을 써봤어요";
 "Tried all three ways to scroll" = "스크롤 세 가지 방식을 모두 써봤어요";
 "True colors" = "진짜 색깔";
@@ -2559,3 +2558,10 @@
 "Connection details copied" = "연결 세부사항을 복사했습니다";
 "Copy connection details" = "연결 세부사항 복사";
 "What Glideball and macOS each say about your trackball right now." = "Glideball과 macOS가 지금 트랙볼에 대해 각각 알고 있는 내용입니다.";
+"Connection" = "연결";
+"Connection details" = "연결 세부사항";
+"Glideball doesn’t see a trackball right now." = "Glideball이 지금 트랙볼을 인식하지 못하고 있습니다.";
+"Glideball sees %@ right now." = "Glideball이 지금 %@을(를) 인식하고 있습니다.";
+"If that’s wrong, copy the details and paste them into Send Feedback." = "이 내용이 틀리다면 세부사항을 복사해 피드백 보내기에 붙여 넣어 주세요.";
+"Other apps" = "다른 앱";
+"connected, not connected, unplugged, usb, hub, diagnostics, support" = "연결됨, 연결 안 됨, 분리, usb, 허브, 진단, 지원";
