@@ -510,8 +510,11 @@ struct TuningSlider: View {
                 RowSymbol(symbol: symbol, tint: session != nil ? tint : nil)
                 Text(title).font(Theme.Font.body)
                 Spacer(minLength: 8)
-                if tryable && enabled && session == nil && (hovering || armed || Self.sandboxTry) {
-                    tryButton
+                // Always there (quiet until hovered), so trying first doesn't depend on
+                // reading a tip (Levi, beta 13: "Honestly I didn't see the ⌥ tip").
+                if tryable && enabled && session == nil {
+                    TryToggle(armed: $armed, tint: tint, emphasized: hovering || Self.sandboxTry)
+                        .help("Try a value for 10 seconds, then keep it or let it go back. Or hold ⌥ while you drag.")
                         .transition(.opacity)
                 }
                 Text(format(value))
@@ -526,7 +529,7 @@ struct TuningSlider: View {
             if let session {
                 TryBar(session: session, tint: tint)
                     .padding(.leading, Theme.Space.symbolColumn + Theme.Space.symbolGap)
-            } else if lowLabel != nil || highLabel != nil || hint != nil || showHint {
+            } else if lowLabel != nil || highLabel != nil || hint != nil || showHint || armed {
                 VStack(alignment: .leading, spacing: 3) {
                     if lowLabel != nil || highLabel != nil {
                         HStack {
@@ -541,7 +544,12 @@ struct TuningSlider: View {
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
-                    if showHint && tryable {
+                    if armed && tryable {
+                        Label("Now drag: the new value goes back after 10 seconds unless you keep it. Or hold ⌥ while you drag.", systemImage: "timer")
+                            .foregroundStyle(tint)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .transition(.opacity)
+                    } else if showHint && tryable {
                         Label("Hold ⌥ while you drag to try a value for 10 seconds.", systemImage: "timer")
                             .foregroundStyle(tint)
                             .fixedSize(horizontal: false, vertical: true)
@@ -559,30 +567,13 @@ struct TuningSlider: View {
         .animation(Theme.Motion.fade, value: hovering)
         .animation(Theme.Motion.spring, value: session != nil)
         .animation(Theme.Motion.fade, value: hinting)
+        .animation(Theme.Motion.fade, value: armed)
         .onChange(of: value) { _, v in
             if preview.isTrying(tryID) { preview.update(id: tryID, what: format(v)) }
         }
         .onChange(of: preview.session == nil) { _, none in if none { armed = false } }
     }
 
-    /// "Try": the next drag is a ten-second preview.
-    private var tryButton: some View {
-        Button {
-            armed.toggle()
-            if armed { TryHint.done() }
-        } label: {
-            Label(armed ? String(localized: "Drag to try", comment: "Try button on a slider row, after it's clicked")
-                        : String(localized: "Try", comment: "Button on a slider row: try a value for 10 seconds"),
-                  systemImage: "timer")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(armed ? AnyShapeStyle(tint) : AnyShapeStyle(.secondary))
-                .padding(.horizontal, 7)
-                .padding(.vertical, 2)
-                .background(Capsule().fill(armed ? tint.opacity(0.14) : Theme.hoverFill))
-        }
-        .buttonStyle(.plain)
-        .help("Try a value for 10 seconds, then keep it or let it go back. Holding ⌥ while you drag does the same")
-    }
 
     /// Before the drag moves anything: with ⌥ held (or Try clicked), a preview starts,
     /// remembering the value it goes back to. Dragging a row already on trial carries on with it.
@@ -1147,22 +1138,31 @@ struct ChoiceStrip<Value: Hashable>: View {
     let isSelected: (Value) -> Bool
     let tint: Color
     var trial: Trial? = nil
+    /// The quiet Try line under the cards (the tour has its own, larger one).
+    var tryRow = true
     let select: (Value) -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Namespace private var glow
     /// The card just picked by hand (its demo plays once), and a count so picking again replays it.
     @State private var picked: Value?
     @State private var pickCount = 0
+    /// Try was clicked: the next card clicked is a ten-second preview.
+    @State private var armed = false
     private let preview = TryPreview.shared
 
     var body: some View {
         let session = trial.flatMap { t in preview.session?.id == t.id ? preview.session : nil }
+        let armed = self.armed || ChoiceStripSandbox.armed
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 8) {
                 ForEach(choices) { c in
                     ChoiceCard(title: c.title, symbol: c.symbol, demo: c.demo, detail: c.detail, selected: isSelected(c.value), tint: tint,
                                glow: glow, picked: picked == c.value ? pickCount : 0,
                                onTry: trial == nil ? nil : { tryChoice(c.value) }) {
+                        if armed, trial != nil {
+                            self.armed = false
+                            return tryChoice(c.value)
+                        }
                         // Picking one for real while one's on trial: you've decided.
                         if let trial, preview.isTrying(trial.id) { preview.keep() }
                         pick(c.value)
@@ -1174,9 +1174,24 @@ struct ChoiceStrip<Value: Hashable>: View {
             .fixedSize(horizontal: false, vertical: true)
             if let session {
                 TryBar(session: session, tint: tint)
+            } else if trial != nil && tryRow {
+                // Try first, in plain sight: one quiet line under the cards.
+                HStack(spacing: 8) {
+                    TryToggle(armed: $armed, tint: tint, clicks: true, emphasized: armed)
+                        .help("Try one for 10 seconds, then keep it or let it go back. Or ⌥-click a card.")
+                    Text(armed ? "Click one to try it for 10 seconds." : "Try one for 10 seconds before you keep it, or ⌥-click it.")
+                        .font(Theme.Font.hint)
+                        .foregroundStyle(armed ? AnyShapeStyle(tint) : AnyShapeStyle(.tertiary))
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .contentTransition(.opacity)
+                }
+                .transition(.opacity)
             }
         }
         .animation(Theme.Motion.spring, value: session != nil)
+        .animation(Theme.Motion.fade, value: armed)
+        .onChange(of: preview.session == nil) { _, none in if !none { self.armed = false } }
     }
 
     private func pick(_ value: Value) {
@@ -1198,6 +1213,43 @@ struct ChoiceStrip<Value: Hashable>: View {
         TryPreview.shared.begin(id: trial.id, was: snap.was, what: trial.name(value), countdown: true, restore: snap.restore)
         TryHint.done()   // they know the trick now: the pages' ⌥ captions go
         pick(value)
+    }
+}
+
+/// Renders: draw every choice strip's Try row armed.
+enum ChoiceStripSandbox {
+    nonisolated(unsafe) static var armed = false
+}
+
+/// "Try": arms the row or strip, so the next drag or click is a ten-second preview.
+/// Always visible where Try works; quiet until hovered or armed. Click again to disarm.
+struct TryToggle: View {
+    @Binding var armed: Bool
+    var tint: Color = Theme.ball
+    /// A strip of cards is clicked, not dragged.
+    var clicks = false
+    /// Hovered: a little more visible.
+    var emphasized = false
+
+    var body: some View {
+        Button {
+            armed.toggle()
+            if armed { TryHint.done() }
+        } label: {
+            Label(armed ? (clicks ? String(localized: "Click to try", comment: "Try button under preset cards, after it's clicked")
+                                  : String(localized: "Drag to try", comment: "Try button on a slider row, after it's clicked"))
+                        : String(localized: "Try", comment: "Button on a slider row: try a value for 10 seconds"),
+                  systemImage: "timer")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(armed ? AnyShapeStyle(tint) : AnyShapeStyle(.secondary))
+                .padding(.horizontal, 7)
+                .padding(.vertical, 2)
+                .background(Capsule().fill(armed ? tint.opacity(0.14) : Theme.hoverFill.opacity(emphasized ? 1 : 0.6)))
+                .contentTransition(.opacity)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(armed ? Text("Try is on: the next change goes back after 10 seconds unless you keep it")
+                                  : Text("Try a value for 10 seconds"))
     }
 }
 
@@ -1446,6 +1498,7 @@ struct PressableStyle: ButtonStyle {
 /// The chosen one is whichever matches the speed right now.
 struct PointerPresetRow: View {
     @Binding var speed: Double
+    var tryRow = true
 
     private static let presets: [ChoiceStrip<Double>.Choice] = [
         .init(value: 1.5, title: LocalizedStringKey("Precise"), symbol: "scope", demo: .pointer(1.5)),
@@ -1469,12 +1522,21 @@ struct PointerPresetRow: View {
 
     static var values: [Double] { presets.map(\.value) }
 
+    /// The tour's "Try it": ten seconds of the next preset up (or down, from the fastest).
+    static func tryNext(_ speed: Binding<Double>) {
+        let old = speed.wrappedValue
+        let next = values.first { $0 > old + 0.01 } ?? values[values.count - 2]
+        TryPreview.shared.begin(id: tryID, was: old.twoDigits, what: name(next), countdown: true) { speed.wrappedValue = old }
+        TryHint.done()
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.8)) { speed.wrappedValue = next }
+    }
+
     var body: some View {
         let binding = $speed
         ChoiceStrip(choices: Self.presets, isSelected: { abs(speed - $0) < 0.01 }, tint: Theme.ball,
                     trial: .init(id: Self.tryID, name: Self.name, snapshot: {
                         let old = binding.wrappedValue
                         return (old.twoDigits, { binding.wrappedValue = old })
-                    })) { speed = $0 }
+                    }), tryRow: tryRow) { speed = $0 }
     }
 }

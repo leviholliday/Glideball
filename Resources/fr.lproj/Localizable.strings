@@ -2288,7 +2288,6 @@
 "Try" = "Essayer";
 "Try Glideball with Kensington trackballs besides the Expert Mouse." = "Essayez Glideball avec des trackballs Kensington en plus de l’Expert Mouse.";
 "Try a setting’s name, like speed, scroll or color, or something to do, like pause." = "Essayez le nom d’un réglage, comme vitesse, défilement ou couleur, ou une action, comme pause.";
-"Try a value for 10 seconds, then keep it or let it go back. Holding ⌥ while you drag does the same" = "Essayez une valeur pendant 10 secondes, puis gardez-la ou revenez en arrière. Maintenir ⌥ en faisant glisser fait la même chose";
 "Try for 10 s" = "Essayer 10 s";
 "Try the %@ pointer preset" = "Essayer le préréglage de pointeur %@";
 "Trying %@" = "Essai de %@";
@@ -2420,8 +2419,6 @@
 "your settings" = "vos réglages";
 "⌘F does the same." = "⌘F fait la même chose.";
 "⌘Q asks first, so you don’t quit by accident." = "⌘Q demande d’abord, pour que vous ne quittiez pas par accident.";
-"⌥-click a mode to try it for 10 seconds first." = "⌥-clic sur un mode pour l’essayer d’abord 10 secondes.";
-"⌥-click a preset to try it for 10 seconds first." = "⌥-clic sur un préréglage pour l’essayer d’abord 10 secondes.";
 "⌥-click to try it for 10 seconds" = "⌥-clic pour l’essayer 10 secondes";
 
 /* Search words for sharing a setup and importing KensingtonWorks' settings */
@@ -2466,7 +2463,6 @@
 "Glideball, a mode is on" = "Glideball, un mode est activé";
 "Glideball, no trackball connected" = "Glideball, aucun trackball connecté";
 "Glideball, paused" = "Glideball, en pause";
-"Hold ⌥ and click a speed to try it for 10 seconds before you keep it. It works while dragging any slider, too." = "Maintenez ⌥ et cliquez sur une vitesse pour l’essayer 10 secondes avant de la garder. Ça marche aussi en faisant glisser n’importe quel curseur.";
 "Install ID" = "Identifiant d’installation";
 "Intel" = "Intel";
 "Last sent" = "Dernier envoi";
@@ -2565,3 +2561,15 @@
 "If that’s wrong, copy the details and paste them into Send Feedback." = "Si c’est faux, copiez les détails et collez-les dans Envoyer un commentaire.";
 "Other apps" = "Autres apps";
 "connected, not connected, unplugged, usb, hub, diagnostics, support" = "connecté, non connecté, débranché, usb, hub, diagnostic, assistance";
+"Click one to try it for 10 seconds." = "Cliquez sur l’une d’elles pour l’essayer 10 secondes.";
+"Click to try" = "Cliquez pour essayer";
+"Hold it while you click a speed or drag a slider, anywhere in Glideball." = "Maintenez-la enfoncée en cliquant sur une vitesse ou en faisant glisser un curseur, partout dans Glideball.";
+"Now drag: the new value goes back after 10 seconds unless you keep it. Or hold ⌥ while you drag." = "Faites glisser maintenant : la nouvelle valeur revient en arrière après 10 secondes, sauf si vous la gardez. Ou maintenez ⌥ en faisant glisser.";
+"Ten seconds, then it goes back unless you keep it." = "Dix secondes, puis retour en arrière, sauf si vous le gardez.";
+"Tries the next speed up for 10 seconds" = "Essaie la vitesse suivante pendant 10 secondes";
+"Try a value for 10 seconds" = "Essayer une valeur pendant 10 secondes";
+"Try a value for 10 seconds, then keep it or let it go back. Or hold ⌥ while you drag." = "Essayez une valeur pendant 10 secondes, puis gardez-la ou laissez-la revenir. Ou maintenez ⌥ en faisant glisser.";
+"Try before you keep" = "Essayez avant de garder";
+"Try is on: the next change goes back after 10 seconds unless you keep it" = "Essai activé : le prochain changement revient en arrière après 10 secondes, sauf si vous le gardez";
+"Try one for 10 seconds before you keep it, or ⌥-click it." = "Essayez-en une 10 secondes avant de la garder, ou faites un ⌥-clic dessus.";
+"Try one for 10 seconds, then keep it or let it go back. Or ⌥-click a card." = "Essayez-en une 10 secondes, puis gardez-la ou laissez-la revenir. Ou faites un ⌥-clic sur une carte.";

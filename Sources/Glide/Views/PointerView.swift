@@ -21,8 +21,7 @@ struct PointerView: View {
                     .findable(.trackingSpeed)
             }
 
-            PlainSection(title: "Presets",
-                         caption: TryHint.due ? "⌥-click a preset to try it for 10 seconds first." : nil) {
+            PlainSection(title: "Presets") {
                 PointerPresetRow(speed: $model.config.trackingSpeed)
             }
             .findable(.pointerPresets)

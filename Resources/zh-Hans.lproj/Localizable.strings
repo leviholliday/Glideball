@@ -2288,7 +2288,6 @@
 "Try" = "试用";
 "Try Glideball with Kensington trackballs besides the Expert Mouse." = "在 Expert Mouse 之外的 Kensington 轨迹球上试用 Glideball。";
 "Try a setting’s name, like speed, scroll or color, or something to do, like pause." = "试试输入设置的名称，如速度、滚动或颜色，或想做的事，如暂停。";
-"Try a value for 10 seconds, then keep it or let it go back. Holding ⌥ while you drag does the same" = "将该值试用 10 秒，然后保留或恢复。按住 ⌥ 并拖移也能做到";
 "Try for 10 s" = "试用 10 秒";
 "Try the %@ pointer preset" = "试用%@指针预设";
 "Trying %@" = "正在试用 %@";
@@ -2420,8 +2419,6 @@
 "your settings" = "你的设置";
 "⌘F does the same." = "⌘F 也能做到。";
 "⌘Q asks first, so you don’t quit by accident." = "⌘Q 会先询问，这样你就不会不小心退出。";
-"⌥-click a mode to try it for 10 seconds first." = "按住 ⌥ 点按某个模式，可先试用 10 秒。";
-"⌥-click a preset to try it for 10 seconds first." = "按住 ⌥ 点按某个预设，可先试用 10 秒。";
 "⌥-click to try it for 10 seconds" = "按住 ⌥ 点按可试用 10 秒";
 
 /* Search words for sharing a setup and importing KensingtonWorks' settings */
@@ -2466,7 +2463,6 @@
 "Glideball, a mode is on" = "Glideball，某个模式已开启";
 "Glideball, no trackball connected" = "Glideball，未连接轨迹球";
 "Glideball, paused" = "Glideball，已暂停";
-"Hold ⌥ and click a speed to try it for 10 seconds before you keep it. It works while dragging any slider, too." = "按住 ⌥ 点按一个速度，可以先试用 10 秒再决定要不要保留。拖动任何滑块时按住 ⌥ 也一样。";
 "Install ID" = "安装 ID";
 "Intel" = "Intel";
 "Last sent" = "上次发送";
@@ -2565,3 +2561,15 @@
 "If that’s wrong, copy the details and paste them into Send Feedback." = "如果不对，请拷贝详细信息并粘贴到“发送反馈”中。";
 "Other apps" = "其他 App";
 "connected, not connected, unplugged, usb, hub, diagnostics, support" = "已连接, 未连接, 拔出, usb, 集线器, 诊断, 支持";
+"Click one to try it for 10 seconds." = "点按一项即可试用 10 秒。";
+"Click to try" = "点按试用";
+"Hold it while you click a speed or drag a slider, anywhere in Glideball." = "在 Glideball 中任何地方点按速度或拖移滑块时按住它即可。";
+"Now drag: the new value goes back after 10 seconds unless you keep it. Or hold ⌥ while you drag." = "现在拖移：除非你保留，新值会在 10 秒后恢复。也可以按住 ⌥ 拖移。";
+"Ten seconds, then it goes back unless you keep it." = "10 秒后会恢复，除非你保留。";
+"Tries the next speed up for 10 seconds" = "试用更快一档的速度 10 秒";
+"Try a value for 10 seconds" = "试用一个值 10 秒";
+"Try a value for 10 seconds, then keep it or let it go back. Or hold ⌥ while you drag." = "试用一个值 10 秒，然后保留或让它恢复。也可以按住 ⌥ 拖移。";
+"Try before you keep" = "先试用再保留";
+"Try is on: the next change goes back after 10 seconds unless you keep it" = "试用已开启：除非你保留，下次更改会在 10 秒后恢复";
+"Try one for 10 seconds before you keep it, or ⌥-click it." = "保留前先试用 10 秒，或按住 ⌥ 点按它。";
+"Try one for 10 seconds, then keep it or let it go back. Or ⌥-click a card." = "试用 10 秒，然后保留或让它恢复。也可以按住 ⌥ 点按卡片。";

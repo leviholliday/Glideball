@@ -2288,7 +2288,6 @@
 "Try" = "試す";
 "Try Glideball with Kensington trackballs besides the Expert Mouse." = "Expert Mouse以外のKensingtonトラックボールでもGlideballを試せます。";
 "Try a setting’s name, like speed, scroll or color, or something to do, like pause." = "設定名（速度、スクロール、色など）や、やりたいこと（一時停止など）を入力してみてください。";
-"Try a value for 10 seconds, then keep it or let it go back. Holding ⌥ while you drag does the same" = "値を10秒間試して、保持するか元に戻すかを選べます。⌥を押しながらドラッグしても同じです";
 "Try for 10 s" = "10秒間試す";
 "Try the %@ pointer preset" = "%@のポインタプリセットを試す";
 "Trying %@" = "%@を試用中";
@@ -2420,8 +2419,6 @@
 "your settings" = "自分の設定";
 "⌘F does the same." = "⌘Fでも同じです。";
 "⌘Q asks first, so you don’t quit by accident." = "⌘Qで先に確認するので、うっかり終了することがありません。";
-"⌥-click a mode to try it for 10 seconds first." = "⌥クリックでモードを10秒間先に試せます。";
-"⌥-click a preset to try it for 10 seconds first." = "⌥クリックでプリセットを10秒間先に試せます。";
 "⌥-click to try it for 10 seconds" = "⌥クリックで10秒間試す";
 
 /* Search words for sharing a setup and importing KensingtonWorks' settings */
@@ -2466,7 +2463,6 @@
 "Glideball, a mode is on" = "Glideball、モードがオン";
 "Glideball, no trackball connected" = "Glideball、トラックボール未接続";
 "Glideball, paused" = "Glideball、一時停止中";
-"Hold ⌥ and click a speed to try it for 10 seconds before you keep it. It works while dragging any slider, too." = "⌥を押しながら速度をクリックすると、決める前に10秒間試せます。どのスライダーでも、ドラッグ中に⌥を押せば同じです。";
 "Install ID" = "インストールID";
 "Intel" = "Intel";
 "Last sent" = "最後の送信";
@@ -2565,3 +2561,15 @@
 "If that’s wrong, copy the details and paste them into Send Feedback." = "違っている場合は、詳細をコピーして「フィードバックを送信」に貼り付けてください。";
 "Other apps" = "ほかのアプリ";
 "connected, not connected, unplugged, usb, hub, diagnostics, support" = "接続, 未接続, 取り外し, usb, ハブ, 診断, サポート";
+"Click one to try it for 10 seconds." = "クリックすると10秒間試せます。";
+"Click to try" = "クリックで試す";
+"Hold it while you click a speed or drag a slider, anywhere in Glideball." = "速度をクリックするときやスライダをドラッグするときに押したままにします。Glideball のどこでも使えます。";
+"Now drag: the new value goes back after 10 seconds unless you keep it. Or hold ⌥ while you drag." = "ドラッグしてください。新しい値は保持しない限り10秒後に元に戻ります。⌥ を押しながらドラッグしても同じです。";
+"Ten seconds, then it goes back unless you keep it." = "10秒後、保持しない限り元に戻ります。";
+"Tries the next speed up for 10 seconds" = "ひとつ速い速度を10秒間試します";
+"Try a value for 10 seconds" = "値を10秒間試す";
+"Try a value for 10 seconds, then keep it or let it go back. Or hold ⌥ while you drag." = "値を10秒間試してから、保持するか元に戻します。⌥ を押しながらドラッグしても同じです。";
+"Try before you keep" = "保持する前に試す";
+"Try is on: the next change goes back after 10 seconds unless you keep it" = "お試しがオン：次の変更は保持しない限り10秒後に元に戻ります";
+"Try one for 10 seconds before you keep it, or ⌥-click it." = "保持する前に10秒間試せます。⌥-クリックでも試せます。";
+"Try one for 10 seconds, then keep it or let it go back. Or ⌥-click a card." = "10秒間試してから、保持するか元に戻します。カードを⌥-クリックしても試せます。";

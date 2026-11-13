@@ -2288,7 +2288,6 @@
 "Try" = "사용해 보기";
 "Try Glideball with Kensington trackballs besides the Expert Mouse." = "Expert Mouse 외의 Kensington 트랙볼에서도 Glideball을 써 볼 수 있어요.";
 "Try a setting’s name, like speed, scroll or color, or something to do, like pause." = "속도, 스크롤, 색상처럼 설정 이름이나 일시 정지처럼 하고 싶은 동작을 입력해 보세요.";
-"Try a value for 10 seconds, then keep it or let it go back. Holding ⌥ while you drag does the same" = "값을 10초 동안 시험해 보고 유지하거나 되돌려요. ⌥를 누른 채 드래그해도 똑같아요";
 "Try for 10 s" = "10초 동안 사용해 보기";
 "Try the %@ pointer preset" = "%@ 포인터 프리셋 사용해 보기";
 "Trying %@" = "%@ 시험 중";
@@ -2420,8 +2419,6 @@
 "your settings" = "내 설정";
 "⌘F does the same." = "⌘F도 같은 기능이에요.";
 "⌘Q asks first, so you don’t quit by accident." = "⌘Q를 누르면 먼저 물어봐서 실수로 종료하는 일이 없어요.";
-"⌥-click a mode to try it for 10 seconds first." = "⌥-클릭하면 모드를 먼저 10초 동안 시험해 볼 수 있어요.";
-"⌥-click a preset to try it for 10 seconds first." = "⌥-클릭하면 프리셋을 먼저 10초 동안 시험해 볼 수 있어요.";
 "⌥-click to try it for 10 seconds" = "⌥-클릭하면 10초 동안 시험해 볼 수 있어요";
 
 /* Search words for sharing a setup and importing KensingtonWorks' settings */
@@ -2466,7 +2463,6 @@
 "Glideball, a mode is on" = "Glideball, 모드 켜짐";
 "Glideball, no trackball connected" = "Glideball, 트랙볼 연결 안 됨";
 "Glideball, paused" = "Glideball, 일시 정지됨";
-"Hold ⌥ and click a speed to try it for 10 seconds before you keep it. It works while dragging any slider, too." = "⌥ 키를 누른 채 속도를 클릭하면 정하기 전에 10초 동안 써 볼 수 있습니다. 어떤 슬라이더든 드래그하면서 눌러도 됩니다.";
 "Install ID" = "설치 ID";
 "Intel" = "Intel";
 "Last sent" = "마지막 전송";
@@ -2565,3 +2561,15 @@
 "If that’s wrong, copy the details and paste them into Send Feedback." = "이 내용이 틀리다면 세부사항을 복사해 피드백 보내기에 붙여 넣어 주세요.";
 "Other apps" = "다른 앱";
 "connected, not connected, unplugged, usb, hub, diagnostics, support" = "연결됨, 연결 안 됨, 분리, usb, 허브, 진단, 지원";
+"Click one to try it for 10 seconds." = "하나를 클릭하면 10초 동안 사용해 볼 수 있습니다.";
+"Click to try" = "클릭해서 사용해 보기";
+"Hold it while you click a speed or drag a slider, anywhere in Glideball." = "Glideball 어디서든 속도를 클릭하거나 슬라이더를 드래그할 때 누르고 있으세요.";
+"Now drag: the new value goes back after 10 seconds unless you keep it. Or hold ⌥ while you drag." = "이제 드래그하세요. 새 값은 유지하지 않으면 10초 후에 돌아갑니다. 또는 ⌥ 키를 누른 채 드래그하세요.";
+"Ten seconds, then it goes back unless you keep it." = "10초 후 유지하지 않으면 원래대로 돌아갑니다.";
+"Tries the next speed up for 10 seconds" = "한 단계 빠른 속도를 10초 동안 사용해 봅니다";
+"Try a value for 10 seconds" = "값을 10초 동안 사용해 보기";
+"Try a value for 10 seconds, then keep it or let it go back. Or hold ⌥ while you drag." = "값을 10초 동안 사용해 본 다음 유지하거나 되돌립니다. 또는 ⌥ 키를 누른 채 드래그하세요.";
+"Try before you keep" = "유지하기 전에 사용해 보기";
+"Try is on: the next change goes back after 10 seconds unless you keep it" = "사용해 보기 켜짐: 다음 변경은 유지하지 않으면 10초 후에 돌아갑니다";
+"Try one for 10 seconds before you keep it, or ⌥-click it." = "유지하기 전에 10초 동안 사용해 보거나 ⌥-클릭하세요.";
+"Try one for 10 seconds, then keep it or let it go back. Or ⌥-click a card." = "10초 동안 사용해 본 다음 유지하거나 되돌립니다. 또는 카드를 ⌥-클릭하세요.";

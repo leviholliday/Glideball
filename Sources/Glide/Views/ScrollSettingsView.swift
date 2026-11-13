@@ -14,8 +14,7 @@ struct ScrollSettingsView: View {
         let controls = ScrollControls(config: $model.config)
         // Wide: the mode and its controls on the left, "Try it here" and the mode's charts on the right.
         PageColumns {
-            PlainSection(title: "Scroll mode",
-                         caption: TryHint.due ? "⌥-click a mode to try it for 10 seconds first." : nil) {
+            PlainSection(title: "Scroll mode") {
                 ModePicker(mode: $model.config.scrollMode)
             }
             .findable(.scrollMode)

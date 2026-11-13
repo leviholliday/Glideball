@@ -430,7 +430,7 @@ struct WelcomeTourView: View {
 
             VStack(alignment: .leading, spacing: 14) {
                 header("Pick a pointer speed", "Roll the ball after each one to feel the difference.")
-                PointerPresetRow(speed: $model.config.trackingSpeed)
+                PointerPresetRow(speed: $model.config.trackingSpeed, tryRow: false)   // the step below says it
                 // While a speed's on trial its countdown says what's happening, in this line's place.
                 if !TryPreview.shared.isTrying(PointerPresetRow.tryID) {
                     Text("How far the cursor travels when you roll the ball. macOS stops at its own setting; Glideball goes past it.")
@@ -460,17 +460,41 @@ struct WelcomeTourView: View {
         .padding(.top, 8)
     }
 
-    /// Try before you keep: ⌥-click a speed right here (the presets' countdown shows under
-    /// them, which is the only answer it needs), and the same on every slider later.
+    /// Try before you keep, as a step of its own: a Try it button that starts ten seconds of
+    /// the next speed up right here (the presets' countdown shows under them), with the ⌥
+    /// keycap for the shortcut. Levi, beta 13: a line of grey text with ⌥ went unnoticed.
     private var optionTip: some View {
-        HStack(alignment: .center, spacing: 10) {
-            KeyCap(label: "⌥")
-                .foregroundStyle(Theme.ball)
-            Text("Hold ⌥ and click a speed to try it for 10 seconds before you keep it. It works while dragging any slider, too.")
-                .font(Theme.Font.hint)
-                .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .center, spacing: 10) {
+                Image(systemName: "timer")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(Theme.ball)
+                Text("Try before you keep")
+                    .font(.system(size: 13, weight: .semibold))
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 8)
+                Button {
+                    PointerPresetRow.tryNext($model.config.trackingSpeed)
+                } label: {
+                    Label("Try it", systemImage: "play.fill")
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(Theme.ball)
+                .controlSize(.small)
+                .fixedSize()
+                .disabled(TryPreview.shared.isTrying(PointerPresetRow.tryID))
+                .help("Tries the next speed up for 10 seconds")
+            }
+            Text("Ten seconds, then it goes back unless you keep it.")
                 .fixedSize(horizontal: false, vertical: true)
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                KeyCap(label: "⌥")
+                Text("Hold it while you click a speed or drag a slider, anywhere in Glideball.", comment: "Tour: next to the ⌥ keycap")
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
+        .font(Theme.Font.hint)
+        .foregroundStyle(.secondary)
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -747,6 +747,11 @@ extension RenderUI {
             cleanup: { TryPreview.shared.revert(); TryBar.sandboxRemaining = nil }) { dark, scale in
             fullPage(page(.pointer, model), dark: dark, scale: scale)
         }
+        add("try-armed", "Try before you change", "Try clicked under the presets (the next card clicked is a ten-second trial), and every slider's Try as hovered",
+            prepare: { ChoiceStripSandbox.armed = true; TuningSlider.sandboxTry = true },
+            cleanup: { ChoiceStripSandbox.armed = false; TuningSlider.sandboxTry = false }) { dark, scale in
+            mainWindow(model, tab: .pointer, dark: dark, scale: scale)
+        }
         add("try-scroll-mode", "Try before you change", "Trying Follow from the mode cards",
             prepare: {
                 let old = model.config.scrollMode
