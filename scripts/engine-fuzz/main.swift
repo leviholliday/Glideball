@@ -1511,6 +1511,8 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
     gestureCases.append(("termination notices before, after and instead of removals, replugged each time: works", [GlideConfig()],
                          [.unplug(0), .replug(0), .kBall(1, 0), .unplug(1), .replug(0), .kBall(1, 0), .unplug(2), .replug(0),
                           .kBall(1, 0), .unplug(3), .wait(1), .replug(1 | 32), .watch(true), .wait(3), .unplug(0), .replug(0)] + use))
+    gestureCases.append(("replugged, taken out by a check while registering, Precision on, unplugged: Precision ends", [GlideConfig()],
+                         [.unplug(2), .replug(3 | 8 | 32 | 64), .kBall(-90, 10), .setMode(0, 1), .unplug(2), .wait(1)]))
     let older: [(String, [GlideConfig], [Op])] = [
         ("held shortcut, unplugged while held: the key comes up",
          [hold], [.kPress(3, hidFirst: true), .unplug(2), .wait(1)]),

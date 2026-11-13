@@ -612,6 +612,7 @@ final class Engine {
             gone.remove(k)
             addedByManager.insert(k)
         }
+        checkRemovedTrackball.remove(k)
         devices[k] = nil
         deviceSupported[k] = nil
         hidBattery[k] = nil
@@ -726,6 +727,12 @@ final class Engine {
         gone.insert(k)
         addedByManager.remove(k)
         deviceRemoved(key: k)
+        // A trackball a check had taken out (say while IOKit was still registering it) is
+        // really gone now: modes switched on in the meantime end, as at any unplug.
+        if checkRemovedTrackball.remove(k) != nil, !deviceSupported.values.contains(true) {
+            releaseModes(.unplug)
+            letGoOfHeld()
+        }
         reconcileNow(reason: "after a removal")
     }
 
@@ -757,6 +764,8 @@ final class Engine {
     private var lastValueCheck: CFTimeInterval = -1e9
     private var lastIdentityRead: [Int: CFTimeInterval] = [:]
     private var recheckTimers: [EngineTimer] = []
+    /// Trackballs (or maybe-trackballs) a check took out that IOHIDManager hasn't removed.
+    private var checkRemovedTrackball = Set<Int>()
 
     /// One verdict per device that changes, each logged. A device check never makes a
     /// "gone" verdict permanent: only a real removal does (`gone`).
@@ -775,6 +784,8 @@ final class Engine {
             if !alive || (!byManager && entry == nil) {
                 deviceEvent("device check (\(reason)): key \(Self.describe(k)) left without a removal: "
                             + "\(alive ? "" : "not alive, ")\(entry == nil ? "not listed" : "listed")\(byManager ? ", added by the manager" : "")")
+                let trackball = deviceSupported[k] == true || (incomplete.contains(k) && (devices[k]?.vendorID ?? DeviceIdentity.kensingtonVendorID) == DeviceIdentity.kensingtonVendorID)
+                if trackball && byManager { checkRemovedTrackball.insert(k) }
                 deviceRemoved(key: k)   // its releases, exactly as an unplug; not `gone`: a later check can bring it back
                 if byManager || entry != nil { doubtful = true }
                 changed = true
