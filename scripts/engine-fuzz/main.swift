@@ -27,6 +27,11 @@
 //   pointer     pointer speeds only while running, finite, inside the app's limits
 //   connected   the status says "Connected" exactly while the trackball is plugged in (late
 //               values, a reused address, a missed removal until the next device check)
+//   works       a plugged-in trackball's every HID value reaches the engine, however the
+//               replug was published (properties, IOHIDManager's list or the registry
+//               late, a device check in the gap, an old removal after it, termination
+//               notices in any order, recycled object addresses). Both judged from 1.5 s
+//               after a replug.
 //
 // On a failure it prints the seed and a minimized list of events (delta debugging).
 //
@@ -173,6 +178,9 @@ final class FakeIO: EngineIO {
         return live().mapValues { ($0, "USB", nil) }
     }
     override func serviceIsAlive(_ key: Int) -> Bool { alive(key) }
+    /// A device's properties now (a replug can publish the device before all of them).
+    var identityNow: (Int) -> DeviceIdentity? = { _ in nil }
+    override func currentIdentity(_ key: Int, _ device: IOHIDDevice?) -> DeviceIdentity? { identityNow(key) }
     override func kensingtonServicesNow() -> [String] { [] }
     /// Wireless trackballs: a battery level that changes over time (and is sometimes missing).
     override func registryBattery(_ key: Int) -> Int? { [nil, 4, 50, 100][Int(clock) % 4] }
@@ -202,7 +210,11 @@ enum Op: CustomStringConvertible {
     case lateValues           // the unplugged trackball's last HID values, delivered after its removal
     case reuse                // another mouse arrives at the unplugged trackball's address (the same key)
     case reconcile            // screen unlocked or the window opened: the engine checks the live devices
-    case replug
+    /// Bits: 1-2 properties published late (1 name, 2 product and name, 3 everything), 4 not
+    /// listed by IOHIDManager yet, 8 IOKit slow to register it, 16 second interface first,
+    /// 32 a device check between the two adds, 64 an old interface's removal comes after.
+    case replug(Int)
+    case watch(Bool)          // the window or the menu opens (checks, then re-checks a quiet trackball) or closes
     case sleep, wake
     case tapOff(Int)          // this many events go by the switched-off tap
     case setMode(Int, Int)    // mode, wanted (0 off, 1 on, 2 toggle)
@@ -235,7 +247,11 @@ enum Op: CustomStringConvertible {
         case .lateValues: "lateValuesFromUnplugged"
         case .reuse: "otherMouseAtSameAddress"
         case .reconcile: "unlockOrWindowOpens"
-        case .replug: "replug"
+        case .replug(let v):
+            v == 0 ? "replug" : "replug(" + [(3, "properties late"), (4, "not listed yet"), (8, "not registered yet"), (16, "second interface first"),
+                                             (32, "check between adds"), (64, "old removal after")]
+                .filter { v & $0.0 != 0 }.map { $0.0 == 3 ? "\(["", "name", "product+name", "all"][v & 3]) \($0.1)" : $0.1 }.joined(separator: ", ") + ")"
+        case .watch(let on): on ? "windowOpens" : "windowCloses"
         case .sleep: "sleep"
         case .wake: "wake"
         case .tapOff(let n): "tapSwitchedOffByMacOS(\(n) events lost)"
@@ -414,6 +430,7 @@ final class World {
     var inputs: [Int: InputInfo] = [:]
     var bypass = 0
     var learning = false
+    var watched = false   // the window or the menu is open (as the engine was told)
     var stale = false    // the trackball left but the engine was never told (a missed removal)
     var reused = false   // another mouse has the trackball's key
     // The trackball's two HID devices (its mouse interface, and a second one like a vendor
@@ -425,6 +442,17 @@ final class World {
     /// callback is running right now).
     var ghosts: [Int: DeviceIdentity] = [:]
     var replugs = 0   // every other one comes back over Bluetooth (battery checks)
+    // Each device's IOHIDDevice object, by address. A freed object's address is handed to the
+    // next one (most recently freed first), as malloc does; its late values still carry it.
+    var addrOf: [Int: Int] = [:]
+    var lastAddr: [Int: Int] = [:]
+    var freeAddrs: [Int] = []
+    var nextAddr = 0x10_000
+    // The latest replug, as IOKit publishes it: properties, the manager's list and the
+    // registry can each lag the add callback for a moment.
+    var partial: DeviceIdentity?
+    var identityAt = -1e9, listAt = -1e9, aliveAt = -1e9
+    var plugGraceUntil = -1e9   // until then "connected" and "works" aren't judged
 
     // What apps see.
     var appK: [Int: Int] = [:]          // Kensington-side buttons down (engine-processed and raw)
@@ -460,10 +488,33 @@ final class World {
         engine = Engine(config: configs[0], io: io)
         wire()
         engine.startInline()
-        engine.deviceAdded(key: kKey, identity: expert, transport: "USB", device: nil)
-        engine.deviceAdded(key: kAux, identity: expert, transport: "USB", device: nil)
-        engine.deviceAdded(key: oKey, identity: otherMouse, transport: "USB", device: nil)
+        add(kKey, expert, transport: "USB")
+        add(kAux, expert, transport: "USB")
+        add(oKey, otherMouse, transport: "USB")
         settle()
+    }
+
+    /// IOHIDManager matched a device: a new object (at a recycled address if one is free).
+    func add(_ k: Int, _ identity: DeviceIdentity, transport: String) {
+        let a = freeAddrs.popLast() ?? { nextAddr += 0x40; return nextAddr }()
+        addrOf[k] = a
+        engine.managerAdded(address: a, key: k, identity: identity, transport: transport)
+    }
+
+    /// IOHIDManager's removal callback for device `k`; its object is freed after it.
+    func remove(_ k: Int) {
+        let a = addrOf[k] ?? lastAddr[k] ?? -k
+        engine.managerRemoved(address: a, fresh: k)
+        if addrOf.removeValue(forKey: k) != nil { freeAddrs.append(a) }
+        lastAddr[k] = a
+    }
+
+    /// A device's properties as IOKit has them now.
+    func identityOf(_ k: Int) -> DeviceIdentity {
+        if k == oKey { return otherMouse }
+        if reused && k == kKey && !kConnected { return otherMouse }
+        if kConnected, k == kKey || k == kAux, let p = partial, io.clock < identityAt { return p }
+        return expert
     }
 
     func wire() {
@@ -472,12 +523,15 @@ final class World {
         io.live = { [unowned self] in
             var d = self.ghosts
             d[oKey] = otherMouse
-            if self.kConnected { d[self.kKey] = expert; d[self.kAux] = expert } else if self.reused { d[self.kKey] = otherMouse }
+            if self.kConnected {
+                if self.io.clock >= self.listAt { d[self.kKey] = self.identityOf(self.kKey); d[self.kAux] = self.identityOf(self.kAux) }
+            } else if self.reused { d[self.kKey] = otherMouse }
             return d
         }
         io.alive = { [unowned self] k in
-            k == oKey || (self.kConnected && (k == self.kKey || k == self.kAux)) || (self.reused && k == self.kKey)
+            k == oKey || (self.kConnected && (k == self.kKey || k == self.kAux) && self.io.clock >= self.aliveAt) || (self.reused && k == self.kKey)
         }
+        io.identityNow = { [unowned self] k in self.identityOf(k) }
         io.appButtons = { [unowned self] in
             Set(self.appK.filter { $0.value > 0 }.keys.map(Int64.init)).union(self.appO.filter { $0.value > 0 }.keys.map(Int64.init))
         }
@@ -565,7 +619,13 @@ final class World {
 
     func hid(_ key: Int, page: Int, usage: Int, value: Int) {
         stamp += 1
-        engine.hidInput(key: key, identity: key == kKey ? expert : otherMouse, page: page, usage: usage, value: value, stamp: stamp)
+        let before = engine.supportedValues
+        engine.hidInput(address: addrOf[key] ?? lastAddr[key] ?? -key, fresh: key, identity: identityOf(key),
+                        page: page, usage: usage, value: value, stamp: stamp)
+        // A plugged-in trackball works: once IOKit has published it, every value counts.
+        if key == kKey, kConnected, !stale, io.clock >= plugGraceUntil, engine.supportedValues == before {
+            fail("works", "the trackball is plugged in, but the engine dropped its value (page \(page), usage \(usage))")
+        }
         if key == kKey && page == kHIDPage_Button && value != 0 {
             kReportsButtons = true   // as the engine: a press over HID, not just a release
             kLastHIDDown[usage - 1] = io.clock
@@ -910,17 +970,29 @@ final class World {
             kConnected = false
             if mode == 3 {   // no removal callback at all: IOHIDManager keeps listing both, dead
                 ghosts[kKey] = expert; ghosts[kAux] = expert
+                if stamp % 2 == 0 {   // IOKit's termination notices still come
+                    engine.deviceTerminated(key: kKey)
+                    engine.deviceTerminated(key: kAux)
+                    return
+                }
                 stale = true
                 return   // until a wake, unlock, window or another removal
             }
             // Each interface's removal, in either order, while IOHIDManager still lists it
             // (as the real one does); the second interface's removal is sometimes never heard of.
+            // IOKit's termination notice for each comes before its removal, after it, or not at all.
             let auxFate = Int(stamp % 3)   // 0: first, 1: second, 2: missed (listed forever)
             let order = auxFate == 0 ? [kAux, kKey] : auxFate == 1 ? [kKey, kAux] : [kKey]
-            if auxFate == 2 { ghosts[kAux] = expert }
-            for k in order {
+            if auxFate == 2 {
+                ghosts[kAux] = expert
+                if stamp % 2 == 1 { engine.deviceTerminated(key: kAux) }
+            }
+            for (i, k) in order.enumerated() {
+                let notice = Int((stamp / 3 + UInt64(i)) % 3)   // 0: before, 1: after, 2: none
                 ghosts[k] = expert
-                engine.deviceRemovedByManager(key: k)
+                if notice == 0 { engine.deviceTerminated(key: k) }
+                remove(k)
+                if notice == 1 { engine.deviceTerminated(key: k) }
                 ghosts[k] = nil
             }
             if mode == 0 {
@@ -935,17 +1007,39 @@ final class World {
             settle()
             mustBeReleased("unplug")
             scrollMuted = true
-        case .replug:
+        case .replug(let v):
             guard !kConnected else { return }
-            if reused { reused = false; engine.deviceRemovedByManager(key: kKey) }
-            if replugs % 3 != 2 || stale {   // re-enumerated: new registry IDs (the old ones may still be listed, dead)
+            if reused { reused = false; remove(kKey) }
+            let oldGhost = ghosts.keys.filter { $0 != oKey }.min()   // a removal IOHIDManager never delivered
+            // Re-enumerated: new registry IDs (the old ones may still be listed, dead). IOKit never
+            // gives a live device the ID of one IOHIDManager still has.
+            if replugs % 3 != 2 || stale || ghosts[kKey] != nil || ghosts[kAux] != nil {
                 kKey = nextKey; kAux = nextKey + 1000; nextKey += 1
             }
             kConnected = true
             stale = false
-            engine.deviceAdded(key: kKey, identity: expert, transport: replugs % 2 == 0 ? "USB" : "Bluetooth Low Energy", device: nil)
-            engine.deviceAdded(key: kAux, identity: expert, transport: "USB", device: nil)
+            // How IOKit publishes it this time (see Op.replug).
+            partial = [nil, DeviceIdentity(vendorID: expert.vendorID, productID: expert.productID, name: nil),
+                       DeviceIdentity(vendorID: expert.vendorID, productID: nil, name: nil),
+                       DeviceIdentity(vendorID: nil, productID: nil, name: nil)][v & 3]
+            identityAt = io.clock + 0.2
+            listAt = v & 4 != 0 ? io.clock + 0.3 : -1e9
+            aliveAt = v & 8 != 0 ? io.clock + 0.4 : -1e9
+            plugGraceUntil = io.clock + 1.5
+            let order = v & 16 != 0 ? [kAux, kKey] : [kKey, kAux]
+            for (i, k) in order.enumerated() {
+                add(k, identityOf(k), transport: k == kKey && replugs % 2 == 1 ? "Bluetooth Low Energy" : "USB")
+                if i == 0 && v & 32 != 0 { engine.reconcileDevices(reason: "fuzz") }
+            }
+            if v & 64 != 0, let g = oldGhost {   // the old interface's removal, late, while still listed
+                remove(g)
+                ghosts[g] = nil
+            }
             replugs += 1
+        case .watch(let on):
+            engine.setWatched(on)
+            if on && !watched { stale = false }   // opening checks; already open, nothing new happens
+            watched = on
         case .sleep:
             engine.releaseForSleep()
             settle()
@@ -962,12 +1056,13 @@ final class World {
             guard !kConnected, !stale, !reused else { return }
             for (page, usage, value) in [(kHIDPage_GenericDesktop, kHIDUsage_GD_X, 7), (kHIDPage_Button, 2, 1), (kHIDPage_Button, 2, 0)] {
                 stamp += 1
-                engine.hidInput(key: kKey, identity: expert, page: page, usage: usage, value: value, stamp: stamp)
+                engine.hidInput(address: addrOf[kKey] ?? lastAddr[kKey] ?? -kKey, fresh: kKey, identity: expert,
+                                page: page, usage: usage, value: value, stamp: stamp)
             }
         case .reuse:
             guard !kConnected, !stale, !reused else { return }
             reused = true
-            engine.deviceAdded(key: kKey, identity: otherMouse, transport: "USB", device: nil)
+            add(kKey, otherMouse, transport: "USB")
         case .tapOff(let n):
             bypass = n
         case .setMode(let m, let w):
@@ -1010,17 +1105,23 @@ final class World {
         io.tapEnabled.removeAll()
         io.tapMask.removeAll()
         engine = Engine(config: resolved, io: io)
+        watched = false   // a new engine starts with nothing open
         modes = Engine.Modes()
         lastFlashSeq = 0
         quitDone = false
         wire()
         engine.startInline()
+        // A new process: the same devices, new objects. (Ghosts stay listed, as they would.)
+        func relist(_ k: Int, _ identity: DeviceIdentity) {
+            if let a = addrOf.removeValue(forKey: k) { freeAddrs.append(a) }
+            add(k, identity, transport: "USB")
+        }
         if kConnected {
-            engine.deviceAdded(key: kKey, identity: expert, transport: "USB", device: nil)
-            engine.deviceAdded(key: kAux, identity: expert, transport: "USB", device: nil)
-        } else if reused { engine.deviceAdded(key: kKey, identity: otherMouse, transport: "USB", device: nil) }
+            relist(kKey, identityOf(kKey))
+            relist(kAux, identityOf(kAux))
+        } else if reused { relist(kKey, otherMouse) }
         stale = false
-        engine.deviceAdded(key: oKey, identity: otherMouse, transport: "USB", device: nil)
+        relist(oKey, otherMouse)
         learning = false
         kReportsButtons = false   // a new engine hasn't seen a button over HID yet
         pendingPrimary.removeAll()
@@ -1126,7 +1227,7 @@ final class World {
     func checkAlways() {
         if io.warpedWhileFree { io.warpedWhileFree = false; fail("modes", "the pointer was moved by Glideball while nothing held it") }
         // "Connected" is the truth, unless a removal went missing and nothing has checked since.
-        if !stale && connected != kConnected { fail("connected", "status says connected = \(connected), the trackball is \(kConnected ? "plugged in" : "unplugged")") }
+        if !stale && io.clock >= plugGraceUntil && connected != kConnected { fail("connected", "status says connected = \(connected), the trackball is \(kConnected ? "plugged in" : "unplugged")") }
         if io.frozen != (modes.ballScrolling || modes.gestureHeld) {
             fail("modes", "pointer frozen = \(io.frozen) but Scroll with ball = \(modes.ballScrolling), gesture = \(modes.gestureHeld)")
         }
@@ -1195,7 +1296,8 @@ func generate(seed: UInt64, count: Int) -> (configs: [GlideConfig], ops: [Op]) {
         (0.3, { _ in .lateValues }),
         (0.15, { _ in .reuse }),
         (0.2, { _ in .reconcile }),
-        (0.45, { _ in .replug }),
+        (0.45, { r in .replug(r.chance(0.5) ? 0 : r.int(128)) }),
+        (0.2, { r in .watch(r.chance(0.6)) }),
         (0.35 * rare, { _ in .sleep }),
         (0.25, { _ in .wake }),
         (0.5, { r in .tapOff(1 + r.int(4)) }),
@@ -1369,7 +1471,7 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
     holdKey.buttons[3] = .holdShortcut(.wisprFlow)
     gestureCases.append(("unplugged, then late values from it: not connected", [GlideConfig()], [.unplug(0), .lateValues, .wait(1)]))
     gestureCases.append(("unplugged, another mouse at the same address: not connected", [GlideConfig()],
-                         [.unplug(2), .reuse, .reconcile, .wait(1), .replug, .wait(1), .unplug(0), .lateValues, .wait(1)]))
+                         [.unplug(2), .reuse, .reconcile, .wait(1), .replug(0), .wait(1), .unplug(0), .lateValues, .wait(1)]))
     gestureCases.append(("removal missed, then wake: not connected, released once", [holdKey],
                          down(3) + [.setMode(0, 1), .unplug(3), .wait(1), .sleep, .wake, .wait(1)] + up(3) + settle))
     gestureCases.append(("removal missed, then the window opens: not connected", [GlideConfig()], [.unplug(3), .reconcile, .lateValues, .wait(1)]))
@@ -1377,7 +1479,7 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
     // runs, and the check inside the callback added it straight back. Every unplug now models
     // that; these pin the interface orders (aux first, aux second, aux never removed).
     gestureCases.append(("still listed during its own removal callback: not connected", [GlideConfig()],
-                         [.unplug(0), .wait(1), .replug, .kBall(3, 0), .unplug(0), .wait(1), .replug, .kBall(3, 0), .kBall(2, 1), .unplug(2), .reconcile, .wait(1)]))
+                         [.unplug(0), .wait(1), .replug(0), .kBall(3, 0), .unplug(0), .wait(1), .replug(0), .kBall(3, 0), .kBall(2, 1), .unplug(2), .reconcile, .wait(1)]))
     // The pointer held in any app (beta 13): it stays put, in front and behind; with the tap
     // switched off it moves freely, and a hold still on keeps it where it went.
     var scrollHold = GlideConfig()
@@ -1387,7 +1489,28 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
     gestureCases.append(("Scroll with ball, the tap switched off mid-roll: no jump back after", [scrollHold],
                          [.kPress(4, hidFirst: true), .tapOff(1), .kBall(1, 0), .wait(1.2), .kBall(0, 0), .kBall(4, 0)] + up(4)))
     gestureCases.append(("replugged with new IDs, old ones still listed dead: connected, then not", [holdKey],
-                         [.unplug(3), .replug, .reconcile, .wait(1)] + down(3) + [.unplug(1), .reconcile, .wait(1)] + settle))
+                         [.unplug(3), .replug(0), .reconcile, .wait(1)] + down(3) + [.unplug(1), .reconcile, .wait(1)] + settle))
+    // Beta 14 (Levi, Nov 13): unplugged and plugged back in, the trackball no longer worked in
+    // Glideball until a relaunch. A device check's "left" verdict was permanent (a tombstone
+    // only IOHIDManager's add could clear, and its add had already come). Each replug here
+    // is published the way IOKit can, with a check landing in the gap; after it the
+    // trackball must be connected and every value from it must count ("works").
+    let use: [Op] = [.wait(2), .kBall(3, 0), .kPress(1, hidFirst: true), .kRelease(1, hidFirst: true), .kWheel(1), .wait(1)]
+    gestureCases.append(("replugged, its name published late, then the window opens: works", [GlideConfig()],
+                         [.unplug(0), .wait(1), .replug(1), .wait(0.5), .watch(true)] + use))
+    gestureCases.append(("replugged before IOHIDManager lists it, a check in between: works", [GlideConfig()],
+                         [.unplug(0), .wait(1), .replug(4 | 32)] + use))
+    gestureCases.append(("replugged before IOKit finished registering it, a check in between: works", [GlideConfig()],
+                         [.unplug(0), .wait(1), .replug(8 | 32)] + use))
+    gestureCases.append(("replugged with no properties yet: works", [GlideConfig()],
+                         [.unplug(0), .wait(1), .replug(3)] + use))
+    gestureCases.append(("an old interface's removal arrives after the replug: works", [GlideConfig()],
+                         [.unplug(3), .wait(1), .replug(4 | 64)] + use))
+    gestureCases.append(("late values, then a replug at the recycled address: works", [GlideConfig()],
+                         [.unplug(0), .lateValues, .replug(4 | 16 | 32), .kBall(2, 0)] + use))
+    gestureCases.append(("termination notices before, after and instead of removals, replugged each time: works", [GlideConfig()],
+                         [.unplug(0), .replug(0), .kBall(1, 0), .unplug(1), .replug(0), .kBall(1, 0), .unplug(2), .replug(0),
+                          .kBall(1, 0), .unplug(3), .wait(1), .replug(1 | 32), .watch(true), .wait(3), .unplug(0), .replug(0)] + use))
     let older: [(String, [GlideConfig], [Op])] = [
         ("held shortcut, unplugged while held: the key comes up",
          [hold], [.kPress(3, hidFirst: true), .unplug(2), .wait(1)]),
@@ -1425,7 +1548,7 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
         ("Quick assign restarted while a button is held: its release is still swallowed",
          [GlideConfig()], [.learn, .kPress(1, hidFirst: true), .learn, .kRelease(1, hidFirst: true), .wait(1)]),
         ("trackball unplugged: another mouse's release of the same button isn't swallowed",
-         [primaryCombo], [.kPress(1, hidFirst: true), .kPress(0, hidFirst: true), .wait(1), .unplug(2), .oPress(0), .replug,
+         [primaryCombo], [.kPress(1, hidFirst: true), .kPress(0, hidFirst: true), .wait(1), .unplug(2), .oPress(0), .replug(0),
                           .oRelease(0), .wait(1)]),
         ("ring ticks handled back to back with smooth scrolling off: bounded", [jumpy], Array(repeating: .kWheel(-1), count: 8) + [.wait(1)]),
         ("its own button with a modifier, after a button remapped to it", [selfMod],

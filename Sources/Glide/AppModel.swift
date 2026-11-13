@@ -341,12 +341,12 @@ final class AppModel {
         }
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didWakeNotification,
                                                           object: nil, queue: .main) { [weak self] _ in
-            self?.engine.reconcileDevices()   // a removal can go missing while asleep
+            self?.engine.reconcileDevices(reason: "wake")   // a removal can go missing while asleep
             self?.engine.reapplyPointer()
         }
         DistributedNotificationCenter.default().addObserver(forName: .init("com.apple.screenIsUnlocked"),
                                                             object: nil, queue: .main) { [weak self] _ in
-            self?.engine.reconcileDevices()
+            self?.engine.reconcileDevices(reason: "unlock")
         }
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didActivateApplicationNotification,
                                                           object: nil, queue: .main) { [weak self] note in
