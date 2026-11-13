@@ -74,6 +74,8 @@ final class AppModel {
     var shareRequest: ShareRequest?
     /// The ball color before an import that changed it, for Undo.
     @ObservationIgnored var lookBeforeImport: ShareLook?
+    /// The Sounds settings before an import that changed them, for Undo.
+    @ObservationIgnored var soundsBeforeImport: ShareSounds?
     /// When the last preview closed (`systemUptime`): links that come right after are dropped.
     @ObservationIgnored var lastIncomingClosed = -Double.infinity
     /// A page asked for before the main window's content was there to show it.
@@ -632,7 +634,7 @@ final class AppModel {
         incoming.enabled = config.enabled            // the pause switch belongs to this Mac
         backups.checkpoint(config, kind: .beforeImport)
         configBeforeImport = config
-        lookBeforeImport = nil
+        lookBeforeImport = nil; soundsBeforeImport = nil
         config = incoming
         pendingImport = nil
         show(.init(symbol: "arrow.down.doc.fill", text: String(localized: "Imported “\(pending.fileName)”"), action: .undoImport))
@@ -646,7 +648,7 @@ final class AppModel {
         updated.apply(preset)
         guard updated != config else { return }
         backups.checkpoint(config, kind: .beforePreset)
-        configBeforeImport = config; lookBeforeImport = nil
+        configBeforeImport = config; lookBeforeImport = nil; soundsBeforeImport = nil
         config = updated
         delight.explored(.preset)
         show(.init(symbol: preset.symbol, text: String(localized: "Applied “\(preset.title)”", comment: "Toast; the name of a button preset"),
@@ -659,6 +661,8 @@ final class AppModel {
         configBeforeImport = nil
         if let look = lookBeforeImport { BallThemeStore.shared.use(look) }
         lookBeforeImport = nil
+        soundsBeforeImport?.use()
+        soundsBeforeImport = nil
         show(.init(symbol: "arrow.uturn.backward.circle.fill", text: String(localized: "Restored your previous settings")))
     }
 
@@ -676,7 +680,7 @@ final class AppModel {
             return
         }
         backups.checkpoint(config, kind: .beforeRestore)
-        configBeforeImport = config; lookBeforeImport = nil
+        configBeforeImport = config; lookBeforeImport = nil; soundsBeforeImport = nil
         config = restored
         let when = backup.date.formatted(.dateTime.month(.abbreviated).day().hour().minute())
         show(.init(symbol: "clock.arrow.circlepath", text: String(localized: "Restored the backup from \(when)", comment: "Toast; the date and time of the backup"), action: .undoImport))

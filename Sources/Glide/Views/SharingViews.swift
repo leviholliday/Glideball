@@ -4,20 +4,32 @@ import SwiftUI
 
 // The two sheets of sharing a setup: the preview of something coming in (a
 // glideball://import link, a shared file, KensingtonWorks' settings), and
-// Share… for sending part of your own setup as a link, a file or a picture.
-// The logic is in AppModel+Sharing.swift and SharedSetup.swift.
+// Share… for sending a checklist of parts of your own setup as a link, a file
+// or a picture. The logic is in AppModel+Sharing.swift and SharedSetup.swift.
 
 // MARK: - Receiving: the preview
 
-/// Everything that would change, setting by setting, before and after; what has
-/// no equivalent (KensingtonWorks); and Apply or Cancel. Nothing changes until Apply.
+/// Everything that would change, part by part, before and after, with a switch
+/// on each part to leave it out; what has no equivalent (KensingtonWorks); and
+/// Apply or Cancel. Nothing changes until Apply, and only the parts still ticked.
 struct IncomingSetupSheet: View {
     let model: AppModel
     let incoming: IncomingSetup
+    @State private var chosen: Set<SharePart>
+
+    init(model: AppModel, incoming: IncomingSetup, chosen: Set<SharePart>? = nil) {
+        self.model = model
+        self.incoming = incoming
+        _chosen = State(initialValue: chosen ?? Set(incoming.parts))
+    }
+
+    private var isShare: Bool { incoming.share != nil }
 
     var body: some View {
-        let changes = model.changes(for: incoming)
-        let cautions = changes.filter(\.caution).count
+        let sections: [(part: SharePart, changes: [ImportChange])] = incoming.parts.map { ($0, model.changes(for: incoming, part: $0)) }
+        let all = isShare ? sections.flatMap(\.changes) : model.changes(for: incoming)
+        let picked = isShare ? sections.filter { chosen.contains($0.part) }.flatMap(\.changes) : all
+        let cautions = picked.filter(\.caution).count
         VStack(alignment: .leading, spacing: 0) {
             header
                 .padding(.horizontal, 24)
@@ -25,15 +37,30 @@ struct IncomingSetupSheet: View {
                 .padding(.bottom, 16)
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    if changes.isEmpty {
+                    if all.isEmpty {
                         RowGroup {
                             SettingRow(title: "Nothing would change",
                                        hint: "This matches what you have already.",
                                        symbol: "checkmark.circle")
                         }
                     }
-                    ForEach(ImportChange.Area.allCases.filter { a in changes.contains { $0.area == a } }, id: \.self) { area in
-                        ChangeSection(area: area, changes: changes.filter { $0.area == area })
+                    if isShare {
+                        ForEach(sections.filter { !$0.changes.isEmpty }, id: \.part) { s in
+                            PartChangeSection(part: s.part, title: s.part.title(apps: incoming.share?.apps ?? []),
+                                              changes: s.changes, isOn: binding(s.part))
+                        }
+                        let same = sections.filter { $0.changes.isEmpty }.map { $0.part.title(apps: incoming.share?.apps ?? []) }
+                        if !same.isEmpty && !all.isEmpty {
+                            Text("Also in it, already the same as yours: \(same.formatted(.list(type: .and)))",
+                                 comment: "Import preview: parts of a share that wouldn't change anything; %@ is a list of them")
+                                .font(Theme.Font.hint)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    } else {
+                        ForEach(ImportChange.Area.allCases.filter { a in all.contains { $0.area == a } }, id: \.self) { area in
+                            ChangeSection(area: area, changes: all.filter { $0.area == area })
+                        }
                     }
                     if !incoming.notes.isEmpty {
                         NotesSection(notes: incoming.notes)
@@ -43,9 +70,9 @@ struct IncomingSetupSheet: View {
                 .padding(.bottom, 16)
             }
             .scrollIndicators(.automatic)
-            .frame(height: Self.scrollHeight(changes: changes, notes: incoming.notes.count))
+            .frame(height: Self.scrollHeight(changes: all, notes: incoming.notes.count))
             Hairline()
-            footer(cautions: cautions, nothing: changes.isEmpty)
+            footer(cautions: cautions, nothing: picked.isEmpty)
                 .padding(.horizontal, 24)
                 .padding(.vertical, 16)
         }
@@ -53,11 +80,16 @@ struct IncomingSetupSheet: View {
         .background(GlideBackground(anchor: UnitPoint(x: 0.2, y: -0.1), strength: 0.7))
     }
 
+    private func binding(_ part: SharePart) -> Binding<Bool> {
+        Binding(get: { chosen.contains(part) },
+                set: { on in withAnimation(Theme.Motion.fade) { if on { chosen.insert(part) } else { chosen.remove(part) } } })
+    }
+
     /// Tall enough for a short list without scrolling, never taller than a small window.
     static func scrollHeight(changes: [ImportChange], notes: Int) -> CGFloat {
         let sections = Set(changes.map(\.area)).count + (notes > 0 ? 1 : 0)
         let rows = max(changes.count, 1) + notes
-        return min(max(CGFloat(rows) * 48 + CGFloat(sections) * 34 + 16, 120), 420)
+        return min(max(CGFloat(rows) * 48 + CGFloat(sections) * 40 + 16, 120), 420)
     }
 
     private var header: some View {
@@ -75,6 +107,15 @@ struct IncomingSetupSheet: View {
                     .font(.system(size: 20, weight: .semibold))
                     .lineLimit(2)
                     .accessibilityAddTraits(.isHeader)
+                if let from = incoming.from {
+                    // What they typed, shown as plain text and said to be just that.
+                    Text("From \(Text(verbatim: from).fontWeight(.semibold).foregroundColor(.primary)) · the name they typed, not checked by Glideball",
+                         comment: "Import preview: %@ is the name the sender typed, which nobody verifies")
+                        .font(Theme.Font.hint)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .textSelection(.disabled)
+                }
                 Text(verbatim: incoming.origin)
                     .font(Theme.Font.hint)
                     .foregroundStyle(.secondary)
@@ -109,6 +150,10 @@ struct IncomingSetupSheet: View {
                     } icon: {
                         Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Theme.warn)
                     }
+                } else if isShare && nothing && !chosen.isEmpty {
+                    Text("Nothing ticked would change anything.", comment: "Import preview footer when the ticked parts match what you have")
+                } else if isShare && chosen.isEmpty {
+                    Text("Tick at least one part to apply.", comment: "Import preview footer when every part is unticked")
                 } else {
                     Text("Apply saves a backup first, and you can undo right after.")
                 }
@@ -120,7 +165,7 @@ struct IncomingSetupSheet: View {
             Button("Cancel") { model.cancelIncoming() }
                 .keyboardShortcut(.cancelAction)
             Button {
-                model.applyIncoming()
+                model.applyIncoming(parts: isShare ? chosen : nil)
             } label: {
                 Text(incoming.source == .kensingtonWorks ? "Import" : "Apply")
                     .frame(minWidth: 60)
@@ -131,6 +176,48 @@ struct IncomingSetupSheet: View {
             .disabled(nothing)
         }
         .controlSize(.large)
+    }
+}
+
+/// One part of a share: a switch to keep it or leave it out, then its rows.
+private struct PartChangeSection: View {
+    let part: SharePart
+    let title: String
+    let changes: [ImportChange]
+    @Binding var isOn: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Theme.Space.titleToGroup) {
+            Toggle(isOn: $isOn) {
+                Label {
+                    HStack(spacing: 6) {
+                        Text(verbatim: title).font(Theme.Font.body.weight(.semibold))
+                        if !isOn {
+                            Text("Left out", comment: "Import preview: a part the person unticked")
+                                .font(Theme.Font.hint)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                } icon: {
+                    Image(systemName: part.symbol).foregroundStyle(partColor)
+                }
+            }
+            .toggleStyle(.checkbox)
+            .accessibilityAddTraits(.isHeader)
+            RowGroup {
+                ForEach(changes) { ChangeRow(change: $0) }
+            }
+            .opacity(isOn ? 1 : 0.4)
+        }
+    }
+
+    private var partColor: Color {
+        switch part.area {
+        case .pointer: Theme.ball
+        case .scrolling: Theme.ring
+        case .buttons, .combos: Theme.buttons
+        default: .secondary
+        }
     }
 }
 
@@ -240,69 +327,79 @@ private struct NotesSection: View {
 
 // MARK: - Sending: Share…
 
-/// Pick a part (or it's one app's setup), then copy a link, save or share a file,
+/// Tick what to share (several at once), then copy a link, save or share a file,
 /// or make a picture with a QR code of the link.
 struct ShareSetupSheet: View {
     let model: AppModel
     let request: ShareRequest
-    @State private var kind: ShareKind
+    @State private var chosen: Set<SharePart>
     @State private var done: String?
     @State private var anchor = AnchorHolder()
     @Environment(\.dismiss) private var dismiss
 
-    /// Renders: the picture, drawn beforehand (nil: drawn when shown).
+    /// Renders: the note after an action, drawn beforehand.
     nonisolated(unsafe) static var sandboxDone: String?
 
-    init(model: AppModel, request: ShareRequest) {
+    init(model: AppModel, request: ShareRequest, chosen: Set<SharePart>? = nil) {
         self.model = model
         self.request = request
-        _kind = State(initialValue: request.kind)
+        _chosen = State(initialValue: chosen ?? model.initialShareParts(request))
     }
 
-    private var share: SharedSetup? { model.share(kind, appSetup: request.appSetup) }
+    private var share: SharedSetup? { chosen.isEmpty ? nil : model.share(parts: chosen) }
     private var link: URL? { share?.link() }
-    private var name: String {
-        kind == .appSetup ? (model.config.profile(for: request.appSetup)?.name ?? kind.title) : kind.title
-    }
+    private var name: String { model.setupCard(parts: chosen, link: nil).title }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        let available = model.shareableParts
+        let apps = available.filter { $0.bundleID != nil }
+        let inset = Theme.Space.rowHorizontal + Theme.Space.symbolColumn + Theme.Space.symbolGap
+        VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(request.canChoose ? "Share your setup" : "Share this app’s setup")
+                Text("Share your setup")
                     .font(.system(size: 20, weight: .semibold))
                     .accessibilityAddTraits(.isHeader)
-                Text("Whoever opens it sees exactly what would change and decides. Nothing else about you or your Mac goes with it.")
+                Text("Tick what to send. Whoever opens it sees exactly what would change and picks what to keep. Nothing else about you or your Mac goes with it.")
                     .font(Theme.Font.hint)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            if request.canChoose {
-                SectionBlock(title: "What to share", dividerInset: Theme.Space.rowHorizontal + Theme.Space.symbolColumn + Theme.Space.symbolGap) {
-                    ForEach(ShareKind.choosable) { k in
-                        KindRow(kind: k, headline: model.headline(k), selected: k == kind) {
-                            withAnimation(Theme.Motion.fade) { kind = k; done = nil }
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(verbatim: model.summary(of: chosen))
+                    .font(Theme.Font.body.weight(.medium))
+                    .foregroundStyle(chosen.isEmpty ? .secondary : .primary)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentTransition(.opacity)
+                Button("Everything") { set(Set(available)) }
+                    .disabled(chosen == Set(available))
+                Button("None") { set([]) }
+                    .disabled(chosen.isEmpty)
+            }
+            .controlSize(.small)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    SectionBlock(title: "How it moves", dividerInset: inset) {
+                        ForEach(available.filter { [.pointer, .displays, .scrolling].contains($0) }) { row($0) }
+                    }
+                    SectionBlock(title: "Buttons", dividerInset: inset) {
+                        ForEach(available.filter { [.buttons, .combos, .gestures].contains($0) }) { row($0) }
+                    }
+                    if !apps.isEmpty {
+                        SectionBlock(title: "App setups", dividerInset: inset) {
+                            ForEach(apps) { row($0) }
                         }
                     }
-                }
-            } else {
-                RowGroup {
-                    HStack(spacing: Theme.Space.symbolGap) {
-                        AppIcon(bundleID: request.appSetup ?? "", size: 28)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(verbatim: name).font(Theme.Font.body.weight(.medium))
-                            Text(verbatim: model.headline(.appSetup, appSetup: request.appSetup))
-                                .font(Theme.Font.hint).foregroundStyle(.secondary)
-                        }
-                        Spacer(minLength: 0)
+                    SectionBlock(title: "Look and sound", dividerInset: inset) {
+                        ForEach(available.filter { [.look, .sounds].contains($0) }) { row($0) }
                     }
-                    .padding(.horizontal, Theme.Space.rowHorizontal)
-                    .padding(.vertical, Theme.Space.rowVertical)
                 }
             }
-            SectionBlock(title: "Send it", dividerInset: Theme.Space.rowHorizontal + Theme.Space.symbolColumn + Theme.Space.symbolGap) {
-                SettingRow(title: "Link",
-                           hint: link == nil ? "Too much for a link. Send the file instead." : "Paste it in a message. It opens in Glideball.",
-                           symbol: "link") {
+            .scrollIndicators(.automatic)
+            .frame(maxHeight: Self.listHeight(rows: available.count, sections: apps.isEmpty ? 3 : 4))
+            SectionBlock(title: "Send it", dividerInset: inset) {
+                SettingRow(title: "Link", hint: LocalizedStringKey(linkHint), symbol: "link") {
                     Button("Copy Link") { copyLink() }
                         .disabled(link == nil)
                 }
@@ -312,6 +409,7 @@ struct ShareSetupSheet: View {
                             .background(ShareAnchorView(holder: anchor))
                         Button("Save…") { saveFile() }
                     }
+                    .disabled(share == nil)
                 }
                 SettingRow(title: "Picture",
                            hint: link == nil ? "A picture of the key settings." : "A picture of the key settings, with a QR code of the link.",
@@ -320,6 +418,7 @@ struct ShareSetupSheet: View {
                         Button("Copy") { copyPicture() }
                         Button("Save…") { savePicture() }
                     }
+                    .disabled(share == nil)
                 }
             }
             .controlSize(.small)
@@ -329,9 +428,13 @@ struct ShareSetupSheet: View {
                         Label(done, systemImage: "checkmark.circle.fill")
                             .foregroundStyle(Theme.ok)
                             .transition(.opacity)
+                    } else {
+                        Text(verbatim: nameNote)
+                            .foregroundStyle(.secondary)
                     }
                 }
                 .font(Theme.Font.hint)
+                .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 Button("Done") { close() }
                     .keyboardShortcut(.defaultAction)
@@ -339,10 +442,50 @@ struct ShareSetupSheet: View {
             }
         }
         .padding(24)
-        .frame(width: 540)
+        .frame(width: 560)
         .background(GlideBackground(anchor: UnitPoint(x: 0.2, y: -0.1), strength: 0.7))
         .onAppear { if let d = Self.sandboxDone { done = d } }
         .onExitCommand { close() }
+    }
+
+    /// Short enough to leave room for Send it on a small screen; tall enough for most lists.
+    static func listHeight(rows: Int, sections: Int) -> CGFloat {
+        min(CGFloat(rows) * 45 + CGFloat(sections) * 42, 380)
+    }
+
+    private func row(_ part: SharePart) -> some View {
+        PartRow(part: part, title: part.title(apps: model.config.appProfiles), headline: model.headline(part),
+                selected: chosen.contains(part)) {
+            var next = chosen
+            if next.contains(part) { next.remove(part) } else { next.insert(part) }
+            set(next)
+        }
+    }
+
+    private func set(_ parts: Set<SharePart>) {
+        withAnimation(Theme.Motion.fade) {
+            chosen = parts
+            done = nil
+        }
+        if !Sandbox.isActive { ShareChoiceMemory.save(parts) }
+    }
+
+    private var linkHint: String {
+        guard share != nil else { return String(localized: "Tick something to share first.", comment: "Share: link hint with nothing ticked") }
+        guard link == nil, let share else {
+            return String(localized: "Opens a page that shows what’s in it, with a button to import it into Glideball.", comment: "Share: link hint")
+        }
+        let n = share.linkLength - SharedSetup.maxLinkLength
+        return String(localized: "Too much for a link, by about \(n) characters (some apps cut long links short). Untick a part or two, or send the file instead.",
+                      comment: "Share: link hint when the link would be too long; %lld is how many characters too many")
+    }
+
+    private var nameNote: String {
+        if let name = SharingName.forLinks {
+            return String(localized: "Your name, “\(name)”, goes with the link and file. You can change that in Settings › General.",
+                          comment: "Share: the sender's name; %@ is the name")
+        }
+        return String(localized: "No name goes with it. You can add one in Settings › General.", comment: "Share: no name is sent")
     }
 
     private func close() {
@@ -382,7 +525,7 @@ struct ShareSetupSheet: View {
     }
 
     private var card: ShareCard {
-        .setup(model.setupCard(kind, appSetup: request.appSetup, link: link?.absoluteString))
+        .setup(model.setupCard(parts: chosen, link: link?.absoluteString))
     }
 
     private func copyPicture() {
@@ -405,43 +548,51 @@ struct ShareSetupSheet: View {
     }
 }
 
-/// A part to share: its symbol, name, what it holds now, and a check when chosen.
-private struct KindRow: View {
-    let kind: ShareKind
+/// A part to share: its symbol (or app icon), name, what it holds now, and a tick.
+private struct PartRow: View {
+    let part: SharePart
+    let title: String
     let headline: String
     let selected: Bool
-    let choose: () -> Void
+    let toggle: () -> Void
 
     var body: some View {
-        Button(action: choose) {
+        Button(action: toggle) {
             HStack(spacing: Theme.Space.symbolGap) {
-                RowSymbol(symbol: kind.symbol, tint: tint)
+                if let id = part.bundleID {
+                    AppIcon(bundleID: id, size: 20)
+                        .frame(width: Theme.Space.symbolColumn)
+                } else {
+                    RowSymbol(symbol: part.symbol, tint: tint)
+                        .frame(width: Theme.Space.symbolColumn)
+                }
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(verbatim: kind.title).font(Theme.Font.body)
+                    Text(verbatim: title).font(Theme.Font.body)
                     Text(verbatim: headline)
                         .font(Theme.Font.hint)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                Image(systemName: selected ? "checkmark.circle.fill" : "circle")
+                Image(systemName: selected ? "checkmark.square.fill" : "square")
                     .font(.system(size: 15))
                     .foregroundStyle(selected ? AnyShapeStyle(Theme.ball) : AnyShapeStyle(.tertiary))
                     .contentTransition(.symbolEffect(.replace))
             }
             .padding(.horizontal, Theme.Space.rowHorizontal)
-            .padding(.vertical, 8)
+            .padding(.vertical, 7)
             .contentShape(Rectangle())
         }
         .buttonStyle(RowHoverStyle())
         .accessibilityAddTraits(selected ? .isSelected : [])
+        .accessibilityHint(Text("Includes or leaves out this part", comment: "Share: accessibility hint on a checklist row"))
     }
 
     private var tint: Color? {
-        switch kind {
+        switch part.area {
         case .pointer: Theme.ball
         case .scrolling: Theme.ring
-        case .buttons: Theme.buttons
+        case .buttons, .combos: Theme.buttons
         default: nil
         }
     }
@@ -548,51 +699,58 @@ enum QRCode {
     }
 }
 
+
 extension AppModel {
-    /// The picture's words for a share: what it is and its key settings.
-    func setupCard(_ kind: ShareKind, appSetup: String? = nil, link: String?) -> SetupCard {
+    /// The picture's words for a share of `parts`: what it is and its key settings.
+    func setupCard(parts: Set<SharePart>, link: String?) -> SetupCard {
         let c = config
         var lines: [SetupCard.Line] = []
         func line(_ t: String, _ v: String) { lines.append(.init(title: t, value: v)) }
-        let buttons = { (map: [Int: ButtonAction]) in
-            for b in 1...3 { line(ImportReview.buttonName(b), ImportReview.describe(map[b] ?? .system, on: b)) }
-        }
-        var title = kind.title
-        switch kind {
-        case .everything:
-            line(String(localized: "Pointer speed"), c.trackingSpeed.formatted())
-            line(ImportChange.Area.scrolling.title, ImportReview.scrollLine(c.scrollSettings))
-            line(String(localized: "Buttons"), headline(.buttons))
-            line(String(localized: "App setups"), c.appProfilesSummary)
-        case .appSetup:
-            if let p = c.profile(for: appSetup) {
-                title = p.name
-                line(String(localized: "Pointer speed"), (p.trackingSpeed ?? c.trackingSpeed).formatted())
-                line(ImportChange.Area.scrolling.title, ImportReview.scrollLine(p.scroll ?? c.scrollSettings))
-                for b in 1...2 { line(ImportReview.buttonName(b), ImportReview.describe((p.buttons ?? c.buttons)[b] ?? .system, on: b)) }
+        let sorted = parts.sorted()
+        for part in sorted {
+            switch part {
+            case .pointer:
+                line(String(localized: "Pointer speed"), c.trackingSpeed.formatted())
+            case .displays:
+                line(part.title, headline(part))
+            case .scrolling:
+                line(ImportChange.Area.scrolling.title, ImportReview.scrollLine(c.scrollSettings))
+            case .buttons:
+                for b in 2...3 { line(ImportReview.buttonName(b), ImportReview.describe(c.buttons[b] ?? .system, on: b)) }
+            case .combos:
+                line(String(localized: "Combos"), c.chords.isEmpty ? String(localized: "None", comment: "No combos / no app setups") : c.chords.count.formatted())
+            case .gestures:
+                line(part.title, headline(part))
+            case .app(let id):
+                if let p = c.profile(for: id) { line(p.name, p.summary(comparedTo: c)) }
+            case .look:
+                line(String(localized: "Ball color", comment: "Import preview"), BallThemeStore.title(of: BallThemeStore.shared.look))
+            case .sounds:
+                line(part.title, headline(part))
             }
-        case .pointer:
-            line(String(localized: "Pointer speed"), c.trackingSpeed.formatted())
-            line(String(localized: "Precision speed", comment: "Import preview: the pointer speed while Precision is on"), c.precisionSpeed.formatted())
-        case .scrolling:
-            let s = c.scrollSettings
-            line(String(localized: "Scroll mode", comment: "Import preview"), s.scrollMode.title)
-            switch s.scrollMode {
-            case .native: line(String(localized: "Native speed", comment: "Import preview: the Native scroll mode's speed"), s.nativeScrollSpeed.decimals(2))
-            case .flywheel:
-                line(String(localized: "Glide"), String(localized: "\(Int(ImportReview.glideMs(s.flyGlide))) ms", comment: "Milliseconds"))
-                line(String(localized: "Slow-turn distance"), String(localized: "\(Int(s.flyDistance)) pt", comment: "Points: a distance on screen"))
-                line(String(localized: "Spin power"), s.flyAcceleration.wholePercent)
-            case .follow:
-                line(String(localized: "Distance per tick", comment: "Import preview: Follow mode's distance"), String(localized: "\(Int(s.scrollDistance)) pt", comment: "Points: a distance on screen"))
-                line(String(localized: "Throw", comment: "Import preview: Follow mode's throw switch"), s.throwEnabled ? s.throwAmount.wholePercent : String(localized: "Off", comment: "A switch that's off"))
-            }
-        case .buttons:
-            buttons(c.buttons)
-            line(String(localized: "Combos"), c.chords.isEmpty ? String(localized: "None", comment: "No combos / no app setups") : c.chords.count.formatted())
-        case .look:
-            line(String(localized: "Ball color", comment: "Import preview"), BallThemeStore.title(of: BallThemeStore.shared.look))
         }
-        return SetupCard(title: title, symbol: kind.symbol, lines: lines, link: link)
+        let titles = sorted.map { $0.title(apps: c.appProfiles) }
+        let title: String
+        let symbol: String
+        if sorted.count == 1, let only = sorted.first {
+            title = titles[0]
+            symbol = only.symbol
+        } else if Set(sorted) == Set(shareableParts) {
+            title = ShareKind.everything.title
+            symbol = ShareKind.everything.symbol
+        } else if titles.count <= 3 {
+            title = titles.formatted(.list(type: .and))
+            symbol = ShareKind.everything.symbol
+        } else {
+            let more = titles.count - 1
+            title = String(localized: "\(titles[0]) and \(more) more", comment: "Share picture title: the first part, then how many others; e.g. “Pointer feel and 3 more”")
+            symbol = ShareKind.everything.symbol
+        }
+        return SetupCard(title: title, symbol: symbol, lines: lines, link: link)
+    }
+
+    /// The picture's words for a page's own part (the self-test and renders).
+    func setupCard(_ kind: ShareKind, appSetup: String? = nil, link: String?) -> SetupCard {
+        setupCard(parts: Set(kind.parts(in: config, appSetup: appSetup)).intersection(shareableParts), link: link)
     }
 }

@@ -11,7 +11,7 @@ import Foundation
 
 struct ImportChange: Identifiable, Equatable {
     enum Area: Int, CaseIterable, Comparable {
-        case pointer, scrolling, buttons, combos, appSetups, look, shortcuts
+        case pointer, scrolling, buttons, combos, appSetups, look, sounds, shortcuts
         static func < (a: Area, b: Area) -> Bool { a.rawValue < b.rawValue }
 
         var title: String {
@@ -22,6 +22,7 @@ struct ImportChange: Identifiable, Equatable {
             case .combos: String(localized: "Combos")
             case .appSetups: String(localized: "App setups")
             case .look: String(localized: "Ball color and look", comment: "Import preview section")
+            case .sounds: String(localized: "Sounds")
             case .shortcuts: String(localized: "Keyboard shortcuts", comment: "Import preview section: Glideball's own system-wide shortcuts")
             }
         }
@@ -34,6 +35,7 @@ struct ImportChange: Identifiable, Equatable {
             case .combos: "square.on.square"
             case .appSetups: "square.grid.2x2"
             case .look: "paintpalette"
+            case .sounds: "speaker.wave.2"
             case .shortcuts: "command"
             }
         }
@@ -129,6 +131,15 @@ enum ImportReview {
             old.precisionSpeed.formatted(), new.precisionSpeed.formatted())
         add(.pointer, "per-display", String(localized: "Per-display speeds", comment: "Import preview: the switch for a pointer speed per display"),
             onOff(old.displaySpeeds.enabled), onOff(new.displaySpeeds.enabled))
+        let mainSpeed = String(localized: "Main speed", comment: "Import preview: a display that uses the main pointer speed")
+        for key in Set(old.displaySpeeds.speeds.keys).union(new.displaySpeeds.speeds.keys).sorted() {
+            let name = new.displaySpeeds.names[key] ?? old.displaySpeeds.names[key]
+                ?? String(localized: "A display", comment: "Import preview: a display whose name isn't known")
+            add(.pointer, "display/\(key)",
+                String(localized: "\(name): pointer speed", comment: "Import preview: one display's own pointer speed; %@ is the display's name"),
+                old.displaySpeeds.speeds[key].map { $0.formatted() } ?? mainSpeed,
+                new.displaySpeeds.speeds[key].map { $0.formatted() } ?? mainSpeed)
+        }
 
         // Scrolling
         scrollChanges(old.scrollSettings, new.scrollSettings, prefix: "", area: .scrolling, add: add)
@@ -177,6 +188,21 @@ enum ImportReview {
         }
 
         if let newLook { add(.look, "theme", String(localized: "Ball color", comment: "Import preview"), oldLook, newLook) }
+        return out
+    }
+
+    /// The Sounds settings that would change (Settings › Sound). `titles` names each kind (SoundKind's titles).
+    static func soundChanges(from a: ShareSounds, to b: ShareSounds, titles: [String: String]) -> [ImportChange] {
+        var out: [ImportChange] = []
+        func add(_ key: String, _ title: String, _ x: String, _ y: String) {
+            guard x != y else { return }
+            out.append(ImportChange(id: "\(ImportChange.Area.sounds.rawValue)/\(key)", area: .sounds, title: title, before: x, after: y))
+        }
+        add("on", String(localized: "Sounds"), onOff(a.on), onOff(b.on))
+        add("volume", String(localized: "Volume"), a.volume.wholePercent, b.volume.wholePercent)
+        for id in ShareSounds.kindIDs {
+            add(id, titles[id] ?? id, onOff(a.kinds[id] ?? true), onOff(b.kinds[id] ?? a.kinds[id] ?? true))
+        }
         return out
     }
 

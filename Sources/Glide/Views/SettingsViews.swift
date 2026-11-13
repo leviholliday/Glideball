@@ -178,6 +178,7 @@ struct GeneralSettingsPane: View {
                                isOn: $model.allowExternalControl, link: SiteLinks.help)
                     .findable(.externalControl)
             }
+            SharingNameSection()   // SharingNameSettings.swift
         }
     }
 
@@ -313,7 +314,8 @@ extension Findable {
 
 extension GeneralSettingsPane {
     static let findables: [Findable] = [.openAtLogin, .launchStyle, .askBeforeQuitting, .menuBarIcon, .menuBarIconStyle, .menuBarOpens,
-                                        .showInDock, .language, .otherTrackballs, .lowBattery, .externalControl]
+                                        .showInDock, .language, .otherTrackballs, .lowBattery, .externalControl,
+                                        .sharingName, .sharingNamePictures, .sharingNameLinks]
 }
 
 /// The menu-bar icon as it looks now, on a little piece of menu bar.

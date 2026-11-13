@@ -170,9 +170,13 @@ Wide windows (`Views/PageLayout.swift`): pages are one column (680 pt, left) unt
 
 The website's screenshots come from the same pictures: `scripts/site-screens.sh [--no-build]` renders `overview`, `pointer`, `scrolling` and `buttons` (dark, 2x), writes `website/assets/screens/<screen>-960.webp`, `-1600.webp` and `-1200.png`, and updates the homepage's `?v=` and image sizes so browsers fetch the new ones. `scripts/site-icons.py` does the same for the site's icons, favicon and `og.png`, from `brand/icon-candidates/orb-b.png` (bump `ASSET_V` in `build_pages.py` and the `?v=` in the hand-written pages after).
 
-Screens: the six tabs as the window opens (`overview`, `pointer`, `scrolling`, `buttons`, `apps`, `sync`) and each whole tab top to bottom (`*-page`, the content column without the sidebar); the sidebar's trackball in each of its looks, at its own size and large (`trackball-states`), and the ball turning as it rolls right and away, large and small (`trackball-rolling`); the light and motion that a still can't otherwise show (`overview-record`: the moment today passes your best, with the dial's sweep, the number's pop and the sparks; `atmosphere-rolling`, `atmosphere-ring`, `atmosphere-click`: the room lit by each part of the hand; `slider-dragging`; `mode-card-hover`: a mode card's demo playing; `minimal-performance`: rolling with the stage held still); states (`permissions-needed`, `permissions-half`, `paused`, `no-trackball`, `other-kensington`, `modes-on`, `app-setup-active`, `celebration-toast`, `celebration-confetti`, `toast-import`, `import-preview`, `quick-assign`, `small-favor`, `icon-prompt`); the Welcome Tour (`tour-1-welcome` … `tour-5-done`, plus `tour-3-buttons-found` and `tour-4-option-try`, a speed ⌥-clicked beside the ⌥ tip, also at the smallest size); What's New (`whats-new`, and `min-size-whats-new` with the tour's busiest steps at the smallest window); `about`, `feedback`, `feedback-idea`, `feedback-sending`, `feedback-sent`, `backup-history`, `shortcuts-sheet`, `quit-card` (over the window; in the app it floats over the whole screen), `quit-card-close` (at its real size), `scrolling-try-active` (Try it here after a click, without its hint); the Buttons page's picker and presets (`buttons-picker`, `-picker-search`, `-picker-nothing`, `-picker-record`, `-preset-preview`, `-preset-applied`, `-new-combo`, and `apps-add-picker`; popovers can't be drawn, so the picker is drawn where it opens, on a glass card); ball colors (`ball-colors`, `overview-theme-ember`, `-ocean`, `-classic`); badges and sharing (`badges`, `badge-detail`, `share-panel`, `share-panel-posted` and `share-panel-badge` (the note a site button leaves), `share-card-overview`, `-badge`, `-badge-locked`, `-theme`, drawn with ImageRenderer as Share… makes them); `fullscreen` and `fullscreen-pointer` (simulated: the toolbar hidden as the app hides it in full screen, at 1440 × 900); `overview-hint-gone` (Overview once the Settings hint has gone); Settings (`settings-general`, `-look`, `-sound`, `-updates`, `-privacy`, `-shortcuts`, through the real Settings window with its toolbar, plus `settings-general-spotlight`, `settings-look-classic`, `settings-look-custom`, `settings-privacy-deleted`, `settings-privacy-nothing`, `settings-privacy-stats` (Privacy's live "What this sends" in each choice), `settings-shortcuts-search`, `-no-match` and `-conflict`) and `external-control-notice`; frames of the launch animations (`launch-intro-rolling-in`, `-ring-spinning-up`, `-light-drawing-in`, `-held-beat`, `-the-hit`, `-the-word-landing`, `-ripple`, `-finished`; `launch-ring-spin` and `launch-roll-in`, each also `-start` and `-settling`; `launch-reveal-opening` and `-wide`, the hand-off over the window; `launch-fade`); Software Update (`update-checking`, `-failed`, `-up-to-date`, `-available`, `-in-header`, `-downloading`, `-install-failed`, reached by answering the update check and download with canned replies).
+Screens: the six tabs as the window opens (`overview`, `pointer`, `scrolling`, `buttons`, `apps`, `sync`) and each whole tab top to bottom (`*-page`, the content column without the sidebar); the sidebar's trackball in each of its looks, at its own size and large (`trackball-states`), and the ball turning as it rolls right and away, large and small (`trackball-rolling`); the light and motion that a still can't otherwise show (`overview-record`: the moment today passes your best, with the dial's sweep, the number's pop and the sparks; `atmosphere-rolling`, `atmosphere-ring`, `atmosphere-click`: the room lit by each part of the hand; `slider-dragging`; `mode-card-hover`: a mode card's demo playing; `minimal-performance`: rolling with the stage held still); states (`permissions-needed`, `permissions-half`, `paused`, `no-trackball`, `other-kensington`, `modes-on`, `app-setup-active`, `celebration-toast`, `celebration-confetti`, `toast-import`, `import-preview`, `quick-assign`, `small-favor`, `icon-prompt`); the Welcome Tour (`tour-1-welcome` … `tour-6-done`, plus `tour-3-buttons-found`, `tour-4-option-try` (a speed ⌥-clicked beside the ⌥ tip, also at the smallest size), the name step `tour-5-name` and `tour-name-filled`); What's New (`whats-new`, and `min-size-whats-new` with the tour's busiest steps at the smallest window); `about`, `feedback`, `feedback-idea`, `feedback-sending`, `feedback-sent`, `backup-history`, `shortcuts-sheet`, `quit-card` (over the window; in the app it floats over the whole screen), `quit-card-close` (at its real size), `scrolling-try-active` (Try it here after a click, without its hint); the Buttons page's picker and presets (`buttons-picker`, `-picker-search`, `-picker-nothing`, `-picker-record`, `-preset-preview`, `-preset-applied`, `-new-combo`, and `apps-add-picker`; popovers can't be drawn, so the picker is drawn where it opens, on a glass card); ball colors (`ball-colors`, `overview-theme-ember`, `-ocean`, `-classic`); badges and sharing (`badges`, `badge-detail`, `share-panel`, `share-panel-posted` and `share-panel-badge` (the note a site button leaves), `share-card-overview`, `-badge`, `-badge-locked`, `-theme`, drawn with ImageRenderer as Share… makes them); `fullscreen` and `fullscreen-pointer` (simulated: the toolbar hidden as the app hides it in full screen, at 1440 × 900); `overview-hint-gone` (Overview once the Settings hint has gone); Settings (`settings-general`, `-look`, `-sound`, `-updates`, `-privacy`, `-shortcuts`, through the real Settings window with its toolbar, plus `settings-general-spotlight`, `settings-look-classic`, `settings-look-custom`, `settings-privacy-deleted`, `settings-privacy-nothing`, `settings-privacy-stats` (Privacy's live "What this sends" in each choice), `settings-shortcuts-search`, `-no-match` and `-conflict`) and `external-control-notice`; frames of the launch animations (`launch-intro-rolling-in`, `-ring-spinning-up`, `-light-drawing-in`, `-held-beat`, `-the-hit`, `-the-word-landing`, `-ripple`, `-finished`; `launch-ring-spin` and `launch-roll-in`, each also `-start` and `-settling`; `launch-reveal-opening` and `-wide`, the hand-off over the window; `launch-fade`); Software Update (`update-checking`, `-failed`, `-up-to-date`, `-available`, `-in-header`, `-downloading`, `-install-failed`, reached by answering the update check and download with canned replies).
 
-Round 4: the search palette (`search`, `-recent`, `-speed`, `-speed-number`, `-moved`, `-buttons`, `-badge`, `-nothing`, `-jump`, `-jump-settings`), the menu-bar icon in every state, Mono and Color, light and dark bars, 1x and 2x blown up beside Apple's glyphs (`menubar-icons`, drawn by `MenuBarIcon.swift`), the menu-bar panel (`menubar-panel`, `-modes`, `-paused`; drawn on glass, since a popover is its own window), the weekly recap (`weekly-recap`, `-quiet`, `share-card-recap`) and Try before you change (`try-hint`, `try-slider`, `try-preset`, `try-scroll-mode`). Search finds what each page declares: every row sits inside a `.findable(...)` whose `Findable` is written next to it, and the self-test fails if a drawn row isn't inside one or a `Findable` isn't drawn.
+Round 4: the search palette (`search`, `-recent`, `-speed`, `-speed-number`, `-moved`, `-buttons`, `-badge`, `-nothing`, `-jump`, `-jump-settings`), the menu-bar icon in every state, Mono and Color, light and dark bars, 1x and 2x blown up beside Apple's glyphs (`menubar-icons`, drawn by `MenuBarIcon.swift`), the menu-bar panel (`menubar-panel`, `-modes`, `-paused`; drawn on glass, since a popover is its own window), the weekly recap (`weekly-recap`, `-quiet`, `share-card-recap`) and Try before you change (`try-hint`, `try-slider`, `try-preset`, `try-scroll-mode`).
+
+Sharing (RenderSharing.swift): Share…'s checklist (`share-sheet-checklist`, `-some` with a name going with it, `-none`), the receive preview with parts unticked and a sender's name (`share-preview-parts`) and a beta 12 link (`share-preview-beta12`), the pictures with and without a name (`share-card-checklist`, `share-card-overview`, `share-card-badge`, each also `-named`), `settings-general-sharing` and `tour-name-filled`. The website's share page has its own pictures: `node scripts/share-page-shots.mjs [folder]` (headless Chrome, a few payloads at 1440 and 390 wide).
+
+Search finds what each page declares: every row sits inside a `.findable(...)` whose `Findable` is written next to it, and the self-test fails if a drawn row isn't inside one or a `Findable` isn't drawn.
 
 How it draws: each view is hosted in a window that's never ordered front, given a moment to settle (onAppear, async work), and its layer tree is drawn by Core Animation's own renderer (`CARenderer`) into a Metal texture: the renderer that draws windows on screen, so Liquid Glass, materials and vibrancy come out as they do in the app. AppKit's `cacheDisplay` (try `GLIDE_RENDER_ENGINE=appkit`) leaves glass empty and text in it black; `ImageRenderer` can't draw AppKit controls or scroll views. The window claims to be key, so controls, switches and traffic lights draw in their active colors. Animations are switched off, so everything is drawn where its animation would end.
 
@@ -213,29 +217,52 @@ Open them with `open -g "glideball://…"` (the `-g` keeps Glideball in the back
 | `glideball://check-for-updates` | Opens Software Update and checks. |
 | `glideball://import?d=<payload>` | A shared setup: shows its preview. Never changes anything by itself. Works with the switch off. |
 
-### Shared setups (`glideball://import`)
+### Shared setups (`/s/#…` and `glideball://import`)
 
-Share… (each page's header menu, the Apps page per setup, Sync › Export) makes a share of one part
-(`pointer`, `scrolling`, `buttons`, `look`), one `app-setup`, or `everything` (`SharedSetup.swift`).
-The JSON is the usual settings file type (`.glide-settings`) with `"format": "glideball-share"`, a
-`kind` and only that part; `everything` also carries `config`, so an older Glideball imports it as a
-plain settings file. No Mac name goes in it. `version` follows the settings file's rule (2 only when
-gestures, media keys, Open an app or per-display speeds are in it). The link is
-`glideball://import?d=` + base64url (no padding) of raw-deflated JSON (Compression's `COMPRESSION_ZLIB`),
-offered only when the whole URL is at most 2,000 characters; otherwise it's file only.
+The format is written once in [SHARE-FORMAT.md](SHARE-FORMAT.md); the app (`SharedSetup.swift`) and
+the website's share page (`website/s/share-decode.js`) both follow it and are checked against the same
+fixtures (`website/tests/fixtures/share/`: `swift-made.json` from `scripts/import-sim/run.sh
+--write-fixtures`, `js-made.json` and `hostile.json` from `node website/tests/make-share-fixtures.mjs`;
+import-sim reads all three with the Swift decoder, `website/tests/share-page.test.mjs` with the page's).
+
+Share… (each page's header menu, the Apps page per setup, Sync › Export) is a checklist: Pointer feel,
+Per-display speeds (only when there are some), Scroll feel, Buttons, Combos, Gestures, each app setup,
+Ball color and look, Sounds, with Everything and None and a summary line. A page's menu ticks that
+page's part; Share Everything… ticks the last choice (`ShareChoiceMemory`, `GlideShareParts`), or
+everything but per-display speeds the first time. The JSON (`.glide-settings`, `"format": "glideball-share"`,
+`"kind": "parts"`, `parts`) carries exactly the ticked parts, plus `from` (the sender's name, below) when
+they chose it. No Mac name goes in it. `version` follows the settings file's rule.
+
+Copy Link and the QR code give `https://glideball.netlify.app/s/#<d>`: the website shows what's in it
+and its Import to Glideball button opens `glideball://import?d=<d>` (the same payload; the app still
+accepts it directly, and beta 12's one-`kind` links still import). `<d>` is base64url (no padding) of
+raw-deflated JSON (Compression's `COMPRESSION_ZLIB`; the page reads it with `DecompressionStream('deflate-raw')`).
+The payload after `#` never reaches a server, and nothing is stored. A link is offered only when it's at
+most 2,000 characters; otherwise Share… says by how much and offers the file.
+
+The sender's name (`SharingName.swift`): optional, asked in the Welcome Tour's name step and in Settings ›
+General › Sharing, cleaned and at most 40 characters, in this Mac's UserDefaults only (`GlideSharingName`,
+`GlideSharingNameOnPictures`, `GlideSharingNameInLinks`). It's not part of `GlideConfig`, so never synced,
+backed up or exported; it's never in the opt-in stats, and `CrashReports.scrub` takes it out of crash
+reports (the self-test's "the sharing name stays private" checks both). Both switches are off without a
+name and on with the first one. It goes on share pictures, badge pictures and the weekly recap with the
+first switch, and into a link or file's `from` with the second.
 
 Receiving is the dangerous side, since any page can open the link:
 - A link or file opens a preview sheet over Glideball's window listing every setting that would change,
-  before and after (`ImportReview.swift`); actions that open an app or press keys are marked, and an
-  Open shows its bundle ID. Only Apply changes anything: a backup checkpoint, the change, Undo in the toast.
+  part by part, before and after (`ImportReview.swift`), each part with a checkbox to leave it out; a
+  sender's name shows as "From …, the name they typed, not checked by Glideball". Actions that open an
+  app or press keys are marked, and an Open shows its bundle ID. Only Apply changes anything, and only
+  the ticked parts: a backup checkpoint, the change, Undo in the toast (which puts the ball color and
+  sounds back too).
 - One preview at a time; anything arriving while one is open, or in the 1.5 s after it closes, is dropped.
   Links also share the URL rate limit (20 a second).
 - The URL is at most 2,100 characters, `d` once and at most 2,048, inflated into a fixed 64 KB buffer
   (anything that fills it is refused), JSON nested at most 32 deep, a known `format`, `kind` and version.
 - Every share, settings file and KensingtonWorks import goes through `GlideConfig.sanitizedForImport()`
   (`ImportSafety.swift`): values clamped to the sliders' ranges, text cleaned, counts capped, bundle IDs
-  and shortcuts checked, and the primary button never set. A share from someone else keeps this Mac's
-  global shortcuts, per-display speeds and pause switch. Unknown fields are ignored. What any of them
+  and shortcuts checked, and the primary button never set. A share never changes global shortcuts or
+  the pause switch, and per-display speeds only when that part is in it and ticked. Unknown fields are ignored. What any of them
   would give is then clamped like every config from a file, backup or sync (`GlideConfig.clamped()`).
 - A chosen or double-clicked file is read by `ImportFile` (`SharedSetup.swift`): plain files only (a link
   someone chose is followed, a pipe or device never), at most 1 MB, then a share or a settings file.

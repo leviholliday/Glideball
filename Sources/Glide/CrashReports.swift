@@ -161,7 +161,8 @@ enum CrashReports {
                                        (#"(?<![^\s@'"<>()])[^\s@'"<>()]++@[^\s@'"<>()]+\.[A-Za-z]{2,}"#, "(email)")] {
             out = out.replacingOccurrences(of: pattern, with: replacement, options: [.regularExpression, .caseInsensitive])
         }
-        for name in [NSUserName(), NSFullUserName()] where name.count >= 3 {
+        // …and the name you may have typed for sharing (Settings › General › Sharing).
+        for name in [NSUserName(), NSFullUserName(), SharingName.name()] where name.count >= 3 {
             out = out.replacingOccurrences(of: name, with: "(name)", options: .caseInsensitive)
         }
         // One line: line breaks and tabs become spaces.

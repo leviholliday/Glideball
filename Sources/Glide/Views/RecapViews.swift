@@ -302,6 +302,8 @@ struct LastWeekButton: View {
 /// The recap as a share picture (`ShareCardView` draws the stage around it).
 struct RecapShareContent<Trackball: View>: View {
     let recap: WeeklyRecap
+    /// The name you chose to put on pictures, or nil.
+    var name: String? = nil
     @ViewBuilder var trackball: Trackball
 
     var body: some View {
@@ -309,7 +311,13 @@ struct RecapShareContent<Trackball: View>: View {
             trackball
             VStack(alignment: .leading, spacing: 11) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("My week with Glideball", comment: "Share picture heading for the weekly recap")
+                    Group {
+                        if let name {
+                            Text("\(name)’s week with Glideball", comment: "Share picture heading for the weekly recap, with the person's name; %@ is the name they typed")
+                        } else {
+                            Text("My week with Glideball", comment: "Share picture heading for the weekly recap")
+                        }
+                    }
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(.white.opacity(0.62))
                     Text(verbatim: (recap.start..<recap.end.addingTimeInterval(3600)).formatted(.interval.month(.abbreviated).day()))

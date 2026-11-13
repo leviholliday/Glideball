@@ -215,7 +215,11 @@ enum SelfTest {
             theirs.buttons = [0: .disabled, 2: .openApp(bundleID: "com.apple.Notes"), 3: .shortcut(.copy)]
             theirs.chords = [Chord(buttons: [2, 3], action: .shortcut(.missionControl))]
             let share = try unwrap(SharedSetup.make(.buttons, from: theirs, look: nil), "couldn't make a share")
-            let link = try unwrap(share.link(), "the share didn't fit in a link")
+            let web = try unwrap(share.link(), "the share didn't fit in a link")
+            try check(web.absoluteString.hasPrefix(SharedSetup.webPrefix), "Copy Link isn't the website's /s/ link")
+            let link = try unwrap(share.appLink(), "no glideball:// link")
+            try check(web.fragment == URLComponents(url: link, resolvingAgainstBaseURL: false)?.queryItems?.first?.value,
+                      "the website link and the glideball:// link carry different payloads")
             guard case .success(let parsed)? = ExternalControl.parseImport(link) else { throw Failure("a good link was refused") }
             model.lastIncomingClosed = -.infinity
             if LaunchExperience.shared.show != nil {
@@ -226,6 +230,29 @@ enum SelfTest {
                 model.incomingIgnoresLaunch = true
             }
             defer { model.incomingIgnoresLaunch = false }
+            // A brand-new Mac with the Welcome Tour up: the link waits, and shows once the tour closes.
+            // (What's New and the icon question come before a waiting preview after an update,
+            // so the order is only checked on a fresh install; "one thing at a time" covers the rest.)
+            if !WhatsNew.isPending && !AppIconChoice.shared.promptDue && !model.showingWelcomeTour {
+                defer {
+                    model.pendingIncoming = nil
+                    model.queuedIncoming = nil
+                    model.lastIncomingClosed = -.infinity
+                }
+                model.showWelcomeTour()
+                model.receiveShare(parsed, from: .link)
+                try check(model.pendingIncoming == nil && model.queuedIncoming != nil, "a link's preview showed over the Welcome Tour")
+                model.closeWelcomeTour()
+                try check(model.queuedIncoming != nil && !model.incomingMustWait, "the link that waited for the tour was dropped")
+                if LaunchExperience.shared.show == nil {
+                    try check(model.presentNextPrompt(ignoringWindow: true) == .importPreview && model.pendingIncoming != nil && model.queuedIncoming == nil,
+                              "the link that waited for the tour didn't show after it")
+                } else {
+                    // The first-launch intro is still playing: it waits for that too (the order is checked in "one thing at a time").
+                    try check(model.presentNextPrompt(ignoringWindow: true) == nil && model.queuedIncoming != nil,
+                              "the link that waited for the tour showed over the launch animation")
+                }
+            }
             model.receiveShare(parsed, from: .link)
             let pending = try unwrap(model.pendingIncoming, "a link didn't open a preview")
             try check(model.config == before, "a link changed settings before Apply")
@@ -244,6 +271,15 @@ enum SelfTest {
             try check(model.toast?.action == .undoImport, "no Undo after Apply")
             model.undoImport()
             try check(model.config == before, "Undo didn't put everything back")
+            // Leaving parts out in the preview: only the ticked ones change.
+            model.lastIncomingClosed = -.infinity
+            model.receiveShare(parsed, from: .link)
+            try check(model.pendingIncoming != nil, "the link didn't open its preview again")
+            model.applyIncoming(parts: [.combos])
+            try check(model.config.chords.map(\.buttons) == [[2, 3]] && model.config.buttons == before.buttons,
+                      "applying only Combos changed the buttons, or not the combos")
+            model.undoImport()
+            try check(model.config == before, "Undo after a partial apply didn't put everything back")
             model.receiveShare(parsed, from: .link)
             try check(model.pendingIncoming == nil, "a link right after a preview closed opened another")
 
@@ -793,6 +829,59 @@ enum SelfTest {
             return "crash report \(payloads[0].1.count) keys, stats \(payloads[1].1.count) keys, all labelled"
         }
 
+        step("the sharing name stays private") {
+            // The name typed for sharing (Settings › General › Sharing) goes on pictures and links
+            // only when switched on, and never into stats, crash reports, settings, backups or sync.
+            let d = UserDefaults.standard
+            let name = "Quokka Zyxwvut"
+            defer {
+                d.removeObject(forKey: SharingName.nameKey)
+                d.removeObject(forKey: SharingName.picturesKey)
+                d.removeObject(forKey: SharingName.linksKey)
+                SharingNameStore.shared.reload()
+            }
+            try check(!SharingName.onPictures() && !SharingName.inLinks(), "the name switches are on without a name")
+            SharingName.setName("  \u{202E}\(name)\u{0007}  ")
+            try check(SharingName.name() == name, "the name wasn't cleaned: \(SharingName.name().debugDescription)")
+            try check(SharingName.onPictures() && SharingName.inLinks(), "the first name didn't turn both switches on")
+            SharingName.setName(String(repeating: "x", count: 200))
+            try check(SharingName.name().count == SharingName.maxLength, "the name isn't cut to \(SharingName.maxLength)")
+            SharingName.setName(name)
+
+            func contains(_ data: Data?) -> Bool { data.map { String(decoding: $0, as: UTF8.self).contains(name) } ?? false }
+            let stats = try JSONEncoder().encode(ShareData.shared.stats(model, installID: "00000000-0000-0000-0000-000000000000"))
+            try check(!contains(stats), "the name is in the opt-in stats")
+            let ips = Sandbox.folder.appendingPathComponent("Glide-name-test.ips")
+            let header = #"{"bug_type":"309","app_version":"2.10","build_version":"1","os_version":"macOS 26.1 (25B1)"}"#
+            let body = #"{"exception":{"type":"EXC_BAD_ACCESS","signal":"SIGSEGV"},"termination":{"indicator":"for \#(name)"},"#
+                + #""asi":{"x":["Fatal error: \#(name) said hi"]},"usedImages":[{"name":"GlideSandbox"}],"faultingThread":0,"#
+                + #""threads":[{"frames":[{"imageIndex":0,"imageOffset":12,"symbol":"\#(name)()"}]}]}"#
+            try Data((header + "\n" + body).utf8).write(to: ips)
+            let report = try unwrap(CrashReports.read(ips, date: Date(), installID: "x"), "the made-up crash report wasn't read")
+            try check(!contains(try JSONEncoder().encode(report)), "the name is in a crash report")
+            try check(!contains(try JSONEncoder().encode(model.config)), "the name is in the settings (and so in sync and backups)")
+            // Settings › Privacy's "What this sends" shows the real payloads, so the name mustn't be there either.
+            for choice in ShareChoice.allCases {
+                let preview = SendPreview.make(choice, model: model, installID: "00000000-0000-0000-0000-000000000000")
+                for field in preview.crash + preview.stats {
+                    try check(!field.label.contains(name) && !field.value.contains(name),
+                              "the name is in Privacy's “What this sends” (\(choice.rawValue), \(field.label))")
+                }
+            }
+            try check(!contains(try JSONEncoder().encode(CrashReports.Report.example(installID: "x"))),
+                      "the name is in the crash report Privacy previews")
+
+            let share = try unwrap(model.share(parts: [.pointer]), "no share")
+            try check(share.from == name && contains(try share.fileData()), "the name isn't in a shared file with the switch on")
+            SharingName.setInLinks(false)
+            let quiet = try unwrap(model.share(parts: [.pointer]), "no share")
+            try check(quiet.from == nil && !contains(try quiet.fileData()), "the name went into a share with the switch off")
+            try check(ShareCardView(card: .overview, delight: model.delight).name == name, "pictures don't get the name")
+            SharingName.setOnPictures(false)
+            try check(ShareCardView(card: .overview, delight: model.delight).name == nil, "pictures get the name with the switch off")
+            return "cleaned and capped; on pictures and links only when switched on; never in stats, crash reports, settings or the Privacy preview"
+        }
+
         step("crash report scrubbing") {
             // The same cases as the server's (website/tests/usage.test.mjs), so neither can be got round.
             let cases: [(String, String)] = [
@@ -855,10 +944,21 @@ enum SelfTest {
     /// Hosts and draws `view` offscreen; fails if nothing was drawn (unless `allowBlank`).
     private static func draw<V: View>(_ view: V, _ what: String, size: NSSize? = nil,
                                       chrome: Offscreen.Chrome = .plain, allowBlank: Bool = false, settle: Double = 0.02) throws {
-        let rep = Offscreen.render(view, size: size ?? (chrome == .plain ? nil : RenderUI.windowSize), chrome: chrome,
-                                   appearance: nil, scale: 1, settle: settle)
-        let drawn = try unwrap(rep, "\(what) didn't draw")
-        try check(allowBlank || !Offscreen.isBlank(drawn), "\(what) drew nothing")
+        // Wait for the real condition, not a fixed delay: a view whose first layout hasn't
+        // landed yet (a sheet with a scroll view, say) draws blank for a moment. Drawn again
+        // with a longer settle each time, until it shows something or about 2 s have gone.
+        // (2.10 beta 13: "the preview of a link drew nothing" now and then on a fresh install.)
+        var wait = settle
+        var drawn: NSBitmapImageRep?
+        for _ in 0..<6 {
+            let rep = Offscreen.render(view, size: size ?? (chrome == .plain ? nil : RenderUI.windowSize), chrome: chrome,
+                                       appearance: nil, scale: 1, settle: wait)
+            drawn = rep
+            if let rep, allowBlank || !Offscreen.isBlank(rep) { return }
+            wait = min(max(wait * 4, 0.05), 0.8)
+        }
+        _ = try unwrap(drawn, "\(what) didn't draw")
+        try check(allowBlank, "\(what) drew nothing")
     }
 
     private static func step(_ name: String, _ body: () throws -> String) {

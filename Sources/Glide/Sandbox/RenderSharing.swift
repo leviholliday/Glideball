@@ -55,7 +55,72 @@ extension RenderUI {
                 return IncomingSetup(source: .kensingtonWorks, content: .kensingtonWorks(imp))
             })
 
+        // A checklist share from someone who put their name on it, with two parts left out.
+        add("share-preview-parts", "A link with several parts and the sender's name; Combos and the ball color unticked",
+            draw: { dark, scale in
+                var them = friend
+                var safari = AppProfile(bundleID: "com.apple.Safari", name: "Safari")
+                safari.trackingSpeed = 6
+                safari.buttons = [2: .back, 3: .forward]
+                them.appProfiles = [safari]
+                guard let s = SharedSetup.make([.pointer, .scrolling, .buttons, .combos, .app("com.apple.Safari"), .look, .sounds], from: them,
+                                               look: ShareLook(theme: "ember", custom: nil),
+                                               sounds: ShareSounds(on: true, volume: 0.5, kinds: ["ticks": false]), name: "Sam")
+                else { return nil }
+                let i = IncomingSetup(source: .link, content: .shared(s))
+                return sheet(IncomingSetupSheet(model: model, incoming: i, chosen: Set(s.parts).subtracting([.combos, .look])), dark: dark, scale: scale)
+            })
+        add("share-preview-beta12", "A beta 12 link (one kind), read as its parts") { dark, scale in
+            // {"format":"glideball-share","version":1,"kind":"pointer","trackingSpeed":12,"precisionSpeed":0.5}
+            let json = #"{"format":"glideball-share","version":1,"kind":"pointer","trackingSpeed":12,"precisionSpeed":0.5,"writtenBy":"2.10-beta.12"}"#
+            guard let packed = SharedSetup.deflate(Data(json.utf8)),
+                  let s = try? SharedSetup.decode(linkPayload: SharedSetup.base64url(packed)) else { return nil }
+            return sheet(IncomingSetupSheet(model: model, incoming: IncomingSetup(source: .link, content: .shared(s))), dark: dark, scale: scale)
+        }
+
         // Sending.
+        add("share-sheet-checklist", "Share… from Share Everything: the checklist, everything but per-display speeds ticked") { dark, scale in
+            sheet(ShareSetupSheet(model: model, request: ShareRequest(kind: .everything)), dark: dark, scale: scale)
+        }
+        add("share-sheet-some", "Share…: pointer, buttons and one app setup ticked, with a name going with it",
+            prepare: { useSharingName("Levi") }) { dark, scale in
+            let first = model.config.appProfiles.first.map { SharePart.app($0.bundleID) }
+            return sheet(ShareSetupSheet(model: model, request: ShareRequest(kind: .everything),
+                                         chosen: Set([.pointer, .buttons, .gestures] + (first.map { [$0] } ?? []))), dark: dark, scale: scale)
+        }
+        add("share-sheet-none", "Share… with nothing ticked") { dark, scale in
+            sheet(ShareSetupSheet(model: model, request: ShareRequest(kind: .everything), chosen: []), dark: dark, scale: scale)
+        }
+        for named in [false, true] {
+            let suffix = named ? "-named" : ""
+            let note = named ? " with a name on it" : " without a name"
+            add("share-card-checklist\(suffix)", "The picture of a share of several parts\(note)",
+                prepare: { if named { useSharingName("Levi") } }) { _, _ in
+                let parts: Set<SharePart> = [.pointer, .scrolling, .buttons]
+                let link = model.share(parts: parts)?.link()?.absoluteString
+                return ShareImage.render(.setup(model.setupCard(parts: parts, link: link)), delight: model.delight)
+            }
+        }
+        // Without a name these are RenderScreens' share-card-overview and share-card-badge.
+        add("share-card-overview-named", "Overview's share picture with a name on it",
+            prepare: { useSharingName("Levi") }) { _, _ in
+            ShareImage.render(.overview, delight: model.delight)
+        }
+        add("share-card-badge-named", "A badge's share picture with a name on it",
+            prepare: { useSharingName("Levi") }) { _, _ in
+            guard let m = Milestone.all.first(where: { model.delight.ledger.earned[$0.id] != nil }) ?? Milestone.all.first else { return nil }
+            return ShareImage.render(.badge(m, model.delight.ledger.earned[m.id] ?? Date()), delight: model.delight)
+        }
+        add("settings-general-sharing", "Settings › General with a name typed (the Sharing group at the bottom)",
+            prepare: { useSharingName("Levi") }) { dark, scale in
+            card(GeneralSettingsPane(model: model), width: 640, dark: dark, scale: scale)
+        }
+        add("tour-name-filled", "The tour's name step with a name typed",
+            prepare: { useSharingName("Levi") }) { dark, scale in
+            mainWindow(model, tab: .overview, dark: dark, scale: scale) {
+                WelcomeTourView(model: model, step: .name)
+            }
+        }
         add("share-sheet", "Share…: pick a part, then a link, a file or a picture",
             prepare: { ShareSetupSheet.sandboxDone = String(localized: "Link copied. Paste it anywhere.") }) { dark, scale in
             sheet(ShareSetupSheet(model: model, request: ShareRequest(kind: .scrolling)), dark: dark, scale: scale)
@@ -87,7 +152,7 @@ extension RenderUI {
             prepare: { useSampleKensingtonWorks() }) { dark, scale in
             fullPage(page(.backup, model), dark: dark, scale: scale)
         }
-        add("tour-5-done-kensingtonworks", "The tour's last step with KensingtonWorks settings found",
+        add("tour-6-done-kensingtonworks", "The tour's last step with KensingtonWorks settings found",
             prepare: { useSampleKensingtonWorks() }) { dark, scale in
             mainWindow(model, tab: .overview, dark: dark, scale: scale) {
                 WelcomeTourView(model: model, step: .done)
@@ -102,7 +167,17 @@ extension RenderUI {
         }
     }
 
+    /// A name typed for sharing (both switches on, as after typing one).
+    static func useSharingName(_ name: String) {
+        SharingName.setName(name)
+        SharingNameStore.shared.reload()
+    }
+
     static func resetSharing(_ model: AppModel) {
+        for key in [SharingName.nameKey, SharingName.picturesKey, SharingName.linksKey, ShareChoiceMemory.key] {
+            UserDefaults.standard.removeObject(forKey: key)
+        }
+        SharingNameStore.shared.reload()
         KensingtonWorksSource.sandboxSettings = nil
         ShareSetupSheet.sandboxDone = nil
         model.pendingIncoming = nil

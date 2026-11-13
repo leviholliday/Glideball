@@ -1,26 +1,37 @@
 import Compression
 import Foundation
 
-// Sharing a setup with someone else: everything, one app setup, or one part
-// (pointer feel, scroll feel, buttons and gestures, ball color and look).
+// Sharing a setup with someone else: whichever parts the person ticks in
+// Share… (pointer feel, per-display speeds, scroll feel, buttons, combos,
+// gestures, each app setup, ball color, sounds). The format is written once, in
+// docs/SHARE-FORMAT.md; the website's /s/ page reads the same thing
+// (website/s/share-decode.js), and both are checked against the same fixtures.
 //
-// Two carriers, the same JSON inside:
-//  - a file: the usual .glide-settings type, with a `format` and `kind` and
-//    only the chosen parts ("everything" also carries `config`, so an older
-//    Glideball can still import it as a plain settings file);
-//  - a link: glideball://import?d=<base64url of raw-deflated JSON>, when the
-//    whole URL fits in 2,000 characters (otherwise it's file only).
+// Three carriers, the same JSON inside:
+//  - a file: the usual .glide-settings type, with a `format`, `kind: "parts"`,
+//    `parts` and only those parts' fields;
+//  - a link to the website, https://glideball.netlify.app/s/#<d>, which shows
+//    what's in it and offers Import to Glideball (the payload is after the #,
+//    so it never reaches a server);
+//  - glideball://import?d=<d>, what that page's button opens.
+// <d> is base64url (no padding) of raw-deflated JSON. A link is offered only
+// when it fits in 2,000 characters (otherwise it's file only).
 //
 // Receiving is the dangerous side: any web page can open a glideball:// link.
 // So nothing here changes anything. A share is decoded (size-capped, depth-
 // checked, strictly validated), turned into the settings it would give
-// (`applied(to:)`, through the same `sanitizedForImport()` as file import) and
-// shown as a preview; only Apply in Glideball's own window changes something.
-// The primary button never changes, and "everything" from someone else keeps
-// this Mac's own global shortcuts, per-display speeds and pause switch.
+// (`applied(to:parts:)`, through the same sanitizing as file import) and shown
+// as a preview, part by part; only Apply in Glideball's own window changes
+// something, and only the parts still ticked there. The primary button never
+// changes, and a share never carries or changes global shortcuts or the pause switch.
+//
+// Beta 12's shares (one `kind` each) are still read: they're turned into the
+// same parts on the way in (`init(from:)`).
 //
 // Foundation only, so the simulators can check it.
 
+/// What Share… started from (a page's share menu, an app setup's row). Also the
+/// kind a beta 12 share said it was.
 enum ShareKind: String, Codable, CaseIterable, Identifiable {
     case everything
     case appSetup = "app-setup"
@@ -29,6 +40,61 @@ enum ShareKind: String, Codable, CaseIterable, Identifiable {
     case buttons
     case look
     var id: String { rawValue }
+}
+
+/// One thing a share can carry: a row of Share…'s checklist, and of the preview's.
+enum SharePart: Hashable, Identifiable, Comparable {
+    case pointer, displays, scrolling, buttons, combos, gestures, look, sounds
+    /// One app setup, by bundle ID.
+    case app(String)
+
+    /// The parts that aren't app setups, in checklist order.
+    static let fixed: [SharePart] = [.pointer, .displays, .scrolling, .buttons, .combos, .gestures, .look, .sounds]
+
+    /// "pointer", "app:com.apple.Safari" (docs/SHARE-FORMAT.md).
+    var id: String {
+        switch self {
+        case .pointer: "pointer"
+        case .displays: "displays"
+        case .scrolling: "scrolling"
+        case .buttons: "buttons"
+        case .combos: "combos"
+        case .gestures: "gestures"
+        case .look: "look"
+        case .sounds: "sounds"
+        case .app(let id): "app:" + id
+        }
+    }
+
+    init?(id: String) {
+        if id.hasPrefix("app:") {
+            let bundle = String(id.dropFirst(4))
+            guard ImportText.isBundleID(bundle) else { return nil }
+            self = .app(bundle)
+            return
+        }
+        guard let p = Self.fixed.first(where: { $0.id == id }) else { return nil }
+        self = p
+    }
+
+    /// Checklist order: the feel, the buttons, app setups, then look and sound.
+    var rank: Int {
+        switch self {
+        case .pointer: 0
+        case .displays: 1
+        case .scrolling: 2
+        case .buttons: 3
+        case .combos: 4
+        case .gestures: 5
+        case .app: 6
+        case .look: 7
+        case .sounds: 8
+        }
+    }
+
+    static func < (a: SharePart, b: SharePart) -> Bool { a.rank < b.rank }
+
+    var bundleID: String? { if case .app(let id) = self { id } else { nil } }
 }
 
 /// A ball color: one of Glideball's own (by id), or "custom" with three hex colors.
@@ -41,98 +107,191 @@ struct ShareLook: Codable, Equatable {
     var sanitized: ShareLook? {
         guard Self.themeIDs.contains(theme) else { return nil }
         guard theme == "custom" else { return ShareLook(theme: theme, custom: nil) }
-        let colors = (custom ?? []).filter { $0.count == 6 && UInt32($0, radix: 16) != nil }.map { $0.uppercased() }
+        let colors = (custom ?? []).filter { s in
+            s.count == 6 && s.unicodeScalars.allSatisfy { CharacterSet(charactersIn: "0123456789abcdefABCDEF").contains($0) }
+        }.map { $0.uppercased() }
         guard colors.count == 3 else { return nil }
         return ShareLook(theme: theme, custom: colors)
     }
 }
 
-struct SharedSetup: Codable {
+/// The Sounds settings (Settings › Sound): the one switch, the volume and each kind's switch.
+struct ShareSounds: Codable, Equatable {
+    /// SoundKind's raw values (Sounds.swift), the only keys read.
+    static let kindIDs = ["pauseResume", "modes", "ticks", "milestones", "buttons"]
+    var on: Bool
+    var volume: Double
+    var kinds: [String: Bool]
+
+    var sanitized: ShareSounds {
+        ShareSounds(on: on, volume: volume.clamped(to: 0...1, or: 1),
+                    kinds: kinds.filter { Self.kindIDs.contains($0.key) })
+    }
+
+    init(on: Bool, volume: Double, kinds: [String: Bool]) {
+        self.on = on
+        self.volume = volume
+        self.kinds = kinds
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        on = try c.decode(Bool.self, forKey: .on)
+        volume = (try? c.decodeIfPresent(Double.self, forKey: .volume)) ?? 1
+        kinds = ((try? c.decodeIfPresent([String: Bool].self, forKey: .kinds)) ?? nil) ?? [:]
+    }
+}
+
+struct SharedSetup {
     static let formatMarker = "glideball-share"
+    /// The page that shows a share and offers Import to Glideball.
+    static let webPrefix = "https://glideball.netlify.app/s/#"
+    static let appPrefix = "glideball://import?d="
     /// Links longer than this are file only (some apps cut longer links short).
     static let maxLinkLength = 2_000
     /// What a receiver accepts in `d` (a little over what a sender makes).
     static let maxPayloadLength = 2_048
-    /// The most JSON a link's payload may inflate to.
+    /// The most JSON a link's payload may inflate to (output that fills it is refused).
     static let maxInflatedBytes = 64 * 1024
+    /// The sender's name: at most this many characters.
+    static let maxFromLength = 40
 
     var format = SharedSetup.formatMarker
     var version: Int
-    var kind: ShareKind
-    /// The app setup's name, or nothing.
-    var name: String?
-    /// everything
-    var config: GlideConfig?
-    /// pointer
-    var trackingSpeed: Double?
-    var precisionSpeed: Double?
-    /// scrolling
-    var scroll: ScrollSettings?
-    var ballScrollSpeed: Double?
-    /// buttons
-    var buttons: [Int: ButtonAction]?
-    var chords: [Chord]?
-    var gesturesEnabled: Bool?
-    /// app-setup
-    var appSetup: AppProfile?
-    /// look (and everything)
-    var look: ShareLook?
+    /// What's in it, in checklist order.
+    var parts: [SharePart]
+    /// What a beta 12 share said it was (nil for a checklist share).
+    var legacyKind: ShareKind?
+    /// The sender's name, as they typed it (never checked). Only when they chose to send it.
+    var from: String?
     /// The Glideball that wrote it. No Mac name: shares go to other people.
     var writtenBy: String?
+
+    // pointer
+    var trackingSpeed: Double?
+    var precisionSpeed: Double?
+    // displays
+    var displaySpeeds: DisplaySpeeds?
+    // scrolling
+    var scroll: ScrollSettings?
+    var ballScrollSpeed: Double?
+    // buttons (entries that aren't gestures) and gestures (entries that are)
+    var buttons: [Int: ButtonAction]?
+    // combos
+    var chords: [Chord]?
+    // gestures
+    var gesturesEnabled: Bool?
+    var gestureDistance: GestureDistance?
+    var gestureSteadyHands: Bool?
+    // app:<id>
+    var apps: [AppProfile]?
+    // look
+    var look: ShareLook?
+    // sounds
+    var sounds: ShareSounds?
 
     enum Problem: Error, Equatable {
         case tooBig, notBase64, notDeflate, tooDeep, notJSON, notAShare, unsupportedVersion, missingPart
     }
 
+    init(version: Int, parts: [SharePart]) {
+        self.version = version
+        self.parts = parts
+    }
+
+    /// What the share is, for the preview's title and symbol: what a beta 12 share
+    /// said, the one part a checklist share holds, or "everything" for several.
+    var kind: ShareKind {
+        if let legacyKind { return legacyKind }
+        guard parts.count == 1 else {
+            // Only app setups: still "an app setup" when there's one.
+            return .everything
+        }
+        switch parts[0] {
+        case .pointer, .displays: return .pointer
+        case .scrolling: return .scrolling
+        case .buttons, .combos, .gestures: return .buttons
+        case .look, .sounds: return .look
+        case .app: return .appSetup
+        }
+    }
+
     // MARK: Making one
 
-    /// A share of `kind` from these settings and look. `appSetup` picks the app setup for `.appSetup`.
-    static func make(_ kind: ShareKind, from config: GlideConfig, look: ShareLook?, appSetup bundleID: String? = nil,
-                     writtenBy: String? = nil) -> SharedSetup? {
-        var s = SharedSetup(version: 1, kind: kind)
+    /// A share of `parts` from these settings, ball color and sounds. Parts with
+    /// nothing in them (no per-display speeds, an app setup that's gone) are left
+    /// out; nil if nothing is left.
+    static func make(_ parts: [SharePart], from config: GlideConfig, look: ShareLook?, sounds: ShareSounds?,
+                     name: String? = nil, writtenBy: String? = nil) -> SharedSetup? {
+        var s = SharedSetup(version: 1, parts: [])
         s.writtenBy = writtenBy
-        switch kind {
-        case .everything:
-            var c = config
-            c.enabled = true
-            c.displaySpeeds = DisplaySpeeds()   // someone else's displays mean nothing here
-            s.config = c
-            s.look = look
-        case .appSetup:
-            guard let p = config.profile(for: bundleID) else { return nil }
-            s.appSetup = p
-            s.name = p.name
-        case .pointer:
-            s.trackingSpeed = config.trackingSpeed
-            s.precisionSpeed = config.precisionSpeed
-        case .scrolling:
-            s.scroll = config.scrollSettings
-            s.ballScrollSpeed = config.ballScrollSpeed
-        case .buttons:
-            s.buttons = config.buttons.filter { $0.key != 0 }
-            s.chords = config.chords
-            s.gesturesEnabled = config.gesturesEnabled
-        case .look:
-            guard let look else { return nil }
-            s.look = look
+        s.from = name.map { ImportText.clean($0, max: maxFromLength) }.flatMap { $0.isEmpty ? nil : $0 }
+        var kept: [SharePart] = []
+        var map: [Int: ButtonAction] = [:]
+        var unique: [SharePart] = []
+        for p in parts where !unique.contains(p) { unique.append(p) }
+        // Checklist order; app setups in the order given.
+        let ordered = unique.enumerated().sorted { ($0.element.rank, $0.offset) < ($1.element.rank, $1.offset) }.map(\.element)
+        for part in ordered {
+            switch part {
+            case .pointer:
+                s.trackingSpeed = config.trackingSpeed
+                s.precisionSpeed = config.precisionSpeed
+            case .displays:
+                guard !config.displaySpeeds.speeds.isEmpty else { continue }
+                s.displaySpeeds = config.displaySpeeds
+            case .scrolling:
+                s.scroll = config.scrollSettings
+                s.ballScrollSpeed = config.ballScrollSpeed
+            case .buttons:
+                // Every button 1–7 that isn't a gesture, Default spelled out, so the
+                // receiver's own are replaced (a gesture button is the Gestures part's).
+                for b in ImportLimits.buttons {
+                    let a = config.buttons[b] ?? .system
+                    if !a.isGesture { map[b] = a }
+                }
+            case .combos:
+                s.chords = config.chords
+            case .gestures:
+                for b in ImportLimits.buttons {
+                    if let a = config.buttons[b], a.isGesture { map[b] = a }
+                }
+                s.gesturesEnabled = config.gesturesEnabled
+                s.gestureDistance = config.gestureDistance
+                s.gestureSteadyHands = config.gestureSteadyHands
+            case .app(let id):
+                guard let p = config.profile(for: id) else { continue }
+                s.apps = (s.apps ?? []) + [p]
+            case .look:
+                guard let look else { continue }
+                s.look = look
+            case .sounds:
+                guard let sounds else { continue }
+                s.sounds = sounds
+            }
+            kept.append(part)
         }
+        guard !kept.isEmpty else { return nil }
+        if !map.isEmpty { s.buttons = map }
+        s.parts = kept
         s.version = s.requiredVersion
         return s
     }
 
-    init(version: Int, kind: ShareKind) {
-        self.version = version
-        self.kind = kind
+    /// Share… from a page's menu: that page's part (or one app setup, or everything).
+    static func make(_ kind: ShareKind, from config: GlideConfig, look: ShareLook?, appSetup bundleID: String? = nil,
+                     sounds: ShareSounds? = nil, name: String? = nil, writtenBy: String? = nil) -> SharedSetup? {
+        make(kind.parts(in: config, appSetup: bundleID), from: config, look: look, sounds: sounds, name: name, writtenBy: writtenBy)
     }
 
     /// 2 when what's inside uses something a Glideball before 2.10 would drop (the
     /// settings file's own rule, `GlideConfig.requiredFileVersion`); otherwise 1.
     var requiredVersion: Int {
         var probe = GlideConfig()
-        if let config { probe = config }
         probe.buttons.merge(buttons ?? [:]) { $1 }
         probe.chords += chords ?? []
-        if let appSetup { probe.appProfiles.append(appSetup) }
+        probe.appProfiles += apps ?? []
+        if let displaySpeeds { probe.displaySpeeds = displaySpeeds }
         return probe.requiredFileVersion
     }
 
@@ -144,15 +303,27 @@ struct SharedSetup: Codable {
         return try e.encode(self)
     }
 
-    /// glideball://import?d=…, or nil when it would be longer than `maxLinkLength`.
-    func link() -> URL? {
+    /// The payload: base64url of the raw-deflated, compact JSON.
+    var payload: String? {
         let e = JSONEncoder()
         e.outputFormatting = [.sortedKeys]
-        // Chord ids are made fresh on import anyway; leave them out of the link.
-        guard let json = try? e.encode(LinkForm(self)), let packed = Self.deflate(json) else { return nil }
-        let text = "glideball://import?d=" + Self.base64url(packed)
-        guard text.count <= Self.maxLinkLength else { return nil }
-        return URL(string: text)
+        guard let json = try? e.encode(self), let packed = Self.deflate(json) else { return nil }
+        return Self.base64url(packed)
+    }
+
+    /// How long the website link would be (it's offered only up to `maxLinkLength`).
+    var linkLength: Int { Self.webPrefix.count + (payload?.count ?? Int.max / 2) }
+
+    /// https://glideball.netlify.app/s/#…, or nil when it would be longer than `maxLinkLength`.
+    func link() -> URL? {
+        guard let d = payload, Self.webPrefix.count + d.count <= Self.maxLinkLength else { return nil }
+        return URL(string: Self.webPrefix + d)
+    }
+
+    /// glideball://import?d=…, the same payload (what the website's Import button opens).
+    func appLink() -> URL? {
+        guard let d = payload, Self.webPrefix.count + d.count <= Self.maxLinkLength else { return nil }
+        return URL(string: Self.appPrefix + d)
     }
 
     /// Decodes a file's bytes. Throws for anything that isn't a share.
@@ -181,62 +352,75 @@ struct SharedSetup: Codable {
         }
         guard share.format == formatMarker else { throw Problem.notAShare }
         guard (1...GlideSettingsFile.currentVersion).contains(share.version) else { throw Problem.unsupportedVersion }
-        guard share.hasItsPart else { throw Problem.missingPart }
+        guard !share.parts.isEmpty else { throw Problem.missingPart }
         return share
-    }
-
-    /// The part its kind promises is there.
-    private var hasItsPart: Bool {
-        switch kind {
-        case .everything: config != nil
-        case .appSetup: appSetup.map { ImportText.isBundleID($0.bundleID) } ?? false
-        case .pointer: trackingSpeed != nil || precisionSpeed != nil
-        case .scrolling: scroll != nil
-        case .buttons: buttons != nil || chords != nil
-        case .look: look?.sanitized != nil
-        }
     }
 
     // MARK: What it would do
 
-    /// The settings `current` would become: only this share's part changes, after
-    /// the same clamping and checks as a settings file.
-    func applied(to current: GlideConfig) -> GlideConfig {
+    /// The settings `current` would become with `chosen` of this share's parts
+    /// (nil: all of them): only those change, after the same clamping and checks
+    /// as a settings file.
+    func applied(to current: GlideConfig, parts chosen: Set<SharePart>? = nil) -> GlideConfig {
+        let use = { (p: SharePart) in self.parts.contains(p) && (chosen?.contains(p) ?? true) }
         var c = current
-        switch kind {
-        case .everything:
-            guard let config else { return current }
-            c = config.sanitizedForImport()
-            c.enabled = current.enabled                  // the pause switch belongs to this Mac
-            c.globalShortcuts = current.globalShortcuts  // so do its keyboard shortcuts…
-            c.displaySpeeds = current.displaySpeeds      // …and its displays
-        case .appSetup:
-            guard let p = appSetup.flatMap(ImportSanitize.appSetup) else { return current }
-            if let i = c.appProfiles.firstIndex(where: { $0.bundleID == p.bundleID }) {
-                c.appProfiles[i] = p
-            } else if c.appProfiles.count < ImportLimits.maxAppSetups {
-                c.appProfiles.append(p)
-            }
-        case .pointer:
+        if use(.pointer) {
             if let v = trackingSpeed { c.trackingSpeed = v.clamped(to: SettingRanges.trackingSpeed, or: current.trackingSpeed) }
             if let v = precisionSpeed { c.precisionSpeed = v.clamped(to: SettingRanges.precisionSpeed, or: current.precisionSpeed) }
-        case .scrolling:
+        }
+        if use(.displays), let ds = displaySpeeds {
+            var probe = GlideConfig()
+            probe.displaySpeeds = ds
+            c.displaySpeeds = probe.sanitizedForImport().displaySpeeds
+        }
+        if use(.scrolling) {
             if let s = scroll { c.scrollSettings = ImportSanitize.scroll(s) }
             if let v = ballScrollSpeed { c.ballScrollSpeed = v.clamped(to: SettingRanges.ballScrollSpeed, or: current.ballScrollSpeed) }
-        case .buttons:
-            if let b = buttons { c.buttons = ImportSanitize.buttons(b) }
-            if let ch = chords { c.chords = ImportSanitize.chords(ch) }
+        }
+        // Each button the share sets, for the part it belongs to. One that can't be made
+        // safe (a shortcut with a key code that doesn't exist) becomes Default: the sender
+        // changed that button, and Default is the one safe thing to change it to.
+        for (b, raw) in buttons ?? [:] where ImportLimits.buttons.contains(b) && use(raw.isGesture ? .gestures : .buttons) {
+            let a = raw.sanitized() ?? .system
+            c.buttons[b] = a == .system ? nil : a
+        }
+        if use(.gestures) {
             if let g = gesturesEnabled { c.gesturesEnabled = g }
-        case .look:
-            break
+            if let d = gestureDistance { c.gestureDistance = d }
+            if let s = gestureSteadyHands { c.gestureSteadyHands = s }
+        }
+        if use(.combos), let ch = chords { c.chords = ImportSanitize.chords(ch) }
+        for p in apps ?? [] where use(.app(p.bundleID)) {
+            guard let safe = ImportSanitize.appSetup(p) else { continue }
+            if let i = c.appProfiles.firstIndex(where: { $0.bundleID == safe.bundleID }) {
+                c.appProfiles[i] = safe
+            } else if c.appProfiles.count < ImportLimits.maxAppSetups {
+                c.appProfiles.append(safe)
+            }
         }
         c = c.clamped()   // the same limits as every settings file (ConfigLimits)
         c.buttons[0] = current.buttons[0]   // the primary button never changes
+        c.enabled = current.enabled         // nor does the pause switch
+        c.globalShortcuts = current.globalShortcuts
         return c
     }
 
-    /// The ball color it brings, if any (checked).
-    var appliedLook: ShareLook? { look?.sanitized }
+    /// The ball color it brings, if that part is chosen (checked).
+    func appliedLook(parts chosen: Set<SharePart>? = nil) -> ShareLook? {
+        guard parts.contains(.look), chosen?.contains(.look) ?? true else { return nil }
+        return look?.sanitized
+    }
+
+    var appliedLook: ShareLook? { appliedLook() }
+
+    /// The sounds it brings, if that part is chosen (checked).
+    func appliedSounds(parts chosen: Set<SharePart>? = nil) -> ShareSounds? {
+        guard parts.contains(.sounds), chosen?.contains(.sounds) ?? true else { return nil }
+        return sounds?.sanitized
+    }
+
+    /// An app setup it carries.
+    func app(_ id: String) -> AppProfile? { apps?.first { $0.bundleID == id } }
 
     // MARK: base64url and deflate
 
@@ -287,17 +471,39 @@ struct SharedSetup: Codable {
     }
 }
 
-/// A share as a link carries it: chords without their ids (each is 36 characters).
-private struct LinkForm: Encodable {
-    let share: SharedSetup
-    init(_ s: SharedSetup) { share = s }
+extension ShareKind {
+    /// The parts Share… starts with when it's opened from here.
+    func parts(in config: GlideConfig, appSetup: String? = nil) -> [SharePart] {
+        switch self {
+        case .everything:
+            [.pointer, .scrolling, .buttons, .combos, .gestures] + config.appProfiles.map { .app($0.bundleID) } + [.look, .sounds]
+        case .appSetup: appSetup.map { [.app($0)] } ?? []
+        case .pointer: [.pointer]
+        case .scrolling: [.scrolling]
+        case .buttons: [.buttons, .combos, .gestures]
+        case .look: [.look]
+        }
+    }
+}
+
+// MARK: - JSON
+
+extension SharedSetup: Codable {
+    enum CodingKeys: String, CodingKey {
+        case format, version, kind, parts, from, writtenBy
+        case trackingSpeed, precisionSpeed, displaySpeeds, scroll, ballScrollSpeed
+        case buttons, chords, gesturesEnabled, gestureDistance, gestureSteadyHands, apps, look, sounds
+        // beta 12
+        case name, config, appSetup
+    }
 
     private struct ChordForm: Encodable {
         let buttons: [Int]
         let action: ButtonAction
     }
 
-    private struct ProfileForm: Encodable {
+    /// An app setup as a share carries it: no chord ids (made fresh on import anyway).
+    private struct AppForm: Encodable {
         let p: AppProfile
         private enum Keys: String, CodingKey { case bundleID, name, trackingSpeed, scroll, buttons, chords }
         func encode(to encoder: Encoder) throws {
@@ -306,59 +512,151 @@ private struct LinkForm: Encodable {
             try c.encode(p.name, forKey: .name)
             try c.encodeIfPresent(p.trackingSpeed, forKey: .trackingSpeed)
             try c.encodeIfPresent(p.scroll, forKey: .scroll)
-            try c.encodeIfPresent(p.buttons, forKey: .buttons)
+            try c.encodeIfPresent(p.buttons?.filter { $0.key != 0 }, forKey: .buttons)
             try c.encodeIfPresent(p.chords?.map { ChordForm(buttons: $0.buttons, action: $0.action) }, forKey: .chords)
         }
     }
 
+    /// Always the checklist form (a beta 12 share read in is written out as its parts).
     func encode(to encoder: Encoder) throws {
-        var c = encoder.container(keyedBy: SharedSetup.CodingKeys.self)
-        let s = share
-        try c.encode(s.format, forKey: .format)
-        try c.encode(s.version, forKey: .version)
-        try c.encode(s.kind, forKey: .kind)
-        try c.encodeIfPresent(s.name, forKey: .name)
-        try c.encodeIfPresent(s.config, forKey: .config)
-        try c.encodeIfPresent(s.trackingSpeed, forKey: .trackingSpeed)
-        try c.encodeIfPresent(s.precisionSpeed, forKey: .precisionSpeed)
-        try c.encodeIfPresent(s.scroll, forKey: .scroll)
-        try c.encodeIfPresent(s.ballScrollSpeed, forKey: .ballScrollSpeed)
-        try c.encodeIfPresent(s.buttons, forKey: .buttons)
-        try c.encodeIfPresent(s.chords?.map { ChordForm(buttons: $0.buttons, action: $0.action) }, forKey: .chords)
-        try c.encodeIfPresent(s.gesturesEnabled, forKey: .gesturesEnabled)
-        try c.encodeIfPresent(s.appSetup.map { ProfileForm(p: $0) }, forKey: .appSetup)
-        try c.encodeIfPresent(s.look, forKey: .look)
-        try c.encodeIfPresent(s.writtenBy, forKey: .writtenBy)
-    }
-}
-
-extension SharedSetup {
-    enum CodingKeys: String, CodingKey {
-        case format, version, kind, name, config, trackingSpeed, precisionSpeed, scroll, ballScrollSpeed
-        case buttons, chords, gesturesEnabled, appSetup, look, writtenBy
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(format, forKey: .format)
+        try c.encode(version, forKey: .version)
+        try c.encode("parts", forKey: .kind)
+        try c.encode(parts.map(\.id), forKey: .parts)
+        try c.encodeIfPresent(from, forKey: .from)
+        try c.encodeIfPresent(writtenBy, forKey: .writtenBy)
+        try c.encodeIfPresent(trackingSpeed, forKey: .trackingSpeed)
+        try c.encodeIfPresent(precisionSpeed, forKey: .precisionSpeed)
+        try c.encodeIfPresent(displaySpeeds, forKey: .displaySpeeds)
+        try c.encodeIfPresent(scroll, forKey: .scroll)
+        try c.encodeIfPresent(ballScrollSpeed, forKey: .ballScrollSpeed)
+        try c.encodeIfPresent(buttons?.filter { $0.key != 0 }, forKey: .buttons)
+        try c.encodeIfPresent(chords?.map { ChordForm(buttons: $0.buttons, action: $0.action) }, forKey: .chords)
+        try c.encodeIfPresent(gesturesEnabled, forKey: .gesturesEnabled)
+        try c.encodeIfPresent(gestureDistance, forKey: .gestureDistance)
+        try c.encodeIfPresent(gestureSteadyHands, forKey: .gestureSteadyHands)
+        try c.encodeIfPresent(apps?.map { AppForm(p: $0) }, forKey: .apps)
+        try c.encodeIfPresent(look, forKey: .look)
+        try c.encodeIfPresent(sounds, forKey: .sounds)
     }
 
     // Unknown fields are ignored (Codable's way); a kind this version doesn't know is refused.
-    // Parts are read leniently like settings files: an unreadable button or combo is skipped.
+    // Each field is read leniently: one that can't be read counts as not given (as on the
+    // website), and an unreadable button or combo is skipped. A part whose fields aren't
+    // there is dropped; `decode(json:)` refuses a share with no parts left.
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         format = try c.decode(String.self, forKey: .format)
         version = try c.decode(Int.self, forKey: .version)
-        guard let k = ShareKind(rawValue: try c.decode(String.self, forKey: .kind)) else { throw Problem.notAShare }
-        kind = k
-        name = try c.decodeIfPresent(String.self, forKey: .name).map { ImportText.clean($0) }
-        config = try c.decodeIfPresent(GlideConfig.self, forKey: .config)
-        trackingSpeed = try c.decodeIfPresent(Double.self, forKey: .trackingSpeed)
-        precisionSpeed = try c.decodeIfPresent(Double.self, forKey: .precisionSpeed)
-        scroll = try c.decodeIfPresent(ScrollSettings.self, forKey: .scroll)
-        ballScrollSpeed = try c.decodeIfPresent(Double.self, forKey: .ballScrollSpeed)
-        buttons = try c.decodeLenientActions(forKey: .buttons)
-        chords = try c.decodeLenientChords(forKey: .chords)
-        gesturesEnabled = try c.decodeIfPresent(Bool.self, forKey: .gesturesEnabled)
-        appSetup = try c.decodeIfPresent(AppProfile.self, forKey: .appSetup)
-        look = try c.decodeIfPresent(ShareLook.self, forKey: .look)
-        writtenBy = try c.decodeIfPresent(String.self, forKey: .writtenBy).map { ImportText.clean($0, max: 24) }
+        let kindText = try c.decode(String.self, forKey: .kind)
+        func opt<T: Decodable>(_ type: T.Type, _ key: CodingKeys) -> T? { (try? c.decodeIfPresent(type, forKey: key)) ?? nil }
+        writtenBy = opt(String.self, .writtenBy).map { ImportText.clean($0, max: 24) }.flatMap { $0.isEmpty ? nil : $0 }
+        parts = []
+
+        func finite(_ v: Double?) -> Double? { v.flatMap { $0.isFinite ? $0 : nil } }
+        trackingSpeed = finite(opt(Double.self, .trackingSpeed))
+        precisionSpeed = finite(opt(Double.self, .precisionSpeed))
+        displaySpeeds = opt(DisplaySpeeds.self, .displaySpeeds)
+        scroll = opt(ScrollSettings.self, .scroll)
+        ballScrollSpeed = finite(opt(Double.self, .ballScrollSpeed))
+        buttons = ((try? c.decodeLenientActions(forKey: .buttons)) ?? nil)?.filter { ImportLimits.buttons.contains($0.key) }
+        chords = (try? c.decodeLenientChords(forKey: .chords)) ?? nil
+        gesturesEnabled = opt(Bool.self, .gesturesEnabled)
+        gestureDistance = opt(GestureDistance.self, .gestureDistance)
+        gestureSteadyHands = opt(Bool.self, .gestureSteadyHands)
+        apps = opt([LenientApp].self, .apps)?.compactMap(\.app)
+        look = opt(ShareLook.self, .look)?.sanitized
+        sounds = opt(ShareSounds.self, .sounds)
+
+        var wanted: [SharePart]
+        if kindText == "parts" {
+            guard let ids = opt([LenientString].self, .parts) else { throw Problem.notAShare }
+            wanted = ids.compactMap(\.value).compactMap(SharePart.init(id:))
+            from = opt(String.self, .from).map { ImportText.clean($0, max: Self.maxFromLength) }.flatMap { $0.isEmpty ? nil : $0 }
+        } else {
+            guard let k = ShareKind(rawValue: kindText) else { throw Problem.notAShare }
+            legacyKind = k
+            wanted = try readLegacy(k, c)
+        }
+
+        // Each part needs its fields; repeats count once; checklist order.
+        let plain = (buttons ?? [:]).filter { !$0.value.isGesture }
+        let gestures = (buttons ?? [:]).filter { $0.value.isGesture }
+        var kept: [SharePart] = []
+        for p in wanted where !kept.contains(p) {
+            let has: Bool = switch p {
+            case .pointer: trackingSpeed != nil || precisionSpeed != nil
+            case .displays: displaySpeeds != nil
+            case .scrolling: scroll != nil || ballScrollSpeed != nil
+            case .buttons: !plain.isEmpty
+            case .combos: chords != nil
+            case .gestures: !gestures.isEmpty || gesturesEnabled != nil || gestureDistance != nil || gestureSteadyHands != nil
+            case .app(let id): apps?.contains { $0.bundleID == id && ImportText.isBundleID(id) } ?? false
+            case .look: look != nil
+            case .sounds: sounds != nil
+            }
+            if has { kept.append(p) }
+        }
+        // Checklist order; app setups keep the order they came in.
+        parts = kept.enumerated().sorted { ($0.element.rank, $0.offset) < ($1.element.rank, $1.offset) }.map(\.element)
     }
+
+    /// Beta 12's kinds, read as checklist parts (docs/SHARE-FORMAT.md, "Beta 12 shares").
+    private mutating func readLegacy(_ kind: ShareKind, _ c: KeyedDecodingContainer<CodingKeys>) throws -> [SharePart] {
+        /// Buttons 1–7, a missing one as Default: beta 12 replaced the whole map.
+        func filled(_ map: [Int: ButtonAction]?) -> [Int: ButtonAction] {
+            var out: [Int: ButtonAction] = [:]
+            for b in ImportLimits.buttons { out[b] = map?[b] ?? .system }
+            return out
+        }
+        switch kind {
+        case .pointer: return [.pointer]
+        case .scrolling: return [.scrolling]
+        case .look: return [.look]
+        case .buttons:
+            var out: [SharePart] = []
+            if buttons != nil {
+                buttons = filled(buttons)
+                out += [.buttons, .gestures]
+            } else if gesturesEnabled != nil {
+                out.append(.gestures)
+            }
+            if chords != nil { out.append(.combos) }
+            return out
+        case .appSetup:
+            guard let p = (try? c.decodeIfPresent(AppProfile.self, forKey: .appSetup)) ?? nil, ImportText.isBundleID(p.bundleID) else { return [] }
+            apps = [p]
+            return [.app(p.bundleID)]
+        case .everything:
+            guard let config = try? c.decode(GlideConfig.self, forKey: .config) else { return [] }
+            trackingSpeed = config.trackingSpeed
+            precisionSpeed = config.precisionSpeed
+            scroll = config.scrollSettings
+            ballScrollSpeed = config.ballScrollSpeed
+            buttons = filled(config.buttons.filter { ImportLimits.buttons.contains($0.key) })
+            chords = config.chords
+            gesturesEnabled = config.gesturesEnabled
+            gestureDistance = config.gestureDistance
+            gestureSteadyHands = config.gestureSteadyHands
+            displaySpeeds = nil   // never the per-display speeds it also carried
+            sounds = nil
+            var seen = Set<String>()
+            apps = config.appProfiles.filter { ImportText.isBundleID($0.bundleID) && seen.insert($0.bundleID).inserted }
+            return [.pointer, .scrolling, .buttons, .combos, .gestures] + (apps ?? []).map { .app($0.bundleID) } + (look != nil ? [.look] : [])
+        }
+    }
+}
+
+/// An app setup that can't be read is skipped, not the whole share.
+private struct LenientApp: Decodable {
+    let app: AppProfile?
+    init(from decoder: Decoder) { app = try? AppProfile(from: decoder) }
+}
+
+private struct LenientString: Decodable {
+    let value: String?
+    init(from decoder: Decoder) { value = try? String(from: decoder) }
 }
 
 // MARK: - A file chosen or double-clicked to import

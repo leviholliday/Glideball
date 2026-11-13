@@ -22,6 +22,7 @@ swiftc -O -swift-version 5 -o "$OUT" \
   Sources/Glide/DeviceBattery.swift \
   Sources/Glide/ImportSafety.swift \
   Sources/Glide/SharedSetup.swift \
+  Sources/Glide/SharingName.swift \
   Sources/Glide/KensingtonWorks.swift \
   Sources/Glide/ImportReview.swift \
   Sources/Glide/DeviceSupport.swift \
