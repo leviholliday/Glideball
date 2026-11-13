@@ -50,7 +50,8 @@ func oncePerHold(_ g: ButtonGesture) -> ButtonGesture {
 // MARK: - The engine's wiring, in miniature
 
 /// What Engine.swift does with a press, a release, ball movement and the ways a
-/// hold can end, minus CoreGraphics. `frozen` is CGAssociateMouseAndMouseCursorPosition.
+/// hold can end, minus CoreGraphics. `frozen` is the engine's freeze (CGAssociateMouseAndMouseCursorPosition
+/// plus putting the pointer back in any app); scripts/engine-fuzz checks where the pointer ends up, in front and behind.
 final class Rig {
     let machine = GestureMachine()
     var config = GlideConfig()

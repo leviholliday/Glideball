@@ -33,6 +33,14 @@ class EngineIO {
     /// Freezes (true) or frees (false) the pointer; the ball keeps reporting movement.
     func freezePointer(_ frozen: Bool) { _ = CGAssociateMouseAndMouseCursorPosition(frozen ? 0 : 1) }
 
+    /// Puts the pointer back at `point` while it's held (any app in front). Warping starts a
+    /// short suppression of local mouse events; associating again right after ends it, and
+    /// keeps the pointer dissociated from the ball, as it is while held.
+    func warpPointer(_ point: CGPoint) {
+        CGWarpMouseCursorPosition(point)
+        _ = CGAssociateMouseAndMouseCursorPosition(0)
+    }
+
     func post(_ event: CGEvent, tap: CGEventTapLocation) { event.post(tap: tap) }
 
     /// The mouse buttons macOS currently has down (any mouse), for when the tap was off.

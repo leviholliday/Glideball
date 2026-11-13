@@ -792,6 +792,10 @@ final class Engine {
         guard devices[k] != nil else { return }
         let isK = isSupported(key: k, identity: identity)
         lastActiveIsKensington = isK
+        if !isK, page == kHIDPage_GenericDesktop, usage == kHIDUsage_GD_X || usage == kHIDUsage_GD_Y, v != 0 {
+            lastOtherMotion = io.now()
+            if anchor != nil { otherMovedSinceAnchor = true }
+        }
         guard isK else { return }
         lastSupportedValue = io.now()
 
@@ -805,6 +809,7 @@ final class Engine {
         case (kHIDPage_GenericDesktop, kHIDUsage_GD_X):
             telemetry.addBall(dx: v, dy: 0)
             let now = io.now()
+            if v != 0 { lastKMotion = now; holdPointer() }
             // A held gesture takes the ball (even over Scroll with ball): see GestureRoute.
             if gestures.isHeld { applyGesture(gestures.ball(dx: Double(v), dy: 0, now: now)); publishModes() }
             else if ballScrolling { scroller.addBallDelta(dx: Double(v) * ballSign, dy: 0) }
@@ -812,6 +817,7 @@ final class Engine {
         case (kHIDPage_GenericDesktop, kHIDUsage_GD_Y):
             telemetry.addBall(dx: 0, dy: v)
             let now = io.now()
+            if v != 0 { lastKMotion = now; holdPointer() }
             if gestures.isHeld { applyGesture(gestures.ball(dx: 0, dy: Double(v), now: now)); publishModes() }
             else if ballScrolling { scroller.addBallDelta(dx: 0, dy: Double(v) * ballSign) }
             watchDisplay(now: now)
@@ -940,6 +946,13 @@ final class Engine {
             return pass
         case _ where event.getIntegerValueField(.eventSourceUserData) == Self.syntheticTag:
             return pass   // our own events
+        case .mouseMoved where anchor != nil && trackballMoving:
+            // The pointer is held: the trackball's moves never reach apps, in any app.
+            holdPointer()
+            return nil
+        case .leftMouseDragged, .rightMouseDragged, .otherMouseDragged:
+            if anchor != nil && trackballMoving { holdPointer() }
+            return handleButton(event, .drag)
         case .mouseMoved where dragLocked:
             // macOS may not count our synthetic press as a held button, so it
             // reports plain moves: make them the drag the lock promised.
@@ -955,8 +968,6 @@ final class Engine {
             return handleButton(event, .down)
         case .leftMouseUp, .rightMouseUp, .otherMouseUp:
             return handleButton(event, .up)
-        case .leftMouseDragged, .rightMouseDragged, .otherMouseDragged:
-            return handleButton(event, .drag)
         default:
             return pass
         }
@@ -1513,8 +1524,54 @@ final class Engine {
     }
 
     /// The cursor is frozen while Scroll with ball or a gesture hold has it, and only then.
+    ///
+    /// `CGAssociateMouseAndMouseCursorPosition` (io.freezePointer) only holds the pointer while
+    /// Glideball is the app in front (Levi, beta 13: "it captures when I'm in the app, just not
+    /// elsewhere"), and swallowing the held button's drags at the tap never stopped the cursor:
+    /// WindowServer has moved it before a session tap sees the event. So the pointer is also
+    /// held at its `anchor` by putting it back (`holdPointer`) whenever the trackball's own
+    /// movement moved it, in any app. Ends with the freeze, so it can never outlive the hold.
     private func syncFreeze() {
-        io.freezePointer(ballScrolling || gestureFrozen)
+        let frozen = ballScrolling || gestureFrozen
+        if frozen, anchor == nil {
+            anchor = io.cursorLocation()
+            otherMovedSinceAnchor = false
+        } else if !frozen {
+            anchor = nil
+        }
+        io.freezePointer(frozen)
+        syncMoveTap()
+    }
+
+    // The system-wide hold. Input thread only.
+    private var anchor: CGPoint?                     // where the pointer stays while frozen
+    private var otherMovedSinceAnchor = false        // another mouse moved the pointer while it's held
+    private var lastKMotion: CFTimeInterval = -1     // the trackball's ball moved (HID)
+    private var lastOtherMotion: CFTimeInterval = -1 // another mouse moved (HID); the trackpad never shows up here
+
+    /// The latest movement came from the trackball (its HID report, just now), not another mouse.
+    private var trackballMoving: Bool {
+        hid && lastKMotion >= lastOtherMotion && io.now() - lastKMotion < 0.25
+    }
+
+    /// Puts the pointer back on its anchor if the trackball moved it. Another mouse moving
+    /// in the meantime moves the anchor with it (its movement is the person's, not the ball's).
+    private func holdPointer() {
+        guard let a = anchor, let tap, io.tapIsEnabled(tap) else { return }   // no tap: never fight the pointer
+        guard let p = io.cursorLocation() else { return }
+        if otherMovedSinceAnchor {
+            anchor = p
+            otherMovedSinceAnchor = false
+            return
+        }
+        guard abs(p.x - a.x) > 0.5 || abs(p.y - a.y) > 0.5 else { return }
+        io.warpPointer(a)
+    }
+
+    /// The plain-move tap is on while a Drag lock needs its moves turned into drags, or while
+    /// the pointer is held (a keyboard Scroll with ball has no button down, so no drags).
+    private func syncMoveTap() {
+        if dragLocked || anchor != nil { installMoveTap() } else { removeMoveTap() }
     }
 
     /// Ends the hold (or the latch). The ball stops scrolling once neither is left.
@@ -1547,14 +1604,14 @@ final class Engine {
         dragLocked = true
         dragLockManual = manual
         postButton(0, down: true)
-        installMoveTap()
+        syncMoveTap()
     }
 
     private func endDragLock() {
         guard dragLocked else { return }
         dragLocked = false
         dragLockManual = false
-        removeMoveTap()
+        syncMoveTap()
         postButton(0, down: false)
         for (b, o) in overrides {
             if case .dragButton = o { overrides[b] = .swallow }
@@ -1795,7 +1852,7 @@ final class Engine {
         ballScrolling = false
         ballScrollHeld = false
         ballScrollLatched = false
-        io.freezePointer(false)
+        syncFreeze()   // frees the pointer: nothing holds it now
         scroller.stopAll()   // a flywheel still coasting stops here: nothing scrolls after a pause or unplug
         endDragLock()
         precisionHeld = false

@@ -101,7 +101,23 @@ final class FakeIO: EngineIO {
     override func now() -> CFTimeInterval { clock }
     override func cursorLocation() -> CGPoint? { cursor }
     override func keyboardFlags() -> CGEventFlags { kbFlags }
-    override func freezePointer(_ f: Bool) { frozen = f }
+    /// Glideball is the app in front. `CGAssociateMouseAndMouseCursorPosition` only holds the
+    /// pointer then (beta 13); in the background only the engine's own warps do.
+    var foreground = false
+    /// Where the pointer must stay while it's frozen (moves with another mouse's movement).
+    var anchorExpect: CGPoint?
+    var warps = 0
+    override func freezePointer(_ f: Bool) {
+        if f && anchorExpect == nil { anchorExpect = cursor }
+        if !f { anchorExpect = nil }
+        frozen = f
+    }
+    override func warpPointer(_ point: CGPoint) {
+        if !frozen { warpedWhileFree = true }
+        warps += 1
+        cursor = point
+    }
+    var warpedWhileFree = false
     override func post(_ event: CGEvent, tap: CGEventTapLocation) { posted.append(event) }
     var appButtons: () -> Set<Int64> = { [] }
     override func buttonsDown() -> Set<Int64> { appButtons() }
@@ -788,7 +804,15 @@ final class World {
             noteScrollInput()   // Scroll with ball, if it's on
             if dx != 0 { gestureTravel(dx, 0); hid(kKey, page: kHIDPage_GenericDesktop, usage: kHIDUsage_GD_X, value: dx) }
             if dy != 0 { gestureTravel(0, dy); hid(kKey, page: kHIDPage_GenericDesktop, usage: kHIDUsage_GD_Y, value: dy) }
-            if !io.frozen { io.cursor.x = min(max(io.cursor.x + CGFloat(dx), 0), 3000); io.cursor.y = min(max(io.cursor.y + CGFloat(dy), 0), 1000) }
+            let bypassBefore = bypass
+            if !(io.frozen && io.foreground) { io.cursor.x = min(max(io.cursor.x + CGFloat(dx), 0), 3000); io.cursor.y = min(max(io.cursor.y + CGFloat(dy), 0), 1000) }
+            defer {
+                // Held means held, in any app: checked where it counts, the pointer after the
+                // tap has had the trackball's move (unless macOS had the tap off for it).
+                if io.frozen, bypass == bypassBefore, bypass == 0, let a = io.anchorExpect, io.cursor != a {
+                    fail("modes", "the pointer moved while held (\(io.foreground ? "Glideball in front" : "another app in front")): \(a) → \(io.cursor)")
+                }
+            }
             if let b = kDown.min() {
                 let id = newID(InputInfo(source: .kensington, button: b, type: World.type(b, 2), flags: io.kbFlags, time: io.clock))
                 deliver(mouseEvent(World.type(b, 2), button: b, id: id), source: .kensington)
@@ -828,6 +852,10 @@ final class World {
             if let out = lastOut[id], out.type != .scrollWheel { fail("others", "another mouse's scroll came out as type \(out.type.rawValue)") }
         case .oBall:
             hid(oKey, page: kHIDPage_GenericDesktop, usage: kHIDUsage_GD_X, value: 3)
+            if !(io.frozen && io.foreground) {   // another mouse always moves the pointer; the hold follows it
+                io.cursor.x = min(io.cursor.x + 3, 3000)
+                if io.frozen { io.anchorExpect = io.cursor }
+            }
             if let b = oDown.min() {
                 let id = newID(InputInfo(source: .other, button: b, type: World.type(b, 2), flags: io.kbFlags, time: io.clock))
                 deliver(mouseEvent(World.type(b, 2), button: b, id: id), source: .other)
@@ -857,6 +885,7 @@ final class World {
             push()
         case .front(let i):
             front = i
+            io.foreground = stamp % 2 == 0
             push()
         case .pause:
             guard enabled else { return }
@@ -1092,6 +1121,7 @@ final class World {
     }
 
     func checkAlways() {
+        if io.warpedWhileFree { io.warpedWhileFree = false; fail("modes", "the pointer was moved by Glideball while nothing held it") }
         // "Connected" is the truth, unless a removal went missing and nothing has checked since.
         if !stale && connected != kConnected { fail("connected", "status says connected = \(connected), the trackball is \(kConnected ? "plugged in" : "unplugged")") }
         if io.frozen != (modes.ballScrolling || modes.gestureHeld) {
