@@ -123,6 +123,9 @@ struct RootView: View {
         .sheet(isPresented: $model.showingShortcuts) {
             ShortcutsSheet(model: model)
         }
+        .sheet(item: $model.sharingPicture) { request in
+            SharePanel(card: request.card, done: { model.sharingPicture = nil })
+        }
         .modifier(SharingSheets(model: model, primary: primary))
         // Pages asked for come straight here (`AppModel.requestTab`). Only the main
         // window's RootView takes them; the pictures --render-ui makes don't.

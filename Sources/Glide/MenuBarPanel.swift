@@ -90,7 +90,15 @@ final class MenuBarPanelController: NSObject, NSPopoverDelegate {
     }
 
     func close() {
+        popover?.animates = !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion   // the close fades as usual
         popover?.performClose(nil)
+    }
+
+    /// Once it's open, the panel changes size without animating: an animated popover resize
+    /// runs a nested run loop inside AppKit's display cycle, the crash beta 10 and beta 13
+    /// had in the badge popover. The panel's height changes with modes and the connection.
+    nonisolated func popoverDidShow(_ notification: Notification) {
+        MainActor.assumeIsolated { popover?.animates = false }
     }
 
     nonisolated func popoverDidClose(_ notification: Notification) {

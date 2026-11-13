@@ -497,14 +497,14 @@ extension RenderUI {
             cleanup: { SharePanel.sandboxImage = nil; SharePanel.sandboxDone = nil }) { dark, scale in
             card(PopoverMock { SharePanel(card: .overview) }, width: 500, dark: dark, scale: scale)
         }
-        add("share-panel-badge", "Badges and sharing", "A badge's Share… (the panel the badge's details turn into), after Instagram was clicked",
+        add("share-panel-badge", "Badges and sharing", "A badge’s Share… (a sheet over the window), after Instagram was clicked",
             prepare: {
                 let m = Milestone.all.first { $0.id == "scroll-828" }!
                 SharePanel.sandboxImage = ShareImage.render(.badge(m, model.delight.ledger.earned[m.id]), delight: model.delight)
                 SharePanel.sandboxDone = String(localized: "Saved to Downloads. Instagram only takes uploads from its app or site.")
             },
             cleanup: { SharePanel.sandboxImage = nil; SharePanel.sandboxDone = nil }) { dark, scale in
-            card(PopoverMock { BadgeDetail(milestone: Milestone.all.first { $0.id == "scroll-828" }!, delight: model.delight, sharing: true) },
+            card(PopoverMock { SharePanel(card: .badge(Milestone.all.first { $0.id == "scroll-828" }!, model.delight.ledger.earned["scroll-828"]), done: {}) },
                  width: 500, dark: dark, scale: scale)
         }
         // The pictures as Share… makes them (ImageRenderer, always 2x).

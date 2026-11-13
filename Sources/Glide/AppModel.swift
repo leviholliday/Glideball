@@ -72,6 +72,9 @@ final class AppModel {
     @ObservationIgnored var incomingIgnoresLaunch = false
     /// Share…: the sheet that makes a link, file or picture of part of your setup.
     var shareRequest: ShareRequest?
+    /// A badge's Share…: the picture panel, as a sheet over the window (never inside the
+    /// badge's popover, whose resize crashed betas 10 and 13).
+    var sharingPicture: SharePictureRequest?
     /// The ball color before an import that changed it, for Undo.
     @ObservationIgnored var lookBeforeImport: ShareLook?
     /// The Sounds settings before an import that changed them, for Undo.

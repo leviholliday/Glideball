@@ -198,20 +198,19 @@ private struct BadgeCell: View {
 struct BadgeDetail: View {
     let milestone: Milestone
     let delight: DelightCenter
-    @State private var sharing: Bool
+    @Environment(\.dismiss) private var dismiss
 
-    init(milestone: Milestone, delight: DelightCenter, sharing: Bool = false) {
-        self.milestone = milestone
-        self.delight = delight
-        _sharing = State(initialValue: sharing)
-    }
+    /// The popover never changes size after it opens: an animated popover resize runs a
+    /// nested run loop inside AppKit's display cycle, and that crashed 2.10 beta 10 and
+    /// beta 13 (a display-cycle observer AppKit had already freed was called at address 0).
+    /// So Share… closes the popover and opens the share panel as a sheet over the window.
+    var body: some View { details }
 
-    var body: some View {
-        if sharing {
-            SharePanel(card: .badge(milestone, delight.ledger.earned[milestone.id]), back: { sharing = false })
-        } else {
-            details
-        }
+    private func share() {
+        let card = ShareCard.badge(milestone, delight.ledger.earned[milestone.id])
+        dismiss()
+        // Once the popover has gone: never a sheet and a closing popover in the same pass.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { AppModel.shared.sharingPicture = SharePictureRequest(card: card) }
     }
 
     private var details: some View {
@@ -261,8 +260,7 @@ struct BadgeDetail: View {
             }
             if earned != nil {
                 Button {
-                    // No animation: the popover resizes once, straight to the panel's size.
-                    sharing = true
+                    share()
                 } label: {
                     Label("Share…", systemImage: "square.and.arrow.up")
                 }

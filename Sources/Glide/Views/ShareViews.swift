@@ -426,6 +426,12 @@ struct ShareItems {
     }
 }
 
+/// A badge's Share…, shown as a sheet over the window.
+struct SharePictureRequest: Identifiable {
+    let id = UUID()
+    let card: ShareCard
+}
+
 /// "Share…" next to a section title: opens the share panel in a popover.
 struct ShareButton: View {
     let card: ShareCard
@@ -450,10 +456,10 @@ struct ShareButton: View {
 /// changes once it's open (a popover that resizes animates in a nested run loop).
 struct SharePanel: View {
     let card: ShareCard
-    /// Back to whatever opened it (a badge's details), if anything.
-    var back: (() -> Void)? = nil
+    /// Shown as a sheet: its Done button.
+    var done: (() -> Void)? = nil
     @State private var image: NSBitmapImageRep?
-    @State private var done: String?
+    @State private var note: String?
     @State private var anchor = AnchorHolder()
 
     /// Renders: the picture, drawn beforehand.
@@ -464,21 +470,21 @@ struct SharePanel: View {
     nonisolated(unsafe) static var drawnCount = 0
 
     static let width: CGFloat = 420
+    /// Fixed too: the popover's content size never changes after it opens, whatever note
+    /// a button leaves (2.10 beta 13 crashed on Copy: the popover animated a resize in a
+    /// nested run loop, which called a display-cycle observer AppKit had already freed).
+    static let height: CGFloat = 476
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                if let back {
-                    Button {
-                        back()
-                    } label: {
-                        Label("Back", systemImage: "chevron.left")
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
-                }
                 Text("Share your Glideball").font(Theme.Font.emphasis)
                 Spacer()
+                if let done {
+                    Button("Done") { done() }
+                        .keyboardShortcut(.cancelAction)   // Esc; Share… stays the one blue button
+                        .controlSize(.small)
+                }
             }
             ZStack {
                 RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Theme.well)
@@ -497,7 +503,9 @@ struct SharePanel: View {
             Text("The picture is made on your Mac. It only goes somewhere if you share it.")
                 .font(Theme.Font.hint)
                 .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+                .lineLimit(2)
+                .minimumScaleFactor(0.85)
+                .frame(maxWidth: .infinity, minHeight: 30, maxHeight: 30, alignment: .topLeading)
 
             HStack(spacing: 8) {
                 Button {
@@ -541,23 +549,24 @@ struct SharePanel: View {
             }
             .disabled(image == nil)
 
-            // Room for one line of news is always there, so the popover never resizes.
-            Group {
-                if let done {
-                    Label(done, systemImage: "checkmark.circle.fill")
+            // A fixed room for the note a button leaves: it fades in, nothing moves.
+            ZStack(alignment: .topLeading) {
+                if let note {
+                    Label(note, systemImage: "checkmark.circle.fill")
                         .font(Theme.Font.hint)
                         .foregroundStyle(Theme.ok)
                         .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
+                        .minimumScaleFactor(0.8)
                         .transition(.opacity)
                 }
             }
-            .frame(maxWidth: .infinity, minHeight: 30, alignment: .topLeading)
+            .frame(maxWidth: .infinity, minHeight: 34, maxHeight: 34, alignment: .topLeading)
+            Spacer(minLength: 0)
         }
         .padding(18)
-        .frame(width: Self.width)
+        .frame(width: Self.width, height: Self.height, alignment: .top)
         .onAppear {
-            if let ready = Self.sandboxImage { image = ready; done = Self.sandboxDone } else { draw() }
+            if let ready = Self.sandboxImage { image = ready; note = Self.sandboxDone } else { draw() }
         }
     }
 
@@ -616,7 +625,7 @@ struct SharePanel: View {
     }
 
     private func say(_ text: String) {
-        withAnimation(Theme.Motion.fade) { done = text }
+        withAnimation(Theme.Motion.fade) { note = text }
     }
 }
 

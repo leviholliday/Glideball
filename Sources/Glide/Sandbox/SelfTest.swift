@@ -177,8 +177,8 @@ enum SelfTest {
             let lockedBadge = try unwrap(Milestone.all.first { model.delight.ledger.earned[$0.id] == nil }, "every badge is earned")
             let before = SharePanel.drawnCount
             try draw(SharePanel(card: .overview), "Overview's share panel")
-            try draw(BadgeDetail(milestone: earnedBadge, delight: model.delight, sharing: true), "an earned badge's share panel")
-            try draw(BadgeDetail(milestone: lockedBadge, delight: model.delight, sharing: true), "a badge-to-earn's share panel")
+            try draw(SharePanel(card: .badge(earnedBadge, model.delight.ledger.earned[earnedBadge.id]), done: {}), "an earned badge's share sheet")
+            try draw(SharePanel(card: .badge(lockedBadge, nil), done: {}), "a badge-to-earn's share sheet")
             try check(SharePanel.drawnCount - before == 3, "the share panels drew \(SharePanel.drawnCount - before) pictures, not 3")
             var posts = 0
             for card in [ShareCard.overview, .badge(earnedBadge, model.delight.ledger.earned[earnedBadge.id] ?? Date()), .badge(lockedBadge, nil)] {
@@ -203,7 +203,46 @@ enum SelfTest {
             let a = try unwrap(ShareImage.save(image, name: ShareCard.overview.fileName, in: ShareImage.downloads), "couldn't save to Downloads")
             let b = try unwrap(ShareImage.save(image, name: ShareCard.overview.fileName, in: ShareImage.downloads), "couldn't save a second copy")
             try check(a != b && a.path.hasPrefix(Sandbox.folder.path), "the saved copies collide or left the sandbox")
-            return "3 panels drawn (Overview, an earned badge, one to earn); 3 pictures with PNG, file, words and \(posts) post links checked"
+            // 2.10 beta 13 crashed on Copy in a badge's popover: anything that changes a popover's
+            // size after it opens makes AppKit animate a resize in a nested run loop. Every state
+            // of the flow (details, Share…, each note Copy, Save and the site buttons leave, Back)
+            // must have exactly one size, again and again.
+            let notes: [String?] = [nil, String(localized: "Copied. Paste it anywhere."),
+                                    String(localized: "Picture copied. Paste it into the post."),
+                                    String(localized: "Saved to Downloads. Instagram only takes uploads from its app or site."),
+                                    String(localized: "Couldn’t save it to Downloads. Try Save as PNG… instead."),
+                                    String(localized: "Saved “\(ShareCard.overview.fileName)”"),
+                                    String(localized: "Couldn’t save it: \("The disk is full, and this is a long reason to make the note wrap onto a second line")")]
+            SharePanel.sandboxImage = image
+            defer { SharePanel.sandboxImage = nil; SharePanel.sandboxDone = nil }
+            // A badge's popover is its details only (Share… opens a sheet), and the panel (in
+            // Overview's and the recap's popovers, and the sheet) has one size whatever it says.
+            var sizes: [String: Set<String>] = [:]
+            var measured = 0
+            func measure(_ name: String, _ view: some View) {
+                let host = NSHostingView(rootView: view)
+                host.layoutSubtreeIfNeeded()
+                let s = host.fittingSize
+                sizes[name, default: []].insert("\(Int(s.width))×\(Int(s.height))")
+                measured += 1
+            }
+            for _ in 0..<3 {
+                measure("earned badge", BadgeDetail(milestone: earnedBadge, delight: model.delight))
+                measure("badge to earn", BadgeDetail(milestone: lockedBadge, delight: model.delight))
+                for note in notes {
+                    SharePanel.sandboxDone = note
+                    measure("panel", SharePanel(card: .overview))
+                    measure("panel", SharePanel(card: .badge(earnedBadge, model.delight.ledger.earned[earnedBadge.id]), done: {}))
+                    measure("panel", SharePanel(card: .badge(lockedBadge, nil), done: {}))
+                }
+            }
+            for (name, s) in sizes { try check(s.count == 1, "the \(name) has more than one size: \(s.sorted())") }
+            try check(sizes["panel"] == ["\(Int(SharePanel.width))×\(Int(SharePanel.height))"], "the panel isn't its fixed size: \(sizes["panel"] ?? [])")
+            // Share… on a badge: the popover closes, then the sheet opens over the window.
+            model.sharingPicture = SharePictureRequest(card: .badge(earnedBadge, model.delight.ledger.earned[earnedBadge.id]))
+            try draw(RootView(model: model), "the window with a badge's share sheet")
+            model.sharingPicture = nil
+            return "3 panels drawn (Overview, an earned badge, one to earn); 3 pictures with PNG, file, words and \(posts) post links checked; \(measured) states of the flow, one size"
         }
 
         step("receiving a shared setup") {
