@@ -581,8 +581,23 @@ final class Engine {
 
     /// IOHIDManager's callback (input thread).
     func deviceAdded(_ device: IOHIDDevice) {
-        deviceAdded(key: Self.key(device), identity: Self.identity(of: device),
+        let k = Self.key(device)
+        keyByAddress[Self.address(device)] = k
+        deviceAdded(key: k, identity: Self.identity(of: device),
                     transport: DeviceBattery.transport(device), device: device)
+    }
+
+    /// Each device's key by its object's address, so a HID value (hundreds a second) doesn't
+    /// ask the kernel for its registry ID every time. Refreshed whenever a device is added.
+    private var keyByAddress: [Int: Int] = [:]
+    private static func address(_ device: IOHIDDevice) -> Int { Int(bitPattern: Unmanaged.passUnretained(device).toOpaque()) }
+
+    private func cachedKey(_ device: IOHIDDevice) -> Int {
+        let a = Self.address(device)
+        if let k = keyByAddress[a] { return k }
+        let k = Self.key(device)
+        keyByAddress[a] = k
+        return k
     }
 
     /// A pointing device appeared. `device` is nil in scripts/engine-fuzz.
@@ -614,7 +629,10 @@ final class Engine {
 
     /// IOHIDManager's callback (input thread): that device, then a check of the rest
     /// against what IOKit has (a removal can go missing, say across a USB hub reset).
-    func deviceRemoved(_ device: IOHIDDevice) { deviceRemovedByManager(key: Self.key(device)) }
+    func deviceRemoved(_ device: IOHIDDevice) {
+        let k = keyByAddress.removeValue(forKey: Self.address(device)) ?? Self.key(device)
+        deviceRemovedByManager(key: k)
+    }
 
     /// What the removal callback does (scripts/engine-fuzz calls this directly).
     ///
@@ -651,9 +669,11 @@ final class Engine {
         guard let listed = io.liveDevices() else { return }   // not listening: nothing to compare with
         // IOHIDManager can still list a device that's gone (see deviceRemovedByManager), so
         // only devices IOKit still has count, and never one whose removal already came.
-        let live = listed.filter { !gone.contains($0.key) && io.serviceIsAlive($0.key) }
+        // A key that isn't a registry ID (negative: its ID couldn't be read) can't be checked
+        // against IOKit, so a check leaves it to IOHIDManager's own callbacks.
+        let live = listed.filter { $0.key > 0 && !gone.contains($0.key) && io.serviceIsAlive($0.key) }
         var changed = false
-        for k in Array(devices.keys).sorted() where live[k] == nil || live[k]?.identity != devices[k] {
+        for k in Array(devices.keys).sorted() where k > 0 && (live[k] == nil || live[k]?.identity != devices[k]) {
             diagnostics.record("device check: a device left without a removal")
             gone.insert(k)
             deviceRemoved(key: k)   // its releases, exactly as an unplug
@@ -777,7 +797,7 @@ final class Engine {
     func hidValue(_ value: IOHIDValue) {
         let element = IOHIDValueGetElement(value)
         let device = IOHIDElementGetDevice(element)
-        hidInput(key: Self.key(device), identity: Self.identity(of: device),
+        hidInput(key: cachedKey(device), identity: Self.identity(of: device),
                  page: Int(IOHIDElementGetUsagePage(element)), usage: Int(IOHIDElementGetUsage(element)),
                  value: IOHIDValueGetIntegerValue(value), stamp: IOHIDValueGetTimeStamp(value),
                  logicalMin: IOHIDElementGetLogicalMin(element), logicalMax: IOHIDElementGetLogicalMax(element))
