@@ -455,6 +455,9 @@ final class World {
     var plugGraceUntil = -1e9   // until then "connected" and "works" aren't judged
     var oddReplug = false       // the latest replug was published late in some way (Op.replug bits 1-8)
     var holdDisturbed = false   // the trackball moved during such a replug while the pointer was held
+    /// While such a replug settles, a check can take the trackball out and put it back
+    /// mid-press (IOKit not done registering it), so button pairing can't be judged.
+    var settling: Bool { oddReplug && io.clock < plugGraceUntil }
 
     // What apps see.
     var appK: [Int: Int] = [:]          // Kensington-side buttons down (engine-processed and raw)
@@ -843,6 +846,7 @@ final class World {
         case .kPress(let b, let hidFirst):
             guard kConnected, !kDown.contains(b) else { return }
             markAmbiguity(kensington: b)
+            if settling { ambiguous = true }
             kDown.insert(b)
             let id = newID(InputInfo(source: .kensington, button: b, type: World.type(b, 0), flags: io.kbFlags, time: io.clock))
             if hidFirst { hid(kKey, page: kHIDPage_Button, usage: b + 1, value: 1) }
@@ -877,7 +881,7 @@ final class World {
                 // (Not while a replug is still being published: properties missing, or IOKit not
                 // done registering it, nothing yet says it's the trackball.)
                 // A hold such a move went through can't be judged until it ends.
-                if !io.frozen { holdDisturbed = false } else if oddReplug && io.clock < plugGraceUntil { holdDisturbed = true }
+                if !io.frozen { holdDisturbed = false } else if settling { holdDisturbed = true }
                 if io.frozen, bypass == bypassBefore, bypass == 0, !holdDisturbed, let a = io.anchorExpect, io.cursor != a {
                     fail("modes", "the pointer moved while held (\(io.foreground ? "Glideball in front" : "another app in front")): \(a) → \(io.cursor)")
                 }
