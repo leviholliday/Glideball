@@ -2555,3 +2555,7 @@
 "name, sharing, badge, picture, link, from" = "이름, 공유, 배지, 이미지, 링크, 보낸 사람";
 "the %@ setup" = "%@ 설정";
 "“%@’s Glideball setup”" = "‘%@ 님의 Glideball 설정’";
+"Copy Connection Details" = "연결 세부사항 복사";
+"Connection details copied" = "연결 세부사항을 복사했습니다";
+"Copy connection details" = "연결 세부사항 복사";
+"What Glideball and macOS each say about your trackball right now." = "Glideball과 macOS가 지금 트랙볼에 대해 각각 알고 있는 내용입니다.";

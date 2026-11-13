@@ -498,6 +498,7 @@ final class Engine {
         // Wireless models' battery: once a minute, and only for one that's battery powered.
         maintainTicks += 1
         if maintainTicks % 30 == 0 { refreshBatteries() }
+        healIfQuiet()
         publish()
     }
 
@@ -549,8 +550,16 @@ final class Engine {
         hid = io.startListening(self, runLoop: runLoop)
     }
 
+    /// A device's key: its HID service's I/O Registry entry ID, which IOKit never reuses
+    /// (a replug or a hub re-enumerating gets a new one). Until beta 13 this was the
+    /// IOHIDDevice's address, which a freed device could hand to the next one.
     static func key(_ device: IOHIDDevice) -> Int {
-        Int(bitPattern: Unmanaged.passUnretained(device).toOpaque())
+        var id: UInt64 = 0
+        let service = IOHIDDeviceGetService(device)
+        if service != 0, IORegistryEntryGetRegistryEntryID(service, &id) == KERN_SUCCESS, id > 0, id < 1 << 62 {
+            return Int(id)
+        }
+        return -abs(Int(bitPattern: Unmanaged.passUnretained(device).toOpaque()))   // never looks like an ID
     }
 
     static func identity(of device: IOHIDDevice) -> DeviceIdentity {
@@ -577,7 +586,8 @@ final class Engine {
     }
 
     /// A pointing device appeared. `device` is nil in scripts/engine-fuzz.
-    func deviceAdded(key k: Int, identity: DeviceIdentity, transport: String?, device: IOHIDDevice?) {
+    func deviceAdded(key k: Int, identity: DeviceIdentity, transport: String?, device: IOHIDDevice?, fromCheck: Bool = false) {
+        if !fromCheck { gone.remove(k) }   // IOHIDManager matched it: it's here
         devices[k] = nil
         deviceSupported[k] = nil
         hidBattery[k] = nil
@@ -588,6 +598,7 @@ final class Engine {
             io.rememberDevice(k, device)
         }
         if isSupported(key: k, identity: { identity }) {
+            io.watchTermination(k, device, engine: self, runLoop: runLoop)
             io.pointerDevicesChanged()
             // The HID service appears slightly after the device; apply twice to be sure.
             for delay in [0.3, 1.5] {
@@ -602,36 +613,124 @@ final class Engine {
     }
 
     /// IOHIDManager's callback (input thread): that device, then a check of the rest
-    /// against what IOHIDManager has (a removal can go missing, say across a USB hub reset).
+    /// against what IOKit has (a removal can go missing, say across a USB hub reset).
     func deviceRemoved(_ device: IOHIDDevice) { deviceRemovedByManager(key: Self.key(device)) }
 
     /// What the removal callback does (scripts/engine-fuzz calls this directly).
+    ///
+    /// The "Connected after an unplug" bug (betas 12 and 13): IOHIDManager calls this
+    /// *before* it takes the device out of its own set, so the check that followed found
+    /// the trackball still listed, logged "a device arrived without an add" and added it
+    /// right back. Now a removed key is never re-added by a check (`gone`), and a check only
+    /// believes devices whose service IOKit still has registered (`io.serviceIsAlive`).
     func deviceRemovedByManager(key k: Int) {
+        gone.insert(k)
         deviceRemoved(key: k)
         reconcileNow()
     }
 
-    /// Wake, screen unlock, the window opening: make the devices Glideball knows match
-    /// the ones IOHIDManager has now. A removal callback that never came would
-    /// otherwise leave "Connected" showing (and the tap on) until a relaunch. Cheap: one
-    /// IOHIDManagerCopyDevices, no timer.
+    /// IOKit's termination notice for a device's service (EngineIO.watchTermination): the
+    /// same as its removal, whichever of the two comes first. The second does nothing.
+    func deviceTerminated(key k: Int) {
+        guard !gone.contains(k) else { return }
+        diagnostics.record("device check: terminated")
+        deviceRemovedByManager(key: k)
+    }
+
+    /// Wake, screen unlock, the window or the menu opening: make the devices Glideball knows
+    /// match the ones IOKit has now. A removal callback that never came would otherwise
+    /// leave "Connected" showing (and the tap on) until a relaunch. Cheap: one
+    /// IOHIDManagerCopyDevices and a registry lookup per device, no timer.
     func reconcileDevices() { perform { self.reconcileNow() } }
 
+    /// Keys whose removal came (registry IDs are never reused). A check never adds one back;
+    /// only IOHIDManager's own matching callback can.
+    private var gone = Set<Int>()
+
     private func reconcileNow() {
-        guard let live = io.liveDevices() else { return }   // not listening: nothing to compare with
+        guard let listed = io.liveDevices() else { return }   // not listening: nothing to compare with
+        // IOHIDManager can still list a device that's gone (see deviceRemovedByManager), so
+        // only devices IOKit still has count, and never one whose removal already came.
+        let live = listed.filter { !gone.contains($0.key) && io.serviceIsAlive($0.key) }
         var changed = false
-        for k in Array(devices.keys) where live[k] == nil || live[k]?.identity != devices[k] {
+        for k in Array(devices.keys).sorted() where live[k] == nil || live[k]?.identity != devices[k] {
             diagnostics.record("device check: a device left without a removal")
+            gone.insert(k)
             deviceRemoved(key: k)   // its releases, exactly as an unplug
             changed = true
         }
         for (k, d) in live.sorted(by: { $0.key < $1.key }) where devices[k] == nil {
             diagnostics.record("device check: a device arrived without an add")
-            deviceAdded(key: k, identity: d.identity, transport: d.transport, device: d.device)
+            deviceAdded(key: k, identity: d.identity, transport: d.transport, device: d.device, fromCheck: true)
             changed = true
         }
+        lastCheck = io.now()
         if changed { publish() }
     }
+
+    // Self-heal: while the window or the menu is open, a "connected" trackball that has sent
+    // nothing for a few seconds is checked again (`maintain`). Nothing runs while hidden.
+    private var watched = false
+    private var lastSupportedValue: CFTimeInterval = 0
+    private var lastCheck: CFTimeInterval = 0
+
+    /// The window or the menu-bar panel is open (main thread → input thread). Opening
+    /// checks the devices at once.
+    func setWatched(_ on: Bool) {
+        perform {
+            guard on != self.watched else { return }
+            self.watched = on
+            if on { self.reconcileNow() }
+        }
+    }
+
+    /// Run every 2 s by `maintain`: only while watched and the trackball has been quiet.
+    private func healIfQuiet() {
+        guard watched, hid, deviceSupported.values.contains(true) else { return }
+        let now = io.now()
+        guard now - lastSupportedValue > 2, now - lastCheck > 1.5 else { return }
+        reconcileNow()
+    }
+
+    /// "Copy connection details" (Help menu, support info): what the engine believes and
+    /// what IOKit says right now. Plain facts only: names, IDs, product numbers.
+    func connectionDetails(_ done: @escaping (String) -> Void) {
+        guard isRunning else { return done("Engine not running.") }
+        perform {
+            var lines: [String] = []
+            let now = self.io.now()
+            lines.append("Glideball believes: \(self.status.deviceConnected ? "connected" : "not connected")"
+                         + (self.status.deviceName.map { " (\($0))" } ?? ""))
+            lines.append("Listening (Input Monitoring): \(self.hid ? "yes" : "no"); tap: \(self.status.tapActive ? "on" : "off")")
+            for (k, d) in self.devices.sorted(by: { $0.key < $1.key }) {
+                let pid = d.productID.map { String(format: "0x%04X", $0) } ?? "?"
+                let vid = d.vendorID.map { String(format: "0x%04X", $0) } ?? "?"
+                lines.append("  engine: key \(Self.describe(k)) vendor \(vid) product \(pid) "
+                             + "supported \(self.deviceSupported[k] == true ? "yes" : "no") transport \(self.transports[k] ?? "?")")
+            }
+            if self.lastSupportedValue > 0 {
+                lines.append(String(format: "Last value from the trackball: %.1f s ago", now - self.lastSupportedValue))
+            }
+            if let listed = self.io.liveDevices() {
+                lines.append("IOHIDManager lists \(listed.count) pointing device(s):")
+                for (k, d) in listed.sorted(by: { $0.key < $1.key }) {
+                    let pid = d.identity.productID.map { String(format: "0x%04X", $0) } ?? "?"
+                    let vid = d.identity.vendorID.map { String(format: "0x%04X", $0) } ?? "?"
+                    lines.append("  manager: key \(Self.describe(k)) vendor \(vid) product \(pid) "
+                                 + "alive \(self.io.serviceIsAlive(k) ? "yes" : "no")\(self.gone.contains(k) ? " (removed)" : "")")
+                }
+            } else {
+                lines.append("IOHIDManager: not open")
+            }
+            let services = self.io.kensingtonServicesNow()
+            lines.append("IOKit has \(services.count) Kensington HID device(s) registered now:")
+            lines += services.map { "  " + $0 }
+            let text = lines.joined(separator: "\n")
+            self.io.toMain { done(text) }
+        }
+    }
+
+    private static func describe(_ k: Int) -> String { k > 0 ? "0x" + String(k, radix: 16) : "ptr" }
 
     func deviceRemoved(key k: Int) {
         if deviceSupported[k] == true {
@@ -650,6 +749,7 @@ final class Engine {
         deviceSupported[k] = nil
         batteryDevices.remove(k)
         io.forgetDevice(k)
+        io.unwatchTermination(k)
         transports[k] = nil
         hidBattery[k] = nil
         registryBattery[k] = nil
@@ -693,6 +793,7 @@ final class Engine {
         let isK = isSupported(key: k, identity: identity)
         lastActiveIsKensington = isK
         guard isK else { return }
+        lastSupportedValue = io.now()
 
         // The same hardware report can reach us twice (one device, two
         // matches). Each report has one hardware timestamp, so skip repeats.

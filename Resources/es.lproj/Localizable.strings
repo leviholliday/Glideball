@@ -2555,3 +2555,7 @@
 "name, sharing, badge, picture, link, from" = "nombre, compartir, insignia, imagen, enlace, de";
 "the %@ setup" = "la configuración de %@";
 "“%@’s Glideball setup”" = "«La configuración de Glideball de %@»";
+"Copy Connection Details" = "Copiar detalles de conexión";
+"Connection details copied" = "Detalles de conexión copiados";
+"Copy connection details" = "Copiar detalles de conexión";
+"What Glideball and macOS each say about your trackball right now." = "Lo que Glideball y macOS dicen ahora mismo de tu trackball.";

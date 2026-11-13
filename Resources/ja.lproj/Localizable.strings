@@ -2555,3 +2555,7 @@
 "name, sharing, badge, picture, link, from" = "名前, 共有, バッジ, 画像, リンク, 送信者";
 "the %@ setup" = "%@の設定";
 "“%@’s Glideball setup”" = "「%@のGlideball設定」";
+"Copy Connection Details" = "接続の詳細をコピー";
+"Connection details copied" = "接続の詳細をコピーしました";
+"Copy connection details" = "接続の詳細をコピー";
+"What Glideball and macOS each say about your trackball right now." = "Glideball と macOS がそれぞれ今トラックボールをどう認識しているか。";

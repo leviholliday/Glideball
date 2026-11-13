@@ -547,6 +547,19 @@ final class AppModel {
     // What's New, "Glideball has a new look" and the "A small favor" card take
     // turns: see `showNextPrompt()` in WhatsNew.swift.
 
+    /// Help › Copy Connection Details and About's support info: what the engine believes
+    /// about the trackball and what IOKit reports right now, on the clipboard.
+    @MainActor func copyConnectionDetails(toast: Bool = true) {
+        let header = "Glideball \(FeedbackDraft.appInfo["version"] ?? "?") connection details, \(Date().formatted(.iso8601))\n"
+        engine.connectionDetails { [weak self] text in
+            MainActor.assumeIsolated {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(header + text, forType: .string)
+            if toast { self?.show(Toast(symbol: "doc.on.clipboard", text: String(localized: "Connection details copied"))) }
+            }
+        }
+    }
+
     func show(_ toast: Toast) {
         self.toast = toast
         toastDismissal?.cancel()
@@ -781,6 +794,7 @@ final class AppModel {
     /// One timer, at the rate the window needs: fast while it's showing, and a slow
     /// housekeeping tick (saving totals, rolling the day) when nobody's looking.
     private func updateSampling() {
+        engine.setWatched(watched)   // opening checks the devices; quiet ones are re-checked while open
         let wanted = watched ? performance.sampleInterval(windowIsKey: windowIsKey || panelOpen, deviceConnected: status.deviceConnected) : 10
         guard sampler == nil || wanted != samplerInterval else { return }
         sampler?.invalidate()

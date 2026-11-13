@@ -62,6 +62,11 @@ struct AboutView: View {
                         }
                         .padding(.horizontal, Theme.Space.rowHorizontal)
                         .padding(.vertical, 12)
+                        ActionRow(title: "Copy connection details",
+                                  hint: "What Glideball and macOS each say about your trackball right now.",
+                                  symbol: "cable.connector") {
+                            model.copyConnectionDetails()
+                        }
                     }
                     Text("Made for Kensington trackballs. Glideball is an independent project and isn’t affiliated with Kensington.")
                         .font(Theme.Font.hint)

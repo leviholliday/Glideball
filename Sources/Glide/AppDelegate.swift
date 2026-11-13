@@ -154,6 +154,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     @objc private func openHelp(_ sender: Any?) { NSWorkspace.shared.open(SiteLinks.help) }
     @objc private func openTroubleshooting(_ sender: Any?) { NSWorkspace.shared.open(SiteLinks.troubleshooting) }
+    @objc private func copyConnectionDetails(_ sender: Any?) { MainActor.assumeIsolated { AppModel.shared.copyConnectionDetails() } }
 
     /// Help › What's New: this version's What's New, over the window.
     @objc private func openWhatsNew(_ sender: Any?) {
@@ -617,6 +618,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         helpMenu.addItem(.separator())
         helpMenu.addItem(withTitle: String(localized: "Glideball Help"), action: #selector(openHelp), keyEquivalent: "").target = self
         helpMenu.addItem(withTitle: String(localized: "Troubleshooting"), action: #selector(openTroubleshooting), keyEquivalent: "").target = self
+        helpMenu.addItem(withTitle: String(localized: "Copy Connection Details"), action: #selector(copyConnectionDetails), keyEquivalent: "").target = self
         helpMenu.addItem(withTitle: String(localized: "What’s New"), action: #selector(openWhatsNew), keyEquivalent: "").target = self
         helpMenu.addItem(.separator())
         helpMenu.addItem(withTitle: String(localized: "Send Feedback…"), action: #selector(sendFeedback), keyEquivalent: "").target = self

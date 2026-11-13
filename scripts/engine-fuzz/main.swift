@@ -146,12 +146,18 @@ final class FakeIO: EngineIO {
         if tapEnabled[ObjectIdentifier(tap)] != nil { tapEnabled[ObjectIdentifier(tap)] = on }
     }
     override func startListening(_ engine: Engine, runLoop: CFRunLoop?) -> Bool { inputMonitoring }
-    /// What IOHIDManager would list now (the World's hardware).
+    /// What IOHIDManager would list now. Like the real one, it can still list a device
+    /// that's gone: during that device's own removal callback (IOHIDManager takes it out of
+    /// its set only after the callback), and for good when it never heard of the removal.
     var live: () -> [Int: DeviceIdentity] = { [:] }
+    /// What IOKit really has registered (the World's hardware).
+    var alive: (Int) -> Bool = { _ in true }
     override func liveDevices() -> [Int: (identity: DeviceIdentity, transport: String?, device: IOHIDDevice?)]? {
         guard inputMonitoring else { return nil }
         return live().mapValues { ($0, "USB", nil) }
     }
+    override func serviceIsAlive(_ key: Int) -> Bool { alive(key) }
+    override func kensingtonServicesNow() -> [String] { [] }
     /// Wireless trackballs: a battery level that changes over time (and is sometimes missing).
     override func registryBattery(_ key: Int) -> Int? { [nil, 4, 50, 100][Int(clock) % 4] }
 
@@ -394,6 +400,14 @@ final class World {
     var learning = false
     var stale = false    // the trackball left but the engine was never told (a missed removal)
     var reused = false   // another mouse has the trackball's key
+    // The trackball's two HID devices (its mouse interface, and a second one like a vendor
+    // interface), by registry entry ID. A replug can re-enumerate with new IDs.
+    var kKey = 1
+    var kAux = 1001
+    var nextKey = 3
+    /// Gone devices IOHIDManager still lists (a removal it never heard of, or one whose
+    /// callback is running right now).
+    var ghosts: [Int: DeviceIdentity] = [:]
     var replugs = 0   // every other one comes back over Bluetooth (battery checks)
 
     // What apps see.
@@ -431,6 +445,7 @@ final class World {
         wire()
         engine.startInline()
         engine.deviceAdded(key: kKey, identity: expert, transport: "USB", device: nil)
+        engine.deviceAdded(key: kAux, identity: expert, transport: "USB", device: nil)
         engine.deviceAdded(key: oKey, identity: otherMouse, transport: "USB", device: nil)
         settle()
     }
@@ -439,9 +454,13 @@ final class World {
         engine.onModes = { [unowned self] m in self.observe(m) }
         engine.onStatus = { [unowned self] s in self.connected = s.deviceConnected }
         io.live = { [unowned self] in
-            var d = [oKey: otherMouse]
-            if self.kConnected { d[kKey] = expert } else if self.reused { d[kKey] = otherMouse }
+            var d = self.ghosts
+            d[oKey] = otherMouse
+            if self.kConnected { d[self.kKey] = expert; d[self.kAux] = expert } else if self.reused { d[self.kKey] = otherMouse }
             return d
+        }
+        io.alive = { [unowned self] k in
+            k == oKey || (self.kConnected && (k == self.kKey || k == self.kAux)) || (self.reused && k == self.kKey)
         }
         io.appButtons = { [unowned self] in
             Set(self.appK.filter { $0.value > 0 }.keys.map(Int64.init)).union(self.appO.filter { $0.value > 0 }.keys.map(Int64.init))
@@ -857,8 +876,21 @@ final class World {
             let held = kDown.sorted()
             if mode == 1 || mode == 3 { for b in held { apply(.kRelease(b, hidFirst: true)) } }
             kConnected = false
-            if mode == 3 { stale = true; return }   // until a wake, unlock, window or another removal
-            engine.deviceRemovedByManager(key: kKey)
+            if mode == 3 {   // no removal callback at all: IOHIDManager keeps listing both, dead
+                ghosts[kKey] = expert; ghosts[kAux] = expert
+                stale = true
+                return   // until a wake, unlock, window or another removal
+            }
+            // Each interface's removal, in either order, while IOHIDManager still lists it
+            // (as the real one does); the second interface's removal is sometimes never heard of.
+            let auxFate = Int(stamp % 3)   // 0: first, 1: second, 2: missed (listed forever)
+            let order = auxFate == 0 ? [kAux, kKey] : auxFate == 1 ? [kKey, kAux] : [kKey]
+            if auxFate == 2 { ghosts[kAux] = expert }
+            for k in order {
+                ghosts[k] = expert
+                engine.deviceRemovedByManager(key: k)
+                ghosts[k] = nil
+            }
             if mode == 0 {
                 for b in held {
                     kDown.remove(b)
@@ -874,9 +906,13 @@ final class World {
         case .replug:
             guard !kConnected else { return }
             if reused { reused = false; engine.deviceRemovedByManager(key: kKey) }
+            if replugs % 3 != 2 || stale {   // re-enumerated: new registry IDs (the old ones may still be listed, dead)
+                kKey = nextKey; kAux = nextKey + 1000; nextKey += 1
+            }
             kConnected = true
             stale = false
             engine.deviceAdded(key: kKey, identity: expert, transport: replugs % 2 == 0 ? "USB" : "Bluetooth Low Energy", device: nil)
+            engine.deviceAdded(key: kAux, identity: expert, transport: "USB", device: nil)
             replugs += 1
         case .sleep:
             engine.releaseForSleep()
@@ -947,8 +983,10 @@ final class World {
         quitDone = false
         wire()
         engine.startInline()
-        if kConnected { engine.deviceAdded(key: kKey, identity: expert, transport: "USB", device: nil) }
-        else if reused { engine.deviceAdded(key: kKey, identity: otherMouse, transport: "USB", device: nil) }
+        if kConnected {
+            engine.deviceAdded(key: kKey, identity: expert, transport: "USB", device: nil)
+            engine.deviceAdded(key: kAux, identity: expert, transport: "USB", device: nil)
+        } else if reused { engine.deviceAdded(key: kKey, identity: otherMouse, transport: "USB", device: nil) }
         stale = false
         engine.deviceAdded(key: oKey, identity: otherMouse, transport: "USB", device: nil)
         learning = false
@@ -1302,6 +1340,13 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
     gestureCases.append(("removal missed, then wake: not connected, released once", [holdKey],
                          down(3) + [.setMode(0, 1), .unplug(3), .wait(1), .sleep, .wake, .wait(1)] + up(3) + settle))
     gestureCases.append(("removal missed, then the window opens: not connected", [GlideConfig()], [.unplug(3), .reconcile, .lateValues, .wait(1)]))
+    // Beta 13 (Levi, Nov 13): IOHIDManager still lists the trackball while its removal callback
+    // runs, and the check inside the callback added it straight back. Every unplug now models
+    // that; these pin the interface orders (aux first, aux second, aux never removed).
+    gestureCases.append(("still listed during its own removal callback: not connected", [GlideConfig()],
+                         [.unplug(0), .wait(1), .replug, .kBall(3, 0), .unplug(0), .wait(1), .replug, .kBall(3, 0), .kBall(2, 1), .unplug(2), .reconcile, .wait(1)]))
+    gestureCases.append(("replugged with new IDs, old ones still listed dead: connected, then not", [holdKey],
+                         [.unplug(3), .replug, .reconcile, .wait(1)] + down(3) + [.unplug(1), .reconcile, .wait(1)] + settle))
     let older: [(String, [GlideConfig], [Op])] = [
         ("held shortcut, unplugged while held: the key comes up",
          [hold], [.kPress(3, hidFirst: true), .unplug(2), .wait(1)]),

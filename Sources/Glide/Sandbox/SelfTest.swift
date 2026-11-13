@@ -526,6 +526,46 @@ enum SelfTest {
             return "the menu by default; the panel drawn, nothing open"
         }
 
+        step("connection state follows the engine") {
+            // Levi, beta 13: unplugged with the window open, it kept saying Connected. Every
+            // place that shows the connection reads `model.status`, and must be told (by
+            // Observation) the moment the engine publishes a change, both ways, without the
+            // window closing.
+            let saved = (model.status, model.hasAccessibility, model.hasInputMonitoring, model.config.enabled)
+            defer {
+                model.status = saved.0; model.hasAccessibility = saved.1; model.hasInputMonitoring = saved.2
+                model.config.enabled = saved.3
+            }
+            model.hasAccessibility = true; model.hasInputMonitoring = true; model.config.enabled = true
+            var on = DemoData.connected
+            on.connection = .usb
+            var off = on
+            off.deviceConnected = false; off.deviceName = nil; off.connection = nil
+            for (from, to) in [(on, off), (off, on), (on, off)] {
+                model.status = from
+                final class Flag: @unchecked Sendable { var on = false }
+                let told = Flag()
+                withObservationTracking {
+                    _ = SidebarStatus(model).text
+                    _ = TrackballLook.of(model)
+                    _ = MenuBarIcon.state(of: model)
+                    _ = model.shownConnection
+                } onChange: { told.on = true }
+                model.status = to
+                try check(told.on, "the views weren't told the connection changed (\(from.deviceConnected) → \(to.deviceConnected))")
+                let c = to.deviceConnected
+                let text = SidebarStatus(model).text
+                try check(text == (c ? String(localized: "Connected", comment: "Status pill") : String(localized: "Not connected", comment: "Status pill")),
+                          "the sidebar says \(text)")
+                try check((TrackballLook.of(model) == .connected) == c, "the sidebar trackball is \(TrackballLook.of(model))")
+                try check((MenuBarIcon.state(of: model) == .notConnected) == !c, "the menu-bar icon is \(MenuBarIcon.state(of: model))")
+                try check((model.shownConnection != nil) == c, "Overview's connection line")
+                try check(ExternalControlCenter.snapshot().trackballConnected == c, "status.json")
+                try draw(RootView(model: model), "the window, \(c ? "connected" : "unplugged")")
+            }
+            return "sidebar, trackball, menu-bar icon, Overview line and status.json follow an unplug and a replug at once"
+        }
+
         step("welcome tour") {
             for s in WelcomeTourView.Step.allCases {
                 try draw(WelcomeTourView(model: model, step: s), "tour step \(s.rawValue + 1)", size: RenderUI.windowSize)

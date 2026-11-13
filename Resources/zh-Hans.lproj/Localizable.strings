@@ -2555,3 +2555,7 @@
 "name, sharing, badge, picture, link, from" = "名字, 分享, 徽章, 图片, 链接, 来自";
 "the %@ setup" = "%@ 的设置";
 "“%@’s Glideball setup”" = "“%@ 的 Glideball 设置”";
+"Copy Connection Details" = "拷贝连接详细信息";
+"Connection details copied" = "已拷贝连接详细信息";
+"Copy connection details" = "拷贝连接详细信息";
+"What Glideball and macOS each say about your trackball right now." = "Glideball 和 macOS 此刻各自对你的轨迹球的识别情况。";

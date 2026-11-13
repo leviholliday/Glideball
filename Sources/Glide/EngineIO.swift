@@ -155,13 +155,93 @@ class EngineIO {
     func rememberDevice(_ key: Int, _ device: IOHIDDevice?) { batteryDevices[key] = device }
     func forgetDevice(_ key: Int) { batteryDevices[key] = nil }
 
-    /// The pointing devices IOHIDManager has right now, by `Engine.key`; nil when it isn't open.
+    /// The pointing devices IOHIDManager lists right now, by `Engine.key`; nil when it isn't open.
+    /// Not proof that they're plugged in: IOHIDManager calls its removal callback *before*
+    /// it takes the device out of this set (IOKitUser, IOHIDManager.c,
+    /// `__IOHIDManagerDeviceRemoved`), and a removal it never heard of leaves one here for
+    /// good. `Engine.reconcileNow` checks each against `serviceIsAlive`.
     func liveDevices() -> [Int: (identity: DeviceIdentity, transport: String?, device: IOHIDDevice?)]? {
         guard let manager, let set = IOHIDManagerCopyDevices(manager) as NSSet? else { return manager == nil ? nil : [:] }
         var out: [Int: (identity: DeviceIdentity, transport: String?, device: IOHIDDevice?)] = [:]
         for obj in set {
             let device = unsafeBitCast(obj as AnyObject, to: IOHIDDevice.self)
             out[Engine.key(device)] = (Engine.identity(of: device), DeviceBattery.transport(device), device)
+        }
+        return out
+    }
+
+    /// A fresh question to IOKit: is the HID service with this registry entry ID still
+    /// registered? A terminated (unplugged) service is never found by matching, whatever
+    /// IOHIDManager still lists. Keys that aren't registry IDs (0, or a pointer from an old
+    /// fallback, which is negative) count as alive, so nothing is ever dropped on a guess.
+    func serviceIsAlive(_ key: Int) -> Bool {
+        guard key > 0, let matching = IORegistryEntryIDMatching(UInt64(key)) else { return true }
+        let service = IOServiceGetMatchingService(kIOMainPortDefault, matching)   // consumes `matching`
+        guard service != 0 else { return false }
+        IOObjectRelease(service)
+        return true
+    }
+
+    // MARK: Termination notices (a second signal beside IOHIDManager's removal callback)
+
+    /// What a termination notice's refcon points at (kept alive in `terminationNotices`).
+    private final class Notice {
+        unowned let engine: Engine
+        let key: Int
+        var object: io_object_t = 0
+        init(engine: Engine, key: Int) { self.engine = engine; self.key = key }
+    }
+
+    private var notifyPort: IONotificationPortRef?
+    private var terminationNotices: [Int: Notice] = [:]
+
+    /// Asks IOKit to tell the engine the moment this device's service is terminated
+    /// (kIOMessageServiceIsTerminated), on the input thread's run loop. Only for the devices
+    /// the engine works with. No-op in scripts/engine-fuzz (device is nil).
+    func watchTermination(_ key: Int, _ device: IOHIDDevice?, engine: Engine, runLoop: CFRunLoop?) {
+        guard let device, terminationNotices[key] == nil, let runLoop else { return }
+        let service = IOHIDDeviceGetService(device)
+        guard service != 0 else { return }
+        if notifyPort == nil {
+            notifyPort = IONotificationPortCreate(kIOMainPortDefault)
+            if let port = notifyPort, let source = IONotificationPortGetRunLoopSource(port)?.takeUnretainedValue() {
+                CFRunLoopAddSource(runLoop, source, .commonModes)
+            }
+        }
+        guard let notifyPort else { return }
+        let notice = Notice(engine: engine, key: key)
+        let ok = IOServiceAddInterestNotification(notifyPort, service, kIOGeneralInterest, { refcon, _, message, _ in
+            // kIOMessageServiceIsTerminated: iokit_common_msg(0x010)
+            guard message == 0xE000_0010, let refcon else { return }
+            let notice = Unmanaged<Notice>.fromOpaque(refcon).takeUnretainedValue()
+            notice.engine.deviceTerminated(key: notice.key)
+        }, Unmanaged.passUnretained(notice).toOpaque(), &notice.object)
+        if ok == KERN_SUCCESS { terminationNotices[key] = notice }
+    }
+
+    func unwatchTermination(_ key: Int) {
+        if let n = terminationNotices.removeValue(forKey: key), n.object != 0 { IOObjectRelease(n.object) }
+    }
+
+    /// Every Kensington HID device IOKit has registered right now, from a fresh matching
+    /// query (not IOHIDManager): for "Copy connection details".
+    func kensingtonServicesNow() -> [String] {
+        guard let matching = IOServiceMatching("IOHIDDevice") as NSMutableDictionary? else { return [] }
+        matching[kIOHIDVendorIDKey] = DeviceIdentity.kensingtonVendorID
+        var iterator: io_iterator_t = 0
+        guard IOServiceGetMatchingServices(kIOMainPortDefault, matching, &iterator) == KERN_SUCCESS else { return [] }
+        defer { IOObjectRelease(iterator) }
+        var out: [String] = []
+        while case let service = IOIteratorNext(iterator), service != 0 {
+            var id: UInt64 = 0
+            IORegistryEntryGetRegistryEntryID(service, &id)
+            func prop(_ k: String) -> Any? { IORegistryEntryCreateCFProperty(service, k as CFString, kCFAllocatorDefault, 0)?.takeRetainedValue() }
+            let pid = (prop(kIOHIDProductIDKey) as? Int).map { String(format: "0x%04X", $0) } ?? "?"
+            let usage = "\(prop(kIOHIDPrimaryUsagePageKey) as? Int ?? 0)/\(prop(kIOHIDPrimaryUsageKey) as? Int ?? 0)"
+            let transport = prop(kIOHIDTransportKey) as? String ?? "?"
+            let location = (prop(kIOHIDLocationIDKey) as? Int).map { String(format: "0x%08X", $0) } ?? "?"
+            out.append("id 0x\(String(id, radix: 16)) product \(pid) usage \(usage) \(transport) location \(location)")
+            IOObjectRelease(service)
         }
         return out
     }

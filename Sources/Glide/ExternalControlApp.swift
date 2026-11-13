@@ -191,7 +191,7 @@ final class ExternalControlCenter {
         observe(gen)
     }
 
-    private static func snapshot() -> GlideStatus {
+    static func snapshot() -> GlideStatus {
         let model = AppModel.shared
         var s = GlideStatus()
         s.appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
