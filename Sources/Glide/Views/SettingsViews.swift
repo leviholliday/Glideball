@@ -166,6 +166,7 @@ struct GeneralSettingsPane: View {
                                isOn: $model.allowExternalControl, link: SiteLinks.help)
                     .findable(.externalControl)
             }
+            SharingNameSection()   // SharingNameSettings.swift
         }
     }
 
@@ -286,7 +287,8 @@ extension Findable {
 
 extension GeneralSettingsPane {
     static let findables: [Findable] = [.openAtLogin, .launchStyle, .askBeforeQuitting, .menuBarIcon, .menuBarOpens,
-                                        .showInDock, .language, .otherTrackballs, .lowBattery, .externalControl]
+                                        .showInDock, .language, .otherTrackballs, .lowBattery, .externalControl,
+                                        .sharingName, .sharingNamePictures, .sharingNameLinks]
 }
 
 /// How much the window animates: Smoothest, Efficient (the default) or Minimal.

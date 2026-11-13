@@ -1,0 +1,251 @@
+{
+  "cases" : [
+    {
+      "d" : "rVXJbtswEP2VgmfbsBY7y81x0qRAm0ONnoygoKWRRYQiBZKy4Qa69tzlD_slnaFkOYrTNgF6kag35Lzhm0UPjJelZefLB7aqVCrh3SU7Z4kuRohLGC14xo1gA7Q6pxXufGAhPVY8ucd3XQ9YRN-ZNltuUg8hpngB6Kg77gzuF2q9KAFwU1QP_kB4qx1Y1jnYfz45H9Z3GBKXcpEYjc8GDXphBvQwYp27uRRdsD54m2vjksrR-vOYnvewm-sUGU8HtL5t2OfIXOhUZAIM-gzG8enkZFp3l16DdZWBg5tUbxW9eeKEVv-gCsLJY7JfX3_26cJpGMSxZzNQAneIZVxaQEBC5l5BFPWJvr2cyAv4Cqa4z_Tj5UyOl977zjoo2mxV5Suop33q7y-l9lh8xD05QqZHyMkTBKEEQ0ybjvrfcXfFvQwH0R210IFBl6BmpZfrL33V9xKQF2ykVNhS8p3vIt86oPhKUkc5U0HTi01LTSbhMMZyiod4Cfb--s0niZ35Vihg6Nl2DvobT4kWB0TBUQC2liIF6t2hzTk2D5qMLsgdbGhUtE11KazjKiFNvHoHy8IBT3c3XKX7FHYme9WPHEcGrlnJjaMpIrWmOcCSyjqiXLIsg_HJGE3h1fzsbEaLi2h2dsVQFpeDT0m7G-_Q-MFjpRbKgWGdduTd-lmEQ-rRuBxQClbaHqKnJabk_JkZ24f3o88Hjd51RRfGuEoDibCY98PYa6jpapnczZIEJBjelMZ4hFMG0YOesf--pjSQOWrsH4Enebtd4dkN9Garxw1ssCZbQ6d9Q_4Ma2M4EAfxHvvgSx9rQkq97aRbFFq7XIG15IA25yJzDZu90UZ80cph4ez26bX-wKLTvYVdbvR2VqBgrnXkkV5t1J2i1IyiXaz0urJ7N4WQmDKtoEMc_kceTSy6aKvBRsuq8HLG9dHfakpikHJemnDAtkY4B-oCL8LCUTAersDxURCx-jc",
+      "expect" : {
+        "apps" : [
+          "com.apple.Safari",
+          "com.apple.Notes"
+        ],
+        "buttons" : {
+          "1" : "rightClick",
+          "2" : "shortcut",
+          "3" : "gesture",
+          "4" : "system",
+          "5" : "system",
+          "6" : "system",
+          "7" : "system"
+        },
+        "from" : "Levi",
+        "parts" : [
+          "pointer",
+          "displays",
+          "scrolling",
+          "buttons",
+          "combos",
+          "gestures",
+          "app:com.apple.Safari",
+          "app:com.apple.Notes",
+          "look",
+          "sounds"
+        ],
+        "scrollMode" : "follow",
+        "theme" : "custom",
+        "trackingSpeed" : 6.5
+      },
+      "name" : "everything, named, custom color"
+    },
+    {
+      "d" : "LYsxDoMwEAT_srWJlAIKvkEZUVzwxZxibOts0aD8nUOkWu3O7IFP1o0aRoQont8UY1dXUobDV5I3UEhbtXrn-ELJkhorZtuUF6mS01SYTX46NKXFnuG_DI_eYWe9JOO_Ew",
+      "expect" : {
+        "from" : null,
+        "parts" : [
+          "pointer"
+        ],
+        "trackingSpeed" : 6.5
+      },
+      "name" : "pointer only"
+    },
+    {
+      "d" : "bVCxTgMxDP0XzwFxoizZKoFgYeFGxJCmvl5ELq4ct1Wp-u_EuRwIiSWR33t-z_YFNi7G3jOVd4-4BdsZGIgnJ2BhF8MWVXGTR8cIBj5DKhrYO5Zcyvm375CrRUg7-DCtAHuBIZ7X3mNEdhIogb27fTCKPoYsLnkEu6r1syYpfT_zb-j82OSp9B7xz5AVZzwi50aAHVzMuIT_kzoTv8HdasFeSbPL2jHSCRa0n4hkTJizGqh4DIPMafmFOHxRknKbM1jhgybXhv7nEg2Wkem0nuiQpBlV5Cm5TdRdVHU1oLvUYbvrNw",
+      "expect" : {
+        "from" : null,
+        "parts" : [
+          "scrolling"
+        ],
+        "scrollMode" : "follow"
+      },
+      "name" : "scroll feel, follow"
+    },
+    {
+      "d" : "ZY_dCoMwDIXfJdcd6PAPb73fC4wxqq222NrRxoFI333pNnYxb5KTL3ByskO_IrolQLtDnorXk8LO6GGmKUYG50SDch6HFZO-Z6nOcuuckNA2LOkLt6ShAwbWCT1q6ckzz4qmrKuYfIq3zxZQ2q9zeSDVgdR_hNDovOWUBCajhey5MaeguJd0etaLoMWDeww0fnp7_T15Y_CkYNotlC2-AA",
+      "expect" : {
+        "buttons" : {
+          "1" : "rightClick",
+          "2" : "shortcut",
+          "4" : "system",
+          "5" : "system",
+          "6" : "system",
+          "7" : "system"
+        },
+        "from" : null,
+        "parts" : [
+          "buttons"
+        ]
+      },
+      "name" : "buttons without gestures"
+    },
+    {
+      "d" : "lZG9TsQwDMffxXOQuF65oSsgMbEwIoTcxu1FlyZV4oKqU1dmPt6QJ8GpuDt1axf774_458hHKHtm7yIUR9gm01DkPlCSr9fJav_ukseKjZ9U3PvAVc-XngMNt17Lo012o1L0iK1E8PvxAwpar01tKAgk22WbPB_HUUGgjpAlV6ONJAlLNa8Abeegz-WgYJr9GlI-J30vJzF20_QhMrWiUlPfrUDv5uivpehxStY-tCiDobFGU4nWXsU9ynHV6cx3JjK6Kk2f9rhUnphQDw_o9GnouRTvHZaWNBQcekkfjBMNHQZZQP374vncDi8K3mTh6cPZ-Ac",
+      "expect" : {
+        "buttons" : {
+          "3" : "gesture"
+        },
+        "from" : null,
+        "parts" : [
+          "gestures"
+        ]
+      },
+      "name" : "gestures only"
+    },
+    {
+      "d" : "VY4xDsIwDEXv4jlUNKAO3RAsLFwAIZQ2BiLSOEpSJFRlZeeKnAQHFljs_235-U_QXyjoCO1-AtUnQw7aCSIPUz-moo_zUq94X5NGaGvZiOJ2amAHr8cTBAykzclgYI5sZL1c5pwFdGNK5ApbisUhi98P5NGtvC-yG522uN0wraehUt5brHaUMMI_pS6Ug4AThUFxNjhbo7FT1s7iRQXkIFfjNC-8Cimy_fZ2X8AdReDjG6f8ZJD5DQ",
+      "expect" : {
+        "from" : null,
+        "parts" : [
+          "combos"
+        ]
+      },
+      "name" : "combos"
+    },
+    {
+      "d" : "dY-9DsIwDITfxXOoRNkys7CwdKwYnMYtEWkSpSkMVd4dh59KgFhs-XyXL14AQ5hAtguo2WlLhz1I6PxYsW6pOvpEEwhwOBIv3mOK2F2MG5pApEHWWfzJN9hjNJxQc0reMWmBuhTFD3DPWcCuzL2PN4z6IeWVt8a_gLt8EiUyYmLXYI0mhdZupjNGYjtb2QUBYyrffXbZlmPl73Gf6ovJgCvFyXgHcpvv",
+      "expect" : {
+        "apps" : [
+          "com.apple.Notes",
+          "com.apple.Safari"
+        ],
+        "from" : null,
+        "parts" : [
+          "app:com.apple.Notes",
+          "app:com.apple.Safari"
+        ]
+      },
+      "name" : "two app setups"
+    },
+    {
+      "d" : "LYo5DoAgEEXv8mssbOcqxgLDqITNMKMN4e6SaPmWhr3UZBWEI3rHm41xktNWhkHw2Y1w2aoyMJYSQA16cuLh5c7Cim7-g5ZvWQ0eruJLBs39BQ",
+      "expect" : {
+        "from" : null,
+        "parts" : [
+          "look"
+        ],
+        "theme" : "sunset"
+      },
+      "name" : "ball color, sunset"
+    },
+    {
+      "d" : "PYpLDsIwDETvMuuAQGKVqyAWKXFLVCdGcdJN1btjymc1b-bNilFqDg0eE6dIQ2A-6CNUgsOcSjTxDLWp1U_6K1R6iYqb-5Ff9-8Og0zdoNVODjkxaZNC_6Wl-2xlDKy0OUj5ssMi3DPBn44XEwtVTW973l4",
+      "expect" : {
+        "from" : null,
+        "parts" : [
+          "sounds"
+        ]
+      },
+      "name" : "sounds"
+    },
+    {
+      "d" : "VU7LCsIwEPwVmXMCtrYg-QC9eBNP4mFLVg2machGQUr-3aAoeBrmsTszwzqJnp77yGwFZgYHGjxbmJzurBBo5Lfe9H2ru6ZddXoJg912cfA50cYFRlGQ34P_4LpU8zylkXK9unhneSDvtVwpMRRuLtQuREpZKv2gOX53CU4KD07ipgDTlhc",
+      "expect" : {
+        "from" : null,
+        "parts" : [
+          "displays"
+        ]
+      },
+      "name" : "per-display speeds"
+    },
+    {
+      "d" : "NYyxDcIwEEVXQVc7SBRQeA06EMXhXBIrts86W2mirMAKDEDFDCyUETikUP73nv4MHUvEChb64Fu6YwhNGVAIDHTCUcWFP6_d-ny8FY0-tYoySi06A_MIdoY6UCTl7AgTLGYL7BUy-1RJ_u1NlZDzxXM6ZyI9Oxiogk6f-42c9kcDE8kvUr98AQ",
+      "expect" : {
+        "from" : "Zoë 🎱",
+        "parts" : [
+          "pointer",
+          "look"
+        ],
+        "theme" : "ocean",
+        "trackingSpeed" : 6.5
+      },
+      "name" : "a name with an emoji"
+    },
+    {
+      "d" : "LYvBCsIwEER_pexJIQo96KFYf8KjeFjTbVxMkzAJIoj_7oqehpn35kVzxsKNBgpRJ7lyjJt6Ywg5mpEXAwddQlfhx2eXkwAZI0dBW_Xro1l3TZNZhdGq1V8OZypZUxPQxTaI16o5nYqIyb2jBvb2DP9lv905egi-kvH3Bw",
+      "expect" : {
+        "from" : "<img src=x onerror=alert(1)>",
+        "parts" : [
+          "pointer"
+        ],
+        "trackingSpeed" : 6.5
+      },
+      "name" : "a name with markup"
+    },
+    {
+      "d" : "PY09DoMwDEbv4jmgJmPGirUTJwjEUKupUzlREULcvS6t2J70vp8NpizPUMHDnCjiEFJqyj0IgoE3SqHM4K2BB3HUUBklp0Q8q_4x-O1PtxxRI5NiXk7fUamBRzXO7Qa-B_0h-hdiPLYXoVqRr6u2XWsvzYA1tNbB_gE",
+      "expect" : {
+        "from" : null,
+        "parts" : [
+          "scrolling"
+        ],
+        "scrollMode" : "follow"
+      },
+      "name" : "beta 12: scroll feel"
+    },
+    {
+      "d" : "TY7NagMxDITfRWc3bDf9Cb6VpIde8gKhFO1aSUz8hy0XwrLvXnlJ2vowyIxm9E1wjNkjg4aTs4YGdO6hnDETKPimXGwMoHsFFxuMLA2VOYYi5n3SE_RNyjlmHiu3-atreqHrNhoCvVHgo7FHK32gH7unzfPri2r-Hr34sIV5nhWsW-pEhauc_62pqSmOvKBM4MlYvNtdy2VKhCzVnCvJn3GJlGth8jLNy1MwCqKRtcP0R3_o1fpT_auPicJbWgqGGoyjj50QjtGvMCVHq31kKo1XUjfW8h5wcGRuAD8",
+      "expect" : {
+        "buttons" : {
+          "1" : "system",
+          "2" : "shortcut",
+          "3" : "gesture",
+          "4" : "system",
+          "5" : "system",
+          "6" : "system",
+          "7" : "system"
+        },
+        "from" : null,
+        "parts" : [
+          "buttons",
+          "combos",
+          "gestures"
+        ]
+      },
+      "name" : "beta 12: buttons"
+    },
+    {
+      "d" : "Xc29DoMwDEbRd_EMkSrUJTNLZxZWE7sQ1flRElgQ7163UpeuPtf6TnimErCBhVU88YIifd2wMHRwcKk-RbC3Dl4-kkaYc1-57Vk5YmA9zS7Rp1aavmJPWPZIwo9R2aVglIQNNfNr_15bQacD65SZdWUw9-t6Aw",
+      "expect" : {
+        "apps" : [
+          "com.apple.dt.Xcode"
+        ],
+        "from" : null,
+        "parts" : [
+          "app:com.apple.dt.Xcode"
+        ]
+      },
+      "name" : "beta 12: app setup"
+    },
+    {
+      "d" : "pVVNb9swDP0rg852YPmraW5p4rYDumJYsFNRDIot20IVyZDkBlnQ6877-If7JaNkx0nabSnQHAKZJvnIxyd6i0qpVsSgCao4K-iScO7rmiiKPPRIlWZSoEnooQcmCnCiYNuYmokK3nMpH9Bki0xNVxRe5pxozXL05KFcipJV9mXFJSRd1FKZvDXamgpFqhuZQ6xoOfeQBV3kSnK-szSk1dS6PtDNTBZwTDx7viUO6ArAV7JgJYMK0QSPoyQIxgDbKJqzrmabCCwV1aZVdM60ISK3wdqWAgmMIjl0VS0aSqG1dAQQJd9cWRrQJBhF3fMnSvLaPidDsoWhpNhcE1EAeEm4ph7Srv7FSkpTC6q1jYh35mmeU04VMa6yoEf6i1VZfjXdkdHnXrbGSOGoixylXRn2-CWw_21j_xVtKDH7kkjeZd52LQP7-4iBVxymR1yGaYjj-JDs399-oCf4wbxpad4AFJ0E-t4DKVbVb0GKTyL97JEMcdTpjTZ0BSdrK-RavAE8OQn-y4E7fOyAbLszzuyNcBWEJ0DGx_IP4nFylh5izPr2qCBLbtVtVAsdCNDaY6-uXvZOdsO16Y0Ymm2aj0qWjFNAuNtCqEu8ICVR7OXtiaxKRcHp-7ldBHI1ggScjgb_Aw277pZk6NZpGtbQmqjCmcA4AN5KAxW8wAv_gde5P91DQK3kerqSrTD9XdyvmX2b3f3cbwcMfjkQX3Rdv3Lkr7xCHmJ2h4ZZkGZpeuZPsyDyYzj758H5zE9weImjJJmmQXzI2F3oRfeWkn01sqFi2jjp_o-GHeI0ifE8wdifzQEsTseZP53jsR_gLD3Louzy4iI5QsQW8d5tqT038bAAdXasK8f1M1vBdMPJxlHtxm4H6g44SUI_hn0Q-0Akurl695nDeC-ZoPbToYeIY8fxcz1bX7dvu6Hab1KP3U31g5sOKItzuYb2dM1K0_nqa6nYVykMSGLTZ3v6Aw",
+      "expect" : {
+        "apps" : [
+          "com.apple.Safari",
+          "com.apple.Notes"
+        ],
+        "buttons" : {
+          "1" : "rightClick",
+          "2" : "shortcut",
+          "3" : "gesture",
+          "4" : "system",
+          "5" : "system",
+          "6" : "system",
+          "7" : "system"
+        },
+        "from" : null,
+        "parts" : [
+          "pointer",
+          "scrolling",
+          "buttons",
+          "combos",
+          "gestures",
+          "app:com.apple.Safari",
+          "app:com.apple.Notes",
+          "look"
+        ],
+        "scrollMode" : "follow",
+        "theme" : "classic",
+        "trackingSpeed" : 6.5
+      },
+      "name" : "beta 12: everything"
+    }
+  ],
+  "note" : "Made by scripts/import-sim/run.sh --write-fixtures (docs/SHARE-FORMAT.md). Do not edit by hand."
+}

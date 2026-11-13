@@ -11,7 +11,7 @@ What it does (Python standard library only, no framework):
      whenever gh works.
   3. Replaces the nav and footer between the <!-- site-nav --> / <!-- /site-nav -->
      and <!-- site-footer --> / <!-- /site-footer --> markers in the hand-written
-     pages (index.html, feedback/, 404.html), so every page shares one copy.
+     pages (index.html, feedback/, 404.html, s/), so every page shares one copy.
   4. Rewrites website/sitemap.xml: the built pages plus whatever else it
      already lists (the home page, /feedback/), keeping their lastmod.
 
@@ -629,6 +629,7 @@ def main():
     sync_markers("index.html", home=True)
     sync_markers("feedback/index.html", current="feedback")
     sync_markers("404.html")
+    sync_markers("s/index.html")
     write_sitemap(built)
 
 

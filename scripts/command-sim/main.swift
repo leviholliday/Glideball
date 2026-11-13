@@ -344,8 +344,8 @@ do {
     var mine = GlideConfig()
     mine.trackingSpeed = 9
     mine.buttons = [2: .shortcut(.copy)]
-    let good = SharedSetup.make(.pointer, from: mine, look: nil)!.link()!.absoluteString
-    let buttons = SharedSetup.make(.buttons, from: mine, look: nil)!.link()!.absoluteString
+    let good = SharedSetup.make(.pointer, from: mine, look: nil)!.appLink()!.absoluteString
+    let buttons = SharedSetup.make(.buttons, from: mine, look: nil)!.appLink()!.absoluteString
     let payload = String(good.dropFirst("glideball://import?d=".count))
 
     // With the switch off: handed over for a preview, and nothing else.

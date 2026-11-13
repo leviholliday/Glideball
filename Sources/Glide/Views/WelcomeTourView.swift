@@ -10,7 +10,7 @@ struct WelcomeTourView: View {
     @Bindable var model: AppModel
 
     enum Step: Int, CaseIterable, Identifiable {
-        case welcome, permissions, buttons, tryIt, done
+        case welcome, permissions, buttons, tryIt, name, done
         var id: Int { rawValue }
         /// For `--render-ui`'s file names.
         var name: String {
@@ -19,6 +19,7 @@ struct WelcomeTourView: View {
             case .permissions: "permissions"
             case .buttons: "buttons"
             case .tryIt: "scroll-and-speed"
+            case .name: "name"
             case .done: "done"
             }
         }
@@ -153,6 +154,7 @@ struct WelcomeTourView: View {
         switch step {
         case .welcome: String(localized: "Get Started")
         case .done: String(localized: "Start Using Glideball")
+        case .name where !SharingNameStore.shared.hasName: String(localized: "Skip", comment: "Welcome Tour: go on without typing a name")
         default: String(localized: "Continue")
         }
     }
@@ -194,6 +196,7 @@ struct WelcomeTourView: View {
         case .permissions: permissionsPage
         case .buttons: buttonsPage
         case .tryIt: tryItPage
+        case .name: WelcomeNameStep()   // WelcomeNameStep.swift
         case .done: donePage
         }
     }

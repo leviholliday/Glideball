@@ -1,5 +1,21 @@
 [
  {
+  "body": "A big one. Thanks for all the notes.\n• Fixed: Glideball could keep saying your trackball was connected after you unplugged it.\n• A round of bug hunting found and fixed 17 engine bugs, like a shortcut key staying stuck after unplugging, and a few ways a broken settings file could crash Glideball.\n• Wide windows use the space now: two or three columns, centered.\n• Gestures work on combos, and one hold can fire several commands (roll left, up, left). Zoom and volume keep going as you roll. Pick a gesture distance and try Steady hands if you need it.\n• ⌘K (or ⌘F) searches every setting and action.\n• Optional menu bar panel, a weekly recap you can share, and hold ⌥ while dragging a slider to try a value for 10 seconds.\n• Share a setup (one app, one section or everything) as a file or link. Opening one always shows you what would change first.\n• Import your old KensingtonWorks buttons, if their settings file is still on your Mac.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `2a4d5b1e8575d22b3bf9d74e0dc056971786f16da625c3b7eb8e4bf60c03a862`",
+  "date": "2026-11-12T21:37:01Z",
+  "name": "Glideball 2.10 beta 12",
+  "prerelease": true,
+  "tag": "v2.10-beta.12",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.12"
+ },
+ {
+  "body": "Fixes from your notes on beta 10, plus gestures.\n• Fixed: tapping Share on a badge crashed the app.\n• Scrolling pages is smoother, and clicking a tab now always switches to it.\n• ⌘Q asks with three big buttons: Return quits, Esc cancels, and Always quit takes a mouse click.\n• Share has buttons for X, LinkedIn, Facebook and Instagram (it copies the picture and opens the post box).\n• Press ⇧1 to ⇧6 to switch pages. Full screen no longer shows an empty bar. The Overview hint about settings goes away by itself.\n• New: hold a button and roll the ball to do something, like switch Spaces or change the volume (Buttons › pick Gesture on a button). A quick press still does what it did before.\n• New: a pointer speed for each display (Pointer page), and battery level for wireless models that report it.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `c4bd3a2c7f490833cfbabe62f911f8d79677bb11b5ca9a9711fbf9656fc07711`",
+  "date": "2026-11-12T05:38:46Z",
+  "name": "Glideball 2.10 beta 11",
+  "prerelease": true,
+  "tag": "v2.10-beta.11",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.11"
+ },
+ {
   "body": "Built from your notes on beta 9.\n• The ball on screen now rolls the way your real ball rolls, and the light is calmer: it swells and fades instead of flashing.\n• Fixed: on Overview, scrolling down could make the ball spin wildly.\n• Buttons: click a button on the trackball picture (or press the real one) to pick its action from a searchable list. There are ready-made sets too (Spaces, Browser, Editing, Media), each with Undo.\n• Pick a ball color in Settings › Look, and set how strong the light is. Settings › Sound has a volume and a switch for each kind of sound. No more sound on every save.\n• 37 badges now, and Share… makes a picture of your stats or a badge.\n• Press ? to see every shortcut. ⌘Q now asks first (press it again to quit).\n• \"Try it here\" on Scrolling only scrolls after you click it.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `4851472f646107399bc43e526ec1c99d0aca21b8b4758e576a2776cafdba953d`",
   "date": "2026-11-12T04:10:05Z",
   "name": "Glideball 2.10 beta 10",

@@ -110,7 +110,10 @@ for kind in ShareKind.allCases {
     check(viaFile != nil, "\(kind): the file doesn't read back")
     guard let url = share.link() else { check(false, "\(kind): no link"); continue }
     check(url.absoluteString.count <= SharedSetup.maxLinkLength, "\(kind): link is \(url.absoluteString.count) characters")
-    let d = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "d" }?.value ?? ""
+    check(url.absoluteString.hasPrefix(SharedSetup.webPrefix), "\(kind): Copy Link isn't the website's link")
+    let d = url.fragment ?? ""
+    let appD = share.appLink().flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "d" }?.value }
+    check(appD == d, "\(kind): the website link and the glideball:// link carry different payloads")
     guard let viaLink = try? SharedSetup.decode(linkPayload: d) else { check(false, "\(kind): the link doesn't read back"); continue }
     for (how, got) in [("file", viaFile), ("link", viaLink)] {
         guard let got else { continue }
@@ -142,12 +145,190 @@ for kind in ShareKind.allCases {
         check(a.globalShortcuts == withShortcut.globalShortcuts && !a.enabled && a.displaySpeeds == withShortcut.displaySpeeds,
               "everything: took over this Mac's shortcuts, pause switch or displays")
         check(a.appProfiles.count == 1 && a.trackingSpeed == 6.5, "everything: lost something")
-        check(viaFile?.config != nil, "everything: the file has no plain config for older Glideballs")
     }
 }
 let plain = SharedSetup.make(.pointer, from: GlideConfig(), look: nil)!
 check(plain.version == 1, "a plain pointer share is version \(plain.version)")
 check(String(data: try! plain.fileData(), encoding: .utf8)!.contains("exportedFrom") == false, "a share names the Mac it came from")
+
+// MARK: - Checklist shares (several parts, a name, leaving parts out)
+
+section("Checklist shares: any mix of parts, each applied on its own")
+var rich = sampleConfig()
+rich.displaySpeeds.enabled = true
+rich.displaySpeeds.speeds = ["1552-41234-0": 8]
+rich.displaySpeeds.names = ["1552-41234-0": "LG UltraFine"]
+rich.gestureDistance = .short
+var notes = AppProfile(bundleID: "com.apple.Notes", name: "Notes")
+notes.trackingSpeed = 2
+rich.appProfiles.append(notes)
+let richSounds = ShareSounds(on: false, volume: 0.4, kinds: ["ticks": false, "milestones": true, "bogus": true])
+let allParts: [SharePart] = [.pointer, .displays, .scrolling, .buttons, .combos, .gestures, .app("com.apple.Safari"), .app("com.apple.Notes"), .look, .sounds]
+let full = SharedSetup.make(allParts, from: rich, look: ShareLook(theme: "custom", custom: ["ffe070", "2EC99A", "2B3A9E"]),
+                            sounds: richSounds, name: "  \u{202E}Levi\u{0007}  ", writtenBy: "2.10-beta.13")!
+check(full.parts == allParts, "parts: \(full.parts.map(\.id))")
+check(full.from == "Levi", "the name wasn't cleaned: \(String(describing: full.from))")
+check(full.version == 2, "gestures and displays: version \(full.version)")
+check(full.buttons?[3]?.isGesture == true && full.buttons?[1] == .rightClick && full.buttons?[7] == .system, "buttons: \(String(describing: full.buttons))")
+if let d = full.payload, let back = try? SharedSetup.decode(linkPayload: d) {
+    check(back.parts == full.parts && back.from == "Levi" && back.sounds == full.sounds && back.look?.custom == ["FFE070", "2EC99A", "2B3A9E"],
+          "the link doesn't read back the same")
+    check(full.link()?.absoluteString.hasPrefix(SharedSetup.webPrefix) == true, "the link isn't the website's")
+    check(full.appLink()?.absoluteString == SharedSetup.appPrefix + d, "the glideball:// link has another payload")
+    check(back.appliedSounds()?.kinds["bogus"] == nil, "an unknown sound kind got through")
+    // Each part alone changes only its own settings.
+    for part in back.parts {
+        let a = back.applied(to: theirs, parts: [part])
+        isSane(a, "only \(part.id)")
+        var expect = theirs
+        switch part {
+        case .pointer: expect.trackingSpeed = rich.trackingSpeed; expect.precisionSpeed = rich.precisionSpeed
+        case .displays: expect.displaySpeeds = rich.displaySpeeds
+        case .scrolling: expect.scrollSettings = rich.scrollSettings; expect.ballScrollSpeed = rich.ballScrollSpeed
+        case .buttons:
+            expect.buttons = [1: .rightClick, 2: .shortcut(.copy)]   // button 3 is a gesture: not this part
+        case .combos: expect.chords = rich.chords
+        case .gestures:
+            expect.buttons[3] = rich.buttons[3]
+            expect.gesturesEnabled = rich.gesturesEnabled; expect.gestureDistance = .short; expect.gestureSteadyHands = rich.gestureSteadyHands
+        case .app(let id): expect.appProfiles = [rich.profile(for: id)!]
+        case .look, .sounds: break
+        }
+        check(a.trackingSpeed == expect.trackingSpeed && a.scrollSettings == expect.scrollSettings && a.buttons == expect.buttons
+              && a.chords.map(\.buttons) == expect.chords.map(\.buttons) && a.appProfiles.map(\.bundleID) == expect.appProfiles.map(\.bundleID)
+              && a.displaySpeeds == expect.displaySpeeds && a.gestureDistance == expect.gestureDistance,
+              "only \(part.id) changed something else")
+        cautionListed(theirs, a, "only \(part.id)")
+        check(back.appliedLook(parts: [part]) == (part == .look ? back.look : nil), "only \(part.id): the look")
+        check(back.appliedSounds(parts: [part]) == (part == .sounds ? richSounds.sanitized : nil), "only \(part.id): the sounds")
+    }
+    check(back.applied(to: theirs, parts: []) == theirs.clamped(), "no parts ticked still changed something")
+    // Another Mac's app setups stay when one comes in.
+    var mine2 = theirs
+    mine2.appProfiles = [AppProfile(bundleID: "com.example.mine", name: "Mine")]
+    check(back.applied(to: mine2, parts: [.app("com.apple.Notes")]).appProfiles.map(\.bundleID) == ["com.example.mine", "com.apple.Notes"],
+          "an incoming app setup replaced the others")
+} else {
+    check(false, "the full checklist share doesn't read back")
+}
+check(SharedSetup.make([.displays], from: GlideConfig(), look: nil, sounds: nil) == nil, "a share of nothing (no displays) was made")
+check(SharedSetup.make([.look], from: rich, look: nil, sounds: nil) == nil, "a look share without a look was made")
+let quiet = SharedSetup.make([.pointer], from: rich, look: nil, sounds: nil, name: "   ")!
+check(quiet.from == nil && !String(data: try! quiet.fileData(), encoding: .utf8)!.contains("\"from\""), "an empty name went into the share")
+// Too long for a link: file only, and it says by how much.
+var huge = rich
+huge.appProfiles = (0..<40).map { i in
+    var p = AppProfile(bundleID: "com.example.\(UUID().uuidString)", name: "App \(UUID().uuidString)")
+    p.trackingSpeed = Double(i) + 0.5; p.scroll = rich.scrollSettings; p.buttons = [2: .shortcut(.copy), 3: .openApp(bundleID: "com.example.other\(i)")]
+    return p
+}
+let tooBig = SharedSetup.make([.pointer] + huge.appProfiles.map { .app($0.bundleID) }, from: huge, look: nil, sounds: nil)!
+check(tooBig.link() == nil && tooBig.appLink() == nil && tooBig.linkLength > SharedSetup.maxLinkLength, "a share too long for a link got one")
+check((try? SharedSetup.decode(file: tooBig.fileData()))?.parts.count == 41, "a big share doesn't read back from its file")
+
+// MARK: - The format, both ways: fixtures shared with the website (docs/SHARE-FORMAT.md)
+
+section("Shared fixtures: what the website reads, the app reads the same way")
+let shareFixtures = URL(fileURLWithPath: "website/tests/fixtures/share")
+
+/// What a fixture's `expect` compares (see website/tests/share-page.test.mjs).
+func expectation(_ s: SharedSetup) -> [String: Any] {
+    var e: [String: Any] = ["parts": s.parts.map(\.id), "from": s.from ?? NSNull()]
+    if s.parts.contains(.pointer), let v = s.trackingSpeed { e["trackingSpeed"] = v.clamped(to: SettingRanges.trackingSpeed, or: 4) }
+    if s.parts.contains(.scrolling), let m = s.scroll?.scrollMode { e["scrollMode"] = m.rawValue }
+    if s.parts.contains(.look), let t = s.look?.theme { e["theme"] = t }
+    let apps = s.parts.compactMap(\.bundleID)
+    if !apps.isEmpty { e["apps"] = apps }
+    if s.parts.contains(.buttons) || s.parts.contains(.gestures) {
+        var kinds: [String: String] = [:]
+        for (b, raw) in s.buttons ?? [:] where s.parts.contains(raw.isGesture ? .gestures : .buttons) {
+            guard let a = raw.sanitized(), let data = try? JSONEncoder().encode(a),
+                  let key = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?.keys.first else { continue }
+            kinds[String(b)] = key
+        }
+        e["buttons"] = kinds
+    }
+    return e
+}
+
+func same(_ a: Any?, _ b: Any?) -> Bool {
+    switch (a, b) {
+    case (nil, nil): return true
+    case (let x as NSNull, _): return b == nil || b is NSNull || x == (b as? NSNull)
+    case (_, let y as NSNull): return a == nil || y == (a as? NSNull)
+    case (let x as NSNumber, let y as NSNumber): return x.doubleValue == y.doubleValue
+    case (let x as String, let y as String): return x == y
+    case (let x as [Any], let y as [Any]): return x.count == y.count && zip(x, y).allSatisfy { same($0, $1) }
+    case (let x as [String: Any], let y as [String: Any]): return Set(x.keys) == Set(y.keys) && x.allSatisfy { same($0.value, y[$0.key]) }
+    default: return false
+    }
+}
+
+func checkFixtures(_ name: String) -> Int {
+    guard let data = try? Data(contentsOf: shareFixtures.appendingPathComponent(name)),
+          let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any], let cases = root["cases"] as? [[String: Any]] else {
+        check(false, "\(name): missing or unreadable"); return 0
+    }
+    for c in cases {
+        let what = "\(name): \(c["name"] as? String ?? "?")"
+        let d = c["d"] as? String ?? ""
+        let got = try? SharedSetup.decode(linkPayload: d)
+        if c["refuse"] as? Bool == true {
+            check(got == nil, "\(what): accepted, but the website refuses it")
+            continue
+        }
+        guard let got else { check(false, "\(what): refused, but the website reads it"); continue }
+        let mine = expectation(got)
+        for (key, want) in (c["expect"] as? [String: Any]) ?? [:] {
+            check(same(mine[key], want), "\(what): \(key) is \(String(describing: mine[key])), the website says \(want)")
+        }
+        isSane(got.applied(to: theirs), what)
+    }
+    return cases.count
+}
+
+if let i = CommandLine.arguments.firstIndex(of: "--write-fixtures") {
+    // Payloads made by the app's own code, for the website's tests to read.
+    let out = i + 1 < CommandLine.arguments.count ? URL(fileURLWithPath: CommandLine.arguments[i + 1]) : shareFixtures.appendingPathComponent("swift-made.json")
+    var cases: [[String: Any]] = []
+    func add(_ name: String, _ s: SharedSetup?) {
+        guard let s, let d = s.payload else { check(false, "fixture \(name): couldn't make it"); return }
+        let back = try! SharedSetup.decode(linkPayload: d)
+        cases.append(["name": name, "d": d, "expect": expectation(back)])
+    }
+    func legacy(_ name: String, _ json: String) {
+        let d = packed(json)
+        guard let back = try? SharedSetup.decode(linkPayload: d) else { check(false, "fixture \(name): doesn't read"); return }
+        cases.append(["name": name, "d": d, "expect": expectation(back)])
+    }
+    add("everything, named, custom color", full)
+    add("pointer only", SharedSetup.make([.pointer], from: rich, look: nil, sounds: nil))
+    add("scroll feel, follow", SharedSetup.make([.scrolling], from: rich, look: nil, sounds: nil))
+    add("buttons without gestures", SharedSetup.make([.buttons], from: rich, look: nil, sounds: nil))
+    add("gestures only", SharedSetup.make([.gestures], from: rich, look: nil, sounds: nil))
+    add("combos", SharedSetup.make([.combos], from: rich, look: nil, sounds: nil))
+    add("two app setups", SharedSetup.make([.app("com.apple.Notes"), .app("com.apple.Safari")], from: rich, look: nil, sounds: nil))
+    add("ball color, sunset", SharedSetup.make([.look], from: rich, look: ShareLook(theme: "sunset", custom: nil), sounds: nil))
+    add("sounds", SharedSetup.make([.sounds], from: rich, look: nil, sounds: richSounds))
+    add("per-display speeds", SharedSetup.make([.displays], from: rich, look: nil, sounds: nil))
+    add("a name with an emoji", SharedSetup.make([.pointer, .look], from: rich, look: ShareLook(theme: "ocean", custom: nil), sounds: nil, name: "Zoë 🎱"))
+    add("a name with markup", SharedSetup.make([.pointer], from: rich, look: nil, sounds: nil, name: "<img src=x onerror=alert(1)>"))
+    legacy("beta 12: scroll feel", #"{"format":"glideball-share","version":1,"kind":"scrolling","scroll":{"scrollMode":"follow","scrollDistance":22},"ballScrollSpeed":1,"writtenBy":"2.10-beta.12"}"#)
+    legacy("beta 12: buttons", #"{"format":"glideball-share","version":2,"kind":"buttons","buttons":{"2":{"shortcut":{"_0":{"keyCode":8,"modifiers":1048576,"keyName":"C"}}},"3":{"gesture":{"_0":{"up":{"action":{"media":{"_0":0}},"repeats":true},"tap":{"system":{}}}}}},"chords":[{"buttons":[2,3],"action":{"openApp":{"bundleID":"com.apple.Notes"}}}],"gesturesEnabled":true}"#)
+    legacy("beta 12: app setup", #"{"format":"glideball-share","version":1,"kind":"app-setup","name":"Xcode","appSetup":{"bundleID":"com.apple.dt.Xcode","name":"Xcode","trackingSpeed":3.5}}"#)
+    if let old = SharedSetup.make(.everything, from: rich, look: nil), let config = try? JSONEncoder().encode(rich) {
+        _ = old
+        legacy("beta 12: everything", #"{"format":"glideball-share","version":2,"kind":"everything","look":{"theme":"classic"},"config":"#
+               + String(decoding: config, as: UTF8.self) + "}")
+    }
+    let note = "Made by scripts/import-sim/run.sh --write-fixtures (docs/SHARE-FORMAT.md). Do not edit by hand."
+    let json = try! JSONSerialization.data(withJSONObject: ["note": note, "cases": cases], options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
+    try! (json + Data("\n".utf8)).write(to: out)
+    print("  wrote \(cases.count) cases to \(out.path)")
+}
+var fixtureCount = 0
+for name in ["js-made.json", "hostile.json", "swift-made.json"] { fixtureCount += checkFixtures(name) }
+print("  \(fixtureCount) shared fixtures read the same as on the website")
 
 // MARK: - Hostile links
 

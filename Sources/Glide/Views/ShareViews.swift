@@ -59,6 +59,8 @@ struct SetupCard: Equatable {
 struct ShareCardView: View {
     let card: ShareCard
     let delight: DelightCenter
+    /// The name you chose to put on pictures (Settings › General › Sharing), or nil.
+    var name: String? = SharingName.forPictures
 
     var body: some View {
         let size = ShareCard.size
@@ -83,7 +85,7 @@ struct ShareCardView: View {
             case .overview: overview
             case .badge(let m, let date): badge(m, date)
             case .setup(let s): setup(s)
-            case .recap(let recap): RecapShareContent(recap: recap) { trackball.scaleEffect(0.9) }
+            case .recap(let recap): RecapShareContent(recap: recap, name: name) { trackball.scaleEffect(0.9) }
             }
 
             VStack {
@@ -122,7 +124,13 @@ struct ShareCardView: View {
         HStack(spacing: 30) {
             trackball
             VStack(alignment: .leading, spacing: 13) {
-                Text("My trackball, so far", comment: "Share picture heading")
+                Group {
+                    if let name {
+                        Text("\(name)’s trackball, so far", comment: "Share picture heading with the person's name; %@ is the name they typed")
+                    } else {
+                        Text("My trackball, so far", comment: "Share picture heading")
+                    }
+                }
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.62))
                 ForEach(Metric.lifetimeOrder) { m in
@@ -173,7 +181,11 @@ struct ShareCardView: View {
                 .frame(width: s.link == nil ? 196 : 142, height: s.link == nil ? 196 : 142)
             VStack(alignment: .leading, spacing: 10) {
                 Label {
-                    Text("My Glideball setup", comment: "Share picture heading for a shared setup")
+                    if let name {
+                        Text("\(name)’s Glideball setup", comment: "Share picture heading for a shared setup, with the person's name; %@ is the name they typed")
+                    } else {
+                        Text("My Glideball setup", comment: "Share picture heading for a shared setup")
+                    }
                 } icon: {
                     Image(systemName: s.symbol)
                 }
@@ -206,7 +218,7 @@ struct ShareCardView: View {
                         .frame(width: 112, height: 112)
                         .padding(8)
                         .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(.white))
-                    Text("Open in Glideball", comment: "Share picture: under the QR code of a shared setup's link")
+                    Text("Scan to see it", comment: "Share picture: under the QR code of a shared setup's link (it opens a page that shows the setup)")
                         .font(.system(size: 10.5, weight: .medium))
                         .foregroundStyle(.white.opacity(0.55))
                 }
@@ -227,9 +239,14 @@ struct ShareCardView: View {
             }
             VStack(alignment: .leading, spacing: 8) {
                 Group {
-                    if date != nil {
+                    switch (date != nil, name) {
+                    case (true, let name?):
+                        Text("\(name) earned a badge", comment: "Share picture heading for a badge, with the person's name; %@ is the name they typed")
+                    case (false, let name?):
+                        Text("\(name) is working toward", comment: "Share picture heading for a badge that isn't earned yet, with the person's name; %@ is the name they typed")
+                    case (true, nil):
                         Text("Badge earned", comment: "Share picture heading for a badge")
-                    } else {
+                    case (false, nil):
                         Text("Working toward", comment: "Share picture heading for a badge that isn't earned yet")
                     }
                 }

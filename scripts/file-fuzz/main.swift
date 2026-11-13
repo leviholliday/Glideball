@@ -787,9 +787,24 @@ for (name, c) in normalConfigs {
         // Versioning: a share (like a settings file) is version 2 only when it carries something newer.
         if share.version != share.requiredVersion { fail("share \(kind.rawValue) of \(name): version \(share.version), needs \(share.requiredVersion)") }
         if let data = try? share.fileData() { shareFiles.append(("\(kind.rawValue) of \(name)", data)) }
-        if let link = share.link(), let d = URLComponents(url: link, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "d" })?.value {
-            shareLinks.append(("\(kind.rawValue) of \(name)", d))
+        if share.link() != nil, let d = share.payload { shareLinks.append(("\(kind.rawValue) of \(name)", d)) }
+    }
+    // Checklist shares: every part, each part alone, and a few mixes, with names (odd ones too), sounds and a look.
+    let parts: [SharePart] = SharePart.fixed + c.appProfiles.prefix(3).map { .app($0.bundleID) }
+    let names = [nil, "Levi", "  \u{202E}Zoë 🎱\u{0007}  ", "<script>alert(1)</script>", String(repeating: "名", count: 300), "\u{0}\u{200B}"]
+    let sounds = ShareSounds(on: false, volume: 0.3, kinds: ["ticks": false, "notAKind": true])
+    var mixes: [[SharePart]] = [parts] + parts.map { [$0] }
+    for i in 0..<6 { mixes.append(parts.enumerated().filter { ($0.offset + i) % 3 != 0 }.map(\.element)) }
+    for (i, mix) in mixes.enumerated() {
+        let n = names[i % names.count]
+        guard let share = SharedSetup.make(mix, from: c, look: ShareLook(theme: "custom", custom: ["FF0000", "00FF00", "0000FF"]),
+                                           sounds: sounds, name: n, writtenBy: "2.11") else { continue }
+        if let from = share.from, from.count > SharedSetup.maxFromLength || from.unicodeScalars.contains(where: { $0.properties.generalCategory == .control || $0.properties.generalCategory == .format }) {
+            fail("checklist share of \(name): the name wasn't cleaned: \(from.debugDescription)")
         }
+        let label = "parts \(mix.map(\.id).joined(separator: "+").prefix(80)) of \(name)"
+        if let data = try? share.fileData() { shareFiles.append((label, data)) }
+        if share.link() != nil, let d = share.payload { shareLinks.append((label, d)) }
     }
 }
 for (name, data) in shareFiles { importCase("shared file: \(name)", data, expect: true) }
@@ -803,6 +818,15 @@ func linkCase(_ name: String, _ payload: String, expect: Bool? = nil) {
         if expect == false { fail("link: \(name): accepted, should be refused") }
         assertImported(sharedApplied(share, to: current), from: current, "link: \(name)")
         assertImported(sharedApplied(share, to: GlideConfig()), from: GlideConfig(), "link: \(name) (onto defaults)")
+        // Parts left out in the preview: whatever's still ticked is just as safe, and nothing ticked changes nothing.
+        for part in share.parts {
+            assertImported(share.applied(to: current, parts: [part]), from: current, "link: \(name), only \(part.id)")
+        }
+        if share.applied(to: current, parts: []) != current.clamped() { fail("link: \(name): applying no parts changed something") }
+        if let from = share.from, from.count > SharedSetup.maxFromLength { fail("link: \(name): a \(from.count)-character name got through") }
+        if let s = share.appliedSounds(), !(0...1).contains(s.volume) || s.kinds.keys.contains(where: { !ShareSounds.kindIDs.contains($0) }) {
+            fail("link: \(name): sounds outside the limits: \(s)")
+        }
     }
 }
 for (name, d) in shareLinks { linkCase(name, d, expect: true) }
