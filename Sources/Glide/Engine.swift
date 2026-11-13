@@ -269,7 +269,10 @@ final class Engine {
         perform {
             guard on != self.betaProgram else { return }
             self.betaProgram = on
+            let before = self.deviceSupported
             self.deviceSupported = self.devices.mapValues { $0.isSupported(beta: on) }
+            // A trackball no longer supported won't have its releases handled: let go now.
+            if before.contains(where: { $0.value && self.deviceSupported[$0.key] != true }) { self.letGoOfTrackball() }
             self.lastActiveIsKensington = false   // re-learned from the next raw input
             self.syncTap()
             self.io.pointerDevicesChanged()
@@ -729,10 +732,7 @@ final class Engine {
         deviceRemoved(key: k)
         // A trackball a check had taken out (say while IOKit was still registering it) is
         // really gone now: modes switched on in the meantime end, as at any unplug.
-        if checkRemovedTrackball.remove(k) != nil, !deviceSupported.values.contains(true) {
-            releaseModes(.unplug)
-            letGoOfHeld()
-        }
+        if checkRemovedTrackball.remove(k) != nil, !deviceSupported.values.contains(true) { letGoOfTrackball() }
         reconcileNow(reason: "after a removal")
     }
 
@@ -911,21 +911,24 @@ final class Engine {
         return "vendor \(vid) product \(pid) name \(d.name == nil ? "missing" : "yes")"
     }
 
+    /// A trackball went away (unplugged, or no longer one Glideball works with): its button
+    /// releases will never come, so everything it held lets go, as at an unplug.
+    private func letGoOfTrackball() {
+        hidButtonsDown.removeAll()
+        releaseModes(.unplug)
+        letGoOfHeld()   // keys a held button had down, and buttons it was remapped to
+        // Presses still waiting to see if they're a combo: never replay them now, their
+        // releases will never come. Found by scripts/engine-fuzz.
+        pendingTimer?.invalidate()
+        pendingTimer = nil
+        for p in pending { overrides[p.button] = .swallow }
+        pending = []
+    }
+
     func deviceRemoved(key k: Int) {
         // A device whose properties never all arrived may have been the trackball: let go as for one.
         let maybeTrackball = incomplete.contains(k) && (devices[k]?.vendorID ?? DeviceIdentity.kensingtonVendorID) == DeviceIdentity.kensingtonVendorID
-        if deviceSupported[k] == true || maybeTrackball {
-            // Unplugged mid-hold: its button releases will never come.
-            hidButtonsDown.removeAll()
-            releaseModes(.unplug)
-            letGoOfHeld()   // keys a held button had down, and buttons it was remapped to
-            // Presses still waiting to see if they're a combo: never replay them now, their
-            // releases will never come. Found by scripts/engine-fuzz.
-            pendingTimer?.invalidate()
-            pendingTimer = nil
-            for p in pending { overrides[p.button] = .swallow }
-            pending = []
-        }
+        if deviceSupported[k] == true || maybeTrackball { letGoOfTrackball() }
         devices[k] = nil
         deviceSupported[k] = nil
         batteryDevices.remove(k)

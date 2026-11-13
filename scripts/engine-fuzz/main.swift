@@ -453,6 +453,8 @@ final class World {
     var partial: DeviceIdentity?
     var identityAt = -1e9, listAt = -1e9, aliveAt = -1e9
     var plugGraceUntil = -1e9   // until then "connected" and "works" aren't judged
+    var oddReplug = false       // the latest replug was published late in some way (Op.replug bits 1-8)
+    var holdDisturbed = false   // the trackball moved during such a replug while the pointer was held
 
     // What apps see.
     var appK: [Int: Int] = [:]          // Kensington-side buttons down (engine-processed and raw)
@@ -872,7 +874,11 @@ final class World {
             defer {
                 // Held means held, in any app: checked where it counts, the pointer after the
                 // tap has had the trackball's move (unless macOS had the tap off for it).
-                if io.frozen, bypass == bypassBefore, bypass == 0, let a = io.anchorExpect, io.cursor != a {
+                // (Not while a replug is still being published: properties missing, or IOKit not
+                // done registering it, nothing yet says it's the trackball.)
+                // A hold such a move went through can't be judged until it ends.
+                if !io.frozen { holdDisturbed = false } else if oddReplug && io.clock < plugGraceUntil { holdDisturbed = true }
+                if io.frozen, bypass == bypassBefore, bypass == 0, !holdDisturbed, let a = io.anchorExpect, io.cursor != a {
                     fail("modes", "the pointer moved while held (\(io.foreground ? "Glideball in front" : "another app in front")): \(a) → \(io.cursor)")
                 }
             }
@@ -1026,6 +1032,7 @@ final class World {
             listAt = v & 4 != 0 ? io.clock + 0.3 : -1e9
             aliveAt = v & 8 != 0 ? io.clock + 0.4 : -1e9
             plugGraceUntil = io.clock + 1.5
+            oddReplug = v & (3 | 4 | 8) != 0
             let order = v & 16 != 0 ? [kAux, kKey] : [kKey, kAux]
             for (i, k) in order.enumerated() {
                 add(k, identityOf(k), transport: k == kKey && replugs % 2 == 1 ? "Bluetooth Low Energy" : "USB")
