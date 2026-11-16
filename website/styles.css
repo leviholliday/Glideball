@@ -674,6 +674,18 @@ kbd {
 .faq summary .icon { display: none; }
 .faq details > p { padding: 0 22px 22px; color: var(--text-2); max-width: 70ch; }
 .faq details > p + p { margin-top: -10px; }
+/* An answer opens and closes with a short slide and fade where the browser can
+   animate it; elsewhere it just opens. Still with Reduce Motion. */
+@media (prefers-reduced-motion: no-preference) {
+  @supports selector(::details-content) {
+    .faq details { interpolate-size: allow-keywords; }
+    .faq details::details-content {
+      block-size: 0; overflow: clip; opacity: 0;
+      transition: block-size 0.28s ease, opacity 0.22s ease, content-visibility 0.28s allow-discrete;
+    }
+    .faq details[open]::details-content { block-size: auto; opacity: 1; }
+  }
+}
 
 /* --------------------------------------------------------------- Footer */
 .footer {

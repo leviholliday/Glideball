@@ -193,3 +193,14 @@
     })
     .catch(() => {});
 })();
+
+/* Questions: opening one closes the one that was open, so the page doesn't keep growing. */
+(() => {
+  document.querySelectorAll('.faq').forEach((faq) => {
+    faq.addEventListener('toggle', (e) => {
+      const opened = e.target;
+      if (!(opened instanceof HTMLDetailsElement) || !opened.open) return;
+      faq.querySelectorAll('details[open]').forEach((d) => { if (d !== opened) d.open = false; });
+    }, true);
+  });
+})();
