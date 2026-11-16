@@ -16,6 +16,7 @@
 #   import-sim   scripts/import-sim/run.sh       settings files, shared setups, KensingtonWorks: good, hostile, fuzzed
 #   engine-fuzz  scripts/engine-fuzz/run.sh      the real engine, ~1.2M random events + one random seed
 #   file-fuzz    scripts/file-fuzz/run.sh        hostile settings, shares, links, KensingtonWorks, backup, sync, crash-report files
+#   update-fuzz  scripts/update-fuzz/run.sh      the updater: hostile release lists, versions, zips, signatures, install script (offline)
 #   l10n         scripts/l10n/check.py           every translation complete, no repeated keys
 #   website      the website's function tests    (npm ci first if website/node_modules is missing)
 #   admin        the admin site's tests          its proxy against the real admin function, its pages and policy
@@ -89,6 +90,7 @@ run import-sim "settings files, shared setups, KensingtonWorks: good, hostile, f
 run engine-fuzz "engine fuzzer: the hard rules over ~1.2M random events" scripts/engine-fuzz/run.sh --seeds 1-60 --events 20000 --random
 grep -m1 '^random seed' "$LOGS/engine-fuzz.log" 2>/dev/null | sed 's/^/  /'
 run file-fuzz "hostile files: import, shares, links, KensingtonWorks, backups, sync, crash reports" scripts/file-fuzz/run.sh
+run update-fuzz "the updater: hostile release lists, versions, zips and signatures (offline)" scripts/update-fuzz/run.sh
 run l10n "translations: complete, no repeated keys" python3 scripts/l10n/check.py
 
 website_tests() (   # a subshell: the cd stays in here

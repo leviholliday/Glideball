@@ -13,6 +13,9 @@
 #     --no-build                                  use the binary that's already built
 #
 #   scripts/render-ui.sh build/screens-de --lang de --only 'settings-*,tour-*'
+#
+# A run that crashes, stalls (no output for RENDER_UI_STALL s, default 120) or passes
+# RENDER_UI_TIMEOUT s (default 3600) is stopped, says which scene it was on, and exits non-zero.
 set -euo pipefail
 ROOT=${0:A:h:h}
 cd "$ROOT"

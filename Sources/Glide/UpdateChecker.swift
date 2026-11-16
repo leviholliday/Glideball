@@ -111,7 +111,7 @@ final class UpdateChecker {
     /// prerelease ("2.4-beta.1") counts as one even if GitHub isn't told so.
     static func newest(in data: Data, includePrereleases: Bool) -> Update? {
         // 30 releases with their notes are well under a megabyte; anything past this isn't GitHub's answer.
-        guard data.count <= maxReleaseListBytes,
+        guard data.count <= maxReleaseListBytes, nestingDepth(of: data) <= maxReleaseListDepth,
               let list = try? JSONSerialization.jsonObject(with: data) as? [Any] else { return nil }
         return list.compactMap { item -> (GlideVersion, Update)? in
             // One odd entry (a null, a string) costs only itself, not every update after it.
@@ -121,6 +121,28 @@ final class UpdateChecker {
             return (version, update)
         }
         .max { $0.0 < $1.0 }?.1
+    }
+
+    /// A real release list is four or five levels deep; JSONSerialization overflows its stack on a few
+    /// thousand levels of objects, so anything deeper is turned away before it's parsed.
+    static let maxReleaseListDepth = 32
+
+    /// How deep the brackets nest, counted without parsing (quoted text is skipped).
+    static func nestingDepth(of data: Data) -> Int {
+        var depth = 0, deepest = 0, inString = false, escaped = false
+        for byte in data {
+            if inString {
+                if escaped { escaped = false } else if byte == 0x5C { escaped = true } else if byte == 0x22 { inString = false }
+                continue
+            }
+            switch byte {
+            case 0x22: inString = true
+            case 0x5B, 0x7B: depth += 1; deepest = max(deepest, depth)
+            case 0x5D, 0x7D: depth = max(0, depth - 1)
+            default: break
+            }
+        }
+        return deepest
     }
 
     /// One release from the GitHub API.
@@ -206,20 +228,35 @@ final class UpdateChecker {
     /// `requirement` are the running app's own unless a test names others.
     static func prepare(zip: URL, expectedVersion: String,
                         bundleID: String? = Bundle.main.bundleIdentifier,
-                        requirement: SecRequirement? = nil) throws -> URL {
+                        requirement: SecRequirement? = nil,
+                        workRoot: URL = FileManager.default.temporaryDirectory) throws -> URL {
         let fm = FileManager.default
         let size = (try? fm.attributesOfItem(atPath: zip.path)[.size] as? Int64) ?? 0
         guard size > 0, size <= maxZipBytes else {
             throw UpdateError(String(localized: "The download isn’t the expected Glideball \(expectedVersion)."))
         }
-        let work = fm.temporaryDirectory.appendingPathComponent("GlideUpdate-\(UUID().uuidString)", isDirectory: true)
+        let work = workRoot.appendingPathComponent("GlideUpdate-\(UUID().uuidString)", isDirectory: true)
         try fm.createDirectory(at: work, withIntermediateDirectories: true)
         do {
             return try unpack(zip: zip, into: work, expectedVersion: expectedVersion, bundleID: bundleID, requirement: requirement)
         } catch {
-            try? fm.removeItem(at: work)   // a refused or broken download leaves nothing behind
+            removeTree(work)   // a refused or broken download leaves nothing behind
             throw error
         }
+    }
+
+    /// Deletes an unpacked folder. A zip can carry folders with no permissions, which a plain
+    /// remove can't get into, so those are made writable first.
+    static func removeTree(_ url: URL) {
+        let fm = FileManager.default
+        if (try? fm.removeItem(at: url)) != nil || !fm.fileExists(atPath: url.path) { return }
+        let chmod = Process()
+        chmod.executableURL = URL(fileURLWithPath: "/bin/chmod")
+        chmod.arguments = ["-R", "u+rwX", url.path]
+        chmod.standardError = FileHandle.nullDevice
+        try? chmod.run()
+        chmod.waitUntilExit()
+        try? fm.removeItem(at: url)
     }
 
     private static func unpack(zip: URL, into work: URL, expectedVersion: String,
@@ -228,6 +265,8 @@ final class UpdateChecker {
         let unzip = Process()
         unzip.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
         unzip.arguments = ["-x", "-k", zip.path, work.path]
+        unzip.standardOutput = FileHandle.nullDevice
+        unzip.standardError = FileHandle.nullDevice
         let finished = DispatchSemaphore(value: 0)
         unzip.terminationHandler = { _ in finished.signal() }
         try unzip.run()
