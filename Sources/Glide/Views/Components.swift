@@ -1297,7 +1297,9 @@ private struct ChoiceCard: View {
             Text(title)
                 .font(.system(size: 13, weight: selected ? .semibold : .regular))
                 .lineLimit(detail == nil ? 1 : 2)
-                .minimumScaleFactor(0.8)
+                .minimumScaleFactor(detail == nil ? 0.6 : 0.8)   // a long name in a narrow card shrinks before it's cut
+                .allowsTightening(true)
+                .layoutPriority(1)
                 .fixedSize(horizontal: false, vertical: detail != nil)
             Spacer(minLength: 0)
             if check {
@@ -1317,13 +1319,13 @@ private struct ChoiceCard: View {
             VStack(alignment: .leading, spacing: detail == nil ? 8 : 4) {
                 // The checkmark only where it fits beside the whole name: a narrow card (the tour's
                 // four speeds, or German) gets its name in full and the glow says it's picked.
-                if detail == nil {
+                if detail == nil && selected {
                     ViewThatFits(in: .horizontal) {
                         titleRow(check: selected)
                         titleRow(check: false)
                     }
                 } else {
-                    titleRow(check: selected)   // a name that may wrap: the checkmark stays
+                    titleRow(check: selected)   // a name that may wrap, or a card that isn't picked
                 }
                 if let detail {
                     Text(detail)
