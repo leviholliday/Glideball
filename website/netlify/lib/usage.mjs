@@ -221,9 +221,11 @@ export function cleanPing(b, now = Date.now()) {
 
   if (!isObj(b.buttons)) return [null, "buttons doesn't look right."];
   out.buttons = {};
-  for (const [k, v] of Object.entries(b.buttons)) {
-    if (!ACTION_TYPES.includes(k) || count(v, 100) === null) return [null, "buttons doesn't look right."];
-    if (v > 0) out.buttons[k] = v;
+  // An action kind this server doesn't know (a newer app's) is left out, not a reason to
+  // refuse the whole ping: that lost every install with a gesture button until 2.10 beta 15.
+  for (const [k, v] of Object.entries(b.buttons).slice(0, 64)) {
+    if (count(v, 100) === null) return [null, "buttons doesn't look right."];
+    if (ACTION_TYPES.includes(k) && v > 0) out.buttons[k] = v;
   }
 
   // The settings in use (newer apps only): each kept only if it's on its list.

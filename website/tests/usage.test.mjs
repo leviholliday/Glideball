@@ -106,7 +106,6 @@ test("a ping that doesn't look right is turned down whole", async () => {
     { installId: "GB-0001-7K3Q-AB12-CDEF-GHJK-MNPQ-RSTV-WXYU" },
     { scrollMode: "turbo" },
     { pointerSpeed: 4.5 },
-    { buttons: { leftClick: 1, typedText: 3 } },
     { buttons: { shortcut: 1000 } },
     { trackballs: [{ name: "Expert Mouse <script>", product: 4128 }] },
     { trackballs: [{ name: "Expert Mouse", product: 70000 }] },
@@ -581,4 +580,11 @@ test("tallySettings() counts own keys only", () => {
   tallySettings(out, JSON.parse(`{"__proto__": {"ballColor": "orb"}, "ballColor": "constructor", "sounds": true}`));
   assert.deepEqual(out.ballColor, { counts: {}, notReported: 1 });
   assert.deepEqual(out.sounds, { counts: { on: 1 }, notReported: 0 });
+});
+
+test("an action kind the server doesn't know is left out, and the rest of the ping is kept", async () => {
+  fresh();
+  assert.equal((await ping(1, { buttons: { leftClick: 1, typedText: 3 } })).status, 201);
+  const [key] = S().keys();
+  assert.deepEqual((await S().get(key, { type: "json" })).buttons, { leftClick: 1 });
 });
