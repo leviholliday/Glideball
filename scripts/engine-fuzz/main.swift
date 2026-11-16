@@ -117,10 +117,11 @@ final class FakeIO: EngineIO {
         if !f { anchorExpect = nil }
         frozen = f
     }
-    override func warpPointer(_ point: CGPoint) {
+    override func warpPointer(_ point: CGPoint) -> Bool {
         if !frozen { warpedWhileFree = true }
         warps += 1
         cursor = point
+        return true
     }
     var warpedWhileFree = false
     override func post(_ event: CGEvent, tap: CGEventTapLocation) { posted.append(event) }
@@ -455,6 +456,8 @@ final class World {
     var plugGraceUntil = -1e9   // until then "connected" and "works" aren't judged
     var oddReplug = false       // the latest replug was published late in some way (Op.replug bits 1-8)
     var holdDisturbed = false   // the trackball moved during such a replug while the pointer was held
+    var holdCheckAt: Double?    // a held pointer moved with nothing after it: back on its anchor by then
+    var lastFrameAt = -1e9      // the scroll engine's last frame, for the display link's cadence
     /// While such a replug settles, a check can take the trackball out and put it back
     /// mid-press (IOKit not done registering it), so button pairing can't be judged.
     var settling: Bool { oddReplug && io.clock < plugGraceUntil }
@@ -692,6 +695,8 @@ final class World {
             swallowedOther.remove(b); return
         }
         if before.type == .leftMouseDragged || before.type == .rightMouseDragged || before.type == .otherMouseDragged, swallowedOther.contains(b) { return }
+        // A drag lock holds the left button for every mouse: a plain move is its drag.
+        if before.type == .mouseMoved, dragLockedBefore, out?.type == .leftMouseDragged { return }
         if kAmbiguous { tainted.insert(b); return }
         guard let out else { return fail("others", "\(info.source) \(before.type.rawValue) of button \(b) was swallowed") }
         if out.type != before.type || out.button != before.button || out.flags != before.flags {
@@ -814,7 +819,9 @@ final class World {
         let end = io.clock + dt
         while true {
             let nextTimer = io.timers.filter(\.valid).min { ($0.fireAt, $0.order) < ($1.fireAt, $1.order) }
-            let nextFrame = engine.scroller.wantsFrames ? io.clock + 1.0 / 120 : Double.infinity
+            // The display link ticks every 1/120 s whatever the input does (it used to be counted
+            // from each wait's start, so a run of short waits drew no frames at all).
+            let nextFrame = engine.scroller.wantsFrames ? max(io.clock, lastFrameAt + 1.0 / 120) : Double.infinity
             let t = min(nextTimer?.fireAt ?? .infinity, nextFrame)
             guard t <= end else { break }
             io.clock = max(io.clock, t)
@@ -823,6 +830,7 @@ final class World {
                 if tracing { print(String(format: "        (timer #%d, every %.3f s, at +%.3f)", timer.order, timer.interval, io.clock - lastScrollInput)) }
                 timer.body()
             } else {
+                lastFrameAt = io.clock
                 engine.scroller.frame(at: io.clock)
             }
             settle()
@@ -871,10 +879,35 @@ final class World {
         case .kBall(let dx, let dy):
             guard kConnected else { return }
             noteScrollInput()   // Scroll with ball, if it's on
-            if dx != 0 { gestureTravel(dx, 0); hid(kKey, page: kHIDPage_GenericDesktop, usage: kHIDUsage_GD_X, value: dx) }
-            if dy != 0 { gestureTravel(0, dy); hid(kKey, page: kHIDPage_GenericDesktop, usage: kHIDUsage_GD_Y, value: dy) }
+            // How macOS delivers this move while the pointer is held. Nothing guarantees the
+            // order of IOHIDManager's value callback and the tap's event, nor that the tap sees
+            // the move at all (beta 14 on real hardware: the gesture fired, so the HID values
+            // arrived, but the pointer moved the whole time). Picked from the move itself, so a
+            // minimized replay delivers it the same way:
+            //   0: HID, then the pointer moves, then the tap's event (a drag with a button down)
+            //   1: the pointer moves and the tap's event comes first, HID after
+            //   2: HID, then the pointer moves, and the tap never sees the move
+            //   3: HID, the pointer moves, then a plain move instead of the held button's drag
+            // Unheld, every move is delivered the first way.
+            let delivery = io.frozen ? ((dx &* 31 &+ dy &* 17) % 4 + 4) % 4 : 0
+            func sendHID() {
+                if dx != 0 { gestureTravel(dx, 0); hid(kKey, page: kHIDPage_GenericDesktop, usage: kHIDUsage_GD_X, value: dx) }
+                if dy != 0 { gestureTravel(0, dy); hid(kKey, page: kHIDPage_GenericDesktop, usage: kHIDUsage_GD_Y, value: dy) }
+            }
+            func movePointer() {
+                if !(io.frozen && io.foreground) { io.cursor.x = min(max(io.cursor.x + CGFloat(dx), 0), 3000); io.cursor.y = min(max(io.cursor.y + CGFloat(dy), 0), 1000) }
+            }
+            func sendTapEvent(drag: Bool) {
+                if drag, let b = kDown.min() {
+                    let id = newID(InputInfo(source: .kensington, button: b, type: World.type(b, 2), flags: io.kbFlags, time: io.clock))
+                    deliver(mouseEvent(World.type(b, 2), button: b, id: id), source: .kensington)
+                } else if io.moveTap != nil {
+                    let id = newID(InputInfo(source: .kensington, button: 0, type: .mouseMoved, flags: io.kbFlags, time: io.clock))
+                    deliver(mouseEvent(.mouseMoved, button: 0, id: id), source: .kensington)
+                }
+            }
             let bypassBefore = bypass
-            if !(io.frozen && io.foreground) { io.cursor.x = min(max(io.cursor.x + CGFloat(dx), 0), 3000); io.cursor.y = min(max(io.cursor.y + CGFloat(dy), 0), 1000) }
+            var checkLater = false
             defer {
                 // Held means held, in any app: checked where it counts, the pointer after the
                 // tap has had the trackball's move (unless macOS had the tap off for it).
@@ -882,16 +915,21 @@ final class World {
                 // done registering it, nothing yet says it's the trackball.)
                 // A hold such a move went through can't be judged until it ends.
                 if !io.frozen { holdDisturbed = false } else if settling { holdDisturbed = true }
-                if io.frozen, bypass == bypassBefore, bypass == 0, !holdDisturbed, let a = io.anchorExpect, io.cursor != a {
+                if checkLater {
+                    // Nothing came after the move for the engine to act on at once: the pointer
+                    // must be back within a few milliseconds (before the next frame shows it).
+                    if io.frozen, bypass == bypassBefore, bypass == 0, !holdDisturbed, holdCheckAt == nil {
+                        holdCheckAt = io.clock + 0.012
+                    }
+                } else if io.frozen, bypass == bypassBefore, bypass == 0, !holdDisturbed, let a = io.anchorExpect, io.cursor != a {
                     fail("modes", "the pointer moved while held (\(io.foreground ? "Glideball in front" : "another app in front")): \(a) → \(io.cursor)")
                 }
             }
-            if let b = kDown.min() {
-                let id = newID(InputInfo(source: .kensington, button: b, type: World.type(b, 2), flags: io.kbFlags, time: io.clock))
-                deliver(mouseEvent(World.type(b, 2), button: b, id: id), source: .kensington)
-            } else if io.moveTap != nil {
-                let id = newID(InputInfo(source: .kensington, button: 0, type: .mouseMoved, flags: io.kbFlags, time: io.clock))
-                deliver(mouseEvent(.mouseMoved, button: 0, id: id), source: .kensington)
+            switch delivery {
+            case 1: movePointer(); sendTapEvent(drag: true); sendHID()
+            case 2: sendHID(); movePointer(); checkLater = true
+            case 3: sendHID(); movePointer(); sendTapEvent(drag: false); checkLater = io.moveTap == nil
+            default: sendHID(); movePointer(); sendTapEvent(drag: true)
             }
         case .kWheel(let t):
             guard kConnected else { return }
@@ -924,6 +962,9 @@ final class World {
             deliver(e, source: .other)
             if let out = lastOut[id], out.type != .scrollWheel { fail("others", "another mouse's scroll came out as type \(out.type.rawValue)") }
         case .oBall:
+            // Another mouse moving within the few milliseconds a trackball move is still being put
+            // back: which part of the pointer's offset is whose can't be told, so that hold isn't judged.
+            if holdCheckAt != nil { holdDisturbed = true }
             hid(oKey, page: kHIDPage_GenericDesktop, usage: kHIDUsage_GD_X, value: 3)
             if !(io.frozen && io.foreground) {   // another mouse always moves the pointer; the hold follows it
                 io.cursor.x = min(io.cursor.x + 3, 3000)
@@ -932,6 +973,9 @@ final class World {
             if let b = oDown.min() {
                 let id = newID(InputInfo(source: .other, button: b, type: World.type(b, 2), flags: io.kbFlags, time: io.clock))
                 deliver(mouseEvent(World.type(b, 2), button: b, id: id), source: .other)
+            } else if io.moveTap != nil {
+                let id = newID(InputInfo(source: .other, button: 0, type: .mouseMoved, flags: io.kbFlags, time: io.clock))
+                deliver(mouseEvent(.mouseMoved, button: 0, id: id), source: .other)
             }
         case .padClick(let b):
             markAmbiguity(other: b)
@@ -1147,6 +1191,9 @@ final class World {
 
     /// The ball moved while a gesture is held (as the engine sees it: the hold is current).
     func gestureTravel(_ dx: Int, _ dy: Int) {
+        // A hold the tap's event just started (a move delivered before its HID report) is
+        // published on main: see it before counting this report's roll toward it.
+        while !io.mainWork.isEmpty { io.mainWork.removeFirst()() }
         guard modes.gestureHeld, var h = hold else { return }
         h.l1 += Double(abs(dx) + abs(dy))
         h.x += Double(dx); h.y += Double(dy)
@@ -1249,6 +1296,16 @@ final class World {
     }
 
     func checkTimed() {
+        if let t = holdCheckAt {
+            if !io.frozen || bypass != 0 || holdDisturbed {
+                holdCheckAt = nil
+            } else if io.clock >= t {
+                holdCheckAt = nil
+                if let a = io.anchorExpect, io.cursor != a {
+                    fail("modes", "the pointer moved while held and stayed moved (\(io.foreground ? "Glideball in front" : "another app in front"), no move event for the tap): \(a) → \(io.cursor)")
+                }
+            }
+        }
         for p in pendingPrimary where io.clock > p.deadline {
             fail("primary", "the primary button's press (#\(p.id)) never reached apps as a left click")
         }
@@ -1524,6 +1581,47 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
                           .kBall(1, 0), .unplug(3), .wait(1), .replug(1 | 32), .watch(true), .wait(3), .unplug(0), .replug(0)] + use))
     gestureCases.append(("replugged, taken out by a check while registering, Precision on, unplugged: Precision ends", [GlideConfig()],
                          [.unplug(2), .replug(3 | 8 | 32 | 64), .kBall(-90, 10), .setMode(0, 1), .unplug(2), .wait(1)]))
+    // Beta 14 (Levi, Nov 16, an Expert Mouse with KensingtonWorks' driver): holding the gesture
+    // button and rolling fired the gesture (so HID values arrived) but the pointer moved the whole
+    // time. The hold was only put back when a look found the pointer already moved: at a HID report
+    // (usually before WindowServer has moved it) or at the move's tap event (which needn't come).
+    // How a kBall is delivered while held follows from its numbers (see `delivery` in World.apply): (10, 0) has no
+    // tap event at all, (5, 0) a plain move instead of the drag, (3, 0) the tap's event before HID.
+    var volume = GlideConfig()
+    volume.buttons[1] = .gesture(ButtonGesture(up: GestureStep(.media(.volumeUp)), down: GestureStep(.media(.volumeDown))))
+    let roll10: [Op] = (0..<6).flatMap { _ in [Op.kBall(10, 0), .wait(0.008)] }
+    gestureCases.append(("gesture held in another app, the tap never sees the ball's moves: the pointer stays put", [volume],
+                         [.front(1)] + down(1) + roll10 + [.wait(0.05)] + up(1) + settle))
+    gestureCases.append(("gesture held in another app, plain moves instead of drags: the pointer stays put", [volume],
+                         [.front(1)] + down(1) + (0..<6).flatMap { _ in [Op.kBall(5, 0), .wait(0.008)] } + up(1) + settle))
+    gestureCases.append(("gesture held in another app, each move's tap event before its HID report: the pointer stays put", [volume],
+                         [.front(1)] + down(1) + (0..<6).flatMap { _ in [Op.kBall(3, 0), .wait(0.008)] } + up(1) + settle))
+    gestureCases.append(("Scroll with ball from the keyboard in another app, no tap events: the pointer stays put", [GlideConfig()],
+                         [.front(1), .setMode(1, 1)] + roll10 + [.wait(0.05), .setMode(1, 0)] + settle))
+    // The ball turning a few counts under the hand while a gesture combo's buttons go down used
+    // to end the combo wait: the first button acted alone and the gesture never started.
+    gestureCases.append(("gesture combo pressed with the ball jiggling: still the combo's gesture", [comboG],
+                         down(1) + [.kBall(2, 1), .kBall(-3, 2)] + down(3) + roll(20, 0, 4) + up(3, 1) + settle))
+    // A gesture firing a click of a button that is held and waiting for a combo partner: the
+    // waiting press reached apps at the next drag, then the queued click pressed it again.
+    var backWait = GlideConfig()
+    backWait.buttons[4] = .gesture(ButtonGesture(left: GestureStep(.back)))
+    backWait.chords = [Chord(buttons: [2, 3], action: .dragLock)]
+    gestureCases.append(("a gesture fires Back while Back's button waits for a combo: never a double press", [backWait],
+                         down(4) + [.kBall(12, -12)] + down(3) + [.kBall(-90, -2)] + up(3, 4) + settle))
+    var leftWait = GlideConfig()
+    leftWait.buttons[3] = .gesture(ButtonGesture(up: GestureStep(.leftClick)))
+    leftWait.chords = [Chord(buttons: [0, 4], action: .gesture(.standard))]
+    gestureCases.append(("a gesture fires a left click while the primary waits for a combo: never a double press", [leftWait],
+                         down(3) + [.kBall(11, 8)] + down(0) + [.kBall(10, -90)] + up(0, 3) + settle))
+    // Scroll with ball: reports that piled up (the input thread held up) went out in one frame.
+    var fastBall = GlideConfig()
+    fastBall.ballScrollSpeed = 4
+    var fastBallDirect = fastBall
+    fastBallDirect.smoothScrolling = false
+    let pile: [Op] = [.setMode(1, 1), .kWheel(1), .wait(0.001)] + (0..<20).map { Op.kBall(90, $0 % 2 == 0 ? 9 : -9) } + [.wait(1), .setMode(1, 0)]
+    gestureCases.append(("Scroll with ball, 20 reports at once: spread over frames, no runaway", [fastBall], pile))
+    gestureCases.append(("Scroll with ball, smooth scrolling off, 20 reports at once: no runaway", [fastBallDirect], pile))
     let older: [(String, [GlideConfig], [Op])] = [
         ("held shortcut, unplugged while held: the key comes up",
          [hold], [.kPress(3, hidFirst: true), .unplug(2), .wait(1)]),
@@ -1738,6 +1836,8 @@ let expectations: [String: (World) -> String?] = [
     "gesture combo: holds, fires, ends with the first button up": { w in
         w.hold?.buttons == [1, 3] && w.hold?.byDirection == [.right: 1] ? nil : "hold \(String(describing: w.hold?.buttons)) fired \(w.hold?.byDirection ?? [:])" },
     "gesture combo with the primary button: never a gesture": { w in w.hold == nil ? nil : "a gesture hold started" },
+    "gesture combo pressed with the ball jiggling: still the combo's gesture": { w in
+        w.hold?.buttons == [1, 3] && w.hold?.byDirection == [.right: 1] ? nil : "hold \(String(describing: w.hold?.buttons)) fired \(w.hold?.byDirection ?? [:])" },
     "Steady hands: a short roll doesn't fire, a long one does": { w in
         w.gestureFires == 1 ? nil : "\(w.gestureFires) fires, expected 1 (the 60-count roll only)" },
     "a gesture's own Long distance: 60 counts don't fire": { w in w.gestureFires == 0 ? nil : "\(w.gestureFires) fires" },

@@ -36,9 +36,11 @@ class EngineIO {
     /// Puts the pointer back at `point` while it's held (any app in front). Warping starts a
     /// short suppression of local mouse events; associating again right after ends it, and
     /// keeps the pointer dissociated from the ball, as it is while held.
-    func warpPointer(_ point: CGPoint) {
-        CGWarpMouseCursorPosition(point)
+    /// False if macOS refused the warp (logged per hold, so a real-hardware report says so).
+    func warpPointer(_ point: CGPoint) -> Bool {
+        let result = CGWarpMouseCursorPosition(point)
         _ = CGAssociateMouseAndMouseCursorPosition(0)
+        return result == .success
     }
 
     func post(_ event: CGEvent, tap: CGEventTapLocation) { event.post(tap: tap) }

@@ -999,7 +999,7 @@ final class Engine {
         let isK = isSupported(key: k, identity: identity)
         lastActiveIsKensington = isK
         if !isK, page == kHIDPage_GenericDesktop, usage == kHIDUsage_GD_X || usage == kHIDUsage_GD_Y, v != 0 {
-            lastOtherMotion = io.now()
+            lastMotionWasTrackball = false
             if anchor != nil { otherMovedSinceAnchor = true }
         }
         guard isK else { return }
@@ -1016,7 +1016,7 @@ final class Engine {
         case (kHIDPage_GenericDesktop, kHIDUsage_GD_X):
             telemetry.addBall(dx: v, dy: 0)
             let now = io.now()
-            if v != 0 { lastKMotion = now; holdPointer() }
+            if v != 0 { lastKMotion = now; lastMotionWasTrackball = true; pendingTravel = min(pendingTravel + Int(min(v.magnitude, 1_000)), 1 << 30); holdForBallReport() }
             // A held gesture takes the ball (even over Scroll with ball): see GestureRoute.
             if gestures.isHeld { applyGesture(gestures.ball(dx: Double(v), dy: 0, now: now)); publishModes() }
             else if ballScrolling { scroller.addBallDelta(dx: Double(v) * ballSign, dy: 0) }
@@ -1024,7 +1024,7 @@ final class Engine {
         case (kHIDPage_GenericDesktop, kHIDUsage_GD_Y):
             telemetry.addBall(dx: 0, dy: v)
             let now = io.now()
-            if v != 0 { lastKMotion = now; holdPointer() }
+            if v != 0 { lastKMotion = now; lastMotionWasTrackball = true; pendingTravel = min(pendingTravel + Int(min(v.magnitude, 1_000)), 1 << 30); holdForBallReport() }
             if gestures.isHeld { applyGesture(gestures.ball(dx: 0, dy: Double(v), now: now)); publishModes() }
             else if ballScrolling { scroller.addBallDelta(dx: 0, dy: Double(v) * ballSign) }
             watchDisplay(now: now)
@@ -1146,7 +1146,10 @@ final class Engine {
             cancelGesture(.tapDisabled)
             // The pointer moved freely while the tap was off; a hold still on (a keyboard
             // Scroll with ball) keeps it where it is now instead of pulling it back.
-            if anchor != nil { otherMovedSinceAnchor = true }
+            if anchor != nil, let p = io.cursorLocation() {
+                anchor = p   // here and now: the trackball's next move may already be on its way
+                otherMovedSinceAnchor = false
+            }
             appButtons = io.buttonsDown()   // what went by while it was off
             syncTap()
             if let moveTap { io.tapEnable(moveTap, true) }
@@ -1158,10 +1161,16 @@ final class Engine {
             return pass   // our own events
         case .mouseMoved where anchor != nil && trackballMoving:
             // The pointer is held: the trackball's moves never reach apps, in any app.
+            holdStats.tapMoves += 1
             holdPointer()
             return nil
+        case .mouseMoved where anchor != nil:
+            followOtherMouse()   // another mouse's move: the hold moves with it
+            return pass
         case .leftMouseDragged, .rightMouseDragged, .otherMouseDragged:
-            if anchor != nil && trackballMoving { holdPointer() }
+            if anchor != nil {
+                if trackballMoving { holdStats.tapDrags += 1; holdPointer() } else { followOtherMouse() }
+            }
             return handleButton(event, .drag)
         case .mouseMoved where dragLocked:
             // macOS may not count our synthetic press as a held button, so it
@@ -1263,6 +1272,11 @@ final class Engine {
     /// Longest a combo button's press is ever held back while more fingers land.
     private static let comboMaxWait: TimeInterval = 0.16
     private var pendingStart: CFTimeInterval = 0
+    /// The trackball's roll (HID counts, |x| + |y|) since the first waiting press.
+    private var pendingTravel = 0
+    /// Less roll than this while a combo button waits is the hand settling, not a drag
+    /// (under the gestures' tap slop, about 0.75 mm).
+    private static let comboMoveSlop = 12
 
     private var pending: [(button: Int64, event: CGEvent)] = []
     private var pendingTimer: EngineTimer?
@@ -1385,6 +1399,13 @@ final class Engine {
         // A combo member still waiting: anything else it does means "not a combo".
         // Replay the held press first, then post this event after it, so macOS
         // always sees press → drag → release in order (never a stuck button).
+        // Except the ball barely turning under the hand pressing the buttons (a few counts,
+        // by the trackball's own HID reports): that drag is nobody's yet, so it's dropped and
+        // the wait goes on. It used to end the wait, so a combo (a gesture on two buttons
+        // most of all, pressed with the hand on the ball) often never formed.
+        if phase == .drag, hid, pendingTravel < Self.comboMoveSlop, pending.contains(where: { $0.button == button }) {
+            return nil
+        }
         if phase != .down, pending.contains(where: { $0.button == button }) {
             flushPending()
             postInOrder(handleButton(event, phase))
@@ -1471,6 +1492,7 @@ final class Engine {
             fireCombo(exact)
         } else if pending.count == 1 {
             pendingStart = io.now()
+            pendingTravel = 0
             scheduleComboWindow(Self.comboWindow)
         } else if biggerPossible {
             // A partner arrived and a bigger combo is still possible: give the
@@ -1746,8 +1768,12 @@ final class Engine {
         if frozen, anchor == nil {
             anchor = io.cursorLocation()
             otherMovedSinceAnchor = false
+            holdStats = HoldStats()
         } else if !frozen {
+            if anchor != nil { logHoldStats() }
             anchor = nil
+            holdRecheck?.invalidate()
+            holdRecheck = nil
         }
         io.freezePointer(frozen)
         syncMoveTap()
@@ -1757,26 +1783,80 @@ final class Engine {
     private var anchor: CGPoint?                     // where the pointer stays while frozen
     private var otherMovedSinceAnchor = false        // another mouse moved the pointer while it's held
     private var lastKMotion: CFTimeInterval = -1     // the trackball's ball moved (HID)
-    private var lastOtherMotion: CFTimeInterval = -1 // another mouse moved (HID); the trackpad never shows up here
+    private var lastMotionWasTrackball = false       // the latest HID movement was the trackball's, not
+                                                     // another mouse's (the trackpad never shows up here)
+    private var holdRecheck: EngineTimer?            // looks again just after the trackball's reports
+
+    /// What one hold saw, for the log (the hold can't be watched on real hardware any other way).
+    private struct HoldStats {
+        var hidMoves = 0, tapMoves = 0, tapDrags = 0, warps = 0, failedWarps = 0, rechecks = 0
+        var maxOffset = 0.0
+    }
+    private var holdStats = HoldStats()
+
+    private func logHoldStats() {
+        let s = holdStats
+        guard s.hidMoves > 0 || s.tapMoves > 0 || s.tapDrags > 0 else { return }
+        diagnostics.record(String(format: "pointer hold: %d ball reports, tap saw %d moves %d drags, %d warps (%d failed, %d on a recheck), furthest %.0f pt",
+                                  s.hidMoves, s.tapMoves, s.tapDrags, s.warps, s.failedWarps, s.rechecks, s.maxOffset))
+    }
 
     /// The latest movement came from the trackball (its HID report, just now), not another mouse.
     private var trackballMoving: Bool {
-        hid && lastKMotion >= lastOtherMotion && io.now() - lastKMotion < 0.25
+        hid && lastMotionWasTrackball && io.now() - lastKMotion < 0.25
     }
 
     /// Puts the pointer back on its anchor if the trackball moved it. Another mouse moving
     /// in the meantime moves the anchor with it (its movement is the person's, not the ball's).
-    private func holdPointer() {
-        guard let a = anchor, let tap, io.tapIsEnabled(tap) else { return }   // no tap: never fight the pointer
-        guard let p = io.cursorLocation() else { return }
+    @discardableResult
+    private func holdPointer() -> Bool {
+        guard let a = anchor, let tap, io.tapIsEnabled(tap) else { return false }   // no tap: never fight the pointer
+        guard let p = io.cursorLocation() else { return false }
         if otherMovedSinceAnchor {
             anchor = p
             otherMovedSinceAnchor = false
-            return
+            return false
         }
-        guard abs(p.x - a.x) > 0.5 || abs(p.y - a.y) > 0.5 else { return }
-        io.warpPointer(a)
+        let offset = max(abs(p.x - a.x), abs(p.y - a.y))
+        guard offset > 0.5 else { return false }
+        holdStats.maxOffset = max(holdStats.maxOffset, Double(offset))
+        holdStats.warps += 1
+        if !io.warpPointer(a) { holdStats.failedWarps += 1 }
+        return true
     }
+
+    /// Another mouse's move reached the tap (its HID report was the latest): the pointer is where
+    /// that mouse put it, so the hold stays there. Done here, as the move lands, rather than at
+    /// the trackball's next report, which may already have moved the pointer too.
+    private func followOtherMouse() {
+        guard anchor != nil, otherMovedSinceAnchor, !lastMotionWasTrackball, let p = io.cursorLocation() else { return }
+        anchor = p
+        otherMovedSinceAnchor = false
+    }
+
+    /// The trackball's own HID report while the pointer is held. That report usually reaches
+    /// the engine before WindowServer has moved the pointer for it, so a look right now finds
+    /// nothing to put back, and the move's tap event can't be counted on to follow (a held
+    /// button whose press apps never saw can make macOS send it as a plain move or not at all;
+    /// Kensington's own driver may deliver it later still). So the engine also looks again a
+    /// few milliseconds after each report, every 4 ms until the ball has been still for 16 ms:
+    /// the hold no longer depends on seeing a single move event. (Levi, beta 14 on an Expert
+    /// Mouse with KensingtonWorks' driver: the gesture fired but the pointer moved the whole time.)
+    private func holdForBallReport() {
+        guard anchor != nil else { return }
+        holdStats.hidMoves += 1
+        holdPointer()
+        guard holdRecheck == nil else { return }
+        holdRecheck = io.schedule(Self.holdRecheckInterval, repeats: true) { [unowned self] in
+            guard self.anchor != nil, self.io.now() - self.lastKMotion < 0.016 else {
+                self.holdRecheck?.invalidate()
+                self.holdRecheck = nil
+                return
+            }
+            if self.holdPointer() { self.holdStats.rechecks += 1 }
+        }
+    }
+    static let holdRecheckInterval = 0.004
 
     /// The plain-move tap is on while a Drag lock needs its moves turned into drags, or while
     /// the pointer is held (a keyboard Scroll with ball has no button down, so no drags).
@@ -2125,9 +2205,13 @@ final class Engine {
 
     /// Fires `action` on the key queue. A click on a button apps already see down would be
     /// a second press of a held button (and its release would let go of the held one), so
-    /// it's skipped. Input thread.
+    /// it's skipped. So is one on a trackball button that is held and waiting for a combo
+    /// partner: its press reaches apps when the wait ends (often at the very next drag), and
+    /// this click, still on the key queue, would land after it as a second press. Found by
+    /// scripts/engine-fuzz (a gesture firing Back, or a left click, while that button waited).
+    /// Input thread.
     private func fireLater(_ action: ButtonAction) {
-        if let b = action.clickButton, appButtons.contains(b) {
+        if let b = action.clickButton, appButtons.contains(b) || pending.contains(where: { $0.button == b }) {
             diagnostics.record("click on button \(b) skipped: it's already down")
             return
         }
