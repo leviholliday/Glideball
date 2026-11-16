@@ -906,6 +906,7 @@ final class World {
                     deliver(mouseEvent(.mouseMoved, button: 0, id: id), source: .kensington)
                 }
             }
+            checkTimed()   // an earlier move's deadline that has come is judged before this move lands
             let bypassBefore = bypass
             var checkLater = false
             defer {
@@ -918,7 +919,7 @@ final class World {
                 if checkLater {
                     // Nothing came after the move for the engine to act on at once: the pointer
                     // must be back within a few milliseconds (before the next frame shows it).
-                    if io.frozen, bypass == bypassBefore, bypass == 0, !holdDisturbed, holdCheckAt == nil {
+                    if io.frozen, bypass == bypassBefore, bypass == 0, !holdDisturbed {   // 12 ms from the latest such move
                         holdCheckAt = io.clock + 0.012
                     }
                 } else if io.frozen, bypass == bypassBefore, bypass == 0, !holdDisturbed, let a = io.anchorExpect, io.cursor != a {
@@ -1299,7 +1300,7 @@ final class World {
         if let t = holdCheckAt {
             if !io.frozen || bypass != 0 || holdDisturbed {
                 holdCheckAt = nil
-            } else if io.clock >= t {
+            } else if io.clock >= t - 1e-9 {   // (the clock is a sum of waits: allow its rounding)
                 holdCheckAt = nil
                 if let a = io.anchorExpect, io.cursor != a {
                     fail("modes", "the pointer moved while held and stayed moved (\(io.foreground ? "Glideball in front" : "another app in front"), no move event for the tap): \(a) → \(io.cursor)")
