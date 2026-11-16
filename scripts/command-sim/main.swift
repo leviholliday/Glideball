@@ -463,13 +463,16 @@ do {
     // Debounce: many changes in a burst become about one write a second.
     let w2 = StatusFileWriter(url: file, now: { Date().timeIntervalSinceReferenceDate }, snapshot: { current })
     w2.minInterval = 0.2
+    let burstStart = Date()
     for i in 0..<200 {
         current.today.clicks = i
         w2.setNeedsWrite()
         RunLoop.main.run(until: Date().addingTimeInterval(0.004))
     }
     RunLoop.main.run(until: Date().addingTimeInterval(0.5))
-    check(w2.writes >= 2 && w2.writes <= 7, "200 changes over ~0.8 s at a 0.2 s minimum: \(w2.writes) writes")
+    // On a busy machine the burst takes longer than 0.8 s, so the limit follows the time it really took.
+    let most = Int(Date().timeIntervalSince(burstStart) / 0.2) + 2
+    check(w2.writes >= 2 && w2.writes <= most, "200 changes over \(String(format: "%.1f", Date().timeIntervalSince(burstStart))) s at a 0.2 s minimum: \(w2.writes) writes (at most \(most))")
     let onDisk = try? JSONSerialization.jsonObject(with: Data(contentsOf: file)) as? [String: Any]
     check((onDisk?["today"] as? [String: Any])?["clicks"] as? Int == 199, "the last change reaches the file")
     w2.stopAndRemove(wait: true)
