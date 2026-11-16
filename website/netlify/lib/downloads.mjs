@@ -1,6 +1,7 @@
 // What the download numbers are made of, for the Statistics page and its
-// daily snapshot (functions/stats-snapshot.mjs). Everything comes from
-// GitHub's own counts of the release files; nothing is counted by this site.
+// daily snapshot (functions/stats-snapshot.mjs). The downloads come from
+// GitHub's own counts of the release files; the only thing this site counts
+// itself is clicks on its download links (the end of this file).
 // GitHub only gives running totals, so a snapshot of them is kept once a day
 // and the change per day is the difference between two of them.
 //
@@ -10,8 +11,9 @@
 //   status/snapshot      how the last attempt went: { at, ok, error?, lastOkAt }
 //   cache/github         GitHub's answer, for an hour, so the page never asks more often
 //   cache/storage        how many blobs each store holds (stats.mjs), for an hour
+//   clicks/<YYYY-MM-DD>  clicks on the site's download links that day, by file: { v, counts }
 //
-// Nothing about visitors is involved: no addresses, no IDs, only counts.
+// No addresses and no IDs, only counts.
 // (functions/downloads.mjs, the public /api/downloads, leaves out the same
 // two update files; the tests keep the two in step.)
 
@@ -186,5 +188,64 @@ export function downloadsReport(detail, hist) {
     releases: detail.releases.map((r) => ({
       tag: r.tag, name: r.name, publishedAt: r.publishedAt, prerelease: r.prerelease, counts: r.counts,
     })),
+  };
+}
+
+// ------------------------------------------------- clicks on the site's links
+
+// The one thing this site counts itself: a click on one of its download links
+// (and the Mac download the /download/ page starts by itself), by which file,
+// a day at a time. No cookie, no ID and no address: each click adds one to its
+// day's count (clicks/<YYYY-MM-DD> in glide-stats: { v, counts: { asset: n } })
+// and nothing else is written. The limits in functions/download-click.mjs use
+// the same hashed, short-lived counters as everything else (common.mjs).
+//
+//   mac-auto      the /download/ page starting the Mac zip by itself, on a Mac
+//   mac           a Glideball.zip link clicked (any page; the fallback on /download/)
+//   linux, linux-deb, windows, windows-arm   the preview links (/download/linux…)
+export const CLICK_ASSETS = ["mac-auto", "mac", "linux", "linux-deb", "windows", "windows-arm"];
+const CLICK_KEY = /^clicks\/\d{4}-\d{2}-\d{2}$/;
+
+/** Adds one to today's count for `asset` (UTC day). Conditional writes, so clicks
+ * at the same moment all count; returns false if it kept losing (busy). */
+export async function countClick(store, asset, now = Date.now()) {
+  if (!CLICK_ASSETS.includes(asset)) return false;
+  const key = `clicks/${dayOf(now)}`;
+  for (let tries = 0; tries < 6; tries++) {
+    const cur = await store.getWithMetadata(key, { type: "json" });
+    const counts = {};
+    for (const a of CLICK_ASSETS) if (Number.isInteger(cur?.data?.counts?.[a])) counts[a] = cur.data.counts[a];
+    counts[asset] = (counts[asset] ?? 0) + 1;
+    const w = await store.setJSON(key, { v: 1, counts }, cur ? { onlyIfMatch: cur.etag } : { onlyIfNew: true });
+    if (w.modified) return true;
+  }
+  return false;
+}
+
+/** The Statistics page's clicks: each of the last `window` days (zeroes where
+ * nobody clicked), today, the sums over the last 7 and `window` days, and every day kept. */
+export async function clickReport(store, { now = Date.now(), window = 30 } = {}) {
+  const { blobs } = await store.list({ prefix: "clicks/" });
+  const keys = blobs.map((b) => b.key).filter((k) => CLICK_KEY.test(k)).sort();
+  const days = await Promise.all(keys.map((k) => store.get(k, { type: "json" })
+    .then((v) => ({ date: k.slice(-10), counts: v?.counts ?? {} })).catch(() => null)));
+  const byDay = new Map(days.filter(Boolean).map((d) => [d.date, d.counts]));
+  const zero = () => Object.fromEntries(CLICK_ASSETS.map((a) => [a, 0]));
+  const add = (sum, counts) => {
+    for (const a of CLICK_ASSETS) sum[a] += Number.isInteger(counts?.[a]) && counts[a] > 0 ? counts[a] : 0;
+    return sum;
+  };
+  const today = dayOf(now);
+  const perDay = Array.from({ length: window }, (_, i) => {
+    const date = dayOf(Date.parse(`${today}T00:00:00Z`) - (window - 1 - i) * DAY_MS);
+    return { date, ...add(zero(), byDay.get(date)) };
+  });
+  return {
+    since: keys[0]?.slice(-10) ?? null,
+    today: add(zero(), byDay.get(today)),
+    last7: perDay.slice(-7).reduce(add, zero()),
+    lastWindow: perDay.reduce(add, zero()),
+    all: [...byDay.values()].reduce(add, zero()),
+    window, perDay,
   };
 }

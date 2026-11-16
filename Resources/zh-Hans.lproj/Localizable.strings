@@ -1402,7 +1402,6 @@
 "Crash reports and settings stats" = "崩溃报告和设置统计";
 "Glideball doesn't send anything, and that's fine." = "Glideball 不会发送任何内容，这完全没问题。";
 "If Glideball crashes, it sends me where in its code it happened and which versions of Glideball and macOS you have." = "如果 Glideball 崩溃，它会告诉我崩溃发生在代码的哪个位置，以及你使用的 Glideball 和 macOS 版本。";
-"Also, once a day: which trackball you have and a few of your settings, like the scroll mode and roughly how fast the pointer is. Never what you type, which apps you use, or your name." = "另外每天一次：你使用的轨迹球型号，以及你的一些设置，比如滚动模式和指针的大致速度。绝不会发送你输入的内容、你使用的 App 或你的名字。";
 "It isn't tied to your name, your email or your Mac. You can change this, or delete what was sent, any time in Glideball › Settings › Privacy." = "这些都不会与你的名字、电子邮件或 Mac 关联。你可以随时在“Glideball”›“设置”›“隐私”中更改，或删除已发送的内容。";
 "Thanks either way," = "无论如何都谢谢你，";
 "What’s Sent" = "发送了什么";
@@ -1581,7 +1580,6 @@
 "Turn on Allow Raycast and scripts and you can pause Glideball, switch Precision or change the scroll mode from Raycast or a glideball:// link." = "开启“允许 Raycast 和脚本”后，你可以通过 Raycast 或 glideball:// 链接暂停 Glideball、切换精准模式或更改滚动模式。";
 "What’s new in Glideball %@" = "Glideball %@ 的新功能";
 "When you pause or quit Glideball, your trackball goes back to exactly the tracking speed in System Settings, so it always feels the same." = "暂停或退出 Glideball 时，你的轨迹球会准确恢复到“系统设置”里的跟踪速度，手感始终如一。";
-"You can let Glideball send me crash reports, and a few anonymous settings stats if you like. It’s off unless you pick it." = "你可以让 Glideball 向我发送崩溃报告，愿意的话再加上一些匿名的设置统计。除非你选择，否则保持关闭。";
 "Your trackball goes straight back to plain macOS. Press it again to resume." = "你的轨迹球会立刻恢复为普通 macOS 的样子。再按一次即可继续。";
 "You’re all set" = "一切就绪";
 /* Stage 2: the Settings window, the sheets, sounds and the app icon */
@@ -2456,7 +2454,6 @@
 "Button actions" = "按钮操作";
 "Chip" = "芯片";
 "Color" = "彩色";
-"Crash reports, plus your trackball and a few settings once a day." = "崩溃报告，另外每天一次你的轨迹球和几项设置。";
 "Function names in Glideball’s own code" = "Glideball 自身代码里的函数名";
 "Glideball" = "Glideball";
 "Glideball, Precision on" = "Glideball，精准已开启";
@@ -2573,3 +2570,31 @@
 "Try is on: the next change goes back after 10 seconds unless you keep it" = "试用已开启：除非你保留，下次更改会在 10 秒后恢复";
 "Try one for 10 seconds before you keep it, or ⌥-click it." = "保留前先试用 10 秒，或按住 ⌥ 点按它。";
 "Try one for 10 seconds, then keep it or let it go back. Or ⌥-click a card." = "试用 10 秒，然后保留或让它恢复。也可以按住 ⌥ 点按卡片。";
+
+/* Opt-in stats: more settings, Privacy's preview */
+"%@ or more" = "%@ 或以上";
+"%lld of %lld on" = "%2$lld 项中 %1$lld 项开启";
+"A button preset" = "按钮预设";
+"A language just for Glideball" = "Glideball 专用语言";
+"Also, once a day: which trackball you have and which settings you use, like the scroll mode, the ball color and roughly how fast the pointer is. Choices and rough ranges only, never what you type, which apps you use, or your name." = "另外，每天一次：你用的是哪款轨迹球，以及你在用哪些设置，比如滚动模式、球的颜色和指针的大致速度。只有选项和大致范围，绝不包括你输入的内容、你用哪些 App 或你的名字。";
+"Crash reports, plus your trackball and which settings you use, once a day." = "崩溃报告，外加每天一次你的轨迹球和你在用的设置。";
+"Displays" = "显示器";
+"Gesture buttons" = "手势按钮";
+"Gesture directions" = "手势方向";
+"KensingtonWorks import" = "从 KensingtonWorks 导入";
+"Keyboard shortcuts set" = "已设置的键盘快捷键";
+"Kinds of sound" = "声音类型";
+"Modes you can reach" = "可用的模式";
+"Native scroll speed" = "滚动速度（原生）";
+"New in 2.10: the stats include more of your settings than before, like the ball color, sounds and gestures. They’re still only choices and rough ranges, and every one is listed here." = "2.10 新增：统计包含的设置比以前更多，比如球的颜色、声音和手势。仍然只有选项和大致范围，每一项都列在这里。";
+"None yet" = "还没有";
+"Not opened yet" = "尚未打开";
+"One column" = "一栏";
+"Search" = "搜索";
+"Three columns" = "三栏";
+"Two columns" = "两栏";
+"Two wide columns" = "两栏（宽）";
+"Under %@" = "低于 %@";
+"Used at least once" = "至少用过一次";
+"Window layout" = "窗口布局";
+"You can let Glideball send me crash reports, and anonymous stats on which settings you use. It’s off unless you pick it. If you already said yes, the stats now cover more settings, and Settings › Privacy lists every one." = "你可以让 Glideball 向我发送崩溃报告，以及关于你在用哪些设置的匿名统计。在你选择之前它是关闭的。如果你已经同意，统计现在涵盖更多设置，“设置 › 隐私”会列出每一项。";

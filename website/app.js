@@ -137,7 +137,36 @@
     document.body.classList.add('is-mac');
     if (h1) h1.textContent = 'Your download is starting';
     // A moment first, so the page is on screen before the browser's download UI takes over.
-    setTimeout(() => { window.location.href = zip; }, 450);
+    setTimeout(() => { countDownload('mac-auto'); window.location.href = zip; }, 450);
+  }
+
+  /* ------------------------------------------------------------ download counts
+     One count per click on a download link, by file, sent to /api/download-click.
+     No cookie (credentials: 'omit'), no ID, nothing about the visitor: the
+     server adds one to that file's count for the day (the privacy page says so). */
+  function downloadAsset(href) {
+    let u;
+    try { u = new URL(href, window.location.href); } catch (e) { return null; }
+    if (u.hostname === 'github.com' && /\/releases\/latest\/download\/Glideball\.zip$/.test(u.pathname)) return 'mac';
+    if (u.origin !== window.location.origin) return null;
+    const m = /^\/download\/(linux|linux-deb|windows|windows-arm)\/?$/.exec(u.pathname);
+    return m ? m[1] : null;
+  }
+  function countDownload(asset) {
+    if (!window.fetch) return;
+    try {
+      fetch('/api/download-click', {
+        method: 'POST', body: JSON.stringify({ asset: asset }), keepalive: true, credentials: 'omit',
+        headers: { 'content-type': 'text/plain' },
+      }).catch(() => {});
+    } catch (e) { /* never in the way of the download */ }
+  }
+  function initDownloadCounts() {
+    document.addEventListener('click', (e) => {
+      const a = e.target.closest && e.target.closest('a[href]');
+      const asset = a && downloadAsset(a.getAttribute('href'));
+      if (asset) countDownload(asset);
+    }, true);
   }
 
   const boot = () => {
@@ -145,6 +174,7 @@
     initPointerLight();
     initCopy();
     initDownloadPage();
+    initDownloadCounts();
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();

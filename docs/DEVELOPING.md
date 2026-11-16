@@ -359,6 +359,8 @@ Everyone else sees a button with the new version number at the top of the window
 
 Send Feedback (in the app) and the website's [/feedback](https://glideball.netlify.app/feedback/) page post to a small Netlify function (`website/netlify/functions/feedback.mjs`). Reports are stored in Netlify Blobs and read on the password-protected admin site (`admin-site/`, admin-glideball.netlify.app), whose edge function passes `/api/admin/*` on to `admin.mjs` on the main site with a shared secret ([ADMIN-SITE.md](ADMIN-SITE.md)). Each new report triggers an ntfy push with its title, priority and app version, not the message itself (`website/netlify/lib/common.mjs`). `cleanup.mjs` prunes old data on a schedule.
 
+The opt-in stats (`ShareData.Stats`, sent to `/api/usage`) say which settings are in use, as switches, choices from fixed lists, small counts and ranges. The server keeps a setting only if its value is on the same list (`SETTINGS` in `website/netlify/lib/usage.mjs`; `website/tests/usage.test.mjs` checks the two lists match), so adding a setting means adding it in both places, to Privacy's preview (`SendPreview.statsGroups`, which the self-test checks covers every key) and to the Usage page (`SETTING_GROUPS` in `admin-site/public/usage/usage.js`). The website's download links post to `/api/download-click` (`website/netlify/functions/download-click.mjs`): one count per file per day, shown on the admin Statistics page next to GitHub's numbers.
+
 ## Linux & Windows
 
 The previews share the Mac app's scroll physics, buttons, combos and `.glide-settings` format. See [linux/README.md](../linux/README.md) and [windows/README.md](../windows/README.md). CI builds and tests both (`.github/workflows/`).

@@ -79,7 +79,7 @@ enum WhatsNew {
                          art: .symbol("command", nil), showMe: .settings(.general, spotlight: "external-control")),
                     Item(id: "privacy",
                          title: String(localized: "Crash reports, only if you want", comment: "What's New 2.10 item title"),
-                         text: String(localized: "You can let Glideball send me crash reports, and a few anonymous settings stats if you like. It’s off unless you pick it.",
+                         text: String(localized: "You can let Glideball send me crash reports, and anonymous stats on which settings you use. It’s off unless you pick it. If you already said yes, the stats now cover more settings, and Settings › Privacy lists every one.",
                                       comment: "What's New 2.10 item"),
                          art: .symbol("heart.text.square", nil), showMe: .settings(.privacy)),
                   ]),

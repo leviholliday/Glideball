@@ -71,6 +71,7 @@ final class TryPreview {
         wasEnabled = enabled
         wasConnected = connected
         self.restore = restore
+        FeatureUse.mark(.tryBeforeChange)
         session = Session(id: id, what: what, was: was, deadline: countdown ? Date().addingTimeInterval(Self.seconds) : nil)
         lastEnding = nil
         startWatching()

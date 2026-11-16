@@ -296,6 +296,7 @@ extension AppModel {
         lookBeforeImport = lookChanges ? BallThemeStore.shared.look : nil
         soundsBeforeImport = soundsChange ? before : nil
         config = updated
+        if case .kensingtonWorks = incoming.content { FeatureUse.mark(.kensingtonWorks) }
         if lookChanges, let look { BallThemeStore.shared.use(look) }
         if soundsChange, let sounds { sounds.use() }
         let text: String = switch incoming.content {
@@ -344,6 +345,7 @@ extension AppModel {
 
     func requestShare(_ kind: ShareKind, appSetup: String? = nil) {
         guard pendingIncoming == nil else { return }
+        FeatureUse.mark(.share)
         shareRequest = ShareRequest(kind: kind, appSetup: appSetup)
     }
 

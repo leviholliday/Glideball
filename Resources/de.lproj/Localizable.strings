@@ -1402,7 +1402,6 @@
 "Crash reports and settings stats" = "Absturzberichte und Einstellungsstatistik";
 "Glideball doesn't send anything, and that's fine." = "Glideball sendet nichts, und das ist völlig in Ordnung.";
 "If Glideball crashes, it sends me where in its code it happened and which versions of Glideball and macOS you have." = "Wenn Glideball abstürzt, sendet es mir, wo in seinem Code das passiert ist und welche Versionen von Glideball und macOS du hast.";
-"Also, once a day: which trackball you have and a few of your settings, like the scroll mode and roughly how fast the pointer is. Never what you type, which apps you use, or your name." = "Außerdem einmal am Tag: welchen Trackball du hast und ein paar deiner Einstellungen, etwa den Scrollmodus und ungefähr, wie schnell der Zeiger ist. Nie, was du tippst, welche Apps du nutzt oder deinen Namen.";
 "It isn't tied to your name, your email or your Mac. You can change this, or delete what was sent, any time in Glideball › Settings › Privacy." = "Nichts davon ist mit deinem Namen, deiner E-Mail oder deinem Mac verknüpft. Du kannst das jederzeit unter Glideball › Einstellungen › Datenschutz ändern oder das Gesendete löschen.";
 "Thanks either way," = "Danke so oder so,";
 "What’s Sent" = "Was gesendet wird";
@@ -1581,7 +1580,6 @@
 "Turn on Allow Raycast and scripts and you can pause Glideball, switch Precision or change the scroll mode from Raycast or a glideball:// link." = "Schalte „Raycast und Skripte erlauben“ ein, dann kannst du Glideball pausieren, die Präzision umschalten oder den Scrollmodus ändern, aus Raycast oder über einen glideball://-Link.";
 "What’s new in Glideball %@" = "Neu in Glideball %@";
 "When you pause or quit Glideball, your trackball goes back to exactly the tracking speed in System Settings, so it always feels the same." = "Wenn du Glideball pausierst oder beendest, bekommt dein Trackball genau das Tempo aus den Systemeinstellungen zurück, damit er sich immer gleich anfühlt.";
-"You can let Glideball send me crash reports, and a few anonymous settings stats if you like. It’s off unless you pick it." = "Du kannst Glideball erlauben, mir Absturzberichte zu senden, und wenn du magst auch ein paar anonyme Statistiken zu deinen Einstellungen. Das ist aus, bis du es auswählst.";
 "Your trackball goes straight back to plain macOS. Press it again to resume." = "Dein Trackball verhält sich sofort wieder wie unter normalem macOS. Drück es noch einmal, um weiterzumachen.";
 "You’re all set" = "Alles bereit";
 /* Stage 2: the Settings window, the sheets, sounds and the app icon */
@@ -2456,7 +2454,6 @@
 "Button actions" = "Tastenaktionen";
 "Chip" = "Chip";
 "Color" = "Farbe";
-"Crash reports, plus your trackball and a few settings once a day." = "Absturzberichte und einmal am Tag dein Trackball und ein paar Einstellungen.";
 "Function names in Glideball’s own code" = "Funktionsnamen aus Glideballs eigenem Code";
 "Glideball" = "Glideball";
 "Glideball, Precision on" = "Glideball, Präzision an";
@@ -2573,3 +2570,31 @@
 "Try is on: the next change goes back after 10 seconds unless you keep it" = "Testen ist an: Die nächste Änderung wird nach 10 Sekunden zurückgesetzt, außer du behältst sie";
 "Try one for 10 seconds before you keep it, or ⌥-click it." = "Probiere eine 10 Sekunden lang aus, bevor du sie behältst, oder klicke sie mit ⌥ an.";
 "Try one for 10 seconds, then keep it or let it go back. Or ⌥-click a card." = "Probiere eine 10 Sekunden lang aus, dann behalte sie oder lass sie zurückspringen. Oder klicke eine Karte mit ⌥ an.";
+
+/* Opt-in stats: more settings, Privacy's preview */
+"%@ or more" = "%@ oder mehr";
+"%lld of %lld on" = "%1$lld von %2$lld an";
+"A button preset" = "Eine Tastenvorgabe";
+"A language just for Glideball" = "Eigene Sprache für Glideball";
+"Also, once a day: which trackball you have and which settings you use, like the scroll mode, the ball color and roughly how fast the pointer is. Choices and rough ranges only, never what you type, which apps you use, or your name." = "Außerdem einmal am Tag: welchen Trackball du hast und welche Einstellungen du nutzt, etwa den Scrollmodus, die Kugelfarbe und ungefähr, wie schnell der Zeiger ist. Nur Auswahlen und grobe Bereiche, nie, was du tippst, welche Apps du nutzt oder deinen Namen.";
+"Crash reports, plus your trackball and which settings you use, once a day." = "Absturzberichte und einmal am Tag dein Trackball und welche Einstellungen du nutzt.";
+"Displays" = "Bildschirme";
+"Gesture buttons" = "Gestentasten";
+"Gesture directions" = "Gestenrichtungen";
+"KensingtonWorks import" = "KensingtonWorks-Import";
+"Keyboard shortcuts set" = "Gesetzte Tastenkürzel";
+"Kinds of sound" = "Arten von Tönen";
+"Modes you can reach" = "Erreichbare Modi";
+"Native scroll speed" = "Scrolltempo (Nativ)";
+"New in 2.10: the stats include more of your settings than before, like the ball color, sounds and gestures. They’re still only choices and rough ranges, and every one is listed here." = "Neu in 2.10: Die Statistik enthält mehr deiner Einstellungen als vorher, etwa die Kugelfarbe, Töne und Gesten. Es sind weiterhin nur Auswahlen und grobe Bereiche, und jede steht hier.";
+"None yet" = "Noch keine";
+"Not opened yet" = "Noch nicht geöffnet";
+"One column" = "Eine Spalte";
+"Search" = "Suche";
+"Three columns" = "Drei Spalten";
+"Two columns" = "Zwei Spalten";
+"Two wide columns" = "Zwei breite Spalten";
+"Under %@" = "Unter %@";
+"Used at least once" = "Mindestens einmal genutzt";
+"Window layout" = "Fensteraufteilung";
+"You can let Glideball send me crash reports, and anonymous stats on which settings you use. It’s off unless you pick it. If you already said yes, the stats now cover more settings, and Settings › Privacy lists every one." = "Du kannst Glideball erlauben, mir Absturzberichte und eine anonyme Statistik zu deinen genutzten Einstellungen zu senden. Das ist aus, bis du es auswählst. Wenn du schon zugestimmt hast: Die Statistik umfasst jetzt mehr Einstellungen, und Einstellungen › Datenschutz zeigt jede einzelne.";

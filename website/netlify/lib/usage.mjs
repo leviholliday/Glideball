@@ -52,8 +52,93 @@ export const POINTER_SPEEDS = ["<2", "2-4", "4-8", "8-16", "16-32", "32+"];
 export const ACTION_TYPES = [
   "system", "leftClick", "rightClick", "middleClick", "back", "forward", "shortcut", "holdShortcut",
   "modifiedClick", "disabled", "precisionHold", "precisionToggle", "ballScrollHold", "dragLock", "media", "openApp",
+  // (Sent since gestures arrived in 2.10; without it a ping from a Mac with a gesture button was turned down whole.)
+  "gesture",
 ];
 export const ARCHES = ["arm64", "x86_64"];
+
+// Which settings are in use, from 2.10 beta 15 on (ShareData.Stats in the app).
+// Every one is optional, so older apps' pings still count; on the Usage page an
+// install that didn't send one is "not reported". Each value is checked against
+// a fixed list here: a value that isn't on it is dropped (just that field, so a
+// newer app with a new choice still sends the rest), and anything not in this
+// table is dropped too. Ranges are the app's own (ShareData.range): "<a",
+// "a-b", "b+", never an exact number.
+const UNIT = ["<25", "25-50", "50-75", "75+"];   // 0…1 sliders, in percent
+export const SETTINGS = {
+  // Look
+  ballColor: ["orb", "ember", "sunset", "ocean", "forest", "graphite", "classic", "custom"],   // "custom" only, never the colors
+  appIcon: ["orb", "classic"],
+  light: ["off", ...UNIT],
+  launchStyle: ["animation", "fade", "none"],
+  celebrations: "bool",
+  weeklyRecap: "bool",
+  // Sound
+  sounds: "bool",
+  soundVolume: UNIT,
+  soundKinds: { flags: ["pauseResume", "modes", "ticks", "milestones", "buttons"] },
+  // Pointer
+  precisionSpeed: ["<0.5", "0.5-1", "1-1.5", "1.5+"],
+  perDisplaySpeed: "bool",
+  ballScrollSpeed: ["<0.5", "0.5-1", "1-2", "2+"],
+  // Scrolling
+  smoothScrolling: "bool",
+  flipDirection: "bool",
+  shiftSideways: "bool",
+  nativeSpeed: ["<0.5", "0.5-1", "1-1.7", "1.7+"],
+  flyDistance: ["<4", "4-8", "8-12", "12+"],
+  flyPower: UNIT,
+  flyReach: UNIT,
+  flyGlide: UNIT,
+  followDistance: ["<8", "8-16", "16-24", "24+"],
+  followSmoothness: UNIT,
+  followAcceleration: UNIT,
+  throwOn: "bool",
+  throwDistance: UNIT,
+  // Buttons and gestures
+  gestures: "bool",
+  gestureButtons: { max: 100 },
+  gestureDistance: ["short", "normal", "long"],
+  steadyHands: "bool",
+  gestureActions: { kinds: ACTION_TYPES, max: 100 },
+  modesSetUp: { flags: ["precision", "ballScroll", "dragLock"] },
+  // The app
+  menuBarIcon: "bool",
+  menuBarStyle: ["mono", "color"],
+  menuBarOpens: ["menu", "panel"],
+  showInDock: "bool",
+  askBeforeQuitting: "bool",
+  openAtLogin: "bool",
+  allowScripts: "bool",
+  ownLanguage: "bool",
+  lowBatteryAlerts: "bool",
+  sync: "bool",
+  autoBackups: "bool",
+  globalShortcuts: { max: 4 },
+  displays: ["1", "2", "3+"],
+  windowLayout: ["single", "double", "roomy", "triple", "unknown"],
+  used: { flags: ["search", "tryBeforeChange", "share", "kensingtonWorks", "buttonPreset"] },
+};
+
+/** One setting's value as it's kept, or undefined (not kept). */
+export function cleanSetting(spec, v) {
+  if (spec === "bool") return typeof v === "boolean" ? v : undefined;
+  if (Array.isArray(spec)) return typeof v === "string" && spec.includes(v) ? v : undefined;
+  if (spec.max !== undefined && !spec.kinds) {
+    // A small count: whole numbers only, held inside 0…max.
+    return Number.isInteger(v) ? Math.min(Math.max(v, 0), spec.max) : undefined;
+  }
+  if (!isObj(v)) return undefined;
+  const out = {};
+  if (spec.flags) {
+    for (const f of spec.flags) if (typeof v[f] === "boolean") out[f] = v[f];
+  } else if (spec.kinds) {
+    for (const k of spec.kinds) {
+      if (Object.hasOwn(v, k) && Number.isInteger(v[k]) && v[k] > 0) out[k] = Math.min(v[k], spec.max);
+    }
+  }
+  return Object.keys(out).length || spec.kinds ? out : undefined;
+}
 
 export const MAX_PING_BYTES = 4 * 1024;
 export const MAX_CRASH_BYTES = 32 * 1024;
@@ -139,6 +224,13 @@ export function cleanPing(b, now = Date.now()) {
   for (const [k, v] of Object.entries(b.buttons)) {
     if (!ACTION_TYPES.includes(k) || count(v, 100) === null) return [null, "buttons doesn't look right."];
     if (v > 0) out.buttons[k] = v;
+  }
+
+  // The settings in use (newer apps only): each kept only if it's on its list.
+  for (const [k, spec] of Object.entries(SETTINGS)) {
+    if (!Object.hasOwn(b, k)) continue;
+    const v = cleanSetting(spec, b[k]);
+    if (v !== undefined) out[k] = v;
   }
   return [{ install: installKey(id), ping: out }, null];
 }
@@ -363,6 +455,7 @@ export async function usageReport(days, now = Date.now()) {
     version: {}, os: {}, lang: {}, arch: {}, trackball: {}, scrollMode: {}, performance: {},
     pointerSpeed: {}, beta: {}, earlyUpdates: {}, appProfiles: {}, combos: {}, buttons: {},
   };
+  const settings = {};
   let installs = 0;
   for (const l of Object.values(latest)) {
     const p = snaps[l.key];
@@ -385,6 +478,7 @@ export async function usageReport(days, now = Date.now()) {
       b.buttons[type].installs++;
       b.buttons[type].buttons += n;
     }
+    tallySettings(settings, p);
     installs++;
   }
 
@@ -411,6 +505,31 @@ export async function usageReport(days, now = Date.now()) {
   return {
     days, since, today,
     totals: { installs, everSeen: Object.keys(firstSeen).length, crashes: inWindow.length },
-    perDay: dayList, perWeek: weekList, breakdowns: b, crashes: crashList,
+    perDay: dayList, perWeek: weekList, breakdowns: b, settings, crashes: crashList,
   };
+}
+
+/** Adds one install's settings to `out`: for each setting, { counts: {value: installs},
+ * notReported: installs }. A switch counts "on" or "off"; each of a group of switches
+ * (soundKinds, modesSetUp, used) is its own "group.switch"; gestureActions counts the
+ * installs using each kind (or "none"); a count goes in a few groups, like the others. */
+export function tallySettings(out, p) {
+  const add = (key, value) => {
+    const s = (out[key] ??= { counts: {}, notReported: 0 });
+    if (value === undefined) s.notReported++;
+    else bump(s.counts, String(value));
+  };
+  const onOff = (v) => (typeof v === "boolean" ? (v ? "on" : "off") : undefined);
+  for (const [k, spec] of Object.entries(SETTINGS)) {
+    const v = Object.hasOwn(p, k) ? p[k] : undefined;
+    if (spec === "bool") add(k, onOff(v));
+    else if (Array.isArray(spec)) add(k, spec.includes(v) ? v : undefined);
+    else if (spec.flags) for (const f of spec.flags) add(`${k}.${f}`, isObj(v) && Object.hasOwn(v, f) ? onOff(v[f]) : undefined);
+    else if (spec.kinds) {
+      if (!isObj(v)) { add(k, undefined); continue; }
+      const used = spec.kinds.filter((kind) => Object.hasOwn(v, kind) && v[kind] > 0);
+      if (!used.length) add(k, "none");
+      for (const kind of used) add(k, kind);
+    } else add(k, Number.isInteger(v) ? bucket(v, k === "globalShortcuts" ? [0, 1, 2, 3, 4] : [0, 1, 2, 5]) : undefined);
+  }
 }

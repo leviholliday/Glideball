@@ -356,8 +356,8 @@ test("the whole reply: every section has data, and nothing names a person, an ID
   await snap(store, "2026-11-08", { new: 280 });
   await snap(store, "2026-11-09", { new: 290 });
   const r = await S.statsReport({ now: T0, get: github(), store });
-  assert.deepEqual(Object.keys(r).sort(), ["downloads", "feedback", "generatedAt", "health"]);
-  for (const k of ["downloads", "feedback", "health"]) assert.equal(r[k].ok, true, k);
+  assert.deepEqual(Object.keys(r).sort(), ["clicks", "downloads", "feedback", "generatedAt", "health"]);
+  for (const k of ["downloads", "clicks", "feedback", "health"]) assert.equal(r[k].ok, true, k);
   const d = r.downloads.data;
   assert.equal(d.totals.new, 300);
   assert.equal(d.collecting, false);
@@ -564,4 +564,104 @@ test("the page says 'collecting' until there are two mornings, and shows real nu
   assert.match(later, /<svg class="cols"[^>]*aria-label="Downloads per day"/);
   assert.match(later, /Latest full day/);
   assert.match(later, /No feedback yet/);
+});
+
+// ------------------------------------------------- clicks on the site's download links
+
+const { default: clickFn, config: clickConfig } = await import("../netlify/functions/download-click.mjs");
+const SITE = "https://glideball.netlify.app";
+const click = (asset, { ip = "198.51.100.9", origin = SITE, method = "POST", body } = {}) =>
+  clickFn(new Request(`${SITE}/api/download-click`, {
+    method, headers: { "content-type": "text/plain", ...(origin ? { origin } : {}) },
+    body: method === "POST" ? (body ?? JSON.stringify({ asset })) : undefined,
+  }), { ip });
+
+test("a download click adds one to its file's count for the day, and nothing else is kept", async () => {
+  fresh();
+  assert.equal(clickConfig.path, "/api/download-click");
+  const r = await click("mac-auto");
+  assert.equal(r.status, 201);
+  assert.equal(r.headers.get("set-cookie"), null, "no cookie");
+  assert.equal((await click("mac-auto", { ip: "198.51.100.10" })).status, 201);
+  assert.equal((await click("linux-deb", { origin: null })).status, 201, "a request without an Origin still counts");
+  const s = stores["glide-stats"];
+  assert.deepEqual(s.keys(), ["clicks/2026-11-10"]);
+  assert.deepEqual(JSON.parse(s.peek("clicks/2026-11-10")), { v: 1, counts: { "mac-auto": 2, "linux-deb": 1 } });
+  clock += DAY;
+  assert.equal((await click("windows")).status, 201);
+  assert.deepEqual(s.keys(), ["clicks/2026-11-10", "clicks/2026-11-11"]);
+  // no address anywhere: not with the counts, not in a rate counter's name or content
+  for (const store of Object.values(stores)) {
+    for (const { key } of store.entries()) assert.ok(!/198\.51/.test(key) && !/198\.51/.test(store.peek(key)), key);
+  }
+});
+
+test("a click that isn't one is turned away and counts nothing", async () => {
+  fresh();
+  const bad = [
+    [click("Glideball.zip"), 400], [click("__proto__"), 400], [click(undefined, { body: "not json" }), 400],
+    [click(undefined, { body: JSON.stringify({ asset: "mac", pad: "x".repeat(300) }) }), 413],
+    [click("mac", { origin: "https://evil.example" }), 403], [click("mac", { method: "GET" }), 405],
+  ];
+  for (const [r, status] of bad) assert.equal((await r).status, status);
+  assert.equal(stores["glide-stats"]?.keys().length ?? 0, 0);
+});
+
+test("clicks are limited per address (an IPv6 /64 is one), not for everyone", async () => {
+  fresh();
+  for (let i = 0; i < 10; i++) assert.equal((await click("mac", { ip: "2001:db8:1:2::" + (i + 1) })).status, 201);
+  assert.equal((await click("mac", { ip: "2001:db8:1:2::ff" })).status, 429);
+  assert.equal((await click("mac", { ip: "192.0.2.44" })).status, 201);
+  assert.equal(JSON.parse(stores["glide-stats"].peek("clicks/2026-11-10")).counts.mac, 11);
+});
+
+test("clicks at the same moment all count", async () => {
+  fresh();
+  const rs = await Promise.all(Array.from({ length: 4 }, (_, i) => click(i % 2 ? "windows" : "mac", { ip: `192.0.2.${i + 1}` })));
+  assert.ok(rs.every((r) => r.status === 201), rs.map((r) => r.status).join());
+  assert.deepEqual(JSON.parse(stores["glide-stats"].peek("clicks/2026-11-10")).counts, { mac: 2, windows: 2 });
+});
+
+test("the Statistics page: clicks by day and by file, next to GitHub's numbers, escaped", async () => {
+  fresh();
+  const store = createMemoryStore();
+  await D.countClick(store, "mac", at("2026-11-01"));
+  await D.countClick(store, "mac-auto", at("2026-11-09"));
+  await D.countClick(store, "mac-auto", at("2026-11-10"));
+  await D.countClick(store, "windows-arm", at("2026-11-10"));
+  assert.equal(await D.countClick(store, "nonsense", T0), false);
+  await store.setJSON("clicks/2026-11-07", { v: 1, counts: { mac: -5, linux: "7", windows: 2 } });   // only what's sane counts
+  const c = await D.clickReport(store, { now: T0 });
+  assert.equal(c.since, "2026-11-01");
+  assert.equal(c.perDay.length, 30);
+  assert.deepEqual(c.perDay.at(-1), { date: "2026-11-10", "mac-auto": 1, mac: 0, linux: 0, "linux-deb": 0, windows: 0, "windows-arm": 1 });
+  assert.equal(c.today["mac-auto"], 1);
+  assert.equal(c.last7["mac-auto"], 2);
+  assert.equal(c.last7.windows, 2);
+  assert.equal(c.last7.mac, 0);
+  assert.equal(c.lastWindow.mac, 1);
+  assert.equal(c.all.mac, 1);
+  assert.equal(c.all.linux, 0);
+  const r = await S.statsReport({ now: T0, get: github(), store, summaries: async () => [] });
+  assert.equal(r.clicks.ok, true);
+  const render = await pageRender();
+  const html = render(r);
+  assert.match(html, /Clicks on the website&#39;s download links/);
+  assert.match(html, /aria-label="Download clicks per day"/);
+  assert.ok(html.indexOf("Clicks on the website") > html.indexOf("Downloads in all"), "right after GitHub's numbers");
+  const bad = structuredClone(r);
+  bad.clicks.data.since = HOSTILE;
+  bad.clicks.data.window = HOSTILE;
+  assert.ok(!render(bad).includes("<img"));
+  assert.match(render({ ...r, clicks: { ok: false, error: HOSTILE } }), /Clicks on the website/);
+});
+
+test("the website sends a click without cookies, and only for download links", async () => {
+  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
+  assert.match(app, /fetch\('\/api\/download-click'/);
+  assert.match(app, /credentials: 'omit'/);
+  assert.match(app, /countDownload\('mac-auto'\)/);
+  assert.ok(!/document\.cookie|localStorage|sessionStorage/.test(app), "nothing kept in the browser");
+  const toml = await readFile(new URL("../netlify.toml", import.meta.url), "utf8");
+  assert.match(/Content-Security-Policy = "([^"]+)"/.exec(toml)[1], /connect-src 'self'/);
 });

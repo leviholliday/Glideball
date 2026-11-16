@@ -910,6 +910,46 @@ enum SelfTest {
             return "crash report \(payloads[0].1.count) keys, stats \(payloads[1].1.count) keys, all labelled"
         }
 
+        step("the stats say which settings, never names, keys or colors") {
+            // App setups, shortcut keys, a custom ball color and display names are all set up to be
+            // spotted; none of it may reach the stats, which stay small and ranges-only.
+            let before = model.config
+            let themeBefore = BallThemeStore.shared.theme.id
+            defer {
+                model.config = before
+                BallThemeStore.shared.choose(themeBefore)
+            }
+            var c = model.config
+            c.appProfiles.append(AppProfile(bundleID: "com.example.quokkasecretapp", name: "Quokka Secret App"))
+            let key = KeyShortcut(keyCode: 0, modifiers: CGEventFlags.maskCommand.rawValue, keyName: "QuokkaKey")
+            c.buttons[3] = .shortcut(key)
+            c.chords.append(Chord(buttons: [1, 2], action: .gesture(ButtonGesture(up: GestureStep(.openApp(bundleID: "com.example.quokkagesture"))))))
+            c.globalShortcuts.dragLock = key
+            c.trackingSpeed = 13.37
+            BallThemeStore.shared.setCustom(0, to: OrbRGB(hex: 0xA1B2C3))
+            FeatureUse.mark(.share)
+            let baseline = ShareData.shared.stats(model, installID: "GB-TEST")
+            model.config = c
+            let stats = ShareData.shared.stats(model, installID: "GB-TEST")
+            let data = try JSONEncoder().encode(stats)
+            let text = String(decoding: data, as: UTF8.self).lowercased()
+            for secret in ["quokka", "a1b2c3", "13.37", "com.example"] + model.displays.map(\.name.localizedLowercase) {
+                try check(!text.contains(secret), "the stats contain “\(secret)”: \(text)")
+            }
+            try check(stats.ballColor == "custom", "a custom ball color went as \(stats.ballColor), not just “custom”")
+            try check(stats.pointerSpeed == "8-16", "the pointer speed went as \(stats.pointerSpeed)")
+            try check(stats.gestureButtons == baseline.gestureButtons + 1
+                      && stats.gestureActions["openApp", default: 0] == baseline.gestureActions["openApp", default: 0] + 1,
+                      "gestures counted wrong: \(stats.gestureButtons) \(stats.gestureActions)")
+            try check(stats.modesSetUp["dragLock"] == true, "Drag lock on a shortcut isn't counted as set up")
+            try check(stats.used["share"] == true, "Share… used isn't counted")
+            try check(ShareData.range(0.75, [0.25, 0.5, 0.75], scale: 100) == "75+" && ShareData.range(0.1, [0.5, 1]) == "<0.5"
+                      && ShareData.range(1.2, [0.5, 1, 1.5]) == "1-1.5" && ShareData.range(.nan, [2, 4]) == "<2", "ranges are wrong")
+            // The server takes at most 4 KB (website/netlify/lib/usage.mjs, MAX_PING_BYTES).
+            try check(data.count < 2600, "the stats are \(data.count) bytes; keep them well under the server's 4 KB")
+            return "\(data.count) bytes, nothing named"
+        }
+
         step("the sharing name stays private") {
             // The name typed for sharing (Settings › General › Sharing) goes on pictures and links
             // only when switched on, and never into stats, crash reports, settings, backups or sync.

@@ -35,7 +35,7 @@ struct SmallFavorCard: View {
                     option(.crashes,
                            detail: "If Glideball crashes, it sends me where in its code it happened and which versions of Glideball and macOS you have.")
                     option(.crashesAndStats,
-                           detail: "Also, once a day: which trackball you have and a few of your settings, like the scroll mode and roughly how fast the pointer is. Never what you type, which apps you use, or your name.")
+                           detail: "Also, once a day: which trackball you have and which settings you use, like the scroll mode, the ball color and roughly how fast the pointer is. Choices and rough ranges only, never what you type, which apps you use, or your name.")
                 }
 
                 Text("It isn't tied to your name, your email or your Mac. You can change this, or delete what was sent, any time in Glideball › Settings › Privacy.")
@@ -117,7 +117,7 @@ struct ShareDataSettings: View {
         .init(value: .crashes, title: LocalizedStringKey("Crash reports only"), symbol: "ladybug",
               detail: LocalizedStringKey("Where it crashed, and your versions.")),
         .init(value: .crashesAndStats, title: LocalizedStringKey("Crash reports and settings stats"), symbol: "chart.bar",
-              detail: LocalizedStringKey("Crash reports, plus your trackball and a few settings once a day.")),
+              detail: LocalizedStringKey("Crash reports, plus your trackball and which settings you use, once a day.")),
     ]
 
     var body: some View {
@@ -307,7 +307,20 @@ struct SendPreviewView: View {
                         .font(Theme.Font.hint)
                         .foregroundStyle(.secondary)
                         .padding(.top, 2)
-                    fields(preview.stats.filter { f in !preview.crash.contains { $0.id == f.id } })
+                    Label("New in 2.10: the stats include more of your settings than before, like the ball color, sounds and gestures. They’re still only choices and rough ranges, and every one is listed here.",
+                          systemImage: "info.circle")
+                        .font(Theme.Font.hint)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    let stats = preview.stats.filter { f in !preview.crash.contains { $0.id == f.id } }
+                    ForEach(groups(stats), id: \.title) { group in
+                        if !group.title.isEmpty {
+                            Text(verbatim: group.title)
+                                .font(.system(size: 11, weight: .semibold))
+                                .padding(.top, 4)
+                        }
+                        fields(group.fields)
+                    }
                 }
             }
         }
@@ -316,6 +329,16 @@ struct SendPreviewView: View {
         .groupBackground()
         .animation(Theme.Motion.fade, value: choice)
         .accessibilityElement(children: .contain)
+    }
+
+    /// Fields in runs of the same heading, in order (the ones without a heading first).
+    private func groups(_ list: [SendPreview.Field]) -> [(title: String, fields: [SendPreview.Field])] {
+        var out: [(title: String, fields: [SendPreview.Field])] = []
+        for f in list {
+            let title = f.group ?? ""
+            if let i = out.firstIndex(where: { $0.title == title }) { out[i].fields.append(f) } else { out.append((title, [f])) }
+        }
+        return out
     }
 
     private func fields(_ list: [SendPreview.Field]) -> some View {

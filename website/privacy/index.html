@@ -40,7 +40,7 @@
    "name": "Privacy · Glideball",
    "description": "Glideball's privacy in plain words: the Mac app has no tracking, sends crash reports or settings stats only if you say yes, and you can delete them any time.",
    "inLanguage": "en",
-   "dateModified": "2026-11-11",
+   "dateModified": "2026-11-16",
    "isPartOf": {
     "@id": "https://glideball.netlify.app/#website"
    },
@@ -156,7 +156,14 @@
         <ul>
           <li><strong>Nothing.</strong> This is the default. Glideball doesn't send anything.</li>
           <li><strong>Crash reports only.</strong> When Glideball crashes, macOS writes a crash report on your Mac. On the next launch, Glideball sends me a small part of it: the kind of crash, the message it left (if there is one), and the list of functions it was in when it crashed, plus your Glideball and macOS versions and whether your Mac has Apple silicon or Intel. Before it's sent, your user name, any email address, and the part of a file path that names you or a drive (like <code>/Users/jane</code> or <code>/Volumes/Jane's Passport</code>) are taken out. The rest of a path stays in. Only crashes from after you said yes are sent.</li>
-          <li><strong>Crash reports and settings stats.</strong> The same, plus once a day: your Glideball and macOS versions, the language Glideball is in, Apple silicon or Intel, which Kensington trackballs are connected (their product name and ID), your scroll mode and Performance setting, roughly how fast your pointer is (a range like "4 to 8", not the exact number), whether Other Kensington trackballs and Early updates are on, how many app setups and button combos you have, and how many buttons are set to each kind of action (like "keyboard shortcut" or "right click", never which keys).</li>
+          <li><strong>Crash reports and settings stats.</strong> The same, plus once a day: your Glideball and macOS versions, the language Glideball is in, Apple silicon or Intel, which Kensington trackballs are connected (their product name and ID), and which settings you use. A setting only ever goes as a choice, a switch, a small count or a rough range, never an exact number:
+            <ul>
+              <li><strong>Look and sound:</strong> the ball color (a built-in one by name, or just "custom", never your colors), the app icon, the light (as a range), Performance, what plays when Glideball opens, celebrations, the weekly recap, whether sounds are on, the volume (as a range) and which kinds of sound are on.</li>
+              <li><strong>Pointer and scrolling:</strong> roughly how fast the pointer, Precision and Scroll with ball are (a range like "4 to 8"), whether per-display speeds are on, the scroll mode, each scroll slider as a range (like "25 to 50%"), and the Smooth scrolling, Flip direction, Shift scrolls sideways and Throw switches.</li>
+              <li><strong>Buttons and gestures:</strong> how many buttons and gesture directions are set to each kind of action (like "keyboard shortcut" or "open an app", never which keys or which app), how many combos and gesture buttons you have, whether gestures and Steady hands are on, the gesture distance, and whether Precision, Scroll with ball and Drag lock are on a button or a shortcut.</li>
+              <li><strong>The rest of the app:</strong> how many app setups you have (never which apps or their names), the menu bar icon (on or off, its style and what it opens), the Dock icon, Ask before quitting, Open at login, Allow Raycast and scripts, low battery alerts, sync, automatic backups, Other Kensington trackballs and Early updates, whether you picked a language just for Glideball, how many global keyboard shortcuts are set (never which keys), how many displays you have (1, 2, or 3 or more, never their names), how many columns the window had room for, and whether you've ever used search, Try before you keep, Share…, the KensingtonWorks import or a button preset.</li>
+            </ul>
+            Glideball › Settings › Privacy shows every one of these with your own values. If you said yes before 2.10 beta 15, this list is longer now than when you did; I added it because I want to know which settings people actually use, and it's still nothing that names you, your apps or what you type.</li>
         </ul>
         <p>Neither one ever includes what you type, which apps you use or have setups for, window titles, your name or email, or your Mac's serial number. To tell one install from another, each Mac that says yes gets a random ID made just for this. It isn't made from anything about you or your Mac, it isn't used for anything else, and it isn't synced to your other Macs. The server only keeps a scrambled version of it (a SHA-256 hash), so I can't see anyone's ID. It doesn't keep IP addresses with what's sent. The only trace is a scrambled form of the address in the counters that stop too many reports arriving at once, and those are deleted after about two hours. You can see your own ID in Glideball › Settings › Privacy. If you ever want me to look up or delete what your Mac sent, you can send it to me; otherwise I have no way to tell which data is yours.</p>
         <p>You can change your choice any time in <strong>Glideball › Settings › Privacy</strong>. <strong>Delete My Data</strong>, in the same place, deletes everything that Mac has sent and turns sharing off. If you say yes again later, it gets a new ID. It's all stored privately on Netlify, like feedback, and only I can see it. I keep it until I delete it, so I can see how things change from one version to the next.</p>
@@ -173,6 +180,7 @@
           <li><strong>Cloudflare Web Analytics</strong> counts visits without cookies.</li>
           <li><strong>Google Analytics</strong> runs only if you accept it. If you don't, it isn't loaded.</li>
           <li>No advertising features.</li>
+          <li><strong>Download clicks</strong> are counted by the site itself: when you click a download link (or the download page starts the Mac download for you), the count for that file and day goes up by one. That's all it keeps: no cookie, no ID and no address.</li>
         </ul>
         <p>You can change your choice any time with <strong>Privacy settings</strong> at the bottom of every page. The full notice is there too, under Website privacy and analytics.</p>
       </section>
@@ -181,7 +189,7 @@
         <h2 id="q-h">Questions about privacy</h2>
         <p>Email <a href="mailto:glideball@proton.me">glideball@proton.me</a>. All of the app's code is on <a href="https://github.com/leviholliday/glideball">GitHub</a>, so you can check any of this yourself.</p>
       </section>
-      <p class="pg-updated">Last updated <time datetime="2026-11-11">November 11, 2026</time></p>
+      <p class="pg-updated">Last updated <time datetime="2026-11-16">November 16, 2026</time></p>
     </div>
   </main>
 

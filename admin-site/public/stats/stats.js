@@ -174,6 +174,34 @@ function downloads(d) {
     <h4>By release</h4>${releaseTable}`;
 }
 
+// ------------------------------------------------- clicks on the site's links
+
+const CLICKS = [
+  { key: "mac-auto", cls: "s-new", name: "Mac (started by /download/)" },
+  { key: "mac", cls: "s-updates", name: "Mac (a Glideball.zip link)" },
+  { key: "linux", cls: "s-previews", name: "Linux (.tar.gz)" },
+  { key: "linux-deb", cls: "s-previews", name: "Linux (.deb)" },
+  { key: "windows", cls: "s-other", name: "Windows (x64)" },
+  { key: "windows-arm", cls: "s-other", name: "Windows (Arm)" },
+];
+
+function clicks(c) {
+  const sum = (o) => CLICKS.reduce((s, k) => s + (Number(o?.[k.key]) || 0), 0);
+  const row = (label, o) => `<tr><td>${esc(label)}</td>${CLICKS.map((k) => `<td class="num">${num(o?.[k.key])}</td>`).join("")}<td class="num">${num(sum(o))}</td></tr>`;
+  const days = (c.perDay ?? []).map((d) => ({ ...d, mac: (d.mac || 0), previews: (d.linux || 0) + (d["linux-deb"] || 0), win: (d.windows || 0) + (d["windows-arm"] || 0) }));
+  return `
+    <p class="hint">Counted by the website itself: one per click on a download link, by file, a day at a time (UTC). No cookie, no ID, no address. A click isn't a finished download (GitHub's numbers above are), and someone with scripts off isn't counted. ${c.since ? `Counting since ${esc(fmtDay(c.since))}.` : "Nothing counted yet."}</p>
+    <div class="tiles">${tile(sum(c.today), "Today")}${tile(sum(c.last7), "Last 7 days")}${tile(sum(c.lastWindow), `Last ${c.window ?? 30} days`)}${tile(sum(c.all), "Since counting began")}</div>
+    <div class="tablewrap"><table class="tbl"><thead><tr><th></th>${CLICKS.map((k) => `<th class="num">${esc(k.name)}</th>`).join("")}<th class="num">All</th></tr></thead><tbody>
+      ${row("Today", c.today)}${row("Last 7 days", c.last7)}${row(`Last ${c.window ?? 30} days`, c.lastWindow)}${row("Since counting began", c.all)}
+    </tbody></table></div>
+    <h4>Clicks per day, last ${esc(c.window ?? 30)} days</h4>
+    ${days.length ? stacked(days, [
+      { key: "mac-auto", cls: "s-new", name: "Mac, started by /download/" }, { key: "mac", cls: "s-updates", name: "Mac, link clicked" },
+      { key: "previews", cls: "s-previews", name: "Linux" }, { key: "win", cls: "s-other", name: "Windows" },
+    ], (x) => fmtDay(x.date), "Download clicks per day") : `<p class="none">None yet.</p>`}`;
+}
+
 // ---------------------------------------------------------------- feedback
 
 const KIND_NAMES = { bug: "Bugs", idea: "Ideas", question: "Questions", other: "Other" };
@@ -220,8 +248,9 @@ function health(h) {
 /** The whole page's content from GET /api/admin/stats. */
 function render(s) {
   return `
-    <p class="intro">Counts only: nothing here comes from visitors, and nothing lists a person, an ID or an address.</p>
+    <p class="intro">Counts only: nothing here lists a person, an ID or an address. The only thing counted from visitors is clicks on the download links.</p>
     ${part("Downloads", s.downloads, downloads)}
+    ${part("Clicks on the website's download links", s.clicks, clicks)}
     ${part("Feedback", s.feedback, feedback)}
     ${part("Site health", s.health, health)}`;
 }

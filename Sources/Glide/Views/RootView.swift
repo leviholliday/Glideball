@@ -189,6 +189,7 @@ struct RootView: View {
         // changes (never while scrolling), and a new page starts with the right one.
         .onGeometryChange(for: PageWidth.self) { PageGrid.width(forDetail: $0.size.width) } action: { new in
             PageGrid.measured = new
+            WindowLayoutMemory.save(new)
             // The first one (the window opening) just is; later ones glide from one arrangement to the other.
             guard widthKnown else { pageWidth = new; widthKnown = true; return }
             withAnimation(Theme.Motion.respecting(reduceMotion, Theme.Motion.spring)) { pageWidth = new }

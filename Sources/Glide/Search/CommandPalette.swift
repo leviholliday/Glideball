@@ -36,6 +36,7 @@ final class CommandPalette {
     /// Runs an item and remembers it for next time.
     @MainActor func run(_ item: PaletteItem) {
         PaletteRecents.used(item.id)
+        FeatureUse.mark(.search)
         item.run()
     }
 

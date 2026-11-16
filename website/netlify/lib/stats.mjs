@@ -1,8 +1,9 @@
 // The Statistics page's data (GET /api/admin/stats): downloads from the daily
-// snapshots (downloads.mjs), feedback counted from what the Feedback page
+// snapshots (downloads.mjs), clicks on the website's download links (counted
+// by the site itself, a day at a time, by file: downloads.mjs), feedback counted from what the Feedback page
 // lists (summaries.mjs), and the site's own health. Counts only: no feedback
-// text, titles, names, IDs, hashes or addresses are read out, and nothing is
-// collected from visitors. Read-only: opening the page writes only its own
+// text, titles, names, IDs, hashes or addresses are read out, and the only
+// thing collected from visitors is that click count. Read-only: opening the page writes only its own
 // short-lived caches.
 //
 // Each part is made on its own, so one failing is one section's error and
@@ -10,7 +11,7 @@
 
 import { items, files, misc } from "./common.mjs";
 import { usage, dayOf, weekOf } from "./usage.mjs";
-import { statsStore, releaseCounts, history, downloadsReport, FRESH_FOR, DAY_MS } from "./downloads.mjs";
+import { statsStore, releaseCounts, history, downloadsReport, clickReport, FRESH_FOR, DAY_MS } from "./downloads.mjs";
 import { feedbackSummaries } from "./summaries.mjs";
 
 // ---------------------------------------------------------------- feedback
@@ -129,8 +130,9 @@ export async function part(fn) {
 /** The whole reply. Everything is injectable for the tests:
  * store (glide-stats), get (GitHub), summaries(), stores (what to count), now, cap. */
 export async function statsReport({ now = Date.now(), get, store = statsStore(), summaries = feedbackSummaries, stores, cap = CAP } = {}) {
-  const [downloads, feedback, health] = await Promise.all([
+  const [downloads, clicks, feedback, health] = await Promise.all([
     part(async () => downloadsReport(await releaseCounts(store, { now, get }), await history(store))),
+    part(async () => clickReport(store, { now })),
     part(async () => feedbackCounts(await summaries(), now)),
     part(async () => ({
       snapshots: await snapshotHealth(store, now),
@@ -138,5 +140,5 @@ export async function statsReport({ now = Date.now(), get, store = statsStore(),
       links: LINKS,
     })),
   ]);
-  return { generatedAt: new Date(now).toISOString(), downloads, feedback, health };
+  return { generatedAt: new Date(now).toISOString(), downloads, clicks, feedback, health };
 }

@@ -229,6 +229,47 @@ test("the admin site's netlify.toml: strict policy, noindex, the proxy, no analy
   assert.ok(!/googletagmanager|google-analytics|cloudflareinsights/.test(toml));
 });
 
+// ------------------------------------------------- the Usage page's settings
+
+test("the Usage page shows every setting, grouped, with not reported, everything escaped", async () => {
+  const vm = await import("node:vm");
+  const U = await import("../netlify/lib/usage.mjs");
+  const ctx = vm.createContext({ document: undefined, console, Intl, Date, Number, String, Math, Object, Array });
+  vm.runInContext(await readFile(new URL("public/usage/usage.js", site), "utf8"), ctx);
+  const settings = {};
+  U.tallySettings(settings, {
+    ballColor: "custom", light: "off", sounds: true, soundKinds: { ticks: false }, gestureActions: { shortcut: 2, gesture: 1 },
+    globalShortcuts: 1, used: { search: true }, windowLayout: "triple",
+  });
+  U.tallySettings(settings, {});   // an older app
+  const HOSTILE = `<img src=x onerror=alert(1)>"'&`;
+  settings.ballColor.counts[HOSTILE] = 1;   // a value the page doesn't know still shows, escaped
+  const d = {
+    days: 7, since: "2026-11-04", today: "2026-11-10", totals: { installs: 2, everSeen: 2, crashes: 0 },
+    perDay: [{ day: "2026-11-10", active: 2, new: 2 }], perWeek: [{ week: "2026-11-09", active: 2 }],
+    breakdowns: { version: { [HOSTILE]: 2 }, os: {}, lang: {}, arch: {}, trackball: {}, scrollMode: {}, performance: {}, pointerSpeed: {}, beta: {}, earlyUpdates: {}, appProfiles: {}, combos: {}, buttons: { gesture: { installs: 1, buttons: 1 } } },
+    settings, crashes: [],
+  };
+  const html = ctx.page(d);
+  for (const group of ["Look", "Sound", "Scrolling", "Pointer", "Buttons and gestures", "App"]) assert.match(html, new RegExp(`<h3>${group}</h3>`), group);
+  // every setting the server tallies has a block on the page
+  const keys = Object.entries(U.SETTINGS).flatMap(([k, spec]) => (spec.flags ? spec.flags.map((f) => `${k}.${f}`) : [k]));
+  const shown = [...html.matchAll(/<div class="setting"><h4>/g)].length;
+  assert.equal(shown, keys.length, "one block per setting");
+  assert.match(html, /<span class="label" title="Custom">Custom<\/span>/);
+  assert.match(html, /Not reported/);
+  assert.match(html, /Three columns/);
+  assert.match(html, /Used search/);
+  assert.match(html, /<td>Gesture<\/td>/);
+  assert.ok(!html.includes("<img"), "an <img> got through");
+  assert.ok(!/\sstyle=|\son[a-z]+=/.test(html.replace(/&lt;[^&]*&gt;/g, "")), "inline style or handler in the output");
+  // before any install sends them: a plain note, not an empty page
+  assert.match(ctx.page({ ...d, settings: {} }), /No install in this period has sent these yet/);
+  // One install: the settings in words
+  const rows = ctx.settingRows({ ballColor: "ember", soundKinds: { ticks: false }, gestureActions: { media: 2 }, used: { share: true } });
+  assert.deepEqual(JSON.parse(JSON.stringify(rows)), [["Ball color", "Ember"], ["Slider and switch ticks", "Off"], ["What gesture directions do (installs using each)", "Media key 2"], ["Used Share…", "On"]]);
+});
+
 // ------------------------------------------------------------------ the cut-over
 
 test("cut-over: the public site sends /admin to the admin site and answers no one else", async () => {

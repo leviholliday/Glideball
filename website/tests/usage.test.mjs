@@ -463,3 +463,122 @@ test("the admin pages get a policy of their own, with no outside scripts", async
   assert.match(csp, /connect-src 'self';/);
   assert.ok(!/https?:|sha256-|unsafe/.test(csp), csp);
 });
+
+// ------------------------------------------------- which settings are in use (2.10 beta 15 on)
+
+const { SETTINGS, MAX_PING_BYTES, cleanSetting, tallySettings } = await import("../netlify/lib/usage.mjs");
+
+/** Every setting, as a 2.10 beta 15 Mac sends them (ShareData.Stats). */
+const SETTINGS_PING = () => ({
+  ballColor: "custom", appIcon: "orb", light: "50-75", launchStyle: "animation", celebrations: true, weeklyRecap: true,
+  sounds: true, soundVolume: "75+", soundKinds: { pauseResume: true, modes: true, ticks: false, milestones: true, buttons: true },
+  precisionSpeed: "1-1.5", perDisplaySpeed: false, ballScrollSpeed: "1-2",
+  smoothScrolling: true, flipDirection: false, shiftSideways: true, nativeSpeed: "0.5-1", flyDistance: "4-8",
+  flyPower: "50-75", flyReach: "50-75", flyGlide: "25-50", followDistance: "8-16", followSmoothness: "25-50",
+  followAcceleration: "50-75", throwOn: true, throwDistance: "25-50",
+  gestures: true, gestureButtons: 2, gestureDistance: "normal", steadyHands: false,
+  gestureActions: { shortcut: 3, media: 2, openApp: 1 }, modesSetUp: { precision: true, ballScroll: false, dragLock: true },
+  menuBarIcon: true, menuBarStyle: "color", menuBarOpens: "panel", showInDock: true, askBeforeQuitting: true,
+  openAtLogin: true, allowScripts: false, ownLanguage: false, lowBatteryAlerts: false, sync: true, autoBackups: true,
+  globalShortcuts: 1, displays: "2", windowLayout: "double",
+  used: { search: true, tryBeforeChange: false, share: true, kensingtonWorks: false, buttonPreset: false },
+});
+const kept = (i) => JSON.parse(S().peek(`pings/${dayOfNow()}/${H(i)}`));
+const dayOfNow = () => new Date(Date.now()).toISOString().slice(0, 10);
+
+test("the app's list of settings and the server's are the same", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const swift = await readFile(new URL("../../Sources/Glide/ShareData.swift", import.meta.url), "utf8");
+  const struct = /struct Stats: Encodable \{([\s\S]*?)struct Trackball/.exec(swift)?.[1] ?? "";
+  const sent = [...struct.slice(struct.indexOf("// Look")).matchAll(/^\s*var (\w+):/gm)].map((m) => m[1]);
+  assert.ok(sent.length > 40, `found ${sent.length} settings in ShareData.Stats`);
+  assert.deepEqual([...sent].sort(), Object.keys(SETTINGS).sort());
+  assert.deepEqual(Object.keys(SETTINGS_PING()).sort(), Object.keys(SETTINGS).sort(), "the test's ping has every setting");
+});
+
+test("a ping with every setting keeps each one as sent, well under the size limit", async () => {
+  fresh();
+  const all = SETTINGS_PING();
+  assert.ok(JSON.stringify(PING(1, all)).length < MAX_PING_BYTES * 0.6, `${JSON.stringify(PING(1, all)).length} bytes`);
+  assert.equal((await ping(1, { ...all, buttons: { gesture: 2, shortcut: 1 } })).status, 201);
+  const k = kept(1);
+  for (const [key, v] of Object.entries(all)) assert.deepEqual(k[key], v, key);
+  assert.deepEqual(k.buttons, { gesture: 2, shortcut: 1 }, "a gesture button no longer turns the ping down");
+});
+
+test("an older app's ping, without any of the settings, still counts", async () => {
+  fresh();
+  const old = PING(1);
+  delete old.earlyUpdates;
+  assert.equal((await call(usageFn, "/api/usage", { method: "POST", body: JSON.stringify(old) })).status, 201);
+  const k = kept(1);
+  for (const key of Object.keys(SETTINGS)) assert.ok(!(key in k), key);
+  assert.equal(k.scrollMode, "flywheel");
+});
+
+test("a setting that isn't on its list is dropped (just that one); anything else unknown too", async () => {
+  fresh();
+  const odd = {
+    ballColor: "#ff0000", appIcon: "Orb", light: 0.6, launchStyle: "<script>", celebrations: "true", weeklyRecap: 1,
+    soundVolume: "60%", soundKinds: { pauseResume: "yes", modes: true, __proto__x: true, constructor: true, typed: "hello" },
+    precisionSpeed: "1.23", flyDistance: "4-9", displays: 2, windowLayout: "1440x900",
+    gestureButtons: 2.5, globalShortcuts: 99, gestureActions: { shortcut: 500, typedText: 3, media: -1, openApp: "1", constructor: 2 },
+    modesSetUp: ["precision"], used: { search: true, appName: "Safari" },
+    appNames: ["Safari"], bundleIDs: ["com.apple.Safari"], displayName: "LG UltraFine", customColors: ["FF0000"], setupNames: ["Work"],
+  };
+  assert.equal((await ping(1, odd)).status, 201);
+  const k = kept(1);
+  for (const key of ["ballColor", "appIcon", "light", "launchStyle", "celebrations", "weeklyRecap", "soundVolume", "precisionSpeed",
+    "flyDistance", "displays", "windowLayout", "gestureButtons", "modesSetUp", "appNames", "bundleIDs", "displayName", "customColors", "setupNames"]) {
+    assert.ok(!(key in k), key);
+  }
+  assert.deepEqual(k.soundKinds, { modes: true }, "only known switches, only booleans");
+  assert.equal(k.globalShortcuts, 4, "a count is held inside its range");
+  assert.deepEqual(k.gestureActions, { shortcut: 100 }, "only known kinds, whole positive numbers, at most 100");
+  assert.deepEqual(k.used, { search: true });
+  assert.ok(!/Safari|LG Ultra|FF0000|Work|hello/.test(S().peek(`pings/2026-11-10/${H(1)}`)));
+});
+
+test("cleanSetting() checks each kind of setting", () => {
+  assert.equal(cleanSetting("bool", false), false);
+  assert.equal(cleanSetting("bool", 0), undefined);
+  assert.equal(cleanSetting(["a", "b"], "b"), "b");
+  assert.equal(cleanSetting(["a", "b"], "toString"), undefined);
+  assert.equal(cleanSetting({ max: 4 }, -3), 0);
+  assert.equal(cleanSetting({ max: 4 }, Infinity), undefined);
+  assert.equal(cleanSetting({ flags: ["x"] }, { y: true }), undefined, "no known switch: not kept");
+  assert.equal(cleanSetting({ flags: ["x"] }, null), undefined);
+  assert.deepEqual(cleanSetting({ kinds: ["shortcut"], max: 100 }, {}), {}, "no gesture directions is a real answer");
+  assert.equal(cleanSetting({ kinds: ["shortcut"], max: 100 }, []), undefined);
+});
+
+test("the Usage page: each setting's breakdown, with installs that didn't send it as not reported", async () => {
+  fresh();
+  const cookie = await signIn();
+  const all = SETTINGS_PING();
+  await ping(1, all);
+  await ping(2, { ...all, ballColor: "ember", light: "off", gestureActions: {}, globalShortcuts: 0, used: { search: false } });
+  await ping(3);   // an older app: none of them
+  const d = await (await A("usage?days=7", {}, cookie)).json();
+  const s = d.settings;
+  assert.deepEqual(s.ballColor, { counts: { custom: 1, ember: 1 }, notReported: 1 });
+  assert.deepEqual(s.light, { counts: { "50-75": 1, off: 1 }, notReported: 1 });
+  assert.deepEqual(s.sounds, { counts: { on: 2 }, notReported: 1 });
+  assert.deepEqual(s.perDisplaySpeed, { counts: { off: 2 }, notReported: 1 });
+  assert.deepEqual(s["soundKinds.ticks"], { counts: { off: 2 }, notReported: 1 });
+  assert.deepEqual(s["used.search"], { counts: { on: 1, off: 1 }, notReported: 1 });
+  assert.deepEqual(s["used.share"], { counts: { on: 1 }, notReported: 2 }, "a switch missing from the group is not reported");
+  assert.deepEqual(s.gestureActions, { counts: { shortcut: 1, media: 1, openApp: 1, none: 1 }, notReported: 1 });
+  assert.deepEqual(s.globalShortcuts, { counts: { 1: 1, 0: 1 }, notReported: 1 });
+  assert.deepEqual(s.gestureButtons, { counts: { "2–4": 2 }, notReported: 1 });
+  assert.equal(Object.keys(s).length, Object.entries(SETTINGS).reduce((n, [, spec]) => n + (spec.flags ? spec.flags.length : 1), 0));
+  const text = JSON.stringify(d);
+  for (let i = 1; i <= 3; i++) assert.ok(!text.includes(ID(i)) && !text.includes(H(i)), `install ${i}`);
+});
+
+test("tallySettings() counts own keys only", () => {
+  const out = {};
+  tallySettings(out, JSON.parse(`{"__proto__": {"ballColor": "orb"}, "ballColor": "constructor", "sounds": true}`));
+  assert.deepEqual(out.ballColor, { counts: {}, notReported: 1 });
+  assert.deepEqual(out.sounds, { counts: { on: 1 }, notReported: 0 });
+});

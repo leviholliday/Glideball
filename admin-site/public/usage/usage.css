@@ -55,6 +55,15 @@ code { font-family: var(--mono); font-size: 12.5px; }
   white-space: pre;
 }
 
+/* Settings in use: a section per group, a small block per setting. */
+.group-title { font-size: 17px; font-weight: 800; letter-spacing: -0.01em; margin: 26px 0 6px; }
+.settings { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px 26px; }
+.setting h4 { font-size: 13px; font-weight: 750; color: var(--dim); margin: 0 0 7px; }
+.setting .bars { gap: 5px; }
+.setting .bar-row { grid-template-columns: minmax(0, 9em) 1fr auto; font-size: 12.5px; }
+.bar-row.nr .label, .bar-row.nr .n { color: var(--faint); font-weight: 600; }
+.bar-row.nr .bar rect { fill: var(--line-2); }
+
 .range { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: end; }
 .range label { display: grid; gap: 4px; font-size: 12.5px; font-weight: 700; color: var(--dim); }
 .range label.grow { flex: 1 1 360px; }

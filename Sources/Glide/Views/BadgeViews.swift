@@ -209,6 +209,7 @@ struct BadgeDetail: View {
     private func share() {
         let card = ShareCard.badge(milestone, delight.ledger.earned[milestone.id])
         dismiss()
+        FeatureUse.mark(.share)
         // Once the popover has gone: never a sheet and a closing popover in the same pass.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { AppModel.shared.sharingPicture = SharePictureRequest(card: card) }
     }

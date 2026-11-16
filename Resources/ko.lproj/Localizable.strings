@@ -1402,7 +1402,6 @@
 "Crash reports and settings stats" = "충돌 보고서와 설정 통계";
 "Glideball doesn't send anything, and that's fine." = "Glideball은 아무것도 보내지 않아요. 그래도 괜찮아요.";
 "If Glideball crashes, it sends me where in its code it happened and which versions of Glideball and macOS you have." = "Glideball이 충돌하면 코드의 어느 부분에서 일어났는지와 사용 중인 Glideball 및 macOS 버전을 보내요.";
-"Also, once a day: which trackball you have and a few of your settings, like the scroll mode and roughly how fast the pointer is. Never what you type, which apps you use, or your name." = "그리고 하루에 한 번: 어떤 트랙볼을 쓰는지와 스크롤 모드, 대략적인 포인터 속도 같은 몇 가지 설정을 보내요. 입력한 내용, 사용하는 앱, 이름은 절대 보내지 않아요.";
 "It isn't tied to your name, your email or your Mac. You can change this, or delete what was sent, any time in Glideball › Settings › Privacy." = "이름, 이메일, Mac과 연결되지 않아요. Glideball › 설정 › 개인정보 보호에서 언제든지 바꾸거나 보낸 데이터를 삭제할 수 있어요.";
 "Thanks either way," = "어떤 선택이든 고마워요,";
 "What’s Sent" = "보내는 내용";
@@ -1581,7 +1580,6 @@
 "Turn on Allow Raycast and scripts and you can pause Glideball, switch Precision or change the scroll mode from Raycast or a glideball:// link." = "‘Raycast 및 스크립트 허용’을 켜면 Raycast나 glideball:// 링크로 Glideball을 일시 정지하거나 정밀 모드를 전환하거나 스크롤 모드를 바꿀 수 있어요.";
 "What’s new in Glideball %@" = "Glideball %@의 새로운 기능";
 "When you pause or quit Glideball, your trackball goes back to exactly the tracking speed in System Settings, so it always feels the same." = "Glideball을 일시 정지하거나 종료하면 트랙볼이 시스템 설정의 이동 속도로 정확히 돌아가서 늘 같은 느낌이에요.";
-"You can let Glideball send me crash reports, and a few anonymous settings stats if you like. It’s off unless you pick it." = "Glideball이 저에게 충돌 보고서를, 원하면 설정에 관한 익명 통계도 보내도록 할 수 있어요. 선택하지 않으면 꺼져 있어요.";
 "Your trackball goes straight back to plain macOS. Press it again to resume." = "트랙볼이 바로 평소의 macOS처럼 돌아가요. 다시 누르면 다시 시작해요.";
 "You’re all set" = "모두 준비됐어요";
 /* Stage 2: the Settings window, the sheets, sounds and the app icon */
@@ -2456,7 +2454,6 @@
 "Button actions" = "버튼 동작";
 "Chip" = "칩";
 "Color" = "컬러";
-"Crash reports, plus your trackball and a few settings once a day." = "충돌 보고서와 함께, 하루에 한 번 트랙볼과 몇 가지 설정.";
 "Function names in Glideball’s own code" = "Glideball 자체 코드의 함수 이름";
 "Glideball" = "Glideball";
 "Glideball, Precision on" = "Glideball, 정밀 모드 켬";
@@ -2573,3 +2570,31 @@
 "Try is on: the next change goes back after 10 seconds unless you keep it" = "사용해 보기 켜짐: 다음 변경은 유지하지 않으면 10초 후에 돌아갑니다";
 "Try one for 10 seconds before you keep it, or ⌥-click it." = "유지하기 전에 10초 동안 사용해 보거나 ⌥-클릭하세요.";
 "Try one for 10 seconds, then keep it or let it go back. Or ⌥-click a card." = "10초 동안 사용해 본 다음 유지하거나 되돌립니다. 또는 카드를 ⌥-클릭하세요.";
+
+/* Opt-in stats: more settings, Privacy's preview */
+"%@ or more" = "%@ 이상";
+"%lld of %lld on" = "%2$lld개 중 %1$lld개 켬";
+"A button preset" = "버튼 프리셋";
+"A language just for Glideball" = "Glideball 전용 언어";
+"Also, once a day: which trackball you have and which settings you use, like the scroll mode, the ball color and roughly how fast the pointer is. Choices and rough ranges only, never what you type, which apps you use, or your name." = "또한 하루에 한 번: 사용하는 트랙볼과 사용하는 설정(스크롤 모드, 볼 색상, 대략적인 포인터 속도 등). 선택한 항목과 대략적인 범위만 보내며, 입력한 내용, 사용하는 앱, 이름은 절대 보내지 않습니다.";
+"Crash reports, plus your trackball and which settings you use, once a day." = "충돌 보고서와 함께 하루에 한 번 트랙볼과 사용하는 설정을 보냅니다.";
+"Displays" = "디스플레이";
+"Gesture buttons" = "제스처 버튼";
+"Gesture directions" = "제스처 방향";
+"KensingtonWorks import" = "KensingtonWorks 가져오기";
+"Keyboard shortcuts set" = "설정된 키보드 단축키";
+"Kinds of sound" = "사운드 종류";
+"Modes you can reach" = "사용할 수 있는 모드";
+"Native scroll speed" = "스크롤 속도(기본)";
+"New in 2.10: the stats include more of your settings than before, like the ball color, sounds and gestures. They’re still only choices and rough ranges, and every one is listed here." = "2.10의 새로운 기능: 통계에 이전보다 더 많은 설정(볼 색상, 사운드, 제스처 등)이 포함됩니다. 여전히 선택한 항목과 대략적인 범위뿐이며, 모두 여기에 나와 있습니다.";
+"None yet" = "아직 없음";
+"Not opened yet" = "아직 열지 않음";
+"One column" = "1열";
+"Search" = "검색";
+"Three columns" = "3열";
+"Two columns" = "2열";
+"Two wide columns" = "넓은 2열";
+"Under %@" = "%@ 미만";
+"Used at least once" = "한 번 이상 사용함";
+"Window layout" = "윈도우 레이아웃";
+"You can let Glideball send me crash reports, and anonymous stats on which settings you use. It’s off unless you pick it. If you already said yes, the stats now cover more settings, and Settings › Privacy lists every one." = "Glideball이 충돌 보고서와 사용하는 설정에 대한 익명 통계를 보내도록 할 수 있습니다. 직접 선택하기 전까지는 꺼져 있습니다. 이미 허용했다면 이제 통계에 더 많은 설정이 포함되며, 설정 › 개인정보 보호에서 모두 확인할 수 있습니다.";

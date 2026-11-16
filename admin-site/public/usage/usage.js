@@ -1,8 +1,9 @@
 // Glide Usage: the admin page for the app's opt-in crash reports and
 // settings stats. Signs in through the Feedback page (the same session).
 // Shows active installs by day and week, what versions, Macs, trackballs and
-// settings they use, and crashes grouped by where they happened; and deletes
-// everything from a stretch of days.
+// settings they use (a breakdown per setting, grouped, with "not reported" for
+// installs on an app too old to send it), and crashes grouped by where they
+// happened; and deletes everything from a stretch of days.
 //
 // Nothing here lists or shows install IDs (the server keeps only their
 // hashes, and never sends those either). To look at or delete one person's
@@ -12,7 +13,7 @@
 // (The site's CSP allows no inline styles or on*= attributes: bars are SVG
 // with plain attributes, and every handler is added with addEventListener.)
 
-const app = document.getElementById("app");
+const app = typeof document !== "undefined" ? document.getElementById("app") : null;
 const ICON = "/assets/icon-256.png";
 const state = { days: 90, data: null };
 try { state.days = Number(localStorage.getItem("usage-days")) || 90; } catch {}
@@ -128,22 +129,162 @@ const ACTION = {
   back: "Back", forward: "Forward", shortcut: "Keyboard shortcut", holdShortcut: "Held shortcut",
   modifiedClick: "Modifier-click", disabled: "Do nothing", precisionHold: "Precision (hold)",
   precisionToggle: "Precision (toggle)", ballScrollHold: "Scroll with ball", dragLock: "Drag lock",
-  media: "Media key", openApp: "Open an app",
+  media: "Media key", openApp: "Open an app", gesture: "Gesture",
 };
 const SPEED = { "<2": "Under 2", "2-4": "2 to 4", "4-8": "4 to 8", "8-16": "8 to 16", "16-32": "16 to 32", "32+": "32 or more" };
+
+// Which settings are in use (sent from 2.10 beta 15 on; website/netlify/lib/usage.mjs,
+// SETTINGS, has the same keys and values). Each: [key, label, value labels (in the
+// order they're shown; values not listed come after)]. "group.switch" is one switch
+// of a group (soundKinds, modesSetUp, used).
+const ON_OFF = { on: "On", off: "Off" };
+const UNIT = { "<25": "Under 25%", "25-50": "25 to 50%", "50-75": "50 to 75%", "75+": "75% or more" };
+const range = (...edges) => {
+  const out = { [`<${edges[0]}`]: `Under ${edges[0]}` };
+  for (let i = 0; i + 1 < edges.length; i++) out[`${edges[i]}-${edges[i + 1]}`] = `${edges[i]} to ${edges[i + 1]}`;
+  out[`${edges.at(-1)}+`] = `${edges.at(-1)} or more`;
+  return out;
+};
+const COUNT = { 0: "None", 1: "1", 2: "2", "2–4": "2 to 4", "3": "3", "4+": "4", "5+": "5 or more" };
+const SETTING_GROUPS = [
+  ["Look", [
+    ["ballColor", "Ball color", { orb: "Orb", ember: "Ember", sunset: "Sunset", ocean: "Ocean", forest: "Forest", graphite: "Graphite", classic: "Classic red", custom: "Custom" }],
+    ["appIcon", "App icon", { orb: "Orb", classic: "Classic" }],
+    ["light", "Light", { off: "Off", ...UNIT }],
+    ["launchStyle", "When Glideball opens", { animation: "Animation", fade: "Quick fade", none: "Nothing" }],
+    ["celebrations", "Celebrations", ON_OFF],
+    ["weeklyRecap", "Weekly recap", ON_OFF],
+  ]],
+  ["Sound", [
+    ["sounds", "Sounds", ON_OFF],
+    ["soundVolume", "Volume", UNIT],
+    ["soundKinds.pauseResume", "Pause and resume sounds", ON_OFF],
+    ["soundKinds.modes", "Modes on and off sounds", ON_OFF],
+    ["soundKinds.ticks", "Slider and switch ticks", ON_OFF],
+    ["soundKinds.milestones", "Milestone and record sounds", ON_OFF],
+    ["soundKinds.buttons", "Button press sounds (Buttons page)", ON_OFF],
+  ]],
+  ["Scrolling", [
+    ["smoothScrolling", "Smooth scrolling", ON_OFF],
+    ["flipDirection", "Flip direction", ON_OFF],
+    ["shiftSideways", "Shift scrolls sideways", ON_OFF],
+    ["nativeSpeed", "Native: scroll speed", range(0.5, 1, 1.7)],
+    ["flyDistance", "Flywheel: slow-turn distance (pt)", range(4, 8, 12)],
+    ["flyPower", "Flywheel: spin power", UNIT],
+    ["flyReach", "Flywheel: fast-spin reach", UNIT],
+    ["flyGlide", "Flywheel: glide", UNIT],
+    ["followDistance", "Follow: distance per notch (pt)", range(8, 16, 24)],
+    ["followSmoothness", "Follow: softness", UNIT],
+    ["followAcceleration", "Follow: spin acceleration", UNIT],
+    ["throwOn", "Follow: throw to coast", ON_OFF],
+    ["throwDistance", "Follow: throw distance", UNIT],
+  ]],
+  ["Pointer", [
+    ["precisionSpeed", "Precision speed", range(0.5, 1, 1.5)],
+    ["perDisplaySpeed", "Per-display speeds", ON_OFF],
+    ["ballScrollSpeed", "Scroll with ball speed", range(0.5, 1, 2)],
+  ]],
+  ["Buttons and gestures", [
+    ["gestures", "Gestures", ON_OFF],
+    ["gestureButtons", "Gesture buttons and combos", COUNT],
+    ["gestureDistance", "Gesture distance", { short: "Short", normal: "Normal", long: "Long" }],
+    ["steadyHands", "Steady hands", ON_OFF],
+    ["gestureActions", "What gesture directions do (installs using each)", { ...ACTION, none: "No directions set" }],
+    ["modesSetUp.precision", "Precision on a button or shortcut", ON_OFF],
+    ["modesSetUp.ballScroll", "Scroll with ball on a button or shortcut", ON_OFF],
+    ["modesSetUp.dragLock", "Drag lock on a button or shortcut", ON_OFF],
+  ]],
+  ["App", [
+    ["menuBarIcon", "Menu bar icon", ON_OFF],
+    ["menuBarStyle", "Menu bar icon style", { mono: "Mono", color: "Color" }],
+    ["menuBarOpens", "Menu bar icon opens", { menu: "Menu", panel: "Panel" }],
+    ["showInDock", "Show in Dock and app switcher", ON_OFF],
+    ["askBeforeQuitting", "Ask before quitting", ON_OFF],
+    ["openAtLogin", "Open at login", ON_OFF],
+    ["allowScripts", "Allow Raycast and scripts", ON_OFF],
+    ["ownLanguage", "A language just for Glideball", ON_OFF],
+    ["lowBatteryAlerts", "Low battery alerts", ON_OFF],
+    ["sync", "iCloud Drive sync", ON_OFF],
+    ["autoBackups", "Automatic backups", ON_OFF],
+    ["globalShortcuts", "Global shortcuts set", COUNT],
+    ["displays", "Displays", { 1: "1", 2: "2", "3+": "3 or more" }],
+    ["windowLayout", "Window layout", { single: "One column", double: "Two columns", roomy: "Two wide columns", triple: "Three columns", unknown: "Never opened" }],
+    ["used.search", "Used search", ON_OFF],
+    ["used.tryBeforeChange", "Used try before you keep", ON_OFF],
+    ["used.share", "Used Share…", ON_OFF],
+    ["used.kensingtonWorks", "Imported from KensingtonWorks", ON_OFF],
+    ["used.buttonPreset", "Applied a button preset", ON_OFF],
+  ]],
+];
+
+/** One setting: a bar per value (in the labels' order), with how many installs and what
+ * share of the period's installs, then the installs that didn't send it. */
+function settingBars(s, n, labels) {
+  if (!s) return `<p class="none">Nothing yet.</p>`;
+  const order = Object.keys(labels);
+  const rows = Object.entries(s.counts).sort((a, b) => {
+    const ia = order.indexOf(a[0]), ib = order.indexOf(b[0]);
+    return (ia < 0 ? 1e3 : ia) - (ib < 0 ? 1e3 : ib) || b[1] - a[1];
+  }).map(([k, c]) => [labels[k] ?? k, c, ""]);
+  if (s.notReported) rows.push(["Not reported", s.notReported, "nr"]);
+  if (!rows.length) return `<p class="none">Nothing yet.</p>`;
+  return `<div class="bars">${rows.map(([label, c, cls]) => `
+    <div class="bar-row ${cls}">
+      <span class="label" title="${esc(label)}">${esc(label)}</span>
+      <svg class="bar" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true"><rect width="${Math.max(1, (c / Math.max(n, 1)) * 100).toFixed(2)}" height="10" rx="2"></rect></svg>
+      <span class="n">${c.toLocaleString()} <span class="pct">${n ? Math.round((c / n) * 100) : 0}%</span></span>
+    </div>`).join("")}</div>`;
+}
+
+/** The settings, a section per group. */
+function settingsSections(settings, n) {
+  const any = SETTING_GROUPS.some(([, list]) => list.some(([k]) => settings?.[k] && Object.keys(settings[k].counts).length));
+  const note = any ? "" : `<p class="none">No install in this period has sent these yet (they come from 2.10 beta 15 on).</p>`;
+  return `
+    <h2 class="group-title">Settings in use</h2>
+    <p class="hint">Each install's most recent day in this period. A bar is the share of all ${n.toLocaleString()} install${n === 1 ? "" : "s"}; "Not reported" are installs on an older Glideball that doesn't send that setting. Ranges are what the app sends, never exact values.</p>
+    ${note}
+    ${SETTING_GROUPS.map(([title, list]) => section(title, `<div class="settings">${list.map(([k, label, labels]) => `
+      <div class="setting"><h4>${esc(label)}</h4>${settingBars(settings?.[k], n, labels)}</div>`).join("")}</div>`)).join("")}`;
+}
+
+/** One install's settings, in words (for "One install"). */
+function settingRows(p) {
+  const rows = [];
+  for (const [, list] of SETTING_GROUPS) {
+    for (const [k, label, labels] of list) {
+      const [key, flag] = k.split(".");
+      let v = flag ? p[key]?.[flag] : p[key];
+      if (v === undefined) continue;
+      if (typeof v === "boolean") v = v ? "on" : "off";
+      if (typeof v === "object") v = Object.entries(v).map(([kind, c]) => `${ACTION[kind] ?? kind} ${c}`).join(", ") || "none";
+      rows.push([label, labels[v] ?? String(v)]);
+    }
+  }
+  return rows;
+}
 
 function section(title, inner, cls = "") {
   return `<section class="section glass ${cls}"><h3>${esc(title)}</h3>${inner}</section>`;
 }
 
 function render(d) {
+  document.getElementById("body").innerHTML = page(d);
+  document.getElementById("one").addEventListener("submit", lookUp);
+  document.getElementById("one-delete").addEventListener("click", deleteInstall);
+  document.getElementById("range").addEventListener("submit", deleteRange);
+}
+
+/** The page's content from GET /api/admin/usage: plain string-building with everything
+ * escaped, so the tests can run it without a browser. */
+function page(d) {
   const b = d.breakdowns;
   const n = d.totals.installs;
   const thisWeek = d.perWeek.length ? d.perWeek[d.perWeek.length - 1].active : 0;
   const today = d.perDay.length ? d.perDay[d.perDay.length - 1].active : 0;
   const buttonRows = Object.entries(b.buttons).sort((x, y) => y[1].installs - x[1].installs);
 
-  document.getElementById("body").innerHTML = `
+  return `
     <p class="intro">From people who chose to share. ${esc(fmtDay(d.since))} to ${esc(fmtDay(d.today))} (UTC). Settings are each install's most recent day in this period.</p>
     <div class="tiles">
       <div class="tile glass"><b>${n.toLocaleString()}</b><span>Installs in this period</span></div>
@@ -173,6 +314,7 @@ function render(d) {
           ${buttonRows.map(([k, v]) => `<tr><td>${esc(ACTION[k] ?? k)}</td><td>${v.installs}</td><td>${v.buttons}</td></tr>`).join("")}
         </tbody></table>` : `<p class="none">Nothing yet.</p>`)}
     </div>
+    ${settingsSections(d.settings ?? {}, n)}
     ${section(`Crashes (${d.crashes.length} kind${d.crashes.length === 1 ? "" : "s"})`, crashList(d.crashes))}
     ${section("One install", `
       <p class="hint">If someone asks to see or delete their data, they can copy their install ID from Settings › Privacy in the app and send it to you. Paste it here. Nothing on this page lists IDs.</p>
@@ -189,10 +331,6 @@ function render(d) {
         <label>To <input class="field small" type="date" id="to" required></label>
         <button class="btn danger" type="submit">Delete these days…</button>
       </form>`)}`;
-
-  document.getElementById("one").addEventListener("submit", lookUp);
-  document.getElementById("one-delete").addEventListener("click", deleteInstall);
-  document.getElementById("range").addEventListener("submit", deleteRange);
 }
 
 function crashList(list) {
@@ -234,6 +372,7 @@ function showInstall(r) {
     ["Performance", PERF[p.performance] ?? p.performance], ["Other Kensington trackballs", p.beta ? "On" : "Off"], ["Early updates", p.earlyUpdates ? "On" : "Off"],
     ["App setups", p.appProfiles], ["Combos", p.combos],
     ["Buttons", Object.entries(p.buttons).map(([k, v]) => `${ACTION[k] ?? k} ${v}`).join(", ") || "None changed"],
+    ...settingRows(p),
   ] : [["Days sent", "None (crash reports only)"]];
   out.innerHTML = `
     <dl class="kv one">${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}
@@ -285,5 +424,4 @@ async function deleteRange(ev) {
   }
 }
 
-shell();
-load();
+if (app) { shell(); load(); }

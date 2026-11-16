@@ -667,6 +667,7 @@ final class AppModel {
         configBeforeImport = config; lookBeforeImport = nil; soundsBeforeImport = nil
         config = updated
         delight.explored(.preset)
+        FeatureUse.mark(.buttonPreset)
         show(.init(symbol: preset.symbol, text: String(localized: "Applied “\(preset.title)”", comment: "Toast; the name of a button preset"),
                    action: .undoImport))
     }
