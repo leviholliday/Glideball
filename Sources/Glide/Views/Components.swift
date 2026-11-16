@@ -1289,28 +1289,43 @@ private struct ChoiceCard: View {
     @FocusState private var focused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    private func titleRow(check: Bool) -> some View {
+        HStack(alignment: detail == nil ? .center : .firstTextBaseline, spacing: 6) {
+            Image(systemName: symbol)
+                .font(.system(size: 13, weight: selected ? .semibold : .regular))
+                .foregroundStyle(selected ? AnyShapeStyle(tint) : AnyShapeStyle(.secondary))
+            Text(title)
+                .font(.system(size: 13, weight: selected ? .semibold : .regular))
+                .lineLimit(detail == nil ? 1 : 2)
+                .minimumScaleFactor(detail == nil ? 0.6 : 0.8)   // a long name in a narrow card shrinks before it's cut
+                .allowsTightening(true)
+                .layoutPriority(1)
+                .fixedSize(horizontal: false, vertical: detail != nil)
+            Spacer(minLength: 0)
+            if check {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 12))
+                    .foregroundStyle(tint)
+                    .transition(reduceMotion ? .opacity : .scale(scale: 0.4).combined(with: .opacity))
+            }
+        }
+    }
+
     var body: some View {
         let playing = (hovering || focused || playingOnce || ChoiceCardSandbox.hovered == symbol) && !reduceMotion
         Button {
             if let onTry, NSEvent.modifierFlags.contains(.option) { onTry() } else { action() }
         } label: {
             VStack(alignment: .leading, spacing: detail == nil ? 8 : 4) {
-                HStack(alignment: detail == nil ? .center : .firstTextBaseline, spacing: 6) {
-                    Image(systemName: symbol)
-                        .font(.system(size: 13, weight: selected ? .semibold : .regular))
-                        .foregroundStyle(selected ? AnyShapeStyle(tint) : AnyShapeStyle(.secondary))
-                    Text(title)
-                        .font(.system(size: 13, weight: selected ? .semibold : .regular))
-                        .lineLimit(detail == nil ? 1 : 2)
-                        .minimumScaleFactor(0.8)
-                        .fixedSize(horizontal: false, vertical: detail != nil)
-                    Spacer(minLength: 0)
-                    if selected {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 12))
-                            .foregroundStyle(tint)
-                            .transition(reduceMotion ? .opacity : .scale(scale: 0.4).combined(with: .opacity))
+                // The checkmark only where it fits beside the whole name: a narrow card (the tour's
+                // four speeds, or German) gets its name in full and the glow says it's picked.
+                if detail == nil && selected {
+                    ViewThatFits(in: .horizontal) {
+                        titleRow(check: selected)
+                        titleRow(check: false)
                     }
+                } else {
+                    titleRow(check: selected)   // a name that may wrap, or a card that isn't picked
                 }
                 if let detail {
                     Text(detail)

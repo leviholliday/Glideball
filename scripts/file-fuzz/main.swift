@@ -21,6 +21,18 @@ let deep = args.contains("--deep")
 let seed: UInt64 = args.firstIndex(of: "--seed").flatMap { args.indices.contains($0 + 1) ? UInt64(args[$0 + 1]) : nil }
     ?? UInt64.random(in: 1...UInt64(UInt32.max))
 
+/// How long the random mutations run (a quick run 1 s, --deep 180 s), and the hard limit on the
+/// whole run (--budget N seconds overrides): a watchdog thread stops it, naming the case, if it
+/// goes over, or if nothing finishes for 30 s (a generator or a case stuck outside the worker).
+let randomSeconds: Double = deep ? 180 : 1
+let totalBudget: Double = args.firstIndex(of: "--budget").flatMap { args.indices.contains($0 + 1) ? Double(args[$0 + 1]) : nil }
+    ?? (deep ? 1500 : 300)
+let stallLimit = 30.0
+let runStart = Date()
+nonisolated(unsafe) var lastProgress = Date()
+let progressLock = NSLock()
+func progress() { progressLock.lock(); lastProgress = Date(); progressLock.unlock() }
+
 let fm = FileManager.default
 let root = fm.temporaryDirectory.resolvingSymlinksInPath().appendingPathComponent("glide-file-fuzz-\(UUID().uuidString)", isDirectory: true)
 let appFolder = root.appendingPathComponent("app", isDirectory: true)       // everything Glideball may write
@@ -46,6 +58,7 @@ caseBuffer.initialize(repeating: 0, count: 512)
 /// threads (the sync queue) can't be caught here, so that's how to find it.
 let trace = ProcessInfo.processInfo.environment["FUZZ_TRACE"] != nil
 func setCase(_ name: String) {
+    progress()
     if trace { FileHandle.standardError.write(Data("case: \(name.prefix(200))\n".utf8)) }
     let bytes = Array(name.utf8.prefix(500))
     for (i, b) in bytes.enumerated() { caseBuffer[i] = CChar(bitPattern: b) }
@@ -111,6 +124,29 @@ final class Worker {
     }
 }
 let worker = Worker()
+
+/// Stops the run, saying where, if it overruns its budget or stops making progress. Runs on its own thread.
+func startWatchdog() {
+    let t = Thread {
+        while true {
+            Thread.sleep(forTimeInterval: 1)
+            progressLock.lock(); let idle = Date().timeIntervalSince(lastProgress); progressLock.unlock()
+            let total = Date().timeIntervalSince(runStart)
+            if deep, Int(total) % 120 == 0 { print("  … \(Int(total) / 60) min in, now: \(String(cString: caseBuffer).prefix(80))") }
+            var why: String?
+            if idle > stallLimit { why = "nothing finished for \(Int(idle)) s" }
+            else if total > totalBudget { why = "over the \(Int(totalBudget)) s budget" }
+            guard let why else { continue }
+            let line = "\nFAIL: \(why), in case: \(String(cString: caseBuffer)) (seed \(seed))\n\(failures + 1) FAILURES (seed \(seed))\n"
+            FileHandle.standardOutput.write(Data(line.utf8))
+            try? fm.removeItem(at: root)
+            exit(1)
+        }
+    }
+    t.stackSize = 256 * 1024
+    t.start()
+}
+startWatchdog()
 
 /// In-memory UserDefaults: nothing touches ~/Library/Preferences.
 final class MemoryDefaults: UserDefaults {
@@ -341,6 +377,17 @@ indirect enum J {
     }
 
     init(data: Data) { self.init(try! JSONSerialization.jsonObject(with: data, options: [.fragmentsAllowed])) }
+
+    /// How many nodes this tree has (stops counting past `limit`, so asking is cheap on a huge one).
+    func nodeCount(limit: Int = .max) -> Int {
+        var n = 1
+        switch self {
+        case .obj(let d): for v in d.values { n += v.nodeCount(limit: limit - n); if n > limit { return n } }
+        case .arr(let a): for v in a { n += v.nodeCount(limit: limit - n); if n > limit { return n } }
+        default: break
+        }
+        return n
+    }
 
     var text: String {
         var out = ""
@@ -1343,11 +1390,21 @@ func randomValue() -> J {
     }
 }
 
+/// The generator's own limits. Before these, "repeat an element up to 300 times" and "graft
+/// another node here" (the root included) compounded within one file, and --deep twice spent
+/// 40 to 70 minutes building a single multi-gigabyte test file on the main thread.
+let maxMutationNodes = 20_000      // nodes in a mutated tree
+let maxMutationBytes = 1_000_000   // bytes of a mutated file
+let maxMutationSeconds = 2.0       // building one file
+
 func mutate(_ base: J) -> Data {
     var tree = base
+    let began = Date()
     for _ in 0..<Int.random(in: 1...4, using: &rng) {
+        if Date().timeIntervalSince(began) > maxMutationSeconds { break }
         let paths = tree.paths()
         let path = paths.randomElement(using: &rng)!
+        let before = tree
         switch Int.random(in: 0..<7, using: &rng) {
         case 0, 1: tree = tree.replacing(path[...], with: randomValue()) ?? tree
         case 2: tree = tree.replacing(path[...], with: nil) ?? tree
@@ -1369,8 +1426,11 @@ func mutate(_ base: J) -> Data {
                 tree = tree.replacing(path[...], with: .obj(d)) ?? tree
             }
         }
+        // An operation that pushed the tree past the cap is undone.
+        if tree.nodeCount(limit: maxMutationNodes) > maxMutationNodes { tree = before }
     }
     var data = tree.data
+    if data.count > maxMutationBytes { data = data.prefix(maxMutationBytes) }   // truncated, which is hostile too
     if Int.random(in: 0..<5, using: &rng) == 0, !data.isEmpty {   // byte damage
         for _ in 0..<Int.random(in: 1...8, using: &rng) {
             let i = Int.random(in: 0..<data.count, using: &rng)
@@ -1386,13 +1446,20 @@ func mutate(_ base: J) -> Data {
 }
 
 beginSection()
-let fuzzEnd = Date().addingTimeInterval(deep ? 180 : 1)
-var mutations = 0, accepted = 0, syncRuns = 0
+let fuzzEnd = Date().addingTimeInterval(min(randomSeconds, max(10, totalBudget - Date().timeIntervalSince(runStart) - 60)))   // never past the budget
+var mutations = 0, accepted = 0, syncRuns = 0, biggest = 0
+var nextReport = Date().addingTimeInterval(30)
 let local = richConfig()
 while Date() < fuzzEnd {
     mutations += 1
+    if deep && Date() >= nextReport {
+        nextReport = Date().addingTimeInterval(30)
+        print("  … \(Int(fuzzEnd.timeIntervalSinceNow)) s left: \(mutations) files, \(accepted) accepted, biggest \(biggest / 1000) KB, \(failures) failures")
+    }
+    setCase("generating mutation \(mutations) (seed \(seed))")
     let base = seeds.randomElement(using: &rng)!
     let data = mutate(base)
+    biggest = max(biggest, data.count)
     let n = mutations
     if n % 4 == 0 {   // a shared setup, through ImportFile and the share preview's Apply
         let share = mutate(shareSeeds.randomElement(using: &rng)!)
@@ -1419,7 +1486,7 @@ while Date() < fuzzEnd {
         syncCase("mutation \(n) (seed \(seed))", local: local, remote: wrapped, expect: .any)
     }
 }
-endSection("random mutations", "seed \(seed), \(mutations) files, \(accepted) accepted\(deep ? ", \(syncRuns) through sync" : "")")
+endSection("random mutations", "seed \(seed), \(mutations) files (biggest \(biggest / 1000) KB), \(accepted) accepted\(deep ? ", \(syncRuns) through sync" : "")")
 
 print(failures == 0 ? "ALL GOOD" : "\(failures) FAILURES (seed \(seed))")
 try? fm.removeItem(at: root)

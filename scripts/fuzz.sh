@@ -2,7 +2,7 @@
 # The long fuzz run: what scripts/check.sh does in seconds, for as long as you like.
 # Never runs the real app; everything is the real code against fakes and temp folders.
 #
-#   scripts/fuzz.sh                 10 minutes of engine fuzzing, the deep file fuzz,
+#   scripts/fuzz.sh                 10 minutes of engine fuzzing, the deep file and updater fuzz,
 #                                   and a minute of the engine's threads
 #   scripts/fuzz.sh --minutes 60    an hour of engine fuzzing instead
 #   scripts/fuzz.sh --tsan          also everything under the thread sanitizer (slow build)
@@ -44,6 +44,7 @@ step() {
 step engine-fuzz scripts/engine-fuzz/run.sh --seeds 1-200 --events 20000 --minutes $MINUTES
 step engine-threads scripts/engine-fuzz/run.sh --threads --seconds 60
 step file-fuzz scripts/file-fuzz/run.sh --deep
+step update-fuzz scripts/update-fuzz/run.sh --deep
 (( TSAN )) && step sanitize scripts/sanitize.sh thread
 
 print "done in $(( (SECONDS - started) / 60 )) min: $([[ $rc == 0 ]] && print 'all rules held' || print 'FAILURES above')"

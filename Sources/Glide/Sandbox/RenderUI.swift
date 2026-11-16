@@ -116,6 +116,7 @@ enum RenderUI {
 
     private static func run(_ o: Options) {
         let started = Date()
+        setvbuf(stdout, nil, _IOLBF, 0)   // piped output is block-buffered by default; a kill would lose it (scripts/render-ui.sh reads it to name a stuck scene)
         do {
             try FileManager.default.createDirectory(at: o.dir, withIntermediateDirectories: true)
         } catch {
@@ -143,6 +144,7 @@ enum RenderUI {
         var written: [(screen: Screen, file: String, dark: Bool, size: NSSize)] = []
         var problems: [String] = []
         for screen in selected {
+            print("  ▸ \(screen.name)")   // render-ui.sh names this scene if the run stalls or crashes
             screen.prepare()
             for dark in o.appearances {
                 let file = "\(screen.name).\(dark ? "dark" : "light").png"
