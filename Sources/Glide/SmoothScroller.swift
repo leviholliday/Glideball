@@ -465,6 +465,9 @@ final class SmoothScroller: NSObject {
     static let ballSmoothing = 0.016
     /// Only movement this recent counts toward the glide when the button is let go.
     static let ballGlideWindow = 0.06
+    /// The fastest the page follows the ball (points / second): above any real flick at the
+    /// top Scroll with ball speed, so it only ever spreads out a backlog.
+    static let ballMaxSpeed = 60_000.0
 
     private enum BallMode { case idle, rolling, gliding }
     private var ballMode = BallMode.idle
@@ -561,8 +564,16 @@ final class SmoothScroller: NSObject {
             }
         }
         let a = config.smoothScrolling ? 1 - exp(-dt / Self.ballSmoothing) : 1
-        ballPos.x += (ballTarget.x - ballPos.x) * a
-        ballPos.y += (ballTarget.y - ballPos.y) * a
+        var sx = (ballTarget.x - ballPos.x) * a, sy = (ballTarget.y - ballPos.y) * a
+        // Never faster than `ballMaxSpeed`. Reports that pile up (the input thread held up for
+        // a moment, or the frame loop just restarting after the ring stopped it, whose first
+        // frame counts as the longest) used to go out as one jump: 2,500 points in a single
+        // frame on a fast flick. The rest follows on the next frames; nothing is dropped.
+        // Found by scripts/engine-fuzz.
+        let step = (sx * sx + sy * sy).squareRoot(), most = Self.ballMaxSpeed * dt
+        if step > most { sx *= most / step; sy *= most / step }
+        ballPos.x += sx
+        ballPos.y += sy
         if ballResting { ballPos = ballTarget }   // caught up: land exactly, and let the frame loop rest
         if ballMode == .gliding, ballVel.x == 0, ballVel.y == 0,
            abs(ballTarget.x - ballPos.x) < 0.5, abs(ballTarget.y - ballPos.y) < 0.5 {

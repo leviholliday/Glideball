@@ -269,7 +269,10 @@ final class Engine {
         perform {
             guard on != self.betaProgram else { return }
             self.betaProgram = on
+            let before = self.deviceSupported
             self.deviceSupported = self.devices.mapValues { $0.isSupported(beta: on) }
+            // A trackball no longer supported won't have its releases handled: let go now.
+            if before.contains(where: { $0.value && self.deviceSupported[$0.key] != true }) { self.letGoOfTrackball() }
             self.lastActiveIsKensington = false   // re-learned from the next raw input
             self.syncTap()
             self.io.pointerDevicesChanged()
@@ -581,38 +584,61 @@ final class Engine {
 
     /// IOHIDManager's callback (input thread).
     func deviceAdded(_ device: IOHIDDevice) {
-        let k = Self.key(device)
-        keyByAddress[Self.address(device)] = k
-        deviceAdded(key: k, identity: Self.identity(of: device),
-                    transport: DeviceBattery.transport(device), device: device)
+        managerAdded(address: Self.address(device), key: Self.key(device), identity: Self.identity(of: device),
+                     transport: DeviceBattery.transport(device), device: device)
+    }
+
+    /// IOHIDManager's add, by the device object's address (scripts/engine-fuzz calls this directly).
+    func managerAdded(address a: Int, key k: Int, identity: DeviceIdentity, transport: String?, device: IOHIDDevice? = nil) {
+        keyByAddress[a] = k
+        deviceAdded(key: k, identity: identity, transport: transport, device: device)
     }
 
     /// Each device's key by its object's address, so a HID value (hundreds a second) doesn't
-    /// ask the kernel for its registry ID every time. Refreshed whenever a device is added.
+    /// ask the kernel for its registry ID every time. Refreshed whenever a device is added,
+    /// and read again from the device whenever the cached key isn't a device the engine has
+    /// (a freed device's address can be handed to the next one).
     private var keyByAddress: [Int: Int] = [:]
     private static func address(_ device: IOHIDDevice) -> Int { Int(bitPattern: Unmanaged.passUnretained(device).toOpaque()) }
 
-    private func cachedKey(_ device: IOHIDDevice) -> Int {
-        let a = Self.address(device)
-        if let k = keyByAddress[a] { return k }
-        let k = Self.key(device)
+    private func resolveKey(address a: Int, fresh: () -> Int) -> Int {
+        if let k = keyByAddress[a], devices[k] != nil { return k }
+        let k = fresh()
         keyByAddress[a] = k
         return k
     }
 
-    /// A pointing device appeared. `device` is nil in scripts/engine-fuzz.
+    /// A pointing device appeared: IOHIDManager matched it, or a device check found it.
+    /// `device` is nil in scripts/engine-fuzz.
     func deviceAdded(key k: Int, identity: DeviceIdentity, transport: String?, device: IOHIDDevice?, fromCheck: Bool = false) {
-        if !fromCheck { gone.remove(k) }   // IOHIDManager matched it: it's here
+        if !fromCheck {   // IOHIDManager matched it: it's here, whatever an earlier check thought
+            gone.remove(k)
+            addedByManager.insert(k)
+        }
+        checkRemovedTrackball.remove(k)
         devices[k] = nil
         deviceSupported[k] = nil
         hidBattery[k] = nil
         registryBattery[k] = nil
         transports[k] = transport
+        deviceObjects[k] = device
         if identity.vendorID == DeviceIdentity.kensingtonVendorID {
             batteryDevices.insert(k)   // only Kensington's, for the battery check
             io.rememberDevice(k, device)
         }
-        if isSupported(key: k, identity: { identity }) {
+        let supported = isSupported(key: k, identity: { identity })
+        deviceEvent("device add (\(fromCheck ? "check" : "manager")): key \(Self.describe(k)) \(Self.describe(identity)) "
+                    + "supported \(supported ? "yes" : "no") transport \(transport ?? "?")")
+        // IOKit can publish a device before all of its properties: read them again shortly.
+        if !Self.isComplete(identity) {
+            incomplete.insert(k)
+            for delay in [0.3, 1.0, 3.0] {
+                _ = io.schedule(delay, repeats: false) { [unowned self] in self.refreshIdentity(k) }
+            }
+        } else {
+            incomplete.remove(k)
+        }
+        if supported {
             io.watchTermination(k, device, engine: self, runLoop: runLoop)
             io.pointerDevicesChanged()
             // The HID service appears slightly after the device; apply twice to be sure.
@@ -620,6 +646,7 @@ final class Engine {
                 _ = io.schedule(delay, repeats: false) { [unowned self] in
                     self.applyPointer()
                     if delay > 1 { self.refreshBatteries() }   // registry properties can arrive late too
+                    self.checkOpen(k, always: delay < 1)
                 }
             }
         }
@@ -627,10 +654,67 @@ final class Engine {
         publish()
     }
 
+    /// IOHIDManager opens each device it matches, and doesn't try again if that fails (say
+    /// while a driver has the device to itself for a moment). An unopened device sends no
+    /// values, so Glideball would see a trackball that never moves. Logged; opened again,
+    /// read-only (never seized), when EngineIO can tell. The first look is always logged,
+    /// the second only when the device isn't simply open.
+    private func checkOpen(_ k: Int, always: Bool) {
+        guard deviceSupported[k] == true, let note = io.ensureOpen(k, deviceObjects[k] ?? nil) else { return }
+        if always || note != "open" { deviceEvent("device open: key \(Self.describe(k)) \(note)") }
+    }
+
+    private static func isComplete(_ d: DeviceIdentity) -> Bool { d.vendorID != nil && d.productID != nil && d.name != nil }
+
+    /// Reads an incomplete device's properties again (timers after its add, its own values,
+    /// a device check). A different identity updates the device; it never removes it.
+    private func refreshIdentity(_ k: Int) {
+        refreshIdentity(k) { io.currentIdentity(k, deviceObjects[k] ?? nil) }
+    }
+
+    private func refreshIdentity(_ k: Int, _ read: () -> DeviceIdentity?) {
+        guard devices[k] != nil, incomplete.contains(k) else { return }
+        guard let now = read() else { return }
+        updateIdentity(k, now, reason: "properties filled in")
+    }
+
+    /// The identity a device has now (`reason` for the log). Same support: just stored.
+    /// Support changed: taken out and put back as that, with the usual releases.
+    private func updateIdentity(_ k: Int, _ identity: DeviceIdentity, reason: String) {
+        guard let old = devices[k], old != identity else { return }
+        if Self.isComplete(identity) { incomplete.remove(k) }
+        let was = deviceSupported[k] == true
+        let now = identity.isSupported(beta: betaProgram)
+        deviceEvent("device check: key \(Self.describe(k)) identity changed (\(reason)): \(Self.describe(old)) -> \(Self.describe(identity))")
+        if was == now {
+            devices[k] = identity
+            if identity.vendorID == DeviceIdentity.kensingtonVendorID, !batteryDevices.contains(k) {
+                batteryDevices.insert(k)
+                io.rememberDevice(k, deviceObjects[k] ?? nil)
+            }
+            publish()
+            return
+        }
+        let transport = transports[k], device = deviceObjects[k] ?? nil, byManager = addedByManager.contains(k)
+        incomplete.remove(k)   // not "maybe the trackball" while it's swapped (deviceAdded marks it again)
+        deviceRemoved(key: k)
+        deviceAdded(key: k, identity: identity, transport: transport, device: device, fromCheck: true)
+        if byManager { addedByManager.insert(k) }
+    }
+
     /// IOHIDManager's callback (input thread): that device, then a check of the rest
     /// against what IOKit has (a removal can go missing, say across a USB hub reset).
     func deviceRemoved(_ device: IOHIDDevice) {
-        let k = keyByAddress.removeValue(forKey: Self.address(device)) ?? Self.key(device)
+        managerRemoved(address: Self.address(device), fresh: Self.key(device))
+    }
+
+    /// IOHIDManager's removal, by the device object's address (scripts/engine-fuzz calls this
+    /// directly). The device's own registry ID wins over the cached one: an address can have
+    /// been reused, and removing the wrong key would drop a working device.
+    func managerRemoved(address a: Int, fresh: Int) {
+        let cached = keyByAddress.removeValue(forKey: a)
+        let k = fresh > 0 ? fresh : (cached ?? fresh)
+        if let cached, cached != k { deviceEvent("device removal: address cached key \(Self.describe(cached)), device says \(Self.describe(k))") }
         deviceRemovedByManager(key: k)
     }
 
@@ -642,16 +726,21 @@ final class Engine {
     /// right back. Now a removed key is never re-added by a check (`gone`), and a check only
     /// believes devices whose service IOKit still has registered (`io.serviceIsAlive`).
     func deviceRemovedByManager(key k: Int) {
+        deviceEvent("device removal (manager): key \(Self.describe(k))\(devices[k] == nil ? " (not known)" : "")")
         gone.insert(k)
+        addedByManager.remove(k)
         deviceRemoved(key: k)
-        reconcileNow()
+        // A trackball a check had taken out (say while IOKit was still registering it) is
+        // really gone now: modes switched on in the meantime end, as at any unplug.
+        if checkRemovedTrackball.remove(k) != nil, !deviceSupported.values.contains(true) { letGoOfTrackball() }
+        reconcileNow(reason: "after a removal")
     }
 
     /// IOKit's termination notice for a device's service (EngineIO.watchTermination): the
     /// same as its removal, whichever of the two comes first. The second does nothing.
     func deviceTerminated(key k: Int) {
-        guard !gone.contains(k) else { return }
-        diagnostics.record("device check: terminated")
+        guard !gone.contains(k) else { return deviceEvent("device terminated: key \(Self.describe(k)) (already removed)") }
+        deviceEvent("device terminated: key \(Self.describe(k))")
         deviceRemovedByManager(key: k)
     }
 
@@ -659,40 +748,100 @@ final class Engine {
     /// match the ones IOKit has now. A removal callback that never came would otherwise
     /// leave "Connected" showing (and the tap on) until a relaunch. Cheap: one
     /// IOHIDManagerCopyDevices and a registry lookup per device, no timer.
-    func reconcileDevices() { perform { self.reconcileNow() } }
+    func reconcileDevices(reason: String = "asked") { perform { self.reconcileNow(reason: reason) } }
 
-    /// Keys whose removal came (registry IDs are never reused). A check never adds one back;
-    /// only IOHIDManager's own matching callback can.
+    /// Keys whose real removal came (IOHIDManager's removal callback or IOKit's termination
+    /// notice) since IOHIDManager last added them. Registry IDs are never reused, so a check
+    /// never adds one back; only IOHIDManager's own matching callback can.
     private var gone = Set<Int>()
+    /// Keys IOHIDManager added and hasn't removed. A check takes one of these out only when
+    /// IOKit no longer has its service (whether IOHIDManager lists it yet or not), and never
+    /// for good: a later check puts it back if IOKit has it.
+    private var addedByManager = Set<Int>()
+    /// Devices whose properties were missing something when they arrived (see `refreshIdentity`).
+    private var incomplete = Set<Int>()
+    private var deviceObjects: [Int: IOHIDDevice?] = [:]
+    private var lastValueCheck: CFTimeInterval = -1e9
+    private var lastIdentityRead: [Int: CFTimeInterval] = [:]
+    private var recheckTimers: [EngineTimer] = []
+    /// Trackballs (or maybe-trackballs) a check took out that IOHIDManager hasn't removed.
+    private var checkRemovedTrackball = Set<Int>()
 
-    private func reconcileNow() {
+    /// One verdict per device that changes, each logged. A device check never makes a
+    /// "gone" verdict permanent: only a real removal does (`gone`).
+    private func reconcileNow(reason: String) {
         guard let listed = io.liveDevices() else { return }   // not listening: nothing to compare with
-        // IOHIDManager can still list a device that's gone (see deviceRemovedByManager), so
-        // only devices IOKit still has count, and never one whose removal already came.
+        var changed = false, doubtful = false
         // A key that isn't a registry ID (negative: its ID couldn't be read) can't be checked
         // against IOKit, so a check leaves it to IOHIDManager's own callbacks.
-        let live = listed.filter { $0.key > 0 && !gone.contains($0.key) && io.serviceIsAlive($0.key) }
-        var changed = false
-        for k in Array(devices.keys).sorted() where k > 0 && (live[k] == nil || live[k]?.identity != devices[k]) {
-            diagnostics.record("device check: a device left without a removal")
-            gone.insert(k)
-            deviceRemoved(key: k)   // its releases, exactly as an unplug
-            changed = true
+        for k in Array(devices.keys).sorted() where k > 0 {
+            let entry = listed[k]
+            let byManager = addedByManager.contains(k)
+            // IOHIDManager can still list a device that's gone (see deviceRemovedByManager), so
+            // a device only stays while IOKit still has its service. One the manager added stays
+            // even before the manager lists it; one a check added, only while it's listed.
+            let alive = io.serviceIsAlive(k)
+            if !alive || (!byManager && entry == nil) {
+                deviceEvent("device check (\(reason)): key \(Self.describe(k)) left without a removal: "
+                            + "\(alive ? "" : "not alive, ")\(entry == nil ? "not listed" : "listed")\(byManager ? ", added by the manager" : "")")
+                let trackball = deviceSupported[k] == true || (incomplete.contains(k) && (devices[k]?.vendorID ?? DeviceIdentity.kensingtonVendorID) == DeviceIdentity.kensingtonVendorID)
+                if trackball && byManager { checkRemovedTrackball.insert(k) }
+                deviceRemoved(key: k)   // its releases, exactly as an unplug; not `gone`: a later check can bring it back
+                if byManager || entry != nil { doubtful = true }
+                changed = true
+            } else if let entry, entry.identity != devices[k] {
+                updateIdentity(k, entry.identity, reason: "listed differently")
+                changed = true
+            }
         }
-        for (k, d) in live.sorted(by: { $0.key < $1.key }) where devices[k] == nil {
-            diagnostics.record("device check: a device arrived without an add")
+        for (k, d) in listed.sorted(by: { $0.key < $1.key }) where k > 0 && devices[k] == nil && !gone.contains(k) {
+            guard io.serviceIsAlive(k) else { continue }
+            deviceEvent("device check (\(reason)): key \(Self.describe(k)) arrived without an add")
+            if let device = d.device { keyByAddress[Self.address(device)] = k }
             deviceAdded(key: k, identity: d.identity, transport: d.transport, device: d.device, fromCheck: true)
             changed = true
         }
         lastCheck = io.now()
+        // A device taken out that IOHIDManager still has: look again a little later, in case
+        // IOKit was only slow to finish registering it.
+        if doubtful { scheduleRechecks() }
         if changed { publish() }
     }
+
+    private func scheduleRechecks() {
+        for t in recheckTimers { t.invalidate() }
+        recheckTimers = [0.5, 2, 6].map { delay in
+            io.schedule(delay, repeats: false) { [unowned self] in self.reconcileNow(reason: "recheck") }
+        }
+    }
+
+    /// A value from a device the engine doesn't have, and whose removal never came: it is
+    /// plugged in, so check now (at most once a second) rather than drop its input for good.
+    private func valueFromUnknown(_ k: Int) {
+        let now = io.now()
+        guard k > 0, !gone.contains(k), now - lastValueCheck >= 1 else { return }
+        lastValueCheck = now
+        deviceEvent("device check: values from key \(Self.describe(k)), which the engine doesn't have")
+        reconcileNow(reason: "values")
+    }
+
+    /// Device lifecycle facts (adds, removals, termination notices, check verdicts): the log,
+    /// and the last 30 for Help › Copy Connection Details. Keys, vendor and product IDs only.
+    private var deviceLines: [String] = []
+    private func deviceEvent(_ line: String) {
+        diagnostics.record(line)
+        deviceLines.append(String(format: "%.1f s  ", io.now() - startedAt) + line)
+        if deviceLines.count > 30 { deviceLines.removeFirst(deviceLines.count - 30) }
+    }
+    private lazy var startedAt: CFTimeInterval = io.now()
 
     // Self-heal: while the window or the menu is open, a "connected" trackball that has sent
     // nothing for a few seconds is checked again (`maintain`). Nothing runs while hidden.
     private var watched = false
     private var lastSupportedValue: CFTimeInterval = 0
     private var lastCheck: CFTimeInterval = 0
+    /// HID values taken from a supported trackball (scripts/engine-fuzz: a plugged-in trackball works).
+    private(set) var supportedValues = 0
 
     /// The window or the menu-bar panel is open (main thread → input thread). Opening
     /// checks the devices at once.
@@ -700,7 +849,7 @@ final class Engine {
         perform {
             guard on != self.watched else { return }
             self.watched = on
-            if on { self.reconcileNow() }
+            if on { self.reconcileNow(reason: "window open") }
         }
     }
 
@@ -709,7 +858,7 @@ final class Engine {
         guard watched, hid, deviceSupported.values.contains(true) else { return }
         let now = io.now()
         guard now - lastSupportedValue > 2, now - lastCheck > 1.5 else { return }
-        reconcileNow()
+        reconcileNow(reason: "quiet")
     }
 
     /// "Copy connection details" (Help menu, support info): what the engine believes and
@@ -745,6 +894,8 @@ final class Engine {
             let services = self.io.kensingtonServicesNow()
             lines.append("IOKit has \(services.count) Kensington HID device(s) registered now:")
             lines += services.map { "  " + $0 }
+            lines.append("Recent device events (seconds since launch, newest last):")
+            lines += self.deviceLines.isEmpty ? ["  none"] : self.deviceLines.map { "  " + $0 }
             let text = lines.joined(separator: "\n")
             self.io.toMain { done(text) }
         }
@@ -752,19 +903,32 @@ final class Engine {
 
     private static func describe(_ k: Int) -> String { k > 0 ? "0x" + String(k, radix: 16) : "ptr" }
 
+    /// Vendor and product IDs, and whether a name is there (never the name itself: a
+    /// Bluetooth device can carry its owner's).
+    private static func describe(_ d: DeviceIdentity) -> String {
+        let vid = d.vendorID.map { String(format: "0x%04X", $0) } ?? "?"
+        let pid = d.productID.map { String(format: "0x%04X", $0) } ?? "?"
+        return "vendor \(vid) product \(pid) name \(d.name == nil ? "missing" : "yes")"
+    }
+
+    /// A trackball went away (unplugged, or no longer one Glideball works with): its button
+    /// releases will never come, so everything it held lets go, as at an unplug.
+    private func letGoOfTrackball() {
+        hidButtonsDown.removeAll()
+        releaseModes(.unplug)
+        letGoOfHeld()   // keys a held button had down, and buttons it was remapped to
+        // Presses still waiting to see if they're a combo: never replay them now, their
+        // releases will never come. Found by scripts/engine-fuzz.
+        pendingTimer?.invalidate()
+        pendingTimer = nil
+        for p in pending { overrides[p.button] = .swallow }
+        pending = []
+    }
+
     func deviceRemoved(key k: Int) {
-        if deviceSupported[k] == true {
-            // Unplugged mid-hold: its button releases will never come.
-            hidButtonsDown.removeAll()
-            releaseModes(.unplug)
-            letGoOfHeld()   // keys a held button had down, and buttons it was remapped to
-            // Presses still waiting to see if they're a combo: never replay them now, their
-            // releases will never come. Found by scripts/engine-fuzz.
-            pendingTimer?.invalidate()
-            pendingTimer = nil
-            for p in pending { overrides[p.button] = .swallow }
-            pending = []
-        }
+        // A device whose properties never all arrived may have been the trackball: let go as for one.
+        let maybeTrackball = incomplete.contains(k) && (devices[k]?.vendorID ?? DeviceIdentity.kensingtonVendorID) == DeviceIdentity.kensingtonVendorID
+        if deviceSupported[k] == true || maybeTrackball { letGoOfTrackball() }
         devices[k] = nil
         deviceSupported[k] = nil
         batteryDevices.remove(k)
@@ -773,6 +937,9 @@ final class Engine {
         transports[k] = nil
         hidBattery[k] = nil
         registryBattery[k] = nil
+        deviceObjects[k] = nil
+        incomplete.remove(k)
+        lastIdentityRead[k] = nil
         // No trackball left: its presses' overrides would otherwise outlive it and catch
         // another mouse's release of the same button (swallowed: stuck down). Found by
         // scripts/engine-fuzz. Whatever they held was let go of above.
@@ -797,10 +964,18 @@ final class Engine {
     func hidValue(_ value: IOHIDValue) {
         let element = IOHIDValueGetElement(value)
         let device = IOHIDElementGetDevice(element)
-        hidInput(key: cachedKey(device), identity: Self.identity(of: device),
+        hidInput(address: Self.address(device), fresh: Self.key(device), identity: Self.identity(of: device),
                  page: Int(IOHIDElementGetUsagePage(element)), usage: Int(IOHIDElementGetUsage(element)),
                  value: IOHIDValueGetIntegerValue(value), stamp: IOHIDValueGetTimeStamp(value),
                  logicalMin: IOHIDElementGetLogicalMin(element), logicalMax: IOHIDElementGetLogicalMax(element))
+    }
+
+    /// One HID value from the device object at `address` (scripts/engine-fuzz calls this
+    /// directly). `fresh` reads the device's registry ID, only when the cached key won't do.
+    func hidInput(address a: Int, fresh: @autoclosure () -> Int, identity: @autoclosure () -> DeviceIdentity,
+                  page: Int, usage: Int, value v: Int, stamp: UInt64, logicalMin: Int = 0, logicalMax: Int = 100) {
+        hidInput(key: resolveKey(address: a, fresh: fresh), identity: identity(), page: page, usage: usage, value: v,
+                 stamp: stamp, logicalMin: logicalMin, logicalMax: logicalMax)
     }
 
     /// One HID value from device `k` (scripts/engine-fuzz calls this directly).
@@ -808,16 +983,28 @@ final class Engine {
                   stamp: UInt64, logicalMin: Int = 0, logicalMax: Int = 100) {
         // Only devices that arrived (deviceAdded) count. A value delivered after its
         // device's removal used to re-add it here as supported, so "Connected" stayed
-        // on after an unplug until a relaunch.
-        guard devices[k] != nil else { return }
+        // on after an unplug until a relaunch. A device whose removal never came is
+        // plugged in, though: a check (at most once a second) brings it back.
+        if devices[k] == nil {
+            valueFromUnknown(k)
+            guard devices[k] != nil else { return }
+        }
+        if incomplete.contains(k) {   // its properties were missing something when it arrived
+            let now = io.now()
+            if now - (lastIdentityRead[k] ?? -1e9) >= 0.25 {
+                lastIdentityRead[k] = now
+                refreshIdentity(k) { identity() }
+            }
+        }
         let isK = isSupported(key: k, identity: identity)
         lastActiveIsKensington = isK
         if !isK, page == kHIDPage_GenericDesktop, usage == kHIDUsage_GD_X || usage == kHIDUsage_GD_Y, v != 0 {
-            lastOtherMotion = io.now()
+            lastMotionWasTrackball = false
             if anchor != nil { otherMovedSinceAnchor = true }
         }
         guard isK else { return }
         lastSupportedValue = io.now()
+        supportedValues &+= 1
 
         // The same hardware report can reach us twice (one device, two
         // matches). Each report has one hardware timestamp, so skip repeats.
@@ -829,7 +1016,7 @@ final class Engine {
         case (kHIDPage_GenericDesktop, kHIDUsage_GD_X):
             telemetry.addBall(dx: v, dy: 0)
             let now = io.now()
-            if v != 0 { lastKMotion = now; holdPointer() }
+            if v != 0 { lastKMotion = now; lastMotionWasTrackball = true; pendingTravel = min(pendingTravel + Int(min(v.magnitude, 1_000)), 1 << 30); holdForBallReport() }
             // A held gesture takes the ball (even over Scroll with ball): see GestureRoute.
             if gestures.isHeld { applyGesture(gestures.ball(dx: Double(v), dy: 0, now: now)); publishModes() }
             else if ballScrolling { scroller.addBallDelta(dx: Double(v) * ballSign, dy: 0) }
@@ -837,7 +1024,7 @@ final class Engine {
         case (kHIDPage_GenericDesktop, kHIDUsage_GD_Y):
             telemetry.addBall(dx: 0, dy: v)
             let now = io.now()
-            if v != 0 { lastKMotion = now; holdPointer() }
+            if v != 0 { lastKMotion = now; lastMotionWasTrackball = true; pendingTravel = min(pendingTravel + Int(min(v.magnitude, 1_000)), 1 << 30); holdForBallReport() }
             if gestures.isHeld { applyGesture(gestures.ball(dx: 0, dy: Double(v), now: now)); publishModes() }
             else if ballScrolling { scroller.addBallDelta(dx: 0, dy: Double(v) * ballSign) }
             watchDisplay(now: now)
@@ -959,7 +1146,10 @@ final class Engine {
             cancelGesture(.tapDisabled)
             // The pointer moved freely while the tap was off; a hold still on (a keyboard
             // Scroll with ball) keeps it where it is now instead of pulling it back.
-            if anchor != nil { otherMovedSinceAnchor = true }
+            if anchor != nil, let p = io.cursorLocation() {
+                anchor = p   // here and now: the trackball's next move may already be on its way
+                otherMovedSinceAnchor = false
+            }
             appButtons = io.buttonsDown()   // what went by while it was off
             syncTap()
             if let moveTap { io.tapEnable(moveTap, true) }
@@ -971,10 +1161,16 @@ final class Engine {
             return pass   // our own events
         case .mouseMoved where anchor != nil && trackballMoving:
             // The pointer is held: the trackball's moves never reach apps, in any app.
+            holdStats.tapMoves += 1
             holdPointer()
             return nil
+        case .mouseMoved where anchor != nil:
+            followOtherMouse()   // another mouse's move: the hold moves with it
+            return pass
         case .leftMouseDragged, .rightMouseDragged, .otherMouseDragged:
-            if anchor != nil && trackballMoving { holdPointer() }
+            if anchor != nil {
+                if trackballMoving { holdStats.tapDrags += 1; holdPointer() } else { followOtherMouse() }
+            }
             return handleButton(event, .drag)
         case .mouseMoved where dragLocked:
             // macOS may not count our synthetic press as a held button, so it
@@ -1076,6 +1272,11 @@ final class Engine {
     /// Longest a combo button's press is ever held back while more fingers land.
     private static let comboMaxWait: TimeInterval = 0.16
     private var pendingStart: CFTimeInterval = 0
+    /// The trackball's roll (HID counts, |x| + |y|) since the first waiting press.
+    private var pendingTravel = 0
+    /// Less roll than this while a combo button waits is the hand settling, not a drag
+    /// (under the gestures' tap slop, about 0.75 mm).
+    private static let comboMoveSlop = 12
 
     private var pending: [(button: Int64, event: CGEvent)] = []
     private var pendingTimer: EngineTimer?
@@ -1198,6 +1399,13 @@ final class Engine {
         // A combo member still waiting: anything else it does means "not a combo".
         // Replay the held press first, then post this event after it, so macOS
         // always sees press → drag → release in order (never a stuck button).
+        // Except the ball barely turning under the hand pressing the buttons (a few counts,
+        // by the trackball's own HID reports): that drag is nobody's yet, so it's dropped and
+        // the wait goes on. It used to end the wait, so a combo (a gesture on two buttons
+        // most of all, pressed with the hand on the ball) often never formed.
+        if phase == .drag, hid, pendingTravel < Self.comboMoveSlop, pending.contains(where: { $0.button == button }) {
+            return nil
+        }
         if phase != .down, pending.contains(where: { $0.button == button }) {
             flushPending()
             postInOrder(handleButton(event, phase))
@@ -1284,6 +1492,7 @@ final class Engine {
             fireCombo(exact)
         } else if pending.count == 1 {
             pendingStart = io.now()
+            pendingTravel = 0
             scheduleComboWindow(Self.comboWindow)
         } else if biggerPossible {
             // A partner arrived and a bigger combo is still possible: give the
@@ -1559,8 +1768,12 @@ final class Engine {
         if frozen, anchor == nil {
             anchor = io.cursorLocation()
             otherMovedSinceAnchor = false
+            holdStats = HoldStats()
         } else if !frozen {
+            if anchor != nil { logHoldStats() }
             anchor = nil
+            holdRecheck?.invalidate()
+            holdRecheck = nil
         }
         io.freezePointer(frozen)
         syncMoveTap()
@@ -1570,26 +1783,80 @@ final class Engine {
     private var anchor: CGPoint?                     // where the pointer stays while frozen
     private var otherMovedSinceAnchor = false        // another mouse moved the pointer while it's held
     private var lastKMotion: CFTimeInterval = -1     // the trackball's ball moved (HID)
-    private var lastOtherMotion: CFTimeInterval = -1 // another mouse moved (HID); the trackpad never shows up here
+    private var lastMotionWasTrackball = false       // the latest HID movement was the trackball's, not
+                                                     // another mouse's (the trackpad never shows up here)
+    private var holdRecheck: EngineTimer?            // looks again just after the trackball's reports
+
+    /// What one hold saw, for the log (the hold can't be watched on real hardware any other way).
+    private struct HoldStats {
+        var hidMoves = 0, tapMoves = 0, tapDrags = 0, warps = 0, failedWarps = 0, rechecks = 0
+        var maxOffset = 0.0
+    }
+    private var holdStats = HoldStats()
+
+    private func logHoldStats() {
+        let s = holdStats
+        guard s.hidMoves > 0 || s.tapMoves > 0 || s.tapDrags > 0 else { return }
+        diagnostics.record(String(format: "pointer hold: %d ball reports, tap saw %d moves %d drags, %d warps (%d failed, %d on a recheck), furthest %.0f pt",
+                                  s.hidMoves, s.tapMoves, s.tapDrags, s.warps, s.failedWarps, s.rechecks, s.maxOffset))
+    }
 
     /// The latest movement came from the trackball (its HID report, just now), not another mouse.
     private var trackballMoving: Bool {
-        hid && lastKMotion >= lastOtherMotion && io.now() - lastKMotion < 0.25
+        hid && lastMotionWasTrackball && io.now() - lastKMotion < 0.25
     }
 
     /// Puts the pointer back on its anchor if the trackball moved it. Another mouse moving
     /// in the meantime moves the anchor with it (its movement is the person's, not the ball's).
-    private func holdPointer() {
-        guard let a = anchor, let tap, io.tapIsEnabled(tap) else { return }   // no tap: never fight the pointer
-        guard let p = io.cursorLocation() else { return }
+    @discardableResult
+    private func holdPointer() -> Bool {
+        guard let a = anchor, let tap, io.tapIsEnabled(tap) else { return false }   // no tap: never fight the pointer
+        guard let p = io.cursorLocation() else { return false }
         if otherMovedSinceAnchor {
             anchor = p
             otherMovedSinceAnchor = false
-            return
+            return false
         }
-        guard abs(p.x - a.x) > 0.5 || abs(p.y - a.y) > 0.5 else { return }
-        io.warpPointer(a)
+        let offset = max(abs(p.x - a.x), abs(p.y - a.y))
+        guard offset > 0.5 else { return false }
+        holdStats.maxOffset = max(holdStats.maxOffset, Double(offset))
+        holdStats.warps += 1
+        if !io.warpPointer(a) { holdStats.failedWarps += 1 }
+        return true
     }
+
+    /// Another mouse's move reached the tap (its HID report was the latest): the pointer is where
+    /// that mouse put it, so the hold stays there. Done here, as the move lands, rather than at
+    /// the trackball's next report, which may already have moved the pointer too.
+    private func followOtherMouse() {
+        guard anchor != nil, otherMovedSinceAnchor, !lastMotionWasTrackball, let p = io.cursorLocation() else { return }
+        anchor = p
+        otherMovedSinceAnchor = false
+    }
+
+    /// The trackball's own HID report while the pointer is held. That report usually reaches
+    /// the engine before WindowServer has moved the pointer for it, so a look right now finds
+    /// nothing to put back, and the move's tap event can't be counted on to follow (a held
+    /// button whose press apps never saw can make macOS send it as a plain move or not at all;
+    /// Kensington's own driver may deliver it later still). So the engine also looks again a
+    /// few milliseconds after each report, every 4 ms until the ball has been still for 16 ms:
+    /// the hold no longer depends on seeing a single move event. (Levi, beta 14 on an Expert
+    /// Mouse with KensingtonWorks' driver: the gesture fired but the pointer moved the whole time.)
+    private func holdForBallReport() {
+        guard anchor != nil else { return }
+        holdStats.hidMoves += 1
+        holdPointer()
+        guard holdRecheck == nil else { return }
+        holdRecheck = io.schedule(Self.holdRecheckInterval, repeats: true) { [unowned self] in
+            guard self.anchor != nil, self.io.now() - self.lastKMotion < 0.016 else {
+                self.holdRecheck?.invalidate()
+                self.holdRecheck = nil
+                return
+            }
+            if self.holdPointer() { self.holdStats.rechecks += 1 }
+        }
+    }
+    static let holdRecheckInterval = 0.004
 
     /// The plain-move tap is on while a Drag lock needs its moves turned into drags, or while
     /// the pointer is held (a keyboard Scroll with ball has no button down, so no drags).
@@ -1938,9 +2205,13 @@ final class Engine {
 
     /// Fires `action` on the key queue. A click on a button apps already see down would be
     /// a second press of a held button (and its release would let go of the held one), so
-    /// it's skipped. Input thread.
+    /// it's skipped. So is one on a trackball button that is held and waiting for a combo
+    /// partner: its press reaches apps when the wait ends (often at the very next drag), and
+    /// this click, still on the key queue, would land after it as a second press. Found by
+    /// scripts/engine-fuzz (a gesture firing Back, or a left click, while that button waited).
+    /// Input thread.
     private func fireLater(_ action: ButtonAction) {
-        if let b = action.clickButton, appButtons.contains(b) {
+        if let b = action.clickButton, appButtons.contains(b) || pending.contains(where: { $0.button == b }) {
             diagnostics.record("click on button \(b) skipped: it's already down")
             return
         }

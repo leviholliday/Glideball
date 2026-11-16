@@ -36,9 +36,11 @@ class EngineIO {
     /// Puts the pointer back at `point` while it's held (any app in front). Warping starts a
     /// short suppression of local mouse events; associating again right after ends it, and
     /// keeps the pointer dissociated from the ball, as it is while held.
-    func warpPointer(_ point: CGPoint) {
-        CGWarpMouseCursorPosition(point)
+    /// False if macOS refused the warp (logged per hold, so a real-hardware report says so).
+    func warpPointer(_ point: CGPoint) -> Bool {
+        let result = CGWarpMouseCursorPosition(point)
         _ = CGAssociateMouseAndMouseCursorPosition(0)
+        return result == .success
     }
 
     func post(_ event: CGEvent, tap: CGEventTapLocation) { event.post(tap: tap) }
@@ -190,6 +192,31 @@ class EngineIO {
         return true
     }
 
+    /// A device's properties as IOKit has them now (they can arrive after the device does).
+    func currentIdentity(_ key: Int, _ device: IOHIDDevice?) -> DeviceIdentity? { device.map(Engine.identity(of:)) }
+
+    /// Whether IOHIDManager managed to open this device. It opens each device it matches
+    /// and never tries again if that fails, and an unopened device sends no values. Asks for
+    /// one input element's last value, which reads the device's own memory, not the device
+    /// (`kIOReturnNotOpen` when it isn't open); if it isn't, opens it read-only, never seized,
+    /// exactly as the manager does. Returns "open", what the probe said instead, or nil when
+    /// there's nothing to ask (no device, as in scripts/engine-fuzz, or no input element).
+    func ensureOpen(_ key: Int, _ device: IOHIDDevice?) -> String? {
+        guard let device,
+              let elements = IOHIDDeviceCopyMatchingElements(device, nil, IOOptionBits(kIOHIDOptionsTypeNone)) as? [IOHIDElement],
+              let element = elements.first(where: {
+                  let t = IOHIDElementGetType($0)
+                  return t == kIOHIDElementTypeInput_Button || t == kIOHIDElementTypeInput_Misc || t == kIOHIDElementTypeInput_Axis
+              }) else { return nil }
+        let placeholder = IOHIDValueCreateWithIntegerValue(kCFAllocatorDefault, element, 0, 0)
+        var value = Unmanaged<IOHIDValue>.passUnretained(placeholder)
+        let probe = withExtendedLifetime(placeholder) { IOHIDDeviceGetValue(device, element, &value) }
+        if probe == kIOReturnSuccess { return "open" }
+        guard probe == kIOReturnNotOpen else { return String(format: "probe said 0x%08X (left alone)", UInt32(bitPattern: probe)) }
+        let opened = IOHIDDeviceOpen(device, IOOptionBits(kIOHIDOptionsTypeNone))
+        return "was not open; opened again (read-only): " + (opened == kIOReturnSuccess ? "ok" : String(format: "failed 0x%08X", UInt32(bitPattern: opened)))
+    }
+
     // MARK: Termination notices (a second signal beside IOHIDManager's removal callback)
 
     /// What a termination notice's refcon points at (kept alive in `terminationNotices`).
@@ -227,8 +254,16 @@ class EngineIO {
         if ok == KERN_SUCCESS { terminationNotices[key] = notice }
     }
 
+    /// Released notices are kept a while: a termination message already queued on the port
+    /// still arrives with its refcon after the notification is released, and a freed refcon
+    /// would hand the engine whatever key the memory held next.
+    private var retiredNotices: [Notice] = []
+
     func unwatchTermination(_ key: Int) {
-        if let n = terminationNotices.removeValue(forKey: key), n.object != 0 { IOObjectRelease(n.object) }
+        guard let n = terminationNotices.removeValue(forKey: key) else { return }
+        if n.object != 0 { IOObjectRelease(n.object) }
+        retiredNotices.append(n)
+        if retiredNotices.count > 64 { retiredNotices.removeFirst(retiredNotices.count - 64) }
     }
 
     /// Every Kensington HID device IOKit has registered right now, from a fresh matching
