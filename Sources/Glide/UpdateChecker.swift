@@ -39,6 +39,11 @@ final class UpdateChecker {
     private(set) var available: Update?
     private(set) var installState: InstallState = .idle
 
+    static let maxReleaseListBytes = 10_000_000
+    /// The biggest zip the updater will unpack (the app is a few MB), and how long unpacking may take.
+    static let maxZipBytes: Int64 = 300_000_000
+    static let unpackSeconds: TimeInterval = 120
+
     /// The newest releases, prereleases included (GitHub's "latest" never is one).
     static let releasesAPI = URL(string: "https://api.github.com/repos/leviholliday/glideball/releases?per_page=30")!
     /// What the app downloads when it updates itself. The same zip as
@@ -105,9 +110,12 @@ final class UpdateChecker {
     /// count; prereleases only with Early updates. A tag that reads like a
     /// prerelease ("2.4-beta.1") counts as one even if GitHub isn't told so.
     static func newest(in data: Data, includePrereleases: Bool) -> Update? {
-        guard let list = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else { return nil }
-        return list.compactMap { json -> (GlideVersion, Update)? in
-            guard json["draft"] as? Bool != true,
+        // 30 releases with their notes are well under a megabyte; anything past this isn't GitHub's answer.
+        guard data.count <= maxReleaseListBytes,
+              let list = try? JSONSerialization.jsonObject(with: data) as? [Any] else { return nil }
+        return list.compactMap { item -> (GlideVersion, Update)? in
+            // One odd entry (a null, a string) costs only itself, not every update after it.
+            guard let json = item as? [String: Any], json["draft"] as? Bool != true,
                   let update = parse(json), let version = GlideVersion(update.version),
                   includePrereleases || !update.isPrerelease else { return nil }
             return (version, update)
@@ -117,14 +125,20 @@ final class UpdateChecker {
 
     /// One release from the GitHub API.
     static func parse(_ json: [String: Any]) -> Update? {
-        guard let tag = json["tag_name"] as? String,
-              let page = (json["html_url"] as? String).flatMap(URL.init(string:)) else { return nil }
+        // Links come from the release list: only https ones are ever opened or downloaded
+        // (the page is handed to the browser, so a file: or custom-scheme link would be an app launcher).
+        func secure(_ string: String?) -> URL? {
+            guard let url = string.flatMap(URL.init(string:)), url.scheme?.lowercased() == "https", url.host?.isEmpty == false else { return nil }
+            return url
+        }
+        guard let tag = json["tag_name"] as? String, !tag.isEmpty, tag.count <= 64,
+              let page = secure(json["html_url"] as? String) else { return nil }
         let assets = json["assets"] as? [[String: Any]] ?? []
         let zip = downloadURL(in: assets)
         let version = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
         return Update(version: version,
                       page: page,
-                      download: zip.flatMap(URL.init(string:)),
+                      download: secure(zip),
                       notes: json["body"] as? String ?? "",
                       isPrerelease: json["prerelease"] as? Bool == true || GlideVersion(version)?.isPrerelease == true)
     }
@@ -188,47 +202,96 @@ final class UpdateChecker {
     }
 
     /// Unpacks the downloaded zip and returns the new Glide.app — only if it's
-    /// genuinely ours and genuinely the advertised version.
-    static func prepare(zip: URL, expectedVersion: String) throws -> URL {
-        let work = FileManager.default.temporaryDirectory
-            .appendingPathComponent("GlideUpdate-\(UUID().uuidString)", isDirectory: true)
-        try FileManager.default.createDirectory(at: work, withIntermediateDirectories: true)
+    /// genuinely ours and genuinely the advertised version. `bundleID` and
+    /// `requirement` are the running app's own unless a test names others.
+    static func prepare(zip: URL, expectedVersion: String,
+                        bundleID: String? = Bundle.main.bundleIdentifier,
+                        requirement: SecRequirement? = nil) throws -> URL {
+        let fm = FileManager.default
+        let size = (try? fm.attributesOfItem(atPath: zip.path)[.size] as? Int64) ?? 0
+        guard size > 0, size <= maxZipBytes else {
+            throw UpdateError(String(localized: "The download isn’t the expected Glideball \(expectedVersion)."))
+        }
+        let work = fm.temporaryDirectory.appendingPathComponent("GlideUpdate-\(UUID().uuidString)", isDirectory: true)
+        try fm.createDirectory(at: work, withIntermediateDirectories: true)
+        do {
+            return try unpack(zip: zip, into: work, expectedVersion: expectedVersion, bundleID: bundleID, requirement: requirement)
+        } catch {
+            try? fm.removeItem(at: work)   // a refused or broken download leaves nothing behind
+            throw error
+        }
+    }
+
+    private static func unpack(zip: URL, into work: URL, expectedVersion: String,
+                               bundleID: String?, requirement: SecRequirement?) throws -> URL {
+        let fm = FileManager.default
         let unzip = Process()
         unzip.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
         unzip.arguments = ["-x", "-k", zip.path, work.path]
+        let finished = DispatchSemaphore(value: 0)
+        unzip.terminationHandler = { _ in finished.signal() }
         try unzip.run()
-        unzip.waitUntilExit()
+        if finished.wait(timeout: .now() + unpackSeconds) == .timedOut {
+            unzip.terminate()   // a zip bomb or a stuck unpack
+            throw UpdateError(String(localized: "Couldn’t unpack the update."))
+        }
         guard unzip.terminationStatus == 0 else { throw UpdateError(String(localized: "Couldn’t unpack the update.")) }
 
-        // "Glideball.app" since 2.8; older releases unpack "Glide.app".
-        let app = ["Glideball.app", "Glide.app"].map { work.appendingPathComponent($0) }
-            .first { FileManager.default.fileExists(atPath: $0.path) } ?? work.appendingPathComponent("Glideball.app")
-        guard let info = Bundle(url: app)?.infoDictionary,
-              info["CFBundleIdentifier"] as? String == Bundle.main.bundleIdentifier,
+        // "Glideball.app" since 2.8; older releases unpack "Glide.app". It must be a real folder
+        // that came out of the zip: a link (to the installed app, say) would pass the checks below
+        // by being the very thing they trust, and then be moved into place as a link.
+        func isRealFolder(_ url: URL) -> Bool {
+            guard let type = try? fm.attributesOfItem(atPath: url.path)[.type] as? FileAttributeType else { return false }
+            return type == .typeDirectory   // attributesOfItem doesn't follow a final link
+        }
+        let app = ["Glideball.app", "Glide.app"].map { work.appendingPathComponent($0) }.first { isRealFolder($0) }
+            ?? work.appendingPathComponent("Glideball.app")
+        guard isRealFolder(app), let info = Bundle(url: app)?.infoDictionary,
+              info["CFBundleIdentifier"] as? String == bundleID,
               info["CFBundleShortVersionString"] as? String == expectedVersion else {
             throw UpdateError(String(localized: "The download isn’t the expected Glideball \(expectedVersion)."))
         }
-        try verifySignature(of: app)
+        try verifySignature(of: app, against: requirement)
         return app
     }
 
     /// The new app must satisfy the running app's own designated requirement:
-    /// same signing certificate, same identifier.
-    static func verifySignature(of app: URL) throws {
-        var me: SecCode?
-        var requirement: SecRequirement?
-        var staticMe: SecStaticCode?
-        guard SecCodeCopySelf([], &me) == errSecSuccess, let me,
-              SecCodeCopyStaticCode(me, [], &staticMe) == errSecSuccess, let staticMe,
-              SecCodeCopyDesignatedRequirement(staticMe, [], &requirement) == errSecSuccess, let requirement else {
-            throw UpdateError(String(localized: "Couldn’t read Glideball’s own signature to compare against."))
+    /// same signing certificate, same identifier. (`requirement`: a test's own.)
+    static func verifySignature(of app: URL, against pinned: SecRequirement? = nil) throws {
+        var requirement = pinned
+        if requirement == nil {
+            var me: SecCode?
+            var staticMe: SecStaticCode?
+            guard SecCodeCopySelf([], &me) == errSecSuccess, let me,
+                  SecCodeCopyStaticCode(me, [], &staticMe) == errSecSuccess, let staticMe,
+                  SecCodeCopyDesignatedRequirement(staticMe, [], &requirement) == errSecSuccess, requirement != nil else {
+                throw UpdateError(String(localized: "Couldn’t read Glideball’s own signature to compare against."))
+            }
         }
         var candidate: SecStaticCode?
-        guard SecStaticCodeCreateWithPath(app as CFURL, [], &candidate) == errSecSuccess, let candidate,
+        guard let requirement, SecStaticCodeCreateWithPath(app as CFURL, [], &candidate) == errSecSuccess, let candidate,
               SecStaticCodeCheckValidity(candidate, SecCSFlags(rawValue: kSecCSCheckAllArchitectures), requirement) == errSecSuccess else {
             throw UpdateError(String(localized: "The update isn’t signed by Glideball’s developer, so it wasn’t installed."))
         }
     }
+
+    /// The helper's whole script. Arguments: $1 where the app lives, $2 where it is now (differs
+    /// only when Glide.app moves to Glideball.app), $3 the new app, $4 Glideball's process ID.
+    static let swapScript = """
+    current="$1"; old="$2"; new="$3"
+    while kill -0 "$4" 2>/dev/null; do sleep 0.2; done
+    rm -rf "$current.old"
+    [ -d "$current" ] && mv "$current" "$current.old"
+    if mv "$new" "$current"; then
+      rm -rf "$current.old"
+      [ "$old" != "$current" ] && rm -rf "$old"
+    else
+      rm -rf "$current"; [ -d "$current.old" ] && mv "$current.old" "$current"
+      current="$old"
+    fi
+    xattr -dr com.apple.quarantine "$current" 2>/dev/null
+    open "$current"
+    """
 
     /// Hands off to a tiny shell helper that swaps the app once Glide has quit.
     private func relaunch(into newApp: URL) {
@@ -236,24 +299,10 @@ final class UpdateChecker {
         let current = AppRename.installPath(for: Bundle.main.bundleURL).path
         let old = Bundle.main.bundleURL.path   // differs only when moving Glide.app → Glideball.app
         let pid = ProcessInfo.processInfo.processIdentifier
-        let script = """
-        current="\(current)"
-        while kill -0 \(pid) 2>/dev/null; do sleep 0.2; done
-        rm -rf "\(current).old"
-        [ -d "\(current)" ] && mv "\(current)" "\(current).old"
-        if mv "\(newApp.path)" "\(current)"; then
-          rm -rf "\(current).old"
-          [ "\(old)" != "\(current)" ] && rm -rf "\(old)"
-        else
-          rm -rf "\(current)"; [ -d "\(current).old" ] && mv "\(current).old" "\(current)"
-          current="\(old)"
-        fi
-        xattr -dr com.apple.quarantine "$current" 2>/dev/null
-        open "$current"
-        """
         let helper = Process()
         helper.executableURL = URL(fileURLWithPath: "/bin/sh")
-        helper.arguments = ["-c", script]
+        // The paths go in as arguments, never spliced into the script: a folder name with a quote or a $ in it can't change what runs.
+        helper.arguments = ["-c", Self.swapScript, "glideball-update", current, old, newApp.path, String(pid)]
         do {
             try helper.run()
         } catch {
