@@ -1,5 +1,13 @@
 [
  {
+  "body": "Fixed: Glideball kept saying Connected after you unplugged the trackball. Gestures and Scroll with ball now hold the pointer still in every app, not only in Glideball. Fixed a crash when copying a badge's share picture. The Settings window now fits on smaller screens, with new Trackball and Sharing tabs. Sliders and presets have a Try button, so you can test a change for 10 seconds before you keep it. New: Help > Copy Connection Details, for when something looks wrong.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `f52f1e536d61a651e5067cb70f4a169265998c0c540ee3494487bd8ca4253149`",
+  "date": "2026-11-13T08:43:17Z",
+  "name": "Glideball 2.10 beta 14",
+  "prerelease": true,
+  "tag": "v2.10-beta.14",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.14"
+ },
+ {
   "body": "Sharing, a new menu bar icon, and a clearer Privacy tab.\n• Sharing: when you share a setup, tick exactly what goes in it (pointer feel, scroll feel, buttons, combos, gestures, each app setup, ball color, sounds). The person opening it can untick parts before applying.\n• Optional name: the intro asks what to call you. It only shows on things you share, and you can turn it off in Settings › General › Sharing. It never goes in crash reports or stats.\n• Share links now open a page on the website that shows the settings in plain words, with an Import to Glideball button. The settings stay in the link itself and aren't stored anywhere. (The page goes live shortly; until then links still open in the app.)\n• A new menu bar icon, drawn for Glideball. It changes for paused, Precision, a held gesture, not connected and an update. Settings › General can show it in your ball color.\n• The intro mentions holding ⌥ while you drag a slider to try a value first.\n• Privacy has three clear choices and a live list of exactly what would be sent from this Mac.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `e11e7f741cffb8ec02b22c158d45cd0f31655f5a9abcdeaed43108a9b823d912`",
   "date": "2026-11-13T05:28:51Z",
   "name": "Glideball 2.10 beta 13",
