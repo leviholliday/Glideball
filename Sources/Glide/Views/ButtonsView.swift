@@ -20,6 +20,7 @@ struct ButtonsView: View {
     }
 
     var body: some View {
+        let _ = PerfProbe.count("ButtonsView")
         // Wide: the map on the left, staying in view; Quick Assign, presets, the list and combos on the right.
         // (The map and its labels need about 570 pt, so two columns wait for a roomy page.)
         PageColumns(share: 0.54, from: .roomy) {

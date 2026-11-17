@@ -11,9 +11,13 @@ import os
 /// Once a second it logs what was rebuilt ("RootView 0, TabPage 0, Group 3…"),
 /// and each count is also a signpost (Instruments › Points of Interest). While
 /// you scroll a page, everything should stay at 0 except the live light and the
-/// trackball, which only redraw themselves. `defaults delete … GlidePerfProbe` turns it off.
+/// trackball, which only redraw themselves (and hold still while the page scrolls).
+/// `defaults delete … GlidePerfProbe` turns it off. `--scroll-bench` reads the counts itself.
 enum PerfProbe {
-    static let enabled: Bool = !Sandbox.isActive && UserDefaults.standard.bool(forKey: "GlidePerfProbe")
+    static let enabled: Bool = Sandbox.mode == .scrollBench
+        || (!Sandbox.isActive && UserDefaults.standard.bool(forKey: "GlidePerfProbe"))
+    /// `--scroll-bench` reads the counts itself (`take()`): no log, no signposts, no timer.
+    private static let benchOnly = Sandbox.mode == .scrollBench
 
     private static let lock = NSLock()
     nonisolated(unsafe) private static var counts: [String: Int] = [:]
@@ -29,11 +33,18 @@ enum PerfProbe {
     }
 
     private static func record(_ name: StaticString) {
-        signposter.emitEvent("rebuild", "\(name, privacy: .public)")
+        if !benchOnly { signposter.emitEvent("rebuild", "\(name, privacy: .public)") }
         lock.lock()
         counts["\(name)", default: 0] += 1
-        if timer == nil { startReporting() }
+        if timer == nil && !benchOnly { startReporting() }
         lock.unlock()
+    }
+
+    /// The counts since the last call, and starts again from zero (`--scroll-bench`).
+    static func take() -> [String: Int] {
+        lock.lock()
+        defer { counts = [:]; lock.unlock() }
+        return counts.filter { $0.value > 0 }
     }
 
     /// Called with the lock held.
@@ -52,3 +63,4 @@ enum PerfProbe {
         timer = t
     }
 }
+

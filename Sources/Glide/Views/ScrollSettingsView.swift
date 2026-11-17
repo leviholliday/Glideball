@@ -11,6 +11,7 @@ struct ScrollSettingsView: View {
     private static let defaults = GlideConfig()
 
     var body: some View {
+        let _ = PerfProbe.count("ScrollSettingsView")
         let controls = ScrollControls(config: $model.config)
         // Wide: the mode and its controls on the left, "Try it here" and the mode's charts on the right.
         PageColumns {

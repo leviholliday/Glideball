@@ -65,6 +65,19 @@ final class LiveFeed {
     /// draw the light run a timeline only then, and an idle trackball costs nothing.
     private(set) var lightAwake = false
     @ObservationIgnored private var light = LightField()
+    /// The window's page is being scrolled: the live pictures (the light, the trackball,
+    /// the graphs) hold still on their last frame until it settles (`AppModel.pageMoved`).
+    /// Scrolling Glideball's own pages with the ring used to redraw them all, plus the
+    /// light over the whole window, under every frame of the scroll. Samples keep coming,
+    /// so when the page stops they carry on from where things are now.
+    private(set) var held = false
+    func hold(_ on: Bool) { if held != on { held = on } }
+
+    /// `--scroll-bench` only: an offscreen window has no display, so animation timelines
+    /// don't tick on their own; the bench bumps this at the rate they would (30 a second)
+    /// and the live views read it while their timeline would be running. Never changes in the app.
+    private(set) var benchFrame = 0
+    func benchTick() { if Sandbox.mode == .scrollBench && !held { benchFrame &+= 1 } }
     /// Renders hold the light where the last sample left it (no clock in a picture).
     @ObservationIgnored var lightClockFrozen = false
     /// How bright the hand's light gets, 0…1 (`AppModel.lightIntensity`).
@@ -376,7 +389,9 @@ struct LiveTimeline<Content: View>: View {
     @ViewBuilder var content: (LiveFeed, CFTimeInterval) -> Content
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: max(feed.interval, 1 / maxFPS), paused: !feed.isActive)) { _ in
+        TimelineView(.animation(minimumInterval: max(feed.interval, 1 / maxFPS), paused: !feed.isActive || feed.held)) { _ in
+            let _ = PerfProbe.count("LiveTimeline frame")
+            let _ = feed.isActive ? feed.benchFrame : 0
             content(feed, CACurrentMediaTime())
         }
     }

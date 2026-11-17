@@ -314,7 +314,12 @@ private struct SettingsScroller<Content: View>: View {
 
     var body: some View {
         ScrollViewReader { proxy in
-            ScrollView(.vertical) { content }
+            ScrollView(.vertical) {
+                // Groups line themselves up on pixels against the tab's content, which
+                // scrolling doesn't move (in the window's coordinates every group was
+                // measured again on every frame of a scroll), as the main window's pages do.
+                content.coordinateSpace(.named(PixelGrid.page))
+            }
                 .scrollBounceBehavior(.basedOnSize)
                 .scrollIndicators(.automatic)
                 .onChange(of: spot.row) { _, row in
