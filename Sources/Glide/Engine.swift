@@ -650,8 +650,23 @@ final class Engine {
                 }
             }
         }
+        classifyEchoes()
         syncTap()
         publish()
+    }
+
+    /// Unsupported devices that are really the trackball (its driver re-publishing its
+    /// movement as a pointer of its own): their movement is the trackball's, never "another
+    /// mouse". Asked again whenever a device comes, since either may arrive first.
+    private var echoDevices = Set<Int>()
+    private func classifyEchoes() {
+        let trackballs = Set(deviceSupported.filter { $0.value }.keys)
+        for (k, supported) in deviceSupported where !supported && !echoDevices.contains(k) {
+            if let why = io.echoReason(k, trackballs: trackballs) {
+                echoDevices.insert(k)
+                deviceEvent("device echo: key \(Self.describe(k)) is the trackball's own driver (\(why)); its movement counts as the trackball's")
+            }
+        }
     }
 
     /// IOHIDManager opens each device it matches, and doesn't try again if that fails (say
@@ -931,6 +946,7 @@ final class Engine {
         if deviceSupported[k] == true || maybeTrackball { letGoOfTrackball() }
         devices[k] = nil
         deviceSupported[k] = nil
+        echoDevices.remove(k)
         batteryDevices.remove(k)
         io.forgetDevice(k)
         io.unwatchTermination(k)
@@ -999,8 +1015,7 @@ final class Engine {
         let isK = isSupported(key: k, identity: identity)
         lastActiveIsKensington = isK
         if !isK, page == kHIDPage_GenericDesktop, usage == kHIDUsage_GD_X || usage == kHIDUsage_GD_Y, v != 0 {
-            lastMotionWasTrackball = false
-            if anchor != nil { otherMovedSinceAnchor = true }
+            otherDeviceMoved(k)
         }
         guard isK else { return }
         lastSupportedValue = io.now()
@@ -1016,7 +1031,7 @@ final class Engine {
         case (kHIDPage_GenericDesktop, kHIDUsage_GD_X):
             telemetry.addBall(dx: v, dy: 0)
             let now = io.now()
-            if v != 0 { lastKMotion = now; lastMotionWasTrackball = true; pendingTravel = min(pendingTravel + Int(min(v.magnitude, 1_000)), 1 << 30); holdForBallReport() }
+            if v != 0 { trackballMoved(now); pendingTravel = min(pendingTravel + Int(min(v.magnitude, 1_000)), 1 << 30); holdForBallReport() }
             // A held gesture takes the ball (even over Scroll with ball): see GestureRoute.
             if gestures.isHeld { applyGesture(gestures.ball(dx: Double(v), dy: 0, now: now)); publishModes() }
             else if ballScrolling { scroller.addBallDelta(dx: Double(v) * ballSign, dy: 0) }
@@ -1024,7 +1039,7 @@ final class Engine {
         case (kHIDPage_GenericDesktop, kHIDUsage_GD_Y):
             telemetry.addBall(dx: 0, dy: v)
             let now = io.now()
-            if v != 0 { lastKMotion = now; lastMotionWasTrackball = true; pendingTravel = min(pendingTravel + Int(min(v.magnitude, 1_000)), 1 << 30); holdForBallReport() }
+            if v != 0 { trackballMoved(now); pendingTravel = min(pendingTravel + Int(min(v.magnitude, 1_000)), 1 << 30); holdForBallReport() }
             if gestures.isHeld { applyGesture(gestures.ball(dx: 0, dy: Double(v), now: now)); publishModes() }
             else if ballScrolling { scroller.addBallDelta(dx: 0, dy: Double(v) * ballSign) }
             watchDisplay(now: now)
@@ -1149,6 +1164,7 @@ final class Engine {
             if anchor != nil, let p = io.cursorLocation() {
                 anchor = p   // here and now: the trackball's next move may already be on its way
                 otherMovedSinceAnchor = false
+                anchorBeforeFollow = nil
             }
             appButtons = io.buttonsDown()   // what went by while it was off
             syncTap()
@@ -1162,14 +1178,16 @@ final class Engine {
         case .mouseMoved where anchor != nil && trackballMoving:
             // The pointer is held: the trackball's moves never reach apps, in any app.
             holdStats.tapMoves += 1
-            holdPointer()
-            return nil
+            holdPointer(seen: event.location)
+            // Another mouse moved with the ball just now: this move may be its, so it goes
+            // through (the pointer is put back all the same). A known echo device's never does.
+            return io.now() - sharedMotionAt < Self.echoWindow ? pass : nil
         case .mouseMoved where anchor != nil:
-            followOtherMouse()   // another mouse's move: the hold moves with it
+            followOtherMouse(at: event.location)   // another mouse's move: the hold moves with it
             return pass
         case .leftMouseDragged, .rightMouseDragged, .otherMouseDragged:
             if anchor != nil {
-                if trackballMoving { holdStats.tapDrags += 1; holdPointer() } else { followOtherMouse() }
+                if trackballMoving { holdStats.tapDrags += 1; holdPointer(seen: event.location) } else { followOtherMouse(at: event.location) }
             }
             return handleButton(event, .drag)
         case .mouseMoved where dragLocked:
@@ -1769,6 +1787,7 @@ final class Engine {
         if frozen, anchor == nil {
             anchor = io.cursorLocation()
             otherMovedSinceAnchor = false
+            anchorBeforeFollow = nil
             holdStats = HoldStats()
         } else if !frozen {
             if anchor != nil { logHoldStats() }
@@ -1786,20 +1805,47 @@ final class Engine {
     private var lastKMotion: CFTimeInterval = -1     // the trackball's ball moved (HID)
     private var lastMotionWasTrackball = false       // the latest HID movement was the trackball's, not
                                                      // another mouse's (the trackpad never shows up here)
+    private var otherMoveAt: CFTimeInterval = -1     // another device's movement that counted as another mouse's
+    private var otherMoveKey = 0                     // ...and which device it was
+    private var anchorBeforeFollow: CGPoint?         // where the hold was before it last followed another mouse
+    private var followAt: CFTimeInterval = -1        // ...and when it followed
+    private var sharedMotionAt: CFTimeInterval = -1  // another device moved with the trackball (counted as its)
     private var holdRecheck: EngineTimer?            // looks again just after the trackball's reports
+
+    /// Movement from another device this close to one of the trackball's reports (before or
+    /// after) is the trackball's: a driver re-publishing the ball's movement as a pointer of its
+    /// own, say. Only a different device moving while the trackball hasn't reported for this long
+    /// is "another mouse" that the hold follows. (Levi, betas 16 and 17: every hold logged
+    /// "0 warps … furthest 0 pt" while the pointer moved with the ball.)
+    static let echoWindow = 0.03
 
     /// What one hold saw, for the log (the hold can't be watched on real hardware any other way).
     private struct HoldStats {
         var hidMoves = 0, tapMoves = 0, tapDrags = 0, warps = 0, failedWarps = 0, rechecks = 0
         var maxOffset = 0.0
+        /// Times the hold moved to follow another mouse, by device key; and how many of those
+        /// the trackball reported within `echoWindow` of, so they were put back.
+        var follows: [Int: Int] = [:], followsUndone = 0
+        /// Other devices' movement counted as the trackball's (`echoWindow`, or a known echo device), by key.
+        var echoes: [Int: Int] = [:]
+        /// A trackball move event said the pointer had moved while macOS's location said it hadn't,
+        /// and times macOS gave no location at all.
+        var queryLagged = 0, noLocation = 0
     }
     private var holdStats = HoldStats()
 
     private func logHoldStats() {
         let s = holdStats
-        guard s.hidMoves > 0 || s.tapMoves > 0 || s.tapDrags > 0 else { return }
+        guard s.hidMoves > 0 || s.tapMoves > 0 || s.tapDrags > 0 || !s.follows.isEmpty else { return }
+        func byKey(_ d: [Int: Int]) -> String {
+            d.isEmpty ? "" : " (" + d.sorted { $0.key < $1.key }.map { "\(Self.describe($0.key)) ×\($0.value)" }.joined(separator: ", ") + ")"
+        }
         diagnostics.record(String(format: "pointer hold: %d ball reports, tap saw %d moves %d drags, %d warps (%d failed, %d on a recheck), furthest %.0f pt",
-                                  s.hidMoves, s.tapMoves, s.tapDrags, s.warps, s.failedWarps, s.rechecks, s.maxOffset))
+                                  s.hidMoves, s.tapMoves, s.tapDrags, s.warps, s.failedWarps, s.rechecks, s.maxOffset)
+                           + "; followed another mouse \(s.follows.values.reduce(0, +)) times\(byKey(s.follows))"
+                           + (s.followsUndone > 0 ? ", \(s.followsUndone) put back (the trackball reported with it)" : "")
+                           + "; other devices' movement counted as the trackball's \(s.echoes.values.reduce(0, +)) times\(byKey(s.echoes))"
+                           + "; macOS's location behind the move event \(s.queryLagged) times, missing \(s.noLocation) times")
     }
 
     /// The latest movement came from the trackball (its HID report, just now), not another mouse.
@@ -1807,20 +1853,73 @@ final class Engine {
         hid && lastMotionWasTrackball && io.now() - lastKMotion < 0.25
     }
 
+    /// The trackball's ball moved (HID). Another device's movement just before it was this
+    /// movement too (an echo that arrived first): it no longer counts as another mouse's, and
+    /// if the hold already followed it, the hold goes back to where it was.
+    private func trackballMoved(_ now: CFTimeInterval) {
+        if now - otherMoveAt < Self.echoWindow {
+            if otherMovedSinceAnchor {
+                otherMovedSinceAnchor = false
+                if anchor != nil { holdStats.echoes[otherMoveKey, default: 0] += 1 }
+            }
+            if !echoDevices.contains(otherMoveKey) { sharedMotionAt = otherMoveAt }
+            if let before = anchorBeforeFollow, anchor != nil, now - followAt < Self.echoWindow {
+                anchor = before
+                holdStats.followsUndone += 1
+            }
+            otherMoveAt = -1
+        }
+        anchorBeforeFollow = nil
+        lastKMotion = now
+        lastMotionWasTrackball = true
+    }
+
+    /// Another device's X or Y moved (HID). It's another mouse only if it isn't the trackball's own
+    /// driver and the trackball hasn't reported within `echoWindow`; a report from the trackball
+    /// within `echoWindow` after it takes it back (`trackballMoved`).
+    private func otherDeviceMoved(_ k: Int) {
+        let now = io.now()
+        if echoDevices.contains(k) || now - lastKMotion < Self.echoWindow {
+            if anchor != nil { holdStats.echoes[k, default: 0] += 1 }
+            if !echoDevices.contains(k) { sharedMotionAt = now }
+            return
+        }
+        lastMotionWasTrackball = false
+        otherMoveAt = now
+        otherMoveKey = k
+        if anchor != nil { otherMovedSinceAnchor = true }
+    }
+
+    /// The hold moves to where another mouse put the pointer.
+    private func follow(to p: CGPoint) {
+        let now = io.now()
+        if anchorBeforeFollow == nil || now - followAt >= Self.echoWindow { anchorBeforeFollow = anchor }
+        followAt = now
+        anchor = p
+        otherMovedSinceAnchor = false
+        holdStats.follows[otherMoveKey, default: 0] += 1
+    }
+
     /// Puts the pointer back on its anchor if the trackball moved it. Another mouse moving
     /// in the meantime moves the anchor with it (its movement is the person's, not the ball's).
+    /// `seen` is the location on the trackball's move event, when there is one: where WindowServer
+    /// put the pointer for that move. The pointer is put back if either it or macOS's answer for the
+    /// pointer's location is off the anchor, so the hold doesn't hang on one of them being current.
     @discardableResult
-    private func holdPointer() -> Bool {
+    private func holdPointer(seen: CGPoint? = nil) -> Bool {
         guard let a = anchor, let tap, io.tapIsEnabled(tap) else { return false }   // no tap: never fight the pointer
-        guard let p = io.cursorLocation() else { return false }
+        let asked = io.cursorLocation()
+        if asked == nil { holdStats.noLocation += 1 }
         if otherMovedSinceAnchor {
-            anchor = p
-            otherMovedSinceAnchor = false
+            if let p = seen ?? asked { follow(to: p) }
             return false
         }
-        let offset = max(abs(p.x - a.x), abs(p.y - a.y))
+        func off(_ p: CGPoint?) -> Double { p.map { Double(max(abs($0.x - a.x), abs($0.y - a.y))) } ?? 0 }
+        let bySeen = off(seen), byAsked = off(asked)
+        if bySeen > 0.5, byAsked <= 0.5 { holdStats.queryLagged += 1 }
+        let offset = max(bySeen, byAsked)
         guard offset > 0.5 else { return false }
-        holdStats.maxOffset = max(holdStats.maxOffset, Double(offset))
+        holdStats.maxOffset = max(holdStats.maxOffset, offset)
         holdStats.warps += 1
         if !io.warpPointer(a) { holdStats.failedWarps += 1 }
         return true
@@ -1829,10 +1928,9 @@ final class Engine {
     /// Another mouse's move reached the tap (its HID report was the latest): the pointer is where
     /// that mouse put it, so the hold stays there. Done here, as the move lands, rather than at
     /// the trackball's next report, which may already have moved the pointer too.
-    private func followOtherMouse() {
-        guard anchor != nil, otherMovedSinceAnchor, !lastMotionWasTrackball, let p = io.cursorLocation() else { return }
-        anchor = p
-        otherMovedSinceAnchor = false
+    private func followOtherMouse(at seen: CGPoint?) {
+        guard anchor != nil, otherMovedSinceAnchor, !lastMotionWasTrackball, let p = seen ?? io.cursorLocation() else { return }
+        follow(to: p)
     }
 
     /// The trackball's own HID report while the pointer is held. That report usually reaches
