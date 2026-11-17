@@ -8,6 +8,7 @@ struct PointerView: View {
     private static let defaults = GlideConfig()
 
     var body: some View {
+        let _ = PerfProbe.count("PointerView")
         // Wide: how it feels (and the presets) on the left, the curve and each display's speed on the right.
         PageColumns {
             SectionBlock(title: "Feel",

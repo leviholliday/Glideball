@@ -305,6 +305,7 @@ struct Spotlight: ViewModifier {
                 }
             }
             .onContinuousHover(coordinateSpace: .local) { phase in
+                PerfProbe.count("Spotlight hover")
                 switch phase {
                 case .active(let p):
                     let screen = NSEvent.mouseLocation
@@ -340,6 +341,7 @@ private struct PixelAligned: ViewModifier {
         content
             .offset(nudge)
             .onGeometryChange(for: CGPoint.self) { $0.frame(in: .named(PixelGrid.page)).origin } action: { origin in
+                PerfProbe.count("PixelAligned change")
                 let s = max(scale, 1)
                 // `origin` already includes the current nudge.
                 let x = origin.x - nudge.width, y = origin.y - nudge.height

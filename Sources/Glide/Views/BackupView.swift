@@ -22,6 +22,7 @@ struct BackupView: View {
     @Bindable var model: AppModel
 
     var body: some View {
+        let _ = PerfProbe.count("BackupView")
         // Wide: sync, export and import on the left, the backups list on the right.
         PageColumns {
             SyncSection(model: model, sync: model.sync)

@@ -10,6 +10,8 @@ case .renderUI?:
     MainActor.assumeIsolated { RenderUI.start() }   // draws every screen offscreen, then exits
 case .selfTest?:
     MainActor.assumeIsolated { SelfTest.start() }   // the real launch path, sandboxed, then exits
+case .scrollBench?:
+    MainActor.assumeIsolated { ScrollBench.start() }   // times fast scrolling of every page offscreen, then exits
 case nil:
     let delegate = AppDelegate()
     app.delegate = delegate

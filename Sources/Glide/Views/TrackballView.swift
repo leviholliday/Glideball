@@ -43,7 +43,9 @@ struct TrackballView: View {
         let live = feed.isActive && look == .connected
         // The ball turns smoothly (up to 30 frames a second) while it's moving; the rest follows the samples.
         let interval = live ? min(feed.interval, 1.0 / 30) : 1 / max(drift, 1)
-        TimelineView(.animation(minimumInterval: interval, paused: !live && drift == 0)) { _ in
+        TimelineView(.animation(minimumInterval: interval, paused: (!live && drift == 0) || feed.held)) { _ in
+            let _ = PerfProbe.count("Trackball frame")
+            let _ = live ? feed.benchFrame : 0
             let now = CACurrentMediaTime()
             let light = live ? feed.lightLevels(at: now) : LightField.Levels()
             // The idle drift turns the ball on top of where the hand left it. Built from the

@@ -190,6 +190,21 @@ What isn't faithful:
 - Sync's "This Mac" row shows the real Mac's name, and app setups show icons of apps installed on the Mac that renders (a generic icon if one isn't).
 - `Context leak detected, CoreAnalytics returned false` in the output is macOS noise from the renderer, not an error.
 
+### Scrolling smoothness: `scripts/scroll-bench.sh`
+
+A third sandbox mode, `--scroll-bench` (`Sandbox/ScrollBench.swift`), measures how smoothly the window's own pages scroll while the trackball is in use. Each page (and Settings' General, Look and Shortcuts tabs, on a screen as tall as the window) is hosted at 980 × 680 and 1440 × 900, 2x, and scrolled fast down and back up at 120 Hz for 3 s, while the ring's notches and scrolled points go into the real `Telemetry` and the real 20 Hz sampler, so the light, the trackballs, the graphs and today's numbers change as they do in the app. It prints, per page, the main thread's work per frame (the scroll, SwiftUI's updates, layout, drawing, the commit, and timers and timelines that ran before the next frame) and Core Animation's renderer compositing the window into a Metal texture (median, 95th percentile, worst, frames over budget), the slowest frames, and how often the heavy views were rebuilt (`PerfProbe`).
+
+```sh
+scripts/scroll-bench.sh                              # every page, both sizes
+scripts/scroll-bench.sh --pages overview,pointer --sizes 980x680 --seconds 6
+scripts/scroll-bench.sh --no-hold                    # without holding the live pictures (as before beta 15)
+scripts/scroll-bench.sh --no-feed                    # just the scroll, nothing live
+```
+
+Other options: `--hz`, `--appearance light|dark`, `--performance smooth|efficient|minimal`, `--drive wheel|offset`, `--json file`, `--no-build`.
+
+Limits: it can't see WindowServer's own compositing or the display's timing, hover, or uneven event timing (its scroll steps are perfectly even), and the renderer redraws the whole window every frame. An offscreen window has no display, so animation timelines are ticked by the bench at 30 a second (`LiveFeed.benchTick`). By default the page's clip view is moved each frame: Glideball's own scroll events (`--drive wheel`) are queued by AppKit for a display refresh that never comes offscreen. Other work on the Mac (a build, another render) moves the numbers a lot, so compare runs made back to back.
+
 ### The self-test: `scripts/self-test.sh`
 
 Proves a build launches without launching it. `--self-test` runs `AppDelegate`'s real launch path (menus, model, hot keys, the launch animation choice, the main window, built but never shown), then draws every tab, the Settings window's five tabs, each Welcome Tour step, the sheets and panels, What's New, "Glideball has a new look" and frames of every launch animation, checks when What's New is due (after an update, never on a fresh install), which icon a Mac starts with (the Orb on a fresh install; the classic one and the question after an update), and that only one thing ever shows over the window (never over the launch animation, the tour or a sheet; What's New, then the icon question, then a link or file preview that had to wait (one with nothing in the way shows straight away), then the weekly recap, then the small favor), checks sharing end to end (Overview and a badge, earned and not, panel to post links), switches pages faster than their transition and with ⇧1–⇧6, checks when the Settings hint goes away, checks the crash-report scrubbing against the server's cases, checks that nothing went live (no engine, no visible window, not the active app), and runs the quit path. One line per step; exit 0 if all pass, 1 on a failure, a crash (the step is named) or a timeout (10 s). The script runs it twice: as a brand-new Mac (first-launch intro) and with `--returning` (a returning user's settings just after an update: short animation, then What's New). It takes about six seconds each.

@@ -767,7 +767,55 @@ final class AppModel {
     @ObservationIgnored private var lastDelightTick = 0.0
     /// The page is scrolling: today's numbers and the badges hold still (for up to a
     /// couple of seconds) so the gauges, charts and badge grid aren't rebuilt mid-scroll.
-    @ObservationIgnored var pageScrolling = false
+    @ObservationIgnored var pageScrolling = false {
+        didSet { if !pageScrolling { live.hold(false) } }
+    }
+    @ObservationIgnored private var lastPageMove = 0.0
+    @ObservationIgnored private var pageChanged = -Double.infinity
+    @ObservationIgnored private var pageSettleCheck: DispatchWorkItem?
+    /// `--scroll-bench --no-hold` turns this off, to measure the window as it was.
+    nonisolated(unsafe) static var holdWhileScrolling = true
+    /// How long the page has to be still before the live pictures carry on.
+    static let pageSettleDelay = 0.18
+
+    /// The window's page moved (every frame of a scroll, from `RootView`): the live
+    /// pictures and today's numbers hold still until it's been still for `pageSettleDelay`.
+    /// Glideball's own scroll engine posts plain scroll events with no phase, so this
+    /// goes by the page's offset rather than SwiftUI's scroll phase alone.
+    func pageMoved() {
+        // A new page settling into place (its insets, its first layout) isn't a scroll:
+        // holding then would only add work to the page change.
+        guard Self.holdWhileScrolling, CACurrentMediaTime() - pageChanged > 0.4 else { return }
+        lastPageMove = CACurrentMediaTime()
+        if !pageScrolling { pageScrolling = true }
+        live.hold(true)
+        guard pageSettleCheck == nil else { return }
+        schedulePageSettle(after: Self.pageSettleDelay)
+    }
+
+    /// One pending check at a time (not one per frame), pushed back while the page keeps moving.
+    private func schedulePageSettle(after delay: Double) {
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.pageSettleCheck = nil
+            let still = CACurrentMediaTime() - self.lastPageMove
+            if still >= Self.pageSettleDelay - 0.01 {
+                self.pageScrolling = false
+            } else {
+                self.schedulePageSettle(after: Self.pageSettleDelay - still)
+            }
+        }
+        pageSettleCheck = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
+    }
+
+    /// The page stopped being the scrolling one (another page, the window closing).
+    func pageStopped() {
+        pageChanged = CACurrentMediaTime()
+        pageSettleCheck?.cancel()
+        pageSettleCheck = nil
+        pageScrolling = false
+    }
     @ObservationIgnored private var lastClickCount = Int.max
     @ObservationIgnored private var lastSave = 0.0
 

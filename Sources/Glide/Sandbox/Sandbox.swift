@@ -24,12 +24,13 @@ import ObjectiveC
 /// `com.leviholliday.glide`): run them from a copy made by
 /// `scripts/render-ui.sh` / `scripts/self-test.sh`, or the bare binary.
 enum Sandbox {
-    enum Mode { case renderUI, selfTest }
+    enum Mode { case renderUI, selfTest, scrollBench }
 
     static let mode: Mode? = {
         let args = CommandLine.arguments
         if args.contains("--render-ui") { return .renderUI }
         if args.contains("--self-test") { return .selfTest }
+        if args.contains("--scroll-bench") { return .scrollBench }
         return nil
     }()
 
@@ -61,7 +62,7 @@ enum Sandbox {
         setvbuf(stdout, nil, _IOLBF, 0)
         if Bundle.main.bundleIdentifier == realBundleID {
             print("""
-            error: --render-ui and --self-test don't run as the real Glideball (\(realBundleID)).
+            error: --render-ui, --self-test and --scroll-bench don't run as the real Glideball (\(realBundleID)).
                    Use scripts/render-ui.sh or scripts/self-test.sh, which run a copy with its own bundle ID.
             """)
             exit(2)

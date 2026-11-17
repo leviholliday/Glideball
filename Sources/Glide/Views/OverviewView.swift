@@ -8,6 +8,7 @@ struct OverviewView: View {
     @Bindable var model: AppModel
 
     var body: some View {
+        let _ = PerfProbe.count("OverviewView")
         VStack(alignment: .leading, spacing: Theme.Space.section + 8) {
             // Wide: the instrument cluster on the left, what's live and what's next on the right.
             PageColumns(share: 0.55, spacing: Theme.Space.section + 8) {
@@ -89,23 +90,16 @@ struct TodayCluster: View {
     static let order: [Metric] = [.clicks, .scroll, .ball]
 
     var body: some View {
+        let _ = PerfProbe.count("TodayCluster")
         let dial: CGFloat = 368
-        ViewThatFits(in: .horizontal) {
-            // A wide page's column has room for a larger instrument (never on a narrow one).
-            if pageWidth.isWide {
-                HStack(alignment: .center, spacing: 32) {
-                    gauge(dial * 1.18)
-                    stats
-                }
-            }
-            HStack(alignment: .center, spacing: 28) {
-                gauge(dial)
-                stats
-            }
-            HStack(alignment: .center, spacing: 18) {
-                gauge(dial * 0.86)
-                stats
-            }
+        // The largest instrument that fits beside the numbers: on a wide page's column a
+        // larger one (never on a narrow one), then the usual, then a smaller one. It used to
+        // be a ViewThatFits of three copies of the cluster, which SwiftUI built again to
+        // measure on every frame of a scroll; this picks the size with one copy.
+        ClusterLayout(dials: (pageWidth.isWide ? [(dial * 1.18, 32)] : []) + [(dial, 28), (dial * 0.86, 18)]) {
+            // Drawn at the size it's given, never scaled.
+            GeometryReader { geo in gauge(geo.size.width) }
+            stats
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .onScrollVisibilityChange(threshold: 0.35) { visible in shell?.heroOnScreen = visible }
@@ -193,6 +187,37 @@ struct TodayCluster: View {
     }
 }
 
+/// The instrument and the numbers side by side, centered on each other, like an
+/// HStack: the first dial size (with its spacing) that leaves the numbers their ideal
+/// width, else the last. What ViewThatFits did with three alternatives, with one.
+private struct ClusterLayout: Layout {
+    /// (dial, spacing), in order of preference.
+    let dials: [(CGFloat, CGFloat)]
+
+    private func choice(for width: CGFloat?, stats: LayoutSubview) -> (dial: CGFloat, spacing: CGFloat) {
+        guard let width, let last = dials.last else { return dials.first ?? (368, 28) }
+        let ideal = stats.sizeThatFits(.unspecified).width
+        return dials.first { $0.0 + $0.1 + ideal <= width } ?? last
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        guard subviews.count == 2 else { return .zero }
+        let (d, sp) = choice(for: proposal.width, stats: subviews[1])
+        let width = proposal.width ?? (d + sp + subviews[1].sizeThatFits(.unspecified).width)
+        let stats = subviews[1].sizeThatFits(ProposedViewSize(width: max(width - d - sp, 0), height: nil))
+        return CGSize(width: width, height: max(d, stats.height))
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        guard subviews.count == 2 else { return }
+        let (d, sp) = choice(for: bounds.width, stats: subviews[1])
+        subviews[0].place(at: CGPoint(x: bounds.minX, y: bounds.midY), anchor: .leading,
+                          proposal: ProposedViewSize(width: d, height: d))
+        subviews[1].place(at: CGPoint(x: bounds.minX + d + sp, y: bounds.midY), anchor: .leading,
+                          proposal: ProposedViewSize(width: max(bounds.width - d - sp, 0), height: nil))
+    }
+}
+
 /// The scroll ring's ticks around the dial: 120 of them on the 270° the gauges use.
 private struct DialTicks: View {
     @Environment(\.colorScheme) private var scheme
@@ -241,6 +266,7 @@ private struct GaugeArc: View {
     static let span = 0.75   // of a full turn
 
     var body: some View {
+        let _ = PerfProbe.count("GaugeArc")
         let width: CGFloat = dial * 0.022
         let r = dial / 2 - dial * 0.045 - CGFloat(lane) * (width + dial * 0.016)
         let fill = min(max(shown, 0), 1) * Self.span
@@ -337,6 +363,7 @@ private struct ClusterStat: View {
     }
 
     var body: some View {
+        let _ = PerfProbe.count("ClusterStat")
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 6) {
                 StatusDot(color: metric.color, size: 7)
@@ -548,6 +575,7 @@ struct LiveChart: View {
     let ring: [Double]
 
     var body: some View {
+        let _ = PerfProbe.count("LiveChart")
         Canvas { context, size in
             trace(ring, floor: 10, color: Theme.ring, in: context, size: size)
             trace(ball, floor: 4, color: Theme.ball, in: context, size: size)

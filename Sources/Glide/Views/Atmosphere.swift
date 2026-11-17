@@ -55,6 +55,7 @@ struct StaticAtmosphere: View, Equatable {
     var strength = 1.0
 
     var body: some View {
+        let _ = PerfProbe.count("StaticAtmosphere")
         // Increase Contrast: the light steps back so text stays crisp.
         let k = contrast ? 0.5 : 1.0
         GeometryReader { geo in
@@ -217,13 +218,16 @@ private struct HandLight: View {
 }
 
 /// Redraws `content` with the hand's light levels, on a timeline that runs only
-/// while the light is awake (`LiveFeed.lightAwake`); at rest it's paused.
+/// while the light is awake (`LiveFeed.lightAwake`); at rest it's paused, and it
+/// holds its last frame while the page scrolls (`LiveFeed.held`).
 struct LiveLight<Content: View>: View {
     let feed: LiveFeed
     @ViewBuilder var content: (LightField.Levels) -> Content
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !feed.lightAwake)) { _ in
+        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !feed.lightAwake || feed.held)) { _ in
+            let _ = PerfProbe.count("Light frame")
+            let _ = feed.lightAwake ? feed.benchFrame : 0
             content(feed.lightLevels())
         }
     }

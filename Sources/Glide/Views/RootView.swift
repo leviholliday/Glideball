@@ -170,7 +170,12 @@ struct RootView: View {
                         // scrolling doesn't change (the window's coordinates would, every frame).
                         .coordinateSpace(.named(PixelGrid.page))
                     }
-                    .onScrollPhaseChange { _, phase in model.pageScrolling = phase != .idle }
+                    // While the page moves, the live pictures and today's numbers hold still (`AppModel.pageMoved`).
+                    // By the offset, since Glideball's own scroll events carry no phase.
+                    .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { old, new in
+                        if abs(new - old) >= 0.5 { model.pageMoved() }
+                    }
+                    .onScrollPhaseChange { _, phase in if phase != .idle { model.pageMoved() } }
                     .scrollIndicators(.automatic)
                     // Search found a row on this page: bring it into view as it lights up.
                     .onChange(of: spotlight.row) { _, row in
@@ -231,7 +236,7 @@ struct RootView: View {
     /// a fresh page instead of reviving the half-faded copy that's on its way out.
     private func select(_ new: GlideTab) {
         guard new != tab else { return }
-        model.pageScrolling = false   // the new page starts still
+        model.pageStopped()   // the new page starts still
         withAnimation(reduceMotion ? Theme.Motion.fade : Theme.Motion.tabChange) {
             tab = new
             pageID &+= 1
@@ -331,6 +336,7 @@ private struct Sidebar: View {
     @Environment(ShellState.self) private var shell: ShellState?
 
     var body: some View {
+        let _ = PerfProbe.count("Sidebar")
         // Overview's big trackball is on screen: this one steps down to a small status light.
         let compact = (shell?.heroOnScreen ?? false) && (tab == .overview || tab == .buttons)
         VStack(spacing: 0) {
