@@ -268,6 +268,7 @@ private struct PadCallout: View {
                     shape.fill(lit ? Theme.buttons.opacity(0.22) : hovering && button != 0 && !previewing ? Theme.hoverFill : Theme.groupFill)
                         .pixelBorder(shape, changing ? Theme.buttons : lit ? Theme.buttons.opacity(0.8) : Theme.groupBorder)
                         .shadow(color: lit || changing ? Theme.buttons.opacity(0.45) : .clear, radius: 8)
+                        .flattened(room: 20)
                 }
                 .contentShape(Rectangle())
             }
@@ -428,6 +429,7 @@ private struct PresetCard: View {
                 shape.fill(selected ? Theme.buttons.opacity(0.12) : hovering ? Theme.hoverFill : Theme.groupFill)
                     .pixelBorder(shape, selected ? Theme.buttons : applied ? Theme.ball.opacity(0.6) : Theme.groupBorder)
                     .shadow(color: selected ? Theme.buttons.opacity(0.35) : .clear, radius: 8)
+                    .flattened(room: 20)
             }
             .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
@@ -687,6 +689,7 @@ struct CornerGlyph: View {
             }
         }
         .frame(width: 26, height: 26)
+        .flattened(room: 10)   // its lit pad's glow, drawn once
         .accessibilityHidden(true)
     }
 }

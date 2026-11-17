@@ -89,6 +89,7 @@ private struct DisplaySpeedRow: View {
                         HStack(spacing: 4) {
                             Circle().fill(Theme.ball).frame(width: 6, height: 6)
                                 .shadow(color: Theme.ball, radius: 3)
+                                .flattened(room: 8)
                             Text("The pointer is here now")
                         }
                         .font(Theme.Font.hint)

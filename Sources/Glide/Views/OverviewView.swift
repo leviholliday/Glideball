@@ -368,6 +368,7 @@ private struct ClusterStat: View {
             HStack(spacing: 6) {
                 StatusDot(color: metric.color, size: 7)
                     .shadow(color: metric.color.opacity(0.8), radius: 3)
+                    .flattened(room: 8)
                 Text(label)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(.secondary)
