@@ -57,6 +57,12 @@ class EngineIO {
             .map { Int64($0) })
     }
 
+    /// Whether macOS has this one button down right now (any mouse).
+    func buttonDown(_ button: Int64) -> Bool {
+        guard let b = CGMouseButton(rawValue: UInt32(clamping: button)) else { return false }
+        return CGEventSource.buttonState(.combinedSessionState, button: b)
+    }
+
     // MARK: Threads and timers
 
     private let keyQueue = DispatchQueue(label: "glide.keys", qos: .userInteractive)
@@ -259,6 +265,32 @@ class EngineIO {
         guard probe == kIOReturnNotOpen else { return String(format: "probe said 0x%08X (left alone)", UInt32(bitPattern: probe)) }
         let opened = IOHIDDeviceOpen(device, IOOptionBits(kIOHIDOptionsTypeNone))
         return "was not open; opened again (read-only): " + (opened == kIOReturnSuccess ? "ok" : String(format: "failed 0x%08X", UInt32(bitPattern: opened)))
+    }
+
+    /// The trackball's buttons that are down right now by its own last report (CG numbers: HID
+    /// usage − 1), for buttons already held when the engine starts, the tap comes back or the
+    /// trackball arrives. Read-only and never blocking: each button is an input element, read
+    /// with `kIOHIDDeviceGetValueWithoutUpdate` (the value the device last reported, from the
+    /// device's own memory; no report is requested from the device, which is never seized).
+    /// Nil when it can't be told (no device, as in scripts/engine-fuzz, or not open).
+    func heldButtons(_ key: Int, _ device: IOHIDDevice?) -> Set<Int64>? {
+        guard let device else { return nil }
+        let match = [kIOHIDElementUsagePageKey: kHIDPage_Button] as CFDictionary
+        guard let elements = IOHIDDeviceCopyMatchingElements(device, match, IOOptionBits(kIOHIDOptionsTypeNone)) as? [IOHIDElement]
+        else { return nil }
+        var held = Set<Int64>()
+        for element in elements where IOHIDElementGetType(element) == kIOHIDElementTypeInput_Button {
+            let usage = Int(IOHIDElementGetUsage(element))
+            guard (1...32).contains(usage) else { continue }
+            let placeholder = IOHIDValueCreateWithIntegerValue(kCFAllocatorDefault, element, 0, 0)
+            var value = Unmanaged<IOHIDValue>.passUnretained(placeholder)
+            let result = withExtendedLifetime(placeholder) {
+                IOHIDDeviceGetValueWithOptions(device, element, &value, IOHIDDeviceGetValueOptions.withoutUpdate.rawValue)
+            }
+            guard result == kIOReturnSuccess else { return nil }   // not open: nothing to go on
+            if IOHIDValueGetIntegerValue(value.takeUnretainedValue()) != 0 { held.insert(Int64(usage - 1)) }
+        }
+        return held
     }
 
     // MARK: Termination notices (a second signal beside IOHIDManager's removal callback)
