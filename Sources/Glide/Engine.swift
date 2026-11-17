@@ -133,13 +133,71 @@ final class Engine {
     private var moveTapSource: CFRunLoopSource?
     /// Buttons apps currently see down: presses that passed the tap (or that Glideball
     /// posted, which pass it too) without their release yet.
-    private var appButtons = Set<Int64>()
+    /// Counted, since two devices can hold the same button: one's release mustn't make the
+    /// engine think the other's is up too.
+    private var appButtons = HeldButtons()
     private var leftDown: Bool { appButtons.contains(0) }   // Precision keeps drags drags
+    struct HeldButtons {
+        private var count: [Int64: Int] = [:]
+        func contains(_ b: Int64) -> Bool { (count[b] ?? 0) > 0 }
+        mutating func insert(_ b: Int64) { count[b, default: 0] += 1 }
+        mutating func remove(_ b: Int64) { count[b] = max(0, (count[b] ?? 0) - 1) }
+        /// What macOS says is down now (one each: it can't say how many hold it); counts
+        /// already known stay as they are (nothing went by unseen).
+        mutating func refresh(_ down: Set<Int64>) {
+            var next: [Int64: Int] = [:]
+            for b in down { next[b] = max(1, count[b] ?? 0) }
+            count = next
+        }
+        mutating func set(_ counts: [Int64: Int]) { count = counts }
+    }
     // Held modes end if their button's release is ever lost (see `checkHolds`).
     private var hidButtonsDown = Set<Int>()    // Kensington buttons physically down, per HID
-    private var hidButtonDownAt: [Int: CFTimeInterval] = [:]   // when each last went down
+    private var hidButtonsByDevice: [Int: Set<Int>] = [:]   // ...by trackball, so one leaving doesn't forget another's
     private var kensingtonReportsButtons = false   // its buttons reach us over HID at all
     private var hidButtonSeen = false          // HID has shown a press since the hold began
+    // Who pressed what (see `handleButton`). macOS doesn't say which device a click came from, so
+    // each CG press is given an owner when it arrives (the trackball's HID report of that button
+    // going down, claimed once), and each release is matched to an open press of the same owner,
+    // by the HID reports of the button going up. Input thread only. CG button numbers.
+    private var kOpen = Set<Int64>()           // the trackball's presses the engine saw, not yet released
+    private var kUnseen = Set<Int64>()         // the trackball's buttons held whose presses went by unseen
+    private var kTokens: [Int64: CFTimeInterval] = [:]   // its HID downs no CG press has claimed yet
+    private var kUpAt: [Int64: CFTimeInterval] = [:]     // its HID ups no CG release has claimed yet
+    private var kClaimedEarly: [Int64: CFTimeInterval] = [:]   // its presses taken without a HID report yet
+    private var kReleasedSince = Set<Int64>()  // open presses it has reported letting go of (release to come, or gone by)
+    private var postedForStale = Set<Int64>()  // a stale press's end was posted: the next press goes behind it
+    // Which release report came last (the trackball's or another device's), per button.
+    private var reportSeq = 0
+    private var kUpSeq: [Int64: Int] = [:]
+    private var oUpSeq: [Int64: Int] = [:]
+    // Releases matched before their own HID report came (its CG event first): that report,
+    // when it comes, is theirs, not news of another release. Trackball's and other devices'.
+    private var kMatchedEarly: [Int64: CFTimeInterval] = [:]
+    private var oMatchedEarly: [Int64: (at: CFTimeInterval, device: Int?)] = [:]   // nil: whichever device
+    /// Another device's press: which device reported it over HID (nil: none did, the trackpad),
+    /// and whether it ended a Drag lock (then it and its release never reach apps).
+    private struct OtherPress {
+        var device: Int?
+        var at: CFTimeInterval
+        var swallowed: Bool
+        var hidReleased = false   // its device has reported letting go; its CG release is to come
+        var reported: Bool { device != nil }
+    }
+    private var otherPresses: [Int64: [OtherPress]] = [:]   // other devices' presses, not yet released
+    private var oTokens: [Int64: (at: CFTimeInterval, device: Int)] = [:]   // other devices' HID downs, unclaimed
+    private var oUpAt: [Int64: CFTimeInterval] = [:]     // other devices' HID ups, unclaimed
+    private var oUpDevice: [Int64: Int] = [:]            // ...and whose
+    private var lastMoverIsTrackball = true    // the latest HID movement was the trackball's
+    private var deferredUps: [(button: Int64, event: CGEvent)] = []   // whose release it is isn't known yet
+    private var deferTimer: EngineTimer?
+    /// A HID report and its CG event are this close (either way round), as the old press check had it.
+    private static let ownerWindow: CFTimeInterval = 0.3
+    /// A press with no HID report of its own, this close before the trackball's report of that
+    /// button, was the trackball's (its CG event came first).
+    private static let lateReportWindow: CFTimeInterval = 0.05
+    /// Longest a release is held back while it isn't known whose it is.
+    private static let deferLimit: TimeInterval = 0.1
     private var holdStart: CFTimeInterval = 0
     private var holdReleasedChecks = 0
     private var holdFailsafe: EngineTimer?
@@ -288,6 +346,7 @@ final class Engine {
         guard isRunning else { return }
         let done = DispatchSemaphore(value: 0)
         perform {
+            self.resolveDeferredUps()   // a release waiting to be told apart goes out now (quit)
             self.letGoOfHeld()
             done.signal()
         }
@@ -413,6 +472,7 @@ final class Engine {
     /// the Mac wakes does nothing when it lifts. Precision switched on stays on.
     func releaseForSleep() {
         perform {
+            self.resolveDeferredUps()   // first: what it sets off is ended below like everything else
             self.cancelModifierWait(silently: true)
             self.cancelGesture(.sleep)   // a held gesture freezes the cursor too
             if self.ballScrolling { self.scroller.cancelBall() }
@@ -482,7 +542,7 @@ final class Engine {
     }
 
     private func setUp() {
-        appButtons = io.buttonsDown()   // a button held while Glideball (re)launches
+        noteButtonsAlreadyDown("start", clearTokens: true)   // a button held while Glideball (re)launches
         startListening()
         installTap()
         applyPointer()
@@ -502,7 +562,20 @@ final class Engine {
         maintainTicks += 1
         if maintainTicks % 30 == 0 { refreshBatteries() }
         healIfQuiet()
+        forgetReleasedOtherPresses()
         publish()
+    }
+
+    /// Another device's press that went through to apps, of a button macOS says is up: its
+    /// release went by unseen (the tap was off) and nothing reported it. Forgotten, so it's
+    /// never matched to a later release.
+    private func forgetReleasedOtherPresses() {
+        for (b, list) in otherPresses where list.contains(where: { !$0.swallowed }) && !io.buttonDown(b)
+            && !deferredUps.contains(where: { $0.button == b }) {
+            let kept = list.filter(\.swallowed)
+            otherPresses[b] = kept.isEmpty ? nil : kept
+            diagnostics.record("another device's press of button \(b) is up by macOS: forgotten")
+        }
     }
 
     /// The tracking speed right now (precedence: `PointerSpeed.effective`).
@@ -639,6 +712,9 @@ final class Engine {
             incomplete.remove(k)
         }
         if supported {
+            // A button already held as it arrives (plugged in, or the engine starting, with a
+            // finger on it): its press went by unseen, so its release does nothing mapped.
+            noteButtonsAlreadyDown("trackball added", clearTokens: false)
             io.watchTermination(k, device, engine: self, runLoop: runLoop)
             io.pointerDevicesChanged()
             // The HID service appears slightly after the device; apply twice to be sure.
@@ -927,9 +1003,23 @@ final class Engine {
     }
 
     /// A trackball went away (unplugged, or no longer one Glideball works with): its button
-    /// releases will never come, so everything it held lets go, as at an unplug.
-    private func letGoOfTrackball() {
-        hidButtonsDown.removeAll()
+    /// releases will never come, so everything it held lets go, as at an unplug. `k`: which one
+    /// (nil: any of them); another trackball still plugged in keeps what its own reports say.
+    private func letGoOfTrackball(_ k: Int? = nil) {
+        resolveDeferredUps()   // by what the reports have said so far
+        if let k { hidButtonsByDevice[k] = nil } else { hidButtonsByDevice.removeAll() }
+        hidButtonsDown = hidButtonsByDevice.values.reduce(into: Set<Int>()) { $0.formUnion($1) }
+        // Quick assign holding presses whose releases will never come: what it has, now.
+        if !learnHeld.isEmpty {
+            learnHeld.removeAll()
+            if let handler = learnHandler, !learnMax.isEmpty {
+                let result = learnMax
+                learnHandler = nil
+                io.toMain { handler(result) }
+            }
+        }
+        kUnseen.removeAll()   // their releases, if they come, are nobody's (`unseenRelease`)
+        kTokens.removeAll()
         releaseModes(.unplug)
         letGoOfHeld()   // keys a held button had down, and buttons it was remapped to
         // Presses still waiting to see if they're a combo: never replay them now, their
@@ -943,7 +1033,8 @@ final class Engine {
     func deviceRemoved(key k: Int) {
         // A device whose properties never all arrived may have been the trackball: let go as for one.
         let maybeTrackball = incomplete.contains(k) && (devices[k]?.vendorID ?? DeviceIdentity.kensingtonVendorID) == DeviceIdentity.kensingtonVendorID
-        if deviceSupported[k] == true || maybeTrackball { letGoOfTrackball() }
+        if deviceSupported[k] == true || maybeTrackball { letGoOfTrackball(k) }
+        hidButtonsByDevice[k] = nil
         devices[k] = nil
         deviceSupported[k] = nil
         echoDevices.remove(k)
@@ -959,7 +1050,12 @@ final class Engine {
         // No trackball left: its presses' overrides would otherwise outlive it and catch
         // another mouse's release of the same button (swallowed: stuck down). Found by
         // scripts/engine-fuzz. Whatever they held was let go of above.
-        if !deviceSupported.values.contains(true) { overrides.removeAll() }
+        if !deviceSupported.values.contains(true) {
+            overrides.removeAll()
+            kOpen.removeAll()
+            kUpAt.removeAll()
+            kReleasedSince.removeAll()
+        }
         syncTap()
         publish()
     }
@@ -1016,6 +1112,11 @@ final class Engine {
         lastActiveIsKensington = isK
         if !isK, page == kHIDPage_GenericDesktop, usage == kHIDUsage_GD_X || usage == kHIDUsage_GD_Y, v != 0 {
             otherDeviceMoved(k)
+            // (Movement this close to the trackball's is its echo: `echoWindow`.)
+            if !echoDevices.contains(k), io.now() - lastKMotion >= Self.echoWindow { lastMoverIsTrackball = false }
+        }
+        if !isK, page == kHIDPage_Button, usage >= 1, usage <= 32, !echoDevices.contains(k) {
+            otherDeviceButton(k, Int64(usage - 1), down: v != 0)
         }
         guard isK else { return }
         lastSupportedValue = io.now()
@@ -1031,7 +1132,7 @@ final class Engine {
         case (kHIDPage_GenericDesktop, kHIDUsage_GD_X):
             telemetry.addBall(dx: v, dy: 0)
             let now = io.now()
-            if v != 0 { trackballMoved(now); pendingTravel = min(pendingTravel + Int(min(v.magnitude, 1_000)), 1 << 30); holdForBallReport() }
+            if v != 0 { trackballMoved(now); lastMoverIsTrackball = true; pendingTravel = min(pendingTravel + Int(min(v.magnitude, 1_000)), 1 << 30); holdForBallReport() }
             // A held gesture takes the ball (even over Scroll with ball): see GestureRoute.
             if gestures.isHeld { applyGesture(gestures.ball(dx: Double(v), dy: 0, now: now)); publishModes() }
             else if ballScrolling { scroller.addBallDelta(dx: Double(v) * ballSign, dy: 0) }
@@ -1039,7 +1140,7 @@ final class Engine {
         case (kHIDPage_GenericDesktop, kHIDUsage_GD_Y):
             telemetry.addBall(dx: 0, dy: v)
             let now = io.now()
-            if v != 0 { trackballMoved(now); pendingTravel = min(pendingTravel + Int(min(v.magnitude, 1_000)), 1 << 30); holdForBallReport() }
+            if v != 0 { trackballMoved(now); lastMoverIsTrackball = true; pendingTravel = min(pendingTravel + Int(min(v.magnitude, 1_000)), 1 << 30); holdForBallReport() }
             if gestures.isHeld { applyGesture(gestures.ball(dx: 0, dy: Double(v), now: now)); publishModes() }
             else if ballScrolling { scroller.addBallDelta(dx: 0, dy: Double(v) * ballSign) }
             watchDisplay(now: now)
@@ -1055,13 +1156,14 @@ final class Engine {
         case (kHIDPage_Button, let b) where b >= 1:
             telemetry.button(b - 1, down: v != 0)
             if v != 0 {
-                hidButtonsDown.insert(b)
-                hidButtonDownAt[b] = io.now()
+                hidButtonsByDevice[k, default: []].insert(b)
                 kensingtonReportsButtons = true
                 hidButtonSeen = true
             } else {
-                hidButtonsDown.remove(b)
+                hidButtonsByDevice[k]?.remove(b)
             }
+            hidButtonsDown = hidButtonsByDevice.values.reduce(into: Set<Int>()) { $0.formUnion($1) }
+            if b <= 32 { trackballButton(Int64(b - 1), down: v != 0) }
         default: break
         }
     }
@@ -1109,40 +1211,445 @@ final class Engine {
         guard io.tapIsEnabled(tap) != wanted else { return }
         io.tapEnable(tap, wanted)
         // While it was off, presses and releases went by unseen: ask macOS what's down now.
-        if wanted { appButtons = io.buttonsDown() }
+        if wanted { noteButtonsAlreadyDown("tap on", clearTokens: true) }
     }
 
     /// The device that produced the most recent raw input. Without Input
     /// Monitoring we can't tell devices apart, so we leave everything alone.
     private var fromKensington: Bool { hid && lastActiveIsKensington }
 
-    /// Did this click come from the Kensington? "Last active device" isn't enough
-    /// for buttons: a built-in trackpad's clicks never reach IOHIDManager, so a
-    /// trackpad right-click right after using the trackball would look like the
-    /// trackball's. A press only counts when the trackball itself reported that
-    /// button going down (HID usage n+1 = CG button n), just now.
-    private func isKensingtonPress(_ button: Int64) -> Bool {
-        guard hid else { return false }
-        let b = Int(button) + 1
-        if hidButtonsDown.contains(b) { return true }
-        if let t = hidButtonDownAt[b], io.now() - t < 0.3 { return true }
+    // MARK: Who pressed what
+
+    /// Whose is this press: the trackball's, or another device's (another mouse, the trackpad)?
+    /// "Last active device" isn't enough: a built-in trackpad's clicks never reach IOHIDManager,
+    /// and two devices can press the same button number at once. A press is the trackball's
+    /// when the trackball itself just reported that button going down (HID usage n+1 = CG
+    /// button n) and no earlier press has claimed that report. Each report is claimed once, so
+    /// another mouse pressing a button the trackball already holds is another mouse's.
+    /// `device`: the other device whose HID report of that button this press claimed (nil: none,
+    /// so not a HID mouse; the trackpad's clicks never reach HID).
+    private func attributePress(_ button: Int64) -> (isK: Bool, device: Int?) {
+        guard hid else { return (false, nil) }
+        let now = io.now()
+        if let t = kTokens.removeValue(forKey: button), now - t < Self.ownerWindow || hidButtonsDown.contains(Int(button) + 1) {
+            return (true, nil)
+        }
+        // A device whose buttons never arrive over HID: fall back to the last active device.
+        // (Its report may yet come, a moment later: it belongs to this press.)
+        if !kensingtonReportsButtons && lastActiveIsKensington {
+            kClaimedEarly[button] = now
+            return (true, nil)
+        }
         if lastActiveIsKensington && kensingtonReportsButtons {
             diagnostics.record("press of button \(button) not reported by the trackball: passed through")
         }
-        // A device whose buttons never arrive over HID: fall back to the last active device.
-        return !kensingtonReportsButtons && lastActiveIsKensington
+        guard let t = oTokens.removeValue(forKey: button), now - t.at < Self.ownerWindow else { return (false, nil) }
+        return (false, t.device)
+    }
+
+    /// The trackball's HID report of button `b` (CG number) going down or up.
+    private func trackballButton(_ b: Int64, down: Bool) {
+        let now = io.now()
+        guard down else {
+            kUnseen.remove(b)
+            if let t = kMatchedEarly.removeValue(forKey: b), now - t < Self.lateReportWindow { return }
+            kUpAt[b] = now
+            reportSeq &+= 1
+            kUpSeq[b] = reportSeq
+            if kOpen.contains(b) { kReleasedSince.insert(b) }
+            if deferredUps.contains(where: { $0.button == b }) {
+                if (otherPresses[b]?.isEmpty ?? true) && !othersHold(b) {
+                    settleDeferredUp(b, .evidence)   // nobody else holds it: the waiting release was the trackball's
+                } else {
+                    // Another device holds it too: the waiting release is the trackball's if no
+                    // other release of that button comes in the next moment (the trackball's own,
+                    // behind its report). If one does, the waiting one was the other device's.
+                    scheduleDeferTimer(Self.lateReportWindow)
+                }
+            }
+            return
+        }
+        // Pressed again while its last release still waits to be told apart: that release was
+        // the trackball's (it reported letting go in between). It goes out ahead of this press's
+        // event (`handleButton`), or when its wait ends.
+        if kUpFresh(b), deferredUps.contains(where: { $0.button == b }) { deferredIsTrackball.insert(b) }
+        // Its earlier press of this button is still open, though it reported letting go of it
+        // since: that release went by unseen (the tap was off). That press is over now, as if
+        // its release had come (`handleButton`'s lost release, which this press's own event may
+        // not get to do: it can arrive first and be taken for another device's).
+        else { closeStaleTrackballPress(b) }
+        kUpAt[b] = nil
+        // Already known to be held (its last report said so as it arrived): the same press, whose
+        // CG event went by unseen, not a new one. (Value callbacks only come on a change.)
+        if kUnseen.contains(b) { return }
+        // A press already taken for the trackball's without a report (`attributePress`'s fallback):
+        // this is its report, not a new press another device's CG press could claim.
+        if let t = kClaimedEarly.removeValue(forKey: b), now - t < Self.lateReportWindow, kOpen.contains(b) { return }
+        // Its CG press came first, with no report to go on, and was taken for another device's:
+        // it was this one. It went through as it was (as such presses always have); its release
+        // is the trackball's. (Only when nothing of the trackball's holds that button already.)
+        if !kOpen.contains(b), overrides[b] == nil, !pending.contains(where: { $0.button == b }),
+           var list = otherPresses[b],
+           let i = list.lastIndex(where: { !$0.reported && now - $0.at < Self.lateReportWindow }) {
+            // (One that let go of a Drag lock did only that, as the trackball's press would have:
+            // its release does nothing either.)
+            if list.remove(at: i).swallowed { overrides[b] = .swallow }
+            otherPresses[b] = list.isEmpty ? nil : list
+            kOpen.insert(b)
+            diagnostics.record("press of button \(b) came before the trackball's report: the trackball's, passed through")
+            return
+        }
+        kTokens[b] = now
+    }
+
+    /// The trackball's open press of `b` that it has reported letting go of, whose release
+    /// hasn't come and isn't waiting: that release went by unseen (the tap was off), or it
+    /// would have come with the report. Something new on that button (the trackball pressing it
+    /// again, another device pressing it) ends that press, as its release would have, so the
+    /// stale report is never taken for a later release.
+    private func closeStaleTrackballPress(_ b: Int64) {
+        guard kOpen.contains(b), kReleasedSince.contains(b), !deferredUps.contains(where: { $0.button == b }) else { return }
+        kOpen.remove(b)
+        kReleasedSince.remove(b)
+        kUpAt[b] = nil
+        diagnostics.record("release of button \(b) never came after the trackball let go of it: that press is over")
+        if pending.contains(where: { $0.button == b }) { flushPending(); postedForStale.insert(b) }
+        if overrides[b] != nil, releaseOverride(b) { postedForStale.insert(b) }
+        if learnHeld.remove(Int(b)) != nil, learnHeld.isEmpty, let handler = learnHandler {   // as its release would have
+            let result = learnMax
+            learnHandler = nil
+            io.toMain { handler(result) }
+        }
+    }
+
+    /// Device `k`'s HID report of button `b` going down or up.
+    private func otherDeviceButton(_ k: Int, _ b: Int64, down: Bool) {
+        if down {
+            // A press of that device's that's still open had its release go by unseen.
+            if var list = otherPresses[b], list.contains(where: { $0.device == k }) {
+                list.removeAll { $0.device == k }
+                otherPresses[b] = list.isEmpty ? nil : list
+            }
+            oTokens[b] = (io.now(), k)
+            oUpAt[b] = nil
+        } else {
+            if let m = oMatchedEarly[b], io.now() - m.at < Self.lateReportWindow, m.device == nil || m.device == k {
+                oMatchedEarly[b] = nil
+                return
+            }
+            if var list = otherPresses[b], let i = list.firstIndex(where: { $0.device == k && !$0.hidReleased }) {
+                list[i].hidReleased = true
+                otherPresses[b] = list
+            }
+            oUpAt[b] = io.now()
+            oUpDevice[b] = k
+            reportSeq &+= 1
+            oUpSeq[b] = reportSeq
+            guard deferredUps.contains(where: { $0.button == b }) else { return }
+            // A release waiting for this is that device's, unless the trackpad (whose releases
+            // never report) could own it: then that device's own release may yet follow its
+            // report, which would make the waiting one the trackpad's.
+            let list = otherPresses[b] ?? []
+            if list.contains(where: { $0.device == k }), list.contains(where: { !$0.reported }) {
+                scheduleDeferTimer(Self.lateReportWindow)
+            } else {
+                settleDeferredUp(b, .final)
+            }
+        }
+    }
+
+    /// Another device holds `b`: a press the engine saw, or one it didn't (past a switched-off
+    /// tap, counted when the tap came back) while apps have the button down and the trackball's
+    /// press didn't put it there.
+    private func othersHold(_ b: Int64) -> Bool {
+        (otherPresses[b] ?? []).contains { !$0.hidReleased }
+            || ((overrides[b] != nil || pending.contains { $0.button == b }) && appButtons.contains(b))
+    }
+
+    /// The trackball's press of `b` is still open but its release went by unseen (the tap was
+    /// off): the trackball reported letting go of it a while ago.
+    private func kStale(_ b: Int64) -> Bool {
+        kReleasedSince.contains(b) && !kUpFresh(b)
+    }
+    private func kUpFresh(_ b: Int64) -> Bool { kUpAt[b].map { io.now() - $0 < Self.ownerWindow } ?? false }
+    private func oUpFresh(_ b: Int64) -> Bool { oUpAt[b].map { io.now() - $0 < Self.ownerWindow } ?? false }
+
+    private enum UpOwner { case trackball, trackballUnseen, other, nobody, wait }
+
+    /// Whose is this release of `b`? Matched to an open press by the HID reports of that button
+    /// going up. `wait`: the trackball's press is open and it still says the button is down, so
+    /// this is another device's release (the trackpad, whose buttons never reach HID, or a press
+    /// that went by unseen) or the trackball's own, arriving just before its report.
+    private func ownerOfUp(_ b: Int64) -> UpOwner {
+        let kLive = kOpen.contains(b) && !kStale(b)
+        let k = kLive || kUnseen.contains(b) || kUpFresh(b)
+        let o = !(otherPresses[b]?.isEmpty ?? true)
+        guard k else { return o ? .other : .nobody }
+        let kOwner: UpOwner = kLive ? .trackball : .trackballUnseen
+        let kDown = kUnseen.contains(b) || (kensingtonReportsButtons && hidButtonsDown.contains(Int(b) + 1))
+        let kReleased = !kDown && kUpFresh(b)
+        let oReleased = oUpFresh(b)   // another device reported that button going up (even one whose press went by unseen)
+        if kReleased && (!oReleased || kUpAt[b]! <= oUpAt[b]!) { return kOwner }
+        if oReleased { return o ? .other : .nobody }
+        if !kDown { return kOwner }   // nothing to go on (its buttons don't come over HID): as before
+        return .wait
+    }
+
+    /// The release of `b`, as its owner has it.
+    /// `reportCame`: the trackball's report of this release has come already. `keepReports`:
+    /// the reports so far are another release's (`settleDeferredUp`), not this one's.
+    private func finishUp(_ event: CGEvent, _ b: Int64, _ owner: UpOwner, reportCame: Bool = false,
+                          keepReports: Bool = false) -> Unmanaged<CGEvent>? {
+        let now = io.now()
+        switch owner {
+        case .trackball, .trackballUnseen:
+            // Its report is still to come (the trackball says the button is down still).
+            if !kUpFresh(b) && !reportCame && (hidButtonsDown.contains(Int(b) + 1) || kUnseen.contains(b)) { kMatchedEarly[b] = now }
+            kUpAt[b] = nil
+            kReleasedSince.remove(b)
+            kClaimedEarly[b] = nil
+            if owner == .trackballUnseen {
+                kUnseen.remove(b)
+                kTokens[b] = nil   // a report of its press no press claimed is over too
+                return unseenRelease(event, b)
+            }
+            kOpen.remove(b)
+            return routeButton(event, .up)
+        case .other, .nobody, .wait:
+            if owner != .other, !kOpen.contains(b) { kTokens[b] = nil }   // as above
+            let device = !keepReports && oUpFresh(b) ? oUpDevice[b] : nil
+            if device != nil { oUpAt[b] = nil }   // the report it went with
+            guard owner == .other else {
+                // Nobody's press: a report from whichever device in the next moment is its own.
+                if device == nil, !(keepReports && oUpFresh(b)) {
+                    oMatchedEarly[b] = (now, nil)
+                    if !kUpFresh(b), !kOpen.contains(b), !kUnseen.contains(b), hidButtonsDown.contains(Int(b) + 1) { kMatchedEarly[b] = now }
+                }
+                return unseenRelease(event, b)
+            }
+            let (out, popped) = otherRelease(event, b, device: device)
+            if device == nil, !(keepReports && oUpFresh(b)), let popped { oMatchedEarly[b] = (now, popped) }   // its report is still to come
+            return out
+        }
+    }
+
+    /// Another device's press: untouched (though a trackball button remapped to the same button
+    /// lets go first, so apps never see it go down twice), except that a left click lets go of a
+    /// Drag lock, and that's all it does. Nothing the trackball holds ends or changes.
+    private func otherPress(_ event: CGEvent, _ button: Int64, device: Int?) -> Unmanaged<CGEvent>? {
+        closeStaleTrackballPress(button)
+        let posted = postedForStale.remove(button) != nil   // then this press goes behind what was posted
+        if gestures.isHeld { gestures.otherPress(Int(button)) }   // the hold's release isn't a tap
+        let swallow = dragLocked && (event.type == .leftMouseDown || button == 0)
+        otherPresses[button, default: []].append(OtherPress(device: device, at: io.now(), swallowed: swallow))
+        if swallow {
+            endDragLock()
+            return nil
+        }
+        guard posted else { return passReal(event, button: button) }
+        postInOrder(passReal(event, button: button))
+        return nil
+    }
+
+    /// Another device's release: always as it came (unless its press ended a Drag lock).
+    /// `device`: the device that reported it going up (nil: none did, so the trackpad's).
+    /// Returns the event (or nil) and the device whose press it matched.
+    private func otherRelease(_ event: CGEvent, _ button: Int64, device: Int?) -> (Unmanaged<CGEvent>?, Int?) {
+        var list = otherPresses[button] ?? []
+        let i = (device.flatMap { d in list.firstIndex { $0.device == d } })
+            ?? list.firstIndex { $0.reported == (device != nil) } ?? list.indices.first
+        var press: OtherPress?
+        if let i { press = list.remove(at: i) }
+        otherPresses[button] = list.isEmpty ? nil : list
+        return (press?.swallowed == true ? nil : Unmanaged.passUnretained(event), press?.device)
+    }
+
+    /// A release whose press this engine never saw (held while it started, while the tap was
+    /// off, or as the trackball arrived): nothing mapped happens. It goes through if apps have
+    /// that button down, so they get its release; otherwise it's swallowed, so they never see
+    /// a release without a press.
+    private func unseenRelease(_ event: CGEvent, _ button: Int64) -> Unmanaged<CGEvent>? {
+        if button != 0, overrides.values.contains(where: { if case .remap(let t, _) = $0 { t == button } else { false } }) {
+            // Another button is remapped to this one and holding it: passing this would let go
+            // of that hold. Found by scripts/engine-fuzz.
+            return nil
+        }
+        // Down by the engine's count or by macOS's own word (two devices can hold a button
+        // macOS counts once; when in doubt it goes through: a stray release is harmless, a
+        // button left down is not).
+        if appButtons.contains(button) || io.buttonDown(button) { return Unmanaged.passUnretained(event) }
+        diagnostics.record("release of button \(button) whose press was never seen, not down for apps: swallowed")
+        return nil
+    }
+
+    /// How a release that waited is settled: by the reports so far, keeping it if they still
+    /// don't say (`evidence`); by the reports, and if they don't say, not the trackball's
+    /// (`final`: time's up, quit, sleep, the other device's report); or not the trackball's
+    /// (`notTrackball`: another release of that button came, the trackball's own behind its
+    /// report, so the waiting one was the other device's). Whatever the way, one the trackball
+    /// has since reported letting go of and pressing again is the trackball's (`deferredIsTrackball`).
+    private enum Settle { case evidence, final, notTrackball }
+    private var deferredIsTrackball = Set<Int64>()
+
+    /// Releases of `b` that waited to be told apart, in the order they arrived.
+    private func settleDeferredUp(_ b: Int64, _ how: Settle) {
+        guard deferredUps.contains(where: { $0.button == b }) else { return }
+        var kept: [(button: Int64, event: CGEvent)] = []
+        let waiting = deferredUps
+        deferredUps = []
+        for d in waiting {
+            guard d.button == b else { kept.append(d); continue }
+            let pressedAgain = deferredIsTrackball.remove(b) != nil
+            var keepReports = false
+            var owner: UpOwner
+            if pressedAgain {
+                owner = kOpen.contains(b) ? .trackball : .trackballUnseen
+            } else if how == .notTrackball {
+                // Another release of the button came: this waiting one is the other side's.
+                // - Another device's report is the newest: the new release is that device's
+                //   (a report and its event come together), so this one is the trackball's if it
+                //   has reported letting go too, otherwise the trackpad's (no reports) or nobody's.
+                // - The trackball's report is the newest, and every other press of the button is
+                //   a HID mouse's (which would have reported its own release by now): this one was
+                //   the trackball's (its event before its report), the new one the mouse's.
+                // - Otherwise (the trackpad among them, or no report): not the trackball's.
+                let list = otherPresses[b] ?? []
+                let kSeq = kUpFresh(b) ? kUpSeq[b] ?? 0 : 0, oSeq = oUpFresh(b) ? oUpSeq[b] ?? 0 : 0
+                let kReleasedNow = kUpFresh(b) && !hidButtonsDown.contains(Int(b) + 1) && (kOpen.contains(b) || kUnseen.contains(b))
+                let kOwner: UpOwner = kOpen.contains(b) ? .trackball : .trackballUnseen
+                if kReleasedNow, oSeq > kSeq || (!list.isEmpty && list.allSatisfy(\.reported)) {
+                    owner = kOwner
+                } else {
+                    owner = list.isEmpty ? .nobody : .other
+                    keepReports = oSeq > kSeq   // that report is the new release's
+                }
+            } else {
+                owner = ownerOfUp(b)
+            }
+            if owner == .wait {
+                guard how != .evidence else { kept.append(d); continue }
+                owner = (otherPresses[b]?.isEmpty ?? true) ? .nobody : .other
+            }
+            diagnostics.record("release of button \(b) held back, then \(owner)")
+            postInOrder(finishUp(d.event, b, owner, reportCame: pressedAgain, keepReports: keepReports))
+        }
+        deferredUps = kept + deferredUps
+        if deferredUps.isEmpty {
+            deferTimer?.invalidate()
+            deferTimer = nil
+        }
+    }
+
+    /// Every release still waiting goes out (time's up, quit, sleep), as the reports say.
+    private func resolveDeferredUps() {
+        for b in Set(deferredUps.map(\.button)) { settleDeferredUp(b, .final) }
+    }
+
+    /// Settles what's waiting in `seconds` (sooner than already planned only).
+    private func scheduleDeferTimer(_ seconds: TimeInterval) {
+        let at = io.now() + seconds
+        if deferTimer != nil, deferTimerAt <= at { return }
+        deferTimer?.invalidate()
+        deferTimerAt = at
+        deferTimer = io.schedule(seconds, repeats: false) { [unowned self] in
+            self.deferTimer = nil
+            self.resolveDeferredUps()
+        }
+    }
+    private var deferTimerAt: CFTimeInterval = 0
+
+    /// Buttons already down whose presses went by unseen (the engine starting, the tap back on,
+    /// a trackball arriving): what apps have down now, and which of the trackball's buttons are
+    /// held (by its HID reports and, read-only, its last report's button values). Their releases
+    /// do nothing mapped (`unseenRelease`). `clearTokens`: presses reported meanwhile went by too.
+    private func noteButtonsAlreadyDown(_ why: String, clearTokens: Bool) {
+        let down = io.buttonsDown()
+        guard clearTokens else {
+            appButtons.refresh(down)   // nothing went by unseen: the counts stand
+            return noteTrackballHeld(why)
+        }
+        // Presses released meanwhile (not one that ended a Drag lock: apps never had it, so
+        // macOS's answer can't speak for it; that device's next press clears it). A press whose
+        // device reported letting go had its release go by too.
+        for (b, list) in otherPresses {
+            let kept = list.filter { !$0.hidReleased && ($0.swallowed || down.contains(b)) }
+            otherPresses[b] = kept.isEmpty ? nil : kept
+        }
+        // Counted again. macOS counts a button once however many hold it, so where it says
+        // down: the presses known to hold it (the trackball's own passing as itself, a remap
+        // onto it, a Drag lock's, other devices'), or one if none of those explains it, unless a
+        // release the engine just posted (not back through the tap yet) does. Where it says up:
+        // only presses the engine just posted that aren't back yet.
+        let now = io.now()
+        notedAtPost = notedAtPost.compactMapValues { list in
+            let fresh = list.filter { now - $0 < 0.25 }   // older ones never came back (the tap was off)
+            return fresh.isEmpty ? nil : fresh
+        }
+        let remapTargets = overrides.values.compactMap { if case .remap(let t, _) = $0 { t } else { nil } }
+        var counts: [Int64: Int] = [:]
+        for b in down.union(otherPresses.keys).union(kOpen).union(remapTargets).union(dragLocked ? [0] : []) {
+            var n = (otherPresses[b] ?? []).filter { !$0.swallowed }.count
+            // (Not a press the trackball has reported letting go of: its release went by.)
+            if kOpen.contains(b), !kReleasedSince.contains(b), overrides[b] == nil, !pending.contains(where: { $0.button == b }) { n += 1 }
+            n += remapTargets.filter { $0 == b }.count
+            if dragLocked && b == 0 { n += 1 }
+            let leaving = !(notedAtPost[b << 1 | 1]?.isEmpty ?? true)
+            if n == 0, down.contains(b), !leaving { n = 1 }
+            if !down.contains(b) { n = notedAtPost[b << 1]?.count ?? 0 }
+            if n > 0 { counts[b] = n }
+        }
+        appButtons.set(counts)
+        // Releases waiting to be told apart go out now, by the reports so far (and after the
+        // count, so whatever they set off knows what's down), before the reports are forgotten.
+        resolveDeferredUps()
+        kTokens.removeAll()
+        oTokens.removeAll()
+        // Reports of releases whose events went by: no longer news of anything coming.
+        kUpAt.removeAll(); oUpAt.removeAll(); kMatchedEarly.removeAll(); oMatchedEarly.removeAll()
+        noteTrackballHeld(why)
+    }
+
+    /// The trackball's buttons held whose presses went by unseen (`noteButtonsAlreadyDown`).
+    private func noteTrackballHeld(_ why: String) {
+        var held = Set(hidButtonsDown.map { Int64($0 - 1) })
+        for (k, supported) in deviceSupported where supported {
+            if let h = io.heldButtons(k, deviceObjects[k] ?? nil) { held.formUnion(h) }
+        }
+        let unseen = held.subtracting(kOpen).subtracting(pending.map(\.button)).subtracting(kTokens.keys)
+        if !unseen.isSubset(of: kUnseen) {
+            diagnostics.record("trackball buttons already down (\(why)): \(unseen.sorted()); their releases do nothing mapped")
+        }
+        kUnseen.formUnion(unseen)
+        // A press with no report of its own just before, of a button the trackball turns out to
+        // hold, was the trackball's (its report came before Glideball had the device open).
+        let now = io.now()
+        for b in unseen {
+            guard var list = otherPresses[b], let i = list.lastIndex(where: { !$0.reported && now - $0.at < Self.ownerWindow })
+            else { continue }
+            list.remove(at: i)
+            otherPresses[b] = list.isEmpty ? nil : list
+        }
     }
 
     /// The event tap's callback (scripts/engine-fuzz calls it directly).
     func handle(_ type: CGEventType, _ event: CGEvent) -> Unmanaged<CGEvent>? {
         let out = route(type, event)
-        if let e = out?.takeUnretainedValue() { noteOut(e) }
+        if let e = out?.takeUnretainedValue() {
+            // One posted from the input thread was noted as it was posted: not twice.
+            // (One posted over 0.25 s ago never came back: posted while the tap was off.)
+            if e.getIntegerValueField(.eventSourceUserData) == Self.syntheticTag, let k = Self.buttonKey(e),
+               let list = notedAtPost[k]?.filter({ io.now() - $0 < 0.25 }), !list.isEmpty {
+                notedAtPost[k] = Array(list.dropFirst())
+            } else {
+                noteOut(e)
+            }
+        }
         return out
     }
 
     /// Keeps `appButtons` up to date with a button event on its way to apps: one the tap
     /// passes, or one posted from the input thread (noted at once, so a decision made before
-    /// it comes back through the tap already knows). Input thread.
+    /// it comes back through the tap already knows: `noteAtPost`). Input thread.
     private func noteOut(_ e: CGEvent) {
         switch e.type {
         case .leftMouseDown: appButtons.insert(0)
@@ -1150,6 +1657,27 @@ final class Engine {
         case .rightMouseDown, .otherMouseDown: appButtons.insert(e.getIntegerValueField(.mouseEventButtonNumber))
         case .rightMouseUp, .otherMouseUp: appButtons.remove(e.getIntegerValueField(.mouseEventButtonNumber))
         default: break
+        }
+    }
+
+    /// Notes an event the input thread is about to post (`appButtons` counts each press once:
+    /// when it comes back through the tap it isn't noted again). Clicks posted from the key
+    /// queue aren't noted here; the tap notes them.
+    private func noteAtPost(_ e: CGEvent) {
+        noteOut(e)
+        if let k = Self.buttonKey(e) { notedAtPost[k, default: []].append(io.now()) }
+    }
+    /// Posted button events not back through the tap yet, by `buttonKey`, with when.
+    private var notedAtPost: [Int64: [CFTimeInterval]] = [:]
+    /// A button event's key for `notedAtPost`: its button doubled, plus one for a release.
+    private static func buttonKey(_ e: CGEvent) -> Int64? {
+        let b = e.getIntegerValueField(.mouseEventButtonNumber)
+        switch e.type {
+        case .leftMouseDown: return 0 << 1
+        case .leftMouseUp: return 0 << 1 | 1
+        case .rightMouseDown, .otherMouseDown: return b << 1
+        case .rightMouseUp, .otherMouseUp: return b << 1 | 1
+        default: return nil
         }
     }
 
@@ -1166,7 +1694,7 @@ final class Engine {
                 otherMovedSinceAnchor = false
                 anchorBeforeFollow = nil
             }
-            appButtons = io.buttonsDown()   // what went by while it was off
+            noteButtonsAlreadyDown("tap back on", clearTokens: true)   // what went by while it was off
             syncTap()
             if let moveTap { io.tapEnable(moveTap, true) }
             // So may the release of a button holding a key or remapped to another button:
@@ -1360,25 +1888,77 @@ final class Engine {
         return false
     }
 
+    /// Every button event: first whose it is (`attributePress`, `ownerOfUp`), then the
+    /// trackball's go to `routeButton` and everything else passes untouched. What a trackball
+    /// press holds is ended by the trackball's own release (or, once the trackball has reported
+    /// letting go and that release went by unseen, by the next press of that button:
+    /// `closeStaleTrackballPress`), never by another device's press or release.
     private func handleButton(_ event: CGEvent, _ phase: Phase) -> Unmanaged<CGEvent>? {
-        // A press of a button that is still waiting for a combo partner, or still has an
-        // override: its release was lost, or another mouse pressed the same button number.
-        // The old press goes through (or lets go of what it holds) first, so this one can
-        // never leave a key or a button stuck; this press is then posted behind that, so
-        // apps see them in order. Found by scripts/engine-fuzz.
-        if phase == .down {
-            let button = event.getIntegerValueField(.mouseEventButtonNumber)
-            var posted = false
+        let button = event.getIntegerValueField(.mouseEventButtonNumber)
+        // A release of this button still waiting to be told apart goes first, and this event
+        // is posted behind it, so apps see them in order.
+        if deferredUps.contains(where: { $0.button == button }) {
+            settleDeferredUp(button, phase == .up ? .notTrackball : .final)
+            postInOrder(ownedButton(event, phase, button))
+            return nil
+        }
+        return ownedButton(event, phase, button)
+    }
+
+    private func ownedButton(_ event: CGEvent, _ phase: Phase, _ button: Int64) -> Unmanaged<CGEvent>? {
+        switch phase {
+        case .down:
+            let (isK, device) = attributePress(button)
+            guard isK else { return otherPress(event, button, device: device) }
+            kUnseen.remove(button)
+            // The trackball's press of a button that is still waiting for a combo partner, or still
+            // has an override: its release was lost. The old press goes through (or lets go of
+            // what it holds) first, so this one can never leave a key or a button stuck; this
+            // press is then posted behind that, so apps see them in order. Found by scripts/engine-fuzz.
+            var posted = postedForStale.remove(button) != nil   // (`closeStaleTrackballPress` posted its end)
             if pending.contains(where: { $0.button == button }) { flushPending(); posted = true }
             if overrides[button] != nil, releaseOverride(button) { posted = true }
+            kOpen.insert(button)
+            kReleasedSince.remove(button)
             if posted {
                 postInOrder(routeButton(event, phase))
                 return nil
             }
+            return routeButton(event, phase)
+        case .up:
+            let owner = ownerOfUp(button)
+            guard owner == .wait else { return finishUp(event, button, owner) }
+            // Held back for a moment (at most `deferLimit`): the trackball's report says which.
+            guard let copy = event.copy() else { return finishUp(event, button, .nobody) }
+            deferredUps.append((button, copy))
+            scheduleDeferTimer(Self.deferLimit)
+            return nil
+        case .drag:
+            // Both hold this button: the drag is the device that moved last.
+            // (Not a press the trackball has reported letting go of: its release went by.)
+            let k = (kOpen.contains(button) && !kReleasedSince.contains(button)) || kUnseen.contains(button)
+            let list = otherPresses[button] ?? []
+            let others = othersHold(button) || (!k && kOpen.contains(button) && appButtons.contains(button))
+            if others, !k || !lastMoverIsTrackball {
+                return !list.isEmpty && list.allSatisfy(\.swallowed) ? nil : Unmanaged.passUnretained(event)
+            }
+            // A button whose press went by unseen and that apps don't have down (it was mapped
+            // before a relaunch, say): its drags are plain moves to apps, as Precision makes them.
+            if !kOpen.contains(button), overrides[button] == nil, !pending.contains(where: { $0.button == button }),
+               !appButtons.contains(button), !io.buttonDown(button) {
+                if leftDown {
+                    Self.retarget(event, to: 0, .drag)
+                } else {
+                    event.type = .mouseMoved
+                    event.setIntegerValueField(.mouseEventButtonNumber, value: 0)
+                }
+                return Unmanaged.passUnretained(event)
+            }
+            return routeButton(event, phase)
         }
-        return routeButton(event, phase)
     }
 
+    /// The trackball's button events (`handleButton` has decided whose each one is).
     private func routeButton(_ event: CGEvent, _ phase: Phase) -> Unmanaged<CGEvent>? {
         let pass = Unmanaged.passUnretained(event)
         let button = event.getIntegerValueField(.mouseEventButtonNumber)
@@ -1386,7 +1966,7 @@ final class Engine {
         // Any other press during a gesture hold means the release isn't a tap.
         if phase == .down, gestures.isHeld { gestures.otherPress(Int(button)) }
 
-        // Drag lock: any click (from any mouse) lets go — and that's all it does.
+        // Drag lock: any click (from any mouse: see `otherPress`) lets go — and that's all it does.
         // (A press that may be the start of a Drag lock combo waits for the
         // combo; if it turns out to be a lone click, `press` lets go instead.)
         if dragLocked, phase == .down, isLeftPress(event, button), !inDragLockCombo(button) {
@@ -1395,7 +1975,7 @@ final class Engine {
             return nil
         }
 
-        if let handler = learnHandler, (phase == .down && isKensingtonPress(button)) || learnHeld.contains(Int(button)) {
+        if let handler = learnHandler, phase == .down || learnHeld.contains(Int(button)) {
             if phase == .down {
                 learnHeld.insert(Int(button))
                 learnMax.formUnion(learnHeld)
@@ -1426,7 +2006,7 @@ final class Engine {
         }
         if phase != .down, pending.contains(where: { $0.button == button }) {
             flushPending()
-            postInOrder(handleButton(event, phase))
+            postInOrder(routeButton(event, phase))
             return nil
         }
 
@@ -1481,16 +2061,11 @@ final class Engine {
                 return nil   // drags never reach apps: the pointer is frozen and the ball is the gesture's
             }
         }
-        if phase == .up, button != 0, overrides.values.contains(where: { if case .remap(let t, _) = $0 { t == button } else { false } }) {
-            // A release whose press this engine never saw (held through a relaunch, or while
-            // the tap was off) of a button another button is remapped to and holding: passing
-            // it would let go of that hold. Found by scripts/engine-fuzz.
-            return nil
-        }
+        // (A release whose press this engine never saw never gets here: `unseenRelease`.)
         guard phase == .down else { return pass }
-        // Another mouse's press, or Glideball paused: untouched (though a trackball button
-        // remapped to the same button lets go first, so apps never see it go down twice).
-        guard config.enabled, isKensingtonPress(button) else { return passReal(event, button: button) }
+        // Glideball paused: untouched (though a trackball button remapped to the same button
+        // lets go first, so apps never see it go down twice).
+        guard config.enabled else { return passReal(event, button: button) }
 
         let comboButtons = Set(config.chords.flatMap(\.buttons))
         guard comboButtons.contains(Int(button)) else {
@@ -1585,7 +2160,7 @@ final class Engine {
     private func postInOrder(_ result: Unmanaged<CGEvent>?) {
         guard let e = result?.takeUnretainedValue().copy() else { return }
         e.setIntegerValueField(.eventSourceUserData, value: Self.syntheticTag)
-        noteOut(e)
+        noteAtPost(e)
         io.post(e, tap: .cgSessionEventTap)
     }
 
@@ -1600,7 +2175,7 @@ final class Engine {
             let e = out.takeUnretainedValue()
             if let loc = io.cursorLocation() { e.location = loc }
             e.setIntegerValueField(.eventSourceUserData, value: Self.syntheticTag)
-            noteOut(e)
+            noteAtPost(e)
             io.post(e, tap: .cgSessionEventTap)
         }
     }
@@ -2008,10 +2583,10 @@ final class Engine {
         publishModes()
     }
 
-    /// Would this press reach apps as a left click?
+    /// Would this press of the trackball's reach apps as a left click?
     private func isLeftPress(_ event: CGEvent, _ button: Int64) -> Bool {
         if event.type == .leftMouseDown || button == 0 { return true }
-        guard config.enabled, isKensingtonPress(button) else { return false }
+        guard config.enabled else { return false }
         switch config.buttons[Int(button)] {
         case .leftClick?: return true
         case .modifiedClick(let b, _)?: return b == 0
@@ -2020,7 +2595,7 @@ final class Engine {
     }
 
     private func inDragLockCombo(_ button: Int64) -> Bool {
-        config.enabled && isKensingtonPress(button)
+        config.enabled
             && config.chords.contains { $0.action == .dragLock && $0.buttons.contains(Int(button)) }
     }
 
@@ -2040,7 +2615,7 @@ final class Engine {
         e.setIntegerValueField(.mouseEventClickState, value: 1)
         e.setIntegerValueField(.eventSourceUserData, value: Self.syntheticTag)
         if !flags.isEmpty { e.flags = flags }
-        noteOut(e)
+        noteAtPost(e)
         io.post(e, tap: tap)
     }
 
