@@ -267,6 +267,22 @@ struct SurfaceShape: View {
     }
 }
 
+extension View {
+    /// Draws this view (its blur or shadow included) into one bitmap, with `room` points
+    /// around it so the soft edge isn't cut. A static shadow or blur on its own layer is
+    /// redone by the compositor every frame anything near it moves (a page scrolling, the
+    /// sidebar trackball turning); flattened, it's drawn once and then only moved.
+    /// Only for things that change rarely, and never around a blend mode that has to mix
+    /// with what's behind (inside the bitmap it would mix with nothing).
+    func flattened(room: CGFloat) -> some View {
+        // Whole points, so the bitmap lands on the same pixels the view would have.
+        let room = room.rounded(.up)
+        return padding(room)
+            .drawingGroup()
+            .padding(-room)
+    }
+}
+
 /// A soft light that follows the pointer along a surface's edge (and a whisper
 /// across its face) while hovering. Driven by pointer moves only: it stops when
 /// the pointer does, and it's off with Reduce Motion or Increase Contrast.
@@ -681,6 +697,7 @@ struct InstrumentSlider: View {
                     .fill(LinearGradient(colors: [tint.opacity(0.55), tint], startPoint: .leading, endPoint: .trailing))
                     .frame(width: max(x - inset, 0), height: 3)
                     .shadow(color: tint.opacity(active ? 0.8 : 0.35), radius: active ? 5 : 2)
+                    .flattened(room: 12)
                     .position(x: inset + max(x - inset, 0) / 2, y: mid)
                 // The default, a small mark under the track.
                 if let defaultValue {
@@ -704,6 +721,7 @@ struct InstrumentSlider: View {
                     .shadow(color: .black.opacity(0.3), radius: 1.5, y: 1)
                     .frame(width: Self.thumb, height: Self.thumb)
                     .scaleEffect(active ? 1.12 : hovering ? 1.05 : 1)
+                    .flattened(room: 5)
                     .position(x: x, y: mid)
             }
             .contentShape(Rectangle())
@@ -1018,6 +1036,7 @@ struct ListRowButtonStyle: ButtonStyle {
                                : hovering ? Theme.hoverFill : .clear)
                         .shadow(color: selected ? Theme.ball.opacity(0.35) : (lift ? Theme.surfaceShadow : .clear),
                                 radius: selected ? 8 : 4, y: lift ? 2 : 0)
+                        .flattened(room: 18)
                 }
                 .overlay {
                     if selected {
@@ -1354,6 +1373,7 @@ private struct ChoiceCard: View {
                     // The glow glides over from the card that had it…
                     let fill = shape.fill(LinearGradient(colors: [tint.opacity(0.20), tint.opacity(0.08)], startPoint: .top, endPoint: .bottom))
                         .shadow(color: tint.opacity(0.35), radius: 8, y: 2)
+                        .flattened(room: 20)
                     if reduceMotion {
                         fill
                     } else {

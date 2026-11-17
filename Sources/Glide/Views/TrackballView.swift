@@ -250,6 +250,7 @@ struct TrackballArt: View {
                     Circle()
                         .stroke(ringGradient, lineWidth: w * 4.5)
                         .blur(radius: w * 3)
+                        .flattened(room: w * 12)
                         .opacity(0.38 + 0.4 * pose.flare)
                         .frame(width: d, height: d)
                 }
@@ -378,6 +379,7 @@ struct TrackballArt: View {
                     .frame(width: d, height: d)
                     .offset(x: s * 0.008, y: s * 0.016)
                     .blur(radius: s * 0.016)
+                    .flattened(room: s * 0.1)
                 if lit, let live {
                     // The ball turning, under its glass (layers).
                     TrackballLayerSlot(part: .ball, live: live, theme: colors)
@@ -549,15 +551,26 @@ private struct TrackballBody: View {
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
-        shape
-            .fill(LinearGradient(colors: [Color(red: 0.082, green: 0.082, blue: 0.098), Color(red: 0.05, green: 0.05, blue: 0.062)],
-                                 startPoint: .top, endPoint: .bottom))
-            .shadow(color: .black.opacity(0.55), radius: size * 0.04, y: size * 0.02)
-            .overlay(
-                shape.strokeBorder(LinearGradient(colors: [.white.opacity(0.13), .white.opacity(0.04)],
-                                                  startPoint: .top, endPoint: .bottom), lineWidth: max(0.5, size * 0.004))
-            )
-            .opacity(look == .notConnected ? 0.75 : 1)
+        let fill = LinearGradient(colors: [Color(red: 0.082, green: 0.082, blue: 0.098), Color(red: 0.05, green: 0.05, blue: 0.062)],
+                                  startPoint: .top, endPoint: .bottom)
+        ZStack {
+            // The shadow on its own, drawn once (see `flattened`): a live shadow under the body was
+            // redone every frame the page scrolled or the sidebar ball turned. Cast by the body a
+            // point smaller, so the bitmap's edge stays hidden under the crisp body drawn on top.
+            shape.inset(by: 1)
+                .fill(.black)
+                .shadow(color: .black.opacity(0.55), radius: size * 0.04, y: size * 0.02)
+                .flattened(room: size * 0.12)
+            shape
+                .fill(fill)
+                .overlay(
+                    shape.strokeBorder(LinearGradient(colors: [.white.opacity(0.13), .white.opacity(0.04)],
+                                                      startPoint: .top, endPoint: .bottom), lineWidth: max(0.5, size * 0.004))
+                )
+        }
+        // Faded as one piece, so the shadow's caster never shows through the body.
+        .compositingGroup()
+        .opacity(look == .notConnected ? 0.75 : 1)
     }
 }
 
