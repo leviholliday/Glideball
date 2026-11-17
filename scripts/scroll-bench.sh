@@ -13,6 +13,7 @@
 #     --sizes 980x680,1440x900     --seconds 3     --hz 120
 #     --appearance dark|light      --performance smooth|efficient|minimal
 #     --no-feed                    (nothing live: just the scroll)
+#     --damage                     (composite only what changed, as WindowServer does)
 #     --drive wheel|offset         (scroll events like Glideball's, or move the clip view)
 #     --json file                  --no-build
 set -euo pipefail
