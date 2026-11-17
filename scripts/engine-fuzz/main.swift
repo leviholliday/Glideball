@@ -106,8 +106,9 @@ final class FakeIO: EngineIO {
     override func now() -> CFTimeInterval { clock }
     override func cursorLocation() -> CGPoint? { cursor }
     override func keyboardFlags() -> CGEventFlags { kbFlags }
-    /// Glideball is the app in front. `CGAssociateMouseAndMouseCursorPosition` only holds the
-    /// pointer then (beta 13); in the background only the engine's own warps do.
+    /// Glideball is the app in front. Since beta 17 that changes nothing for the hold: the pointer
+    /// is never dissociated, so it moves with the ball in front or behind and only the engine's
+    /// own warps put it back (dissociating made macOS report a frozen location, beta 16).
     var foreground = false
     /// Where the pointer must stay while it's frozen (moves with another mouse's movement).
     var anchorExpect: CGPoint?
@@ -895,7 +896,7 @@ final class World {
                 if dy != 0 { gestureTravel(0, dy); hid(kKey, page: kHIDPage_GenericDesktop, usage: kHIDUsage_GD_Y, value: dy) }
             }
             func movePointer() {
-                if !(io.frozen && io.foreground) { io.cursor.x = min(max(io.cursor.x + CGFloat(dx), 0), 3000); io.cursor.y = min(max(io.cursor.y + CGFloat(dy), 0), 1000) }
+                do { io.cursor.x = min(max(io.cursor.x + CGFloat(dx), 0), 3000); io.cursor.y = min(max(io.cursor.y + CGFloat(dy), 0), 1000) }
             }
             func sendTapEvent(drag: Bool) {
                 if drag, let b = kDown.min() {
@@ -967,7 +968,7 @@ final class World {
             // back: which part of the pointer's offset is whose can't be told, so that hold isn't judged.
             if holdCheckAt != nil { holdDisturbed = true }
             hid(oKey, page: kHIDPage_GenericDesktop, usage: kHIDUsage_GD_X, value: 3)
-            if !(io.frozen && io.foreground) {   // another mouse always moves the pointer; the hold follows it
+            do {   // another mouse always moves the pointer; the hold follows it
                 io.cursor.x = min(io.cursor.x + 3, 3000)
                 if io.frozen { io.anchorExpect = io.cursor }
             }

@@ -30,16 +30,22 @@ class EngineIO {
     /// The physical keyboard's modifier state.
     func keyboardFlags() -> CGEventFlags { CGEventSource.flagsState(.hidSystemState) }
 
-    /// Freezes (true) or frees (false) the pointer; the ball keeps reporting movement.
-    func freezePointer(_ frozen: Bool) { _ = CGAssociateMouseAndMouseCursorPosition(frozen ? 0 : 1) }
+    /// The pointer is held (true) or free (false). Holding is done only by putting it back
+    /// (`warpPointer`), never by dissociating it from the mouse: while dissociated, macOS keeps
+    /// reporting the frozen spot as the pointer's location to Glideball even when another app is
+    /// in front and the pointer is visibly moving, so the hold never saw it move and never put it
+    /// back (Levi, beta 16 log: "114 ball reports … 0 warps, furthest 0 pt"). Freeing always
+    /// re-associates, in case an older build left it dissociated.
+    func freezePointer(_ frozen: Bool) {
+        if !frozen { _ = CGAssociateMouseAndMouseCursorPosition(1) }
+    }
 
     /// Puts the pointer back at `point` while it's held (any app in front). Warping starts a
-    /// short suppression of local mouse events; associating again right after ends it, and
-    /// keeps the pointer dissociated from the ball, as it is while held.
+    /// short suppression of local mouse events; associating right after ends it.
     /// False if macOS refused the warp (logged per hold, so a real-hardware report says so).
     func warpPointer(_ point: CGPoint) -> Bool {
         let result = CGWarpMouseCursorPosition(point)
-        _ = CGAssociateMouseAndMouseCursorPosition(0)
+        _ = CGAssociateMouseAndMouseCursorPosition(1)
         return result == .success
     }
 

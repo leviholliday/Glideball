@@ -1757,12 +1757,13 @@ final class Engine {
 
     /// The cursor is frozen while Scroll with ball or a gesture hold has it, and only then.
     ///
-    /// `CGAssociateMouseAndMouseCursorPosition` (io.freezePointer) only holds the pointer while
-    /// Glideball is the app in front (Levi, beta 13: "it captures when I'm in the app, just not
-    /// elsewhere"), and swallowing the held button's drags at the tap never stopped the cursor:
-    /// WindowServer has moved it before a session tap sees the event. So the pointer is also
-    /// held at its `anchor` by putting it back (`holdPointer`) whenever the trackball's own
-    /// movement moved it, in any app. Ends with the freeze, so it can never outlive the hold.
+    /// Swallowing the held button's drags at the tap never stopped the cursor: WindowServer has
+    /// moved it before a session tap sees the event. Dissociating the pointer from the mouse
+    /// (`CGAssociateMouseAndMouseCursorPosition`) only held it with Glideball in front (beta 13),
+    /// and made macOS report the frozen spot as the pointer's location, so the put-back below
+    /// never acted (beta 16). The pointer is held at its `anchor` only by putting it back
+    /// (`holdPointer`) whenever the trackball's own movement moved it, in any app. Ends with
+    /// the freeze, so it can never outlive the hold.
     private func syncFreeze() {
         let frozen = ballScrolling || gestureFrozen
         if frozen, anchor == nil {
