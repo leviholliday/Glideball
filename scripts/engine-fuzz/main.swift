@@ -712,7 +712,8 @@ final class World {
             fail("works", "the trackball is plugged in, but the engine dropped its value (page \(page), usage \(usage))")
         }
         if key == kKey && page == kHIDPage_Button && value != 0 {
-            kReportsButtons = true   // as the engine: a press over HID, not just a release
+            // As the engine: a press over HID (not just a release) that reached it as the trackball's.
+            if engine.supportedValues != before { kReportsButtons = true }
             kLastHIDDown[usage - 1] = io.clock
         }
     }
@@ -1094,7 +1095,7 @@ final class World {
             guard !oDown.contains(b) else { return }
             markAmbiguity(other: b)
             oDown.insert(b)
-            othersKeep("another mouse's press of button \(b)") {
+            othersKeep("another mouse's press of button \(b)", b) {
                 hid(oKey, page: kHIDPage_Button, usage: b + 1, value: 1)
                 let id = newID(InputInfo(source: .other, button: b, type: World.type(b, 0), flags: io.kbFlags, time: io.clock))
                 deliver(mouseEvent(World.type(b, 0), button: b, id: id), source: .other)
@@ -1106,7 +1107,7 @@ final class World {
             oDown.remove(b)
             var cgFirst = false
             if case .oReleaseCGFirst = op { cgFirst = true }
-            othersKeep("another mouse's release of button \(b)") {
+            othersKeep("another mouse's release of button \(b)", b) {
                 if !cgFirst { hid(oKey, page: kHIDPage_Button, usage: b + 1, value: 0) }
                 let id = newID(InputInfo(source: .other, button: b, type: World.type(b, 1), flags: io.kbFlags, time: io.clock))
                 deliver(mouseEvent(World.type(b, 1), button: b, id: id), source: .other)
@@ -1139,7 +1140,7 @@ final class World {
             }
         case .padClick(let b):
             markAmbiguity(other: b)
-            othersKeep("a trackpad click of button \(b)") {
+            othersKeep("a trackpad click of button \(b)", b) {
                 let id = newID(InputInfo(source: .trackpad, button: b, type: World.type(b, 0), flags: io.kbFlags, time: io.clock))
                 deliver(mouseEvent(World.type(b, 0), button: b, id: id), source: .trackpad)
                 oRawReleased(b, trackpad: true)   // (its press may have gone past a switched-off tap)
@@ -1357,11 +1358,13 @@ final class World {
     /// Another device's press or release never ends or changes what the trackball holds: its
     /// keys stay down, its gesture hold and Scroll with ball stay on. (A Drag lock is the one
     /// thing any left click ends, by design.)
-    func othersKeep(_ what: String, _ body: () -> Void) {
+    func othersKeep(_ what: String, _ b: Int, _ body: () -> Void) {
         settle()   // whatever came before (an op that returned early) is in first
         // Only what the trackball still physically holds (a hold whose button was let go of
-        // ends when the engine sees that, which another device's event can be the moment of).
-        let held = !kDown.isEmpty && kRawHeld.isDisjoint(with: kDown)
+        // ends when the engine sees that, which another device's event can be the moment of:
+        // keys and Scroll with ball are judged while the trackball holds this very button, and
+        // a held button's press the engine saw).
+        let held = kDown.contains(b) && kRawHeld.isDisjoint(with: kDown)
         let keys = held ? Set(keysDown.filter { $0.value > 0 }.keys) : []
         let gesture = modes.gestureHeld && Set(modes.gestureButtons).isSubset(of: kDown), ball = held && modes.ballScrolling
         let bypassBefore = bypass
