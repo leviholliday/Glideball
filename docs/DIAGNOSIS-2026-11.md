@@ -48,6 +48,18 @@ Each has a regression case at the top of `scripts/engine-fuzz/main.swift`.
 | Low | After the tap had been off, the engine could think the left button was still down and turn Precision's moves into drags. | It asks macOS which buttons are down when the tap comes back and at launch. |
 | Low | Ring ticks handled back to back (after the input thread was held up) looked like 250+ ticks a second, so one tick could move the page about 17,000 points with smooth scrolling off. | The spin rate is never faster than the trackball can report (125 a second). |
 | Low | A button held across a relaunch: its release could let go of another button's remap onto the same button. | That stray release is swallowed. |
+| Medium | Another mouse (or the trackpad) pressing the button number the trackball holds: the engine took that press for the trackball's own repeat press and let go of what the trackball held (a held shortcut's keys came up mid-hold), and the mouse's release was swallowed or remapped. Within 0.3 s of the trackball's press, the mouse's press was even mapped as the trackball's. | Each press now belongs to a device (below). Another device's press and release always reach apps as they came and never end anything of the trackball's. |
+| Low | A button held while Glideball started, while macOS had the tap off, or as the trackball was plugged in: its release reached apps whatever they had seen, so a press Glideball had mapped before a relaunch ended in a release apps never saw the press of. | Those buttons are read when the engine starts, the tap comes back and a trackball arrives. Their releases do nothing mapped and go through only if apps have the button down. |
+| Low | (Found while fixing the two above.) The engine's list of buttons apps have down was a set, so one device's release made it think another device's hold of that button was up too. Events it posted were noted twice. | It's a count now, each posted event noted once. |
+
+### Whose press is it
+
+macOS doesn't say which device a click came from, so the engine works it out from the HID reports (`Engine.handleButton`):
+
+- A press is the trackball's if the trackball just reported that button going down and no earlier press has claimed that report. Each report is claimed once, so a second press of the same number while the trackball holds it is someone else's. A press with no report of its own (the trackpad's clicks never reach HID) is another device's, unless the trackball's report for it comes within 50 ms; then it was the trackball's, and it goes through as it is, as such presses always have.
+- A release is matched to an open press by the HID reports of that button going up, the trackball's or another mouse's. When they don't say yet (the trackball still has that button down, and the release might be the trackpad's, or the trackball's arriving just before its report), it's held back for at most 0.1 s until a report says whose it is. This only happens when two devices hold the same button, or the trackball's release arrives before its report.
+- A drag of a button both hold goes to whichever moved last.
+- A release with no press the engine saw (held through a relaunch, pressed while the tap was off) does nothing mapped. It goes through if apps have that button down (by the engine's count or macOS's own answer), and is swallowed otherwise.
 
 Also: the diagnostics log trimmed itself by moving 6,000 lines on every entry; it now trims in batches.
 
@@ -81,9 +93,8 @@ Four reports in `~/Library/Logs/DiagnosticReports/`, all from 2.10 beta 10 on 11
 
 ## Found and not fixed
 
-- **Two mice pressing the same button number at once.** If another mouse or the trackpad presses, say, its left button while the trackball holds its own (or within 0.3 s of the trackball pressing it), the engine can't tell whose press and release is whose: macOS doesn't say which device a click came from, and the engine keys what each press holds by button number. A release can then be matched to the wrong press, and a button can stay down until the next click. The fuzzer stops judging button pairing in that situation (it still judges keys, and nothing stays stuck after the next click). A real fix would match each press to its device, perhaps through the HID report's timestamp.
+- **Two devices on one button, where it still can't be told.** Fixed above for everything the HID reports can settle. What's left: both devices letting go of the same button within a few milliseconds of each other with each release's event arriving before its report (the engine guesses, and at worst the trackball's action ends a moment late and the other device's release counts as the trackball's; apps still see one release for each press); and a press that went by unseen (past a switched-off tap, or held through a relaunch) on a button another device holds too, because macOS counts a button as down once however many devices hold it. The fuzzer doesn't judge those few.
 - **The primary button isn't a plain left click in three places, by design:** the click that lets go of a Drag lock (it lets go, and that's all it does), Quick assign listening, and a combo you made that includes it. The fuzzer allows exactly those.
-- **Buttons held through a relaunch.** A release whose press the new Glideball never saw passes through as macOS's own; at worst an app sees a release without a press.
 - **Trackballs whose buttons don't come over HID** get no lost-release failsafe for held keys, because there's nothing to go on and a long push-to-talk hold must keep working.
 - **Small file things:** a junk backup dated in the future stays the "newest" one; the action picker's recent list (UserDefaults only) isn't clamped; the updater wasn't fuzzed here (it's step 5 of the plan).
 
@@ -91,7 +102,7 @@ Four reports in `~/Library/Logs/DiagnosticReports/`, all from 2.10 beta 10 on 11
 
 The engine's decisions were sound on the path people use every day: millions of random presses, combos, gestures and mode switches with nothing going wrong around them broke no rule. Every real bug was the world changing in the middle of a press: a release lost because macOS switched the tap off, an unplug, a pause or a settings change while a combo button was still waiting, two buttons holding the same thing, a relaunch. Those are exactly the cases a person can't test by hand, and each one left something held down, which is the worst thing Glideball can do.
 
-Two design choices sit under most of them. First, what each press holds is remembered by button number, not by device; that's why the two-mice case can't be solved cleanly yet. Second, the engine used to trust that every release would arrive. It now checks the trackball's own HID state for lost releases, asks macOS which buttons are down after the tap was off, and lets go of everything at pause, quit, unplug and sleep.
+Two design choices sit under most of them. First, what each press holds was remembered by button number, not by device; since then each press is matched to its device by the HID reports (above). Second, the engine used to trust that every release would arrive. It now checks the trackball's own HID state for lost releases, asks macOS which buttons are down after the tap was off, and lets go of everything at pause, quit, unplug and sleep.
 
 Settings from outside were trusted too: any number in a file went straight to the scroll engine and IOKit. They're now clamped where they come in and again where they reach the engine, and files are read with limits on size, kind and depth.
 
@@ -100,7 +111,7 @@ The refactor (`EngineIO`) moved the engine's effects behind one class without ch
 ## Next
 
 1. Run `scripts/fuzz.sh` before each beta (and `--tsan` now and then); keep a seed from any failure as a regression case.
-2. Match each press to its device, so the two-mice case can be fixed and fuzzed strictly.
+2. ~~Match each press to its device, so the two-mice case can be fixed and fuzzed strictly.~~ Done; on real hardware, check which comes first for the Expert Mouse, its HID report or its click event (the scroll log, `~/Library/Logs/Glide/scroll.log`, says "held back" when a release waited), and whether `CGEventSource.buttonState` answers with what apps saw or what's physically down.
 3. Fuzz the updater with forged, altered, truncated and downgraded zips (plan step 5).
 4. A Mac CI job that runs `scripts/check.sh` (plan step 3).
 5. Real-hardware checks of the new behaviour on the Expert Mouse: unplug while holding a shortcut, sleep with a Drag lock on, a combo button held across a pause.
