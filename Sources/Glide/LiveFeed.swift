@@ -65,19 +65,31 @@ final class LiveFeed {
     /// draw the light run a timeline only then, and an idle trackball costs nothing.
     private(set) var lightAwake = false
     @ObservationIgnored private var light = LightField()
-    /// The window's page is being scrolled: the live pictures (the light, the trackball,
-    /// the graphs) hold still on their last frame until it settles (`AppModel.pageMoved`).
-    /// Scrolling Glideball's own pages with the ring used to redraw them all, plus the
-    /// light over the whole window, under every frame of the scroll. Samples keep coming,
-    /// so when the page stops they carry on from where things are now.
+    /// The window's page is being scrolled: the live graphs hold still on their last
+    /// frame until it settles (`AppModel.pageMoved`). Scrolling Glideball's own pages with
+    /// the ring used to redraw them all (Pointer's Swift Charts curve at 20 fps) under every
+    /// frame of the scroll. The trackball (its own layers, `TrackballMotion`) and the hand's
+    /// light (`LiveLight`, a few gradients' opacity) cost too little to notice and never
+    /// hold: a trackball that froze mid-turn while the page moved looked like a glitch.
+    /// Samples keep coming, so when the page stops the graphs carry on from where things are now.
     private(set) var held = false
     func hold(_ on: Bool) { if held != on { held = on } }
 
     /// `--scroll-bench` only: an offscreen window has no display, so animation timelines
-    /// don't tick on their own; the bench bumps this at the rate they would (30 a second)
-    /// and the live views read it while their timeline would be running. Never changes in the app.
+    /// don't tick on their own; the bench bumps these at the rate they would (30 a second)
+    /// and the live views read them while their timeline would be running: `benchFrame`
+    /// for the graphs (not while held), `benchLightFrame` for the light (always). Never
+    /// change in the app.
     private(set) var benchFrame = 0
-    func benchTick() { if Sandbox.mode == .scrollBench && !held { benchFrame &+= 1 } }
+    private(set) var benchLightFrame = 0
+    func benchTick() {
+        guard Sandbox.mode == .scrollBench else { return }
+        if !held { benchFrame &+= 1 }
+        benchLightFrame &+= 1
+        // The layered trackball's clock (`LayerClock`) has no display either.
+        NotificationCenter.default.post(name: Self.benchTickNotification, object: nil)
+    }
+    static let benchTickNotification = Notification.Name("GlideBenchTick")
     /// Renders hold the light where the last sample left it (no clock in a picture).
     @ObservationIgnored var lightClockFrozen = false
     /// How bright the hand's light gets, 0…1 (`AppModel.lightIntensity`).

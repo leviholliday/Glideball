@@ -170,7 +170,7 @@ struct RootView: View {
                         // scrolling doesn't change (the window's coordinates would, every frame).
                         .coordinateSpace(.named(PixelGrid.page))
                     }
-                    // While the page moves, the live pictures and today's numbers hold still (`AppModel.pageMoved`).
+                    // While the page moves, the live graphs and today's numbers hold still (`AppModel.pageMoved`).
                     // By the offset, since Glideball's own scroll events carry no phase.
                     .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { old, new in
                         if abs(new - old) >= 0.5 { model.pageMoved() }

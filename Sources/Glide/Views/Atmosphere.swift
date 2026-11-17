@@ -218,16 +218,17 @@ private struct HandLight: View {
 }
 
 /// Redraws `content` with the hand's light levels, on a timeline that runs only
-/// while the light is awake (`LiveFeed.lightAwake`); at rest it's paused, and it
-/// holds its last frame while the page scrolls (`LiveFeed.held`).
+/// while the light is awake (`LiveFeed.lightAwake`); at rest it's paused. It keeps
+/// going while the page scrolls (`--scroll-bench` measures it as within the noise):
+/// only the graphs hold then (`LiveFeed.held`).
 struct LiveLight<Content: View>: View {
     let feed: LiveFeed
     @ViewBuilder var content: (LightField.Levels) -> Content
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !feed.lightAwake || feed.held)) { _ in
+        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !feed.lightAwake)) { _ in
             let _ = PerfProbe.count("Light frame")
-            let _ = feed.lightAwake ? feed.benchFrame : 0
+            let _ = feed.lightAwake ? feed.benchLightFrame : 0
             content(feed.lightLevels())
         }
     }

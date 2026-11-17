@@ -27,9 +27,14 @@ enum TrackballLook: Equatable {
 /// the ring and its ticks travel with it, warming to pink; press a button and
 /// its pad fills amber.
 ///
-/// It redraws only while something moves (`LiveFeed.isActive`), and otherwise
+/// It moves only while something moves (`LiveFeed.isActive`), and otherwise
 /// holds perfectly still — unless Performance is Smoothest, when the idle
 /// ball's light drifts very slowly (`driftFPS`). Never with Reduce Motion.
+///
+/// Connected, its moving parts are Core Animation layers driven by their own
+/// display link (`TrackballMotion`, TrackballLayers.swift), so a turn of the ring
+/// costs a few layer changes rather than a SwiftUI update: cheap enough that it
+/// stays live while a page scrolls, when the window's live graphs hold.
 struct TrackballView: View {
     let feed: LiveFeed
     let pressed: Set<Int>
@@ -37,36 +42,50 @@ struct TrackballView: View {
     /// Frames a second for the idle drift; 0 holds it still.
     var driftFPS: Double = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var motion = TrackballMotion()
 
     var body: some View {
         let drift = reduceMotion || look != .connected ? 0 : driftFPS
         let live = feed.isActive && look == .connected
-        // The ball turns smoothly (up to 30 frames a second) while it's moving; the rest follows the samples.
-        let interval = live ? min(feed.interval, 1.0 / 30) : 1 / max(drift, 1)
-        TimelineView(.animation(minimumInterval: interval, paused: (!live && drift == 0) || feed.held)) { _ in
-            let _ = PerfProbe.count("Trackball frame")
-            let _ = live ? feed.benchFrame : 0
-            let now = CACurrentMediaTime()
-            let light = live ? feed.lightLevels(at: now) : LightField.Levels()
-            // The idle drift turns the ball on top of where the hand left it. Built from the
-            // clock, never as an offset to animate: an animated jump would spin it wildly.
-            let turn = drift > 0 ? BallSpin.drift(at: now) * feed.ballOrientation(at: now) : feed.ballOrientation(at: now)
-            TrackballArt(pose: TrackballPose(
-                look: look, pressed: pressed,
-                ballSpeed: live ? feed.ballSpeed : 0,
-                roll: live ? CGVector(dx: feed.rollX, dy: feed.rollY) : .zero,
-                ringRate: live ? feed.ringVelocity : 0,
-                ringAngle: feed.ringAngle(at: now),
-                orientation: reduceMotion ? BallSpin.identity : turn,
-                afterglow: light.ball, afterglowDirection: light.roll,
-                comet: light.ring, cometSign: light.ringSign))
-                // Frames come from the clock: never let a surrounding animation (the sidebar's
-                // trackball growing as Overview's scrolls away) interpolate between two of them.
-                .transaction { $0.animation = nil }
+        Group {
+            if look == .connected {
+                // Only what never moves is SwiftUI's; this is re-evaluated when a button goes
+                // down or the feed starts or stops, never on a frame.
+                TrackballArt(pose: TrackballPose(look: look, pressed: pressed),
+                             live: TrackballLive(motion: motion, feed: feed,
+                                                 config: .init(live: live, drift: drift, reduceMotion: reduceMotion)))
+            } else {
+                // Paused, missing or waiting: nothing moves.
+                TrackballArt(pose: Self.pose(feed: feed, look: look, pressed: pressed, live: false, drift: 0,
+                                             reduceMotion: reduceMotion, at: CACurrentMediaTime()))
+            }
         }
+        // Going between connected and the rest crossfades, over the time the look's own change takes.
+        .animation(Theme.Motion.pause, value: look)
+        // Frames come from the clock: never let a surrounding animation (the sidebar's
+        // trackball growing as Overview's scrolls away) interpolate between two of them.
+        .transaction { $0.animation = nil }
         .aspectRatio(1, contentMode: .fit)
         .accessibilityElement()
         .accessibilityLabel(accessibilityText)
+    }
+
+    /// The trackball at `now`: the hand's motion carried on from the last sample.
+    static func pose(feed: LiveFeed, look: TrackballLook, pressed: Set<Int>, live: Bool, drift: Double,
+                     reduceMotion: Bool, at now: CFTimeInterval) -> TrackballPose {
+        let light = live ? feed.lightLevels(at: now) : LightField.Levels()
+        // The idle drift turns the ball on top of where the hand left it. Built from the
+        // clock, never as an offset to animate: an animated jump would spin it wildly.
+        let turn = drift > 0 ? BallSpin.drift(at: now) * feed.ballOrientation(at: now) : feed.ballOrientation(at: now)
+        return TrackballPose(
+            look: look, pressed: pressed,
+            ballSpeed: live ? feed.ballSpeed : 0,
+            roll: live ? CGVector(dx: feed.rollX, dy: feed.rollY) : .zero,
+            ringRate: live ? feed.ringVelocity : 0,
+            ringAngle: feed.ringAngle(at: now),
+            orientation: reduceMotion ? BallSpin.identity : turn,
+            afterglow: light.ball, afterglowDirection: light.roll,
+            comet: light.ring, cometSign: light.ringSign)
     }
 
     private var accessibilityText: Text {
@@ -126,6 +145,9 @@ struct TrackballArt: View {
     var reduceMotion = false
     /// A ball color other than the one in use (the render's sheet of every color); nil follows Settings.
     var theme: BallTheme? = nil
+    /// The live trackball: what moves is drawn by layers (`TrackballLayerSlot`) between the
+    /// parts drawn here, and `pose` only says what doesn't move (the look, the buttons).
+    var live: TrackballLive? = nil
 
     static let ballRadius = 0.262
     /// The fine colored line at the ring's outer edge.
@@ -202,12 +224,20 @@ struct TrackballArt: View {
                 Circle().stroke(Theme.warn, lineWidth: w)
                     .frame(width: d, height: d)
             case .connected, .paused:
-                ticks(s, color: lit ? Color(red: 0.86, green: 0.9, blue: 1) : .white,
-                      opacity: lit ? 0.4 + 0.4 * spin + 0.3 * pose.flare : 0.22)
+                if lit, let live {
+                    // The ticks, white and warming pink, turned by the ring (layers).
+                    TrackballLayerSlot(part: .ticks, live: live, theme: colors)
+                        .frame(width: s, height: s)
+                } else {
+                    ticks(s, color: lit ? Color(red: 0.86, green: 0.9, blue: 1) : .white,
+                          opacity: lit ? 0.4 + 0.4 * spin + 0.3 * pose.flare : 0.22)
+                }
                 if lit {
-                    // Pink warming the ticks the faster the ring turns.
-                    ticks(s, color: Theme.ring, opacity: spin * 0.85)
-                        .blendMode(.plusLighter)
+                    if live == nil {
+                        // Pink warming the ticks the faster the ring turns.
+                        ticks(s, color: Theme.ring, opacity: spin * 0.85)
+                            .blendMode(.plusLighter)
+                    }
                     // The launch's spin-up: the ticks streak, pink ghosts trailing behind them.
                     if pose.tickStreak > 0.5 && !reduceMotion {
                         ForEach(1..<5) { i in
@@ -237,7 +267,11 @@ struct TrackballArt: View {
                             style: StrokeStyle(lineWidth: w * 0.7, lineCap: .round))
                     .rotationEffect(.degrees(-6))
                     .frame(width: d, height: d)
-                if lit {
+                if lit, let live {
+                    // Turning: the pink glow, edge and sweep (layers).
+                    TrackballLayerSlot(part: .ringLight, live: live, theme: colors)
+                        .frame(width: s, height: s)
+                } else if lit {
                     // Turning: the edge warms to pink and glows, more the faster it goes.
                     Circle()
                         .stroke(Theme.ring, lineWidth: w * (4 + 3 * spin))
@@ -331,6 +365,39 @@ struct TrackballArt: View {
                 .frame(width: d, height: d)
         } else {
             ZStack {
+                if lit, let live {
+                    // The light the ball throws into the well, and its afterglow (layers).
+                    TrackballLayerSlot(part: .ballLight, live: live, theme: colors)
+                        .frame(width: s, height: s)
+                } else {
+                    ballLight(d)
+                }
+                // Contact shadow, down and to the right, away from the light.
+                Circle()
+                    .fill(Color.black.opacity(0.7))
+                    .frame(width: d, height: d)
+                    .offset(x: s * 0.008, y: s * 0.016)
+                    .blur(radius: s * 0.016)
+                if lit, let live {
+                    // The ball turning, under its glass (layers).
+                    TrackballLayerSlot(part: .ball, live: live, theme: colors)
+                        .frame(width: d, height: d)
+                } else {
+                    OrbBall(diameter: d, orientation: reduceMotion ? BallSpin.identity : pose.orientation, theme: colors)
+                        .saturation(lit ? 1 : 0)
+                        .brightness(lit ? 0.06 * pose.flare : (look == .paused ? -0.08 : -0.03))
+                        .contrast(lit ? 1 : 0.9)
+                }
+            }
+            .scaleEffect(pose.ballScale)
+            .offset(x: pose.ballOffset.width * s, y: pose.ballOffset.height * s)
+            .opacity(pose.ballOpacity)
+            .animation(Theme.Motion.pause, value: look)
+        }
+    }
+
+    /// The light the ball throws into the well (blue, a little more as it rolls) and its afterglow.
+    @ViewBuilder private func ballLight(_ d: CGFloat) -> some View {
                 // The light the ball throws into the well: blue, a little more as it rolls.
                 Circle()
                     .fill(RadialGradient(colors: [colors.glow[1].opacity(0.45), colors.glow[2].opacity(0.14), .clear],
@@ -348,22 +415,6 @@ struct TrackballArt: View {
                         .opacity(pose.afterglow * 0.85)
                         .blendMode(.plusLighter)
                 }
-                // Contact shadow, down and to the right, away from the light.
-                Circle()
-                    .fill(Color.black.opacity(0.7))
-                    .frame(width: d, height: d)
-                    .offset(x: s * 0.008, y: s * 0.016)
-                    .blur(radius: s * 0.016)
-                OrbBall(diameter: d, orientation: reduceMotion ? BallSpin.identity : pose.orientation, theme: colors)
-                    .saturation(lit ? 1 : 0)
-                    .brightness(lit ? 0.06 * pose.flare : (look == .paused ? -0.08 : -0.03))
-                    .contrast(lit ? 1 : 0.9)
-            }
-            .scaleEffect(pose.ballScale)
-            .offset(x: pose.ballOffset.width * s, y: pose.ballOffset.height * s)
-            .opacity(pose.ballOpacity)
-            .animation(Theme.Motion.pause, value: look)
-        }
     }
 }
 
