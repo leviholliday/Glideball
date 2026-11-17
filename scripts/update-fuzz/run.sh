@@ -9,6 +9,10 @@
 #   scripts/update-fuzz/run.sh          the fixed cases and a short random run (~30 s)
 #   scripts/update-fuzz/run.sh --deep   a few minutes of random mutations (seed printed;
 #                                       --seed N repeats one; --budget SECONDS is the hard limit)
+#   scripts/update-fuzz/run.sh --live   NOT offline, not in check.sh: fetches GitHub's real release list, downloads the
+#                                       newest prerelease's Glideball-update.zip through startDownload on URLSession.shared,
+#                                       prepare()s it against /Applications/Glideball.app's designated requirement (read
+#                                       only), prints each stage, and deletes the temp folder. Installs and launches nothing.
 set -e
 cd "$(dirname "$0")/../.."
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/glide-update-fuzz.XXXXXX")

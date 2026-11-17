@@ -136,6 +136,75 @@ var rng = SplitMix(state: seed)
 typealias Checker = UpdateChecker
 let current = "2.10-beta.14"   // what "this app" is, for the downgrade questions
 
+// MARK: - Live check (opt-in: run.sh --live)
+
+// The real updater code on the real network: the release list from GitHub, the newest prerelease as a beta user
+// would be offered it, its updater zip through startDownload on URLSession.shared, and prepare() on that, against the
+// installed app's own designated requirement (read only). Ends with the verified app in a temp folder, which is
+// deleted. Nothing is installed, moved or launched.
+if args.contains("--live") {
+    func stage(_ text: String) { print("[live] \(text)"); setCase("live: \(text)") }
+    func finish(_ ok: Bool, _ why: String) -> Never {
+        print(ok ? "LIVE OK: \(why)" : "LIVE FAILED: \(why)")
+        try? fm.removeItem(at: root)
+        exit(ok ? 0 : 1)
+    }
+    stage("release list: \(Checker.releasesAPI.absoluteString)")
+    var request = URLRequest(url: Checker.releasesAPI, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 15)
+    request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+    let listed = DispatchSemaphore(value: 0)
+    var listData: Data?, listStatus = 0
+    URLSession.shared.dataTask(with: request) { data, response, _ in
+        listData = data; listStatus = (response as? HTTPURLResponse)?.statusCode ?? 0; listed.signal()
+    }.resume()
+    if listed.wait(timeout: .now() + 30) == .timedOut { finish(false, "the release list didn't arrive in 30 s") }
+    guard listStatus == 200, let listData else { finish(false, "GitHub answered \(listStatus) for the release list") }
+    print("[live] release list: \(listData.count) bytes")
+    guard let update = Checker.newest(in: listData, includePrereleases: true) else { finish(false, "no release in the list") }
+    print("[live] newest with Early updates: \(update.version) (prerelease: \(update.isPrerelease))")
+    guard let url = update.download else { finish(false, "release \(update.version) has no updater asset") }
+    print("[live] asset: \(url.absoluteString)")
+    check(url.lastPathComponent == Checker.updateAssetName, "the asset taken is \(url.lastPathComponent), not \(Checker.updateAssetName)")
+
+    stage("designated requirement of /Applications/Glideball.app (read only)")
+    var installedCode: SecStaticCode?, designated: SecRequirement?
+    guard SecStaticCodeCreateWithPath(URL(fileURLWithPath: "/Applications/Glideball.app") as CFURL, [], &installedCode) == errSecSuccess, let installedCode,
+          SecCodeCopyDesignatedRequirement(installedCode, [], &designated) == errSecSuccess, let designated else { finish(false, "couldn't read the installed app's requirement") }
+    var text: CFString?
+    SecRequirementCopyString(designated, [], &text)
+    print("[live] requirement: \(text as String? ?? "?")")
+
+    stage("download through startDownload on URLSession.shared")
+    let done = DispatchSemaphore(value: 0)
+    let lock = NSLock()
+    var outcome: Result<URL, Error>?
+    var lastPrinted = -1.0, reports = 0
+    let began = Date()
+    let live = Checker.startDownload(url, expectedVersion: update.version, bundleID: "com.leviholliday.glide", requirement: designated, workRoot: tmp,
+                                     progress: { p in
+        lock.lock(); defer { lock.unlock() }
+        reports += 1
+        if p - lastPrinted >= 0.25 || p >= 1 { lastPrinted = p; print("[live] progress \(Int(p * 100))%") }
+    }, completion: { r in lock.lock(); outcome = r; lock.unlock(); done.signal() })
+    if done.wait(timeout: .now() + 180) == .timedOut { live.task.cancel(); finish(false, "no end after 180 s") }
+    lock.lock(); let result = outcome; let count = reports; lock.unlock()
+    print("[live] download and prepare took \(String(format: "%.1f", Date().timeIntervalSince(began))) s, \(count) progress reports, \(live.task.countOfBytesReceived) bytes received")
+    switch result {
+    case .success(let app)?:
+        stage("verified app: \(app.path)")
+        let info = Bundle(url: app)?.infoDictionary
+        print("[live] identifier \(info?["CFBundleIdentifier"] ?? "?"), version \(info?["CFBundleShortVersionString"] ?? "?")")
+        check(fm.fileExists(atPath: app.path), "the unpacked app isn't there")
+        check(app.path.hasPrefix(tmp.path), "the app isn't under the temp folder")
+        check((try? Checker.verifySignature(of: app, against: designated)) != nil, "verifySignature disagrees with prepare")
+        check(count > 0, "no progress was reported")
+        print("[live] deleting the temp folder")
+        finish(failures == 0, failures == 0 ? "\(update.version) downloaded, unpacked and verified; nothing installed" : "\(failures) checks failed")
+    case .failure(let error)?: finish(false, "prepare refused: \(error.localizedDescription)")
+    case nil: finish(false, "no result")
+    }
+}
+
 // MARK: - 1. Versions
 
 beginSection()
