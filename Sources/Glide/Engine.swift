@@ -2355,8 +2355,10 @@ final class Engine {
     /// (`CGAssociateMouseAndMouseCursorPosition`) only held it with Glideball in front (beta 13),
     /// and made macOS report the frozen spot as the pointer's location, so the put-back below
     /// never acted (beta 16). The pointer is held at its `anchor` only by putting it back
-    /// (`holdPointer`) whenever the trackball's own movement moved it, in any app. Ends with
-    /// the freeze, so it can never outlive the hold.
+    /// (`holdPointer`), in any app: whenever the trackball's own movement moved it, and again
+    /// every `holdRenewInterval` while the ball keeps reporting, since macOS ignores the mice's
+    /// movement for a moment after each put-back (`EngineIO.freezePointer`), which is what keeps
+    /// it dead still. Ends with the freeze, so it can never outlive the hold.
     private func syncFreeze() {
         let frozen = ballScrolling || gestureFrozen
         if frozen, anchor == nil {
@@ -2364,14 +2366,17 @@ final class Engine {
             otherMovedSinceAnchor = false
             anchorBeforeFollow = nil
             holdStats = HoldStats()
+            lastHoldWarp = -1
         } else if !frozen {
             if anchor != nil { logHoldStats() }
             anchor = nil
             holdRecheck?.invalidate()
             holdRecheck = nil
         }
+        let began = frozen && lastHoldWarp < 0
         io.freezePointer(frozen)
         syncMoveTap()
+        if began { holdPointer(renew: true) }   // macOS starts ignoring the ball before it first moves
     }
 
     // The system-wide hold. Input thread only.
@@ -2386,6 +2391,7 @@ final class Engine {
     private var followAt: CFTimeInterval = -1        // ...and when it followed
     private var sharedMotionAt: CFTimeInterval = -1  // another device moved with the trackball (counted as its)
     private var holdRecheck: EngineTimer?            // looks again just after the trackball's reports
+    private var lastHoldWarp: CFTimeInterval = -1    // the pointer was last put on its anchor (this hold)
 
     /// Movement from another device this close to one of the trackball's reports (before or
     /// after) is the trackball's: a driver re-publishing the ball's movement as a pointer of its
@@ -2397,6 +2403,8 @@ final class Engine {
     /// What one hold saw, for the log (the hold can't be watched on real hardware any other way).
     private struct HoldStats {
         var hidMoves = 0, tapMoves = 0, tapDrags = 0, warps = 0, failedWarps = 0, rechecks = 0
+        /// Put on its anchor again while already there, to keep macOS ignoring the ball.
+        var renewals = 0
         var maxOffset = 0.0
         /// Times the hold moved to follow another mouse, by device key; and how many of those
         /// the trackball reported within `echoWindow` of, so they were put back.
@@ -2415,8 +2423,8 @@ final class Engine {
         func byKey(_ d: [Int: Int]) -> String {
             d.isEmpty ? "" : " (" + d.sorted { $0.key < $1.key }.map { "\(Self.describe($0.key)) ×\($0.value)" }.joined(separator: ", ") + ")"
         }
-        diagnostics.record(String(format: "pointer hold: %d ball reports, tap saw %d moves %d drags, %d warps (%d failed, %d on a recheck), furthest %.0f pt",
-                                  s.hidMoves, s.tapMoves, s.tapDrags, s.warps, s.failedWarps, s.rechecks, s.maxOffset)
+        diagnostics.record(String(format: "pointer hold: %d ball reports, tap saw %d moves %d drags, %d warps (%d failed, %d on a recheck), kept still %d times, furthest %.0f pt",
+                                  s.hidMoves, s.tapMoves, s.tapDrags, s.warps, s.failedWarps, s.rechecks, s.renewals, s.maxOffset)
                            + "; followed another mouse \(s.follows.values.reduce(0, +)) times\(byKey(s.follows))"
                            + (s.followsUndone > 0 ? ", \(s.followsUndone) put back (the trackball reported with it)" : "")
                            + "; other devices' movement counted as the trackball's \(s.echoes.values.reduce(0, +)) times\(byKey(s.echoes))"
@@ -2480,8 +2488,12 @@ final class Engine {
     /// `seen` is the location on the trackball's move event, when there is one: where WindowServer
     /// put the pointer for that move. The pointer is put back if either it or macOS's answer for the
     /// pointer's location is off the anchor, so the hold doesn't hang on one of them being current.
+    /// `renew`: the ball just reported (or the hold just began), so the pointer is put on its
+    /// anchor even if it's there already, once the last put-back is `holdRenewInterval` old:
+    /// macOS then goes on ignoring the ball, and the pointer never leaves the anchor at all.
+    /// True if the pointer was off its anchor.
     @discardableResult
-    private func holdPointer(seen: CGPoint? = nil) -> Bool {
+    private func holdPointer(seen: CGPoint? = nil, renew: Bool = false) -> Bool {
         guard let a = anchor, let tap, io.tapIsEnabled(tap) else { return false }   // no tap: never fight the pointer
         let asked = io.cursorLocation()
         if asked == nil { holdStats.noLocation += 1 }
@@ -2493,12 +2505,20 @@ final class Engine {
         let bySeen = off(seen), byAsked = off(asked)
         if bySeen > 0.5, byAsked <= 0.5 { holdStats.queryLagged += 1 }
         let offset = max(bySeen, byAsked)
-        guard offset > 0.5 else { return false }
-        holdStats.maxOffset = max(holdStats.maxOffset, offset)
-        holdStats.warps += 1
+        let now = io.now()
+        guard offset > 0.5 || (renew && now - lastHoldWarp >= Self.holdRenewInterval) else { return false }
+        lastHoldWarp = now
+        if offset > 0.5 {
+            holdStats.maxOffset = max(holdStats.maxOffset, offset)
+            holdStats.warps += 1
+        } else {
+            holdStats.renewals += 1
+        }
         if !io.warpPointer(a) { holdStats.failedWarps += 1 }
-        return true
+        return offset > 0.5
     }
+    /// Well inside `EngineIO.holdSuppression`, so a late report never finds it run out.
+    static let holdRenewInterval = 0.03
 
     /// Another mouse's move reached the tap (its HID report was the latest): the pointer is where
     /// that mouse put it, so the hold stays there. Done here, as the move lands, rather than at
@@ -2519,7 +2539,7 @@ final class Engine {
     private func holdForBallReport() {
         guard anchor != nil else { return }
         holdStats.hidMoves += 1
-        holdPointer()
+        holdPointer(renew: true)
         guard holdRecheck == nil else { return }
         holdRecheck = io.schedule(Self.holdRecheckInterval, repeats: true) { [unowned self] in
             guard self.anchor != nil, self.io.now() - self.lastKMotion < 0.016 else {

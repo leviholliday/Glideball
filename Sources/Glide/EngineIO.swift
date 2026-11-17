@@ -34,19 +34,51 @@ class EngineIO {
     /// (`warpPointer`), never by dissociating it from the mouse: while dissociated, macOS keeps
     /// reporting the frozen spot as the pointer's location to Glideball even when another app is
     /// in front and the pointer is visibly moving, so the hold never saw it move and never put it
-    /// back (Levi, beta 16 log: "114 ball reports … 0 warps, furthest 0 pt"). Freeing always
-    /// re-associates, in case an older build left it dissociated.
+    /// back (Levi, beta 16 log: "114 ball reports … 0 warps, furthest 0 pt").
+    ///
+    /// After a warp macOS ignores the mice's movement for its "suppression interval", so warps
+    /// that keep coming hold the pointer dead still in any app, which is how Mac Mouse Fix
+    /// freezes the pointer for its drags (PointerFreeze.m). That interval is 0.25 s by default,
+    /// which would leave the pointer stuck for a moment after the hold, so it's `holdSuppression`
+    /// while holding (Mac Mouse Fix found 0.05 s the least that holds) and what it was before
+    /// once free. Nothing is taken from macOS: if Glideball hangs or dies mid-hold, the pointer
+    /// is free again that long after the last warp.
+    /// Freeing always re-associates: that ends a suppression still running, and undoes an older
+    /// build's dissociation.
     func freezePointer(_ frozen: Bool) {
-        if !frozen { _ = CGAssociateMouseAndMouseCursorPosition(1) }
+        let source = CGEventSource(stateID: .combinedSessionState)
+        if !checkedSuppression {
+            // A Glideball that died mid-hold left its own interval behind (it lasts the login session).
+            checkedSuppression = true
+            if let source, abs(source.localEventsSuppressionInterval - Self.holdSuppression) < 0.001 {
+                source.localEventsSuppressionInterval = Self.defaultSuppression
+            }
+        }
+        if frozen {
+            guard !holding else { return }
+            holding = true
+            suppressionBefore = source?.localEventsSuppressionInterval ?? Self.defaultSuppression
+            source?.localEventsSuppressionInterval = Self.holdSuppression
+        } else {
+            _ = CGAssociateMouseAndMouseCursorPosition(1)
+            guard holding else { return }
+            holding = false
+            source?.localEventsSuppressionInterval = suppressionBefore
+        }
     }
+    private var holding = false
+    private var checkedSuppression = false
+    private var suppressionBefore = EngineIO.defaultSuppression
+    static let holdSuppression: CFTimeInterval = 0.07
+    static let defaultSuppression: CFTimeInterval = 0.25
 
-    /// Puts the pointer back at `point` while it's held (any app in front). Warping starts a
-    /// short suppression of local mouse events; associating right after ends it.
+    /// Puts the pointer back at `point` while it's held (any app in front), and starts macOS
+    /// ignoring the mice's movement for `holdSuppression` (`freezePointer`). Not followed by a
+    /// re-associate, which would end that at once (betas 17 to 21 did, so the pointer crept a
+    /// few points between the ball's report and the warp).
     /// False if macOS refused the warp (logged per hold, so a real-hardware report says so).
     func warpPointer(_ point: CGPoint) -> Bool {
-        let result = CGWarpMouseCursorPosition(point)
-        _ = CGAssociateMouseAndMouseCursorPosition(1)
-        return result == .success
+        CGWarpMouseCursorPosition(point) == .success
     }
 
     func post(_ event: CGEvent, tap: CGEventTapLocation) { event.post(tap: tap) }
