@@ -390,12 +390,12 @@ enum Expect { case accept, refuse, either }
 /// when refused, nothing written outside the unpack folder either way.
 @discardableResult
 func prepareCase(_ name: String, _ zipFile: URL, expect: Expect, expectedVersion: String = version, id: String = bundleID,
-                 requirement req: SecRequirement? = nil, budget: Double = 60) -> Bool {
+                 requirement req: SecRequirement? = nil, limits: Checker.ZipLimits = .standard, budget: Double = 60) -> Bool {
     var accepted = false
     let before = tmpListing(), rootBefore = rootListing()
     worker.run("prepare: \(name)", budget: budget) {
         do {
-            let app = try Checker.prepare(zip: zipFile, expectedVersion: expectedVersion, bundleID: id, requirement: req ?? pinned, workRoot: tmp)
+            let app = try Checker.prepare(zip: zipFile, expectedVersion: expectedVersion, bundleID: id, requirement: req ?? pinned, workRoot: tmp, limits: limits)
             accepted = true
             check(expect != .refuse, "\(name): accepted, should have been refused")
             check(app.pathExtension == "app" && fm.fileExists(atPath: app.path), "\(name): returned \(app.path), which isn't an app")
@@ -475,6 +475,94 @@ tampered("code signature from another app (same files, so it still verifies)", e
 tampered("an unsealed file added (observed only)", expect: .either) { try! Data("extra".utf8).write(to: $0.appendingPathComponent("Contents/Resources/extra.txt")) }
 tampered("a helper added in MacOS (observed only)", expect: .either) { try! fm.copyItem(at: URL(fileURLWithPath: "/usr/bin/false"), to: $0.appendingPathComponent("Contents/MacOS/helper")) }
 
+// The strict signature flags (all architectures, nested code, strict validation). Each fixture below is
+// refused by them; the note says whether the old flags (all architectures only) would have let it in.
+func staticVerdict(_ app: URL, _ flags: SecCSFlags) -> Bool {
+    var code: SecStaticCode?
+    guard SecStaticCodeCreateWithPath(app as CFURL, [], &code) == errSecSuccess, let code else { return false }
+    return SecStaticCodeCheckValidity(code, flags, pinned) == errSecSuccess
+}
+let oldFlags = SecCSFlags(rawValue: kSecCSCheckAllArchitectures)
+func strictCase(_ name: String, _ app: URL) {
+    var old = false, new = true
+    worker.run("strict flags: \(name)") {
+        old = staticVerdict(app, oldFlags)
+        new = staticVerdict(app, Checker.signatureCheckFlags)
+    }
+    check(!new, "\(name): passed the strict flags")
+    print("  note: strict flags: \(name): refused; the old flags \(old ? "accepted" : "refused") it")
+    prepareCase("strict flags: \(name)", zip(app), expect: .refuse)
+}
+check({ var ok = false; worker.run("strict flags: good app") { ok = staticVerdict(goodApp, Checker.signatureCheckFlags) }; return ok }(), "the good fixture fails the strict flags")
+do {
+    let a = makeApp(); try! Data("x".utf8).write(to: a.appendingPathComponent("extra.txt"))
+    strictCase("a file in the bundle root, outside the seal", a)
+    let b = makeApp(); try! fm.createSymbolicLink(atPath: b.appendingPathComponent("Contents/Resources/lnk").path, withDestinationPath: "/etc/hosts")
+    strictCase("a link added to Resources after signing", b)
+    let c = makeApp(); try! fm.createSymbolicLink(atPath: c.appendingPathComponent("Contents/MacOS/Glide2").path, withDestinationPath: "/usr/bin/false")
+    strictCase("a link added beside the executable", c)
+    // Nested code: a helper app signed on its own, sealed into the outer app, then changed.
+    func nestedApp(tamper: Bool, helperSigned: Bool) -> URL {
+        let app = makeApp(signedAs: nil)
+        let helper = app.appendingPathComponent("Contents/Library/H.app")
+        buildApp(at: helper, id: "com.test.helper", version: "1", signedAs: helperSigned ? "com.test.helper" : nil)
+        let (code, out) = sh("/usr/bin/codesign", ["--force", "--sign", "-", "--identifier", bundleID, app.path])
+        precondition(code == 0 || !helperSigned, "codesign (nested) failed: \(out)")
+        if tamper { try! Data("#!/bin/sh\necho pwned\n".utf8).write(to: helper.appendingPathComponent("Contents/MacOS/Glide")) }
+        return app
+    }
+    strictCase("a nested helper app changed after signing", nestedApp(tamper: true, helperSigned: true))
+    let ok = nestedApp(tamper: false, helperSigned: true)
+    check({ var v = false; worker.run("strict flags: untampered nested helper") { v = staticVerdict(ok, Checker.signatureCheckFlags) }; return v }(), "an untampered, signed nested helper failed the strict flags")
+    prepareCase("an app with a signed nested helper (a normal one)", zip(ok), expect: .accept)
+}
+// A release built the way release.sh builds one: ~105 files, a universal binary, xattr -cr, signed, ditto --sequesterRsrc.
+do {
+    let dir = fixtures.appendingPathComponent("release-shaped", isDirectory: true)
+    let app = dir.appendingPathComponent("Glideball.app")
+    buildApp(at: app, id: bundleID, version: version, signedAs: nil)
+    let res = app.appendingPathComponent("Contents/Resources")
+    for lang in ["en", "de", "fr", "es", "ja", "zh-Hans", "pt-BR", "it", "ko", "nl", "ru", "tr", "pl", "sv"] {
+        let l = res.appendingPathComponent("\(lang).lproj", isDirectory: true)
+        try! fm.createDirectory(at: l, withIntermediateDirectories: true)
+        for n in ["Localizable", "InfoPlist", "Main"] { try! Data(String(repeating: "\"key\" = \"value \(lang)\";\n", count: 400).utf8).write(to: l.appendingPathComponent("\(n).strings")) }
+    }
+    for n in 0..<40 { try! Data(count: 1).write(to: res.appendingPathComponent("tick\(n).caf")); try! Data((0..<40_000).map { _ in UInt8.random(in: 0...255, using: &rng) }).write(to: res.appendingPathComponent("icon\(n).png")) }
+    var icns = Data(count: 12_000_000)   // incompressible, like real PNG data inside an icns
+    _ = icns.withUnsafeMutableBytes { SecRandomCopyBytes(kSecRandomDefault, $0.count, $0.baseAddress!) }
+    try! icns.write(to: res.appendingPathComponent("AppIcon.icns"))
+    sh("/usr/bin/xattr", ["-cr", app.path])
+    let (code, out) = sh("/usr/bin/codesign", ["--force", "--sign", "-", "--identifier", bundleID, app.path])
+    precondition(code == 0, "codesign failed: \(out)")
+    let z = dir.appendingPathComponent("Glideball-update.zip")
+    let (zc, zo) = sh("/usr/bin/ditto", ["-c", "-k", "--sequesterRsrc", "--keepParent", app.path, z.path])
+    precondition(zc == 0, "ditto failed: \(zo)")
+    let files = (fm.enumerator(atPath: app.path)?.allObjects.count) ?? 0
+    check(files >= 100, "the release-shaped fixture has only \(files) files")
+    check(reasonable(z), "a release-shaped zip's index reads as unreasonable")
+    prepareCase("release-shaped zip (\(files) files, sequestered, strict flags)", z, expect: .accept)
+}
+// The genuine installed app, read only (nothing is launched or changed): it must pass the same flags.
+if fm.fileExists(atPath: "/Applications/Glideball.app") {
+    worker.run("strict flags: the genuine installed Glideball.app") {
+        do { try Checker.verifySignature(of: URL(fileURLWithPath: "/Applications/Glideball.app"), against: requirement("identifier \"com.leviholliday.glide\"")) }
+        catch { fail("the installed Glideball.app fails the strict flags: \(error.localizedDescription)") }
+    }
+    // And zipped the way release.sh zips it (a copy: the installed app is only read), a whole update through prepare().
+    let installed = URL(fileURLWithPath: "/Applications/Glideball.app")
+    let installedVersion = Bundle(url: installed)?.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+    let genuineZip = fixtures.appendingPathComponent("genuine.zip")
+    let (gc, go) = sh("/usr/bin/ditto", ["-c", "-k", "--sequesterRsrc", "--keepParent", installed.path, genuineZip.path])
+    if gc == 0 {
+        check(reasonable(genuineZip), "the installed app's own zip reads as unreasonable")
+        prepareCase("the installed Glideball.app, zipped like a release", genuineZip, expect: .accept, expectedVersion: installedVersion, id: "com.leviholliday.glide",
+                    requirement: requirement("identifier \"com.leviholliday.glide\""))
+        try? fm.removeItem(at: genuineZip)
+    } else { fail("couldn't zip the installed app: \(go)") }
+} else {
+    print("  note: /Applications/Glideball.app isn't installed here; the genuine-app check was skipped")
+}
+
 // Links where the app should be.
 do {
     let realFolder = fixtures.appendingPathComponent("linkdir", isDirectory: true)
@@ -507,8 +595,66 @@ func hostileZip(_ recipe: String, aim: String? = nil) -> URL {
     return out
 }
 // A good app plus extra entries: may be accepted, but nothing may land outside the unpack folder.
-for recipe in ["traversal", "symlink-write", "symlink-loop", "duplicates", "long-names"] + (deep ? ["many", "bomb"] : []) {
+for recipe in ["traversal", "symlink-write", "symlink-loop", "duplicates", "long-names"] {
     prepareCase("zip with \(recipe)", hostileZip(recipe), expect: .either, budget: 120)
+}
+// Zip bombs and their cousins. What the zip's index says is read before anything is unpacked.
+func reasonable(_ zipFile: URL, limits: Checker.ZipLimits = .standard) -> Bool {
+    var answer = false
+    worker.run("zipIsReasonable \(zipFile.lastPathComponent)") { answer = Checker.zipIsReasonable(at: zipFile, limits: limits) }
+    return answer
+}
+func indexCase(_ name: String, _ recipe: String, reasonable expected: Bool, prepare expect: Expect) {
+    let z = hostileZip(recipe)
+    check(reasonable(z) == expected, "\(name): the index reads as \(expected ? "unreasonable" : "reasonable"), expected the opposite")
+    prepareCase(name, z, expect: expect, budget: 120)
+}
+check(reasonable(goodZip), "the good zip's index reads as unreasonable")
+indexCase("zip bomb by ratio (64 MB of zeros in ~64 KB)", "bomb", reasonable: false, prepare: .refuse)
+indexCase("zip bomb by entry count (25,000 entries)", "many", reasonable: false, prepare: .refuse)
+indexCase("an index claiming 600 MB in all", "lying-total", reasonable: false, prepare: .refuse)
+indexCase("an index claiming 12 GB in all, in zip64 fields", "lying-total-zip64", reasonable: false, prepare: .refuse)
+indexCase("a high ratio under 10 MB is not a bomb (8 MB of zeros)", "bomb-small", reasonable: true, prepare: .accept)
+indexCase("19,000 small entries are fine (under the 20,000 cap)", "many-ok", reasonable: true, prepare: .accept)
+indexCase("the good zip with zip64 end records reads fine", "zip64-plain", reasonable: true, prepare: .either)
+do {   // the same limits, tightened, on the good zip: each one on its own refuses it
+    var l = Checker.ZipLimits(); l.maxEntries = 3
+    check(!reasonable(goodZip, limits: l), "a zip with more entries than allowed read as reasonable")
+    prepareCase("prepare with the entry cap at 3", goodZip, expect: .refuse, limits: l)
+    l = Checker.ZipLimits(); l.maxUncompressedBytes = 100
+    check(!reasonable(goodZip, limits: l), "a zip with more bytes than allowed read as reasonable")
+    l = Checker.ZipLimits(); l.ratioFloorBytes = 1; l.maxRatio = 0
+    check(!reasonable(goodZip, limits: l), "a zip over the ratio read as reasonable")
+    l = Checker.ZipLimits(); l.maxDirectoryBytes = 10
+    check(!reasonable(goodZip, limits: l), "a zip with a too-large index read as reasonable")
+}
+// The index lies: it says 1 KB, the data inflates to 64 MB. The unpack folder is watched and the unpack stopped.
+do {
+    var l = Checker.ZipLimits(); l.maxUncompressedBytes = 8_000_000
+    let z = hostileZip("lying-bomb")
+    check(reasonable(z, limits: l), "the lying bomb's index should look innocent")
+    // The case only proves the watch if ditto really does inflate the data past what the index claims.
+    let control = fixtures.appendingPathComponent("lying-bomb-control", isDirectory: true)
+    sh("/usr/bin/ditto", ["-x", "-k", z.path, control.path])
+    let inflated = (try? fm.attributesOfItem(atPath: control.appendingPathComponent("big1.bin").path)[.size] as? Int64) ?? 0
+    check(inflated > 8_000_000, "ditto inflated the lying bomb to only \(inflated) bytes: the folder watch isn't being tested")
+    try? fm.removeItem(at: control)
+    let started = Date()
+    prepareCase("an index that understates a bomb (unpack watched, 8 MB limit)", z, expect: .refuse, limits: l)
+    check(Date().timeIntervalSince(started) < 30, "stopping the lying bomb took \(Date().timeIntervalSince(started)) s")
+}
+// Unreadable indexes are refused, not crashed on.
+worker.run("zipIsReasonable on junk") {
+    for (name, bytes) in [("empty", Data()), ("21 bytes", Data(count: 21)), ("22 zeros", Data(count: 22)), ("EOCD only", Data([0x50, 0x4b, 0x05, 0x06] + [UInt8](repeating: 0, count: 18))),
+                          ("EOCD claiming a huge index", Data([0x50, 0x4b, 0x05, 0x06, 0, 0, 0, 0, 1, 0, 1, 0, 0xFF, 0xFF, 0xFF, 0x7F, 0, 0, 0, 0, 0, 0])),
+                          ("zip64 EOCD without its record", Data([0x50, 0x4b, 0x05, 0x06, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0])),
+                          ("random", Data((0..<70_000).map { _ in UInt8.random(in: 0...255, using: &rng) }))] {
+        let f = fixtures.appendingPathComponent("junk-index.zip")
+        try! bytes.write(to: f)
+        check(!Checker.zipIsReasonable(at: f), "zipIsReasonable accepted \(name)")
+    }
+    check(!Checker.zipIsReasonable(at: fixtures.appendingPathComponent("not-there.zip")), "zipIsReasonable accepted a missing file")
+    check(!Checker.zipIsReasonable(at: fixtures), "zipIsReasonable accepted a folder")
 }
 prepareCase("Glideball.app inside the zip is a link to the decoy", hostileZip("app-is-symlink", aim: goodApp.path), expect: .refuse)
 // The size cap, with a sparse file (no disk used).
@@ -555,6 +701,131 @@ for _ in 0..<damageCount {
     prepareCase("download with damaged bytes #\(damaged) (seed \(seed))", bytesZip(d), expect: .either)
 }
 endSection("unpacking and verifying", "\(fixtureCount) fixtures")
+
+// MARK: - 3b. Downloads
+
+// A URLProtocol that plays a server: no network. It streams `total` bytes (nil: forever) in 64 KB chunks, announcing
+// `declared` as the Content-Length (nil: none), and records how much it sent and whether the client hung up first.
+final class StubServer: URLProtocol {
+    struct Script { var status = 200; var declared: Int64?; var total: Int64?; var body: Data? }
+    nonisolated(unsafe) static var script = Script()
+    nonisolated(unsafe) static var sent: Int64 = 0
+    nonisolated(unsafe) static var hungUp = false
+    nonisolated(unsafe) static var finished = false
+    private let stop = NSLock()
+    private var stopped = false
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+    override func startLoading() {
+        let s = Self.script
+        Self.sent = 0; Self.hungUp = false; Self.finished = false
+        var headers: [String: String] = [:]
+        if let d = s.declared { headers["Content-Length"] = String(d) }
+        client?.urlProtocol(self, didReceive: HTTPURLResponse(url: request.url!, statusCode: s.status, httpVersion: "HTTP/1.1", headerFields: headers)!, cacheStoragePolicy: .notAllowed)
+        DispatchQueue.global().async { [self] in
+            if let body = s.body {
+                client?.urlProtocol(self, didLoad: body); Self.sent = Int64(body.count)
+                client?.urlProtocolDidFinishLoading(self); Self.finished = true
+                return
+            }
+            let chunk = Data(count: 65_536)
+            while true {
+                stop.lock(); let done = stopped; stop.unlock()
+                if done { return }
+                if let total = s.total, Self.sent >= total { break }
+                let n = s.total.map { min(Int64(chunk.count), $0 - Self.sent) } ?? Int64(chunk.count)
+                client?.urlProtocol(self, didLoad: chunk.prefix(Int(n))); Self.sent += n
+                Thread.sleep(forTimeInterval: 0.0005)
+            }
+            client?.urlProtocolDidFinishLoading(self); Self.finished = true
+        }
+    }
+    override func stopLoading() { stop.lock(); stopped = true; stop.unlock(); if !Self.finished { Self.hungUp = true } }
+}
+let stubSession: URLSession = {
+    let c = URLSessionConfiguration.ephemeral
+    c.protocolClasses = [StubServer.self]
+    return URLSession(configuration: c)
+}()
+let stubURL = URL(string: "https://example.invalid/Glideball-update.zip")!
+
+/// Plays one download against the stub and waits for its end. Returns the outcome and how long it took.
+func playDownload(_ name: String, _ script: StubServer.Script, cap: Int64, expectedVersion: String = version) -> (result: Result<URL, Error>?, progress: [Double], seconds: Double) {
+    StubServer.script = script
+    let done = DispatchSemaphore(value: 0)
+    let lock = NSLock()
+    var result: Result<URL, Error>?
+    var progress: [Double] = []
+    let began = Date()
+    let download = Checker.startDownload(stubURL, session: stubSession, maxBytes: cap, expectedVersion: expectedVersion, bundleID: bundleID, requirement: pinned, workRoot: tmp,
+                                         progress: { p in lock.lock(); progress.append(p); lock.unlock() },
+                                         completion: { r in lock.lock(); result = r; lock.unlock(); done.signal() })
+    if done.wait(timeout: .now() + 30) == .timedOut { download.task.cancel(); fail("download \(name): no end after 30 s"); }
+    lock.lock(); defer { lock.unlock() }
+    return (result, progress, Date().timeIntervalSince(began))
+}
+
+beginSection()
+let downloadMessage = "The download isn’t the expected Glideball \(version)."
+let cap: Int64 = 2_000_000
+func downloadMessageIs(_ r: Result<URL, Error>?, _ text: String) -> Bool {
+    if case .failure(let e)? = r { return e.localizedDescription == text }
+    return false
+}
+// With the real 300 MB cap, only the announced size can stop this one before 300 MB have gone by.
+worker.run("download: announces a size over the cap (10 GB), then would stream forever", budget: 40) {
+    let r = playDownload("announced", .init(declared: 10_000_000_000, total: nil), cap: Checker.maxZipBytes)
+    check(downloadMessageIs(r.result, downloadMessage), "announced too big: \(String(describing: r.result))")
+    check(StubServer.sent < 8_000_000, "announced too big: the server had already sent \(StubServer.sent) bytes when the download was cancelled")
+    check(StubServer.hungUp, "announced too big: the connection was never closed")
+}
+worker.run("download: no Content-Length, endless stream, past a 2 MB cap", budget: 40) {
+    let r = playDownload("endless", .init(declared: nil, total: nil), cap: cap)
+    check(downloadMessageIs(r.result, downloadMessage), "endless: \(String(describing: r.result))")
+    check(StubServer.sent > cap, "endless: cancelled at \(StubServer.sent) bytes, before the cap of \(cap)")
+    check(StubServer.sent < cap + 4_000_000, "endless: \(StubServer.sent) bytes went by before the cancel (cap \(cap))")
+    check(StubServer.hungUp, "endless: the connection was never closed")
+    check(r.seconds < 20, "endless: took \(r.seconds) s")
+}
+worker.run("download: Content-Length says 1 KB, the stream never ends", budget: 40) {
+    let r = playDownload("lying length", .init(declared: 1000, total: nil), cap: cap)
+    check(downloadMessageIs(r.result, downloadMessage), "lying length: \(String(describing: r.result))")
+    check(StubServer.sent < cap + 4_000_000 && StubServer.hungUp, "lying length: \(StubServer.sent) bytes sent, hung up: \(StubServer.hungUp)")
+}
+worker.run("download: a finite stream just over the cap", budget: 40) {
+    let r = playDownload("just over", .init(declared: cap + 1000, total: cap + 1000), cap: cap)
+    check(downloadMessageIs(r.result, downloadMessage), "just over: \(String(describing: r.result))")
+}
+worker.run("download: exactly the cap is let through (then refused as not a zip)", budget: 40) {
+    let r = playDownload("exactly the cap", .init(declared: cap, total: cap), cap: cap)
+    check(!StubServer.hungUp, "exactly the cap: cancelled")
+    if case .success = r.result { fail("exactly the cap: junk accepted") }
+}
+worker.run("download: a normal update comes through, with progress", budget: 40) {
+    let r = playDownload("normal", .init(declared: Int64(goodBytes.count), body: goodBytes), cap: Checker.maxZipBytes)
+    switch r.result {
+    case .success(let app)?:
+        check(app.pathExtension == "app" && fm.fileExists(atPath: app.path), "normal: returned \(app.path)")
+        Checker.removeTree(app.deletingLastPathComponent())
+    default: fail("normal: \(String(describing: r.result))")
+    }
+    check(!r.progress.isEmpty, "normal: no progress reported")
+    check(r.progress.allSatisfy { $0 >= 0 && $0 <= 1 }, "normal: progress outside 0...1: \(r.progress)")
+}
+worker.run("download: a normal update with no Content-Length", budget: 40) {
+    let r = playDownload("normal, no length", .init(declared: nil, body: goodBytes), cap: Checker.maxZipBytes)
+    if case .success(let app)? = r.result { Checker.removeTree(app.deletingLastPathComponent()) } else { fail("normal, no length: \(String(describing: r.result))") }
+}
+worker.run("download: HTTP 404 keeps its own wording", budget: 40) {
+    let r = playDownload("404", .init(status: 404, declared: 5, body: Data("nope\n".utf8)), cap: Checker.maxZipBytes)
+    check(downloadMessageIs(r.result, "The download didn’t finish."), "404: \(String(describing: r.result))")
+}
+worker.run("download: a wrong zip is still refused after a full download", budget: 40) {
+    let r = playDownload("wrong version", .init(declared: Int64(goodBytes.count), body: goodBytes), cap: Checker.maxZipBytes, expectedVersion: "9.9")
+    check(downloadMessageIs(r.result, "The download isn’t the expected Glideball 9.9."), "wrong version: \(String(describing: r.result))")
+}
+check(tmpListing().isEmpty, "downloads left unpack folders behind: \(tmpListing())")
+endSection("downloads", "cap enforced while streaming, through a stub server")
 
 // MARK: - 4. The install helper
 
