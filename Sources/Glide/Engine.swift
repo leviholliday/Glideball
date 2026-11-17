@@ -190,7 +190,7 @@ final class Engine {
     private var lastMoverIsTrackball = true    // the latest HID movement was the trackball's
     private var deferredUps: [(button: Int64, event: CGEvent)] = []   // whose release it is isn't known yet
     private var deferTimer: EngineTimer?
-    /// A HID report and its CG event are this close (either way round), as `isKensingtonPress` had it.
+    /// A HID report and its CG event are this close (either way round), as the old press check had it.
     private static let ownerWindow: CFTimeInterval = 0.3
     /// A press with no HID report of its own, this close before the trackball's report of that
     /// button, was the trackball's (its CG event came first).
@@ -1886,8 +1886,9 @@ final class Engine {
 
     /// Every button event: first whose it is (`attributePress`, `ownerOfUp`), then the
     /// trackball's go to `routeButton` and everything else passes untouched. What a trackball
-    /// press holds is ended only by the trackball's own release, never by another device's
-    /// press or release of the same button number.
+    /// press holds is ended by the trackball's own release (or, once the trackball has reported
+    /// letting go and that release went by unseen, by the next press of that button:
+    /// `closeStaleTrackballPress`), never by another device's press or release.
     private func handleButton(_ event: CGEvent, _ phase: Phase) -> Unmanaged<CGEvent>? {
         let button = event.getIntegerValueField(.mouseEventButtonNumber)
         // A release of this button still waiting to be told apart goes first, and this event
