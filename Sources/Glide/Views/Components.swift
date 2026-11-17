@@ -1309,6 +1309,10 @@ private struct ChoiceCard: View {
     @State private var onceWork: DispatchWorkItem?
     @FocusState private var focused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// The title row's width, and what the name and checkmark need side by side (0 until measured).
+    @State private var roomForTitle: CGFloat = 0
+    @State private var titleWithCheck: CGFloat = 0
+    private var checkFits: Bool { titleWithCheck > 0 && titleWithCheck <= roomForTitle + 0.5 }
 
     private func titleRow(check: Bool) -> some View {
         HStack(alignment: detail == nil ? .center : .firstTextBaseline, spacing: 6) {
@@ -1340,13 +1344,21 @@ private struct ChoiceCard: View {
             VStack(alignment: .leading, spacing: detail == nil ? 8 : 4) {
                 // The checkmark only where it fits beside the whole name: a narrow card (the tour's
                 // four speeds, or German) gets its name in full and the glow says it's picked.
-                if detail == nil && selected {
-                    ViewThatFits(in: .horizontal) {
-                        titleRow(check: selected)
-                        titleRow(check: false)
-                    }
+                // Measured rather than left to ViewThatFits, which in the live tour could still
+                // pick the row with the checkmark and cut "Turbo" to "Tu…".
+                if detail == nil {
+                    titleRow(check: selected && checkFits)
+                        .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { roomForTitle = $0 }
+                        .background {
+                            // The whole name with the checkmark, at its natural width, never drawn.
+                            titleRow(check: true)
+                                .fixedSize()
+                                .hidden()
+                                .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { titleWithCheck = $0 }
+                                .accessibilityHidden(true)
+                        }
                 } else {
-                    titleRow(check: selected)   // a name that may wrap, or a card that isn't picked
+                    titleRow(check: selected)   // a name that may wrap: the checkmark stays
                 }
                 if let detail {
                     Text(detail)
