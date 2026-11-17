@@ -68,9 +68,10 @@ final class LiveFeed {
     /// The window's page is being scrolled: the live graphs hold still on their last
     /// frame until it settles (`AppModel.pageMoved`). Scrolling Glideball's own pages with
     /// the ring used to redraw them all (Pointer's Swift Charts curve at 20 fps) under every
-    /// frame of the scroll. The trackball (its own layers, `TrackballMotion`) and the hand's
-    /// light (`LiveLight`, a few gradients' opacity) cost too little to notice and never
-    /// hold: a trackball that froze mid-turn while the page moved looked like a glitch.
+    /// frame of the scroll. The hand's light (`LiveLight`) holds too: it's SwiftUI work on
+    /// the main thread, and on a busy 16 GB Mac it made scrolling a little glitchy. The
+    /// trackball (its own layers, `TrackballMotion`) never holds: one that froze mid-turn
+    /// while the page moved looked like a glitch.
     /// Samples keep coming, so when the page stops the graphs carry on from where things are now.
     private(set) var held = false
     func hold(_ on: Bool) { if held != on { held = on } }
@@ -78,7 +79,7 @@ final class LiveFeed {
     /// `--scroll-bench` only: an offscreen window has no display, so animation timelines
     /// don't tick on their own; the bench bumps these at the rate they would (30 a second)
     /// and the live views read them while their timeline would be running: `benchFrame`
-    /// for the graphs (not while held), `benchLightFrame` for the light (always). Never
+    /// for the graphs, `benchLightFrame` for the light (neither while held). Never
     /// change in the app.
     private(set) var benchFrame = 0
     private(set) var benchLightFrame = 0
