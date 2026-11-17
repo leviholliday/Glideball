@@ -11,7 +11,8 @@ import os
 /// Once a second it logs what was rebuilt ("RootView 0, TabPage 0, Group 3…"),
 /// and each count is also a signpost (Instruments › Points of Interest). While
 /// you scroll a page, everything should stay at 0 except the live light and the
-/// trackball, which only redraw themselves (and hold still while the page scrolls).
+/// trackball, which only redraw themselves and keep going while the page scrolls
+/// (the graphs, `LiveTimeline frame`, hold still then).
 /// `defaults delete … GlidePerfProbe` turns it off. `--scroll-bench` reads the counts itself.
 enum PerfProbe {
     static let enabled: Bool = Sandbox.mode == .scrollBench

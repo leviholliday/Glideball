@@ -201,11 +201,13 @@ A third sandbox mode, `--scroll-bench` (`Sandbox/ScrollBench.swift`), measures h
 ```sh
 scripts/scroll-bench.sh                              # every page, both sizes
 scripts/scroll-bench.sh --pages overview,pointer --sizes 980x680 --seconds 6
-scripts/scroll-bench.sh --no-hold                    # without holding the live pictures (as before beta 15)
+scripts/scroll-bench.sh --no-hold                    # without holding the live graphs (as before beta 15)
 scripts/scroll-bench.sh --no-feed                    # just the scroll, nothing live
 ```
 
 Other options: `--hz`, `--appearance light|dark`, `--performance smooth|efficient|minimal`, `--drive wheel|offset`, `--json file`, `--no-build`.
+
+What holds while a page scrolls: only the live graphs (`LiveFeed.held`; Pointer's Swift Charts curve was the expensive one). The trackball and the hand's light stay live. The trackball's moving parts are Core Animation layers set straight from a display link (`TrackballMotion`, `Views/TrackballLayers.swift`): SwiftUI draws the parts that never move and four layer slots sit between them, so a frame is a few opacity, transform and contents changes, with the ball's surface redrawn in Core Graphics only when it has turned. In the bench, `Trackball frame` should be about 30 a second per trackball on screen while the feed is on and every other view near 0. Offscreen the display link never fires, so it follows the bench's ticks too.
 
 Limits: it can't see WindowServer's own compositing or the display's timing, hover, or uneven event timing (its scroll steps are perfectly even), and the renderer redraws the whole window every frame. An offscreen window has no display, so animation timelines are ticked by the bench at 30 a second (`LiveFeed.benchTick`). By default the page's clip view is moved each frame: Glideball's own scroll events (`--drive wheel`) are queued by AppKit for a display refresh that never comes offscreen. Other work on the Mac (a build, another render) moves the numbers a lot, so compare runs made back to back.
 

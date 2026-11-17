@@ -780,7 +780,8 @@ final class AppModel {
     static let pageSettleDelay = 0.18
 
     /// The window's page moved (every frame of a scroll, from `RootView`): the live
-    /// pictures and today's numbers hold still until it's been still for `pageSettleDelay`.
+    /// graphs and today's numbers hold still until it's been still for `pageSettleDelay`
+    /// (the trackball and the light keep going, `LiveFeed.held`).
     /// Glideball's own scroll engine posts plain scroll events with no phase, so this
     /// goes by the page's offset rather than SwiftUI's scroll phase alone.
     func pageMoved() {
