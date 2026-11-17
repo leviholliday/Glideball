@@ -1171,6 +1171,10 @@ final class World {
             guard !kConnected, !kDown.contains(b) else { return }
             let id = newID(InputInfo(source: .kensington, button: b, type: World.type(b, 0), flags: io.kbFlags, time: io.clock))
             kDown.insert(b)
+            // A missed removal leaves the tap on: the press reaches the engine with no report
+            // to say it's the trackball's, so it's taken for another device's (by design). With
+            // nothing readable as the trackball arrives, it can't be told otherwise.
+            if stale && mode == 2 { ambiguous = true }
             deliver(mouseEvent(World.type(b, 0), button: b, id: id), source: .kensington)
             heldReadable = mode != 2
             apply(.replug(0))

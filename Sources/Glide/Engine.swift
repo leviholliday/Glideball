@@ -166,6 +166,7 @@ final class Engine {
     private var kUpAt: [Int64: CFTimeInterval] = [:]     // its HID ups no CG release has claimed yet
     private var kClaimedEarly: [Int64: CFTimeInterval] = [:]   // its presses taken without a HID report yet
     private var kReleasedSince = Set<Int64>()  // open presses it has reported letting go of (release to come, or gone by)
+    private var postedForStale = Set<Int64>()  // a stale press's end was posted: the next press goes behind it
     // Which release report came last (the trackball's or another device's), per button.
     private var reportSeq = 0
     private var kUpSeq: [Int64: Int] = [:]
@@ -1312,8 +1313,8 @@ final class Engine {
         kReleasedSince.remove(b)
         kUpAt[b] = nil
         diagnostics.record("release of button \(b) never came after the trackball let go of it: that press is over")
-        if pending.contains(where: { $0.button == b }) { flushPending() }
-        if overrides[b] != nil { releaseOverride(b) }
+        if pending.contains(where: { $0.button == b }) { flushPending(); postedForStale.insert(b) }
+        if overrides[b] != nil, releaseOverride(b) { postedForStale.insert(b) }
         if learnHeld.remove(Int(b)) != nil, learnHeld.isEmpty, let handler = learnHandler {   // as its release would have
             let result = learnMax
             learnHandler = nil
@@ -1437,6 +1438,7 @@ final class Engine {
     /// Drag lock, and that's all it does. Nothing the trackball holds ends or changes.
     private func otherPress(_ event: CGEvent, _ button: Int64, device: Int?) -> Unmanaged<CGEvent>? {
         closeStaleTrackballPress(button)
+        let posted = postedForStale.remove(button) != nil   // then this press goes behind what was posted
         if gestures.isHeld { gestures.otherPress(Int(button)) }   // the hold's release isn't a tap
         let swallow = dragLocked && (event.type == .leftMouseDown || button == 0)
         otherPresses[button, default: []].append(OtherPress(device: device, at: io.now(), swallowed: swallow))
@@ -1444,7 +1446,9 @@ final class Engine {
             endDragLock()
             return nil
         }
-        return passReal(event, button: button)
+        guard posted else { return passReal(event, button: button) }
+        postInOrder(passReal(event, button: button))
+        return nil
     }
 
     /// Another device's release: always as it came (unless its press ended a Drag lock).
@@ -1911,7 +1915,7 @@ final class Engine {
             // has an override: its release was lost. The old press goes through (or lets go of
             // what it holds) first, so this one can never leave a key or a button stuck; this
             // press is then posted behind that, so apps see them in order. Found by scripts/engine-fuzz.
-            var posted = false
+            var posted = postedForStale.remove(button) != nil   // (`closeStaleTrackballPress` posted its end)
             if pending.contains(where: { $0.button == button }) { flushPending(); posted = true }
             if overrides[button] != nil, releaseOverride(button) { posted = true }
             kOpen.insert(button)
