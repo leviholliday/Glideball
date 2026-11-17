@@ -198,6 +198,44 @@ class EngineIO {
         return true
     }
 
+    /// Whether the (unsupported) device with this registry entry ID is the trackball's own
+    /// driver re-publishing its movement as a pointer of its own: a HID device published by
+    /// Kensington's driver (its user server, class or bundle says Kensington or `tbw`), or one
+    /// sitting under a supported trackball in the registry. Read-only. Nil when it can't be
+    /// told (no such entry, or a key that isn't a registry ID); the engine then goes by timing.
+    /// (Levi's Mac, 2026-11-16: KensingtonWorks' `tbwDKDriver` is an event service on the
+    /// trackball's own interface and publishes no second device, but other drivers might.)
+    func echoReason(_ key: Int, trackballs: Set<Int>) -> String? {
+        guard key > 0, let matching = IORegistryEntryIDMatching(UInt64(key)) else { return nil }
+        let service = IOServiceGetMatchingService(kIOMainPortDefault, matching)   // consumes `matching`
+        guard service != 0 else { return nil }
+        defer { IOObjectRelease(service) }
+        func text(_ entry: io_registry_entry_t, _ name: String) -> String? {
+            IORegistryEntryCreateCFProperty(entry, name as CFString, kCFAllocatorDefault, 0)?.takeRetainedValue() as? String
+        }
+        for name in ["IOUserServerName", "IOUserClass", "CFBundleIdentifier", "IOClass"] {
+            if let v = text(service, name)?.lowercased(), v.contains("kensington") || v.contains("tbw") {
+                return "\(name) \(v)"
+            }
+        }
+        var entry = service
+        IOObjectRetain(entry)
+        for _ in 0..<10 {
+            var parent: io_registry_entry_t = 0
+            let got = IORegistryEntryGetParentEntry(entry, kIOServicePlane, &parent)
+            IOObjectRelease(entry)
+            guard got == KERN_SUCCESS, parent != 0 else { return nil }
+            entry = parent
+            var id: UInt64 = 0
+            if IORegistryEntryGetRegistryEntryID(entry, &id) == KERN_SUCCESS, trackballs.contains(Int(id)) {
+                IOObjectRelease(entry)
+                return String(format: "under the trackball 0x%llx", id)
+            }
+        }
+        IOObjectRelease(entry)
+        return nil
+    }
+
     /// A device's properties as IOKit has them now (they can arrive after the device does).
     func currentIdentity(_ key: Int, _ device: IOHIDDevice?) -> DeviceIdentity? { device.map(Engine.identity(of:)) }
 

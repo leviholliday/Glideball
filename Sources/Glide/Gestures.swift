@@ -143,6 +143,9 @@ final class GestureMachine {
         var dx = 0.0, dy = 0.0           // travel since the press
         var travel = 0.0                 // farthest the ball got from where it started
         var ox = 0.0, oy = 0.0           // the origin the next fire is measured from
+        /// The furthest the ball has rolled since the origin was set, along the last crossing's
+        /// axis and in its direction: where it turned back, if it did.
+        var peak = 0.0
         /// The last direction the roll crossed the threshold in (fired or not).
         var direction: GestureDirection?
         /// Whether that crossing was a continuous direction (then the axis keeps repeating).
@@ -204,10 +207,28 @@ final class GestureMachine {
 
         // Just after a chained fire: the origin follows the ball, so the rest of
         // the same flick can't count toward the next fire.
-        if h.direction != nil, !h.continuous, now - h.lastCross < t.chainCooldown {
+        if let last = h.direction, !h.continuous, now - h.lastCross < t.chainCooldown {
             h.ox = h.dx
             h.oy = h.dy
+            h.peak = Self.isHorizontal(last) ? h.dx : h.dy
             return []
+        }
+
+        // Rolling back: the way back is measured from where the ball turned, not from the last
+        // fire. Otherwise the opposite direction needed the rest of the forward roll undone first
+        // (up to a whole step more): after a step or two of volume up, down only came once the
+        // ball was back near where the hold started (Levi, beta 17). A turn smaller than the tap
+        // slop is a wobble, and keeps the forward roll toward the next step.
+        if let last = h.direction {
+            let horizontal = Self.isHorizontal(last)
+            let sign: Double = last == .right || last == .down ? 1 : -1
+            let pos = horizontal ? h.dx : h.dy
+            let origin = horizontal ? h.ox : h.oy
+            if (pos - h.peak) * sign > 0 {
+                h.peak = pos
+            } else if (h.peak - pos) * sign > t.tapSlop, (h.peak - origin) * sign > 0 {
+                if horizontal { h.ox = h.peak } else { h.oy = h.peak }
+            }
         }
 
         let rx = h.dx - h.ox, ry = h.dy - h.oy
@@ -224,6 +245,7 @@ final class GestureMachine {
             // axis, and starts fresh across it.
             let consumed = (major / t.step).rounded(.down) * t.step * (horizontal ? (rx < 0 ? -1 : 1) : (ry < 0 ? -1 : 1))
             if horizontal { h.ox += consumed; h.oy = h.dy } else { h.oy += consumed; h.ox = h.dx }
+            h.peak = horizontal ? h.dx : h.dy
             h.direction = way
             h.lastCross = now
             guard now - h.lastFire >= t.minRepeatInterval, let action = h.gesture[way]?.firable else { return [] }
@@ -238,6 +260,7 @@ final class GestureMachine {
         let step = h.gesture[way]
         h.ox = h.dx
         h.oy = h.dy
+        h.peak = horizontal ? h.dx : h.dy
         h.direction = way
         h.continuous = step?.repeats == true
         h.lastCross = now

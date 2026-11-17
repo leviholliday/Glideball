@@ -447,6 +447,77 @@ do {
           && !ButtonAction.shortcut(.nextSpace).repeatsByDefault, "a picked volume or zoom starts continuous, others chained")
 }
 
+section("rolling back (beta 17: down only below where the hold started)")
+do {
+    // Levi, beta 17, up and down set to volume (repeating), Short: "to turn it up my mouse has to
+    // be above the spot I clicked and to turn it down it has to be below". The way back was
+    // measured from the last fire's origin, so it first had to undo the rest of the forward roll
+    // (up to a whole step): after one or two steps up, down came near or past the starting spot.
+    // Now the way back is measured from where the ball turned: the first fire the other way
+    // comes within one step plus the threshold of the turn, whatever came before.
+    let repeating = ButtonGesture.media
+    var chained = repeating
+    chained.up?.repeats = false
+    chained.down?.repeats = false
+    let kinds: [(String, ButtonGesture)] = [("repeating", repeating), ("chained", chained), ("once per hold", oncePerHold(chained))]
+    var worst = 0.0
+    for d in GestureDistance.allCases {
+        for steady in [false, true] {
+            let t = GestureTuning.for(distance: d, steadyHands: steady)
+            for (name, g) in kinds {
+                for steps in 1...5 {
+                    for extra in [0.0, 0.5, 0.95] {
+                        for per in [1.0, 2.0, 5.0] {
+                            let r = Rig([1: .gesture(g)])
+                            r.config.gestureDistance = d
+                            r.config.gestureSteadyHands = steady
+                            r.press(1)
+                            // Up: the first fire, then `steps - 1` more steps' worth, then part of one.
+                            let up = t.commit + Double(steps - 1) * t.step + (extra * t.step).rounded(.down)
+                            var rolled = 0.0
+                            while rolled < up { let s = min(per, up - rolled); r.advance(0.008); r.ball(0, -s); rolled += s }
+                            let upFires = r.fired.count
+                            check(upFires >= 1 && r.fired.allSatisfy { $0.1 == .up }, "\(d.rawValue)\(steady ? " steady" : "") \(name): rolling up fired up (\(upFires))")
+                            // Down, a count at a time, until it fires (or three steps go by).
+                            r.advance(0.3)   // a turn takes a moment (and lets a chained cool-down pass)
+                            var back = 0.0
+                            while r.fired.count == upFires, back < 3 * t.step { r.advance(0.008); r.ball(0, 1); back += 1 }
+                            let fired = r.fired.count > upFires && r.fired[upFires].1 == .down
+                            check(fired, "\(d.rawValue)\(steady ? " steady" : "") \(name), \(steps) up (+\(extra) step): rolling back fires down")
+                            check(back <= t.step + t.commit,
+                                  "\(d.rawValue)\(steady ? " steady" : "") \(name), up \(Int(up)) in \(per)s: down needs \(Int(back)) counts back from the turn (at most \(Int(t.step + t.commit)))")
+                            check(back >= min(t.commit, t.step) - 1, "\(d.rawValue) \(name): down never fires sooner than the threshold (\(Int(back)))")
+                            worst = max(worst, back / t.step)
+                            r.release(1)
+                        }
+                    }
+                }
+            }
+        }
+    }
+    check(worst <= 1.01, "the way back from a turn is at most one step (worst \(String(format: "%.2f", worst)) steps)")
+
+    // Levi's own setup: button 1, Short, volume up/down repeating, tracks left/right chained.
+    var levi = ButtonGesture.media
+    levi.distance = .short
+    let r = Rig([1: .gesture(levi)])
+    r.press(1)
+    r.roll(dx: 0, dy: -2, steps: 20)       // 40 up: one volume up (32), not yet a second (32 + 44)
+    check(r.fired.map(\.1) == [.up], "one volume up (\(r.fired.map(\.1)))")
+    r.roll(dx: 0, dy: 2, steps: 22)        // 44 back: still 4 above where the hold started
+    check(r.fired.map(\.1) == [.up, .down], "one step back turns it down while still above the start (\(r.fired.map(\.1)))")
+
+    // A wobble back smaller than the tap slop keeps the forward roll: the next step up comes on time.
+    let w = Rig([1: .gesture(levi)])
+    w.press(1)
+    w.roll(dx: 0, dy: -2, steps: 30)       // 60 up: one fire at 32, 28 toward the next (76)
+    w.roll(dx: 0, dy: 1, steps: 6)         // a 6-count wobble back
+    w.roll(dx: 0, dy: -2, steps: 10)       // 20 more up: 74 from the start, net of the wobble
+    check(w.fired.map(\.1) == [.up], "a small wobble back fires nothing (\(w.fired.map(\.1)))")
+    w.roll(dx: 0, dy: -2, steps: 4)        // past 76 net
+    check(w.fired.map(\.1) == [.up, .up], "and the next step up still comes one step after the last (\(w.fired.map(\.1)))")
+}
+
 section("gesture distance")
 do {
     func firstFire(_ d: GestureDistance, steady: Bool = false, own: Bool = false) -> Double? {

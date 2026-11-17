@@ -184,6 +184,8 @@ final class FakeIO: EngineIO {
     var identityNow: (Int) -> DeviceIdentity? = { _ in nil }
     override func currentIdentity(_ key: Int, _ device: IOHIDDevice?) -> DeviceIdentity? { identityNow(key) }
     override func kensingtonServicesNow() -> [String] { [] }
+    /// The fake registry can't say what a device is: the engine must go by timing alone.
+    override func echoReason(_ key: Int, trackballs: Set<Int>) -> String? { nil }
     /// Wireless trackballs: a battery level that changes over time (and is sometimes missing).
     override func registryBattery(_ key: Int) -> Int? { [nil, 4, 50, 100][Int(clock) % 4] }
 
@@ -400,6 +402,13 @@ let expert = DeviceIdentity(vendorID: DeviceIdentity.kensingtonVendorID, product
                             name: "Kensington Expert Mouse")
 let otherMouse = DeviceIdentity(vendorID: 0x046D, productID: 0xC077, name: "USB Optical Mouse")
 let kKey = 1, oKey = 2
+/// A shadow pointer: a driver's virtual device re-publishing every one of the trackball's
+/// movements as a pointer of its own, with no vendor (as Levi's log showed a "vendor ?" device
+/// beside the trackball, beta 17). Unsupported, so its movement looks like another mouse's.
+let echoKey = 900
+let virtualPointer = DeviceIdentity(vendorID: 0, productID: 0, name: "Virtual pointer")
+/// Whether the next World has the shadow pointer (half the seeds, and the cases that ask for it).
+var echoShadow = false
 
 enum Source { case kensington, other, trackpad, keyboard }
 
@@ -458,6 +467,9 @@ final class World {
     var oddReplug = false       // the latest replug was published late in some way (Op.replug bits 1-8)
     var holdDisturbed = false   // the trackball moved during such a replug while the pointer was held
     var holdCheckAt: Double?    // a held pointer moved with nothing after it: back on its anchor by then
+    let echo = echoShadow       // the shadow pointer echoes the trackball's every movement
+    var lastKMoveAt = -1e9      // the trackball's latest HID movement
+    var lastOMoveAt = -1e9      // another mouse's latest HID movement
     var lastFrameAt = -1e9      // the scroll engine's last frame, for the display link's cadence
     /// While such a replug settles, a check can take the trackball out and put it back
     /// mid-press (IOKit not done registering it), so button pairing can't be judged.
@@ -500,6 +512,7 @@ final class World {
         add(kKey, expert, transport: "USB")
         add(kAux, expert, transport: "USB")
         add(oKey, otherMouse, transport: "USB")
+        if echo { add(echoKey, virtualPointer, transport: "Virtual") }
         settle()
     }
 
@@ -521,6 +534,7 @@ final class World {
     /// A device's properties as IOKit has them now.
     func identityOf(_ k: Int) -> DeviceIdentity {
         if k == oKey { return otherMouse }
+        if k == echoKey { return virtualPointer }
         if reused && k == kKey && !kConnected { return otherMouse }
         if kConnected, k == kKey || k == kAux, let p = partial, io.clock < identityAt { return p }
         return expert
@@ -532,13 +546,14 @@ final class World {
         io.live = { [unowned self] in
             var d = self.ghosts
             d[oKey] = otherMouse
+            if self.echo { d[echoKey] = virtualPointer }
             if self.kConnected {
                 if self.io.clock >= self.listAt { d[self.kKey] = self.identityOf(self.kKey); d[self.kAux] = self.identityOf(self.kAux) }
             } else if self.reused { d[self.kKey] = otherMouse }
             return d
         }
         io.alive = { [unowned self] k in
-            k == oKey || (self.kConnected && (k == self.kKey || k == self.kAux) && self.io.clock >= self.aliveAt) || (self.reused && k == self.kKey)
+            k == oKey || (self.echo && k == echoKey) || (self.kConnected && (k == self.kKey || k == self.kAux) && self.io.clock >= self.aliveAt) || (self.reused && k == self.kKey)
         }
         io.identityNow = { [unowned self] k in self.identityOf(k) }
         io.appButtons = { [unowned self] in
@@ -892,8 +907,25 @@ final class World {
             // Unheld, every move is delivered the first way.
             let delivery = io.frozen ? ((dx &* 31 &+ dy &* 17) % 4 + 4) % 4 : 0
             func sendHID() {
+                // The shadow pointer's copy of this movement, just before or just after the
+                // trackball's own values (IOHIDManager gives no order between two devices).
+                let echoFirst = (dx &+ dy) & 1 == 0
+                func sendEcho() {
+                    guard echo, kConnected else { return }
+                    if dx != 0 { hid(echoKey, page: kHIDPage_GenericDesktop, usage: kHIDUsage_GD_X, value: dx) }
+                    if dy != 0 { hid(echoKey, page: kHIDPage_GenericDesktop, usage: kHIDUsage_GD_Y, value: dy) }
+                }
+                if echoFirst { sendEcho() }
                 if dx != 0 { gestureTravel(dx, 0); hid(kKey, page: kHIDPage_GenericDesktop, usage: kHIDUsage_GD_X, value: dx) }
                 if dy != 0 { gestureTravel(0, dy); hid(kKey, page: kHIDPage_GenericDesktop, usage: kHIDUsage_GD_Y, value: dy) }
+                if !echoFirst { sendEcho() }
+                // Another mouse that moved within 30 ms of the trackball (either way round) moved
+                // with it: which of the pointer's movement is whose can't be told, so the engine
+                // takes it as the trackball's (put back) and that hold isn't judged.
+                if dx != 0 || dy != 0 {
+                    if io.frozen, io.clock - lastOMoveAt < Engine.echoWindow { holdDisturbed = true }
+                    lastKMoveAt = io.clock
+                }
             }
             func movePointer() {
                 do { io.cursor.x = min(max(io.cursor.x + CGFloat(dx), 0), 3000); io.cursor.y = min(max(io.cursor.y + CGFloat(dy), 0), 1000) }
@@ -967,6 +999,8 @@ final class World {
             // Another mouse moving within the few milliseconds a trackball move is still being put
             // back: which part of the pointer's offset is whose can't be told, so that hold isn't judged.
             if holdCheckAt != nil { holdDisturbed = true }
+            if io.frozen, io.clock - lastKMoveAt < Engine.echoWindow { holdDisturbed = true }
+            lastOMoveAt = io.clock
             hid(oKey, page: kHIDPage_GenericDesktop, usage: kHIDUsage_GD_X, value: 3)
             do {   // another mouse always moves the pointer; the hold follows it
                 io.cursor.x = min(io.cursor.x + 3, 3000)
@@ -1598,6 +1632,21 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
                          [.front(1)] + down(1) + (0..<6).flatMap { _ in [Op.kBall(5, 0), .wait(0.008)] } + up(1) + settle))
     gestureCases.append(("gesture held in another app, each move's tap event before its HID report: the pointer stays put", [volume],
                          [.front(1)] + down(1) + (0..<6).flatMap { _ in [Op.kBall(3, 0), .wait(0.008)] } + up(1) + settle))
+    // Betas 16 and 17 (Levi): every hold logged "0 warps … furthest 0 pt" while the pointer moved.
+    // One way that happens: a second, vendorless pointing device (a driver's virtual pointer)
+    // reporting the trackball's every movement as its own. The hold took each copy for another
+    // mouse and followed it, so it never put the pointer back. Each move here is delivered a
+    // different way (see `delivery`), its copy before or after it, after a pause long enough that
+    // nothing before it counts.
+    let echoRoll: [Op] = [.wait(0.5)] + [4, 3, 5, 2, 6, 7, 8, 9, 11, 10].flatMap { [Op.kBall($0, 0), .wait(0.008)] }
+    gestureCases.append(("a driver's shadow pointer echoes every move, gesture held in another app: the pointer stays put", [volume],
+                         [.front(1)] + down(1) + echoRoll + [.wait(0.05)] + up(1) + settle))
+    gestureCases.append(("a driver's shadow pointer echoes every move, gesture held, another app setup in front: the pointer stays put", [volume],
+                         [.front(0)] + down(1) + echoRoll + [.wait(0.05)] + up(1) + settle))
+    gestureCases.append(("a driver's shadow pointer echoes every move, Scroll with ball from the keyboard: the pointer stays put", [GlideConfig()],
+                         [.front(1), .setMode(1, 1)] + echoRoll + [.wait(0.05), .setMode(1, 0)] + settle))
+    gestureCases.append(("a driver's shadow pointer, then another mouse moves alone mid-hold: the hold follows it", [volume],
+                         [.front(1)] + down(1) + echoRoll + [.wait(0.1), .oBall, .wait(0.1)] + echoRoll + up(1) + settle))
     gestureCases.append(("Scroll with ball from the keyboard in another app, no tap events: the pointer stays put", [GlideConfig()],
                          [.front(1), .setMode(1, 1)] + roll10 + [.wait(0.05), .setMode(1, 0)] + settle))
     // The ball turning a few counts under the hand while a gesture combo's buttons go down used
@@ -1733,6 +1782,7 @@ final class ThreadedIO: EngineIO {
     override func tapIsEnabled(_ tap: CFMachPort) -> Bool { lock.withLock { enabled[ObjectIdentifier(tap)] ?? false } }
     override func tapEnable(_ tap: CFMachPort, _ on: Bool) { lock.withLock { enabled[ObjectIdentifier(tap)] = on } }
     override func startListening(_ engine: Engine, runLoop: CFRunLoop?) -> Bool { true }
+    override func echoReason(_ key: Int, trackballs: Set<Int>) -> String? { nil }   // never the real registry
     var posted: Int { lock.withLock { counts.posted } }
 }
 
@@ -1846,6 +1896,7 @@ let expectations: [String: (World) -> String?] = [
 ]
 print("▸ regression cases")
 for (name, configs, ops) in regressionCases() {
+    echoShadow = name.contains("shadow pointer")
     if let (f, i) = run(configs, ops) {
         failed += 1
         print("  ✗ \(name): \(f) at op \(i)")
@@ -1870,6 +1921,7 @@ while true {
     else { break }
     seedIndex += 1
     let (configs, ops) = generate(seed: seed, count: eventsPerSeed)
+    echoShadow = seed % 2 == 1   // half the seeds have a driver's shadow pointer beside the trackball
     totalEvents += ops.count
     if let (f, i) = run(configs, ops) {
         failed += 1
