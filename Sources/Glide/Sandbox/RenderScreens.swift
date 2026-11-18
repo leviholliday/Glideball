@@ -396,74 +396,136 @@ extension RenderUI {
             fullPage(page(.buttons, model), dark: dark, scale: scale)
         }
 
-        // The Wheel: its editor on the Buttons page, the picker, a held Wheel, and its ring on screen.
-        var eightWheel = WheelMenu.standard
-        eightWheel.eight = true
-        eightWheel[1] = .shortcut(.newTab)
-        eightWheel[3] = .media(.playPause)
-        eightWheel[5] = .shortcut(.screenshot)
-        eightWheel[7] = .shortcut(.spotlight)
-        eightWheel.ring = .zoom
-        func wheelButtons() {
-            model.config.buttons[3] = .wheel(.standard)
-            model.config.buttons[2] = .wheel(eightWheel)
+        // Gestures with their ring (the Wheel became part of Gestures, Nov 18): the editor laid out
+        // as the ring, each Show the ring choice, a More's ring being edited, a held ring, and the
+        // ring on screen (first ring, a More's ring with its way back, a blind hold's readout).
+        var ringFour = ButtonGesture.standard
+        ringFour.show = .atOnce
+        ringFour.ring = .volume
+        var ringEight = ButtonGesture(wheel: WheelMenu.standard)
+        ringEight.eight = true
+        ringEight[.upRight] = GestureStep(.shortcut(.newTab))
+        ringEight[.downRight] = GestureStep(.media(.playPause))
+        ringEight[.downLeft] = GestureStep(.shortcut(.screenshot))
+        ringEight[.upLeft] = GestureStep(.shortcut(.spotlight))
+        ringEight.ring = .zoom
+        ringEight.reverse = true
+        var withMore = ringFour
+        withMore.show = .afterPause
+        withMore[.up] = .moreRing([nil, nil, GestureStep(.shortcut(.screenshot)), nil, nil, nil,
+                                   GestureStep(.shortcut(.lockScreen)), GestureStep(.media(.playPause))])
+        withMore.eight = false
+        var moreEight = withMore
+        moreEight.eight = true
+        moreEight[.up] = .moreRing([nil, GestureStep(.shortcut(.newTab)), GestureStep(.shortcut(.screenshot)), GestureStep(.media(.mute)),
+                                    nil, GestureStep(.shortcut(.emoji)), GestureStep(.shortcut(.lockScreen)), GestureStep(.media(.playPause))])
+        func ringButtons() {
+            model.config.buttons[3] = .gesture(ringFour)
+            model.config.buttons[2] = .gesture(ringEight)
         }
-        func wheelHeld(slot: Int?, buttons: [Int] = [3]) {
+        func showButton(_ show: RingShow) {
+            var g = ringFour
+            g.show = show
+            model.config.buttons[3] = .gesture(g)
+        }
+        func ringHeld(slot: Int?, level: Int? = nil, buttons: [Int] = [3]) {
             var m = Engine.Modes()
             m.wheelHeld = true
             m.gestureButtons = buttons
             m.wheelSlot = slot
+            m.wheelLevel = level
             model.modes = m
             model.pressed = Set(buttons)
         }
-        add("buttons-wheel-page", "Wheel", "Top right a four-slot Wheel, top left an eight-slot one with Zoom on the ring: the editor under each row",
-            prepare: wheelButtons, cleanup: restoreButtons) { dark, scale in
+        add("buttons-ring-page", "Gestures ring", "Top right: four directions shown right away; top left: eight, Zoom on the ring, Reverse on",
+            prepare: ringButtons, cleanup: restoreButtons) { dark, scale in
             fullPage(page(.buttons, model), dark: dark, scale: scale)
         }
-        add("buttons-wheel-narrow", "Wheel", "The Wheel editor at the smallest window's width (stacked)",
-            prepare: wheelButtons, cleanup: restoreButtons) { dark, scale in
+        add("buttons-ring-narrow", "Gestures ring", "The Gestures editor at the smallest window's width (stacked)",
+            prepare: ringButtons, cleanup: restoreButtons) { dark, scale in
             card(page(.buttons, model).frame(width: AppDelegate.mainWindowMinSize.width - Theme.Space.sidebarWidth - Theme.Space.contentSide * 2),
                  width: AppDelegate.mainWindowMinSize.width - Theme.Space.sidebarWidth, dark: dark, scale: scale)
         }
-        add("buttons-wheel-held", "Wheel", "Holding top right and rolling right: Next Space lit in the editor, the armed ring on the sidebar ball",
-            prepare: { wheelButtons(); wheelHeld(slot: 2) },
+        add("buttons-ring-show-never", "Gestures ring", "Show the ring: Never (blind gestures, as they always were)",
+            prepare: { showButton(.never) }, cleanup: restoreButtons) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale)
+        }
+        add("buttons-ring-show-pause", "Gestures ring", "Show the ring: After a pause (the default for a new one)",
+            prepare: { showButton(.afterPause) }, cleanup: restoreButtons) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale)
+        }
+        add("buttons-ring-show-at-once", "Gestures ring", "Show the ring: Right away (how an old Wheel loads)",
+            prepare: { showButton(.atOnce) }, cleanup: restoreButtons) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale)
+        }
+        add("buttons-ring-more", "Gestures ring", "Up is More: its chip on the first ring",
+            prepare: { model.config.buttons[3] = .gesture(withMore) }, cleanup: restoreButtons) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale)
+        }
+        add("buttons-ring-more-open", "Gestures ring", "Editing up's More: its ring in the same place, the way back opposite, First Ring to go back",
+            prepare: { model.config.buttons[3] = .gesture(withMore); GestureEditor.sandboxEditing = 0 },
+            cleanup: { restoreButtons(); GestureEditor.sandboxEditing = nil }) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale)
+        }
+        add("buttons-ring-more-open-8", "Gestures ring", "Editing up's More with eight directions",
+            prepare: { model.config.buttons[3] = .gesture(moreEight); GestureEditor.sandboxEditing = 0 },
+            cleanup: { restoreButtons(); GestureEditor.sandboxEditing = nil }) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale)
+        }
+        add("buttons-ring-held", "Gestures ring", "Holding top right with its ring up, rolling right: Next Space lit in the editor",
+            prepare: { ringButtons(); ringHeld(slot: 2) },
             cleanup: restoreButtons) { dark, scale in
             mainWindow(model, tab: .buttons, dark: dark, scale: scale)
         }
-        add("buttons-wheel-custom-ring", "Wheel", "A Wheel whose ring job is your own pair (Back and Forward)",
+        add("buttons-ring-custom", "Gestures ring", "The ring job is your own pair (Back and Forward)",
             prepare: {
-                var w = WheelMenu.standard
-                w.ring = .custom
-                w.ringDown = .back
-                w.ringUp = .forward
-                model.config.buttons[3] = .wheel(w)
+                var g = ringFour
+                g.ring = .custom
+                g.ringDown = .back
+                g.ringUp = .forward
+                model.config.buttons[3] = .gesture(g)
             }, cleanup: restoreButtons) { dark, scale in
             fullPage(page(.buttons, model), dark: dark, scale: scale)
         }
-        add("buttons-picker-wheel", "Wheel", "The picker for top right: Gesture and Wheel under Hold and roll") { dark, scale in
-            card(PopoverMock { ActionPickerPanel(current: .back, button: 3) { _ in } }, width: 470, dark: dark, scale: scale)
+        add("buttons-picker-gesture-more", "Gestures ring", "The picker for a direction on the first ring: More at the top") { dark, scale in
+            card(PopoverMock { ActionPickerPanel(current: .shortcut(.nextSpace), purpose: .gestureDirection, onMore: {}) { _ in } },
+                 width: 470, dark: dark, scale: scale)
         }
-        add("buttons-picker-wheel-slot", "Wheel", "The picker for a Wheel slot (quick actions only)") { dark, scale in
-            card(PopoverMock { ActionPickerPanel(current: .shortcut(.missionControl), purpose: .wheelSlot) { _ in } }, width: 470, dark: dark, scale: scale)
+        let fourModel = WheelOverlayModel.of(ringFour, level: nil, selected: 0, dot: CGPoint(x: 0, y: -0.75),
+                                                    ring: .init(job: .volume, clockwise: true, steps: 3))
+        let eightModel = WheelOverlayModel.of(ringEight, level: nil, selected: 1, dot: CGPoint(x: 0.56, y: -0.56),
+                                                     ring: .init(job: .zoom, clockwise: false, steps: 2))
+        let moreFirst = WheelOverlayModel.of(withMore, level: nil, selected: 0, dot: CGPoint(x: 0, y: -0.5), ring: nil)
+        let moreModel = WheelOverlayModel.of(withMore, level: 0, selected: 2, dot: CGPoint(x: 0.75, y: 0), ring: nil)
+        let moreModel8 = WheelOverlayModel.of(moreEight, level: 0, selected: nil, dot: .zero, ring: nil)
+        let readout = WheelOverlayModel(slots: Array(repeating: nil, count: 8), eight: false, showsRing: false, selected: nil,
+                                        dot: .zero, ring: .init(job: .volume, clockwise: true, steps: 4))
+        add("ring-overlay-4", "Gestures ring", "The ring on screen: four, Mission Control lit, the ring turning the volume up") { dark, scale in
+            wheelOverlay(fourModel, busy: false, dark: dark, scale: scale)
         }
-        let fourLit = WheelOverlayModel(menu: .standard, selected: 0, dot: CGPoint(x: 0, y: -0.75),
-                                        ring: .init(job: .volume, clockwise: true, steps: 3))
-        let eightLit = WheelOverlayModel(menu: eightWheel, selected: 1, dot: CGPoint(x: 0.56, y: -0.56),
-                                         ring: .init(job: .zoom, clockwise: false, steps: 2))
-        add("wheel-overlay-4", "Wheel", "The Wheel on screen: four slots, Mission Control lit, the ring turning the volume up") { dark, scale in
-            wheelOverlay(fourLit, busy: false, dark: dark, scale: scale)
+        add("ring-overlay-8", "Gestures ring", "Eight, New Tab lit (up right), the ring zooming out") { dark, scale in
+            wheelOverlay(eightModel, busy: false, dark: dark, scale: scale)
         }
-        add("wheel-overlay-8", "Wheel", "Eight slots, New Tab lit (up right), the ring zooming out") { dark, scale in
-            wheelOverlay(eightLit, busy: false, dark: dark, scale: scale)
+        add("ring-overlay-4-plain", "Gestures ring", "Just appeared: nothing lit yet, the ring not turned") { dark, scale in
+            wheelOverlay(WheelOverlayModel.of(ringFour, level: nil, selected: nil, dot: .zero, ring: nil), busy: false, dark: dark, scale: scale)
         }
-        add("wheel-overlay-4-plain", "Wheel", "Just appeared: nothing lit yet, the ring not turned") { dark, scale in
-            wheelOverlay(WheelOverlayModel(menu: .standard, selected: nil, dot: .zero, ring: nil), busy: false, dark: dark, scale: scale)
+        add("ring-overlay-more-lit", "Gestures ring", "The first ring with More up top, about to open") { dark, scale in
+            wheelOverlay(moreFirst, busy: false, dark: dark, scale: scale)
         }
-        add("wheel-overlay-4-busy", "Wheel", "Four slots over a bright, busy wallpaper (contrast)") { dark, scale in
-            wheelOverlay(fourLit, busy: true, dark: dark, scale: scale)
+        add("ring-overlay-more", "Gestures ring", "More's ring, opened in place: Screenshot lit, Back at the bottom") { dark, scale in
+            wheelOverlay(moreModel, busy: false, dark: dark, scale: scale)
         }
-        add("wheel-overlay-8-busy", "Wheel", "Eight slots over a bright, busy wallpaper (contrast)") { dark, scale in
-            wheelOverlay(eightLit, busy: true, dark: dark, scale: scale)
+        add("ring-overlay-more-8", "Gestures ring", "More's ring with eight directions, just opened") { dark, scale in
+            wheelOverlay(moreModel8, busy: false, dark: dark, scale: scale)
+        }
+        add("ring-overlay-readout", "Gestures ring", "A blind hold (Never) turning the volume: only the ring job's readout") { dark, scale in
+            wheelOverlay(readout, busy: false, dark: dark, scale: scale)
+        }
+        add("ring-overlay-4-busy", "Gestures ring", "Four over a bright, busy wallpaper (contrast)") { dark, scale in
+            wheelOverlay(fourModel, busy: true, dark: dark, scale: scale)
+        }
+        add("ring-overlay-more-busy", "Gestures ring", "More's ring over a bright, busy wallpaper (contrast)") { dark, scale in
+            wheelOverlay(moreModel, busy: true, dark: dark, scale: scale)
         }
 
         // The Switcher: its row on the Buttons page, the picker, a held Switcher, and its panel

@@ -300,11 +300,13 @@ struct ActionPickerPanel: View {
     var purpose: Purpose = .button
     /// For a combo: its buttons (a combo can be a gesture unless it includes the primary button).
     var comboButtons: [Int]? = nil
+    /// A Gestures direction on the first ring: also offers More (a second ring), which this makes.
+    var onMore: (() -> Void)? = nil
     let pick: (ButtonAction) -> Void
 
     enum Purpose {
         case button, gestureDirection, gestureTap
-        /// A Wheel's slot, or one way of its ring: quick actions, plus Precision (toggle).
+        /// One way of the ring job's own pair: quick actions, plus Precision (toggle).
         case wheelSlot
     }
 
@@ -359,7 +361,7 @@ struct ActionPickerPanel: View {
         var catalog = ActionCatalog.all.filter { allowed($0.action) }
         if button == nil { catalog.removeAll { $0.action == .system } }   // a combo has no "normal"
         var out: [PickerSection] = []
-        let holdAndRoll = [gestureEntry(q), wheelEntry(q), switcherEntry(q)].compactMap { $0 }
+        let holdAndRoll = [gestureEntry(q), switcherEntry(q), moreEntry(q)].compactMap { $0 }
 
         if q.isEmpty {
             // What it does now, then what was chosen lately (or a few good first picks), then everything.
@@ -367,10 +369,12 @@ struct ActionPickerPanel: View {
                 out.append(PickerSection(id: "now", title: String(localized: "Now", comment: "Action picker group: what the button does now"),
                                          entries: [entry(ActionCatalog.item(for: current), section: "now")]))
             }
-            // A gesture or a Wheel is a different kind of choice: right at the top, under what it does now.
+            // Gestures or the Switcher is a different kind of choice: right at the top, under what it does now.
             if !holdAndRoll.isEmpty {
-                out.append(PickerSection(id: "gesture", title: String(localized: "Hold and roll", comment: "Action picker group: gesture buttons"),
-                                         entries: holdAndRoll))
+                out.append(purpose == .gestureDirection
+                           ? PickerSection(id: "gesture", entries: holdAndRoll)   // just More
+                           : PickerSection(id: "gesture", title: String(localized: "Hold and roll", comment: "Action picker group: gesture buttons"),
+                                           entries: holdAndRoll))
             }
             let recent = ActionCatalog.recents.filter { $0 != current && (button != nil || $0 != .system) && allowed($0) }
             let top = recent.isEmpty ? ActionCatalog.suggestions(forButton: purpose == .button ? button : nil)
@@ -430,24 +434,17 @@ struct ActionPickerPanel: View {
         }
     }
 
-    /// "Wheel": offered wherever Gesture is (never on the primary button).
-    private func wheelEntry(_ q: String) -> PickerEntry? {
-        guard purpose == .button else { return nil }
-        if let comboButtons {
-            guard comboButtons.count > 1, !comboButtons.contains(0) else { return nil }
-        } else {
-            guard let button, button != 0 else { return nil }
-        }
-        let title = String(localized: "Wheel", comment: "Action picker: hold the button, roll the ball to pick from a ring of actions around the pointer")
-        let detail = String(localized: "Hold it and a ring of actions appears around the pointer. Roll toward one and let go; the scroll ring turns the volume meanwhile.",
-                            comment: "Action picker: Wheel")
+    /// "More": a Gestures direction on the first ring can open a second ring instead.
+    private func moreEntry(_ q: String) -> PickerEntry? {
+        guard purpose == .gestureDirection, let onMore else { return nil }
+        let title = String(localized: "More", comment: "Gestures: a direction that opens a second ring of actions")
+        let detail = String(localized: "Rolling this way opens a second ring of up to eight more actions.", comment: "Action picker: More, for a Gestures direction")
         let words = title + " " + detail + " " + String(localized: "radial pie menu ring dial", comment: "Action picker: extra search words for Wheel")
         if !q.isEmpty, !q.split(separator: " ").allSatisfy({ words.range(of: $0, options: [.caseInsensitive, .diacriticInsensitive]) != nil }) {
             return nil
         }
-        return PickerEntry(id: "wheel", title: title, detail: detail,
-                           icon: .symbol("circle.dotted.circle"), isCurrent: current?.isWheel ?? false,
-                           activate: { choose(.wheel(WheelMenu.keeping(current ?? .system))) })
+        return PickerEntry(id: "more", title: title, detail: detail, icon: .symbol(GestureStep.moreSymbol),
+                           activate: { onMore(); dismiss() })
     }
 
     /// "Switcher": offered wherever Gesture is (never on the primary button).
@@ -470,7 +467,7 @@ struct ActionPickerPanel: View {
                            activate: { choose(.switcher(AppSwitcher.keeping(current ?? .system))) })
     }
 
-    /// "Gesture": offered for the three free buttons and for combos without the primary
+    /// "Gestures": offered for the three free buttons and for combos without the primary
     /// button (never the primary one: see `GestureRoute.decide`), and only when choosing
     /// what a button or combo does. Search finds it by its own words.
     private func gestureEntry(_ q: String) -> PickerEntry? {
@@ -483,17 +480,18 @@ struct ActionPickerPanel: View {
         } else {
             return nil
         }
-        let title = String(localized: "Gesture", comment: "Action picker: hold the button and roll the ball")
+        let title = String(localized: "Gestures", comment: "Button action: hold the button and roll the ball one way or another; it can show a ring of actions around the pointer")
         let detail = isCombo
-            ? String(localized: "Hold the buttons together and roll the ball: a different action each way.", comment: "Action picker: Gesture, for a combo")
-            : String(localized: "Hold the button and roll the ball: a different action each way.", comment: "Action picker: Gesture")
+            ? String(localized: "Hold the buttons together and roll the ball: a different action each way. It can show them on a ring around the pointer.", comment: "Action picker: Gestures, for a combo")
+            : String(localized: "Hold the button and roll the ball: a different action each way. It can show them on a ring around the pointer.", comment: "Action picker: Gestures")
         let words = title + " " + detail + " " + String(localized: "hold roll swipe direction", comment: "Action picker: extra search words for Gesture")
+            + " " + String(localized: "radial pie menu ring dial", comment: "Action picker: extra search words for Wheel")
         if !q.isEmpty, !q.split(separator: " ").allSatisfy({ words.range(of: $0, options: [.caseInsensitive, .diacriticInsensitive]) != nil }) {
             return nil
         }
         let isGesture = current?.isGesture ?? false
         return PickerEntry(id: "gesture", title: title, detail: detail,
-                           icon: .symbol("dot.arrowtriangles.up.right.down.left.circle"), isCurrent: isGesture,
+                           icon: .symbol(ButtonAction.gesturesSymbol), isCurrent: isGesture || current?.isWheel == true,
                            activate: { choose(.gesture(ButtonGesture.keeping(current ?? .system))) })
     }
 
@@ -614,6 +612,8 @@ struct ActionPickerButton: View {
     var comboButtons: [Int]? = nil
     /// The keys a shortcut sends, beside its name (off where space is tight).
     var showsKeys = true
+    /// A Gestures direction on the first ring: the picker also offers More.
+    var onMore: (() -> Void)? = nil
     let onPick: (ButtonAction) -> Void
 
     @State private var open = false
@@ -639,7 +639,7 @@ struct ActionPickerButton: View {
         .accessibilityLabel(Text("\(action?.title ?? String(localized: "Nothing chosen")), choose what this does",
                                  comment: "Spoken: a button’s current action, then what clicking does"))
         .popover(isPresented: shown, arrowEdge: .bottom) {
-            ActionPickerPanel(current: action, button: button, purpose: purpose, comboButtons: comboButtons) { new in onPick(new) }
+            ActionPickerPanel(current: action, button: button, purpose: purpose, comboButtons: comboButtons, onMore: onMore) { new in onPick(new) }
         }
     }
 }

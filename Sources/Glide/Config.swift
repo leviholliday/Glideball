@@ -87,12 +87,13 @@ enum ButtonAction: Codable, Hashable {
     case dragLock          // press: left button goes down and stays; press again (or click) lets go
     case media(MediaKey)   // play/pause, next track, volume… (the keyboard's media keys)
     case openApp(bundleID: String)   // opens (or brings forward) an app
-    /// Hold the button and roll the ball: each direction does something, a plain
-    /// tap does `tap`. The pointer stays put while it's held. Never on the primary button.
+    /// "Gestures": hold the button and roll the ball: each direction does something, a plain
+    /// tap does `tap`, and it can show its ring around the pointer. The pointer stays put while
+    /// it's held. Never on the primary button.
     indirect case gesture(ButtonGesture)
-    /// Hold the button: a ring of slots appears around the pointer, the ball picks one and
-    /// letting go runs it; the scroll ring does the Wheel's ring job meanwhile. Never on the
-    /// primary button.
+    /// The Wheel (2.10 betas 24 to 27), kept only so their settings still load: `clamped()`
+    /// turns every one into `.gesture` (`ButtonGesture(wheel:)`, shown right away), so the app
+    /// and the engine never see it, and nothing writes it any more.
     indirect case wheel(WheelMenu)
     /// Hold the button: a panel of the running apps appears (most recent first, like ⌘-Tab),
     /// the ball and the scroll ring move the highlight and letting go switches to that app.
@@ -162,14 +163,14 @@ enum ButtonAction: Codable, Hashable {
         .init(title: String(localized: "Precision (toggle)"), symbol: "dot.circle.viewfinder", action: .precisionToggle),
         .init(title: String(localized: "Scroll with ball (hold)"), symbol: "arrow.up.and.down.and.arrow.left.and.right", action: .ballScrollHold),
         .init(title: String(localized: "Drag lock"), symbol: "hand.draw", action: .dragLock),
-        .init(title: String(localized: "Gesture", comment: "Button action: hold the button and roll the ball up, down, left or right"),
-              symbol: "dot.arrowtriangles.up.right.down.left.circle", action: .gesture(.standard)),
-        .init(title: String(localized: "Wheel", comment: "Button action: hold the button, roll the ball to pick from a ring of actions around the pointer"),
-              symbol: "circle.dotted.circle", action: .wheel(.standard)),
+        .init(title: String(localized: "Gestures", comment: "Button action: hold the button and roll the ball one way or another; it can show a ring of actions around the pointer"),
+              symbol: ButtonAction.gesturesSymbol, action: .gesture(.standard)),
         .init(title: String(localized: "Switcher", comment: "Button action: hold the button, roll the ball to pick a running app, let go to switch to it (like ⌘-Tab)"),
               symbol: AppSwitcher.symbol, action: .switcher(.standard)),
         .init(title: String(localized: "Do nothing"), symbol: "nosign", action: .disabled),
     ]
+
+    static let gesturesSymbol = "dot.arrowtriangles.up.right.down.left.circle"
 
     /// Display names of apps chosen for "Open an app", by bundle ID (set by the app
     /// at launch: Config.swift is also built on its own by the simulators).
@@ -182,8 +183,7 @@ enum ButtonAction: Codable, Hashable {
         case .openApp(let id):
             let name = Self.appName(id) ?? id
             return String(localized: "Open \(name)", comment: "Button action: opens an app; %@ is the app’s name")
-        case .gesture: return String(localized: "Gesture", comment: "Button action: hold the button and roll the ball up, down, left or right")
-        case .wheel: return String(localized: "Wheel", comment: "Button action: hold the button, roll the ball to pick from a ring of actions around the pointer")
+        case .gesture, .wheel: return String(localized: "Gestures", comment: "Button action: hold the button and roll the ball one way or another; it can show a ring of actions around the pointer")
         case .switcher: return String(localized: "Switcher", comment: "Button action: hold the button, roll the ball to pick a running app, let go to switch to it (like ⌘-Tab)")
         case .media(.brightnessUp): return String(localized: "Brightness Up")
         case .media(.brightnessDown): return String(localized: "Brightness Down")
@@ -194,8 +194,8 @@ enum ButtonAction: Codable, Hashable {
 
     var symbol: String {
         if case .openApp = self { return "app" }
-        if case .gesture = self { return "dot.arrowtriangles.up.right.down.left.circle" }
-        if case .wheel = self { return "circle.dotted.circle" }
+        if case .gesture = self { return Self.gesturesSymbol }
+        if case .wheel = self { return Self.gesturesSymbol }
         if case .switcher = self { return AppSwitcher.symbol }
         if self == .media(.brightnessUp) { return "sun.max" }
         if self == .media(.brightnessDown) { return "sun.min" }
@@ -799,6 +799,45 @@ extension GlideConfig {
         return (merged.config.clamped(), merged.kept)
     }
 
+    /// Settings written by a Glideball from before Gestures and the Wheel became one
+    /// (`GlideSettingsFile.gesturesMergeSince`), merged with this Mac's (`local`). It read each
+    /// Gestures button as a plain four-way gesture (`ButtonGesture.asOlderBuildSees`) and wrote
+    /// that back, so the diagonals, the ring, More and Reverse were lost on the way: wherever
+    /// it left a button (or combo) exactly as it would have read this Mac's, this Mac's comes
+    /// back whole. Anything it changed wins. Returns whether anything came back.
+    func keepingGesturesMerge(from local: GlideConfig) -> (config: GlideConfig, kept: Bool) {
+        var out = self
+        var kept = false
+        func restore(_ incoming: ButtonAction, _ mine: ButtonAction?) -> ButtonAction {
+            guard case .gesture(let g) = incoming, case .gesture(let m)? = mine, m != g, m.asOlderBuildSees == g else { return incoming }
+            kept = true
+            return .gesture(m)
+        }
+        func merge(_ buttons: inout [Int: ButtonAction], _ mine: [Int: ButtonAction]) {
+            for (b, a) in buttons { buttons[b] = restore(a, mine[b]) }
+        }
+        func merge(_ chords: inout [Chord], _ mine: [Chord]) {
+            for i in chords.indices {
+                let m = mine.first { $0.id == chords[i].id } ?? mine.first { $0.buttons == chords[i].buttons }
+                chords[i].action = restore(chords[i].action, m?.action)
+            }
+        }
+        merge(&out.buttons, local.buttons)
+        merge(&out.chords, local.chords)
+        for i in out.appProfiles.indices {
+            guard let mine = local.appProfiles.first(where: { $0.bundleID == out.appProfiles[i].bundleID }) else { continue }
+            if var b = out.appProfiles[i].buttons, let mb = mine.buttons {
+                merge(&b, mb)
+                out.appProfiles[i].buttons = b
+            }
+            if var c = out.appProfiles[i].chords, let mc = mine.chords {
+                merge(&c, mc)
+                out.appProfiles[i].chords = c
+            }
+        }
+        return (out.clamped(), kept)
+    }
+
     /// Settings written by a Glideball that knew gestures but not chained gestures,
     /// gesture distance and Steady hands (2.10 betas before `GlideSettingsFile.gestureTuningSince`),
     /// merged with this Mac's (`local`). It read and wrote back the gestures without
@@ -878,6 +917,20 @@ extension GlideSettingsFile {
     static func predatesSwitcher(_ writtenBy: String?) -> Bool {
         guard let writtenBy else { return true }
         guard let v = SettingsVersion(writtenBy), let since = SettingsVersion(switcherSince) else { return false }
+        return v < since
+    }
+
+    /// The first Glideball where Gestures and the Wheel are one action (`ButtonGesture`'s
+    /// eight directions, Show the ring, More, the ring job and Reverse). One before it reads a
+    /// Gestures button as a plain four-way gesture (More doing nothing) and drops the rest, so
+    /// sync puts the rest back after it (`keepingGesturesMerge`). Set this to the beta it ships in.
+    static let gesturesMergeSince = "2.10-beta.28"
+
+    /// Written by a Glideball that would have dropped the merged Gestures' new fields (no
+    /// `writtenBy` at all is older still, and drops gestures altogether: `keepingNewerFeatures`).
+    static func predatesGesturesMerge(_ writtenBy: String?) -> Bool {
+        guard let writtenBy else { return false }
+        guard let v = SettingsVersion(writtenBy), let since = SettingsVersion(gesturesMergeSince) else { return false }
         return v < since
     }
 
@@ -1073,13 +1126,45 @@ extension GlideConfig {
 
 /// Which way the ball rolled while a gesture button was held. "Up" is rolling
 /// the top of the ball away from you: the way the pointer would have gone up.
+/// The diagonals are used only by a Gestures button set to eight directions.
 enum GestureDirection: String, Codable, CaseIterable {
-    case up, down, left, right
+    case up, down, left, right, upRight, downRight, downLeft, upLeft
+
+    /// The four straight ones, the only ones a four-direction gesture uses.
+    static let straight: [GestureDirection] = [.up, .down, .left, .right]
+
+    /// Its place on the ring: 0 up, then clockwise every 45° (1 up right … 7 up left).
+    var place: Int {
+        switch self {
+        case .up: 0
+        case .upRight: 1
+        case .right: 2
+        case .downRight: 3
+        case .down: 4
+        case .downLeft: 5
+        case .left: 6
+        case .upLeft: 7
+        }
+    }
+
+    init(place: Int) {
+        let p = ((place % 8) + 8) % 8
+        self = [GestureDirection.up, .upRight, .right, .downRight, .down, .downLeft, .left, .upLeft][p]
+    }
+
+    var isDiagonal: Bool { place % 2 == 1 }
+
+    /// The way it points, as a unit vector (+x right, +y toward you).
+    var vector: (x: Double, y: Double) {
+        let a = Double(place) * .pi / 4
+        return (sin(a), -cos(a))
+    }
 }
 
 /// What one direction of a gesture does, fired one of three ways (`mode`): each
 /// time you roll that way (the default: chained, as many as you like in one hold),
-/// continuously as you roll (`repeats`), or once per hold (`once`).
+/// continuously as you roll (`repeats`), or once per hold (`once`). Or it's **More**
+/// (`more` set): rolling that way opens a second ring of up to eight more, in place.
 struct GestureStep: Codable, Hashable {
     var action: ButtonAction
     /// Continuous: fires again for every further stretch of rolling (volume, say),
@@ -1089,6 +1174,10 @@ struct GestureStep: Codable, Hashable {
     /// gestures). Written only when on, so a Glideball that doesn't know it reads
     /// the same step and fires it once per hold anyway.
     var once = false
+    /// "More": the sub ring's eight places (clockwise from up), nil for an ordinary step.
+    /// One level only: a step inside it is never More. On disk its `action` is "Do nothing",
+    /// so a Glideball that doesn't know More reads a direction that does nothing.
+    var more: [GestureStep?]?
 
     enum Mode: String, CaseIterable {
         case chain, continuous, once
@@ -1108,10 +1197,37 @@ struct GestureStep: Codable, Hashable {
         self.once = once && !repeats
     }
 
-    private enum CodingKeys: String, CodingKey { case action, repeats, once }
+    /// A More step with these places (normalized to eight; any More inside is dropped).
+    static func moreRing(_ places: [GestureStep?] = []) -> GestureStep {
+        var s = GestureStep(.disabled)
+        s.more = normalizedMore(places)
+        return s
+    }
+
+    var isMore: Bool { more != nil }
+
+    /// Exactly eight places, none of them More.
+    static func normalizedMore(_ places: [GestureStep?]) -> [GestureStep?] {
+        Array((places.map { $0?.more == nil ? $0 : nil } + Array(repeating: nil, count: 8)).prefix(8))
+    }
+
+    private enum CodingKeys: String, CodingKey { case action, repeats, once, more }
+
+    private struct LenientStep: Decodable {
+        let step: GestureStep?
+        init(from decoder: Decoder) {
+            step = (try? decoder.singleValueContainer()).flatMap { c in c.decodeNil() ? nil : try? c.decode(GestureStep.self) }
+        }
+    }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
+        if let raw = (try? c.decodeIfPresent([LenientStep].self, forKey: .more)) ?? nil {
+            // More: what's in it, an unknown action emptying just its place.
+            action = .disabled
+            more = Self.normalizedMore(raw.prefix(8).map(\.step))
+            return
+        }
         action = try c.decode(ButtonAction.self, forKey: .action)   // unknown: the whole step is skipped
         repeats = (try? c.decodeIfPresent(Bool.self, forKey: .repeats)) ?? false
         once = !repeats && ((try? c.decodeIfPresent(Bool.self, forKey: .once)) ?? false)
@@ -1119,6 +1235,12 @@ struct GestureStep: Codable, Hashable {
 
     func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
+        if let more {
+            try c.encode(ButtonAction.disabled, forKey: .action)
+            try c.encode(false, forKey: .repeats)
+            try c.encode(more, forKey: .more)
+            return
+        }
         try c.encode(action, forKey: .action)
         try c.encode(repeats, forKey: .repeats)
         if once { try c.encode(true, forKey: .once) }
@@ -1127,26 +1249,76 @@ struct GestureStep: Codable, Hashable {
     /// The action as a gesture fires it, or nil if it can't be fired mid-gesture.
     /// Everything fires as a quick press and release: a gesture never holds a key,
     /// a mode or a button down, so letting go (or a pause, unplug or quit) has
-    /// nothing to undo.
+    /// nothing to undo. Precision (toggle) only flips Precision (as a Wheel's slot could).
     var firable: ButtonAction? {
-        switch action {
+        guard more == nil else { return nil }
+        return switch action {
         case .holdShortcut(let s): .shortcut(s)
-        case .shortcut, .media, .openApp, .leftClick, .rightClick, .middleClick, .back, .forward, .modifiedClick: action
-        case .system, .disabled, .precisionHold, .precisionToggle, .ballScrollHold, .dragLock, .gesture, .wheel, .switcher: nil
+        case .shortcut, .media, .openApp, .leftClick, .rightClick, .middleClick, .back, .forward, .modifiedClick, .precisionToggle: action
+        case .system, .disabled, .precisionHold, .ballScrollHold, .dragLock, .gesture, .wheel, .switcher: nil
+        }
+    }
+
+    /// Something happens when the ball goes this way: it fires, or it opens More.
+    var isUsable: Bool { more != nil || firable != nil }
+
+    /// As a Glideball from before More (2.10 betas before `GlideSettingsFile.gesturesMergeSince`)
+    /// reads it and would write it back: More is a direction that does nothing.
+    var asOlderBuildSees: GestureStep { more == nil ? self : GestureStep(.disabled) }
+}
+
+/// When a Gestures button draws its ring around the pointer.
+enum RingShow: String, Codable, CaseIterable, Identifiable {
+    /// Never: blind gestures, as they always were (only a ring job's readout, and More, show).
+    case never
+    /// Once the ball has been still for a moment with the button down (`GestureMachine.pauseToShow`);
+    /// a quick flick and release never draws anything.
+    case afterPause
+    /// As soon as the button's held, as the Wheel did.
+    case atOnce
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .never: String(localized: "Never", comment: "Gestures: Show the ring: never (blind gestures)")
+        case .afterPause: String(localized: "After a pause", comment: "Gestures: Show the ring once you hold the ball still for a moment")
+        case .atOnce: String(localized: "Right away", comment: "Gestures: Show the ring as soon as the button is held")
         }
     }
 }
 
-/// A gesture button: hold it and roll the ball one of four ways, or tap it.
+/// A Gestures button: hold it and roll the ball one of four (or eight) ways, or tap it.
+/// It can draw its ring around the pointer (`show`), a direction can be More (a second
+/// ring), and the scroll ring does its ring job while it's held (`ring`; `.scroll` keeps
+/// scrolling, as gestures always did). Old Wheel buttons load as one of these (`init(wheel:)`).
+///
+/// On disk only what's set is written: an old-style gesture writes exactly what it always
+/// did, and a Glideball from before the merge reads the four straight directions and the
+/// tap and skips the rest (`asOlderBuildSees`; sync puts the rest back: `keepingGesturesMerge`).
 struct ButtonGesture: Codable, Hashable {
     var up: GestureStep?
     var down: GestureStep?
     var left: GestureStep?
     var right: GestureStep?
+    /// The diagonals, used with `eight`.
+    var upRight: GestureStep?
+    var downRight: GestureStep?
+    var downLeft: GestureStep?
+    var upLeft: GestureStep?
     /// A press and release without rolling past the threshold. `.system` is the button's own click.
     var tap: ButtonAction = .system
     /// This gesture's own distance; nil follows `GlideConfig.gestureDistance`.
     var distance: GestureDistance?
+    /// Eight directions (the diagonals too) rather than four.
+    var eight = false
+    var show: RingShow = .never
+    /// What the scroll ring does while it's held (`.scroll`: it scrolls as usual).
+    var ring: RingJob = .scroll
+    /// The ring job "Your own pair": clockwise, counterclockwise.
+    var ringUp: ButtonAction?
+    var ringDown: ButtonAction?
+    /// The ring job the other way round.
+    var reverse = false
 
     init(up: GestureStep? = nil, down: GestureStep? = nil, left: GestureStep? = nil, right: GestureStep? = nil,
          tap: ButtonAction = .system, distance: GestureDistance? = nil) {
@@ -1156,6 +1328,20 @@ struct ButtonGesture: Codable, Hashable {
         self.right = right
         self.tap = tap
         self.distance = distance
+    }
+
+    /// An old Wheel button, as Gestures: its slots, four or eight, shown at once, its ring job and tap.
+    /// Each slot ran once at the release, which is what a plain step does on a showing ring.
+    init(wheel w: WheelMenu) {
+        self.init(tap: w.tap)
+        for place in 0..<WheelMenu.places {
+            if let a = w[place] { self[GestureDirection(place: place)] = GestureStep(a) }
+        }
+        eight = w.eight
+        show = .atOnce
+        ring = w.ring
+        ringUp = w.ringUp
+        ringDown = w.ringDown
     }
 
     /// Spaces left and right, Mission Control up, App Exposé down; a tap is the button's own click.
@@ -1192,15 +1378,17 @@ struct ButtonGesture: Codable, Hashable {
         /// The set comes with its own tap (Volume: play or pause); otherwise the tap stays.
         var ownTap = false
 
+        /// The set's four straight directions; everything else (the diagonals, the ring, the tap
+        /// unless the set has its own) stays.
         func applied(to current: ButtonGesture) -> ButtonGesture {
-            var g = gesture
-            if !ownTap { g.tap = current.tap }
-            g.distance = current.distance
+            var g = current
+            for d in GestureDirection.straight { g[d] = gesture[d] }
+            if ownTap { g.tap = gesture.tap }
             return g
         }
 
         func matches(_ g: ButtonGesture) -> Bool {
-            GestureDirection.allCases.allSatisfy { g[$0] == gesture[$0] } && (!ownTap || g.tap == gesture.tap)
+            GestureDirection.straight.allSatisfy { g[$0] == gesture[$0] } && (!ownTap || g.tap == gesture.tap)
         }
     }
 
@@ -1217,15 +1405,18 @@ struct ButtonGesture: Codable, Hashable {
         ]
     }
 
-    /// Turning a button into a gesture keeps what it did as the tap.
+    /// Turning a button into Gestures keeps what it did as the tap. A new one shows its ring
+    /// after a pause and turns the volume with the scroll ring.
     static func keeping(_ previous: ButtonAction) -> ButtonGesture {
-        if case .gesture(let old) = previous { return old }
-        var g = ButtonGesture.standard
         switch previous {
-        case .wheel(let w): g.tap = w.tap
-        case .switcher(let s): g.tap = s.tap
-        default: g.tap = previous
+        case .gesture(let old): return old
+        case .wheel(let w): return ButtonGesture(wheel: w)
+        default: break
         }
+        var g = ButtonGesture.standard
+        g.show = .afterPause
+        g.ring = .volume
+        if case .switcher(let s) = previous { g.tap = s.tap } else { g.tap = previous }
         return g
     }
 
@@ -1236,6 +1427,10 @@ struct ButtonGesture: Codable, Hashable {
             case .down: down
             case .left: left
             case .right: right
+            case .upRight: upRight
+            case .downRight: downRight
+            case .downLeft: downLeft
+            case .upLeft: upLeft
             }
         }
         set {
@@ -1244,8 +1439,45 @@ struct ButtonGesture: Codable, Hashable {
             case .down: down = newValue
             case .left: left = newValue
             case .right: right = newValue
+            case .upRight: upRight = newValue
+            case .downRight: downRight = newValue
+            case .downLeft: downLeft = newValue
+            case .upLeft: upLeft = newValue
             }
         }
+    }
+
+    /// The directions in use, clockwise from up: four, or eight.
+    var usedDirections: [GestureDirection] {
+        eight ? (0..<8).map { GestureDirection(place: $0) } : [.up, .right, .down, .left]
+    }
+
+    /// The steps a ring shows, by place (0 up, clockwise): the first ring (`level` nil) or the
+    /// More in place `level`. Places not in use are nil, and so is a sub ring's way back.
+    func steps(level: Int?) -> [GestureStep?] {
+        let used = Set(usedDirections.map(\.place))
+        guard let level else {
+            return (0..<8).map { used.contains($0) ? self[GestureDirection(place: $0)] : nil }
+        }
+        let sub = self[GestureDirection(place: level)]?.more ?? []
+        var out: [GestureStep?] = (0..<8).map { used.contains($0) && $0 < sub.count ? sub[$0] : nil }
+        out[(level + 4) % 8] = nil
+        return out
+    }
+
+    /// Some direction in use is More.
+    var hasMore: Bool { usedDirections.contains { self[$0]?.isMore == true } }
+
+    /// The ring can come up during a hold (Show the ring, or a More to open).
+    var mayShowRing: Bool { show != .never || hasMore }
+
+    /// The scroll ring is this gesture's while it's held (it doesn't scroll).
+    var takesRing: Bool { ring != .scroll }
+
+    /// What one ring tick does each way (Reverse swaps them); one-shots only.
+    var ringActions: (clockwise: ButtonAction?, counterclockwise: ButtonAction?) {
+        let p = ring.actions(custom: ringUp, ringDown)
+        return reverse ? (p.down, p.up) : (p.up, p.down)
     }
 
     /// The tap as it's performed: a held action can't be held after the release,
@@ -1258,9 +1490,20 @@ struct ButtonGesture: Codable, Hashable {
         }
     }
 
+    /// What a Glideball from before the merge (`GlideSettingsFile.gesturesMergeSince`) keeps of
+    /// it when it reads it and writes it back: the four straight ways (More doing nothing), the
+    /// tap and the distance.
+    var asOlderBuildSees: ButtonGesture {
+        ButtonGesture(up: up?.asOlderBuildSees, down: down?.asOlderBuildSees, left: left?.asOlderBuildSees,
+                      right: right?.asOlderBuildSees, tap: tap, distance: distance)
+    }
+
     // A newer Glideball may write actions or fields this one doesn't know: skip
     // just that direction (or use the plain click for the tap), never the whole button.
-    private enum CodingKeys: String, CodingKey { case up, down, left, right, tap, distance }
+    // Missing fields are what gestures were before the merge (no ring, the ring scrolls).
+    private enum CodingKeys: String, CodingKey {
+        case up, down, left, right, upRight, downRight, downLeft, upLeft, tap, distance, eight, show, ring, ringUp, ringDown, reverse
+    }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -1269,8 +1512,38 @@ struct ButtonGesture: Codable, Hashable {
         down = step(.down)
         left = step(.left)
         right = step(.right)
+        upRight = step(.upRight)
+        downRight = step(.downRight)
+        downLeft = step(.downLeft)
+        upLeft = step(.upLeft)
         tap = (try? c.decodeIfPresent(ButtonAction.self, forKey: .tap)) ?? .system
         distance = (try? c.decodeIfPresent(GestureDistance.self, forKey: .distance)) ?? nil
+        eight = (try? c.decodeIfPresent(Bool.self, forKey: .eight)) ?? false
+        show = (try? c.decodeIfPresent(RingShow.self, forKey: .show)) ?? .never
+        ring = (try? c.decodeIfPresent(RingJob.self, forKey: .ring)) ?? .scroll
+        ringUp = (try? c.decodeIfPresent(ButtonAction.self, forKey: .ringUp)) ?? nil
+        ringDown = (try? c.decodeIfPresent(ButtonAction.self, forKey: .ringDown)) ?? nil
+        reverse = (try? c.decodeIfPresent(Bool.self, forKey: .reverse)) ?? false
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(up, forKey: .up)
+        try c.encodeIfPresent(down, forKey: .down)
+        try c.encodeIfPresent(left, forKey: .left)
+        try c.encodeIfPresent(right, forKey: .right)
+        try c.encodeIfPresent(upRight, forKey: .upRight)
+        try c.encodeIfPresent(downRight, forKey: .downRight)
+        try c.encodeIfPresent(downLeft, forKey: .downLeft)
+        try c.encodeIfPresent(upLeft, forKey: .upLeft)
+        try c.encode(tap, forKey: .tap)
+        try c.encodeIfPresent(distance, forKey: .distance)
+        if eight { try c.encode(true, forKey: .eight) }
+        if show != .never { try c.encode(show, forKey: .show) }
+        if ring != .scroll { try c.encode(ring, forKey: .ring) }
+        try c.encodeIfPresent(ringUp, forKey: .ringUp)
+        try c.encodeIfPresent(ringDown, forKey: .ringDown)
+        if reverse { try c.encode(true, forKey: .reverse) }
     }
 }
 
@@ -1288,12 +1561,13 @@ enum GestureDistance: String, Codable, CaseIterable, Identifiable {
     }
 }
 
-// MARK: - The Wheel
+// MARK: - The ring job, and the old Wheel
 
-/// What turning the scroll ring does while a Wheel button is held (its "ring job"):
-/// one action per ring tick each way. It never scrolls while the Wheel is held.
+/// What turning the scroll ring does while a Gestures button is held (its "ring job"):
+/// one action per ring tick each way, or (`.scroll`) it scrolls as usual, as gestures
+/// always let it. Anything else never scrolls while the button is held.
 enum RingJob: String, Codable, CaseIterable, Identifiable {
-    case volume, brightness, zoom, undo, tabs, custom, off
+    case volume, brightness, zoom, undo, tabs, custom, scroll, off
     var id: String { rawValue }
 
     var title: String {
@@ -1304,6 +1578,7 @@ enum RingJob: String, Codable, CaseIterable, Identifiable {
         case .undo: String(localized: "Undo and redo", comment: "Wheel ring job")
         case .tabs: String(localized: "Tabs", comment: "Wheel ring job: turning the scroll ring moves to the previous or next tab")
         case .custom: String(localized: "Your own pair", comment: "Wheel ring job: one action for each way the ring turns")
+        case .scroll: String(localized: "Scrolls as usual", comment: "Gestures ring job: the scroll ring keeps scrolling while the button is held")
         case .off: String(localized: "Nothing", comment: "Wheel ring job: the scroll ring does nothing while the Wheel is held")
         }
     }
@@ -1316,6 +1591,7 @@ enum RingJob: String, Codable, CaseIterable, Identifiable {
         case .undo: "arrow.uturn.backward"
         case .tabs: "square.on.square"
         case .custom: "slider.horizontal.2.square"
+        case .scroll: "scroll"
         case .off: "nosign"
         }
     }
@@ -1329,7 +1605,7 @@ enum RingJob: String, Codable, CaseIterable, Identifiable {
         case .undo: (.shortcut(.redo), .shortcut(.undo))
         case .tabs: (.shortcut(.nextTab), .shortcut(.previousTab))
         case .custom: (up.flatMap(WheelMenu.oneShot), down.flatMap(WheelMenu.oneShot))
-        case .off: (nil, nil)
+        case .scroll, .off: (nil, nil)
         }
     }
 }
@@ -1592,20 +1868,30 @@ extension ButtonAction {
             return self
         case .gesture(var g):
             guard !insideGesture else { return nil }
+            func plain(_ step: GestureStep?) -> GestureStep? {
+                guard let step, step.more == nil else { return nil }
+                return step.action.clamped(insideGesture: true).map { GestureStep($0, repeats: step.repeats, once: step.once) }
+            }
             for d in GestureDirection.allCases {
-                if let step = g[d] {
-                    g[d] = step.action.clamped(insideGesture: true).map { GestureStep($0, repeats: step.repeats, once: step.once) }
+                guard let step = g[d] else { continue }
+                if let sub = step.more {
+                    // More: one level only, its own steps plain, its way back empty.
+                    var places = GestureStep.normalizedMore(sub).map(plain)
+                    places[(d.place + 4) % 8] = nil
+                    g[d] = .moreRing(places)
+                } else {
+                    g[d] = plain(step)
                 }
             }
             g.tap = g.tap.clamped(insideGesture: true) ?? .system
+            g.ringUp = g.ringUp?.clamped(insideGesture: true)
+            g.ringDown = g.ringDown?.clamped(insideGesture: true)
             return .gesture(g)
-        case .wheel(var w):
+        case .wheel(let w):
+            // The Wheel is Gestures now: every one that comes in (old settings, a backup, sync,
+            // a share) becomes one, shown right away, so it works as it did.
             guard !insideGesture else { return nil }
-            w.slots = WheelMenu.normalized(w.slots.map { $0?.clamped(insideGesture: true) })
-            w.ringUp = w.ringUp?.clamped(insideGesture: true)
-            w.ringDown = w.ringDown?.clamped(insideGesture: true)
-            w.tap = w.tap.clamped(insideGesture: true) ?? .system
-            return .wheel(w)
+            return ButtonAction.gesture(ButtonGesture(wheel: w)).clamped()
         case .switcher(var a):
             guard !insideGesture else { return nil }
             a.tap = a.tap.clamped(insideGesture: true) ?? .system

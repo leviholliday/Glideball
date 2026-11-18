@@ -197,22 +197,6 @@ struct CombosCard: View {
                     .padding(.horizontal, Theme.Space.rowHorizontal)
                     .padding(.vertical, 8)
                     .frame(minHeight: Theme.Space.rowMinHeight)
-                    if case .wheel(let w) = chord.action {
-                        if chord.buttons.contains(0) {
-                            // Never on the primary button (see GestureRoute.decide): say what happens instead.
-                            Label("Includes your primary click, so this combo does the Wheel’s tap instead of the Wheel.",
-                                  systemImage: "info.circle")
-                                .font(Theme.Font.hint)
-                                .foregroundStyle(.secondary)
-                                .padding(.leading, ButtonRow.dividerInset)
-                                .padding(.trailing, Theme.Space.rowHorizontal)
-                                .padding(.bottom, 10)
-                        } else {
-                            WheelEditor(model: model, buttons: chord.buttons,
-                                        menu: Binding(get: { w }, set: { actionBinding(chord.id).wrappedValue = .wheel($0) }))
-                                .transition(.opacity.combined(with: .move(edge: .top)))
-                        }
-                    }
                     if case .switcher(let s) = chord.action {
                         if chord.buttons.contains(0) {
                             // Never on the primary button (see GestureRoute.decide): say what happens instead.

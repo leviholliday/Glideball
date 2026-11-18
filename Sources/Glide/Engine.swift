@@ -47,7 +47,7 @@ final class Engine {
         var precision = false
         var ballScrolling = false
         var dragLocked = false
-        /// A gesture button is held (the pointer is frozen until it lifts).
+        /// A Gestures button is held, blind (no ring in play: the pointer is frozen until it lifts).
         var gestureHeld = false
         /// The held gesture's buttons, and which way it's being rolled (for the UI's
         /// compass: the leaning direction, or the one that fired).
@@ -57,11 +57,14 @@ final class Engine {
         var gestureFlash: GestureFlash?
         /// "Try it" on the Buttons page: gestures are shown, not performed.
         var gesturePractice = false
-        /// A Wheel button is held (the pointer is frozen until it lifts; `gestureButtons`
-        /// are its buttons, `gestureHeld` stays false), and the slot lit now.
+        /// A Gestures button is held with its ring in play (the pointer is frozen until it lifts;
+        /// `gestureButtons` are its buttons, `gestureHeld` is false meanwhile: a hold goes from
+        /// one to the other when its ring comes up, never back), the place lit now, and which
+        /// ring is up (nil the first, else the place whose More is open).
         var wheelHeld = false
         var wheelSlot: Int?
-        /// The last thing a Wheel did, numbered so the UI (and scripts/engine-fuzz) see each one.
+        var wheelLevel: Int?
+        /// The last thing a ring (or a ring job) did, numbered so the UI (and scripts/engine-fuzz) see each one.
         var wheelFlash: WheelFlash?
         /// A Switcher button is held (as a Wheel: `gestureButtons` are its buttons), and the
         /// last thing a Switcher did. Never which app: only its place in the list.
@@ -77,9 +80,11 @@ final class Engine {
         var buttons: [Int]
     }
 
-    /// One thing a Wheel did: a slot ran at the release, the tap, or a ring step while held.
+    /// One thing a Gestures ring did: a place ran at the release, a repeating place ran while
+    /// held, the tap (after a hold with its ring in play), or a ring job step while held (blind
+    /// or not).
     struct WheelFlash: Equatable {
-        enum Kind: Equatable { case slot(Int), tap, ring(clockwise: Bool) }
+        enum Kind: Equatable { case slot(Int), repeated(Int), tap, ring(clockwise: Bool) }
         var seq: Int
         var kind: Kind
         var buttons: [Int]
@@ -1236,9 +1241,9 @@ final class Engine {
         lastHIDWheel = (ticks, now)
         let flags = modifierFlags.union(io.keyboardFlags())
         diagnostics.record("HID wheel \(ticks)")
-        // A Wheel held: the ring is its dial (its ring job), in every scroll mode and with any
-        // modifier. It never also scrolls.
-        if gestures.panelHeld {
+        // A Gestures button with a ring job held (or a Switcher): the ring is its dial, in every
+        // scroll mode and with any modifier. It never also scrolls. ("Scrolls as usual" falls through.)
+        if gestures.ringTaken {
             // The watchdog took the ring or the panel down meanwhile: dismissed.
             if wheelShown != nil, !io.keepWheel() { wheelLost() }
             if switcherShown != nil, !io.keepSwitcher() { switcherLost() }
@@ -1883,7 +1888,7 @@ final class Engine {
             if type == .keyDown, gestures.panelHeld {
                 escSwallowed = true
                 gestures.dismissWheel()
-                diagnostics.record(gestures.switcherHeld ? "switcher dismissed (Esc)" : "wheel dismissed (Esc)")
+                diagnostics.record(gestures.switcherHeld ? "switcher dismissed (Esc)" : "gestures dismissed (Esc)")
                 syncPanels()
                 publishModes()
                 return nil
@@ -1914,9 +1919,9 @@ final class Engine {
         // trackpad gestures always carry a phase, so those pass through.
         let phase = event.getIntegerValueField(CGEventField(rawValue: 99)!)
         let momentum = event.getIntegerValueField(CGEventField(rawValue: 123)!)
-        // A Wheel held: the ring's own scroll events never reach apps (its HID ticks drive the
+        // A ring job held: the ring's own scroll events never reach apps (its HID ticks drive the
         // ring job). Other mice and the trackpad scroll as usual.
-        if gestures.panelHeld, fromKensington, phase == 0, momentum == 0 {
+        if gestures.ringTaken, fromKensington, phase == 0, momentum == 0 {
             if hidWheelSeen { learnDirection(cgDelta: event.getDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1)) }
             return nil
         }
@@ -2226,6 +2231,8 @@ final class Engine {
                     // thing it handles after): then the slot the person could no longer see doesn't run.
                     if wheelShown != nil, gestures.hold?.buttons.contains(Int(button)) == true, !io.keepWheel() { wheelLost() }
                     if switcherShown != nil, !io.keepSwitcher() { switcherLost() }
+                    // Whether the ring was in play at the end (it may have come up mid-hold): its tap flashes as the ring's.
+                    if let h = gestures.hold, h.buttons.contains(Int(button)) { lastHoldWasWheel = h.wheel != nil }
                     let effects = gestures.release(button: Int(button), now: io.now())
                     // A combo gesture ends with its first button up; the others finish silently.
                     for (b, other) in overrides {
@@ -3039,7 +3046,7 @@ final class Engine {
                             canReadBall: tap != nil && canReadBall, gestureHeld: gestures.isHeld)
     }
 
-    /// Starts a gesture or Wheel hold. Both are the same hold to the engine: the `.gesture`
+    /// Starts a Gestures or Switcher hold. Both are the same hold to the engine: the `.gesture`
     /// override on its buttons, the pointer frozen, and every way out through `gestures`.
     private func beginHold(_ kind: HoldKind, buttons: [Int64]) {
         let effects: [GestureEffect]
@@ -3047,9 +3054,6 @@ final class Engine {
         case .gesture(let g):
             let tuning = GestureTuning.for(distance: g.distance ?? config.gestureDistance, steadyHands: config.gestureSteadyHands)
             effects = gestures.begin(buttons: buttons.map { Int($0) }, gesture: g, now: io.now(), tuning: tuning)
-        case .wheel(let w):
-            let tuning = GestureTuning.for(distance: config.gestureDistance, steadyHands: config.gestureSteadyHands)
-            effects = gestures.beginWheel(buttons: buttons.map { Int($0) }, menu: w, now: io.now(), tuning: tuning)
         case .switcher(let a):
             let tuning = GestureTuning.for(distance: config.gestureDistance, steadyHands: config.gestureSteadyHands)
             switcherSessions &+= 1
@@ -3070,16 +3074,29 @@ final class Engine {
             beginSwitcherList()
             return
         }
-        if case .wheel = kind {
-            diagnostics.record("wheel hold on \(buttons)")
-            scroller.stopRing()   // the ring is the Wheel's now: nothing it set going keeps scrolling
+        if case .gesture(let g) = kind {
+            // Only what kind of hold, never what it does.
+            diagnostics.record("gesture hold on \(buttons), ring \(g.show.rawValue)")
+            if g.takesRing { scroller.stopRing() }   // the ring is the ring job's now: nothing it set going keeps scrolling
             wheelReveal?.invalidate()
-            wheelReveal = io.schedule(WheelHold.revealDelay + 0.001, repeats: false) { [unowned self] in
-                syncWheel()
-                publishModes()
+            wheelReveal = nil
+            switch g.show {
+            case .atOnce:
+                wheelReveal = io.schedule(WheelHold.revealDelay + 0.001, repeats: false) { [unowned self] in
+                    syncWheel()
+                    publishModes()
+                }
+            case .afterPause:
+                // Looks every 50 ms whether the ball has been still long enough; stops once the
+                // ring is up, something fired or the hold is over.
+                wheelReveal = io.schedule(0.05, repeats: true) { [unowned self] in
+                    syncWheel()
+                    publishModes()
+                    if !gestures.waitsForPause { wheelReveal?.invalidate(); wheelReveal = nil }
+                }
+            case .never:
+                break
             }
-        } else {
-            diagnostics.record("gesture hold on \(buttons)")
         }
         applyGesture(effects)
         startHoldFailsafe()
@@ -3113,7 +3130,7 @@ final class Engine {
             wheelKeeper = nil
             io.hideWheel()
         }
-        if !gestures.wheelHeld {
+        if !gestures.wheelHeld && !gestures.waitsForPause {
             wheelReveal?.invalidate()
             wheelReveal = nil
         }
@@ -3194,11 +3211,17 @@ final class Engine {
         publishModes()
     }
 
-    /// The overlay couldn't be shown, or EngineIO's watchdog took it down: this hold's Wheel is
-    /// dismissed (nothing runs at the release; the pointer stays held until then).
+    /// The overlay couldn't be shown, or EngineIO's watchdog took it down: if it showed the ring,
+    /// this hold is dismissed (nothing runs at the release; the pointer stays held until then).
+    /// A blind hold's ring job readout alone isn't asked for again, and its gestures go on.
     private func wheelLost() {
-        gestures.dismissWheel()
-        diagnostics.record("wheel overlay gone: dismissed")
+        if wheelShown?.showsRing == false {
+            gestures.readoutLost()
+            diagnostics.record("ring job readout gone")
+        } else {
+            gestures.dismissWheel()
+            diagnostics.record("gestures ring gone: dismissed")
+        }
         wheelShown = nil
         wheelShownAt = nil
         wheelKeeper?.invalidate()
@@ -3261,7 +3284,7 @@ final class Engine {
             case .fire(let action, let direction):
                 diagnostics.record("gesture \(direction.rawValue)")
                 flashGesture(direction, buttons: gestures.hold?.buttons ?? [], chain: gestures.hold?.fired ?? 1)
-                if !practicing { fireLater(action) }
+                if !practicing { performTap(action, buttons: []) }   // a one-shot (Precision (toggle) flips Precision)
             case .tap(let action, let buttons):
                 if gestures.hold == nil, lastHoldWasSwitcher {
                     flashSwitcher(.tap, buttons: buttons)
@@ -3275,6 +3298,10 @@ final class Engine {
                 diagnostics.record("wheel slot \(place)")
                 flashWheel(.slot(place), buttons: lastHoldButtons)
                 if !practicing { performTap(action, buttons: []) }   // never `.system`: a slot is a one-shot
+            case .ringRepeat(let action, let place):
+                diagnostics.record("ring repeat \(place)")
+                flashWheel(.repeated(place), buttons: gestures.hold?.buttons ?? [])
+                if !practicing { performTap(action, buttons: []) }
             case .ringStep(let action, let clockwise):
                 flashWheel(.ring(clockwise: clockwise), buttons: gestures.hold?.buttons ?? [])
                 if !practicing { performTap(action, buttons: []) }
@@ -3388,10 +3415,11 @@ final class Engine {
 
     private func publishModes() {
         let m = Modes(precision: precisionActive, ballScrolling: ballScrolling, dragLocked: dragLocked,
-                      gestureHeld: gestures.isHeld && !gestures.panelHeld, gestureButtons: gestures.hold?.buttons ?? [],
+                      gestureHeld: gestures.isHeld && !gestures.wheelHeld && !gestures.switcherHeld, gestureButtons: gestures.hold?.buttons ?? [],
                       gestureDirection: gestures.leaning, gestureFlash: gestureFlash,
                       gesturePractice: practicing,
-                      wheelHeld: gestures.wheelHeld, wheelSlot: gestures.hold?.wheel?.selected, wheelFlash: wheelFlash,
+                      wheelHeld: gestures.wheelHeld, wheelSlot: gestures.hold?.wheel?.selected,
+                      wheelLevel: gestures.hold?.wheel?.level, wheelFlash: wheelFlash,
                       switcherHeld: gestures.switcherHeld, switcherFlash: switcherFlash)
         guard m != modes else { return }
         modes = m

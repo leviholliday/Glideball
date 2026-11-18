@@ -274,8 +274,13 @@ final class ShareData {
             if case .gesture(let g) = $0 { g } else { nil }
         }
         var gestureActions: [String: Int] = [:]
+        // Every way in use, and what's inside a More (by kind only; More itself isn't a kind the
+        // server knows, so it isn't sent: how many show the ring or use More would need new fields).
         for g in gestures {
-            for step in [g.up, g.down, g.left, g.right].compactMap({ $0 }) { gestureActions[step.action.kind, default: 0] += 1 }
+            for d in g.usedDirections {
+                guard let step = g[d] else { continue }
+                for s in step.more ?? [step] { if let s { gestureActions[s.action.kind, default: 0] += 1 } }
+            }
         }
         let app = ShareData.appInfo
         return Stats(
@@ -508,8 +513,7 @@ extension ButtonAction {
         case .dragLock: "dragLock"
         case .media: "media"
         case .openApp: "openApp"
-        case .gesture: "gesture"
-        case .wheel: "wheel"
+        case .gesture, .wheel: "gesture"   // the Wheel is Gestures now (never sent as one after clamping anyway)
         case .switcher: "switcher"
         }
     }

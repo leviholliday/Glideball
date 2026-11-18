@@ -2661,3 +2661,35 @@
 "Hold this button and your open apps appear, the last one you used already picked. Roll the ball or turn the ring to choose another, and let go to switch. Esc cancels." = "Maintiens ce bouton et tes apps ouvertes apparaissent, la dernière utilisée déjà choisie. Roule la boule ou tourne l’anneau pour en choisir une autre, puis relâche pour basculer. Échap annule.";
 "Hold these buttons together and your open apps appear, the last one you used already picked. Roll the ball or turn the ring to choose another, and let go to switch. Esc cancels." = "Maintiens ces boutons ensemble et tes apps ouvertes apparaissent, la dernière utilisée déjà choisie. Roule la boule ou tourne l’anneau pour en choisir une autre, puis relâche pour basculer. Échap annule.";
 "A quick press, before the apps show." = "Un appui rapide, avant que les apps n’apparaissent.";
+
+/* Gestures and the Wheel as one action (Nov 18) */
+"After a pause" = "Après une pause";
+"Back to the first ring" = "Revenir au premier anneau";
+"Directions" = "Directions";
+"First Ring" = "Premier anneau";
+"Gestures ring" = "Anneau des gestes";
+"Hold it and roll the ball one way or another. It can show a ring of actions around the pointer." = "Maintenez-le et roulez la boule dans un sens ou dans l’autre. Il peut afficher un anneau d’actions autour du pointeur.";
+"Hold the button and roll the ball: a different action each way. It can show them on a ring around the pointer." = "Maintenez le bouton et roulez la boule : une action différente dans chaque sens. Elles peuvent s’afficher en anneau autour du pointeur.";
+"Hold the buttons together and roll the ball: a different action each way. It can show them on a ring around the pointer." = "Maintenez les boutons ensemble et roulez la boule : une action différente dans chaque sens. Elles peuvent s’afficher en anneau autour du pointeur.";
+"Hold these buttons together and roll the ball, and each way does something. A quick press does the tap." = "Maintenez ces boutons ensemble et roulez la boule : chaque sens fait quelque chose. Une pression rapide fait le toucher.";
+"Hold this button and roll the ball, and each way does something. A quick press does the tap." = "Maintenez ce bouton et roulez la boule : chaque sens fait quelque chose. Une pression rapide fait le toucher.";
+"Make this way an ordinary action again" = "Refaire de ce sens une action ordinaire";
+"More" = "Plus";
+"More ring" = "Anneau Plus";
+"Never" = "Jamais";
+"Not More" = "Retirer Plus";
+"Nothing shows. Roll and the action happens straight away, as many times as you like in one hold." = "Rien ne s’affiche. Roulez et l’action se fait tout de suite, autant de fois que vous voulez en un seul maintien.";
+"Open this ring to choose what’s in it" = "Ouvrir cet anneau pour choisir son contenu";
+"Reverse" = "Inverser";
+"Right away" = "Tout de suite";
+"Roll quickly and the action happens straight away. Hold the ball still for a moment and the ring shows, so you can pick." = "Roulez vite et l’action se fait tout de suite. Gardez la boule immobile un instant et l’anneau s’affiche pour choisir.";
+"Rolling this way goes back to the first ring" = "Rouler dans ce sens revient au premier anneau";
+"Rolling this way opens a second ring of up to eight more actions." = "Rouler dans ce sens ouvre un deuxième anneau de jusqu’à huit actions de plus.";
+"Scrolls as usual" = "Défile comme d’habitude";
+"Set up Gestures on a button" = "Mettre des gestes sur un bouton";
+"Show the ring" = "Afficher l’anneau";
+"Swap which way of turning the ring does what" = "Inverser ce que fait chaque sens de rotation de l’anneau";
+"The ring scrolls as usual while you hold it." = "L’anneau défile comme d’habitude pendant que vous le maintenez.";
+"The ring shows as soon as you hold the button. Roll toward an action and let go to run it." = "L’anneau s’affiche dès que vous maintenez le bouton. Roulez vers une action et relâchez pour la lancer.";
+"This is the ring More opens. Roll back through the middle to get to the first ring again; letting go in the middle cancels." = "Voici l’anneau qu’ouvre Plus. Revenez par le centre pour retrouver le premier anneau ; relâcher au centre annule.";
+"gestures, hold and roll, ring, wheel, radial menu, pie menu, more, show the ring, reverse" = "gestes, maintenir et rouler, anneau, roue, menu radial, menu circulaire, plus, afficher l’anneau, inverser";

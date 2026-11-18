@@ -2661,3 +2661,35 @@
 "Hold this button and your open apps appear, the last one you used already picked. Roll the ball or turn the ring to choose another, and let go to switch. Esc cancels." = "按住此按钮会显示打开的应用，并已选中你上次使用的应用。滚动轨迹球或转动滚动环选择其他应用，松开即可切换。按 Esc 取消。";
 "Hold these buttons together and your open apps appear, the last one you used already picked. Roll the ball or turn the ring to choose another, and let go to switch. Esc cancels." = "同时按住这些按钮会显示打开的应用，并已选中你上次使用的应用。滚动轨迹球或转动滚动环选择其他应用，松开即可切换。按 Esc 取消。";
 "A quick press, before the apps show." = "在应用出现前快速按一下。";
+
+/* Gestures and the Wheel as one action (Nov 18) */
+"After a pause" = "停顿片刻后";
+"Back to the first ring" = "回到第一个圆环";
+"Directions" = "方向";
+"First Ring" = "第一个圆环";
+"Gestures ring" = "手势圆环";
+"Hold it and roll the ball one way or another. It can show a ring of actions around the pointer." = "按住它并向某个方向滚动轨迹球。它可以在指针周围显示一圈操作。";
+"Hold the button and roll the ball: a different action each way. It can show them on a ring around the pointer." = "按住按钮并滚动轨迹球：每个方向一个不同的操作。也可以在指针周围的圆环上显示出来。";
+"Hold the buttons together and roll the ball: a different action each way. It can show them on a ring around the pointer." = "同时按住这些按钮并滚动轨迹球：每个方向一个不同的操作。也可以在指针周围的圆环上显示出来。";
+"Hold these buttons together and roll the ball, and each way does something. A quick press does the tap." = "同时按住这些按钮并滚动轨迹球，每个方向都会做点什么。快速按一下是轻点。";
+"Hold this button and roll the ball, and each way does something. A quick press does the tap." = "按住这个按钮并滚动轨迹球，每个方向都会做点什么。快速按一下是轻点。";
+"Make this way an ordinary action again" = "把这个方向改回普通操作";
+"More" = "更多";
+"More ring" = "“更多”圆环";
+"Never" = "从不";
+"Not More" = "不用“更多”";
+"Nothing shows. Roll and the action happens straight away, as many times as you like in one hold." = "不显示任何东西。一滚动操作就立刻发生，一次按住中想做几次都行。";
+"Open this ring to choose what’s in it" = "打开这个圆环来选择里面的内容";
+"Reverse" = "反向";
+"Right away" = "立即";
+"Roll quickly and the action happens straight away. Hold the ball still for a moment and the ring shows, so you can pick." = "快速滚动，操作立刻发生。让轨迹球停一下，圆环就会出现，方便你挑选。";
+"Rolling this way goes back to the first ring" = "朝这个方向滚动会回到第一个圆环";
+"Rolling this way opens a second ring of up to eight more actions." = "朝这个方向滚动会打开第二个圆环，最多再放八个操作。";
+"Scrolls as usual" = "照常滚动";
+"Set up Gestures on a button" = "给按钮设置手势";
+"Show the ring" = "显示圆环";
+"Swap which way of turning the ring does what" = "交换圆环两个转动方向的作用";
+"The ring scrolls as usual while you hold it." = "按住时，圆环照常滚动。";
+"The ring shows as soon as you hold the button. Roll toward an action and let go to run it." = "一按住按钮圆环就会出现。朝一个操作滚动，松开即可执行。";
+"This is the ring More opens. Roll back through the middle to get to the first ring again; letting go in the middle cancels." = "这是“更多”打开的圆环。经过中间滚回去即可回到第一个圆环；在中间松开则取消。";
+"gestures, hold and roll, ring, wheel, radial menu, pie menu, more, show the ring, reverse" = "手势, 按住滚动, 圆环, 滚轮, 径向菜单, 饼状菜单, 更多, 显示圆环, 反向";
