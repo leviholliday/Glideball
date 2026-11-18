@@ -65,27 +65,40 @@ final class LiveFeed {
     /// draw the light run a timeline only then, and an idle trackball costs nothing.
     private(set) var lightAwake = false
     @ObservationIgnored private var light = LightField()
-    /// The window's page is being scrolled: the live graphs hold still on their last
-    /// frame until it settles (`AppModel.pageMoved`). Scrolling Glideball's own pages with
-    /// the ring used to redraw them all (Pointer's Swift Charts curve at 20 fps) under every
-    /// frame of the scroll. The hand's light (`LiveLight`) holds too: it's SwiftUI work on
-    /// the main thread, and on a busy 16 GB Mac it made scrolling a little glitchy. The
-    /// trackball (its own layers, `TrackballMotion`) never holds: one that froze mid-turn
-    /// while the page moved looked like a glitch.
-    /// Samples keep coming, so when the page stops the graphs carry on from where things are now.
+    /// The window's page is being scrolled (`AppModel.pageMoved`) and hasn't settled yet.
+    /// Turning the scroll ring both scrolls the page and is the activity you want to watch,
+    /// so almost everything live keeps going while it moves: Overview's live activity (its
+    /// readouts and traces), the lane's trace on Scrolling, the hand's light (`LiveLight`)
+    /// and the trackball (its own layers, `TrackballMotion`). Up to beta 26 the graphs (from
+    /// beta 15) and the light (from beta 20) held still here, and the live activity froze
+    /// just when you were using it; since beta 23's flattened shadows
+    /// (`View.flattened(room:)`) scrolling has room for them.
+    /// Only the Swift Charts curves (Pointer's response curve, Scrolling's Flywheel and
+    /// Follow curves) slow down while held (`LiveTimeline.WhileScrolling.slow`, 15 frames a
+    /// second): rebuilding a chart is the expensive part, and Pointer's at 20 fps under
+    /// every frame of the scroll is what made it stutter before beta 15.
+    /// Samples keep coming either way.
     private(set) var held = false
     func hold(_ on: Bool) { if held != on { held = on } }
 
     /// `--scroll-bench` only: an offscreen window has no display, so animation timelines
     /// don't tick on their own; the bench bumps these at the rate they would (30 a second)
-    /// and the live views read them while their timeline would be running: `benchFrame`
-    /// for the graphs, `benchLightFrame` for the light (neither while held). Never
-    /// change in the app.
+    /// and the live views read them while their timeline would be running, so the bench
+    /// redraws what the app would: `benchFrame` for live graphs (every tick, held or not),
+    /// `benchSlowFrame` for the ones slowed while held (every other tick while held, 15 a
+    /// second), `benchHeldFrame` for any that hold still (none while held), and
+    /// `benchLightFrame` for the light (every tick). Never change in the app.
     private(set) var benchFrame = 0
+    private(set) var benchSlowFrame = 0
+    private(set) var benchHeldFrame = 0
     private(set) var benchLightFrame = 0
+    @ObservationIgnored private var benchTicks = 0
     func benchTick() {
         guard Sandbox.mode == .scrollBench else { return }
-        if !held { benchFrame &+= 1 }
+        benchTicks &+= 1
+        benchFrame &+= 1
+        if !held || benchTicks % 2 == 0 { benchSlowFrame &+= 1 }
+        if !held { benchHeldFrame &+= 1 }
         benchLightFrame &+= 1
         // The layered trackball's clock (`LayerClock`) has no display either.
         NotificationCenter.default.post(name: Self.benchTickNotification, object: nil)
@@ -117,8 +130,10 @@ final class LiveFeed {
     @ObservationIgnored private var nonZero = 0
     @ObservationIgnored private var quietTicks = 0
 
-    /// The graphs always show this many seconds, whatever the sample rate.
-    static let historySeconds = 8.0
+    /// The graphs always show this many seconds, whatever the sample rate (8 until beta 26:
+    /// a roll left the graph a little too soon). The feed stays active until a trace has
+    /// scrolled all the way off, so this is also how long the live activity lingers.
+    static let historySeconds = 12.0
 
     init() {
         history = Array(repeating: (0, 0), count: Int(Self.historySeconds * 20))
@@ -397,16 +412,40 @@ struct LightField {
 /// while it isn't — so an idle trackball costs the window nothing. Only this view is
 /// re-evaluated on each tick, never the screen around it.
 struct LiveTimeline<Content: View>: View {
+    /// What the timeline does while the page scrolls (`LiveFeed.held`).
+    enum WhileScrolling {
+        /// Keeps going at its own rate (cheap Canvas drawing: the live activity, the lane).
+        case live
+        /// At most `slowFPS` (a Swift Charts chart: rebuilding it is the expensive part).
+        case slow
+        /// Holds its last frame until the page settles.
+        case hold
+    }
+    static var slowFPS: Double { 15 }
+
     let feed: LiveFeed
     /// Never redraw faster than this many frames a second (heavy views like charts).
     var maxFPS: Double = 60
+    var whileScrolling: WhileScrolling = .live
     @ViewBuilder var content: (LiveFeed, CFTimeInterval) -> Content
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: max(feed.interval, 1 / maxFPS), paused: !feed.isActive || feed.held)) { _ in
+        let held = feed.held
+        let fps = held && whileScrolling == .slow ? min(maxFPS, Self.slowFPS) : maxFPS
+        TimelineView(.animation(minimumInterval: max(feed.interval, 1 / fps),
+                                paused: !feed.isActive || (held && whileScrolling == .hold))) { _ in
             let _ = PerfProbe.count("LiveTimeline frame")
-            let _ = feed.isActive ? feed.benchFrame : 0
+            let _ = feed.isActive ? benchFrame : 0
             content(feed, CACurrentMediaTime())
+        }
+    }
+
+    /// The bench's clock for this timeline (`LiveFeed.benchTick`).
+    private var benchFrame: Int {
+        switch whileScrolling {
+        case .live: feed.benchFrame
+        case .slow: feed.benchSlowFrame
+        case .hold: feed.benchHeldFrame
         }
     }
 }

@@ -121,7 +121,7 @@ struct ResponseCurve: View {
         // The live dot follows the ball on its own timeline; nothing else on the page is redrawn for it.
         VStack(alignment: .leading, spacing: 10) {
             SectionTitle(title: "Response curve")
-            LiveTimeline(feed: model.live, maxFPS: 20) { feed, _ in
+            LiveTimeline(feed: model.live, maxFPS: 20, whileScrolling: .slow) { feed, _ in
                 chart(liveBall: feed.ballSpeed)
             }
             HStack(spacing: 14) {

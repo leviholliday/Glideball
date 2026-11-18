@@ -45,11 +45,11 @@ struct ScrollSettingsView: View {
                 case .native:
                     EmptyView()
                 case .flywheel:
-                    LiveTimeline(feed: model.live, maxFPS: 20) { feed, _ in
+                    LiveTimeline(feed: model.live, maxFPS: 20, whileScrolling: .slow) { feed, _ in
                         FlywheelCurve(config: model.config, liveRate: feed.notchRate)
                     }
                 case .follow:
-                    LiveTimeline(feed: model.live, maxFPS: 20) { feed, _ in
+                    LiveTimeline(feed: model.live, maxFPS: 20, whileScrolling: .slow) { feed, _ in
                         SpinCurve(config: model.config, liveRate: feed.notchRate)
                     }
                     controls.throwSection

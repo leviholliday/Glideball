@@ -146,7 +146,7 @@ enum DemoData {
                                          deviceName: "Kensington Expert Mouse",
                                          kensingtonModels: [.init(name: "Expert Mouse", productID: 0x1020)])
 
-    /// Eight seconds of someone rolling the ball and giving the ring a couple of spins.
+    /// The graphs' whole window (`LiveFeed.historySeconds`) of someone rolling the ball and giving the ring a couple of spins.
     static func feedLiveGraphs(_ live: LiveFeed) {
         live.reset()
         let n = 160, dt = LiveFeed.historySeconds / Double(n)

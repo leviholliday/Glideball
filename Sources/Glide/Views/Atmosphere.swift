@@ -218,18 +218,18 @@ private struct HandLight: View {
 }
 
 /// Redraws `content` with the hand's light levels, on a timeline that runs only
-/// while the light is awake (`LiveFeed.lightAwake`); at rest it's paused. It holds
-/// still while the page scrolls (`LiveFeed.held`), like the graphs: redrawing it is
-/// SwiftUI work on the main thread, and on a 16 GB Mac under load that made scrolling
-/// feel a little glitchy. The trackball picture keeps moving (`TrackballLayers`).
+/// while the light is awake (`LiveFeed.lightAwake`); at rest it's paused. It keeps
+/// going while the page scrolls: turning the ring scrolls the page and lights the room
+/// at once. Betas 20 to 26 held it still while the page moved, and it looked frozen
+/// just when you were using it (`LiveFeed.held`).
 struct LiveLight<Content: View>: View {
     let feed: LiveFeed
     @ViewBuilder var content: (LightField.Levels) -> Content
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !feed.lightAwake || feed.held)) { _ in
+        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !feed.lightAwake)) { _ in
             let _ = PerfProbe.count("Light frame")
-            let _ = feed.lightAwake && !feed.held ? feed.benchLightFrame : 0
+            let _ = feed.lightAwake ? feed.benchLightFrame : 0
             content(feed.lightLevels())
         }
     }

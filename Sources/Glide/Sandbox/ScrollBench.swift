@@ -71,7 +71,7 @@ enum ScrollBench {
         var drive = Drive.offset
         var performance: PerformanceMode?
         var json: URL?
-        /// Measure without holding the live pictures while the page scrolls (as before 2.10-beta.15).
+        /// Measure without slowing anything while the page scrolls (`AppModel.holdWhileScrolling`).
         var hold = true
         /// Composite only what changed each frame (as WindowServer does), not the whole window.
         var damageOnly = false
