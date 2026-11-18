@@ -26,6 +26,14 @@
 //               Steady hands: GestureTuning); chained fires are numbered 1, 2, 3… per
 //               hold, at most 20 a second; a "once per hold" direction fires once; a tap
 //               only after a hold that stayed within the tap slop and never fired
+//   wheel       a Wheel hold never includes the primary button; its ring (overlay) is up only
+//               while it's held with the pointer frozen, centred on the hold's anchor, kept
+//               alive for EngineIO's watchdog, and down after every way a hold ends (release,
+//               pause, quit, unplug, sleep, the tap switched off, the 30 s limit, the watchdog);
+//               a slot runs only after the release, at most once per hold, never after Esc or
+//               another trackball button; ring steps only while held, at most 20 a second, and
+//               ring turns never scroll while a Wheel is held; the tap only after a hold with no
+//               ring turn and no slot; the key tap (for Esc) is on only while a Wheel is held
 //   others      other mice and the trackpad pass through untouched, and paired, even pressing
 //               the same button number as the trackball at overlapping times (either's HID
 //               report before or after its event); their press or release never ends or
@@ -174,6 +182,27 @@ final class FakeIO: EngineIO {
     override func standInProblem() -> String? {
         standInWorks ? (standInDropped ? "the engine stopped answering" : nil) : "no background-cursor switch"
     }
+    /// The Wheel's overlay, as the engine asked for it.
+    var wheel: (model: WheelOverlayModel, at: CGPoint)?
+    var wheelKeptAt = 0.0
+    var wheelShows = 0
+    var wheelWorks = true            // false: nothing to draw it with (render-ui, self-test)
+    var wheelDropped = false         // the watchdog took it down this hold (World.apply)
+    var wheelFault: String?
+    override func showWheel(_ model: WheelOverlayModel, at point: CGPoint) -> Bool {
+        guard wheelWorks else { return false }
+        if !frozen { wheelFault = "the Wheel was shown while nothing held the pointer" }
+        if wheel == nil { wheelShows += 1; wheelKeptAt = clock }
+        wheel = (model, point)
+        return true
+    }
+    override func hideWheel() { wheel = nil }
+    override func keepWheel() -> Bool {
+        guard wheel != nil else { return false }
+        wheelKeptAt = clock
+        return true
+    }
+    var keyTap: CFMachPort?
     override func post(_ event: CGEvent, tap: CGEventTapLocation) { posted.append(event) }
     var appButtons: () -> Set<Int64> = { [] }
     override func buttonsDown() -> Set<Int64> { appButtons() }
@@ -211,7 +240,9 @@ final class FakeIO: EngineIO {
         let id = ObjectIdentifier(port)
         tapEnabled[id] = true
         tapMask[id] = mask
-        if mask == CGEventMask(1) << CGEventMask(CGEventType.mouseMoved.rawValue) { moveTap = port } else { mainTap = port }
+        if mask == CGEventMask(1) << CGEventMask(CGEventType.mouseMoved.rawValue) { moveTap = port }
+        else if mask & (CGEventMask(1) << CGEventMask(CGEventType.keyDown.rawValue)) != 0 { keyTap = port }
+        else { mainTap = port }
         return (port, source)
     }
     override func removeTap(_ tap: CFMachPort, source: CFRunLoopSource?, runLoop: CFRunLoop?) {
@@ -219,6 +250,7 @@ final class FakeIO: EngineIO {
         tapMask[ObjectIdentifier(tap)] = nil
         if moveTap === tap { moveTap = nil }
         if mainTap === tap { mainTap = nil }
+        if keyTap === tap { keyTap = nil }
         CFMachPortInvalidate(tap)
     }
     override func tapIsEnabled(_ tap: CFMachPort) -> Bool { tapEnabled[ObjectIdentifier(tap)] ?? false }
@@ -290,6 +322,8 @@ enum Op: CustomStringConvertible {
     case beta(Bool)
     case quit
     case standIn(Int)         // 0: the stand-in works, 1: macOS has no background-cursor switch, 2: the watchdog takes it down
+    case esc                  // Esc pressed and let go (the Wheel's key tap sees it only while one is held)
+    case wheelOverlay(Int)    // 0: the overlay can be drawn, 1: nothing to draw it with, 2: the watchdog takes it down
 
     var description: String {
         switch self {
@@ -336,6 +370,8 @@ enum Op: CustomStringConvertible {
         case .beta(let on): "otherTrackballs(\(on))"
         case .quit: "quitAndRelaunch"
         case .standIn(let m): ["standInWorks", "standInUnavailable", "standInWatchdogTakesItDown"][m]
+        case .esc: "escape"
+        case .wheelOverlay(let m): ["wheelOverlayWorks", "wheelOverlayUnavailable", "wheelOverlayWatchdogTakesItDown"][m]
         }
     }
 }
@@ -372,9 +408,25 @@ func randomAction(_ r: inout RNG) -> ButtonAction {
     case 5: return .precisionToggle
     case 6: return .ballScrollHold
     case 7: return .dragLock
+    case 8:
+        return .wheel(randomWheel(&r))
     default:
         return .gesture(randomGesture(&r))
     }
+}
+
+/// A Wheel: the standard one or slots remixed (hold-type actions too: they must never run),
+/// four or eight, any ring job, sometimes its own tap.
+func randomWheel(_ r: inout RNG) -> WheelMenu {
+    var w = WheelMenu.standard
+    w.eight = r.chance(0.4)
+    for place in 0..<WheelMenu.places where r.chance(0.35) {
+        w[place] = r.chance(0.15) ? nil : r.chance(0.1) ? r.pick([ButtonAction.precisionHold, .ballScrollHold, .dragLock]) : randomPlainAction(&r)
+    }
+    w.ring = r.pick(RingJob.allCases)
+    if w.ring == .custom { w.ringUp = randomPlainAction(&r); w.ringDown = r.chance(0.8) ? randomPlainAction(&r) : nil }
+    if r.chance(0.4) { w.tap = r.chance(0.3) ? randomAction(&r) : randomPlainAction(&r) }
+    return w
 }
 
 /// A gesture: a preset or its directions remixed, each one chained (the default),
@@ -409,7 +461,7 @@ func randomConfig(_ r: inout RNG) -> GlideConfig {
         if set.count >= 2 || r.chance(0.1) { c.chords.append(Chord(buttons: set.sorted(), action: action)) }
     }
     // A combo with the primary button set to a gesture (only a file can say so): never a gesture.
-    if r.chance(0.15) { c.chords.append(Chord(buttons: [0, 1 + r.int(4)], action: .gesture(randomGesture(&r)))) }
+    if r.chance(0.15) { c.chords.append(Chord(buttons: [0, 1 + r.int(4)], action: r.chance(0.5) ? .wheel(randomWheel(&r)) : .gesture(randomGesture(&r)))) }
     if r.chance(0.6) { c = c.withoutPrimaryChords() }
     c.gesturesEnabled = r.chance(0.8)
     c.gestureDistance = r.pick(GestureDistance.allCases)
@@ -448,8 +500,8 @@ func randomConfig(_ r: inout RNG) -> GlideConfig {
 func gestureHeavy(_ c: GlideConfig, _ r: inout RNG) -> GlideConfig {
     var c = c
     c.gesturesEnabled = r.chance(0.95)
-    for b in 1...4 where r.chance(0.6) { c.buttons[b] = .gesture(randomGesture(&r)) }
-    for i in c.chords.indices where r.chance(0.6) { c.chords[i].action = .gesture(randomGesture(&r)) }
+    for b in 1...4 where r.chance(0.6) { c.buttons[b] = r.chance(0.4) ? .wheel(randomWheel(&r)) : .gesture(randomGesture(&r)) }
+    for i in c.chords.indices where r.chance(0.6) { c.chords[i].action = r.chance(0.4) ? .wheel(randomWheel(&r)) : .gesture(randomGesture(&r)) }
     return c
 }
 
@@ -575,6 +627,10 @@ final class World {
                l1: Double, x: Double, y: Double, maxL2: Double, fires: Int, byDirection: [GestureDirection: Int])?
     var lastFlashSeq = 0
     var gestureFires = 0, chainedFires = 0, gestureTaps = 0, gestureHolds = 0
+    // The Wheel hold now (or the last one): see `observe(_:)`.
+    var wheelHold: (buttons: [Int], ringSteps: [Double], picks: Int, dismissed: Bool, ringTurned: Bool)?
+    var lastWheelSeq = 0
+    var wheelHolds = 0, wheelPicks = 0, wheelRingSteps = 0, wheelTaps = 0, wheelOverlays = 0
 
     static let modifierCodes: Set<UInt16> = [UInt16(kVK_Control), UInt16(kVK_Option), UInt16(kVK_Shift), UInt16(kVK_Command)]
 
@@ -638,7 +694,10 @@ final class World {
             guard self.heldReadable, self.kConnected, k == self.kKey || k == self.kAux else { return nil }
             return k == self.kKey ? Set(self.kDown.map(Int64.init)) : []
         }
-        engine.scroller.output = { [unowned self] d in self.scrolled(abs(d)) }
+        engine.scroller.output = { [unowned self] d in
+            if self.modes.wheelHeld, d != 0 { self.fail("wheel", "the ring scrolled \(d) points while a Wheel is held") }
+            self.scrolled(abs(d))
+        }
         engine.scroller.ballOutput = { [unowned self] x, y in self.scrolled((x * x + y * y).squareRoot()) }
         io.onApply = { [unowned self] s in
             if !self.enabled { self.fail("pointer", "Glideball's pointer speed was applied while paused") }
@@ -770,7 +829,7 @@ final class World {
     /// otherwise straight to apps (`raw`).
     func deliver(_ e: CGEvent, source: Source) {
         let type = e.type
-        if bypass > 0, io.sees(io.mainTap, type) || (type == .mouseMoved && io.moveTap != nil) {
+        if bypass > 0, io.sees(io.mainTap, type) || (type == .mouseMoved && io.moveTap != nil) || ((type == .keyDown || type == .keyUp) && io.keyTap != nil) {
             // The tap was switched off by macOS: this one goes by untouched. Then macOS
             // tells the engine, which switches it back on.
             bypass -= 1
@@ -780,7 +839,7 @@ final class World {
             if bypass == 0 { tapComesBack() }
             return
         }
-        let tap = type == .mouseMoved ? io.moveTap : io.mainTap
+        let tap = type == .mouseMoved ? io.moveTap : (type == .keyDown || type == .keyUp) ? io.keyTap : io.mainTap
         guard io.sees(tap, type) else { return emit(e, raw: true) }
         let before = (type: e.type, button: e.getIntegerValueField(.mouseEventButtonNumber), flags: e.flags)
         let dragLockedBefore = modes.dragLocked
@@ -798,6 +857,7 @@ final class World {
         let e = CGEvent(source: nil)!
         io.tapEnable(t, false)
         if let m = io.moveTap { io.tapEnable(m, false) }
+        if let k = io.keyTap { io.tapEnable(k, false) }
         _ = engine.handle(.tapDisabledByTimeout, e)
         graceUntil = io.clock + 1.0
         tainted.subtract(taintedWhileOff)   // the engine has asked macOS what's down: judged again
@@ -1405,6 +1465,27 @@ final class World {
                 io.standInDropped = true
                 io.hideStandIn()
             }
+        case .esc:
+            let wasHeld = modes.wheelHeld
+            for down in [true, false] {
+                let e = CGEvent(keyboardEventSource: nil, virtualKey: UInt16(kVK_Escape), keyDown: down)!
+                e.flags = io.kbFlags
+                deliver(e, source: .keyboard)
+            }
+            settle()
+            if wasHeld, bypass == 0, io.wheel != nil { fail("wheel", "Esc didn't take the Wheel's ring down") }
+            if wasHeld, bypass == 0 { wheelHold?.dismissed = true }
+        case .wheelOverlay(let m):
+            switch m {
+            case 0: io.wheelWorks = true
+            case 1: io.wheelWorks = false
+            default:
+                // EngineIO's watchdog: the engine stopped answering, so the ring is taken down.
+                guard io.wheel != nil else { return }
+                io.wheelDropped = true
+                io.hideWheel()
+                wheelHold?.dismissed = true
+            }
         case .setMode(let m, let w):
             let mode: Engine.ToggleMode = [.precision, .ballScroll, .dragLock][m]
             engine.setMode(mode, on: w == 2 ? nil : w == 1, done: nil)
@@ -1443,7 +1524,8 @@ final class World {
         // a held button's press the engine saw).
         let held = kDown.contains(b) && kRawHeld.isDisjoint(with: kDown)
         let keys = held ? Set(keysDown.filter { $0.value > 0 }.keys) : []
-        let gesture = modes.gestureHeld && Set(modes.gestureButtons).isSubset(of: kDown), ball = held && modes.ballScrolling
+        let gesture = (modes.gestureHeld || modes.wheelHeld) && Set(modes.gestureButtons).isSubset(of: kDown), ball = held && modes.ballScrolling
+        let wheelUp = io.wheel != nil
         let bypassBefore = bypass
         body()
         settle()
@@ -1454,7 +1536,8 @@ final class World {
         // trackball's release ending its hold, as it should.
         if io.clock - lastKReleaseAt < 0.11 { return }
         if let k = keys.first(where: { (keysDown[$0] ?? 0) == 0 }) { fail("others", "\(what) let go of key \(k), held by the trackball") }
-        if gesture && !modes.gestureHeld { fail("others", "\(what) ended the trackball's gesture hold") }
+        if gesture && !modes.gestureHeld && !modes.wheelHeld { fail("others", "\(what) ended the trackball's gesture or Wheel hold") }
+        if wheelUp, modes.wheelHeld, io.wheel == nil, !io.wheelDropped { fail("others", "\(what) took the trackball's Wheel down") }
         if ball && !modes.ballScrolling { fail("others", "\(what) ended Scroll with ball") }
     }
 
@@ -1474,6 +1557,8 @@ final class World {
         watched = false   // a new engine starts with nothing open
         modes = Engine.Modes()
         lastFlashSeq = 0
+        lastWheelSeq = 0
+        io.keyTap = nil
         quitDone = false
         wire()
         engine.startInline()
@@ -1534,6 +1619,46 @@ final class World {
                     io.clock, 0, 0, 0, 0, 0, [:])
         }
         if m.gestureHeld && m.gestureButtons.contains(0) { fail("gestures", "gesture held on \(m.gestureButtons), with the primary button") }
+        if m.wheelHeld && m.gestureHeld { fail("wheel", "a Wheel and a gesture held at once") }
+        if m.wheelHeld && !modes.wheelHeld {
+            if m.gestureButtons.contains(0) { fail("wheel", "a Wheel hold on \(m.gestureButtons) includes the primary button") }
+            wheelHolds += 1
+            wheelHold = (m.gestureButtons, [], 0, false, false)
+            io.wheelDropped = false
+        }
+        if m.wheelHeld && m.gestureButtons.contains(0) { fail("wheel", "Wheel held on \(m.gestureButtons), with the primary button") }
+        if let f = m.wheelFlash, f.seq != lastWheelSeq {
+            if f.seq != lastWheelSeq + 1 { fail("wheel", "Wheel flash \(lastWheelSeq) jumped to \(f.seq)") }
+            lastWheelSeq = f.seq
+            if var h = wheelHold {
+                if f.buttons != h.buttons { fail("wheel", "a Wheel on \(h.buttons) flashed as \(f.buttons)") }
+                switch f.kind {
+                case .slot:
+                    wheelPicks += 1
+                    h.picks += 1
+                    if m.wheelHeld { fail("wheel", "a slot ran while the Wheel is still held") }
+                    if h.picks > 1 { fail("wheel", "\(h.picks) slots ran in one hold") }
+                    if h.dismissed { fail("wheel", "a slot ran after the Wheel was dismissed (Esc, or the watchdog)") }
+                case .ring:
+                    wheelRingSteps += 1
+                    if !m.wheelHeld { fail("wheel", "a ring step with no Wheel held") }
+                    h.ringTurned = true
+                    h.ringSteps.append(io.clock)
+                    if h.ringSteps.count > 1, io.clock - h.ringSteps[h.ringSteps.count - 2] < 0.05 - 1e-9 {
+                        fail("wheel", "two ring steps \(String(format: "%.3f", io.clock - h.ringSteps[h.ringSteps.count - 2])) s apart (faster than 20 a second)")
+                    }
+                case .tap:
+                    wheelTaps += 1
+                    if m.wheelHeld { fail("wheel", "a Wheel tap while it's still held") }
+                    if h.ringTurned { fail("wheel", "a Wheel tap after the ring was turned") }
+                    if h.picks > 0 { fail("wheel", "a Wheel tap after a slot ran") }
+                    if h.dismissed { fail("wheel", "a Wheel tap after it was dismissed") }
+                }
+                wheelHold = h
+            } else {
+                fail("wheel", "a Wheel did something (\(f.kind)) with no hold")
+            }
+        }
         if let flash = m.gestureFlash, flash.seq != lastFlashSeq {
             if flash.seq != lastFlashSeq + 1 { fail("gestures", "gesture flash \(lastFlashSeq) jumped to \(flash.seq)") }
             lastFlashSeq = flash.seq
@@ -1580,7 +1705,7 @@ final class World {
     // MARK: The rules
 
     func mustBeReleased(_ when: String, modesToo: Bool = true) {
-        if modesToo, modes.precision || modes.ballScrolling || modes.dragLocked || modes.gestureHeld {
+        if modesToo, modes.precision || modes.ballScrolling || modes.dragLocked || modes.gestureHeld || modes.wheelHeld {
             fail("modes", "after \(when) a mode is still on: \(modes)")
         }
         if !modesToo, modes.ballScrolling || modes.dragLocked || modes.gestureHeld {
@@ -1588,6 +1713,8 @@ final class World {
         }
         if io.frozen { fail("modes", "the pointer is still frozen after \(when)") }
         if io.standIn != nil || io.realHidden { fail("standin", "the stand-in is still up (the real pointer hidden) after \(when)") }
+        if io.wheel != nil { fail("wheel", "the Wheel's ring is still on screen after \(when)") }
+        if modes.wheelHeld { fail("wheel", "a Wheel is still held after \(when)") }
         if let k = keysDown.first(where: { $0.value > 0 }) { fail("released", "key \(k.key) still down after \(when)") }
         if let m = modifierEvents.first(where: { $0.value % 2 != 0 }) { fail("released", "modifier key \(m.key) still down after \(when)") }
         for (b, n) in appK where n > 0 && !tainted.contains(b) {
@@ -1602,10 +1729,11 @@ final class World {
         // "Connected" is the truth, unless a removal went missing and nothing has checked since.
         if !stale && io.clock >= plugGraceUntil && connected != kConnected { fail("connected", "status says connected = \(connected), the trackball is \(kConnected ? "plugged in" : "unplugged")") }
         checkStandIn()
-        if io.frozen != (modes.ballScrolling || modes.gestureHeld) {
-            fail("modes", "pointer frozen = \(io.frozen) but Scroll with ball = \(modes.ballScrolling), gesture = \(modes.gestureHeld)")
+        if io.frozen != (modes.ballScrolling || modes.gestureHeld || modes.wheelHeld) {
+            fail("modes", "pointer frozen = \(io.frozen) but Scroll with ball = \(modes.ballScrolling), gesture = \(modes.gestureHeld), Wheel = \(modes.wheelHeld)")
         }
-        if !enabled && (modes.precision || modes.ballScrolling || modes.dragLocked || modes.gestureHeld) {
+        checkWheel()
+        if !enabled && (modes.precision || modes.ballScrolling || modes.dragLocked || modes.gestureHeld || modes.wheelHeld) {
             fail("modes", "a mode is on while paused: \(modes)")
         }
         checkTimed()
@@ -1634,6 +1762,23 @@ final class World {
         if engine.standInForChecks != nil, io.standIn == nil, !io.standInDropped {
             fail("standin", "the engine thinks the stand-in is up but it isn't")
         }
+    }
+
+    /// The Wheel's ring: up only while a Wheel is held with the pointer frozen, at the hold's anchor,
+    /// kept alive for EngineIO's watchdog; never left up; the key tap only while a Wheel is held.
+    func checkWheel() {
+        if let f = io.wheelFault { io.wheelFault = nil; fail("wheel", f) }
+        if let w = io.wheel {
+            wheelOverlays += 1
+            if !modes.wheelHeld { fail("wheel", "the Wheel's ring is up with no Wheel held") }
+            if !io.frozen { fail("wheel", "the Wheel's ring is up while nothing holds the pointer") }
+            if w.at != engine.holdAnchorForChecks { fail("wheel", "the ring is at \(w.at), the hold at \(String(describing: engine.holdAnchorForChecks))") }
+            if io.clock - io.wheelKeptAt > EngineIO.standInLease { fail("wheel", "the engine stopped keeping the Wheel (EngineIO's watchdog would take it down)") }
+            if let s = w.model.selected, !w.model.menu.filled.contains(where: { $0.place == s }) { fail("wheel", "slot \(s) is lit but holds nothing that can run") }
+            if w.model.selected != modes.wheelSlot, modes.wheelHeld { fail("wheel", "the ring lights \(String(describing: w.model.selected)), the engine says \(String(describing: modes.wheelSlot))") }
+        }
+        if engine.wheelForChecks != nil, io.wheel == nil, !io.wheelDropped { fail("wheel", "the engine thinks the ring is up but it isn't") }
+        if io.keyTap != nil, !modes.wheelHeld, engine.keyTapForChecks != nil, !engine.escHeldForChecks { fail("wheel", "the key tap is on with no Wheel held") }
     }
 
     /// A trackpad move during a quiet hold: by then the stand-in must be where the real pointer is.
@@ -1754,6 +1899,8 @@ func generate(seed: UInt64, count: Int) -> (configs: [GlideConfig], ops: [Op]) {
         (0.15, { r in .beta(r.chance(0.5)) }),
         (0.08, { _ in .quit }),
         (0.3, { r in .standIn(r.int(3)) }),
+        (1.2, { _ in .esc }),
+        (0.25, { r in .wheelOverlay(r.int(3)) }),
     ]
     let total = weights.reduce(0) { $0 + $1.0 }
     for _ in 0..<count {
@@ -1784,9 +1931,11 @@ func run(_ configs: [GlideConfig], _ ops: [Op]) -> (Failure, Int)? {
     w.apply(.wait(5))
     if let f = w.violations.first { return (f, ops.count) }
     statFires += w.gestureFires; statChained += w.chainedFires; statTaps += w.gestureTaps; statHolds += w.gestureHolds
+    statWheelHolds += w.wheelHolds; statWheelPicks += w.wheelPicks; statWheelRing += w.wheelRingSteps; statWheelTaps += w.wheelTaps
     return nil
 }
 var statFires = 0, statChained = 0, statTaps = 0, statHolds = 0
+var statWheelHolds = 0, statWheelPicks = 0, statWheelRing = 0, statWheelTaps = 0
 
 /// Delta debugging: the smallest list of ops (that we can find quickly) that still
 /// breaks the same rule.
@@ -1830,6 +1979,7 @@ extension ButtonAction {
     var short: String {
         switch self {
         case .gesture(let g): "gesture(tap: \(g.tap.short))"
+        case .wheel(let w): "wheel(\(w.filled.count) slots, ring \(w.ring.rawValue), tap: \(w.tap.short))"
         case .shortcut(let s): "shortcut(\(s.keyCode))"
         case .holdShortcut(let s): "holdShortcut(\(s.keyCode))"
         default: "\(self)"
@@ -2083,6 +2233,48 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
          [.oPress(1)] + down(1) + [.quit] + up(1) + [.oRelease(1)] + settle),
     ]
     gestureCases += both + held
+    // The Wheel (Nov 18): a ring of slots around the pointer, the ball picks, the release runs it;
+    // the ring is a dial while held. Every way a hold ends takes the ring down and runs nothing.
+    var wheelC = GlideConfig()
+    wheelC.buttons[3] = .wheel(.standard)
+    var wheelZoom = GlideConfig()
+    var zoomMenu = WheelMenu.standard
+    zoomMenu.ring = .zoom
+    wheelZoom.buttons[3] = .wheel(zoomMenu)
+    wheelZoom.scrollMode = .flywheel
+    var wheelCombo = GlideConfig()
+    wheelCombo.chords = [Chord(buttons: [1, 3], action: .wheel(.standard))]
+    var wheelPrimary = GlideConfig()
+    wheelPrimary.chords = [Chord(buttons: [0, 2], action: .wheel(.standard))]
+    wheelPrimary.buttons[0] = .wheel(.standard)
+    let right = roll(5, 0, 12), slow = [Op.wait(0.3)]
+    let wheels: [(String, [GlideConfig], [Op])] = [
+        ("wheel: roll right and let go runs the right slot, once, after the release", [wheelC], down(3) + slow + right + up(3) + settle),
+        ("wheel: a still press is the tap", [wheelC], down(3) + [.wait(0.1)] + up(3) + settle),
+        ("wheel: a flick and release before the ring draws still runs that way", [wheelC],
+         down(3) + [.kBall(0, -30), .wait(0.004), .kBall(0, -30)] + up(3) + settle),
+        ("wheel: rolled out and back to the centre runs nothing", [wheelC], down(3) + slow + right + roll(-5, 0, 12) + up(3) + settle),
+        ("wheel: ring turns zoom while held, never scroll, and the release runs nothing", [wheelZoom],
+         flick + down(3) + (0..<6).flatMap { _ in [Op.kWheel(-1), .wait(0.06)] } + up(3) + settle),
+        ("wheel: Esc dismisses it", [wheelC], down(3) + slow + right + [.esc] + right + up(3) + settle),
+        ("wheel: another trackball button dismisses it", [wheelC], down(3) + slow + right + down(1) + up(1) + up(3) + settle),
+        ("wheel: another mouse clicks meanwhile: the Wheel stays", [wheelC],
+         down(3) + slow + right + [.oPress(1), .oRelease(1), .wait(0.2)] + up(3) + settle),
+        ("wheel: on a combo, the first button up runs the slot", [wheelCombo], down(1, 3) + slow + right + up(3) + [.kBall(30, 0)] + up(1) + settle),
+        ("wheel: never on the primary button, alone or in a combo", [wheelPrimary],
+         down(0) + slow + right + up(0) + down(2, 0) + slow + right + up(0, 2) + settle),
+        ("wheel: paused mid-hold: down, nothing runs", [wheelC], down(3) + slow + right + [.pause, .resume] + up(3) + settle),
+        ("wheel: the Mac sleeps mid-hold: down, nothing runs", [wheelC], down(3) + slow + right + [.sleep, .wake] + up(3) + settle),
+        ("wheel: quit mid-hold: down, nothing runs", [wheelC], down(3) + slow + right + [.quit] + up(3) + settle),
+        ("wheel: unplugged mid-hold: down, nothing runs", [wheelC], down(3) + slow + right + [.unplug(0), .wait(1), .replug(0)] + settle),
+        ("wheel: the tap switched off mid-hold: down, nothing runs", [wheelC], down(3) + slow + right + [.tapOff(1), .kBall(5, 0)] + up(3) + settle),
+        ("wheel: past the 30 s limit: down, nothing runs", [wheelC], down(3) + slow + right + [.wait(31)] + up(3) + settle),
+        ("wheel: the watchdog takes the ring down: nothing runs", [wheelC], down(3) + slow + right + [.wheelOverlay(2), .wait(0.5)] + up(3) + settle),
+        ("wheel: nothing to draw it with: nothing runs, the pointer still freed", [wheelC], [.wheelOverlay(1)] + down(3) + slow + right + up(3) + settle),
+        ("wheel: another mouse moves the hold: the ring follows the anchor", [wheelC],
+         down(3) + slow + right + [.wait(0.3), .oBall, .wait(0.1)] + up(3) + settle),
+    ]
+    gestureCases += wheels
     let older: [(String, [GlideConfig], [Op])] = [
         ("held shortcut, unplugged while held: the key comes up",
          [hold], [.kPress(3, hidFirst: true), .unplug(2), .wait(1)]),
@@ -2175,6 +2367,10 @@ final class ThreadedIO: EngineIO {
     override func keepStandIn() -> Bool { lock.withLock { standIns > 0 } }
     override func standInProblem() -> String? { nil }
     private var standIns = 0
+    override func showWheel(_ model: WheelOverlayModel, at point: CGPoint) -> Bool { lock.withLock { wheels += 1 }; return true }   // never a real window
+    override func hideWheel() { lock.withLock { wheels = 0 } }
+    override func keepWheel() -> Bool { lock.withLock { wheels > 0 } }
+    private var wheels = 0
     override func post(_ event: CGEvent, tap: CGEventTapLocation) { lock.withLock { counts.posted += 1 } }
     override func buttonsDown() -> Set<Int64> { [] }
     override var naturalScrolling: Bool { true }
@@ -2360,7 +2556,39 @@ let expectations: [String: (World) -> String?] = [
         expectLog(w, ["kensington down 1 raw", "kensington up 1"]) },
     "plugged in held, nothing readable: release goes through, no remap": { w in
         expectLog(w, ["kensington down 1 raw", "kensington up 1"]) },
+    "wheel: roll right and let go runs the right slot, once, after the release": { w in
+        wheelDid(w, holds: 1, picks: 1, shows: 1) ?? (w.modes.wheelFlash?.kind == .slot(2) ? nil : "ran \(String(describing: w.modes.wheelFlash))") },
+    "wheel: a still press is the tap": { w in wheelDid(w, holds: 1, picks: 0, taps: 1) },
+    "wheel: a flick and release before the ring draws still runs that way": { w in
+        wheelDid(w, holds: 1, picks: 1) ?? (w.modes.wheelFlash?.kind == .slot(0) ? nil : "ran \(String(describing: w.modes.wheelFlash))") },
+    "wheel: rolled out and back to the centre runs nothing": { w in wheelDid(w, holds: 1, picks: 0, shows: 1) },
+    "wheel: ring turns zoom while held, never scroll, and the release runs nothing": { w in
+        let keys = w.outLog.filter { $0.hasPrefix("key down") }.count
+        return wheelDid(w, holds: 1, picks: 0, ring: 6, shows: 1) ?? (keys >= 6 ? nil : "\(keys) key presses for 6 zoom steps") },
+    "wheel: Esc dismisses it": { w in wheelDid(w, holds: 1, picks: 0, shows: 1) },
+    "wheel: another trackball button dismisses it": { w in wheelDid(w, holds: 1, picks: 0, shows: 1) },
+    "wheel: another mouse clicks meanwhile: the Wheel stays": { w in wheelDid(w, holds: 1, picks: 1, shows: 1) },
+    "wheel: on a combo, the first button up runs the slot": { w in wheelDid(w, holds: 1, picks: 1, shows: 1) },
+    "wheel: never on the primary button, alone or in a combo": { w in wheelDid(w, holds: 0, picks: 0, shows: 0) },
+    "wheel: paused mid-hold: down, nothing runs": { w in wheelDid(w, holds: 1, picks: 0, shows: 1) },
+    "wheel: the Mac sleeps mid-hold: down, nothing runs": { w in wheelDid(w, holds: 1, picks: 0, shows: 1) },
+    "wheel: quit mid-hold: down, nothing runs": { w in wheelDid(w, holds: 1, picks: 0, shows: 1) },
+    "wheel: unplugged mid-hold: down, nothing runs": { w in wheelDid(w, holds: 1, picks: 0, shows: 1) },
+    "wheel: the tap switched off mid-hold: down, nothing runs": { w in wheelDid(w, holds: 1, picks: 0, shows: 1) },
+    "wheel: past the 30 s limit: down, nothing runs": { w in wheelDid(w, holds: 1, picks: 0, shows: 1) },
+    "wheel: the watchdog takes the ring down: nothing runs": { w in wheelDid(w, holds: 1, picks: 0, shows: 1) },
+    "wheel: nothing to draw it with: nothing runs, the pointer still freed": { w in wheelDid(w, holds: 1, picks: 0, shows: 0) },
+    "wheel: another mouse moves the hold: the ring follows the anchor": { w in wheelDid(w, holds: 1, picks: 1, shows: 1) },
 ]
+
+/// What the Wheel did over a case: holds, slots run, ring steps, taps, times its ring went up.
+func wheelDid(_ w: World, holds: Int, picks: Int, ring: Int = 0, taps: Int = 0, shows: Int? = nil) -> String? {
+    let did = (w.wheelHolds, w.wheelPicks, w.wheelRingSteps, w.wheelTaps)
+    if did != (holds, picks, ring, taps) { return "Wheel holds/slots/ring steps/taps \(did), expected \((holds, picks, ring, taps))" }
+    if let shows, w.io.wheelShows != shows { return "the ring went up \(w.io.wheelShows) times, expected \(shows)" }
+    if w.io.wheel != nil { return "the ring is still up at the end" }
+    return nil
+}
 
 /// The stand-in went up `n` times (once per hold) and is down now.
 func standInShown(_ w: World, _ n: Int) -> String? {
@@ -2432,6 +2660,7 @@ while true {
 }
 let secs = Date().timeIntervalSince(started)
 print("  gestures: \(statHolds) holds, \(statFires) fires (\(statChained) chained), \(statTaps) taps")
+print("  wheels: \(statWheelHolds) holds, \(statWheelPicks) slots run, \(statWheelRing) ring steps, \(statWheelTaps) taps")
 print(String(format: "%d seeds, %d events in %.1f s (%.0f events/s): %@", seedIndex, totalEvents, secs,
              Double(totalEvents) / max(secs, 0.001), failed == 0 ? "all rules held" : "\(failed) FAILED"))
 exit(failed == 0 ? 0 : 1)

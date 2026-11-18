@@ -387,6 +387,12 @@ enum SearchIndex {
                 for step in [g.up, g.down, g.left, g.right].compactMap({ $0 }) { words.append(step.action.title) }
                 if g.tap != .system { words.append(g.tap.title) }
             }
+            if case .wheel(let w) = action {
+                words.append(String(localized: "wheel, ring, radial menu, pie menu", comment: "Search words for a Wheel button (comma-separated)"))
+                for (_, a) in w.filled { words.append(a.title) }
+                words.append(w.ring.title)
+                if w.tap != .system { words.append(w.tap.title) }
+            }
             out.append(PaletteItem(id: "button:\(b)", group: .buttons,
                                    title: String(localized: "\(name): \(does)", comment: "Search palette: a trackball button and what it does, like “Top right: Back”"),
                                    detail: b == 0 ? String(localized: "Your primary click stays a left click, so Glideball can never lock you out.")
