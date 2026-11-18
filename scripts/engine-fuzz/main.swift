@@ -15,6 +15,11 @@
 //   modes       Precision, Scroll with ball, Drag lock and gestures are all off after
 //               pause, quit and unplug; the pointer is frozen exactly while Scroll with
 //               ball or a gesture has it, and always freed
+//   standin     the stand-in pointer is up exactly while the pointer is held with the tap
+//               on (unless it can't be shown or the watchdog took it down), at the hold's
+//               anchor; the real pointer is hidden once under it and shown once after; it's
+//               down after every way a hold ends; the engine keeps it alive for EngineIO's
+//               watchdog; the real pointer is let go where the stand-in was
 //   gestures    a gesture hold never includes the primary button (a combo with it never
 //               starts one); a direction fires only while held, and only after the ball
 //               rolled the hold's distance for each fire (its own, the global one and
@@ -118,11 +123,6 @@ final class FakeIO: EngineIO {
     /// Where the pointer must stay while it's frozen (moves with another mouse's movement).
     var anchorExpect: CGPoint?
     var warps = 0
-    override func freezePointer(_ f: Bool) {
-        if f && anchorExpect == nil { anchorExpect = cursor }
-        if !f { anchorExpect = nil }
-        frozen = f
-    }
     override func warpPointer(_ point: CGPoint) -> Bool {
         if !frozen { warpedWhileFree = true }
         warps += 1
@@ -130,6 +130,50 @@ final class FakeIO: EngineIO {
         return true
     }
     var warpedWhileFree = false
+
+    /// The stand-in pointer, as the engine asked for it, and the real pointer's hidden state as
+    /// EngineIO keeps it (hidden once at a first show, shown once at a take-down).
+    var standIn: CGPoint?
+    var realHidden = false
+    var standInKeptAt = 0.0
+    var standInShows = 0, standInMoves = 0
+    var standInWorks = true          // false: macOS's background-cursor switch is missing
+    var standInDropped = false       // the watchdog took it down this hold (World.apply)
+    var standInRefused = false       // it couldn't be shown this hold
+    var standInFault: String?        // a rule the engine broke, for World.checkAlways
+    /// Where the real pointer was when the hold let it go with the stand-in still up.
+    var freedAt: (cursor: CGPoint, standIn: CGPoint, tapOn: Bool)?
+    override func freezePointer(_ f: Bool) {
+        if f && anchorExpect == nil { anchorExpect = cursor; standInDropped = false; standInRefused = false }
+        if !f { anchorExpect = nil; if frozen, let s = standIn { freedAt = (cursor, s, mainTap.map { tapIsEnabled($0) } ?? false) } }
+        frozen = f
+    }
+    override func showStandIn(at point: CGPoint) -> Bool {
+        guard standInWorks else { standInRefused = true; return false }
+        if !frozen { standInFault = "the stand-in was shown while nothing held the pointer" }
+        if standIn == nil {
+            if realHidden { standInFault = "the real pointer was hidden twice" }
+            realHidden = true
+            standInShows += 1
+            standInKeptAt = clock
+        } else {
+            standInMoves += 1
+        }
+        standIn = point
+        return true
+    }
+    override func hideStandIn() {
+        realHidden = false   // EngineIO shows it only if it hid it: never twice
+        standIn = nil
+    }
+    override func keepStandIn() -> Bool {
+        guard standIn != nil else { return false }
+        standInKeptAt = clock
+        return true
+    }
+    override func standInProblem() -> String? {
+        standInWorks ? (standInDropped ? "the engine stopped answering" : nil) : "no background-cursor switch"
+    }
     override func post(_ event: CGEvent, tap: CGEventTapLocation) { posted.append(event) }
     var appButtons: () -> Set<Int64> = { [] }
     override func buttonsDown() -> Set<Int64> { appButtons() }
@@ -221,6 +265,7 @@ enum Op: CustomStringConvertible {
     case overlap(Int, Int)
     case replugHeld(Int, Int) // plugged in with a button already held (World.apply)
     case padClick(Int), padScroll
+    case padMove              // the trackpad moves the pointer (it never shows up in HID)
     case keyboard(UInt64)
     case wait(Double)
     case config(Int)
@@ -244,6 +289,7 @@ enum Op: CustomStringConvertible {
     case displays(Int)
     case beta(Bool)
     case quit
+    case standIn(Int)         // 0: the stand-in works, 1: macOS has no background-cursor switch, 2: the watchdog takes it down
 
     var description: String {
         switch self {
@@ -263,6 +309,7 @@ enum Op: CustomStringConvertible {
         case .oBall: "otherMouseMove"
         case .padClick(let b): "trackpadClick(\(b))"
         case .padScroll: "trackpadScroll"
+        case .padMove: "trackpadMove"
         case .keyboard(let f): "keyboardModifiers(0x\(String(f, radix: 16)))"
         case .wait(let t): String(format: "wait(%.3f)", t)
         case .config(let i): "settings(\(i))"
@@ -288,6 +335,7 @@ enum Op: CustomStringConvertible {
         case .displays(let n): "displays(\(n))"
         case .beta(let on): "otherTrackballs(\(on))"
         case .quit: "quitAndRelaunch"
+        case .standIn(let m): ["standInWorks", "standInUnavailable", "standInWatchdogTakesItDown"][m]
         }
     }
 }
@@ -1138,6 +1186,24 @@ final class World {
                 let id = newID(InputInfo(source: .other, button: 0, type: .mouseMoved, flags: io.kbFlags, time: io.clock))
                 deliver(mouseEvent(.mouseMoved, button: 0, id: id), source: .other)
             }
+        case .padMove:
+            // With the trackball quiet (no report for 0.25 s) a hold follows the trackpad 30 ms later
+            // if the ball still hasn't reported (Engine.followOtherMouse), so the stand-in ends up
+            // where the real pointer is; with the ball rolling it's put back (the trade-off). Which
+            // part of the pointer's offset is whose can't be told, so that hold isn't judged by position.
+            guard padDown.isEmpty, io.moveTap != nil || !io.frozen else { return }
+            let quiet = io.clock - lastKMoveAt > 0.26
+            io.cursor.x = min(io.cursor.x + 5, 3000)
+            if io.frozen { holdDisturbed = true }
+            let bypassBefore = bypass
+            if io.moveTap != nil {
+                // With the ball rolling the engine can't tell it from the trackball's own move and
+                // swallows it like one (the documented trade-off), so it's judged as one.
+                let source: Source = io.frozen && !quiet ? .kensington : .trackpad
+                let id = newID(InputInfo(source: source, button: 0, type: .mouseMoved, flags: io.kbFlags, time: io.clock))
+                deliver(mouseEvent(.mouseMoved, button: 0, id: id), source: source)
+            }
+            if io.frozen, quiet, bypass == bypassBefore, bypass == 0 { padCheck = (io.clock + Engine.echoWindow + 0.002, lastKMoveAt) }
         case .padClick(let b):
             markAmbiguity(other: b)
             othersKeep("a trackpad click of button \(b)", b) {
@@ -1328,6 +1394,17 @@ final class World {
             add(kKey, otherMouse, transport: "USB")
         case .tapOff(let n):
             bypass = n
+        case .standIn(let m):
+            switch m {
+            case 0: io.standInWorks = true
+            case 1: io.standInWorks = false
+            default:
+                // EngineIO's watchdog: the engine stopped answering (here: it's told at its next keep),
+                // so the real pointer is shown and the stand-in taken down.
+                guard io.standIn != nil else { return }
+                io.standInDropped = true
+                io.hideStandIn()
+            }
         case .setMode(let m, let w):
             let mode: Engine.ToggleMode = [.precision, .ballScroll, .dragLock][m]
             engine.setMode(mode, on: w == 2 ? nil : w == 1, done: nil)
@@ -1510,6 +1587,7 @@ final class World {
             fail("modes", "after \(when) Scroll with ball, Drag lock or a gesture is still on: \(modes)")
         }
         if io.frozen { fail("modes", "the pointer is still frozen after \(when)") }
+        if io.standIn != nil || io.realHidden { fail("standin", "the stand-in is still up (the real pointer hidden) after \(when)") }
         if let k = keysDown.first(where: { $0.value > 0 }) { fail("released", "key \(k.key) still down after \(when)") }
         if let m = modifierEvents.first(where: { $0.value % 2 != 0 }) { fail("released", "modifier key \(m.key) still down after \(when)") }
         for (b, n) in appK where n > 0 && !tainted.contains(b) {
@@ -1523,6 +1601,7 @@ final class World {
         if io.warpedWhileFree { io.warpedWhileFree = false; fail("modes", "the pointer was moved by Glideball while nothing held it") }
         // "Connected" is the truth, unless a removal went missing and nothing has checked since.
         if !stale && io.clock >= plugGraceUntil && connected != kConnected { fail("connected", "status says connected = \(connected), the trackball is \(kConnected ? "plugged in" : "unplugged")") }
+        checkStandIn()
         if io.frozen != (modes.ballScrolling || modes.gestureHeld) {
             fail("modes", "pointer frozen = \(io.frozen) but Scroll with ball = \(modes.ballScrolling), gesture = \(modes.gestureHeld)")
         }
@@ -1532,7 +1611,41 @@ final class World {
         checkTimed()
     }
 
+    /// The stand-in pointer: up only while the pointer is held (with the tap on), exactly at the
+    /// hold's anchor, the real pointer hidden under it once and shown once; up whenever a hold
+    /// could have it; kept alive for EngineIO's watchdog; and the real pointer let go exactly
+    /// where the stand-in was.
+    func checkStandIn() {
+        if let f = io.standInFault { io.standInFault = nil; fail("standin", f) }
+        if let f = io.freedAt {
+            io.freedAt = nil
+            if f.tapOn, f.cursor != f.standIn { fail("standin", "the real pointer came back at \(f.cursor), the stand-in was at \(f.standIn)") }
+        }
+        if io.realHidden != (io.standIn != nil) { fail("standin", "the real pointer is \(io.realHidden ? "hidden" : "shown") with the stand-in \(io.standIn == nil ? "down" : "up")") }
+        let tapOn = io.mainTap.map { io.tapIsEnabled($0) } ?? false
+        if let s = io.standIn {
+            if !io.frozen { fail("standin", "the stand-in is up while nothing holds the pointer") }
+            if !tapOn { fail("standin", "the stand-in is up while the tap is off") }
+            if s != engine.holdAnchorForChecks { fail("standin", "the stand-in is at \(s), the hold at \(String(describing: engine.holdAnchorForChecks))") }
+            if io.clock - io.standInKeptAt > EngineIO.standInLease { fail("standin", "the engine stopped keeping the stand-in (EngineIO's watchdog would take it down)") }
+        } else if io.frozen, tapOn, !io.standInRefused, !io.standInDropped, engine.holdAnchorForChecks != nil {
+            fail("standin", "the pointer is held but the stand-in isn't up")
+        }
+        if engine.standInForChecks != nil, io.standIn == nil, !io.standInDropped {
+            fail("standin", "the engine thinks the stand-in is up but it isn't")
+        }
+    }
+
+    /// A trackpad move during a quiet hold: by then the stand-in must be where the real pointer is.
+    var padCheck: (at: Double, kMoveAt: Double)?
+
     func checkTimed() {
+        if let c = padCheck, io.clock >= c.at - 1e-9 {
+            padCheck = nil
+            if io.frozen, bypass == 0, lastKMoveAt == c.kMoveAt, let s = io.standIn, s != io.cursor {
+                fail("standin", "the trackpad moved the real pointer out from under the stand-in: \(s) → \(io.cursor)")
+            }
+        }
         if let t = holdCheckAt {
             if !io.frozen || bypass != 0 || holdDisturbed {
                 holdCheckAt = nil
@@ -1617,6 +1730,7 @@ func generate(seed: UInt64, count: Int) -> (configs: [GlideConfig], ops: [Op]) {
         (1, { _ in .oBall }),
         (1.5, { r in .padClick(r.int(2)) }),
         (1, { _ in .padScroll }),
+        (0.6, { _ in .padMove }),
         (2.5, { r in .keyboard(r.pick([0, CGEventFlags.maskShift.rawValue, CGEventFlags.maskCommand.rawValue,
                                       CGEventFlags([.maskControl, .maskCommand]).rawValue])) }),
         (1.2, { r in .config(r.int(6)) }),
@@ -1639,6 +1753,7 @@ func generate(seed: UInt64, count: Int) -> (configs: [GlideConfig], ops: [Op]) {
         (0.25, { r in .displays(1 + r.int(3)) }),
         (0.15, { r in .beta(r.chance(0.5)) }),
         (0.08, { _ in .quit }),
+        (0.3, { r in .standIn(r.int(3)) }),
     ]
     let total = weights.reduce(0) { $0 + $1.0 }
     for _ in 0..<count {
@@ -1820,6 +1935,26 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
                          [.front(1), .kPress(4, hidFirst: true), .kBall(30, 5), .kBall(-12, 9), .kRelease(4, hidFirst: true), .kBall(5, 0)]))
     gestureCases.append(("Scroll with ball, the tap switched off mid-roll: no jump back after", [scrollHold],
                          [.kPress(4, hidFirst: true), .tapOff(1), .kBall(1, 0), .wait(1.2), .kBall(0, 0), .kBall(4, 0)] + up(4)))
+    // Beta 23: the stand-in pointer (Mac Mouse Fix's puppet cursor). Beta 22 held slow rolls
+    // dead still but fast ones escaped between macOS moving the pointer and the put-back
+    // ("1375 warps … furthest 175 pt"), so the real pointer is hidden under a picture of it.
+    // Every way a hold ends must take the picture down and show the real pointer.
+    let fast: [Op] = (0..<10).flatMap { _ in [Op.kBall(90, 7), .wait(0.004)] }
+    gestureCases.append(("stand-in: a fast roll in another app, up at the hold, down on release", [g],
+                         [.front(1)] + down(3) + fast + [.wait(0.1)] + up(3) + settle))
+    gestureCases.append(("stand-in: Scroll with ball, paused mid-hold", [scrollHold], down(4) + fast + [.pause, .resume] + up(4) + settle))
+    gestureCases.append(("stand-in: a gesture hold, unplugged mid-hold", [g], down(3) + fast + [.unplug(0), .wait(1), .replug(0)] + settle))
+    gestureCases.append(("stand-in: Scroll with ball, the Mac sleeps mid-hold", [scrollHold], down(4) + fast + [.sleep, .wake] + up(4) + settle))
+    gestureCases.append(("stand-in: a gesture hold through quit", [g], down(3) + fast + [.quit] + up(3) + settle))
+    gestureCases.append(("stand-in: a gesture hold, the tap switched off", [g], down(3) + fast + [.tapOff(1), .kBall(5, 0)] + up(3) + settle))
+    gestureCases.append(("stand-in: a gesture hold past its 30 s limit", [g], down(3) + fast + [.wait(31)] + up(3) + settle))
+    gestureCases.append(("stand-in: Scroll with ball, another mouse moves the hold", [scrollHold],
+                         down(4) + fast + [.wait(0.1), .oBall, .wait(0.1)] + fast + up(4) + settle))
+    gestureCases.append(("stand-in: Scroll with ball from the keyboard, the trackpad moves the pointer: the stand-in goes with it", [scrollHold],
+                         [.setMode(1, 1)] + fast + [.wait(0.5), .padMove, .wait(0.1), .padMove, .wait(0.1), .setMode(1, 0)] + settle))
+    gestureCases.append(("stand-in unavailable: the hold works as before", [g], [.standIn(1)] + down(3) + fast + up(3) + settle))
+    gestureCases.append(("stand-in taken down by the watchdog: the hold goes on without it", [g],
+                         down(3) + fast + [.standIn(2), .wait(0.5)] + fast + up(3) + down(3) + fast + up(3) + settle))
     gestureCases.append(("replugged with new IDs, old ones still listed dead: connected, then not", [holdKey],
                          [.unplug(3), .replug(0), .reconcile, .wait(1)] + down(3) + [.unplug(1), .reconcile, .wait(1)] + settle))
     // Beta 14 (Levi, Nov 13): unplugged and plugged back in, the trackball no longer worked in
@@ -2035,6 +2170,11 @@ final class ThreadedIO: EngineIO {
     override func cursorLocation() -> CGPoint? { CGPoint(x: 300, y: 300) }
     override func keyboardFlags() -> CGEventFlags { [] }
     override func freezePointer(_ frozen: Bool) { lock.withLock { counts.frozen = frozen } }
+    override func showStandIn(at point: CGPoint) -> Bool { lock.withLock { standIns += 1 }; return true }   // never a real window
+    override func hideStandIn() { lock.withLock { standIns = 0 } }
+    override func keepStandIn() -> Bool { lock.withLock { standIns > 0 } }
+    override func standInProblem() -> String? { nil }
+    private var standIns = 0
     override func post(_ event: CGEvent, tap: CGEventTapLocation) { lock.withLock { counts.posted += 1 } }
     override func buttonsDown() -> Set<Int64> { [] }
     override var naturalScrolling: Bool { true }
@@ -2168,6 +2308,20 @@ let expectations: [String: (World) -> String?] = [
     "Steady hands: a short roll doesn't fire, a long one does": { w in
         w.gestureFires == 1 ? nil : "\(w.gestureFires) fires, expected 1 (the 60-count roll only)" },
     "a gesture's own Long distance: 60 counts don't fire": { w in w.gestureFires == 0 ? nil : "\(w.gestureFires) fires" },
+    // The stand-in: shown for each hold (the rules check it came down), or never when it can't be.
+    "stand-in: a fast roll in another app, up at the hold, down on release": { w in standInShown(w, 1) },
+    "stand-in: Scroll with ball, paused mid-hold": { w in standInShown(w, 1) },
+    "stand-in: a gesture hold, unplugged mid-hold": { w in standInShown(w, 1) },
+    "stand-in: Scroll with ball, the Mac sleeps mid-hold": { w in standInShown(w, 1) },
+    "stand-in: a gesture hold through quit": { w in standInShown(w, 1) },
+    "stand-in: a gesture hold, the tap switched off": { w in w.io.standInShows >= 1 ? nil : "never shown" },
+    "stand-in: a gesture hold past its 30 s limit": { w in standInShown(w, 1) },
+    "stand-in: Scroll with ball, another mouse moves the hold": { w in standInShown(w, 1) },
+    "stand-in: Scroll with ball from the keyboard, the trackpad moves the pointer: the stand-in goes with it": { w in
+        w.io.standInMoves == 2 ? standInShown(w, 1) : "the stand-in moved \(w.io.standInMoves) times, expected 2" },
+    "stand-in unavailable: the hold works as before": { w in
+        w.io.standInShows == 0 && w.io.warps > 0 ? nil : "shown \(w.io.standInShows) times, \(w.io.warps) put-backs" },
+    "stand-in taken down by the watchdog: the hold goes on without it": { w in standInShown(w, 2) },
     // Two devices on one button: exactly what apps saw (`remap` is button 1 → middle, 2).
     "same button: another mouse presses and lets go while the trackball's remap holds": { w in
         expectLog(w, ["kensington down 2", "other down 1", "other up 1", "kensington up 2"]) },
@@ -2207,6 +2361,12 @@ let expectations: [String: (World) -> String?] = [
     "plugged in held, nothing readable: release goes through, no remap": { w in
         expectLog(w, ["kensington down 1 raw", "kensington up 1"]) },
 ]
+
+/// The stand-in went up `n` times (once per hold) and is down now.
+func standInShown(_ w: World, _ n: Int) -> String? {
+    w.io.standInShows == n && w.io.standIn == nil && !w.io.realHidden ? nil
+        : "stand-in shown \(w.io.standInShows) times (expected \(n)), \(w.io.standIn == nil ? "down" : "still up") at the end"
+}
 
 /// The button events and keys apps saw, exactly.
 func expectLog(_ w: World, _ want: [String]) -> String? {
