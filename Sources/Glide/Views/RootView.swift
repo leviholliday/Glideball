@@ -414,7 +414,10 @@ private struct SidebarRow: View {
     let selected: Bool
     let action: () -> Void
     @State private var hovering = false
-    @State private var pressed = false
+    /// Resets itself when the press ends or is cancelled. A plain `@State` flag cleared in
+    /// `onEnded` stayed stuck when a press was cancelled (the window losing focus mid-press,
+    /// a page switch redrawing the row): the row stayed lit and its next press did nothing.
+    @GestureState private var pressed = false
     @Environment(\.appearsActive) private var appearsActive
 
     var body: some View {
@@ -440,12 +443,11 @@ private struct SidebarRow: View {
         }
         .contentShape(Rectangle())
         .gesture(DragGesture(minimumDistance: 0)
-            .onChanged { _ in
-                guard !pressed else { return }
-                pressed = true
+            .updating($pressed) { _, isPressed, _ in
+                guard !isPressed else { return }
+                isPressed = true
                 action()
-            }
-            .onEnded { _ in pressed = false })
+            })
         .allowsWindowActivationEvents(true)
         .onHover { hovering = $0 }
         .help(String(localized: "\(tab.title) (⇧\(tab.order + 1) or ⌘\(tab.order + 1))", comment: "Sidebar tooltip: a page's name and its two shortcuts"))
