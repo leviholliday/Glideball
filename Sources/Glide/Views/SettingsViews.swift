@@ -164,6 +164,8 @@ struct GeneralSettingsPane: View {
                 .findable(.menuBarOpens)
                 SettingsToggle(title: "Show in Dock and app switcher", hint: dockHint, symbol: "dock.rectangle", isOn: $model.showInDock)
                     .findable(.showInDock)
+                SettingsToggle(title: "Search button in the sidebar", hint: sidebarSearchHint, symbol: "magnifyingglass", isOn: $model.sidebarSearch)
+                    .findable(.sidebarSearch)
                 LanguageRow()
                     .findable(.language)
             }
@@ -221,6 +223,11 @@ struct GeneralSettingsPane: View {
             : String(localized: "No icon in the menu bar. Open Glideball from the Dock to change things.")
     }
 
+    private var sidebarSearchHint: String {
+        model.sidebarSearch
+            ? String(localized: "A search button sits above the pages. ⌘K and ⌘F open search too.")
+            : String(localized: "The sidebar shows only the pages. ⌘K and ⌘F still open search.")
+    }
     private var dockHint: String {
         model.showInDock
             ? String(localized: "Glideball shows in the Dock and in ⌘-Tab like any other app.")
@@ -339,6 +346,11 @@ extension Findable {
         detail: String(localized: "Hide Glideball from the Dock and ⌘-Tab to keep it in the background.", comment: "Search palette: Show in Dock"),
         keywords: String(localized: "dock, hide, background, command tab, app switcher", comment: "Search words for Show in Dock (comma-separated)"),
         symbol: "dock.rectangle", place: .settings(.general))
+    static let sidebarSearch = Findable(
+        id: "sidebar-search", title: String(localized: "Search button in the sidebar"),
+        detail: String(localized: "Show or hide the search button above the pages.", comment: "Search palette: Search button in the sidebar"),
+        keywords: String(localized: "search, find, command k, sidebar, hide, button", comment: "Search words for Search button in the sidebar (comma-separated)"),
+        symbol: "magnifyingglass", place: .settings(.general))
     static let language = Findable(
         id: "language", title: String(localized: "Language"),
         detail: String(localized: "Use Glideball in another language than your Mac.", comment: "Search palette: Language"),
@@ -368,7 +380,7 @@ extension Findable {
 
 extension GeneralSettingsPane {
     static let findables: [Findable] = [.openAtLogin, .launchStyle, .askBeforeQuitting, .menuBarIcon, .menuBarIconStyle, .menuBarOpens,
-                                        .showInDock, .language, .externalControl]
+                                        .showInDock, .sidebarSearch, .language, .externalControl]
 }
 
 /// The menu-bar icon as it looks now, on a little piece of menu bar.

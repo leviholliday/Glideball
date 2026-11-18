@@ -294,6 +294,7 @@ enum BallSpin {
     }
 
     /// The slow idle drift (Smoothest only): a turn about every 90 seconds, about a tilted axis.
+    /// The drift's turn after `seconds` of drifting (`DriftClock`).
     static func drift(at seconds: Double) -> Quaternion {
         let angle = (seconds * 0.07).truncatingRemainder(dividingBy: 2 * .pi)
         return simd_quatd(angle: angle, axis: simd_normalize(SIMD3(0.35, 1, 0.15)))
@@ -407,5 +408,28 @@ struct LiveTimeline<Content: View>: View {
             let _ = feed.isActive ? feed.benchFrame : 0
             content(feed, CACurrentMediaTime())
         }
+    }
+}
+
+/// How long the idle drift has run, in all: it advances only while a trackball drifts
+/// (`TrackballMotion` says when), so stopping and starting it leaves the ball where it was.
+@MainActor
+enum DriftClock {
+    private static var base = 0.0
+    private static var since: CFTimeInterval?
+    private static var drifting = Set<ObjectIdentifier>()
+
+    static func seconds(at now: CFTimeInterval) -> Double {
+        base + (since.map { max(0, now - $0) } ?? 0)
+    }
+
+    /// `owner` (a trackball's motion) is drifting or not.
+    static func set(_ owner: AnyObject, drifting on: Bool, at now: CFTimeInterval = CACurrentMediaTime()) {
+        let id = ObjectIdentifier(owner)
+        let was = !drifting.isEmpty
+        if on { drifting.insert(id) } else { drifting.remove(id) }
+        let running = !drifting.isEmpty
+        if running, !was { since = now }
+        if !running, was, let s = since { base += max(0, now - s); since = nil }
     }
 }

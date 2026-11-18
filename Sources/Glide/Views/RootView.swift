@@ -343,6 +343,11 @@ private struct Sidebar: View {
         VStack(spacing: 0) {
             SidebarHero(model: model, compact: compact, fullScreen: model.fullScreen)
                 .padding(.bottom, 6)
+            if model.sidebarSearch {
+                SidebarSearchButton()
+                    .padding(.horizontal, 10)
+                    .padding(.bottom, 8)
+            }
             VStack(spacing: 0) {
                 ForEach(GlideTab.allCases) { t in
                     SidebarRow(tab: t, selected: t == tab) { select(t) }
@@ -355,6 +360,43 @@ private struct Sidebar: View {
             SidebarFooter(model: model)
         }
         .toolbar(removing: .sidebarToggle)
+    }
+}
+
+/// Opens search (as ⌘K does), drawn as a quiet search field above the pages so people
+/// find it. Settings › General hides it.
+private struct SidebarSearchButton: View {
+    @State private var hovering = false
+
+    var body: some View {
+        Button { CommandPalette.shared.open() } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 12, weight: .medium))
+                    .frame(width: 22)
+                Text("Search", comment: "Sidebar: the button that opens search")
+                    .font(.system(size: 13))
+                    .lineLimit(1)
+                Spacer(minLength: 4)
+                Text(verbatim: "⌘K")
+                    .font(.system(size: 11, weight: .medium).monospacedDigit())
+                    .foregroundStyle(.tertiary)
+            }
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 8)
+            .frame(height: 28)
+            .background {
+                let shape = RoundedRectangle(cornerRadius: 8, style: .continuous)
+                shape.fill(hovering ? Theme.hoverFill : Color.primary.opacity(0.05))
+                    .overlay(shape.strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5))
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .allowsWindowActivationEvents(true)
+        .onHover { hovering = $0 }
+        .help(String(localized: "Search settings and actions (⌘K or ⌘F)", comment: "Sidebar search button tooltip"))
+        .accessibilityLabel(Text("Search settings and actions", comment: "Sidebar search button, for VoiceOver"))
     }
 }
 

@@ -75,8 +75,11 @@ struct TrackballView: View {
                      reduceMotion: Bool, at now: CFTimeInterval) -> TrackballPose {
         let light = live ? feed.lightLevels(at: now) : LightField.Levels()
         // The idle drift turns the ball on top of where the hand left it. Built from the
-        // clock, never as an offset to animate: an animated jump would spin it wildly.
-        let turn = drift > 0 ? BallSpin.drift(at: now) * feed.ballOrientation(at: now) : feed.ballOrientation(at: now)
+        // drift's own clock, never as an offset to animate: an animated jump would spin it
+        // wildly. That clock stands still while nothing drifts (the window in the background,
+        // paused), and the turn it reached stays, so the ball never jumps when the drift
+        // stops or starts again (Levi: it jumped on clicking off the window and back).
+        let turn = BallSpin.drift(at: DriftClock.seconds(at: now)) * feed.ballOrientation(at: now)
         return TrackballPose(
             look: look, pressed: pressed,
             ballSpeed: live ? feed.ballSpeed : 0,

@@ -175,6 +175,11 @@ final class AppModel {
         }
     }
 
+    /// The search button at the top of the sidebar (⌘K and ⌘F open search either way). Per-Mac.
+    var sidebarSearch: Bool = UserDefaults.standard.object(forKey: "GlideSidebarSearch") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(sidebarSearch, forKey: "GlideSidebarSearch") }
+    }
+
     var permissionsOK: Bool { hasAccessibility && hasInputMonitoring }
 
     static let settingsType = UTType(exportedAs: "com.leviholliday.glide.settings", conformingTo: .json)

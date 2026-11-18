@@ -64,6 +64,7 @@ final class TrackballMotion {
         guard feed !== self.feed || config != self.config else { return }
         self.feed = feed
         self.config = config
+        DriftClock.set(self, drifting: config.drift > 0 && !config.reduceMotion)
         clock.framesPerSecond = config.framesPerSecond
         clock.running = config.runs
         // The frame for the new settings (the last one when the motion stops).
@@ -79,6 +80,7 @@ final class TrackballMotion {
 
     func unregister(_ view: TrackballSlotView) {
         slots.removeAll { $0.view == nil || $0.view === view }
+        if slots.isEmpty { DriftClock.set(self, drifting: false) }
         clock.host(slots.first { $0.view?.window != nil }?.view)
     }
 
