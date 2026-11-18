@@ -403,6 +403,17 @@ enum SearchIndex {
                 PaletteRouter.openButton(b)
             })
         }
+        // The Wheel, findable before any button is one: opens top right's picker, where it's offered.
+        if !model.config.anyAction(\.isWheel) {
+            out.append(PaletteItem(id: "wheel", group: .buttons,
+                                   title: String(localized: "Make a button a Wheel", comment: "Search palette: set up the Wheel button action"),
+                                   detail: String(localized: "Hold it and a ring of actions appears around the pointer; roll toward one and let go.", comment: "Search palette: the Wheel"),
+                                   keywords: String(localized: "wheel, ring, radial menu, pie menu", comment: "Search words for a Wheel button (comma-separated)"),
+                                   symbol: "circle.dotted.circle", part: .clicks, trailing: GlideTab.buttons.title,
+                                   findable: Findable.buttonID(3)) {
+                PaletteRouter.openButton(3)
+            })
+        }
         for chord in model.config.chords {
             let names = ListFormatter.localizedString(byJoining: chord.buttons.map(AppModel.buttonName))
             out.append(PaletteItem(id: "combo:\(chord.id)", group: .buttons,
