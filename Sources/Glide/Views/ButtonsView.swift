@@ -196,7 +196,7 @@ struct ButtonMap: View {
                         .frame(width: side, height: side)
                     PadTargets(side: side, openPad: $openPad, highlighted: preview.map(changedPads) ?? [],
                                gesturePads: Set((1..<4).filter { (preview?.action(for: $0) ?? current($0)).holdsTheBall }),
-                               heldPads: model.modes.gestureHeld || model.modes.wheelHeld ? Set(model.modes.gestureButtons) : [])
+                               heldPads: model.modes.gestureHeld || model.modes.wheelHeld || model.modes.switcherHeld ? Set(model.modes.gestureButtons) : [])
                     GestureHeldOverlay(model: model)
                         .frame(width: side, height: side)
                 }

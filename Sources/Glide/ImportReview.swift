@@ -105,6 +105,10 @@ enum ImportReview {
             if w.tap != .system { parts.append(String(localized: "tap: \(describe(w.tap))", comment: "Gesture summary: what a plain tap does")) }
             let title = String(localized: "Wheel", comment: "Button action: hold the button, roll the ball to pick from a ring of actions around the pointer")
             return parts.isEmpty ? title : "\(title): " + parts.joined(separator: ", ")
+        case .switcher(let a):
+            let title = String(localized: "Switcher", comment: "Button action: hold the button, roll the ball to pick a running app, let go to switch to it (like ⌘-Tab)")
+            guard a.tap != .system else { return title }
+            return "\(title): " + String(localized: "tap: \(describe(a.tap))", comment: "Gesture summary: what a plain tap does")
         default:
             return action.title
         }

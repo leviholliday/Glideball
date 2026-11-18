@@ -563,6 +563,11 @@ struct GestureHeldOverlay: View {
                     GestureArmedRing(size: s, pulse: modes.wheelFlash?.seq ?? 0)
                         .transition(.opacity.combined(with: .scale(scale: 0.94)))
                 }
+                if modes.switcherHeld {
+                    // A Switcher: the same armed ring (the pointer is held).
+                    GestureArmedRing(size: s, pulse: 0)
+                        .transition(.opacity.combined(with: .scale(scale: 0.94)))
+                }
                 if modes.gestureHeld {
                     GestureArmedRing(size: s, pulse: flash?.seq ?? 0)
                         .transition(.opacity.combined(with: .scale(scale: 0.94)))
@@ -600,6 +605,7 @@ struct GestureHeldOverlay: View {
             .animation(Theme.Motion.pressIn, value: modes.gestureDirection)
             .animation(Theme.Motion.fade, value: modes.gestureHeld)
             .animation(Theme.Motion.fade, value: modes.wheelHeld)
+            .animation(Theme.Motion.fade, value: modes.switcherHeld)
             .animation(Theme.Motion.spring, value: flash?.seq)
         }
         .allowsHitTesting(false)
@@ -641,7 +647,7 @@ struct GestureArmedEdge: View {
     let model: AppModel
 
     var body: some View {
-        let held = model.modes.gestureHeld || model.modes.wheelHeld
+        let held = model.modes.gestureHeld || model.modes.wheelHeld || model.modes.switcherHeld
         RoundedRectangle(cornerRadius: 14, style: .continuous)
             .strokeBorder(Theme.buttons.opacity(0.55), lineWidth: 1.5)
             .shadow(color: Theme.buttons.opacity(0.6), radius: 10)

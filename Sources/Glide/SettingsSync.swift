@@ -234,6 +234,12 @@ final class SettingsSync {
                 config = merged.config
                 keptTuning = keptTuning || merged.kept
             }
+            if GlideSettingsFile.predatesSwitcher(file.settings.writtenBy) {
+                // A 2.10 beta before the Switcher skipped every Switcher button and combo: the same.
+                let merged = config.keepingSwitchers(from: local)
+                config = merged.config
+                keptTuning = keptTuning || merged.kept
+            }
         }
         if Self.syncable(config) != Self.syncable(local) {
             config.enabled = local.enabled   // the pause switch stays per-Mac

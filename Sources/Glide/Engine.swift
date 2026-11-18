@@ -63,6 +63,18 @@ final class Engine {
         var wheelSlot: Int?
         /// The last thing a Wheel did, numbered so the UI (and scripts/engine-fuzz) see each one.
         var wheelFlash: WheelFlash?
+        /// A Switcher button is held (as a Wheel: `gestureButtons` are its buttons), and the
+        /// last thing a Switcher did. Never which app: only its place in the list.
+        var switcherHeld = false
+        var switcherFlash: SwitcherFlash?
+    }
+
+    /// One thing a Switcher did: switched to the app in place `index` at the release, or the tap.
+    struct SwitcherFlash: Equatable {
+        enum Kind: Equatable { case switched(index: Int), tap }
+        var seq: Int
+        var kind: Kind
+        var buttons: [Int]
     }
 
     /// One thing a Wheel did: a slot ran at the release, the tap, or a ring step while held.
@@ -229,6 +241,13 @@ final class Engine {
     private var keyTap: CFMachPort?                // Esc, only while a Wheel is held
     private var keyTapSource: CFRunLoopSource?
     private var escSwallowed = false               // its key-up is ours too
+    // The Switcher (Switcher.swift; its hold is `gestures`'). Input thread only.
+    private var switcherFlash: SwitcherFlash?
+    private var switcherShown: SwitcherOverlayModel?   // what the panel shows (nil: not up)
+    private var switcherShownAt: CGPoint?
+    private var switcherKeeper: EngineTimer?
+    private var switcherReveal: EngineTimer?
+    private var switcherSessions = 0                   // numbers each hold's app list
     // Per-display pointer speed (DisplayTracking.swift). Input thread only.
     private var displayTracker = DisplayTracker()
     // Wireless models: connection type and battery, per HID device (DeviceBattery.swift).
@@ -407,6 +426,7 @@ final class Engine {
         io.freezePointer(false)
         io.hideStandIn()
         io.hideWheel()
+        io.hideSwitcher()
     }
 
     /// Quit: gives the trackball macOS's own pointer and scroll speed back.
@@ -1159,14 +1179,14 @@ final class Engine {
             let now = io.now()
             if v != 0 { trackballMoved(now); lastMoverIsTrackball = true; pendingTravel = min(pendingTravel + Int(min(v.magnitude, 1_000)), 1 << 30); holdForBallReport() }
             // A held gesture takes the ball (even over Scroll with ball): see GestureRoute.
-            if gestures.isHeld { applyGesture(gestures.ball(dx: Double(v), dy: 0, now: now)); syncWheel(); publishModes() }
+            if gestures.isHeld { applyGesture(gestures.ball(dx: Double(v), dy: 0, now: now)); syncPanels(); publishModes() }
             else if ballScrolling { scroller.addBallDelta(dx: Double(v) * ballSign, dy: 0) }
             watchDisplay(now: now)
         case (kHIDPage_GenericDesktop, kHIDUsage_GD_Y):
             telemetry.addBall(dx: 0, dy: v)
             let now = io.now()
             if v != 0 { trackballMoved(now); lastMoverIsTrackball = true; pendingTravel = min(pendingTravel + Int(min(v.magnitude, 1_000)), 1 << 30); holdForBallReport() }
-            if gestures.isHeld { applyGesture(gestures.ball(dx: 0, dy: Double(v), now: now)); syncWheel(); publishModes() }
+            if gestures.isHeld { applyGesture(gestures.ball(dx: 0, dy: Double(v), now: now)); syncPanels(); publishModes() }
             else if ballScrolling { scroller.addBallDelta(dx: 0, dy: Double(v) * ballSign) }
             watchDisplay(now: now)
         case let (p, u) where DeviceBattery.isBatteryUsage(page: p, usage: u):
@@ -1204,9 +1224,9 @@ final class Engine {
         diagnostics.record("HID wheel \(ticks)")
         // A Wheel held: the ring is its dial (its ring job), in every scroll mode and with any
         // modifier. It never also scrolls.
-        if gestures.wheelHeld {
+        if gestures.panelHeld {
             applyGesture(gestures.ring(ticks: ticks, now: now))
-            syncWheel()
+            syncPanels()
             publishModes()
             return
         }
@@ -1765,13 +1785,13 @@ final class Engine {
             modifierFlags = event.flags
             return pass
         case .keyDown, .keyUp:
-            // Only the Wheel's own tap sees keys, only while a Wheel is held: Esc dismisses it.
+            // Only the Wheel's and Switcher's own tap sees keys, only while one is held: Esc dismisses it.
             guard event.getIntegerValueField(.keyboardEventKeycode) == Int64(kVK_Escape) else { return pass }
-            if type == .keyDown, gestures.wheelHeld {
+            if type == .keyDown, gestures.panelHeld {
                 escSwallowed = true
                 gestures.dismissWheel()
-                diagnostics.record("wheel dismissed (Esc)")
-                syncWheel()
+                diagnostics.record(gestures.switcherHeld ? "switcher dismissed (Esc)" : "wheel dismissed (Esc)")
+                syncPanels()
                 publishModes()
                 return nil
             }
@@ -1803,7 +1823,7 @@ final class Engine {
         let momentum = event.getIntegerValueField(CGEventField(rawValue: 123)!)
         // A Wheel held: the ring's own scroll events never reach apps (its HID ticks drive the
         // ring job). Other mice and the trackpad scroll as usual.
-        if gestures.wheelHeld, fromKensington, phase == 0, momentum == 0 {
+        if gestures.panelHeld, fromKensington, phase == 0, momentum == 0 {
             if hidWheelSeen { learnDirection(cgDelta: event.getDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1)) }
             return nil
         }
@@ -2022,7 +2042,7 @@ final class Engine {
         let button = event.getIntegerValueField(.mouseEventButtonNumber)
 
         // Any other press during a gesture hold means the release isn't a tap.
-        if phase == .down, gestures.isHeld { gestures.otherPress(Int(button)); syncWheel(); publishModes() }
+        if phase == .down, gestures.isHeld { gestures.otherPress(Int(button)); syncPanels(); publishModes() }
 
         // Drag lock: any click (from any mouse: see `otherPress`) lets go — and that's all it does.
         // (A press that may be the start of a Drag lock combo waits for the
@@ -2315,7 +2335,7 @@ final class Engine {
             return Int64(b) == button ? passReal(event, button: button) : pass
         case .precisionHold, .precisionToggle, .ballScrollHold, .dragLock:
             return nil   // handled by `beginMode`
-        case .gesture, .wheel:
+        case .gesture, .wheel, .switcher:
             switch gestureRoute(action, buttons: [button]) {
             case .begin:
                 if let kind = HoldKind(action) { beginHold(kind, buttons: [button]) }
@@ -2444,7 +2464,7 @@ final class Engine {
         syncMoveTap()
         if began { holdPointer(renew: true) }   // macOS starts ignoring the ball before it first moves
         syncStandIn()   // up after the first put-back; down after the pointer is free
-        syncWheel()     // the Wheel's ring goes with its hold: every way a hold ends comes through here
+        syncPanels()    // the Wheel's ring and the Switcher's panel go with their hold: every way a hold ends comes through here
         syncKeyTap()
     }
 
@@ -2454,7 +2474,7 @@ final class Engine {
     /// one, since they all come through `syncFreeze`. If it can't be shown, or the watchdog took
     /// it down, the hold goes on as before beta 23, without one.
     private func syncStandIn() {
-        defer { syncWheel() }   // the Wheel's ring is centred on the same anchor, and follows it the same way
+        defer { syncPanels() }   // the Wheel's ring is centred on the same anchor, and follows it the same way
         let want: CGPoint? = {
             // Without Input Monitoring nothing tells the trackball's movement apart, so nothing holds the pointer still: no stand-in.
             guard let a = anchor, hid, !standInGaveUp, let tap, io.tapIsEnabled(tap) else { return nil }
@@ -2917,12 +2937,26 @@ final class Engine {
         case .wheel(let w):
             let tuning = GestureTuning.for(distance: config.gestureDistance, steadyHands: config.gestureSteadyHands)
             effects = gestures.beginWheel(buttons: buttons.map { Int($0) }, menu: w, now: io.now(), tuning: tuning)
+        case .switcher(let a):
+            let tuning = GestureTuning.for(distance: config.gestureDistance, steadyHands: config.gestureSteadyHands)
+            switcherSessions &+= 1
+            effects = gestures.beginSwitcher(buttons: buttons.map { Int($0) }, switcher: a, session: switcherSessions,
+                                             now: io.now(), tuning: tuning)
         }
         guard !effects.isEmpty else {
             for b in buttons { overrides[b] = .swallow }   // refused: the press and its release do nothing
             return
         }
         for b in buttons { overrides[b] = .gesture }
+        if case .switcher = kind {
+            // Nothing about the apps is logged: only that a Switcher hold started, and on which buttons.
+            diagnostics.record("switcher hold on \(buttons)")
+            scroller.stopRing()   // the ring steps the highlight now: nothing it set going keeps scrolling
+            applyGesture(effects)
+            startHoldFailsafe()
+            beginSwitcherList()
+            return
+        }
         if case .wheel = kind {
             diagnostics.record("wheel hold on \(buttons)")
             scroller.stopRing()   // the ring is the Wheel's now: nothing it set going keeps scrolling
@@ -2968,6 +3002,78 @@ final class Engine {
         }
     }
 
+    /// Both: the Wheel's ring and the Switcher's panel (only one is ever held).
+    private func syncPanels() {
+        syncWheel()
+        syncSwitcher()
+    }
+
+    /// A Switcher hold began: asks the main thread for its app list (the engine only ever gets
+    /// back how many and how they're laid out), and brings the panel up after its short delay.
+    private func beginSwitcherList() {
+        guard let session = gestures.hold?.switcher?.session else { return }
+        switcherReveal?.invalidate()
+        switcherReveal = io.schedule(SwitcherHold.revealDelay + 0.001, repeats: false) { [unowned self] in
+            syncSwitcher()
+            publishModes()
+        }
+        let near = anchor ?? io.cursorLocation() ?? .zero
+        let asked = io.prepareSwitcher(session: session, near: near) { [weak self] grid in
+            self?.perform { [weak self] in self?.switcherReady(session: session, grid: grid) }
+        }
+        if !asked { diagnostics.record("switcher: no panel to show (the tap still works)") }
+    }
+
+    /// The main thread built hold `session`'s list. Nothing if that hold is over.
+    private func switcherReady(session: Int, grid: SwitcherGrid) {
+        gestures.switcherReady(session: session, grid: grid)
+        syncSwitcher()
+        publishModes()
+    }
+
+    /// The Switcher's panel (`EngineIO.showSwitcher`) is up exactly while a Switcher is held
+    /// with its list ready, revealed and not dismissed. Like the Wheel's ring it comes down
+    /// with the hold by every path that ends one (`syncFreeze` calls this through `syncPanels`).
+    private func syncSwitcher() {
+        let want: SwitcherOverlayModel? = anchor == nil ? nil : gestures.switcherOverlay(now: io.now())
+        if let m = want, let a = anchor {
+            guard m != switcherShown || a != switcherShownAt else { return }
+            if switcherShown == nil {
+                switcherKeeper?.invalidate()
+                switcherKeeper = io.schedule(Self.standInKeepInterval, repeats: true) { [unowned self] in
+                    guard switcherShown != nil else { return }
+                    if !io.keepSwitcher() { switcherLost() }
+                }
+            }
+            switcherShown = m
+            switcherShownAt = a
+            if !io.showSwitcher(m, at: a) { switcherLost() }
+        } else if switcherShown != nil {
+            switcherShown = nil
+            switcherShownAt = nil
+            switcherKeeper?.invalidate()
+            switcherKeeper = nil
+            io.hideSwitcher()
+        }
+        if !gestures.switcherHeld {
+            switcherReveal?.invalidate()
+            switcherReveal = nil
+        }
+    }
+
+    /// The panel couldn't be shown, or EngineIO's watchdog took it down: this hold's Switcher
+    /// is dismissed (nothing switches at the release; the pointer stays held until then).
+    private func switcherLost() {
+        gestures.dismissWheel()
+        diagnostics.record("switcher panel gone: dismissed")
+        switcherShown = nil
+        switcherShownAt = nil
+        switcherKeeper?.invalidate()
+        switcherKeeper = nil
+        io.hideSwitcher()
+        publishModes()
+    }
+
     /// The overlay couldn't be shown, or EngineIO's watchdog took it down: this hold's Wheel is
     /// dismissed (nothing runs at the release; the pointer stays held until then).
     private func wheelLost() {
@@ -2984,7 +3090,7 @@ final class Engine {
     /// The key tap is on exactly while a Wheel is held (for Esc), so ordinary typing never
     /// passes through Glideball. An Esc swallowed at its press keeps it until its release.
     private func syncKeyTap() {
-        if gestures.wheelHeld, let main = tap, io.tapIsEnabled(main) {
+        if gestures.panelHeld, let main = tap, io.tapIsEnabled(main) {
             if keyTap == nil {
                 let mask = (CGEventMask(1) << CGEventMask(CGEventType.keyDown.rawValue)) | (CGEventMask(1) << CGEventMask(CGEventType.keyUp.rawValue))
                 if let (t, source) = io.installTap(mask: mask, engine: self, runLoop: runLoop) {
@@ -3004,6 +3110,7 @@ final class Engine {
 
     /// scripts/engine-fuzz: what the Wheel's overlay shows, as the engine believes, and its key tap.
     var wheelForChecks: WheelOverlayModel? { wheelShown }
+    var switcherForChecks: SwitcherOverlayModel? { switcherShown }
     var keyTapForChecks: CFMachPort? { keyTap }
     var escHeldForChecks: Bool { escSwallowed }
 
@@ -3023,7 +3130,11 @@ final class Engine {
         for effect in effects {
             switch effect {
             case .freeze(let on):
-                if on, let h = gestures.hold { lastHoldButtons = h.buttons; lastHoldWasWheel = h.wheel != nil }
+                if on, let h = gestures.hold {
+                    lastHoldButtons = h.buttons
+                    lastHoldWasWheel = h.wheel != nil
+                    lastHoldWasSwitcher = h.switcher != nil
+                }
                 gestureFrozen = on
                 syncFreeze()
                 publishModes()
@@ -3032,7 +3143,9 @@ final class Engine {
                 flashGesture(direction, buttons: gestures.hold?.buttons ?? [], chain: gestures.hold?.fired ?? 1)
                 if !practicing { fireLater(action) }
             case .tap(let action, let buttons):
-                if gestures.hold == nil, lastHoldWasWheel {
+                if gestures.hold == nil, lastHoldWasSwitcher {
+                    flashSwitcher(.tap, buttons: buttons)
+                } else if gestures.hold == nil, lastHoldWasWheel {
                     flashWheel(.tap, buttons: buttons)
                 } else {
                     flashGesture(nil, buttons: buttons)
@@ -3045,6 +3158,10 @@ final class Engine {
             case .ringStep(let action, let clockwise):
                 flashWheel(.ring(clockwise: clockwise), buttons: gestures.hold?.buttons ?? [])
                 if !practicing { performTap(action, buttons: []) }
+            case .switchApp(let session, let index):
+                diagnostics.record("switcher: switched")   // never which app
+                flashSwitcher(.switched(index: index), buttons: lastHoldButtons)
+                if !practicing { io.activateSwitcher(session: session, index: index) }
             }
         }
     }
@@ -3052,6 +3169,12 @@ final class Engine {
     /// The buttons and kind of the latest hold (its release's effects come after it has ended).
     private var lastHoldButtons: [Int] = []
     private var lastHoldWasWheel = false
+    private var lastHoldWasSwitcher = false
+
+    private func flashSwitcher(_ kind: SwitcherFlash.Kind, buttons: [Int]) {
+        switcherFlash = SwitcherFlash(seq: (switcherFlash?.seq ?? 0) + 1, kind: kind, buttons: buttons)
+        publishModes()
+    }
 
     private func flashWheel(_ kind: WheelFlash.Kind, buttons: [Int]) {
         wheelFlash = WheelFlash(seq: (wheelFlash?.seq ?? 0) + 1, kind: kind, buttons: buttons)
@@ -3093,7 +3216,7 @@ final class Engine {
             // Like the keyboard's: a click (or another tap) drops it.
             if dragLocked { endDragLock() } else { beginDragLock(manual: true) }
             publishModes()
-        case .disabled, .precisionHold, .ballScrollHold, .gesture, .wheel:
+        case .disabled, .precisionHold, .ballScrollHold, .gesture, .wheel, .switcher:
             return
         default:
             fireLater(action)
@@ -3145,10 +3268,11 @@ final class Engine {
 
     private func publishModes() {
         let m = Modes(precision: precisionActive, ballScrolling: ballScrolling, dragLocked: dragLocked,
-                      gestureHeld: gestures.isHeld && !gestures.wheelHeld, gestureButtons: gestures.hold?.buttons ?? [],
+                      gestureHeld: gestures.isHeld && !gestures.panelHeld, gestureButtons: gestures.hold?.buttons ?? [],
                       gestureDirection: gestures.leaning, gestureFlash: gestureFlash,
                       gesturePractice: practicing,
-                      wheelHeld: gestures.wheelHeld, wheelSlot: gestures.hold?.wheel?.selected, wheelFlash: wheelFlash)
+                      wheelHeld: gestures.wheelHeld, wheelSlot: gestures.hold?.wheel?.selected, wheelFlash: wheelFlash,
+                      switcherHeld: gestures.switcherHeld, switcherFlash: switcherFlash)
         guard m != modes else { return }
         modes = m
         io.toMain { self.onModes?(m) }
@@ -3193,7 +3317,7 @@ final class Engine {
         switch action {
         case .system, .disabled: return
         case .precisionHold, .precisionToggle, .ballScrollHold, .dragLock: return   // stateful: `beginMode`
-        case .gesture, .wheel: return                                               // stateful: `beginHold`
+        case .gesture, .wheel, .switcher: return                                    // stateful: `beginHold`
         case .shortcut(let s), .holdShortcut(let s): send(s); return
         case .media(let key): sendMedia(key); return
         case .openApp(let id): io.openApp(id); return

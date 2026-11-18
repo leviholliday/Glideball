@@ -70,6 +70,14 @@ final class Rig {
     var picks: [(ButtonAction, Int)] = []            // Wheel slots run (at the release)
     var ringSteps: [(ButtonAction, Bool)] = []       // Wheel ring steps (while held)
     var picksWhileHeld = 0
+    var switches: [(session: Int, index: Int)] = []  // Switcher: apps switched to (at the release)
+    var switchesWhileHeld = 0
+    /// The Switcher's list as the main thread would build it: this many apps, laid out so.
+    /// Nil: the list never arrives in this hold (a busy main thread).
+    var switcherGrid: SwitcherGrid? = SwitcherGrid.fitting(count: 6, maxColumns: 8, maxRows: 3)
+    var switcherReadyAfter = 0.0                     // seconds after the press it arrives
+    private var switcherDue: (session: Int, at: Double)?
+    private var sessions = 0
 
     // This hold's fires, for the chaining rules.
     private var holdFires: [(t: Double, d: GestureDirection, chained: Bool)] = []
@@ -120,6 +128,11 @@ final class Rig {
             case .ringStep(let a, let cw):
                 check(machine.wheelHeld, "a ring step only while a Wheel is held")
                 ringSteps.append((a, cw))
+            case .switchApp(let session, let index):
+                if machine.isHeld { switchesWhileHeld += 1 }
+                check(!switches.contains { $0.session == session }, "at most one switch per Switcher hold")
+                if let g = switcherGrid { check(index >= 0 && index < g.count, "the switch is to an app in the list (\(index) of \(g.count))") }
+                switches.append((session, index))
             }
         }
         invariants()
@@ -137,10 +150,16 @@ final class Rig {
             case .wheel(let w):
                 let tuning = GestureTuning.for(distance: config.gestureDistance, steadyHands: config.gestureSteadyHands)
                 effects = machine.beginWheel(buttons: buttons, menu: w, now: now, tuning: tuning)
+            case .switcher(let a):
+                let tuning = GestureTuning.for(distance: config.gestureDistance, steadyHands: config.gestureSteadyHands)
+                sessions += 1
+                effects = machine.beginSwitcher(buttons: buttons, switcher: a, session: sessions, now: now, tuning: tuning)
+                if !effects.isEmpty { switcherDue = (sessions, now + switcherReadyAfter) }
             default: fatalError("begin for a non-gesture")
             }
             for b in buttons { overrides[b] = effects.isEmpty ? "swallow" : "gesture" }
             apply(effects)
+            deliverSwitcherList()
         case .tapInstead(let t):
             instantTaps.append((t, buttons))
             for b in buttons { overrides[b] = b == 0 && buttons.count == 1 ? "other" : "swallow" }
@@ -191,6 +210,7 @@ final class Rig {
     /// Time passes: the combo wait may end.
     func advance(_ dt: Double) {
         now += dt
+        deliverSwitcherList()
         if let d = pendingDeadline, now >= d {
             let held = Set(pending)
             if held.count > 1, let chord = config.chords.first(where: { Set($0.buttons) == held }) { fireCombo(chord) }
@@ -233,11 +253,22 @@ final class Rig {
         if machine.isHeld { apply(machine.ball(dx: dx, dy: dy, now: now)) }
     }
 
-    /// The scroll ring (Engine.hidWheel): a Wheel's ring job while one is held.
+    /// The scroll ring (Engine.hidWheel): a Wheel's ring job, or the Switcher's highlight, while one is held.
     func ring(_ ticks: Int) {
-        if machine.wheelHeld { apply(machine.ring(ticks: ticks, now: now)) }
+        if machine.panelHeld { apply(machine.ring(ticks: ticks, now: now)) }
         invariants()
     }
+
+    /// The main thread hands the engine its list, when it's due (`switcherReadyAfter`).
+    func deliverSwitcherList() {
+        guard let due = switcherDue, now >= due.at else { return }
+        switcherDue = nil
+        if let g = switcherGrid { machine.switcherReady(session: due.session, grid: g) }
+        invariants()
+    }
+
+    /// What the Switcher's panel shows now (nil: hidden), as the engine's `syncSwitcher` asks.
+    var switcherPanel: SwitcherOverlayModel? { machine.switcherOverlay(now: now) }
 
     /// Rolls in `steps` reports, `dt` seconds apart.
     func roll(dx: Double, dy: Double, steps: Int, dt: Double = 0.008) {
@@ -265,6 +296,13 @@ final class Rig {
         check(picks.allSatisfy { isFireAndForget($0.0) || $0.0 == .precisionToggle }, "a Wheel slot only runs a one-shot")
         check(ringSteps.allSatisfy { isFireAndForget($0.0) || $0.0 == .precisionToggle }, "a ring step only runs a one-shot")
         check(picksWhileHeld == 0, "a Wheel slot never runs while the Wheel is held")
+        check(switchesWhileHeld == 0, "the Switcher never switches while it's held")
+        check(!(machine.wheelHeld && machine.switcherHeld), "a Wheel and a Switcher are never held at once")
+        if let s = machine.hold?.switcher, let g = s.grid, g.count > 0 {
+            check(s.index >= 0 && s.index < g.count, "the Switcher's highlight is on an app (\(s.index) of \(g.count))")
+            let row = s.index / g.columns
+            check(row >= s.firstRow && row < s.firstRow + g.visibleRows, "the lit app's row is on screen")
+        }
         check(taps.allSatisfy { t in t.1.count != 1 || t.1[0] != 0 }, "never a tap of the primary button")
         check(overrides[0] != "gesture", "the primary button's press never belongs to a gesture")
         if let h = machine.hold { check(now - h.start <= machine.tuning.maxHold + 0.3, "no hold outlives maxHold") }
@@ -569,6 +607,229 @@ do {
     // Import: a shared Wheel is sanitized like a gesture (its apps and keys are listed).
     check(ButtonAction.wheel(w).needsCaution, "a Wheel that opens an app or presses keys is listed in an import")
     check(ButtonAction.wheel(w).sanitized() != nil && ButtonAction.wheel(w).sanitized(nested: true) == nil, "sanitized: kept at the top, dropped when nested")
+}
+
+// MARK: - The Switcher
+
+section("the Switcher")
+do {
+    let sw = ButtonAction.switcher(.standard)
+    // A quick still press (before the panel shows): the tap, no switch.
+    let r = Rig([3: sw])
+    r.press(3); r.advance(0.1); r.release(3)
+    check(r.taps.count == 1 && r.taps[0].0 == .system && r.switches.isEmpty, "a quick still Switcher press is the tap")
+    check(!r.frozen, "pointer free after")
+    // Held still until the panel shows, then let go: the previous app (place 1), like ⌘-Tab.
+    let h = Rig([3: sw])
+    h.press(3); h.advance(0.1)
+    check(h.switcherPanel == nil, "no panel before the delay")
+    h.advance(0.15)
+    check(h.switcherPanel?.selected == 1, "the panel shows with the previous app lit (\(String(describing: h.switcherPanel?.selected)))")
+    h.release(3)
+    check(h.switches.map(\.index) == [1] && h.taps.isEmpty, "hold and release flips to the previous app (\(h.switches.map(\.index)))")
+    // Rolling right two steps: place 3; the release switches once.
+    let ro = Rig([3: sw])
+    ro.press(3); ro.roll(dx: 4, dy: 0, steps: 24)   // 96 counts: two steps at Normal
+    check(ro.switches.isEmpty, "nothing switches while held")
+    check(ro.machine.hold?.switcher?.index == 3, "two steps right from the previous app (\(String(describing: ro.machine.hold?.switcher?.index)))")
+    ro.release(3)
+    check(ro.switches.map(\.index) == [3], "the release switches to the lit app, once")
+    // A flick and release before the delay: the panel came up on the roll, so it switches.
+    let fl = Rig([3: sw])
+    fl.press(3); fl.roll(dx: 12, dy: 0, steps: 5, dt: 0.004); fl.release(3)
+    check(fl.switches.map(\.index) == [2] && fl.taps.isEmpty, "a flick right and release switches one past the previous app (\(fl.switches.map(\.index)))")
+    // Left wraps from the front app to the last one.
+    let wl = Rig([3: sw])
+    wl.press(3); wl.roll(dx: -4, dy: 0, steps: 24); wl.release(3)
+    check(wl.switches.map(\.index) == [5], "left twice from the previous app wraps to the last (\(wl.switches.map(\.index)))")
+    // The ring: one app per report, clockwise forward; it never runs anything while held.
+    let rg = Rig([3: sw])
+    rg.press(3); rg.advance(0.05)
+    for _ in 0..<3 { rg.advance(0.01); rg.ring(-1) }
+    rg.ring(1)
+    check(rg.machine.hold?.switcher?.index == 3 && rg.ringSteps.isEmpty, "the ring steps the highlight: three forward, one back (\(String(describing: rg.machine.hold?.switcher?.index)))")
+    rg.release(3)
+    check(rg.switches.map(\.index) == [3] && rg.taps.isEmpty, "and the release switches there, no tap")
+    // Esc and another button: dismissed, nothing switches.
+    let e = Rig([3: sw])
+    e.press(3); e.roll(dx: 4, dy: 0, steps: 24); e.machine.dismissWheel(); e.roll(dx: 4, dy: 0, steps: 12)
+    check(e.switcherPanel == nil, "Esc takes the panel down")
+    e.release(3)
+    check(e.switches.isEmpty && e.taps.isEmpty, "Esc: nothing switches, no tap")
+    let d = Rig([3: sw])
+    d.press(3); d.advance(0.3); d.press(1); d.release(1); d.release(3)
+    check(d.switches.isEmpty && d.taps.isEmpty, "another trackball button dismisses it")
+    // Every way out without its release: nothing switches.
+    for reason in [GestureCancel.pause, .quit, .unplug, .tapDisabled, .sleep, .lostRelease, .timeout, .configChanged] {
+        let x = Rig([3: sw])
+        x.press(3); x.advance(0.3); x.roll(dx: 4, dy: 0, steps: 12); x.cancel(reason); x.release(3)
+        check(x.switches.isEmpty && x.taps.isEmpty && !x.frozen, "\(reason.rawValue) ends a Switcher hold: nothing switches, pointer free")
+    }
+    let t = Rig([3: sw])
+    t.press(3); t.advance(0.3); t.advance(31); t.tick(); t.release(3)
+    check(t.switches.isEmpty && !t.frozen, "past the time limit: ended, nothing switches")
+    // Never on the primary button, alone or in a combo.
+    let p = Rig([0: sw])
+    p.press(0); p.advance(0.3); p.release(0)
+    check(p.switches.isEmpty && p.freezeOns == 0 && p.primaryPasses == 1, "the primary button is never a Switcher")
+    let pc = Rig([:], chords: [Chord(buttons: [0, 2], action: sw)])
+    pc.combo([0, 2]); pc.advance(0.3); pc.release(0); pc.release(2)
+    check(pc.switches.isEmpty && pc.freezeOns == 0, "a combo with the primary button is never a Switcher")
+    let cb = Rig([:], chords: [Chord(buttons: [1, 3], action: sw)])
+    cb.combo([1, 3]); cb.advance(0.2); cb.release(3); cb.release(1)
+    check(cb.switches.count == 1 && !cb.frozen, "a Switcher combo: the first button up switches, once")
+    // Never two at once: a Wheel or gesture press during a Switcher hold is ignored.
+    let mix = Rig([2: .wheel(.standard), 1: .gesture(.standard), 3: sw])
+    mix.press(3); mix.press(2); mix.press(1); mix.roll(dx: 5, dy: 0, steps: 12); mix.release(2); mix.release(1); mix.release(3)
+    check(mix.picks.isEmpty && mix.fired.isEmpty && mix.freezeOns == 1 && mix.switches.isEmpty, "nothing else starts during a Switcher hold (and the presses dismiss it)")
+    // The list comes late: what was rolled meanwhile still counts (up to three steps).
+    let late = Rig([3: sw])
+    late.switcherReadyAfter = 0.5
+    late.press(3); late.roll(dx: 4, dy: 0, steps: 12)
+    check(late.switcherPanel == nil, "no panel until the list arrives")
+    late.advance(0.5)
+    check(late.machine.hold?.switcher?.index == 2, "the roll before the list arrived still moved the highlight (\(String(describing: late.machine.hold?.switcher?.index)))")
+    late.release(3)
+    check(late.switches.map(\.index) == [2], "and the release switches there")
+    // The list never comes: a quick still press is still the tap; a long hold switches nothing.
+    let never = Rig([3: sw])
+    never.switcherGrid = nil
+    never.press(3); never.advance(0.1); never.release(3)
+    check(never.taps.count == 1 && never.switches.isEmpty, "no list: the tap still works")
+    never.press(3); never.roll(dx: 4, dy: 0, steps: 24); never.advance(1); never.release(3)
+    check(never.switches.isEmpty && never.taps.count == 1, "no list: a roll and release switches nothing")
+    // Only the front app: the highlight stays on it.
+    let one = Rig([3: sw])
+    one.switcherGrid = SwitcherGrid.fitting(count: 1, maxColumns: 8, maxRows: 3)
+    one.press(3); one.advance(0.3); one.roll(dx: 4, dy: 4, steps: 30); one.ring(-1); one.release(3)
+    check(one.switches.map(\.index) == [0], "a single app: it stays lit (\(one.switches.map(\.index)))")
+    // The tap: a held shortcut is a quick press.
+    let tp = Rig([3: .switcher(AppSwitcher(tap: .holdShortcut(.copy)))])
+    tp.press(3); tp.release(3)
+    check(tp.taps.map(\.0) == [.shortcut(.copy)], "a held-shortcut tap is a quick press")
+    // Hostile numbers.
+    let n = Rig([3: sw])
+    n.press(3); n.ball(.infinity, 3); n.ball(.nan, .nan); n.ball(-1e308, 1e308); n.advance(0.3); n.release(3)
+    check(!n.frozen && n.switches.count <= 1, "infinite and NaN rolls: no crash, at most one switch")
+}
+
+section("the Switcher's grid")
+do {
+    // Sizes: one row while they fit, then rows as even as they can be.
+    check(SwitcherGrid.fitting(count: 5, maxColumns: 8, maxRows: 3) == SwitcherGrid(count: 5, columns: 5, visibleRows: 1), "five apps: one row")
+    check(SwitcherGrid.fitting(count: 10, maxColumns: 8, maxRows: 3).columns == 5, "ten apps with room for eight: two rows of five")
+    let g24 = SwitcherGrid.fitting(count: 24, maxColumns: 8, maxRows: 2)
+    check(g24.columns == 8 && g24.rows == 3 && g24.visibleRows == 2, "24 apps, room for two rows: three rows of eight, two on screen")
+    check(SwitcherGrid.fitting(count: 0, maxColumns: 8, maxRows: 3).count == 0, "no apps: an empty grid")
+    // Moves in a 3 × 4 grid with 10 apps (the last row has 2).
+    let g = SwitcherGrid(count: 10, columns: 4, visibleRows: 3)
+    check(g.moved(3, .right) == 4 && g.moved(9, .right) == 0 && g.moved(0, .left) == 9, "left and right run in order and wrap")
+    check(g.moved(1, .down) == 5 && g.moved(5, .down) == 9 && g.moved(9, .down) == 1, "down keeps the column and wraps to the top")
+    check(g.moved(7, .down) == 9, "down into a short last row with nothing under: its last app")
+    check(g.moved(1, .up) == 9 && g.moved(3, .up) == 7 && g.moved(5, .up) == 1, "up from the top wraps to the bottom, or the row above a short last row")
+    for i in 0..<10 { for m in [SwitcherGrid.Move.left, .right, .up, .down] { check((0..<10).contains(g.moved(i, m)), "every move stays in the grid") } }
+    // Scrolling rows: the lit row always on screen, moving as little as possible.
+    let s = SwitcherGrid(count: 24, columns: 8, visibleRows: 2)
+    check(s.firstRow(showing: 17, from: 0) == 1 && s.firstRow(showing: 9, from: 1) == 1 && s.firstRow(showing: 2, from: 1) == 0, "rows scroll to keep the lit app on screen")
+    // A random walk through many shapes: never off the grid, every app reachable.
+    var seed: UInt64 = 0x5717C4
+    func rnd() -> Double { seed = seed &* 6364136223846793005 &+ 1442695040888963407; return Double(seed >> 11) / Double(1 << 53) }
+    for _ in 0..<500 {
+        let grid = SwitcherGrid.fitting(count: 1 + Int(rnd() * 30), maxColumns: 1 + Int(rnd() * 9), maxRows: 1 + Int(rnd() * 4))
+        var i = Int(rnd() * Double(grid.count)), first = 0
+        var seen: Set<Int> = [i]
+        for _ in 0..<200 {
+            i = grid.moved(i, [.left, .right, .up, .down][Int(rnd() * 4)])
+            first = grid.firstRow(showing: i, from: first)
+            seen.insert(i)
+            check(i >= 0 && i < grid.count, "random moves stay in the grid")
+            check(i / grid.columns >= first && i / grid.columns < first + grid.visibleRows, "random moves keep the lit row on screen")
+        }
+        var walk = 0
+        var all: Set<Int> = []
+        for _ in 0..<grid.count { all.insert(walk); walk = grid.moved(walk, .right) }
+        check(all.count == grid.count, "right reaches every app")
+    }
+    // Random Switcher holds: rules after every event (invariants), and at most one switch per hold.
+    for _ in 0..<3000 {
+        let z = Rig([3: .switcher(.standard), 2: .wheel(.standard)],
+                    chords: rnd() < 0.3 ? [Chord(buttons: [1, 3], action: .switcher(.standard))] : [])
+        z.switcherGrid = rnd() < 0.1 ? nil : SwitcherGrid.fitting(count: Int(rnd() * 26), maxColumns: 2 + Int(rnd() * 7), maxRows: 1 + Int(rnd() * 3))
+        z.switcherReadyAfter = rnd() < 0.5 ? 0 : rnd() * 0.6
+        for _ in 0..<60 {
+            let before = z.switches.count
+            switch Int(rnd() * 9) {
+            case 0: z.press(Int(rnd() * 4))
+            case 1: z.release(Int(rnd() * 4))
+            case 2, 3: z.roll(dx: rnd() * 20 - 10, dy: rnd() * 20 - 10, steps: 1 + Int(rnd() * 6))
+            case 4: z.ring(rnd() < 0.5 ? 1 : -1)
+            case 5: if rnd() < 0.9 { z.advance(rnd() * 0.3) } else { z.now += 31 }; z.tick(); z.advance(0)
+            case 6: z.machine.dismissWheel()
+            case 7: if rnd() < 0.2 { z.cancel([.pause, .sleep, .unplug, .tapDisabled][Int(rnd() * 4)]) }
+            default: _ = z.switcherPanel; z.advance(0.01)
+            }
+            check(z.switches.count - before <= 1, "never two switches from one event")
+        }
+        for b in 0..<4 { z.release(b) }
+        check(!z.frozen, "random Switcher holds: pointer free at the end")
+    }
+}
+
+section("the Switcher in settings files")
+do {
+    var c = GlideConfig()
+    c.buttons[3] = .switcher(.standard)
+    c.buttons[2] = .switcher(AppSwitcher.keeping(.middleClick))
+    c.chords = [Chord(buttons: [1, 3], action: .switcher(AppSwitcher(tap: .shortcut(.copy))))]
+    var p = AppProfile(bundleID: "com.example.app", name: "Example")
+    p.buttons = [1: .switcher(.standard)]
+    c.appProfiles = [p]
+    check(c.requiredFileVersion == 2, "a Switcher makes the file version 2 (older Glideballs leave it alone)")
+    let file = GlideSettingsFile(config: c, exportedFrom: "Test")
+    let data = try! JSONEncoder().encode(file)
+    let back = try! JSONDecoder().decode(GlideSettingsFile.self, from: data)
+    check(back.config == c, "a file with Switchers round-trips without loss")
+    check(back.version == 2 && (try? back.validatedConfig()) == c, "and is accepted as version 2")
+    check(AppSwitcher.keeping(.middleClick).tap == .middleClick, "turning a button into a Switcher keeps what it did as the tap")
+    check(AppSwitcher.keeping(.wheel(WheelMenu.keeping(.back))).tap == .back, "from a Wheel it keeps the Wheel's tap")
+    check(WheelMenu.keeping(.switcher(AppSwitcher(tap: .back))).tap == .back, "and a Wheel made from a Switcher keeps its tap")
+    // A Glideball before the Switcher (a beta with the Wheel, say): skips just those buttons.
+    let text = String(data: data, encoding: .utf8)!.replacingOccurrences(of: "\"switcher\"", with: "\"switcherFromTheFuture\"")
+    let old = try? JSONDecoder().decode(GlideSettingsFile.self, from: Data(text.utf8))
+    check(old != nil, "a file a build without the Switcher can't read still opens")
+    check(old?.config.buttons[3] == nil && old?.config.buttons[2] == nil && old?.config.chords.isEmpty == true
+          && old?.config.appProfiles.first?.buttons?.isEmpty == true, "it skips just the Switcher buttons and combos")
+    if let older = old?.config {
+        check(GlideSettingsFile.predatesSwitcher("2.10-beta.24") && !GlideSettingsFile.predatesSwitcher(GlideSettingsFile.switcherSince)
+              && !GlideSettingsFile.predatesSwitcher("2.10") && GlideSettingsFile.predatesSwitcher(nil), "which betas predate the Switcher")
+        let merged = older.keepingSwitchers(from: c)
+        check(merged.kept && merged.config == c, "sync puts the Switchers an older beta dropped back")
+        check(!c.keepingSwitchers(from: c).kept, "and changes nothing when nothing was dropped")
+        var changed = older
+        changed.buttons[3] = .back
+        check(changed.keepingSwitchers(from: c).config.buttons[3] == .back, "a button the older one set explicitly wins")
+        check(older.keepingNewerFeatures(from: c).config.buttons[3] == c.buttons[3], "a Glideball before 2.10 dropping it: put back too")
+    }
+    // Older settings with no Switcher load unchanged and stay version 1 when nothing newer is used.
+    let plain = GlideConfig()
+    check(plain.requiredFileVersion == 1, "settings without a Switcher stay version 1")
+    // A newer Glideball's Switcher: unknown fields ignored, an unknown tap falls back.
+    let newer = #"{"buttons":{"3":{"switcher":{"_0":{"tap":{"rocket":{}},"rows":7,"hue":2}}}}}"#
+    let n = try? JSONDecoder().decode(GlideConfig.self, from: Data(newer.utf8))
+    check(n?.buttons[3] == .switcher(.standard), "a newer Switcher with unknown fields loads with the defaults")
+    let bare = try? JSONDecoder().decode(GlideConfig.self, from: Data(#"{"buttons":{"2":{"switcher":{"_0":{}}}}}"#.utf8))
+    check(bare?.buttons[2] == .switcher(.standard), "a Switcher with no fields loads")
+    // Clamping and import: never nested, the tap made safe.
+    check(ButtonAction.switcher(AppSwitcher(tap: .wheel(.standard))).clamped() == .switcher(.standard), "a Wheel as a Switcher's tap is dropped")
+    var g = ButtonGesture.standard
+    g.up = GestureStep(.switcher(.standard))
+    check(ButtonAction.gesture(g).clamped().map { if case .gesture(let x) = $0 { x.up == nil } else { false } } == true, "a Switcher inside a gesture is dropped")
+    var w = WheelMenu()
+    w[0] = .switcher(.standard)
+    check(ButtonAction.wheel(w).clamped().map { if case .wheel(let x) = $0 { x[0] == nil } else { false } } == true, "a Switcher in a Wheel slot is dropped")
+    check(ButtonAction.switcher(.standard).sanitized() != nil && ButtonAction.switcher(.standard).sanitized(nested: true) == nil, "sanitized: kept at the top, dropped when nested")
+    check(ButtonAction.switcher(AppSwitcher(tap: .shortcut(.copy))).needsCaution && !ButtonAction.switcher(.standard).needsCaution,
+          "a Switcher is listed in an import only when its tap presses keys")
 }
 
 // MARK: - Chained gestures

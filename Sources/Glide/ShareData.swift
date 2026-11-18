@@ -510,6 +510,7 @@ extension ButtonAction {
         case .openApp: "openApp"
         case .gesture: "gesture"
         case .wheel: "wheel"
+        case .switcher: "switcher"
         }
     }
 }

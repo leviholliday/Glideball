@@ -269,7 +269,7 @@ class EngineIO {
         return result == 0 ? nil : "the background-cursor switch failed (\(result))"
     }()
 
-    // MARK: The Wheel's overlay
+    // MARK: The Wheel's and the Switcher's panels
 
     /// Draws the Wheel's ring on screen (the app's SwiftUI view, `WheelOverlayPanel`). Main
     /// thread only. Set once at launch; nil (render-ui, self-test) means no overlay, and a
@@ -282,75 +282,136 @@ class EngineIO {
     /// it with. Callable from any thread; drawn on the main thread, newest state wins.
     func showWheel(_ model: WheelOverlayModel, at point: CGPoint) -> Bool {
         guard Self.wheelPresenter != nil else { return false }
-        wheel.lock.lock()
-        let first = wheel.wanted == nil
-        wheel.wanted = (model, point)
-        wheel.keptAt = now()
-        let gen = wheel.gen
-        wheel.lock.unlock()
-        DispatchQueue.main.async { [self] in placeWheel(gen: gen, first: first) }
+        wheel.show(model, at: point)
         return true
     }
 
     /// Takes the Wheel's ring down. Safe to call any number of times, from any thread.
-    func hideWheel() {
-        wheel.lock.withLock {
-            wheel.gen &+= 1
-            wheel.wanted = nil
-        }
-        if Thread.isMainThread { removeWheelIfUnwanted() } else { DispatchQueue.main.async { [self] in removeWheelIfUnwanted() } }
-    }
+    func hideWheel() { wheel.hide() }
 
     /// The engine is alive and still wants the ring up. False if the watchdog took it down.
-    func keepWheel() -> Bool {
-        wheel.lock.withLock {
-            guard wheel.wanted != nil else { return false }
-            wheel.keptAt = now()
-            return true
+    func keepWheel() -> Bool { wheel.keep() }
+
+    private let wheel = HeldOverlay<WheelOverlayModel>(
+        draw: { EngineIO.wheelPresenter?.showWheel($0, at: $1) },
+        remove: { EngineIO.wheelPresenter?.hideWheel() })
+
+    /// Builds the Switcher's app list, draws its panel and switches apps (the app's
+    /// `SwitcherOverlayPanel`). Main thread only. Set once at launch; nil (render-ui,
+    /// self-test) means no panel: a Switcher then only ever does its tap.
+    nonisolated(unsafe) static var switcherPresenter: SwitcherPresenting?
+
+    /// Asks the main thread to build the app list for Switcher hold `session` (on the display
+    /// that has `point`) and calls `ready` with its grid, on the main thread. False (and no
+    /// call) if there's nothing to build it with. The list never leaves the main thread.
+    func prepareSwitcher(session: Int, near point: CGPoint, ready: @escaping (SwitcherGrid) -> Void) -> Bool {
+        guard Self.switcherPresenter != nil else { return false }
+        DispatchQueue.main.async {
+            guard let presenter = Self.switcherPresenter else { return }
+            ready(presenter.prepareSwitcher(session: session, near: point))
         }
+        return true
     }
 
-    private final class WheelState {
-        let lock = NSLock()
-        var gen = 0
-        var wanted: (model: WheelOverlayModel, at: CGPoint)?
-        var keptAt: CFTimeInterval = 0
+    /// Shows the Switcher's panel (on the display it was prepared for), or updates it. The
+    /// same lease as the Wheel's: `keepSwitcher` at least every `standInLease`, or the main
+    /// thread takes it down. False if there's nothing to draw it with.
+    func showSwitcher(_ model: SwitcherOverlayModel, at point: CGPoint) -> Bool {
+        guard Self.switcherPresenter != nil else { return false }
+        switcher.show(model, at: point)
+        return true
+    }
+
+    /// Takes the Switcher's panel down. Safe to call any number of times, from any thread.
+    func hideSwitcher() { switcher.hide() }
+
+    /// The engine is alive and still wants the panel up. False if the watchdog took it down.
+    func keepSwitcher() -> Bool { switcher.keep() }
+
+    /// Switches to app `index` of Switcher hold `session` (the release). On the main thread.
+    func activateSwitcher(session: Int, index: Int) {
+        DispatchQueue.main.async { Self.switcherPresenter?.activateSwitcher(session: session, index: index) }
+    }
+
+    private let switcher = HeldOverlay<SwitcherOverlayModel>(
+        draw: { EngineIO.switcherPresenter?.showSwitcher($0, near: $1) },
+        remove: { EngineIO.switcherPresenter?.hideSwitcher() })
+
+    /// Something drawn on screen while a button is held (the Wheel's ring, the Switcher's
+    /// panel): shown and hidden from any thread, drawn on the main thread with the newest
+    /// state winning, and taken down by a main-thread watchdog if the engine stops renewing
+    /// its lease (a stuck input thread can't leave it on screen). Times are CACurrentMediaTime,
+    /// as `now()` is in the app (scripts/engine-fuzz overrides the methods that use this).
+    private final class HeldOverlay<Model> {
+        private let lock = NSLock()
+        private var gen = 0
+        private var wanted: (model: Model, at: CGPoint)?
+        private var keptAt: CFTimeInterval = 0
         // Main thread only:
-        var watchdog: Timer?
-        var up = false
-    }
-    private let wheel = WheelState()
+        private var watchdog: Timer?
+        private var up = false
+        private let draw: (Model, CGPoint) -> Void
+        private let remove: () -> Void
 
-    /// Main thread: the newest wanted state drawn (a show queued before a take-down does nothing).
-    private func placeWheel(gen: Int, first: Bool) {
-        guard let presenter = Self.wheelPresenter else { return }
-        let wanted: (model: WheelOverlayModel, at: CGPoint)? = wheel.lock.withLock { gen == wheel.gen ? wheel.wanted : nil }
-        guard let wanted else { return }
-        presenter.showWheel(wanted.model, at: wanted.at)
-        wheel.up = true
-        guard wheel.watchdog == nil else { return }
-        let timer = Timer(timeInterval: 0.25, repeats: true) { [weak self] _ in
-            guard let self else { return }
-            let state = self.wheel
-            let now = self.now()
-            state.lock.withLock {
-                guard state.wanted != nil, now - state.keptAt > Self.standInLease else { return }
-                state.gen &+= 1
-                state.wanted = nil
-            }
-            removeWheelIfUnwanted()
+        init(draw: @escaping (Model, CGPoint) -> Void, remove: @escaping () -> Void) {
+            self.draw = draw
+            self.remove = remove
         }
-        RunLoop.main.add(timer, forMode: .common)
-        wheel.watchdog = timer
-    }
 
-    /// Main thread: the ring gone once nothing wants it.
-    private func removeWheelIfUnwanted() {
-        guard wheel.lock.withLock({ wheel.wanted == nil }) else { return }
-        if wheel.up { Self.wheelPresenter?.hideWheel() }
-        wheel.up = false
-        wheel.watchdog?.invalidate()
-        wheel.watchdog = nil
+        func show(_ model: Model, at point: CGPoint) {
+            let gen: Int = lock.withLock {
+                wanted = (model, point)
+                keptAt = CACurrentMediaTime()
+                return self.gen
+            }
+            DispatchQueue.main.async { [self] in place(gen: gen) }
+        }
+
+        func hide() {
+            lock.withLock {
+                gen &+= 1
+                wanted = nil
+            }
+            if Thread.isMainThread { removeIfUnwanted() } else { DispatchQueue.main.async { [self] in removeIfUnwanted() } }
+        }
+
+        func keep() -> Bool {
+            lock.withLock {
+                guard wanted != nil else { return false }
+                keptAt = CACurrentMediaTime()
+                return true
+            }
+        }
+
+        /// Main thread: the newest wanted state drawn (a show queued before a take-down does nothing).
+        private func place(gen: Int) {
+            let w: (model: Model, at: CGPoint)? = lock.withLock { gen == self.gen ? wanted : nil }
+            guard let w else { return }
+            draw(w.model, w.at)
+            up = true
+            guard watchdog == nil else { return }
+            let timer = Timer(timeInterval: 0.25, repeats: true) { [weak self] _ in
+                guard let self else { return }
+                let t = CACurrentMediaTime()
+                lock.withLock {
+                    guard self.wanted != nil, t - self.keptAt > EngineIO.standInLease else { return }
+                    self.gen &+= 1
+                    self.wanted = nil
+                }
+                removeIfUnwanted()
+            }
+            RunLoop.main.add(timer, forMode: .common)
+            watchdog = timer
+        }
+
+        /// Main thread: gone once nothing wants it.
+        private func removeIfUnwanted() {
+            guard lock.withLock({ wanted == nil }) else { return }
+            if up { remove() }
+            up = false
+            watchdog?.invalidate()
+            watchdog = nil
+        }
     }
 
     /// The mouse buttons macOS currently has down (any mouse), for when the tap was off.
