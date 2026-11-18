@@ -1407,7 +1407,13 @@ final class Engine {
             oTokens[b] = (io.now(), k)
             oUpAt[b] = nil
         } else {
-            if let m = oMatchedEarly[b], io.now() - m.at < Self.lateReportWindow, m.device == nil || m.device == k {
+            // (Not when this device has pressed the button again since: a device reports its
+            // buttons in order, so this report is that new press's release. Taking it for the
+            // late report of a trackpad release just before left the mouse's release waiting,
+            // and then it was taken for the trackball's. Found by scripts/engine-fuzz, seeds
+            // 1020309, 1024311, 1025370.)
+            if let m = oMatchedEarly[b], io.now() - m.at < Self.lateReportWindow, m.device == nil || m.device == k,
+               !(otherPresses[b] ?? []).contains(where: { $0.device == k && $0.at >= m.at && !$0.hidReleased }) {
                 oMatchedEarly[b] = nil
                 return
             }

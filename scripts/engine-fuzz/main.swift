@@ -688,6 +688,7 @@ final class World {
     var heldThroughRelaunch = Set<Int>()      // down because the trackball's own press of it passed: macOS's state
     var heldReadable = true                   // the engine can read the trackball's held buttons (EngineIO.heldButtons)
     var appO: [Int: Int] = [:]
+    var appTotal: [Int: Int] = [:]      // every button down for apps, by anyone
     var keysDown: [UInt16: Int] = [:]
     var modifierEvents: [UInt16: Int] = [:]
     var outCount: [Int: Int] = [:]
@@ -772,9 +773,12 @@ final class World {
             k == oKey || (self.echo && k == echoKey) || (self.kConnected && (k == self.kKey || k == self.kAux) && self.io.clock >= self.aliveAt) || (self.reused && k == self.kKey)
         }
         io.identityNow = { [unowned self] k in self.identityOf(k) }
-        io.appButtons = { [unowned self] in
-            Set(self.appK.filter { $0.value > 0 }.keys.map(Int64.init)).union(self.appO.filter { $0.value > 0 }.keys.map(Int64.init))
-        }
+        // macOS's answer: what apps have down by the presses and releases they saw, not by whose
+        // side the fuzzer counted each on. (When the engine can't tell two devices' releases apart
+        // and gives one's event for the other's, the per-side counts drift; macOS's doesn't. Seed
+        // 1024311: the per-side union kept a trackpad press "down" after both had let go, so the
+        // engine never forgot it.)
+        io.appButtons = { [unowned self] in Set(self.appTotal.filter { $0.value > 0 }.keys.map(Int64.init)) }
         io.held = { [unowned self] k in
             guard self.heldReadable, self.kConnected, k == self.kKey || k == self.kAux else { return nil }
             return k == self.kKey ? Set(self.kDown.map(Int64.init)) : []
@@ -1023,6 +1027,8 @@ final class World {
                 if phase == 0 { pendingPrimary.removeAll { $0.id == id } }
             }
             let isOther = info.map { $0.source == .other || $0.source == .trackpad } ?? false
+            // What macOS has down, whoever pressed it: every press apps saw less every release.
+            if phase == 0 { appTotal[b, default: 0] += 1 } else if phase == 1 { appTotal[b] = max(0, (appTotal[b] ?? 0) - 1) }
             if phase != 2 && keepOutLog {
                 let who = info.map { "\($0.source)" } ?? (synthetic ? "glideball" : "?")
                 outLog.append("\(who) \(phase == 0 ? "down" : "up") \(b)\(raw ? " raw" : "")")
@@ -2623,6 +2629,14 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
     wheel4.buttons = [1: .dragLock, 2: .media(.volumeUp), 3: .switcher(.standard), 4: .wheel(.standard)]
     wheel4.chords = [Chord(buttons: [1, 3], action: .middleClick)]
     wheel4.scrollMode = .flywheel
+    var g1 = GlideConfig()
+    g1.buttons = [1: .gesture(.standard), 2: .switcher(.standard), 3: .precisionToggle, 4: .wheel(.standard)]
+    var g3 = GlideConfig()
+    g3.buttons = [1: .gesture(ButtonGesture(tap: .dragLock)), 2: .switcher(.standard), 3: .gesture(.standard), 4: .gesture(.standard)]
+    g3.scrollMode = .flywheel
+    var w1 = GlideConfig()
+    w1.buttons = [1: .wheel(.standard), 2: .switcher(AppSwitcher(tap: .openApp(bundleID: "com.example.app"))), 3: .switcher(.standard)]
+    w1.scrollMode = .follow
     let fresh: [(String, [GlideConfig], [Op])] = [
         ("seed 1002133: a button remapped to a ⌃-click of itself, its release past a switched-off tap: released once", [selfCtrl],
          [.kPress(1, hidFirst: true), .tapOff(3), .kRelease(1, hidFirst: true)]),
@@ -2645,6 +2659,13 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
           .oRelease(0), .kPress(2, hidFirst: true), .kPress(4, hidFirst: true), .kBall(7, 0)]),
         ("seed 1011727: a keyboard Drag lock ended by a press as the trackball comes back: its release isn't let through", [wheel4],
          [.kPress(4, hidFirst: true), .kWheel(1), .oPress(1), .unplug(3), .setMode(2, 2), .replugHeld(0, 0)]),
+        ("seed 1025370: a trackpad click past a switched-off tap, then another mouse's click inside a gesture hold: each release its own", [g1],
+         [.kPress(0, hidFirst: true), .tapOff(1), .padClick(1), .overlap(1, 0 + 64)]),
+        ("seed 1020309: the same with the trackpad first and a shadow pointer beside: each release its own", [g3],
+         [.kPress(2, hidFirst: true), .tapOff(1), .overlap(3, 3 + 32 + 64), .overlap(3, 2 + 64 + 128)]),
+        ("seed 1024311: a Wheel's release past a switched-off tap, a trackpad click on it, a shadow pointer beside: later clicks paired", [w1],
+         [.kPress(1, hidFirst: true), .padClick(1), .tapOff(1), .kRelease(1, hidFirst: true), .wait(0.486), .wait(1.681),
+          .kPress(1, hidFirst: true), .overlap(1, 1 + 8 + 16 + 64 + 128)]),
         // (The fuzzer's own bookkeeping, these two: see `glideDown`, and `taintedWhileOff` where `ambiguous` clears.)
         ("seed 1015448: the primary pressed while the tap was off, a keyboard Drag lock, then a pause: the held button is macOS's",
          [GlideConfig()], [.tapOff(3), .kPress(0, hidFirst: true), .setMode(2, 2), .kBall(-8, 0), .oWheel(-1), .pause]),
