@@ -171,31 +171,14 @@ struct GestureEditor: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .contentTransition(.opacity)
 
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .top, spacing: 22) {
-                    ringBlock
-                    firstColumn.frame(width: 200, alignment: .leading)
-                    secondColumn.frame(maxWidth: 240, alignment: .leading)
-                }
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack(alignment: .top, spacing: 22) {
-                        ringBlock
-                        firstColumn.frame(maxWidth: 240, alignment: .leading)
-                    }
-                    secondColumn
-                }
-                VStack(alignment: .leading, spacing: 16) {
-                    ringBlock.frame(maxWidth: .infinity)
-                    HStack(alignment: .top, spacing: 24) {
-                        firstColumn.frame(width: 200, alignment: .leading)
-                        secondColumn.frame(maxWidth: 260, alignment: .leading)
-                    }
-                }
-                VStack(alignment: .leading, spacing: 16) {
-                    ringBlock.frame(maxWidth: .infinity)
-                    firstColumn
-                    secondColumn
-                }
+            // One copy of each part, wrapped to the room there is (beside each other when wide,
+            // the ring above the two columns when not). ViewThatFits would build every layout
+            // it's offered, each a whole ring and both columns, and in render-ui that ran
+            // SwiftUI's graph out of room.
+            FlowLayout(spacing: 22, lineSpacing: 16) {
+                ringBlock
+                firstColumn.frame(width: 200, alignment: .leading)
+                secondColumn.frame(width: 240, alignment: .leading)
             }
 
             if isTrying { tryBanner.transition(.opacity.combined(with: .move(edge: .bottom))) }

@@ -437,28 +437,15 @@ extension RenderUI {
             model.modes = m
             model.pressed = Set(buttons)
         }
-        add("buttons-ring-page", "Gestures ring", "Top right: four directions shown right away; top left: eight, Zoom on the ring, Reverse on",
+        add("buttons-ring-page", "Gestures ring", "Top right: four, shown right away (how an old Wheel loads); top left: eight, Zoom on the ring, Reverse on",
             prepare: ringButtons, cleanup: restoreButtons) { dark, scale in
             fullPage(page(.buttons, model), dark: dark, scale: scale)
-        }
-        add("buttons-ring-narrow", "Gestures ring", "The Gestures editor at the smallest window's width (stacked)",
-            prepare: ringButtons, cleanup: restoreButtons) { dark, scale in
-            card(page(.buttons, model).frame(width: AppDelegate.mainWindowMinSize.width - Theme.Space.sidebarWidth - Theme.Space.contentSide * 2),
-                 width: AppDelegate.mainWindowMinSize.width - Theme.Space.sidebarWidth, dark: dark, scale: scale)
         }
         add("buttons-ring-show-never", "Gestures ring", "Show the ring: Never (blind gestures, as they always were)",
             prepare: { showButton(.never) }, cleanup: restoreButtons) { dark, scale in
             fullPage(page(.buttons, model), dark: dark, scale: scale)
         }
-        add("buttons-ring-show-pause", "Gestures ring", "Show the ring: After a pause (the default for a new one)",
-            prepare: { showButton(.afterPause) }, cleanup: restoreButtons) { dark, scale in
-            fullPage(page(.buttons, model), dark: dark, scale: scale)
-        }
-        add("buttons-ring-show-at-once", "Gestures ring", "Show the ring: Right away (how an old Wheel loads)",
-            prepare: { showButton(.atOnce) }, cleanup: restoreButtons) { dark, scale in
-            fullPage(page(.buttons, model), dark: dark, scale: scale)
-        }
-        add("buttons-ring-more", "Gestures ring", "Up is More: its chip on the first ring",
+        add("buttons-ring-show-pause", "Gestures ring", "Show the ring: After a pause (the default for a new one), up is More",
             prepare: { model.config.buttons[3] = .gesture(withMore) }, cleanup: restoreButtons) { dark, scale in
             fullPage(page(.buttons, model), dark: dark, scale: scale)
         }
@@ -477,16 +464,6 @@ extension RenderUI {
             cleanup: restoreButtons) { dark, scale in
             mainWindow(model, tab: .buttons, dark: dark, scale: scale)
         }
-        add("buttons-ring-custom", "Gestures ring", "The ring job is your own pair (Back and Forward)",
-            prepare: {
-                var g = ringFour
-                g.ring = .custom
-                g.ringDown = .back
-                g.ringUp = .forward
-                model.config.buttons[3] = .gesture(g)
-            }, cleanup: restoreButtons) { dark, scale in
-            fullPage(page(.buttons, model), dark: dark, scale: scale)
-        }
         add("buttons-picker-gesture-more", "Gestures ring", "The picker for a direction on the first ring: More at the top") { dark, scale in
             card(PopoverMock { ActionPickerPanel(current: .shortcut(.nextSpace), purpose: .gestureDirection, onMore: {}) { _ in } },
                  width: 470, dark: dark, scale: scale)
@@ -495,7 +472,6 @@ extension RenderUI {
                                                     ring: .init(job: .volume, clockwise: true, steps: 3))
         let eightModel = WheelOverlayModel.of(ringEight, level: nil, selected: 1, dot: CGPoint(x: 0.56, y: -0.56),
                                                      ring: .init(job: .zoom, clockwise: false, steps: 2))
-        let moreFirst = WheelOverlayModel.of(withMore, level: nil, selected: 0, dot: CGPoint(x: 0, y: -0.5), ring: nil)
         let moreModel = WheelOverlayModel.of(withMore, level: 0, selected: 2, dot: CGPoint(x: 0.75, y: 0), ring: nil)
         let moreModel8 = WheelOverlayModel.of(moreEight, level: 0, selected: nil, dot: .zero, ring: nil)
         let readout = WheelOverlayModel(slots: Array(repeating: nil, count: 8), eight: false, showsRing: false, selected: nil,
@@ -506,12 +482,6 @@ extension RenderUI {
         add("ring-overlay-8", "Gestures ring", "Eight, New Tab lit (up right), the ring zooming out") { dark, scale in
             wheelOverlay(eightModel, busy: false, dark: dark, scale: scale)
         }
-        add("ring-overlay-4-plain", "Gestures ring", "Just appeared: nothing lit yet, the ring not turned") { dark, scale in
-            wheelOverlay(WheelOverlayModel.of(ringFour, level: nil, selected: nil, dot: .zero, ring: nil), busy: false, dark: dark, scale: scale)
-        }
-        add("ring-overlay-more-lit", "Gestures ring", "The first ring with More up top, about to open") { dark, scale in
-            wheelOverlay(moreFirst, busy: false, dark: dark, scale: scale)
-        }
         add("ring-overlay-more", "Gestures ring", "More's ring, opened in place: Screenshot lit, Back at the bottom") { dark, scale in
             wheelOverlay(moreModel, busy: false, dark: dark, scale: scale)
         }
@@ -520,12 +490,6 @@ extension RenderUI {
         }
         add("ring-overlay-readout", "Gestures ring", "A blind hold (Never) turning the volume: only the ring job's readout") { dark, scale in
             wheelOverlay(readout, busy: false, dark: dark, scale: scale)
-        }
-        add("ring-overlay-4-busy", "Gestures ring", "Four over a bright, busy wallpaper (contrast)") { dark, scale in
-            wheelOverlay(fourModel, busy: true, dark: dark, scale: scale)
-        }
-        add("ring-overlay-more-busy", "Gestures ring", "More's ring over a bright, busy wallpaper (contrast)") { dark, scale in
-            wheelOverlay(moreModel, busy: true, dark: dark, scale: scale)
         }
 
         // The Switcher: its row on the Buttons page, the picker, a held Switcher, and its panel
