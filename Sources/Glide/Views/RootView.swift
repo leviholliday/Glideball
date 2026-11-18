@@ -200,13 +200,19 @@ struct RootView: View {
             withAnimation(Theme.Motion.respecting(reduceMotion, Theme.Motion.spring)) { pageWidth = new }
         }
         .overlay { GestureArmedEdge(model: model) }   // a held gesture: the page is lit at its edge
+        // Up in the empty title bar, level with the traffic lights, so it never covers
+        // the page's own Share menu or a banner at the top of the page.
         .overlay(alignment: .topTrailing) {
-            if model.delight.showSaved {
-                SavedPill()
-                    .padding(.top, 14)
-                    .padding(.trailing, 18)
-                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+            ZStack(alignment: .topTrailing) {
+                if model.delight.showSaved {
+                    SavedPill()
+                        .padding(.top, model.fullScreen ? 14 : 12)
+                        .padding(.trailing, 18)
+                        .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+            .ignoresSafeArea(.container, edges: .top)
         }
         .overlay(alignment: .bottom) {
             if let toast = model.toast {

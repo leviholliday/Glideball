@@ -482,10 +482,10 @@ struct ShareSetupSheet: View {
 
     private var nameNote: String {
         if let name = SharingName.forLinks {
-            return String(localized: "Your name, “\(name)”, goes with the link and file. You can change that in Settings › General.",
+            return String(localized: "Your name, “\(name)”, goes with the link and file. You can change that in Settings › Sharing.",
                           comment: "Share: the sender's name; %@ is the name")
         }
-        return String(localized: "No name goes with it. You can add one in Settings › General.", comment: "Share: no name is sent")
+        return String(localized: "No name goes with it. You can add one in Settings › Sharing.", comment: "Share: no name is sent")
     }
 
     private func close() {

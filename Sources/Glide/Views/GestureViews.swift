@@ -500,7 +500,7 @@ struct GestureEditor: View {
             Text("Distance").font(.system(size: 12, weight: .semibold))
             Menu {
                 Picker(selection: Binding(get: { gesture.distance }, set: { gesture.distance = $0 })) {
-                    Text(String(localized: "Like Other Gestures (\(general.title))", comment: "Gesture distance menu: follow the setting for all gestures; %@ is that setting (Short, Normal, Long)"))
+                    Text(String(localized: "Like other gestures (\(general.title))", comment: "Gesture distance menu: follow the setting for all gestures; %@ is that setting (Short, Normal, Long)"))
                         .tag(GestureDistance?.none)
                     Divider()
                     ForEach(GestureDistance.allCases) { d in
@@ -509,7 +509,7 @@ struct GestureEditor: View {
                 } label: { EmptyView() }
                 .pickerStyle(.inline)
             } label: {
-                Text(verbatim: gesture.distance?.title ?? String(localized: "Like Other Gestures", comment: "Gesture distance: follows the setting for all gestures"))
+                Text(verbatim: gesture.distance?.title ?? String(localized: "Like other gestures", comment: "Gesture distance: follows the setting for all gestures"))
                     .font(.system(size: 11.5, weight: .medium))
             }
             .menuStyle(.button)
@@ -679,6 +679,22 @@ extension GestureStep.Mode {
         case .once: String(localized: "Fires once per hold, however far you roll.")
         }
     }
+
+    // On a ring that shows (Right away, or inside a More) a place that doesn't repeat runs
+    // once, when you let go on it: chaining is a blind thing, so it isn't "each time you roll".
+    func title(onRing: Bool) -> String {
+        onRing && self == .chain
+            ? String(localized: "When you let go", comment: "Gestures, on a ring that shows: this place runs once, when you let go on it")
+            : title
+    }
+
+    func symbol(onRing: Bool) -> String { onRing && self == .chain ? "1.circle" : symbol }
+
+    func help(onRing: Bool) -> String {
+        onRing && self == .chain
+            ? String(localized: "Runs once, when you let go with this place lit.", comment: "Gestures, on a ring that shows: help for “When you let go”")
+            : help
+    }
 }
 
 /// One direction: what it does (a picker) and how it fires; or More, which opens its ring.
@@ -774,12 +790,12 @@ private struct GestureDirectionCell: View {
                 Menu {
                     Picker(selection: Binding(get: { s.mode }, set: { step?.mode = $0 })) {
                         ForEach(modes, id: \.self) { m in
-                            Label(m.title, systemImage: m.symbol).tag(m)
+                            Label(m.title(onRing: ringOnly), systemImage: m.symbol(onRing: ringOnly)).tag(m)
                         }
                     } label: { EmptyView() }
                     .pickerStyle(.inline)
                 } label: {
-                    Label(s.mode.title, systemImage: s.mode.symbol)
+                    Label(s.mode.title(onRing: ringOnly), systemImage: s.mode.symbol(onRing: ringOnly))
                         .font(.system(size: 10.5, weight: .medium))
                         .foregroundStyle(s.mode == .once ? AnyShapeStyle(.secondary) : AnyShapeStyle(Theme.buttons))
                 }
@@ -787,7 +803,7 @@ private struct GestureDirectionCell: View {
                 .buttonStyle(.borderless)
                 .menuIndicator(.hidden)
                 .fixedSize()
-                .help(s.mode.help)
+                .help(s.mode.help(onRing: ringOnly))
             }
     }
 }

@@ -2,9 +2,9 @@
 
 /* ---- AppDelegate.swift ---- */
 
-"Show Glideball" = "Glideを表示";
+"Show Glideball" = "Glideballを表示";
 
-"Pause / Resume Glideball" = "Glideを一時停止/再開";
+"Pause / Resume Glideball" = "Glideballを一時停止/再開";
 
 /* Mode that slows the pointer for fine work */
 "Precision" = "精密モード";
@@ -13,11 +13,11 @@
 
 "Send Feedback…" = "フィードバックを送信…";
 
-"Quit Glideball" = "Glideを終了";
+"Quit Glideball" = "Glideballを終了";
 
-"About Glideball" = "Glideについて";
+"About Glideball" = "Glideballについて";
 
-"Hide Glideball" = "Glideを非表示";
+"Hide Glideball" = "Glideballを非表示";
 
 "Hide Others" = "ほかを非表示";
 
@@ -49,7 +49,7 @@
 
 "Show Welcome Tour…" = "ようこそツアーを表示…";
 
-"Glideball Website" = "GlideのWebサイト";
+"Glideball Website" = "GlideballのWebサイト";
 
 /* ---- AppModel.swift ---- */
 
@@ -77,21 +77,21 @@
 "Back" = "戻る";
 
 /* Exported file name; %@ is the date */
-"Glideball Settings – %@" = "Glideの設定 – %@";
+"Glideball Settings – %@" = "Glideballの設定 – %@";
 
-"Export Glideball Settings" = "Glideの設定を書き出す";
+"Export Glideball Settings" = "Glideballの設定を書き出す";
 
-"Save your Glideball setup to a file you can back up or open on another Mac." = "Glideの設定をファイルに保存して、バックアップしたりほかのMacで開いたりできます。";
+"Save your Glideball setup to a file you can back up or open on another Mac." = "Glideballの設定をファイルに保存して、バックアップしたりほかのMacで開いたりできます。";
 
 "Saved “%@”" = "「%@」を保存しました";
 
 "Couldn’t export: %@" = "書き出せませんでした：%@";
 
-"Import Glideball Settings" = "Glideの設定を読み込む";
+"Import Glideball Settings" = "Glideballの設定を読み込む";
 
-"Choose a Glideball settings file. You’ll see what’s in it before anything changes." = "Glideの設定ファイルを選択してください。何かが変更される前に内容を確認できます。";
+"Choose a Glideball settings file. You’ll see what’s in it before anything changes." = "Glideballの設定ファイルを選択してください。何かが変更される前に内容を確認できます。";
 
-"That doesn’t look like a Glideball settings file." = "Glideの設定ファイルではないようです。";
+"That doesn’t look like a Glideball settings file." = "Glideballの設定ファイルではないようです。";
 
 "Imported “%@”" = "「%@」を読み込みました";
 
@@ -183,12 +183,12 @@
 /* Button action that isn't one of the presets */
 "Custom" = "カスタム";
 
-"Pause / resume Glideball" = "Glideを一時停止/再開";
+"Pause / resume Glideball" = "Glideballを一時停止/再開";
 
 /* Mode: rolling the ball scrolls instead of moving the pointer */
 "Scroll with ball" = "ボールでスクロール";
 
-"Your escape hatch: Glideball steps aside until you press it again." = "非常口：もう一度押すまでGlideが身を引きます。";
+"Your escape hatch: Glideball steps aside until you press it again." = "非常口：もう一度押すまでGlideballが身を引きます。";
 
 "Slows the pointer for fine work until you press it again." = "もう一度押すまで、ポインタを減速して細かい作業をしやすくします。";
 
@@ -232,7 +232,7 @@
 
 "Your clickiest day yet" = "過去最多クリックの日";
 
-"Glideball is all yours" = "Glideがすっかりあなた仕様に";
+"Glideball is all yours" = "Glideballがすっかりあなた仕様に";
 
 /* %@ is an amount: 1,234 or 12.3 m */
 "%@ today" = "今日は%@";
@@ -500,7 +500,7 @@
 
 "Couldn’t read settings from iCloud Drive: %@" = "iCloud Driveから設定を読み込めませんでした：%@";
 
-"Settings in iCloud Drive were saved by a newer version of Glideball. Update Glideball on this Mac to keep syncing." = "iCloud Driveの設定は新しいバージョンのGlideで保存されています。同期を続けるには、このMacのGlideをアップデートしてください。";
+"Settings in iCloud Drive were saved by a newer version of Glideball. Update Glideball on this Mac to keep syncing." = "iCloud Driveの設定は新しいバージョンのGlideballで保存されています。同期を続けるには、このMacのGlideballをアップデートしてください。";
 
 /* ---- UpdateChecker.swift ---- */
 
@@ -510,17 +510,17 @@
 
 "Couldn’t unpack the update." = "アップデートを展開できませんでした。";
 
-"The download isn’t the expected Glideball %@." = "ダウンロードしたファイルは想定されたGlide %@ではありません。";
+"The download isn’t the expected Glideball %@." = "ダウンロードしたファイルは想定されたGlideball %@ではありません。";
 
-"Couldn’t read Glideball’s own signature to compare against." = "比較に使うGlide自身の署名を読み取れませんでした。";
+"Couldn’t read Glideball’s own signature to compare against." = "比較に使うGlideball自身の署名を読み取れませんでした。";
 
-"The update isn’t signed by Glideball’s developer, so it wasn’t installed." = "このアップデートはGlideの開発者によって署名されていないため、インストールされませんでした。";
+"The update isn’t signed by Glideball’s developer, so it wasn’t installed." = "このアップデートはGlideballの開発者によって署名されていないため、インストールされませんでした。";
 
 "Couldn’t start the installer: %@" = "インストーラを起動できませんでした：%@";
 
 /* ---- AppsView.swift ---- */
 
-"When one of these apps is in front, Glideball switches to its setup. Anything left on “Main setup” follows your main settings." = "これらのAppのいずれかが最前面にあると、Glideはその設定に切り替えます。「メイン設定」のままの項目はメインの設定に従います。";
+"When one of these apps is in front, Glideball switches to its setup. Anything left on “Main setup” follows your main settings." = "これらのAppのいずれかが最前面にあると、Glideballはその設定に切り替えます。「メイン設定」のままの項目はメインの設定に従います。";
 
 "Give an app its own setup" = "Appに専用の設定を";
 
@@ -538,9 +538,9 @@
 /* Open panel button: add the chosen app */
 "Add" = "追加";
 
-"Glideball couldn’t identify that app." = "GlideはそのAppを識別できませんでした。";
+"Glideball couldn’t identify that app." = "GlideballはそのAppを識別できませんでした。";
 
-"Glideball itself always uses your main setup." = "Glide自身では常にメイン設定が使われます。";
+"Glideball itself always uses your main setup." = "Glideball自身では常にメイン設定が使われます。";
 
 /* Tab name */
 "Pointer" = "ポインタ";
@@ -609,7 +609,7 @@
 /* ---- BackupView.swift ---- */
 
 /* Glideball 2.6 (9) · …end in .glide-settings… */
-"Glideball %@ (%@) · Settings files end in .%@ and open in Glideball with a double-click." = "Glideball %@（%@）· 設定ファイルの拡張子は.%@で、ダブルクリックするとGlideで開きます。";
+"Glideball %@ (%@) · Settings files end in .%@ and open in Glideball with a double-click." = "Glideball %@（%@）· 設定ファイルの拡張子は.%@で、ダブルクリックするとGlideballで開きます。";
 
 "Export" = "書き出す";
 
@@ -617,7 +617,7 @@
 
 "Save to File…" = "ファイルに保存…";
 
-"Glideball Settings" = "Glideの設定";
+"Glideball Settings" = "Glideballの設定";
 
 "Share…" = "共有…";
 
@@ -643,7 +643,7 @@
 /* The Mac's name */
 "Exported from %@" = "%@から書き出し";
 
-"Glideball settings file" = "Glide設定ファイル";
+"Glideball settings file" = "Glideball設定ファイル";
 
 /* Tab name: export, import and iCloud sync */
 "Sync" = "同期";
@@ -683,7 +683,7 @@
 
 "Left click · locked" = "左クリック · 固定";
 
-"Your primary click stays a left click, so Glideball can never lock you out." = "メインのクリックは左クリックのままなので、Glideで操作不能になることはありません。";
+"Your primary click stays a left click, so Glideball can never lock you out." = "メインのクリックは左クリックのままなので、Glideballで操作不能になることはありません。";
 
 
 
@@ -707,7 +707,7 @@
 
 "Make it yours" = "自分仕様にしよう";
 
-"You’ve made Glideball yours." = "Glideをすっかり自分仕様にしました。";
+"You’ve made Glideball yours." = "Glideballをすっかり自分仕様にしました。";
 
 "Speed, scrolling, buttons, a combo and an app setup are all done. Change anything, any time." = "速度、スクロール、ボタン、コンボ、App別設定がすべて完了しました。いつでも変更できます。";
 
@@ -800,7 +800,7 @@
 
 "What went wrong? e.g. “Scrolling jumps in Safari”" = "何が問題でしたか？ 例：「Safariでスクロールが飛ぶ」";
 
-"What would make Glideball better?" = "Glideをもっと良くするには？";
+"What would make Glideball better?" = "Glideballをもっと良くするには？";
 
 "What would you like to know?" = "何を知りたいですか？";
 
@@ -877,7 +877,7 @@
 
 "Attachments" = "添付ファイル";
 
-"Include my Glideball settings" = "Glideの設定を含める";
+"Include my Glideball settings" = "Glideballの設定を含める";
 
 "Your pointer, scrolling and button setup (settings.json) so I can reproduce it. Nothing personal is in it." = "ポインタ、スクロール、ボタンの設定（settings.json）。再現に使います。個人情報は含まれません。";
 
@@ -955,7 +955,7 @@
 
 /* ---- LaunchViews.swift ---- */
 
-"Glideball is starting" = "Glideを起動中";
+"Glideball is starting" = "Glideballを起動中";
 
 "Click or press Escape to skip" = "クリックまたはEscキーでスキップ";
 
@@ -973,7 +973,7 @@
 
 "Celebrations" = "お祝い";
 
-"Closing this window keeps Glideball running. Click Glideball in the Dock to bring it back, or press ⌘Q to quit. Your trackball then goes back to normal." = "このウインドウを閉じてもGlideは動作し続けます。DockのGlideをクリックすると戻れます。⌘Qで終了すると、トラックボールは通常の動作に戻ります。";
+"Closing this window keeps Glideball running. Click Glideball in the Dock to bring it back, or press ⌘Q to quit. Your trackball then goes back to normal." = "このウインドウを閉じてもGlideballは動作し続けます。DockのGlideballをクリックすると戻れます。⌘Qで終了すると、トラックボールは通常の動作に戻ります。";
 
 "Waiting for permissions…" = "許可を待っています…";
 
@@ -1049,15 +1049,15 @@
 /* Tab name */
 "Apps" = "App";
 
-"A Precision button is slowing the cursor. Press it again (or pause Glideball) to stop" = "精密モードのボタンでカーソルを減速中。もう一度押すか、Glideを一時停止すると解除されます";
+"A Precision button is slowing the cursor. Press it again (or pause Glideball) to stop" = "精密モードのボタンでカーソルを減速中。もう一度押すか、Glideballを一時停止すると解除されます";
 
 "The left button is held by Drag lock. Click, or press the Drag lock button again, to let go" = "左ボタンがドラッグロックで押されたままです。クリックするか、ドラッグロックのボタンをもう一度押すと解除されます";
 
 "Ball scroll" = "ボールスクロール";
 
-"Pause or resume Glideball (also %@ from anywhere)" = "Glideを一時停止または再開（どこからでも%@で可能）";
+"Pause or resume Glideball (also %@ from anywhere)" = "Glideballを一時停止または再開（どこからでも%@で可能）";
 
-"Pause or resume Glideball" = "Glideを一時停止または再開";
+"Pause or resume Glideball" = "Glideballを一時停止または再開";
 
 /* Status pill */
 "Needs permission" = "許可が必要";
@@ -1078,11 +1078,11 @@
 
 "Previewing %@’s setup while you edit it. Other apps use your main setup." = "編集中は%@の設定をプレビューしています。ほかのAppではメイン設定が使われます。";
 
-"%@ is in front, so Glideball is using its setup. Click to edit it." = "%@が最前面にあるため、Glideはその設定を使用しています。クリックして編集できます。";
+"%@ is in front, so Glideball is using its setup. Click to edit it." = "%@が最前面にあるため、Glideballはその設定を使用しています。クリックして編集できます。";
 
 "Two quick permissions" = "2つの簡単な許可";
 
-"Glideball needs these to read your trackball and adjust its buttons and scrolling. Until both are on, your trackball works normally and Glideball stays out of the way." = "Glideがトラックボールを読み取り、ボタンとスクロールを調整するにはこれらが必要です。両方がオンになるまで、トラックボールは通常どおり動作し、Glideは何もしません。";
+"Glideball needs these to read your trackball and adjust its buttons and scrolling. Until both are on, your trackball works normally and Glideball stays out of the way." = "Glideballがトラックボールを読み取り、ボタンとスクロールを調整するにはこれらが必要です。両方がオンになるまで、トラックボールは通常どおり動作し、Glideballは何もしません。";
 
 "Accessibility: on" = "アクセシビリティ：オン";
 
@@ -1149,7 +1149,6 @@
 
 "Slippery" = "つるつる";
 
-"Off = plain steps, exactly like a basic mouse" = "オフ = 一般的なマウスと同じ段階的なスクロール";
 
 "Smooth scrolling" = "スムーズスクロール";
 
@@ -1185,7 +1184,6 @@
 "Short" = "短い";
 
 /* Seconds, e.g. “1.5 s” */
-"%@ s" = "%@秒";
 
 "Direction" = "方向";
 
@@ -1228,7 +1226,7 @@
 "Click, then press a new shortcut" = "クリックして新しいショートカットを押してください";
 
 /* Use the names System Settings shows in this language */
-"macOS uses %@ for one of its own shortcuts (System Settings › Keyboard › Keyboard Shortcuts), so it may never reach Glideball." = "macOSは%@を独自のショートカットに使っているため（システム設定 › キーボード › キーボードショートカット）、Glideに届かない可能性があります。";
+"macOS uses %@ for one of its own shortcuts (System Settings › Keyboard › Keyboard Shortcuts), so it may never reach Glideball." = "macOSは%@を独自のショートカットに使っているため（システム設定 › キーボード › キーボードショートカット）、Glideballに届かない可能性があります。";
 
 /* ---- WelcomeTourView.swift ---- */
 
@@ -1243,31 +1241,31 @@
 
 "Skip for now" = "今はスキップ";
 
-"Glideball stays out of the way until both permissions are on" = "両方の許可がオンになるまで、Glideは何もしません";
+"Glideball stays out of the way until both permissions are on" = "両方の許可がオンになるまで、Glideballは何もしません";
 
 "Step %lld of %lld" = "ステップ%lld/%lld";
 
 "Get Started" = "はじめる";
 
-"Start Using Glideball" = "Glideを使い始める";
+"Start Using Glideball" = "Glideballを使い始める";
 
 "Continue" = "続ける";
 
 "Welcome to Glideball" = "Glideballへようこそ";
 
-"Glideball needs these to read your trackball and change what it does. Until both are on, your trackball works normally and Glideball stays out of the way." = "Glideがトラックボールを読み取り、その動作を変更するにはこれらが必要です。両方がオンになるまで、トラックボールは通常どおり動作し、Glideは何もしません。";
+"Glideball needs these to read your trackball and change what it does. Until both are on, your trackball works normally and Glideball stays out of the way." = "Glideballがトラックボールを読み取り、その動作を変更するにはこれらが必要です。両方がオンになるまで、トラックボールは通常どおり動作し、Glideballは何もしません。";
 
 "Accessibility" = "アクセシビリティ";
 
-"Lets Glideball change what your buttons and scroll ring do." = "Glideがボタンとスクロールリングの動作を変更できるようにします。";
+"Lets Glideball change what your buttons and scroll ring do." = "Glideballがボタンとスクロールリングの動作を変更できるようにします。";
 
 "Input Monitoring" = "入力監視";
 
-"Lets Glideball tell your trackball apart from your other mice and trackpad." = "Glideがトラックボールをほかのマウスやトラックパッドと区別できるようにします。";
+"Lets Glideball tell your trackball apart from your other mice and trackpad." = "Glideballがトラックボールをほかのマウスやトラックパッドと区別できるようにします。";
 
-"All set. Glideball can see your trackball." = "準備完了。Glideがトラックボールを認識しています。";
+"All set. Glideball can see your trackball." = "準備完了。Glideballがトラックボールを認識しています。";
 
-"Switch Glideball on in each list in System Settings, then come back. The checkmarks update by themselves." = "「システム設定」の各リストでGlideをオンにして、戻ってきてください。チェックマークは自動的に更新されます。";
+"Switch Glideball on in each list in System Settings, then come back. The checkmarks update by themselves." = "「システム設定」の各リストでGlideballをオンにして、戻ってきてください。チェックマークは自動的に更新されます。";
 
 "Allow…" = "許可…";
 
@@ -1283,7 +1281,7 @@
 
 "Not pressed yet" = "まだ押されていません";
 
-"Glideball can't see your buttons until both permissions are on. You can come back to this tour from Help." = "両方の許可がオンになるまで、Glideはボタンを認識できません。このツアーには「ヘルプ」からいつでも戻れます。";
+"Glideball can't see your buttons until both permissions are on. You can come back to this tour from Help." = "両方の許可がオンになるまで、Glideballはボタンを認識できません。このツアーには「ヘルプ」からいつでも戻れます。";
 
 "Plug in your Expert Mouse to try this." = "これを試すにはExpert Mouseを接続してください。";
 
@@ -1291,11 +1289,11 @@
 
 "%lld of 4 found. Shortcuts are paused while you try them, so nothing happens by surprise." = "4個中%lld個が見つかりました。試している間はショートカットが一時停止するので、思わぬ動作は起きません。";
 
-"How far the cursor travels when you roll the ball. macOS stops at its own setting; Glideball goes past it." = "ボールを転がしたときにカーソルが動く距離です。macOSには上限がありますが、Glideはそれを超えられます。";
+"How far the cursor travels when you roll the ball. macOS stops at its own setting; Glideball goes past it." = "ボールを転がしたときにカーソルが動く距離です。macOSには上限がありますが、Glideballはそれを超えられます。";
 
 "Fine-tune both later in the Pointer and Scrolling tabs." = "どちらもあとで「ポインタ」と「スクロール」タブで細かく調整できます。";
 
-"Glideball is paused" = "Glideは一時停止中です";
+"Glideball is paused" = "Glideballは一時停止中です";
 
 "Turn On" = "オンにする";
 
@@ -1313,7 +1311,7 @@
 "Before import" = "読み込み前";
 "Before restore" = "復元前";
 "Couldn’t back up: %@" = "バックアップできませんでした：%@";
-"Every day of the last two weeks, then one a month for a year. Each backup is about a kilobyte, and only made when something changed." = "直近2週間は毎日、その後は1年間月に1つずつ保存します。各バックアップは約1KBで、変更があったときだけ作成されます。";
+"Every day of the last two weeks, then one a month for a year. Each backup is about two kilobytes, and only made when something changed." = "直近2週間は毎日、その後は1年間月に1つずつ保存します。各バックアップは約2KBで、変更があったときだけ作成されます。";
 "Monthly" = "月ごと";
 "Off · %@ · %@" = "オフ · %@ · %@";
 "On, nothing backed up yet" = "オン、まだバックアップはありません";
@@ -1554,32 +1552,23 @@
 "A new look" = "新しいデザイン";
 "A ruler to try scrolling on" = "スクロールを試すための目盛り";
 "Closing the window keeps Glideball running" = "ウインドウを閉じてもGlideballは動き続けます";
-"Crash reports, only if you want" = "クラッシュレポートは希望する場合のみ";
 "Every version, on the Glideball website" = "すべてのバージョンをGlideballのWebサイトで";
 "For your Kensington trackball" = "Kensingtonトラックボールのために";
 "Full changelog" = "変更履歴をすべて見る";
 "Give it a flick over the ruler and watch how far it glides." = "目盛りの上でリングを勢いよく回して、どこまで滑るか見てみましょう。";
-"Glideball › Settings (⌘,) has everything that used to sit at the bottom of Overview, plus a new set of soft sounds you can turn off with one switch." = "Glideball › 設定（⌘,）に、以前「概要」の下にあったものがすべて入りました。新しい控えめなサウンドも、スイッチひとつでオフにできます。";
-"Here’s what changed since 2.9.1. Most of it is how Glideball looks and sounds; your settings are all still here." = "2.9.1からの変更点です。ほとんどはGlideballの見た目と音の変更で、設定はすべてそのまま残っています。";
 "How Glideball uses these, on the Glideball website" = "Glideballがこれらを使う理由（GlideballのWebサイト）";
 "It works. %lld of 4 found." = "動作しています。4つ中%lld個が見つかりました。";
 "Let’s set up your trackball. It takes about a minute." = "トラックボールを設定しましょう。1分ほどで終わります。";
 "Open Settings › %@" = "設定 › %@ を開く";
 "Open it again from the Dock or the menu bar." = "Dockかメニューバーからもう一度開けます。";
 "Pause any time with %@" = "%@ でいつでも一時停止";
-"Pausing puts your speed back" = "一時停止で速度が元に戻ります";
 "Pick a pointer speed" = "ポインタの速度を選ぶ";
 "Press Return to go on, or use the arrow keys." = "Returnキーで次へ。矢印キーも使えます。";
-"Raycast and scripts" = "Raycastとスクリプト";
 "Roll the ball after each one to feel the difference." = "それぞれ選んだらボールを転がして、違いを確かめましょう。";
-"Settings get their own window" = "設定が専用のウインドウになりました";
 "Show Me" = "表示";
 "Skip Tour" = "ツアーをスキップ";
 "Spin the scroll ring" = "スクロールリングを回す";
-"There’s a sidebar now, with your trackball at the top. Roll the ball, turn the ring or press a button and it moves with you. Glideball has a new icon too." = "サイドバーができて、いちばん上にトラックボールが表示されます。ボールを転がしたり、リングを回したり、ボタンを押したりすると一緒に動きます。アイコンも新しくなりました。";
-"Turn on Allow Raycast and scripts and you can pause Glideball, switch Precision or change the scroll mode from Raycast or a glideball:// link." = "「Raycastとスクリプトを許可」をオンにすると、Raycastやglideball://リンクからGlideballの一時停止、精密モードの切り替え、スクロールモードの変更ができます。";
 "What’s new in Glideball %@" = "Glideball %@ の新機能";
-"When you pause or quit Glideball, your trackball goes back to exactly the tracking speed in System Settings, so it always feels the same." = "Glideballを一時停止または終了すると、トラックボールはシステム設定の軌跡の速さにぴったり戻るので、いつも同じ感覚で使えます。";
 "Your trackball goes straight back to plain macOS. Press it again to resume." = "トラックボールはすぐに通常のmacOSの動作に戻ります。もう一度押すと再開します。";
 "You’re all set" = "準備ができました";
 /* Stage 2: the Settings window, the sheets, sounds and the app icon */
@@ -1988,9 +1977,7 @@
 "Battery %@" = "バッテリー %@";
 "Bluetooth" = "Bluetooth";
 "Connect another display to set a speed for each." = "ディスプレイをもう1台つなぐと、それぞれに速度を設定できます。";
-"Gesture" = "ジェスチャ";
 "Hold and roll" = "押したまま転がす";
-"Hold the button and roll the ball: a different action each way." = "ボタンを押したままボールを転がすと、方向ごとに別の操作をします。";
 "Hold this button on your trackball and roll." = "トラックボールのこのボタンを押したまま転がしてください。";
 "Hold top right and roll: sideways switches Spaces, up opens Mission Control, down shows the app’s windows. Hold top left and roll for volume and tracks. A quick press still does what it did." = "右上を押したまま転がす：左右で操作スペースを切り替え、上で Mission Control、下でAppのウインドウを表示。左上を押したまま転がすと音量と曲送り。素早く押すと今までどおりの操作です。";
 "Main display" = "メインディスプレイ";
@@ -2169,7 +2156,7 @@
 "Button preset: %@" = "ボタンプリセット：%@";
 "Button presets" = "ボタンプリセット";
 "Buttons and combos" = "ボタンとコンボ";
-"Buttons set to Gesture: hold and roll the ball to do things." = "ジェスチャに設定したボタン：長押ししてボールを転がすと操作できます。";
+"Buttons set to Gestures: hold and roll the ball to do things." = "ジェスチャに設定したボタン：長押ししてボールを転がすと操作できます。";
 "Changelog" = "変更履歴";
 "Choose whether Glideball sends crash reports, and a few anonymous stats." = "Glideballがクラッシュレポートと匿名の統計を送信するかどうかを選びます。";
 "Choose which things make a sound: pausing, modes, buttons, milestones." = "音を鳴らす項目を選びます：一時停止、モード、ボタン、マイルストーン。";
@@ -2430,16 +2417,13 @@
 "Fires each time you roll this way, even several times in one hold, mixed with the other directions." = "この方向に転がすたびに実行されます。1回押している間に何度でも、ほかの方向と組み合わせても実行できます。";
 "Fires once per hold, however far you roll." = "どれだけ転がしても、押すごとに1回だけ実行されます。";
 "Gesture distance" = "ジェスチャの距離";
-"Hold the buttons together and roll the ball: a different action each way." = "ボタンを同時に押したままボールを転がすと、方向ごとに別の操作をします。";
-"Hold these buttons together and roll the ball. Each way does something the moment you roll a few millimeters, as many times as you like in one hold; a quick press does the tap." = "これらのボタンを同時に押したままボールを転がします。数ミリ転がした瞬間にその方向の操作が実行され、1回押している間に何度でも使えます。素早く押すとタップの操作になります。";
 "Hold these buttons together on your trackball and roll." = "トラックボールのこれらのボタンを同時に押したまま転がしてください。";
-"Hold this button and roll the ball. Each way does something the moment you roll a few millimeters, as many times as you like in one hold; a quick press does the tap." = "このボタンを押したままボールを転がします。数ミリ転がした瞬間にその方向の操作が実行され、1回押している間に何度でも使えます。素早く押すとタップの操作になります。";
 "How far you roll before a direction fires. Short suits small, quick rolls; Long ignores more by accident." = "方向が実行されるまでに転がす距離です。「短い」は小さく素早い動きに、「長い」は意図しない動きを無視しやすくなります。";
 "How far you roll before a direction fires: about 2, 3 or 4.5 mm. A gesture can have its own." = "方向が実行されるまでに転がす距離です（約2、3、4.5 mm）。ジェスチャごとに設定することもできます。";
 "Includes your primary click, so this combo does the gesture’s tap instead of a gesture." = "メインのクリックを含むため、このコンボはジェスチャではなくジェスチャのタップの操作を実行します。";
 "Keeps going for as long as you keep rolling." = "転がし続けている間、続けて実行されます。";
-"Like Other Gestures" = "ほかのジェスチャと同じ";
-"Like Other Gestures (%@)" = "ほかのジェスチャと同じ（%@）";
+"Like other gestures" = "ほかのジェスチャと同じ";
+"Like other gestures (%@)" = "ほかのジェスチャと同じ（%@）";
 "Steady hands" = "手の震えに配慮";
 "What fired in this hold" = "この押下で実行された操作";
 
@@ -2507,12 +2491,12 @@
 "Gesture buttons and the gesture settings" = "ジェスチャーボタンとジェスチャー設定";
 "How it moves" = "動きの感覚";
 "Includes or leaves out this part" = "この項目を含めるか外すかを切り替えます";
-"It isn’t synced, backed up, or sent with stats or crash reports. Change it any time in Settings › General." = "同期やバックアップはされず、統計やクラッシュレポートと一緒に送られることもありません。設定 › 一般でいつでも変更できます。";
+"It isn’t synced, backed up, or sent with stats or crash reports. Change it any time in Settings › Sharing." = "同期やバックアップはされず、統計やクラッシュレポートと一緒に送られることもありません。設定 › 共有でいつでも変更できます。";
 "Left out" = "除外";
 "Links and files you share don’t say who they’re from." = "共有するリンクやファイルには送信者が表示されません。";
 "Look and sound" = "見た目とサウンド";
 "Main speed" = "メインの速度";
-"No name goes with it. You can add one in Settings › General." = "名前は付きません。設定 › 一般で追加できます。";
+"No name goes with it. You can add one in Settings › Sharing." = "名前は付きません。設定 › 共有で追加できます。";
 "Nothing ticked would change anything." = "チェックした項目では何も変わりません。";
 "Nothing yet. Tick what you want to send." = "まだ何もありません。送りたいものにチェックを入れてください。";
 "On shared links and files" = "共有するリンクとファイルに入れる";
@@ -2540,7 +2524,7 @@
 "What should Glideball call you?" = "Glideballで使う名前は?";
 "Whoever opens a link or file you share sees “From %@”." = "共有したリンクやファイルを開いた人には「送信者:%@」と表示されます。";
 "Whoever opens one sees “From %@”." = "開いた人には「送信者:%@」と表示されます。";
-"Your name, “%@”, goes with the link and file. You can change that in Settings › General." = "名前「%@」がリンクとファイルに付きます。設定 › 一般で変更できます。";
+"Your name, “%@”, goes with the link and file. You can change that in Settings › Sharing." = "名前「%@」がリンクとファイルに付きます。設定 › 共有で変更できます。";
 "an app" = "App";
 "name, link, file, from" = "名前, リンク, ファイル, 送信者";
 "name, picture, badge, recap" = "名前, 画像, バッジ, まとめ";
@@ -2597,7 +2581,6 @@
 "Under %@" = "%@未満";
 "Used at least once" = "1回以上使用";
 "Window layout" = "ウインドウのレイアウト";
-"You can let Glideball send me crash reports, and anonymous stats on which settings you use. It’s off unless you pick it. If you already said yes, the stats now cover more settings, and Settings › Privacy lists every one." = "Glideballからクラッシュレポートと、使っている設定の匿名の統計を送ってもらえます。選ぶまではオフです。すでに許可している場合、統計に含まれる設定が増えました。設定 › プライバシーにすべて表示されます。";
 
 /* Sidebar search button (beta 23) */
 "Search button in the sidebar" = "サイドバーの検索ボタン";
@@ -2618,17 +2601,10 @@
 "Eight: the diagonals too." = "8：斜めも使います。";
 "Four slots are the easiest to hit; eight adds the diagonals." = "4つが一番狙いやすく、8つにすると斜めが加わります。";
 "Four: up, right, down and left. Empty ones are skipped, so the rest get wider." = "4：上・右・下・左。空いているスロットは飛ばされ、残りが広くなります。";
-"Hold it and a ring of actions appears around the pointer. Roll toward one and let go; the scroll ring turns the volume meanwhile." = "押したままにすると、ポインタの周りにアクションのリングが現れます。どれかに向かって転がして離します。その間、スクロールリングで音量を調整できます。";
-"Hold it and a ring of actions appears around the pointer; roll toward one and let go." = "押したままにすると、ポインタの周りにアクションのリングが現れます。どれかに向かって転がして離します。";
-"Hold these buttons together and a ring of actions appears around the pointer. Roll toward one and let go to run it, or roll back to the middle to cancel. A quick press does the tap." = "これらのボタンを同時に押したままにすると、ポインタの周りにアクションのリングが現れます。どれかに向かって転がして離すと実行、中央に戻すとキャンセルです。素早く押すとタップの操作になります。";
-"Hold this button and a ring of actions appears around the pointer. Roll toward one and let go to run it, or roll back to the middle to cancel. A quick press does the tap." = "このボタンを押したままにすると、ポインタの周りにアクションのリングが現れます。どれかに向かって転がして離すと実行、中央に戻すとキャンセルです。素早く押すとタップの操作になります。";
-"Includes your primary click, so this combo does the Wheel’s tap instead of the Wheel." = "主クリックが含まれているため、このコンボはホイールではなくホイールのタップの操作になります。";
 "Left" = "左";
-"Make a button a Wheel" = "ボタンをホイールにする";
 "One action for each way you turn the ring, a step per click." = "リングを回す向きごとに1つのアクション、1クリックで1ステップです。";
 "Right" = "右";
 "Scroll ring while held" = "押している間のスクロールリング";
-"Slots" = "スロット";
 "The ring does nothing while you hold it." = "押している間、リングは何もしません。";
 "Turn the ring back to undo, forward to redo." = "リングを戻す方向に回すと取り消し、進める方向に回すとやり直しです。";
 "Turn the ring while you hold it to change the screen’s brightness." = "押したままリングを回すと、画面の明るさを変えられます。";
@@ -2641,14 +2617,11 @@
 "Up" = "上";
 "Up left" = "左上";
 "Up right" = "右上";
-"Wheel" = "ホイール";
 "Your own pair" = "自分で選んだペア";
 "Zoom" = "ズーム";
 "radial pie menu ring dial" = "radial pie 放射状 円形メニュー リング ダイヤル ホイール";
 "ring: %@" = "リング：%@";
 "ring: %@ / %@" = "リング：%@ / %@";
-"wheel, ring, radial menu, pie menu" = "ホイール, リング, 放射状メニュー, 円形メニュー, wheel, ring";
-"Wheel slots" = "ホイールのスロット";
 
 /* The Switcher */
 "Switcher" = "アプリスイッチャー";
@@ -2693,3 +2666,32 @@
 "The ring shows as soon as you hold the button. Roll toward an action and let go to run it." = "ボタンを押すとすぐにリングが表示されます。アクションの方へ転がして離すと実行します。";
 "This is the ring More opens. Roll back through the middle to get to the first ring again; letting go in the middle cancels." = "これは「その他」で開くリングです。中央を通って戻ると最初のリングに戻り、中央で離すとキャンセルします。";
 "gestures, hold and roll, ring, wheel, radial menu, pie menu, more, show the ring, reverse" = "ジェスチャ, 押して転がす, リング, ホイール, ラジアルメニュー, パイメニュー, その他, リングを表示, 逆";
+
+/* What’s New 2.10: Gestures, the Switcher, search and sharing */
+"Hold a button set to Gestures and roll the ball, and each way does something. It can show a ring of actions around the pointer, and the scroll ring can turn the volume while you hold it." = "「ジェスチャ」に設定したボタンを押したままボールを転がすと、方向ごとに別の操作ができます。ポインタの周りに操作のリングを表示することもでき、押している間はスクロールリングで音量を変えられます。";
+"The Switcher" = "アプリスイッチャー";
+"It’s ⌘-Tab for your trackball. Hold a button set to Switcher, roll the ball or turn the ring to pick one of your open apps, and let go to switch to it." = "トラックボール用の⌘-Tabです。「アプリスイッチャー」に設定したボタンを押したまま、ボールを転がすかリングを回して開いているアプリを選び、離すとそのアプリに切り替わります。";
+"There’s a sidebar with your trackball at the top, moving with your hand. Settings have their own window (⌘,), and there’s a new icon and a set of soft sounds." = "サイドバーのいちばん上に、手の動きに合わせて動くトラックボールが表示されます。設定は専用のウインドウ（⌘,）になり、新しいアイコンと控えめなサウンドも加わりました。";
+"Search for anything" = "なんでも検索";
+"Press ⌘K, or click Search in the sidebar, to find any setting or do things like pause Glideball or try a pointer speed." = "⌘Kを押すか、サイドバーの「検索」をクリックすると、どの設定でも見つけられ、Glideballの一時停止やポインタ速度の試用といった操作もできます。";
+"Send your setup, or just part of it, as a link, a file or a picture, and whoever opens it sees what would change first. The Sync page can bring over your KensingtonWorks settings too." = "設定の全部または一部を、リンク、ファイル、画像で送れます。開いた人には、まず何が変わるかが表示されます。KensingtonWorksの設定も「同期」ページから取り込めます。";
+
+/* Search: Gestures settings */
+"shaky, tremor, wobble, dead zone, accidental, gestures" = "手ぶれ, 震え, ぐらつき, デッドゾーン, 誤操作, ジェスチャ";
+
+/* Scrolling: Smooth scrolling's hint follows the switch */
+"Each notch glides the page instead of jumping it" = "1ノッチごとにページがジャンプせず、なめらかに動きます";
+"Off: plain steps, exactly like a basic mouse" = "オフ：一般的なマウスと同じ段階的なスクロール";
+
+/* Gestures: a place on a showing ring runs when you let go */
+"When you let go" = "離したとき";
+"Runs once, when you let go with this place lit." = "この場所が光っているときに離すと、1回実行されます。";
+
+/* Buttons: the Switcher's distance */
+"How far you roll to move the Switcher one app: about 2, 3 or 4.5 mm." = "アプリスイッチャーで1つ隣のアプリに移るまでに転がす距離です：約2、3、4.5 mm。";
+
+/* Privacy: crash reports only, nothing sent yet */
+"Nothing yet. A crash report only goes out if Glideball crashes." = "まだ何も送信していません。クラッシュレポートはGlideballがクラッシュしたときだけ送信されます。";
+
+/* What’s New 2.10: the line under the title */
+"Here’s what changed since 2.9.1. Your settings are all still here." = "2.9.1からの変更点です。設定はすべてそのまま残っています。";

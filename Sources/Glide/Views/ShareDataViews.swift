@@ -241,7 +241,10 @@ struct ShareDataSettings: View {
             return String(localized: "This Mac last sent something \(relative).", comment: "Settings › Privacy; %@ is a relative time, like “2 hours ago”")
         }
         if share.installID != nil {
-            return String(localized: "Nothing yet. The first stats go out within a day, and crash reports only if Glideball crashes.", comment: "Settings › Privacy: sharing is on, nothing sent yet")
+            // Crash reports only: no stats are ever sent, so don't promise any.
+            return share.choice.sendsStats
+                ? String(localized: "Nothing yet. The first stats go out within a day, and crash reports only if Glideball crashes.", comment: "Settings › Privacy: sharing is on, nothing sent yet")
+                : String(localized: "Nothing yet. A crash report only goes out if Glideball crashes.", comment: "Settings › Privacy: crash reports only, nothing sent yet")
         }
         return String(localized: "Nothing has been sent from this Mac.", comment: "Settings › Privacy")
     }

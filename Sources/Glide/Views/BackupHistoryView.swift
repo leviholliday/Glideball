@@ -18,7 +18,7 @@ struct BackupHistorySection: View {
         let sections = sections
         VStack(alignment: .leading, spacing: Theme.Space.titleToGroup) {
             SectionTitle(title: "Backups",
-                         caption: "Every day of the last two weeks, then one a month for a year. Each backup is about a kilobyte, and only made when something changed.") {
+                         caption: "Every day of the last two weeks, then one a month for a year. Each backup is about two kilobytes, and only made when something changed.") {
                 Button("Show in Finder") { store.revealInFinder() }
                     .buttonStyle(.link)
                     .controlSize(.small)

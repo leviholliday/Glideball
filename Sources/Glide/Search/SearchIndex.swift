@@ -76,6 +76,7 @@ enum SearchIndex {
         case Findable.settingsMoved.id: return SettingsHintMemory.isDue()
         case Findable.installID.id, Findable.deleteMyData.id: return ShareData.shared.installID != nil
         case Findable.kensingtonWorks.id: return KensingtonWorksSource.found
+        case Findable.gestureDistance.id, Findable.steadyHands.id: return model.config.anyAction(\.holdsTheBall)
         default: return true
         }
     }
@@ -155,9 +156,9 @@ enum SearchIndex {
                 let on = c.state(target) == "on"
                 let gestures = c.id == "gestures"
                 out.append(PaletteItem(id: "cmd:" + c.id, group: .actions, title: c.title,
-                                       detail: gestures ? String(localized: "Buttons set to Gesture: hold and roll the ball to do things.", comment: "Search palette: the Gestures switch")
+                                       detail: gestures ? String(localized: "Buttons set to Gestures: hold and roll the ball to do things.", comment: "Search palette: the Gestures switch")
                                                         : String(localized: "Each display uses the speed you gave it.", comment: "Search palette: the per-display speed switch"),
-                                       keywords: gestures ? String(localized: "gesture, hold and roll, swipe", comment: "Search words for Gestures (comma-separated)")
+                                       keywords: gestures ? String(localized: "gesture, hold and roll, swipe", comment: "Search words for Gestures (comma-separated)") + ", " + Self.gesturesWords
                                                           : String(localized: "monitor, display, screen speed", comment: "Search words for per-display speed (comma-separated)"),
                                        symbol: gestures ? "dot.arrowtriangles.up.right.down.left.circle" : "display.2",
                                        part: gestures ? .clicks : .ball,
@@ -441,10 +442,16 @@ enum SearchIndex {
         }
         for chord in model.config.chords {
             let names = ListFormatter.localizedString(byJoining: chord.buttons.map(AppModel.buttonName))
+            // A combo set to Gestures or the Switcher is found by the same words as a button.
+            var extra = ""
+            if case .gesture = chord.action { extra = ", " + Self.gesturesWords }
+            if case .switcher = chord.action {
+                extra = ", " + String(localized: "switcher, switch apps, command tab, ⌘-Tab", comment: "Search words for a Switcher button (comma-separated)")
+            }
             out.append(PaletteItem(id: "combo:\(chord.id)", group: .buttons,
                                    title: String(localized: "\(names) together: \(chord.action.title)", comment: "Search palette: a combo; the first %@ is its buttons, the second what it does"),
                                    detail: String(localized: "A combo: press these buttons at the same time.", comment: "Search palette: a combo"),
-                                   keywords: String(localized: "combo, chord, together", comment: "Search words for a combo (comma-separated)") + ", " + chord.action.title,
+                                   keywords: String(localized: "combo, chord, together", comment: "Search words for a combo (comma-separated)") + ", " + chord.action.title + extra,
                                    symbol: "circle.grid.2x1.fill", part: .clicks, trailing: GlideTab.buttons.title, findable: Findable.combos.id) {
                 PaletteRouter.go(.combos)
             })

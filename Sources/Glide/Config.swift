@@ -1103,7 +1103,7 @@ struct SettingsSummaryRow: Identifiable, Equatable {
 
 extension GlideConfig {
     var summary: [SettingsSummaryRow] {
-        let remapped = buttons.values.filter { $0 != .system }.count
+        let remapped = buttons.filter { !$0.value.isNormal(for: $0.key) }.count   // a button set to what it does anyway isn’t remapped
         let scroll: String = switch scrollMode {
         case .native: String(localized: "Native · speed \(nativeScrollSpeed.twoDigits)")
         case .flywheel: String(localized: "Flywheel · \(Int(flyDistance)) pt, \(flyAcceleration.wholePercent) power")

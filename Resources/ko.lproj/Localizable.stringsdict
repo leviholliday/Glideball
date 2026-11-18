@@ -111,7 +111,7 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>lld</string>
 			<key>other</key>
-			<string>이제 Glide가 기록을 보관해요: 이미 배지 %lld개 획득</string>
+			<string>이제 Glideball이 기록을 보관해요: 이미 배지 %lld개 획득</string>
 		</dict>
 	</dict>
 </dict>
