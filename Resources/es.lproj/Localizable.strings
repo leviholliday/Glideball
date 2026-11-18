@@ -2619,7 +2619,6 @@
 "Includes your primary click, so this combo does the Wheel’s tap instead of the Wheel." = "Incluye tu clic principal, así que esta combinación hace el toque de la Rueda en lugar de la Rueda.";
 "Left" = "Izquierda";
 "Make a button a Wheel" = "Convierte un botón en Rueda";
-"Make a button a Wheel and holding it brings up a ring of actions around the pointer. Roll toward one and let go to run it, and turn the scroll ring meanwhile for the volume (or zoom, tabs, undo…). It’s new, so let me know how it feels." = "Convierte un botón en Rueda y, al mantenerlo, aparece un anillo de acciones alrededor del puntero. Rueda hacia una y suelta para ejecutarla, y mientras tanto gira el anillo de desplazamiento para el volumen (o el zoom, las pestañas, deshacer…). Es nueva, así que cuéntame qué tal se siente.";
 "One action for each way you turn the ring, a step per click." = "Una acción para cada sentido en que giras el anillo, un paso por clic.";
 "Right" = "Derecha";
 "Scroll ring while held" = "Anillo de desplazamiento al mantener";
@@ -2627,7 +2626,6 @@
 "Search settings and actions (⌘K or ⌘F)" = "Buscar ajustes y acciones (⌘K o ⌘F)";
 "Show or hide the search button above the pages." = "Muestra u oculta el botón de búsqueda encima de las páginas.";
 "Slots" = "Casillas";
-"The Wheel" = "La Rueda";
 "The ring does nothing while you hold it." = "El anillo no hace nada mientras mantienes el botón.";
 "The sidebar shows only the pages. ⌘K and ⌘F still open search." = "La barra lateral solo muestra las páginas. ⌘K y ⌘F siguen abriendo la búsqueda.";
 "Turn the ring back to undo, forward to redo." = "Gira el anillo hacia atrás para deshacer y hacia delante para rehacer.";
@@ -2642,9 +2640,6 @@
 "Up left" = "Arriba izquierda";
 "Up right" = "Arriba derecha";
 "Wheel" = "Rueda";
-"Wheel buttons" = "Botones de Rueda";
-"Wheel ring jobs" = "Funciones del anillo en la Rueda";
-"Wheel slots" = "Casillas de la Rueda";
 "Your own pair" = "Tu propio par";
 "Zoom" = "Zoom";
 "radial pie menu ring dial" = "radial menú circular anillo dial rueda";
@@ -2652,3 +2647,4 @@
 "ring: %@ / %@" = "anillo: %@ / %@";
 "search, find, command k, sidebar, hide, button" = "buscar, encontrar, command k, barra lateral, ocultar, botón, search";
 "wheel, ring, radial menu, pie menu" = "rueda, anillo, menú radial, menú circular, wheel, ring";
+"Wheel slots" = "Casillas de la Rueda";

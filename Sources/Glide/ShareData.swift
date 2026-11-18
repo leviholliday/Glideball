@@ -197,9 +197,6 @@ final class ShareData {
         var gestureDistance: String
         var steadyHands: Bool
         var gestureActions: [String: Int]   // by kind, like `buttons`
-        var wheelButtons: Int               // buttons and combos that are a Wheel
-        var wheelActions: [String: Int]     // what their slots do, by kind only (never keys or apps)
-        var ringJobs: [String: Int]         // their ring jobs (volume, zoom…), how many of each
         var modesSetUp: [String: Bool]      // Precision, Scroll with ball, Drag lock on a button, combo or shortcut
         // The app
         var menuBarIcon: Bool
@@ -280,16 +277,6 @@ final class ShareData {
         for g in gestures {
             for step in [g.up, g.down, g.left, g.right].compactMap({ $0 }) { gestureActions[step.action.kind, default: 0] += 1 }
         }
-        // Wheels: how many, what kinds of action their slots hold, and which ring jobs. Never which keys or apps.
-        let wheels: [WheelMenu] = (Array(c.buttons.values) + c.chords.map(\.action)).compactMap {
-            if case .wheel(let w) = $0 { w } else { nil }
-        }
-        var wheelActions: [String: Int] = [:]
-        var ringJobs: [String: Int] = [:]
-        for w in wheels {
-            for (_, a) in w.filled { wheelActions[a.kind, default: 0] += 1 }
-            ringJobs[w.ring.rawValue, default: 0] += 1
-        }
         let app = ShareData.appInfo
         return Stats(
             installId: installID,
@@ -341,9 +328,6 @@ final class ShareData {
             gestureDistance: c.gestureDistance.rawValue,
             steadyHands: c.gestureSteadyHands,
             gestureActions: gestureActions.mapValues { min($0, 100) },
-            wheelButtons: min(wheels.count, 100),
-            wheelActions: wheelActions.mapValues { min($0, 100) },
-            ringJobs: ringJobs.mapValues { min($0, 100) },
             modesSetUp: Self.modesSetUp(c),
             menuBarIcon: model.menuBarIcon,
             menuBarStyle: model.menuBarIconStyle.rawValue,
@@ -785,15 +769,6 @@ struct SendPreview {
             (["gestureActions"], String(localized: "Gesture directions", comment: "Privacy preview: field"), { j in
                 let n = (j["gestureActions"] as? [String: Int] ?? [:]).values.reduce(0, +)
                 return String(localized: "\(n) set, by kind only, never the keys", comment: "Privacy preview: how many button actions; %lld is a number")
-            }),
-            (["wheelButtons"], String(localized: "Wheel buttons", comment: "Privacy preview: field, how many buttons and combos are a Wheel"), { count($0, "wheelButtons") }),
-            (["wheelActions"], String(localized: "Wheel slots", comment: "Privacy preview: field"), { j in
-                let n = (j["wheelActions"] as? [String: Int] ?? [:]).values.reduce(0, +)
-                return String(localized: "\(n) set, by kind only, never the keys", comment: "Privacy preview: how many button actions; %lld is a number")
-            }),
-            (["ringJobs"], String(localized: "Wheel ring jobs", comment: "Privacy preview: field, what turning the scroll ring does while a Wheel is held"), { j in
-                let jobs = (j["ringJobs"] as? [String: Int] ?? [:]).keys.sorted().compactMap { RingJob(rawValue: $0)?.title }
-                return jobs.isEmpty ? String(localized: "None") : jobs.formatted(.list(type: .and))
             }),
             (["gestureDistance"], String(localized: "Gesture distance"), { GestureDistance(rawValue: string($0, "gestureDistance"))?.title ?? string($0, "gestureDistance") }),
             (["steadyHands"], String(localized: "Steady hands"), { onOff($0, "steadyHands") }),

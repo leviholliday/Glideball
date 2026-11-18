@@ -2619,7 +2619,6 @@
 "Includes your primary click, so this combo does the Wheel’s tap instead of the Wheel." = "Inclui seu clique principal, então este combo faz o toque da Roda em vez da Roda.";
 "Left" = "Esquerda";
 "Make a button a Wheel" = "Transforme um botão em Roda";
-"Make a button a Wheel and holding it brings up a ring of actions around the pointer. Roll toward one and let go to run it, and turn the scroll ring meanwhile for the volume (or zoom, tabs, undo…). It’s new, so let me know how it feels." = "Transforme um botão em Roda e, ao segurá-lo, um anel de ações aparece em volta do ponteiro. Role até uma e solte para executá-la, e gire o anel de rolagem enquanto isso para o volume (ou zoom, abas, desfazer…). É novidade, então me conte o que achou.";
 "One action for each way you turn the ring, a step per click." = "Uma ação para cada sentido em que você gira o anel, um passo por clique.";
 "Right" = "Direita";
 "Scroll ring while held" = "Anel de rolagem ao segurar";
@@ -2627,7 +2626,6 @@
 "Search settings and actions (⌘K or ⌘F)" = "Buscar ajustes e ações (⌘K ou ⌘F)";
 "Show or hide the search button above the pages." = "Mostra ou oculta o botão de busca acima das páginas.";
 "Slots" = "Posições";
-"The Wheel" = "A Roda";
 "The ring does nothing while you hold it." = "O anel não faz nada enquanto você segura o botão.";
 "The sidebar shows only the pages. ⌘K and ⌘F still open search." = "A barra lateral mostra só as páginas. ⌘K e ⌘F continuam abrindo a busca.";
 "Turn the ring back to undo, forward to redo." = "Gire o anel para trás para desfazer e para a frente para refazer.";
@@ -2642,9 +2640,6 @@
 "Up left" = "Cima à esquerda";
 "Up right" = "Cima à direita";
 "Wheel" = "Roda";
-"Wheel buttons" = "Botões de Roda";
-"Wheel ring jobs" = "Funções do anel na Roda";
-"Wheel slots" = "Posições da Roda";
 "Your own pair" = "Seu próprio par";
 "Zoom" = "Zoom";
 "radial pie menu ring dial" = "radial menu circular anel dial roda";
@@ -2652,3 +2647,4 @@
 "ring: %@ / %@" = "anel: %@ / %@";
 "search, find, command k, sidebar, hide, button" = "buscar, procurar, command k, barra lateral, ocultar, botão, search";
 "wheel, ring, radial menu, pie menu" = "roda, anel, menu radial, menu circular, wheel, ring";
+"Wheel slots" = "Posições da Roda";

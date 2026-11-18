@@ -2619,7 +2619,6 @@
 "Includes your primary click, so this combo does the Wheel’s tap instead of the Wheel." = "기본 클릭이 포함되어 있어서 이 콤보는 휠 대신 휠의 탭 동작을 해요.";
 "Left" = "왼쪽";
 "Make a button a Wheel" = "버튼을 휠로 만들기";
-"Make a button a Wheel and holding it brings up a ring of actions around the pointer. Roll toward one and let go to run it, and turn the scroll ring meanwhile for the volume (or zoom, tabs, undo…). It’s new, so let me know how it feels." = "버튼을 휠로 만들면 누르고 있는 동안 포인터 주위에 동작 링이 나타나요. 원하는 쪽으로 굴리고 놓으면 실행되고, 그동안 스크롤 링을 돌리면 음량(또는 확대/축소, 탭, 실행 취소…)을 조절해요. 새 기능이니 써 보고 어떤지 알려 주세요.";
 "One action for each way you turn the ring, a step per click." = "링을 돌리는 방향마다 동작 하나, 한 칸에 한 단계씩.";
 "Right" = "오른쪽";
 "Scroll ring while held" = "누르고 있는 동안 스크롤 링";
@@ -2627,7 +2626,6 @@
 "Search settings and actions (⌘K or ⌘F)" = "설정 및 동작 검색(⌘K 또는 ⌘F)";
 "Show or hide the search button above the pages." = "페이지 위의 검색 버튼을 보이거나 숨겨요.";
 "Slots" = "칸";
-"The Wheel" = "휠";
 "The ring does nothing while you hold it." = "누르고 있는 동안 링은 아무것도 하지 않아요.";
 "The sidebar shows only the pages. ⌘K and ⌘F still open search." = "사이드바에는 페이지만 보여요. ⌘K와 ⌘F로 여전히 검색을 열 수 있어요.";
 "Turn the ring back to undo, forward to redo." = "링을 뒤로 돌리면 실행 취소, 앞으로 돌리면 실행 복귀예요.";
@@ -2642,9 +2640,6 @@
 "Up left" = "왼쪽 위";
 "Up right" = "오른쪽 위";
 "Wheel" = "휠";
-"Wheel buttons" = "휠 버튼";
-"Wheel ring jobs" = "휠의 링 역할";
-"Wheel slots" = "휠 칸";
 "Your own pair" = "직접 고른 쌍";
 "Zoom" = "확대/축소";
 "radial pie menu ring dial" = "radial pie 방사형 원형 메뉴 링 다이얼 휠";
@@ -2652,3 +2647,4 @@
 "ring: %@ / %@" = "링: %@ / %@";
 "search, find, command k, sidebar, hide, button" = "검색, 찾기, command k, 사이드바, 숨기기, 버튼, search";
 "wheel, ring, radial menu, pie menu" = "휠, 링, 방사형 메뉴, 원형 메뉴, wheel, ring";
+"Wheel slots" = "휠 칸";

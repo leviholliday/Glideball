@@ -2619,7 +2619,6 @@
 "Includes your primary click, so this combo does the Wheel’s tap instead of the Wheel." = "主クリックが含まれているため、このコンボはホイールではなくホイールのタップの操作になります。";
 "Left" = "左";
 "Make a button a Wheel" = "ボタンをホイールにする";
-"Make a button a Wheel and holding it brings up a ring of actions around the pointer. Roll toward one and let go to run it, and turn the scroll ring meanwhile for the volume (or zoom, tabs, undo…). It’s new, so let me know how it feels." = "ボタンをホイールにすると、押したままでポインタの周りにアクションのリングが現れます。どれかに向かって転がして離すと実行。その間にスクロールリングを回せば、音量（またはズーム、タブ、取り消し…）を操作できます。新機能なので、使い心地を教えてください。";
 "One action for each way you turn the ring, a step per click." = "リングを回す向きごとに1つのアクション、1クリックで1ステップです。";
 "Right" = "右";
 "Scroll ring while held" = "押している間のスクロールリング";
@@ -2627,7 +2626,6 @@
 "Search settings and actions (⌘K or ⌘F)" = "設定とアクションを検索（⌘K または ⌘F）";
 "Show or hide the search button above the pages." = "ページの上の検索ボタンを表示または非表示にします。";
 "Slots" = "スロット";
-"The Wheel" = "ホイール";
 "The ring does nothing while you hold it." = "押している間、リングは何もしません。";
 "The sidebar shows only the pages. ⌘K and ⌘F still open search." = "サイドバーにはページだけが表示されます。⌘K と ⌘F で引き続き検索を開けます。";
 "Turn the ring back to undo, forward to redo." = "リングを戻す方向に回すと取り消し、進める方向に回すとやり直しです。";
@@ -2642,9 +2640,6 @@
 "Up left" = "左上";
 "Up right" = "右上";
 "Wheel" = "ホイール";
-"Wheel buttons" = "ホイールボタン";
-"Wheel ring jobs" = "ホイールのリングの役割";
-"Wheel slots" = "ホイールのスロット";
 "Your own pair" = "自分で選んだペア";
 "Zoom" = "ズーム";
 "radial pie menu ring dial" = "radial pie 放射状 円形メニュー リング ダイヤル ホイール";
@@ -2652,3 +2647,4 @@
 "ring: %@ / %@" = "リング：%@ / %@";
 "search, find, command k, sidebar, hide, button" = "検索, 探す, command k, サイドバー, 非表示, ボタン, search";
 "wheel, ring, radial menu, pie menu" = "ホイール, リング, 放射状メニュー, 円形メニュー, wheel, ring";
+"Wheel slots" = "ホイールのスロット";

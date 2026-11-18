@@ -2619,7 +2619,6 @@
 "Includes your primary click, so this combo does the Wheel’s tap instead of the Wheel." = "包含你的主要点按，所以这个组合键会执行轮盘的轻点操作，而不是轮盘。";
 "Left" = "左";
 "Make a button a Wheel" = "把按键设为轮盘";
-"Make a button a Wheel and holding it brings up a ring of actions around the pointer. Roll toward one and let go to run it, and turn the scroll ring meanwhile for the volume (or zoom, tabs, undo…). It’s new, so let me know how it feels." = "把按键设为轮盘后，按住它，指针周围就会出现一圈操作。朝其中一个滚动后松开即可执行，同时转动滚动环可调节音量（或缩放、标签页、撤销…）。这是新功能，欢迎告诉我用起来感觉如何。";
 "One action for each way you turn the ring, a step per click." = "滚动环每个转动方向对应一个操作，每格一步。";
 "Right" = "右";
 "Scroll ring while held" = "按住时的滚动环";
@@ -2627,7 +2626,6 @@
 "Search settings and actions (⌘K or ⌘F)" = "搜索设置和操作（⌘K 或 ⌘F）";
 "Show or hide the search button above the pages." = "显示或隐藏页面上方的搜索按钮。";
 "Slots" = "位置";
-"The Wheel" = "轮盘";
 "The ring does nothing while you hold it." = "按住时滚动环不执行任何操作。";
 "The sidebar shows only the pages. ⌘K and ⌘F still open search." = "边栏只显示页面。⌘K 和 ⌘F 仍可打开搜索。";
 "Turn the ring back to undo, forward to redo." = "向后转动滚动环撤销，向前转动重做。";
@@ -2642,9 +2640,6 @@
 "Up left" = "左上";
 "Up right" = "右上";
 "Wheel" = "轮盘";
-"Wheel buttons" = "轮盘按键";
-"Wheel ring jobs" = "轮盘的滚动环功能";
-"Wheel slots" = "轮盘位置";
 "Your own pair" = "自定一对";
 "Zoom" = "缩放";
 "radial pie menu ring dial" = "radial pie 径向 饼状菜单 环 拨盘 轮盘";
@@ -2652,3 +2647,4 @@
 "ring: %@ / %@" = "滚动环：%@ / %@";
 "search, find, command k, sidebar, hide, button" = "搜索, 查找, command k, 边栏, 隐藏, 按钮, search";
 "wheel, ring, radial menu, pie menu" = "轮盘, 环, 径向菜单, 饼状菜单, wheel, ring";
+"Wheel slots" = "轮盘位置";

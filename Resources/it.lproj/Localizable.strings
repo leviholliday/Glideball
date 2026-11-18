@@ -2619,7 +2619,6 @@
 "Includes your primary click, so this combo does the Wheel’s tap instead of the Wheel." = "Include il tuo clic principale, quindi questa combo fa il tocco della Ruota invece della Ruota.";
 "Left" = "Sinistra";
 "Make a button a Wheel" = "Trasforma un tasto in Ruota";
-"Make a button a Wheel and holding it brings up a ring of actions around the pointer. Roll toward one and let go to run it, and turn the scroll ring meanwhile for the volume (or zoom, tabs, undo…). It’s new, so let me know how it feels." = "Trasforma un tasto in Ruota: tenendolo premuto, intorno al puntatore appare un anello di azioni. Fai rotolare verso una e rilascia per eseguirla, e intanto gira la ghiera di scorrimento per il volume (o lo zoom, le schede, annulla…). È nuova, quindi fammi sapere come ti sembra.";
 "One action for each way you turn the ring, a step per click." = "Un’azione per ogni verso in cui giri la ghiera, un passo per scatto.";
 "Right" = "Destra";
 "Scroll ring while held" = "Ghiera di scorrimento tenendo premuto";
@@ -2627,7 +2626,6 @@
 "Search settings and actions (⌘K or ⌘F)" = "Cerca impostazioni e azioni (⌘K o ⌘F)";
 "Show or hide the search button above the pages." = "Mostra o nascondi il pulsante di ricerca sopra le pagine.";
 "Slots" = "Posizioni";
-"The Wheel" = "La Ruota";
 "The ring does nothing while you hold it." = "La ghiera non fa nulla mentre tieni premuto il tasto.";
 "The sidebar shows only the pages. ⌘K and ⌘F still open search." = "La barra laterale mostra solo le pagine. ⌘K e ⌘F aprono comunque la ricerca.";
 "Turn the ring back to undo, forward to redo." = "Gira la ghiera indietro per annullare, avanti per ripetere.";
@@ -2642,9 +2640,6 @@
 "Up left" = "Su a sinistra";
 "Up right" = "Su a destra";
 "Wheel" = "Ruota";
-"Wheel buttons" = "Tasti Ruota";
-"Wheel ring jobs" = "Funzioni della ghiera nella Ruota";
-"Wheel slots" = "Posizioni della Ruota";
 "Your own pair" = "Una coppia tua";
 "Zoom" = "Zoom";
 "radial pie menu ring dial" = "radiale menu circolare anello ghiera ruota";
@@ -2652,3 +2647,4 @@
 "ring: %@ / %@" = "ghiera: %@ / %@";
 "search, find, command k, sidebar, hide, button" = "cerca, trova, command k, barra laterale, nascondi, pulsante, search";
 "wheel, ring, radial menu, pie menu" = "ruota, anello, menu radiale, menu circolare, wheel, ring";
+"Wheel slots" = "Posizioni della Ruota";
