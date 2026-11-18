@@ -70,7 +70,8 @@ struct WheelEditor: View {
 
     // MARK: The wheel
 
-    /// The eight places on a 3 × 3 grid around the ball, on a faint ring like the real one.
+    /// The eight places on a 3 × 3 grid around the ball. No ring around them: the dashed
+    /// one it had (beta 24) looked off, and the slots read as a wheel without it.
     private var wheel: some View {
         let grid: [[Int?]] = [[7, 0, 1], [6, nil, 2], [5, 4, 3]]
         return Grid(horizontalSpacing: 10, verticalSpacing: 12) {
@@ -91,12 +92,6 @@ struct WheelEditor: View {
             }
         }
         .fixedSize()
-        .background {
-            Circle()
-                .strokeBorder(Theme.ball.opacity(held ? 0.5 : 0.18), style: StrokeStyle(lineWidth: held ? 2 : 1.5, dash: held ? [] : [3, 5]))
-                .padding(menu.eight ? 26 : 8)
-                .allowsHitTesting(false)
-        }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("Wheel slots", comment: "Wheel editor: VoiceOver name of the slots around the ball"))
     }
