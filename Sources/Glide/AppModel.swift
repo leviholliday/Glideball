@@ -779,14 +779,15 @@ final class AppModel {
     @ObservationIgnored private var lastPageMove = 0.0
     @ObservationIgnored private var pageChanged = -Double.infinity
     @ObservationIgnored private var pageSettleCheck: DispatchWorkItem?
-    /// `--scroll-bench --no-hold` turns this off, to measure the window as it was.
+    /// `--scroll-bench --no-hold` turns this off, to measure the window without it.
     nonisolated(unsafe) static var holdWhileScrolling = true
     /// How long the page has to be still before the live pictures carry on.
     static let pageSettleDelay = 0.18
 
-    /// The window's page moved (every frame of a scroll, from `RootView`): the live
-    /// graphs and today's numbers hold still until it's been still for `pageSettleDelay`
-    /// (the trackball keeps going, `LiveFeed.held`).
+    /// The window's page moved (every frame of a scroll, from `RootView`): today's numbers
+    /// update less often and the Swift Charts curves slow down until it's been still for
+    /// `pageSettleDelay`; the live activity, the light and the trackball keep going
+    /// (`LiveFeed.held`).
     /// Glideball's own scroll engine posts plain scroll events with no phase, so this
     /// goes by the page's offset rather than SwiftUI's scroll phase alone.
     func pageMoved() {
