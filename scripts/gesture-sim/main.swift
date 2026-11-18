@@ -67,6 +67,9 @@ final class Rig {
     var primaryPasses = 0
     var primaryReleases = 0
     var comboActions: [(ButtonAction, [Int])] = []  // a combo that formed and isn't a gesture
+    var picks: [(ButtonAction, Int)] = []            // Wheel slots run (at the release)
+    var ringSteps: [(ButtonAction, Bool)] = []       // Wheel ring steps (while held)
+    var picksWhileHeld = 0
 
     // This hold's fires, for the chaining rules.
     private var holdFires: [(t: Double, d: GestureDirection, chained: Bool)] = []
@@ -111,6 +114,12 @@ final class Rig {
             case .tap(let a, let b):
                 check(holdFires.isEmpty, "a tap only when nothing fired in the hold")
                 taps.append((a, b))
+            case .wheelPick(let a, let place):
+                if machine.isHeld { picksWhileHeld += 1 }
+                picks.append((a, place))
+            case .ringStep(let a, let cw):
+                check(machine.wheelHeld, "a ring step only while a Wheel is held")
+                ringSteps.append((a, cw))
             }
         }
         invariants()
@@ -120,9 +129,16 @@ final class Rig {
         switch GestureRoute.decide(action: action, buttons: buttons, enabled: config.gesturesEnabled,
                                    canReadBall: canReadBall, gestureHeld: machine.isHeld) {
         case .begin:
-            guard case .gesture(let g) = action else { fatalError("begin for a non-gesture") }
-            let tuning = GestureTuning.for(distance: g.distance ?? config.gestureDistance, steadyHands: config.gestureSteadyHands)
-            let effects = machine.begin(buttons: buttons, gesture: g, now: now, tuning: tuning)
+            let effects: [GestureEffect]
+            switch action {
+            case .gesture(let g):
+                let tuning = GestureTuning.for(distance: g.distance ?? config.gestureDistance, steadyHands: config.gestureSteadyHands)
+                effects = machine.begin(buttons: buttons, gesture: g, now: now, tuning: tuning)
+            case .wheel(let w):
+                let tuning = GestureTuning.for(distance: config.gestureDistance, steadyHands: config.gestureSteadyHands)
+                effects = machine.beginWheel(buttons: buttons, menu: w, now: now, tuning: tuning)
+            default: fatalError("begin for a non-gesture")
+            }
             for b in buttons { overrides[b] = effects.isEmpty ? "swallow" : "gesture" }
             apply(effects)
         case .tapInstead(let t):
@@ -217,6 +233,12 @@ final class Rig {
         if machine.isHeld { apply(machine.ball(dx: dx, dy: dy, now: now)) }
     }
 
+    /// The scroll ring (Engine.hidWheel): a Wheel's ring job while one is held.
+    func ring(_ ticks: Int) {
+        if machine.wheelHeld { apply(machine.ring(ticks: ticks, now: now)) }
+        invariants()
+    }
+
     /// Rolls in `steps` reports, `dt` seconds apart.
     func roll(dx: Double, dy: Double, steps: Int, dt: Double = 0.008) {
         for _ in 0..<steps { advance(dt); ball(dx, dy) }
@@ -240,6 +262,9 @@ final class Rig {
         check(!(machine.hold?.buttons.contains(0) ?? false), "the primary button never holds a gesture")
         check(freezeOns - freezeOffs == (frozen ? 1 : 0), "every freeze has exactly one unfreeze (\(freezeOns) on, \(freezeOffs) off)")
         check(fired.allSatisfy { isFireAndForget($0.0) }, "a gesture only fires press-and-release actions")
+        check(picks.allSatisfy { isFireAndForget($0.0) || $0.0 == .precisionToggle }, "a Wheel slot only runs a one-shot")
+        check(ringSteps.allSatisfy { isFireAndForget($0.0) || $0.0 == .precisionToggle }, "a ring step only runs a one-shot")
+        check(picksWhileHeld == 0, "a Wheel slot never runs while the Wheel is held")
         check(taps.allSatisfy { t in t.1.count != 1 || t.1[0] != 0 }, "never a tap of the primary button")
         check(overrides[0] != "gesture", "the primary button's press never belongs to a gesture")
         if let h = machine.hold { check(now - h.start <= machine.tuning.maxHold + 0.3, "no hold outlives maxHold") }
@@ -308,6 +333,242 @@ do {
     s.roll(dx: 1, dy: -4, steps: 60)
     check(s.fired.allSatisfy { $0.1 == .up }, "drift during a continuous run doesn't fire sideways (\(s.fired.map(\.1)))")
     s.release(3)
+}
+
+// MARK: - The Wheel
+
+section("the Wheel")
+do {
+    let menu = WheelMenu.standard   // up Mission Control, right Next Space, down App Exposé, left Previous Space
+    // A still press: the tap (the button's own click), nothing else.
+    let r = Rig([3: .wheel(menu)])
+    r.press(3); r.now += 0.1; r.release(3)
+    check(r.taps.count == 1 && r.taps[0].0 == .system && r.picks.isEmpty, "a still Wheel press is the tap")
+    check(!r.frozen, "pointer free after")
+    // Rolling right past the slot distance lights right; the release runs it, once.
+    r.press(3); r.roll(dx: 4, dy: 0, steps: 12)
+    check(r.picks.isEmpty, "nothing runs while held")
+    check(r.machine.hold?.wheel?.selected == 2, "rolling right lights the right slot (\(String(describing: r.machine.hold?.wheel?.selected)))")
+    r.release(3)
+    check(r.picks.count == 1 && r.picks[0].0 == .shortcut(.nextSpace) && r.picks[0].1 == 2, "the release runs the lit slot once")
+    check(r.taps.count == 1, "and no tap")
+    // Each straight way.
+    for (dx, dy, place) in [(0.0, -5.0, 0), (5, 0, 2), (0, 5, 4), (-5, 0, 6)] {
+        let w = Rig([3: .wheel(menu)])
+        w.press(3); w.roll(dx: dx, dy: dy, steps: 12); w.release(3)
+        check(w.picks.map(\.1) == [place], "rolling toward place \(place) picks it (\(w.picks.map(\.1)))")
+    }
+    // A flick and release before the ring draws (under 0.18 s): still runs that way.
+    let f = Rig([3: .wheel(menu)])
+    f.press(3); f.roll(dx: 0, dy: -20, steps: 4, dt: 0.004); f.release(3)
+    check(f.picks.map(\.1) == [0], "a flick up and release before the ring draws runs up")
+    // Rolled out, then back to the centre: nothing.
+    let c = Rig([3: .wheel(menu)])
+    c.press(3); c.roll(dx: 5, dy: 0, steps: 12); c.roll(dx: -5, dy: 0, steps: 12); c.release(3)
+    check(c.picks.isEmpty && c.taps.isEmpty, "rolled back to the centre: nothing runs, no tap")
+    // Rolled far one way, then the other way: the clamp makes it come back at once.
+    let far = Rig([3: .wheel(menu)])
+    far.press(3); far.roll(dx: 5, dy: 0, steps: 200); far.roll(dx: -5, dy: 0, steps: 40); far.release(3)
+    check(far.picks.map(\.1) == [6], "after rolling far right, rolling left soon lights left (\(far.picks.map(\.1)))")
+    // Another trackball button: dismissed.
+    let d = Rig([3: .wheel(menu)])
+    d.press(3); d.roll(dx: 5, dy: 0, steps: 12); d.press(1); d.release(1); d.release(3)
+    check(d.picks.isEmpty && d.taps.isEmpty, "another button dismisses the Wheel: nothing runs")
+    // Esc.
+    let e = Rig([3: .wheel(menu)])
+    e.press(3); e.roll(dx: 5, dy: 0, steps: 12); e.machine.dismissWheel(); e.roll(dx: 5, dy: 0, steps: 12); e.release(3)
+    check(e.picks.isEmpty && e.taps.isEmpty, "Esc dismisses the Wheel: nothing runs, even rolling on")
+    // The ring: steps of the ring job while held, never a slot, never the tap.
+    let g = Rig([3: .wheel(menu)])
+    g.press(3)
+    for _ in 0..<5 { g.advance(0.06); g.ring(-1) }
+    for _ in 0..<3 { g.advance(0.06); g.ring(1) }
+    g.release(3)
+    check(g.ringSteps.map(\.0) == Array(repeating: ButtonAction.media(.volumeUp), count: 5) + Array(repeating: .media(.volumeDown), count: 3),
+          "the ring steps volume up clockwise, down the other way (\(g.ringSteps.map(\.0)))")
+    check(g.picks.isEmpty && g.taps.isEmpty, "a release after only ring turns runs nothing")
+    // At most 20 ring steps a second; the rest are dropped.
+    let fast = Rig([3: .wheel(menu)])
+    fast.press(3)
+    for _ in 0..<40 { fast.advance(0.01); fast.ring(-1) }
+    fast.release(3)
+    check(fast.ringSteps.count <= 9 && fast.ringSteps.count >= 7, "fast ring turns: at most 20 steps a second (\(fast.ringSteps.count) in 0.4 s)")
+    // Ring and a slot: the slot still runs at the release.
+    let both = Rig([3: .wheel(menu)])
+    both.press(3); both.roll(dx: 0, dy: 5, steps: 12); both.advance(0.06); both.ring(1); both.release(3)
+    check(both.picks.map(\.1) == [4] && both.ringSteps.count == 1, "a lit slot still runs after a ring turn")
+    // Every way out without its release: nothing runs.
+    for reason in [GestureCancel.pause, .quit, .unplug, .tapDisabled, .sleep, .lostRelease, .timeout] {
+        let x = Rig([3: .wheel(menu)])
+        x.press(3); x.roll(dx: 5, dy: 0, steps: 12); x.cancel(reason); x.release(3)
+        check(x.picks.isEmpty && x.taps.isEmpty && !x.frozen, "\(reason.rawValue) ends a Wheel hold: nothing runs, pointer free")
+    }
+    // The 30 s limit.
+    let t = Rig([3: .wheel(menu)])
+    t.press(3); t.roll(dx: 5, dy: 0, steps: 12); t.advance(31); t.tick(); t.release(3)
+    check(t.picks.isEmpty && !t.frozen, "past the time limit: ended, nothing runs")
+    // Never on the primary button, alone or in a combo.
+    let p = Rig([0: .wheel(menu)])
+    p.press(0); p.roll(dx: 5, dy: 0, steps: 12); p.release(0)
+    check(p.picks.isEmpty && p.freezeOns == 0 && p.primaryPasses == 1, "the primary button is never a Wheel")
+    let pc = Rig([:], chords: [Chord(buttons: [0, 2], action: .wheel(menu))])
+    pc.combo([0, 2]); pc.roll(dx: 5, dy: 0, steps: 12); pc.release(0); pc.release(2)
+    check(pc.picks.isEmpty && pc.freezeOns == 0, "a combo with the primary button is never a Wheel")
+    // On a combo: the first button up ends it and runs the slot.
+    let cb = Rig([:], chords: [Chord(buttons: [1, 3], action: .wheel(menu))])
+    cb.combo([1, 3]); cb.roll(dx: -5, dy: 0, steps: 12); cb.release(3); cb.release(1)
+    check(cb.picks.map(\.1) == [6] && !cb.frozen, "a Wheel combo: the first button up runs the slot, once")
+    // A gesture and a Wheel are never held at once.
+    let mix = Rig([2: .gesture(.standard), 3: .wheel(menu)])
+    mix.press(3); mix.press(2); mix.roll(dx: 5, dy: 0, steps: 12); mix.release(2); mix.release(3)
+    check(mix.fired.isEmpty && mix.picks.isEmpty && mix.freezeOns == 1, "a gesture press during a Wheel hold is ignored (and dismisses it)")
+    // Empty slots are skipped: two filled slots split the circle between them.
+    var two = WheelMenu()
+    two[0] = .shortcut(.copy); two[4] = .shortcut(.paste)
+    let tw = Rig([3: .wheel(two)])
+    tw.press(3); tw.roll(dx: 5, dy: -1.5, steps: 12); tw.release(3)
+    check(tw.picks.map(\.1) == [0], "with only up and down filled, a roll right-and-up picks up (\(tw.picks.map(\.1)))")
+    // Eight slots use the diagonals.
+    var eight = WheelMenu.standard
+    eight.eight = true
+    eight[1] = .shortcut(.newTab)
+    let ei = Rig([3: .wheel(eight)])
+    ei.press(3); ei.roll(dx: 4, dy: -4, steps: 12); ei.release(3)
+    check(ei.picks.map(\.1) == [1], "eight slots: up-right picks the diagonal (\(ei.picks.map(\.1)))")
+    var four = eight
+    four.eight = false
+    let fo = Rig([3: .wheel(four)])
+    fo.press(3); fo.roll(dx: 4, dy: -4.4, steps: 12); fo.release(3)
+    check(fo.picks.map(\.1) == [0], "four slots: the hidden diagonal is never picked (\(fo.picks.map(\.1)))")
+    // Hold-type actions never run from a slot.
+    var holdy = WheelMenu()
+    holdy[2] = .precisionHold; holdy[6] = .holdShortcut(.wisprFlow); holdy[0] = .dragLock
+    let h = Rig([3: .wheel(holdy)])
+    h.press(3); h.roll(dx: 5, dy: 0, steps: 12); h.release(3)
+    h.press(3); h.roll(dx: -5, dy: 0, steps: 12); h.release(3)
+    h.press(3); h.roll(dx: 0, dy: -5, steps: 12); h.release(3)
+    // (Only the shortcut's slot counts as filled, so every way picks it: empty slots are skipped.)
+    check(h.picks.map(\.0) == Array(repeating: .shortcut(.wisprFlow), count: 3) && h.picks.allSatisfy { $0.1 == 6 },
+          "slots: a hold becomes a quick press, modes that hold never run (\(h.picks.map(\.0)))")
+    // The tap: a held shortcut is a quick press; a Wheel or a hold mode does nothing.
+    var tapW = menu
+    tapW.tap = .holdShortcut(.copy)
+    let tp = Rig([3: .wheel(tapW)])
+    tp.press(3); tp.release(3)
+    check(tp.taps.map(\.0) == [.shortcut(.copy)], "a held-shortcut tap is a quick press")
+    // Geometry: the select distance grows with Gesture distance and Steady hands.
+    let geo = WheelGeometry(GestureTuning.for(distance: .normal, steadyHands: false))
+    check(geo.release < geo.select && geo.select < geo.reach, "release < select < reach")
+    check(geo.pick(x: 0, y: -geo.select + 1, current: nil, filled: [0, 2, 4, 6]) == nil, "just short of the slot distance: nothing lit")
+    check(geo.pick(x: 0, y: -geo.select - 1, current: nil, filled: [0, 2, 4, 6]) == 0, "just past it: up")
+    check(geo.pick(x: 30, y: -32, current: 0, filled: [0, 2, 4, 6]) == 0, "a lit slot stays lit across the border (stickiness)")
+    check(geo.pick(x: .nan, y: 3, current: nil, filled: [0]) == nil, "NaN: nothing")
+    // Hostile numbers through the machine.
+    let n = Rig([3: .wheel(menu)])
+    n.press(3); n.ball(.infinity, 3); n.ball(.nan, .nan); n.ball(-1e308, 1e308); n.release(3)
+    check(!n.frozen && n.picks.count <= 1, "infinite and NaN rolls: no crash, at most one pick")
+    // Random Wheel holds: rules after every event (invariants), and at most one pick per hold.
+    var seed: UInt64 = 0x5EED
+    func rnd() -> Double { seed = seed &* 6364136223846793005 &+ 1442695040888963407; return Double(seed >> 11) / Double(1 << 53) }
+    for _ in 0..<3000 {
+        var m = WheelMenu.standard
+        m.eight = rnd() < 0.5
+        for place in 0..<8 where rnd() < 0.3 { m[place] = rnd() < 0.2 ? nil : [.back, .forward, .shortcut(.copy), .media(.mute), .precisionHold, .precisionToggle][Int(rnd() * 6)] }
+        m.ring = RingJob.allCases[Int(rnd() * Double(RingJob.allCases.count))]
+        let z = Rig([3: .wheel(m), 2: .wheel(m)], chords: rnd() < 0.3 ? [Chord(buttons: [1, 3], action: .wheel(m))] : [])
+        var holds = 0
+        for _ in 0..<60 {
+            let before = z.picks.count
+            switch Int(rnd() * 9) {
+            case 0: z.press(Int(rnd() * 4)); if z.machine.isHeld { holds += 1 }
+            case 1: z.release(Int(rnd() * 4))
+            case 2, 3: z.roll(dx: rnd() * 20 - 10, dy: rnd() * 20 - 10, steps: 1 + Int(rnd() * 6))
+            case 4: z.ring(rnd() < 0.5 ? 1 : -1)
+            case 5: if rnd() < 0.9 { z.advance(rnd() * 0.2) } else { z.now += 31 }; z.tick(); z.advance(0)
+            case 6: z.machine.dismissWheel()
+            case 7: if rnd() < 0.2 { z.cancel([.pause, .sleep, .unplug, .tapDisabled][Int(rnd() * 4)]) }
+            default: z.advance(0.01)
+            }
+            check(z.picks.count - before <= 1, "never two slots from one event")
+        }
+        for b in 0..<4 { z.release(b) }
+        check(!z.frozen, "random Wheel holds: pointer free at the end")
+    }
+}
+
+section("the Wheel in settings files")
+do {
+    var c = GlideConfig()
+    var w = WheelMenu.standard
+    w.eight = true
+    w[1] = .openApp(bundleID: "com.apple.Safari")
+    w[3] = .holdShortcut(.wisprFlow)
+    w.ring = .custom
+    w.ringUp = .shortcut(.redo)
+    w.ringDown = .back
+    w.tap = .media(.playPause)
+    c.buttons[3] = .wheel(w)
+    c.buttons[2] = .wheel(WheelMenu.keeping(.middleClick))
+    c.chords = [Chord(buttons: [1, 3], action: .wheel(.standard))]
+    var p = AppProfile(bundleID: "com.example.app", name: "Example")
+    p.buttons = [1: .wheel(.standard)]
+    c.appProfiles = [p]
+    check(c.requiredFileVersion == 2, "a Wheel makes the file version 2 (older Glideballs leave it alone)")
+    let file = GlideSettingsFile(config: c, exportedFrom: "Test")
+    let data = try! JSONEncoder().encode(file)
+    let back = try! JSONDecoder().decode(GlideSettingsFile.self, from: data)
+    check(back.config == c, "a file with Wheels round-trips without loss")
+    check(back.version == 2 && (try? back.validatedConfig()) == c, "and is accepted as version 2")
+    check(WheelMenu.keeping(.middleClick).tap == .middleClick, "turning a button into a Wheel keeps what it did as the tap")
+    check(WheelMenu.keeping(.wheel(w)) == w, "and a Wheel stays itself")
+    // What a Glideball before the Wheel does with it: skips just those buttons, keeps the rest.
+    let text = String(data: data, encoding: .utf8)!.replacingOccurrences(of: "\"wheel\"", with: "\"wheelFromTheFuture\"")
+    let old = try? JSONDecoder().decode(GlideSettingsFile.self, from: Data(text.utf8))
+    check(old != nil, "a file a build without the Wheel can't read still opens")
+    check(old?.config.buttons[3] == nil && old?.config.chords.isEmpty == true && old?.config.appProfiles.first?.buttons?.isEmpty == true,
+          "it skips just the Wheel buttons and combos")
+    // ...and sync puts them back after it (a beta before the Wheel wrote it).
+    if let older = old?.config {
+        check(GlideSettingsFile.predatesWheel("2.10-beta.22") && !GlideSettingsFile.predatesWheel(GlideSettingsFile.wheelSince)
+              && !GlideSettingsFile.predatesWheel("2.10") && GlideSettingsFile.predatesWheel(nil), "which betas predate the Wheel")
+        let merged = older.keepingWheels(from: c)
+        check(merged.kept && merged.config == c, "sync puts the Wheels an older beta dropped back")
+        let same = c.keepingWheels(from: c)
+        check(!same.kept && same.config == c, "and changes nothing when nothing was dropped")
+        var changed = older
+        changed.buttons[3] = .back   // the older Mac set the button explicitly: that wins
+        check(changed.keepingWheels(from: c).config.buttons[3] == .back, "a button the older one set explicitly wins")
+        let pre210 = older.keepingNewerFeatures(from: c)
+        check(pre210.config.buttons[3] == c.buttons[3] && pre210.kept, "a Glideball before 2.10 dropping it: put back too")
+    }
+    // A newer Glideball's Wheel: unknown slot actions and fields leave just that slot empty.
+    let newer = #"{"buttons":{"3":{"wheel":{"_0":{"slots":[{"back":{}},{"teleport":{"_0":1}},null,{"forward":{}}],"eight":true,"ring":"spaceship","hue":7,"tap":{"rocket":{}}}}}}}"#
+    let n = try? JSONDecoder().decode(GlideConfig.self, from: Data(newer.utf8))
+    if case .wheel(let nw)? = n?.buttons[3] {
+        check(nw.slots.count == 8 && nw[0] == .back && nw[1] == nil && nw[3] == .forward && nw.eight, "unknown slot actions are left empty, the rest kept")
+        check(nw.ring == .volume && nw.tap == .system, "an unknown ring job or tap falls back to the defaults")
+    } else {
+        check(false, "a newer Glideball's Wheel still loads")
+    }
+    // A minimal Wheel (every field missing) loads with defaults.
+    let bare = try? JSONDecoder().decode(GlideConfig.self, from: Data(#"{"buttons":{"2":{"wheel":{"_0":{}}}}}"#.utf8))
+    check(bare?.buttons[2] == .wheel(WheelMenu()), "a Wheel with no fields loads with the defaults")
+    // Clamping: a Wheel inside a Wheel or a gesture is dropped; hostile slots are cleaned.
+    var nested = WheelMenu()
+    nested[0] = .wheel(.standard)
+    nested[2] = .gesture(.standard)
+    nested[4] = .modifiedClick(button: 99, modifiers: 0)
+    nested.slots += [.back, .back]   // too many places
+    let cl = ButtonAction.wheel(nested).clamped()
+    if case .wheel(let cw)? = cl {
+        check(cw.slots.count == 8 && cw[0] == nil && cw[2] == nil && cw[4] == nil, "nested Wheels, gestures and impossible clicks are dropped from slots")
+    } else { check(false, "a hostile Wheel still clamps to a Wheel") }
+    var g = ButtonGesture.standard
+    g.up = GestureStep(.wheel(.standard))
+    check(ButtonAction.gesture(g).clamped().map { if case .gesture(let x) = $0 { x.up == nil } else { false } } == true, "a Wheel inside a gesture is dropped")
+    // Import: a shared Wheel is sanitized like a gesture (its apps and keys are listed).
+    check(ButtonAction.wheel(w).needsCaution, "a Wheel that opens an app or presses keys is listed in an import")
+    check(ButtonAction.wheel(w).sanitized() != nil && ButtonAction.wheel(w).sanitized(nested: true) == nil, "sanitized: kept at the top, dropped when nested")
 }
 
 // MARK: - Chained gestures

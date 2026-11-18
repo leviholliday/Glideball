@@ -558,6 +558,11 @@ struct GestureHeldOverlay: View {
             let modes = model.modes
             let flash = clock.current(modes)
             ZStack {
+                if modes.wheelHeld {
+                    // A Wheel: the same armed ring (the pointer is held), pulsing with each ring step.
+                    GestureArmedRing(size: s, pulse: modes.wheelFlash?.seq ?? 0)
+                        .transition(.opacity.combined(with: .scale(scale: 0.94)))
+                }
                 if modes.gestureHeld {
                     GestureArmedRing(size: s, pulse: flash?.seq ?? 0)
                         .transition(.opacity.combined(with: .scale(scale: 0.94)))
@@ -594,6 +599,7 @@ struct GestureHeldOverlay: View {
             .frame(width: g.size.width, height: g.size.height)
             .animation(Theme.Motion.pressIn, value: modes.gestureDirection)
             .animation(Theme.Motion.fade, value: modes.gestureHeld)
+            .animation(Theme.Motion.fade, value: modes.wheelHeld)
             .animation(Theme.Motion.spring, value: flash?.seq)
         }
         .allowsHitTesting(false)
@@ -635,7 +641,7 @@ struct GestureArmedEdge: View {
     let model: AppModel
 
     var body: some View {
-        let held = model.modes.gestureHeld
+        let held = model.modes.gestureHeld || model.modes.wheelHeld
         RoundedRectangle(cornerRadius: 14, style: .continuous)
             .strokeBorder(Theme.buttons.opacity(0.55), lineWidth: 1.5)
             .shadow(color: Theme.buttons.opacity(0.6), radius: 10)

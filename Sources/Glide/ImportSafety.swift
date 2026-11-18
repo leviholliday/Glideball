@@ -126,6 +126,14 @@ extension ButtonAction {
             out.tap = g.tap.sanitized(nested: true) ?? .system
             out.distance = g.distance
             return .gesture(out)
+        case .wheel(let w):
+            guard !nested else { return nil }
+            var out = WheelMenu(eight: w.eight, ring: w.ring)
+            out.slots = WheelMenu.normalized(w.slots.map { $0?.sanitized(nested: true) })
+            out.ringUp = w.ringUp?.sanitized(nested: true)
+            out.ringDown = w.ringDown?.sanitized(nested: true)
+            out.tap = w.tap.sanitized(nested: true) ?? .system
+            return .wheel(out)
         case .system, .leftClick, .rightClick, .middleClick, .back, .forward, .disabled,
              .precisionHold, .precisionToggle, .ballScrollHold, .dragLock, .media:
             return self
@@ -137,6 +145,8 @@ extension ButtonAction {
         switch self {
         case .openApp, .shortcut, .holdShortcut: true
         case .gesture(let g): GestureDirection.allCases.contains { g[$0]?.action.needsCaution == true } || g.tap.needsCaution
+        case .wheel(let w): w.slots.contains { $0?.needsCaution == true } || w.ringUp?.needsCaution == true
+            || w.ringDown?.needsCaution == true || w.tap.needsCaution
         default: false
         }
     }

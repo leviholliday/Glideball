@@ -93,6 +93,18 @@ enum ImportReview {
             if g.tap != .system { parts.append(String(localized: "tap: \(describe(g.tap))", comment: "Gesture summary: what a plain tap does")) }
             let title = String(localized: "Gesture", comment: "Button action: hold the button and roll the ball up, down, left or right")
             return parts.isEmpty ? title : "\(title): " + parts.joined(separator: ", ")
+        case .wheel(let w):
+            // Clockwise from up, as the Wheel lays them out.
+            let arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"]
+            var parts = w.usedPlaces.compactMap { p in w[p].map { "\(arrows[p]) \(describe($0))" } }
+            if let up = w.ringActions.up, let down = w.ringActions.down, w.ring == .custom {
+                parts.append(String(localized: "ring: \(describe(down)) / \(describe(up))", comment: "Wheel summary: what turning the scroll ring does each way"))
+            } else if w.ring != .off {
+                parts.append(String(localized: "ring: \(w.ring.title)", comment: "Wheel summary: the ring job, like “ring: Volume”"))
+            }
+            if w.tap != .system { parts.append(String(localized: "tap: \(describe(w.tap))", comment: "Gesture summary: what a plain tap does")) }
+            let title = String(localized: "Wheel", comment: "Button action: hold the button, roll the ball to pick from a ring of actions around the pointer")
+            return parts.isEmpty ? title : "\(title): " + parts.joined(separator: ", ")
         default:
             return action.title
         }

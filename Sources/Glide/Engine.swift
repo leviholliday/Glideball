@@ -57,6 +57,20 @@ final class Engine {
         var gestureFlash: GestureFlash?
         /// "Try it" on the Buttons page: gestures are shown, not performed.
         var gesturePractice = false
+        /// A Wheel button is held (the pointer is frozen until it lifts; `gestureButtons`
+        /// are its buttons, `gestureHeld` stays false), and the slot lit now.
+        var wheelHeld = false
+        var wheelSlot: Int?
+        /// The last thing a Wheel did, numbered so the UI (and scripts/engine-fuzz) see each one.
+        var wheelFlash: WheelFlash?
+    }
+
+    /// One thing a Wheel did: a slot ran at the release, the tap, or a ring step while held.
+    struct WheelFlash: Equatable {
+        enum Kind: Equatable { case slot(Int), tap, ring(clockwise: Bool) }
+        var seq: Int
+        var kind: Kind
+        var buttons: [Int]
     }
 
     /// One thing a gesture did: a direction fired (nil direction: the tap).
@@ -206,6 +220,15 @@ final class Engine {
     private var gestureFrozen = false          // a gesture hold has the pointer frozen
     private var gestureFlash: GestureFlash?    // the last fire or tap, for the UI
     private var gesturePracticeUntil: CFTimeInterval = 0   // "Try it": show, don't perform, until then
+    // The Wheel (Wheel.swift; its hold is `gestures`'). Input thread only.
+    private var wheelFlash: WheelFlash?
+    private var wheelShown: WheelOverlayModel?     // what the overlay shows (nil: not up)
+    private var wheelShownAt: CGPoint?
+    private var wheelKeeper: EngineTimer?          // tells EngineIO's watchdog the engine is alive
+    private var wheelReveal: EngineTimer?          // brings the ring up after its short delay
+    private var keyTap: CFMachPort?                // Esc, only while a Wheel is held
+    private var keyTapSource: CFRunLoopSource?
+    private var escSwallowed = false               // its key-up is ours too
     // Per-display pointer speed (DisplayTracking.swift). Input thread only.
     private var displayTracker = DisplayTracker()
     // Wireless models: connection type and battery, per HID device (DeviceBattery.swift).
@@ -380,9 +403,10 @@ final class Engine {
             done.signal()
         }
         _ = done.wait(timeout: .now() + 0.5)
-        // Even if the input thread were stuck, never leave the cursor frozen or hidden.
+        // Even if the input thread were stuck, never leave the cursor frozen or hidden, or a Wheel up.
         io.freezePointer(false)
         io.hideStandIn()
+        io.hideWheel()
     }
 
     /// Quit: gives the trackball macOS's own pointer and scroll speed back.
@@ -1135,14 +1159,14 @@ final class Engine {
             let now = io.now()
             if v != 0 { trackballMoved(now); lastMoverIsTrackball = true; pendingTravel = min(pendingTravel + Int(min(v.magnitude, 1_000)), 1 << 30); holdForBallReport() }
             // A held gesture takes the ball (even over Scroll with ball): see GestureRoute.
-            if gestures.isHeld { applyGesture(gestures.ball(dx: Double(v), dy: 0, now: now)); publishModes() }
+            if gestures.isHeld { applyGesture(gestures.ball(dx: Double(v), dy: 0, now: now)); syncWheel(); publishModes() }
             else if ballScrolling { scroller.addBallDelta(dx: Double(v) * ballSign, dy: 0) }
             watchDisplay(now: now)
         case (kHIDPage_GenericDesktop, kHIDUsage_GD_Y):
             telemetry.addBall(dx: 0, dy: v)
             let now = io.now()
             if v != 0 { trackballMoved(now); lastMoverIsTrackball = true; pendingTravel = min(pendingTravel + Int(min(v.magnitude, 1_000)), 1 << 30); holdForBallReport() }
-            if gestures.isHeld { applyGesture(gestures.ball(dx: 0, dy: Double(v), now: now)); publishModes() }
+            if gestures.isHeld { applyGesture(gestures.ball(dx: 0, dy: Double(v), now: now)); syncWheel(); publishModes() }
             else if ballScrolling { scroller.addBallDelta(dx: 0, dy: Double(v) * ballSign) }
             watchDisplay(now: now)
         case let (p, u) where DeviceBattery.isBatteryUsage(page: p, usage: u):
@@ -1178,6 +1202,14 @@ final class Engine {
         lastHIDWheel = (ticks, now)
         let flags = modifierFlags.union(io.keyboardFlags())
         diagnostics.record("HID wheel \(ticks)")
+        // A Wheel held: the ring is its dial (its ring job), in every scroll mode and with any
+        // modifier. It never also scrolls.
+        if gestures.wheelHeld {
+            applyGesture(gestures.ring(ticks: ticks, now: now))
+            syncWheel()
+            publishModes()
+            return
+        }
         // ⌘/⌃/⌥ + scroll keep their native meaning (zoom etc.): the driver's event passes.
         // In Native mode macOS does all the scrolling.
         guard config.enabled, config.scrollMode != .native,
@@ -1440,7 +1472,7 @@ final class Engine {
     private func otherPress(_ event: CGEvent, _ button: Int64, device: Int?) -> Unmanaged<CGEvent>? {
         closeStaleTrackballPress(button)
         let posted = postedForStale.remove(button) != nil   // then this press goes behind what was posted
-        if gestures.isHeld { gestures.otherPress(Int(button)) }   // the hold's release isn't a tap
+        if gestures.isHeld { gestures.otherPress(Int(button), dismissesWheel: false) }   // the hold's release isn't a tap
         let swallow = dragLocked && (event.type == .leftMouseDown || button == 0)
         otherPresses[button, default: []].append(OtherPress(device: device, at: io.now(), swallowed: swallow))
         if swallow {
@@ -1698,6 +1730,7 @@ final class Engine {
             noteButtonsAlreadyDown("tap back on", clearTokens: true)   // what went by while it was off
             syncTap()
             if let moveTap { io.tapEnable(moveTap, true) }
+            syncKeyTap()
             syncStandIn()   // to the hold's new place, or down if the tap didn't come back
             // So may the release of a button holding a key or remapped to another button:
             // the failsafe lets go of them once the trackball says the button is up.
@@ -1731,6 +1764,23 @@ final class Engine {
         case .flagsChanged:
             modifierFlags = event.flags
             return pass
+        case .keyDown, .keyUp:
+            // Only the Wheel's own tap sees keys, only while a Wheel is held: Esc dismisses it.
+            guard event.getIntegerValueField(.keyboardEventKeycode) == Int64(kVK_Escape) else { return pass }
+            if type == .keyDown, gestures.wheelHeld {
+                escSwallowed = true
+                gestures.dismissWheel()
+                diagnostics.record("wheel dismissed (Esc)")
+                syncWheel()
+                publishModes()
+                return nil
+            }
+            if type == .keyUp, escSwallowed {
+                escSwallowed = false
+                syncKeyTap()
+                return nil
+            }
+            return pass
         case .leftMouseDown, .rightMouseDown, .otherMouseDown:
             return handleButton(event, .down)
         case .leftMouseUp, .rightMouseUp, .otherMouseUp:
@@ -1751,6 +1801,12 @@ final class Engine {
         // trackpad gestures always carry a phase, so those pass through.
         let phase = event.getIntegerValueField(CGEventField(rawValue: 99)!)
         let momentum = event.getIntegerValueField(CGEventField(rawValue: 123)!)
+        // A Wheel held: the ring's own scroll events never reach apps (its HID ticks drive the
+        // ring job). Other mice and the trackpad scroll as usual.
+        if gestures.wheelHeld, fromKensington, phase == 0, momentum == 0 {
+            if hidWheelSeen { learnDirection(cgDelta: event.getDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1)) }
+            return nil
+        }
         guard config.enabled, config.scrollMode != .native, fromKensington, phase == 0, momentum == 0 else { return pass }
 
         let cgDelta = event.getDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1)
@@ -1966,7 +2022,7 @@ final class Engine {
         let button = event.getIntegerValueField(.mouseEventButtonNumber)
 
         // Any other press during a gesture hold means the release isn't a tap.
-        if phase == .down, gestures.isHeld { gestures.otherPress(Int(button)) }
+        if phase == .down, gestures.isHeld { gestures.otherPress(Int(button)); syncWheel(); publishModes() }
 
         // Drag lock: any click (from any mouse: see `otherPress`) lets go — and that's all it does.
         // (A press that may be the start of a Drag lock combo waits for the
@@ -2133,11 +2189,11 @@ final class Engine {
         let pressedButtons = pending
         pending = []
         var action = chord.action
-        if case .gesture(let g) = action {
+        if let kind = HoldKind(action) {
             let buttons = pressedButtons.map(\.button)
             switch gestureRoute(action, buttons: buttons) {
             case .begin:
-                beginGesture(g, buttons: buttons)
+                beginHold(kind, buttons: buttons)
                 return
             case .tapInstead(let tap):
                 action = tap   // a combo with the primary button, or gestures can't work: the tap, now
@@ -2259,13 +2315,13 @@ final class Engine {
             return Int64(b) == button ? passReal(event, button: button) : pass
         case .precisionHold, .precisionToggle, .ballScrollHold, .dragLock:
             return nil   // handled by `beginMode`
-        case .gesture(let g):
+        case .gesture, .wheel:
             switch gestureRoute(action, buttons: [button]) {
             case .begin:
-                beginGesture(g, buttons: [button])
+                if let kind = HoldKind(action) { beginHold(kind, buttons: [button]) }
                 return nil
             case .tapInstead(let tap):
-                return pressAction(tap, event, button: button)   // `tapAction` is never a gesture
+                return pressAction(tap, event, button: button)   // `tapAction` is never a gesture or a Wheel
             case .ignore:
                 // Another gesture is held. A repeat press of the held button itself (its
                 // release was lost) keeps the hold's override, so its next release still ends it.
@@ -2388,6 +2444,8 @@ final class Engine {
         syncMoveTap()
         if began { holdPointer(renew: true) }   // macOS starts ignoring the ball before it first moves
         syncStandIn()   // up after the first put-back; down after the pointer is free
+        syncWheel()     // the Wheel's ring goes with its hold: every way a hold ends comes through here
+        syncKeyTap()
     }
 
     /// The stand-in pointer (`EngineIO.showStandIn`) is up exactly while the pointer is held with
@@ -2396,6 +2454,7 @@ final class Engine {
     /// one, since they all come through `syncFreeze`. If it can't be shown, or the watchdog took
     /// it down, the hold goes on as before beta 23, without one.
     private func syncStandIn() {
+        defer { syncWheel() }   // the Wheel's ring is centred on the same anchor, and follows it the same way
         let want: CGPoint? = {
             // Without Input Monitoring nothing tells the trackball's movement apart, so nothing holds the pointer still: no stand-in.
             guard let a = anchor, hid, !standInGaveUp, let tap, io.tapIsEnabled(tap) else { return nil }
@@ -2847,18 +2906,106 @@ final class Engine {
                             canReadBall: tap != nil && canReadBall, gestureHeld: gestures.isHeld)
     }
 
-    private func beginGesture(_ gesture: ButtonGesture, buttons: [Int64]) {
-        let tuning = GestureTuning.for(distance: gesture.distance ?? config.gestureDistance, steadyHands: config.gestureSteadyHands)
-        let effects = gestures.begin(buttons: buttons.map { Int($0) }, gesture: gesture, now: io.now(), tuning: tuning)
+    /// Starts a gesture or Wheel hold. Both are the same hold to the engine: the `.gesture`
+    /// override on its buttons, the pointer frozen, and every way out through `gestures`.
+    private func beginHold(_ kind: HoldKind, buttons: [Int64]) {
+        let effects: [GestureEffect]
+        switch kind {
+        case .gesture(let g):
+            let tuning = GestureTuning.for(distance: g.distance ?? config.gestureDistance, steadyHands: config.gestureSteadyHands)
+            effects = gestures.begin(buttons: buttons.map { Int($0) }, gesture: g, now: io.now(), tuning: tuning)
+        case .wheel(let w):
+            let tuning = GestureTuning.for(distance: config.gestureDistance, steadyHands: config.gestureSteadyHands)
+            effects = gestures.beginWheel(buttons: buttons.map { Int($0) }, menu: w, now: io.now(), tuning: tuning)
+        }
         guard !effects.isEmpty else {
             for b in buttons { overrides[b] = .swallow }   // refused: the press and its release do nothing
             return
         }
         for b in buttons { overrides[b] = .gesture }
-        diagnostics.record("gesture hold on \(buttons)")
+        if case .wheel = kind {
+            diagnostics.record("wheel hold on \(buttons)")
+            scroller.stopRing()   // the ring is the Wheel's now: nothing it set going keeps scrolling
+            wheelReveal?.invalidate()
+            wheelReveal = io.schedule(WheelHold.revealDelay + 0.001, repeats: false) { [unowned self] in
+                syncWheel()
+                publishModes()
+            }
+        } else {
+            diagnostics.record("gesture hold on \(buttons)")
+        }
         applyGesture(effects)
         startHoldFailsafe()
     }
+
+    /// The Wheel's overlay (`EngineIO.showWheel`) is up exactly while a Wheel is held with its
+    /// ring revealed and not dismissed, centred on the hold's anchor. It comes down with the hold
+    /// by every path that ends one: they all go through `syncFreeze`, which calls this.
+    private func syncWheel() {
+        let want: WheelOverlayModel? = anchor == nil ? nil : gestures.wheelOverlay(now: io.now())
+        if let m = want, let a = anchor {
+            guard m != wheelShown || a != wheelShownAt else { return }
+            if wheelShown == nil {
+                wheelKeeper?.invalidate()
+                wheelKeeper = io.schedule(Self.standInKeepInterval, repeats: true) { [unowned self] in
+                    guard wheelShown != nil else { return }
+                    if !io.keepWheel() { wheelLost() }
+                }
+            }
+            wheelShown = m
+            wheelShownAt = a
+            if !io.showWheel(m, at: a) { wheelLost() }
+        } else if wheelShown != nil {
+            wheelShown = nil
+            wheelShownAt = nil
+            wheelKeeper?.invalidate()
+            wheelKeeper = nil
+            io.hideWheel()
+        }
+        if !gestures.wheelHeld {
+            wheelReveal?.invalidate()
+            wheelReveal = nil
+        }
+    }
+
+    /// The overlay couldn't be shown, or EngineIO's watchdog took it down: this hold's Wheel is
+    /// dismissed (nothing runs at the release; the pointer stays held until then).
+    private func wheelLost() {
+        gestures.dismissWheel()
+        diagnostics.record("wheel overlay gone: dismissed")
+        wheelShown = nil
+        wheelShownAt = nil
+        wheelKeeper?.invalidate()
+        wheelKeeper = nil
+        io.hideWheel()
+        publishModes()
+    }
+
+    /// The key tap is on exactly while a Wheel is held (for Esc), so ordinary typing never
+    /// passes through Glideball. An Esc swallowed at its press keeps it until its release.
+    private func syncKeyTap() {
+        if gestures.wheelHeld, let main = tap, io.tapIsEnabled(main) {
+            if keyTap == nil {
+                let mask = (CGEventMask(1) << CGEventMask(CGEventType.keyDown.rawValue)) | (CGEventMask(1) << CGEventMask(CGEventType.keyUp.rawValue))
+                if let (t, source) = io.installTap(mask: mask, engine: self, runLoop: runLoop) {
+                    keyTap = t
+                    keyTapSource = source
+                }
+            } else if let keyTap, !io.tapIsEnabled(keyTap) {
+                io.tapEnable(keyTap, true)
+            }
+        } else if let keyTap, !escSwallowed || !gestures.isHeld {
+            escSwallowed = false
+            io.removeTap(keyTap, source: keyTapSource, runLoop: runLoop)
+            self.keyTap = nil
+            keyTapSource = nil
+        }
+    }
+
+    /// scripts/engine-fuzz: what the Wheel's overlay shows, as the engine believes, and its key tap.
+    var wheelForChecks: WheelOverlayModel? { wheelShown }
+    var keyTapForChecks: CFMachPort? { keyTap }
+    var escHeldForChecks: Bool { escSwallowed }
 
     /// Ends a gesture hold that won't get its release (or shouldn't wait for it).
     /// The buttons' releases, when they come, do nothing.
@@ -2876,6 +3023,7 @@ final class Engine {
         for effect in effects {
             switch effect {
             case .freeze(let on):
+                if on, let h = gestures.hold { lastHoldButtons = h.buttons; lastHoldWasWheel = h.wheel != nil }
                 gestureFrozen = on
                 syncFreeze()
                 publishModes()
@@ -2884,10 +3032,30 @@ final class Engine {
                 flashGesture(direction, buttons: gestures.hold?.buttons ?? [], chain: gestures.hold?.fired ?? 1)
                 if !practicing { fireLater(action) }
             case .tap(let action, let buttons):
-                flashGesture(nil, buttons: buttons)
+                if gestures.hold == nil, lastHoldWasWheel {
+                    flashWheel(.tap, buttons: buttons)
+                } else {
+                    flashGesture(nil, buttons: buttons)
+                }
                 if !practicing { performTap(action, buttons: buttons) }
+            case .wheelPick(let action, let place):
+                diagnostics.record("wheel slot \(place)")
+                flashWheel(.slot(place), buttons: lastHoldButtons)
+                if !practicing { performTap(action, buttons: []) }   // never `.system`: a slot is a one-shot
+            case .ringStep(let action, let clockwise):
+                flashWheel(.ring(clockwise: clockwise), buttons: gestures.hold?.buttons ?? [])
+                if !practicing { performTap(action, buttons: []) }
             }
         }
+    }
+
+    /// The buttons and kind of the latest hold (its release's effects come after it has ended).
+    private var lastHoldButtons: [Int] = []
+    private var lastHoldWasWheel = false
+
+    private func flashWheel(_ kind: WheelFlash.Kind, buttons: [Int]) {
+        wheelFlash = WheelFlash(seq: (wheelFlash?.seq ?? 0) + 1, kind: kind, buttons: buttons)
+        publishModes()
     }
 
     /// "Try it" is on: a gesture shows what it would do and does nothing else.
@@ -2925,7 +3093,7 @@ final class Engine {
             // Like the keyboard's: a click (or another tap) drops it.
             if dragLocked { endDragLock() } else { beginDragLock(manual: true) }
             publishModes()
-        case .disabled, .precisionHold, .ballScrollHold, .gesture:
+        case .disabled, .precisionHold, .ballScrollHold, .gesture, .wheel:
             return
         default:
             fireLater(action)
@@ -2977,9 +3145,10 @@ final class Engine {
 
     private func publishModes() {
         let m = Modes(precision: precisionActive, ballScrolling: ballScrolling, dragLocked: dragLocked,
-                      gestureHeld: gestures.isHeld, gestureButtons: gestures.hold?.buttons ?? [],
+                      gestureHeld: gestures.isHeld && !gestures.wheelHeld, gestureButtons: gestures.hold?.buttons ?? [],
                       gestureDirection: gestures.leaning, gestureFlash: gestureFlash,
-                      gesturePractice: practicing)
+                      gesturePractice: practicing,
+                      wheelHeld: gestures.wheelHeld, wheelSlot: gestures.hold?.wheel?.selected, wheelFlash: wheelFlash)
         guard m != modes else { return }
         modes = m
         io.toMain { self.onModes?(m) }
@@ -3024,7 +3193,7 @@ final class Engine {
         switch action {
         case .system, .disabled: return
         case .precisionHold, .precisionToggle, .ballScrollHold, .dragLock: return   // stateful: `beginMode`
-        case .gesture: return                                                       // stateful: `beginGesture`
+        case .gesture, .wheel: return                                               // stateful: `beginHold`
         case .shortcut(let s), .holdShortcut(let s): send(s); return
         case .media(let key): sendMedia(key); return
         case .openApp(let id): io.openApp(id); return

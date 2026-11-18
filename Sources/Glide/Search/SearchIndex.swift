@@ -387,6 +387,12 @@ enum SearchIndex {
                 for step in [g.up, g.down, g.left, g.right].compactMap({ $0 }) { words.append(step.action.title) }
                 if g.tap != .system { words.append(g.tap.title) }
             }
+            if case .wheel(let w) = action {
+                words.append(String(localized: "wheel, ring, radial menu, pie menu", comment: "Search words for a Wheel button (comma-separated)"))
+                for (_, a) in w.filled { words.append(a.title) }
+                words.append(w.ring.title)
+                if w.tap != .system { words.append(w.tap.title) }
+            }
             out.append(PaletteItem(id: "button:\(b)", group: .buttons,
                                    title: String(localized: "\(name): \(does)", comment: "Search palette: a trackball button and what it does, like “Top right: Back”"),
                                    detail: b == 0 ? String(localized: "Your primary click stays a left click, so Glideball can never lock you out.")
@@ -395,6 +401,17 @@ enum SearchIndex {
                                    symbol: action.symbol, part: .clicks, trailing: GlideTab.buttons.title,
                                    findable: Findable.buttonID(b)) {
                 PaletteRouter.openButton(b)
+            })
+        }
+        // The Wheel, findable before any button is one: opens top right's picker, where it's offered.
+        if !model.config.anyAction(\.isWheel) {
+            out.append(PaletteItem(id: "wheel", group: .buttons,
+                                   title: String(localized: "Make a button a Wheel", comment: "Search palette: set up the Wheel button action"),
+                                   detail: String(localized: "Hold it and a ring of actions appears around the pointer; roll toward one and let go.", comment: "Search palette: the Wheel"),
+                                   keywords: String(localized: "wheel, ring, radial menu, pie menu", comment: "Search words for a Wheel button (comma-separated)"),
+                                   symbol: "circle.dotted.circle", part: .clicks, trailing: GlideTab.buttons.title,
+                                   findable: Findable.buttonID(3)) {
+                PaletteRouter.openButton(3)
             })
         }
         for chord in model.config.chords {

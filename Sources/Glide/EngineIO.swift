@@ -269,6 +269,90 @@ class EngineIO {
         return result == 0 ? nil : "the background-cursor switch failed (\(result))"
     }()
 
+    // MARK: The Wheel's overlay
+
+    /// Draws the Wheel's ring on screen (the app's SwiftUI view, `WheelOverlayPanel`). Main
+    /// thread only. Set once at launch; nil (render-ui, self-test) means no overlay, and a
+    /// Wheel that can't be shown runs nothing.
+    nonisolated(unsafe) static var wheelPresenter: WheelPresenting?
+
+    /// Shows the Wheel's ring centred on `point` (a global Quartz point), or updates it. The
+    /// engine must call `keepWheel` at least every `standInLease`, or the main thread takes it
+    /// down: a stuck input thread can't leave it on screen. False if there's nothing to draw
+    /// it with. Callable from any thread; drawn on the main thread, newest state wins.
+    func showWheel(_ model: WheelOverlayModel, at point: CGPoint) -> Bool {
+        guard Self.wheelPresenter != nil else { return false }
+        wheel.lock.lock()
+        let first = wheel.wanted == nil
+        wheel.wanted = (model, point)
+        wheel.keptAt = now()
+        let gen = wheel.gen
+        wheel.lock.unlock()
+        DispatchQueue.main.async { [self] in placeWheel(gen: gen, first: first) }
+        return true
+    }
+
+    /// Takes the Wheel's ring down. Safe to call any number of times, from any thread.
+    func hideWheel() {
+        wheel.lock.withLock {
+            wheel.gen &+= 1
+            wheel.wanted = nil
+        }
+        if Thread.isMainThread { removeWheelIfUnwanted() } else { DispatchQueue.main.async { [self] in removeWheelIfUnwanted() } }
+    }
+
+    /// The engine is alive and still wants the ring up. False if the watchdog took it down.
+    func keepWheel() -> Bool {
+        wheel.lock.withLock {
+            guard wheel.wanted != nil else { return false }
+            wheel.keptAt = now()
+            return true
+        }
+    }
+
+    private final class WheelState {
+        let lock = NSLock()
+        var gen = 0
+        var wanted: (model: WheelOverlayModel, at: CGPoint)?
+        var keptAt: CFTimeInterval = 0
+        // Main thread only:
+        var watchdog: Timer?
+        var up = false
+    }
+    private let wheel = WheelState()
+
+    /// Main thread: the newest wanted state drawn (a show queued before a take-down does nothing).
+    private func placeWheel(gen: Int, first: Bool) {
+        guard let presenter = Self.wheelPresenter else { return }
+        let wanted: (model: WheelOverlayModel, at: CGPoint)? = wheel.lock.withLock { gen == wheel.gen ? wheel.wanted : nil }
+        guard let wanted else { return }
+        presenter.showWheel(wanted.model, at: wanted.at)
+        wheel.up = true
+        guard wheel.watchdog == nil else { return }
+        let timer = Timer(timeInterval: 0.25, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            let state = self.wheel
+            let now = self.now()
+            state.lock.withLock {
+                guard state.wanted != nil, now - state.keptAt > Self.standInLease else { return }
+                state.gen &+= 1
+                state.wanted = nil
+            }
+            removeWheelIfUnwanted()
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        wheel.watchdog = timer
+    }
+
+    /// Main thread: the ring gone once nothing wants it.
+    private func removeWheelIfUnwanted() {
+        guard wheel.lock.withLock({ wheel.wanted == nil }) else { return }
+        if wheel.up { Self.wheelPresenter?.hideWheel() }
+        wheel.up = false
+        wheel.watchdog?.invalidate()
+        wheel.watchdog = nil
+    }
+
     /// The mouse buttons macOS currently has down (any mouse), for when the tap was off.
     func buttonsDown() -> Set<Int64> {
         Set((0...31).filter { CGEventSource.buttonState(.combinedSessionState, button: CGMouseButton(rawValue: UInt32($0))!) }

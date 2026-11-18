@@ -54,14 +54,14 @@ struct ButtonsView: View {
                 .findable(.combos)
                 .pageColumn(.trailing)
 
-            if model.config.anyAction(\.isGesture) {
+            if model.config.anyAction(\.holdsTheBall) {
                 GestureSettingsCard(model: model)
                     .transition(.opacity.combined(with: .move(edge: .top)))
                     .pageColumn(.trailing)
             }
         }
         .animation(Theme.Motion.spring, value: model.assignStep)
-        .animation(Theme.Motion.spring, value: model.config.anyAction(\.isGesture))
+        .animation(Theme.Motion.spring, value: model.config.anyAction(\.holdsTheBall))
         .onAppear {
             if let id = Self.sandboxPreview { preview = ButtonPreset.all.first { $0.id == id } }
             takeRequest()
@@ -80,7 +80,7 @@ struct ButtonsView: View {
             // One button let go, alone: open its picker (a combo opens nothing, and neither
             // does a gesture button: you press those here to try them).
             if old.count == 1, new.isEmpty, let b = old.first, b != 0, openPad == nil,
-               model.assignStep == .idle, preview == nil, !(model.buttonsInEffect[b]?.isGesture ?? false) {
+               model.assignStep == .idle, preview == nil, !(model.buttonsInEffect[b]?.holdsTheBall ?? false) {
                 openPad = b
             }
         }
@@ -195,8 +195,8 @@ struct ButtonMap: View {
                     TrackballView(feed: model.live, pressed: model.pressed, look: TrackballLook.of(model))
                         .frame(width: side, height: side)
                     PadTargets(side: side, openPad: $openPad, highlighted: preview.map(changedPads) ?? [],
-                               gesturePads: Set((1..<4).filter { (preview?.action(for: $0) ?? current($0)).isGesture }),
-                               heldPads: model.modes.gestureHeld ? Set(model.modes.gestureButtons) : [])
+                               gesturePads: Set((1..<4).filter { (preview?.action(for: $0) ?? current($0)).holdsTheBall }),
+                               heldPads: model.modes.gestureHeld || model.modes.wheelHeld ? Set(model.modes.gestureButtons) : [])
                     GestureHeldOverlay(model: model)
                         .frame(width: side, height: side)
                 }
@@ -604,8 +604,13 @@ struct ButtonRow: View {
                               gesture: Binding(get: { g }, set: { action = .gesture($0) }))
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
+            if case .wheel(let w) = action, index != 0 {
+                WheelEditor(model: model, buttons: [index], menu: Binding(get: { w }, set: { action = .wheel($0) }))
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
         }
         .animation(Theme.Motion.spring, value: action.isGesture)
+        .animation(Theme.Motion.spring, value: action.isWheel)
     }
 
     private var row: some View {

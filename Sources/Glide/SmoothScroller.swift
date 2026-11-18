@@ -537,6 +537,15 @@ final class SmoothScroller: NSObject {
         stop()
     }
 
+    /// A Wheel took the ring: whatever the ring set going stops where it is (and nothing
+    /// held back is posted). Scroll with ball is left alone.
+    func stopRing() {
+        halt()
+        throwStart = 0
+        emitted = position
+        if ballMode == .idle { stop() }
+    }
+
     /// The frame loop is running (scripts/engine-fuzz drives frames while it is).
     var wantsFrames: Bool { running }
 

@@ -396,6 +396,76 @@ extension RenderUI {
             fullPage(page(.buttons, model), dark: dark, scale: scale)
         }
 
+        // The Wheel: its editor on the Buttons page, the picker, a held Wheel, and its ring on screen.
+        var eightWheel = WheelMenu.standard
+        eightWheel.eight = true
+        eightWheel[1] = .shortcut(.newTab)
+        eightWheel[3] = .media(.playPause)
+        eightWheel[5] = .shortcut(.screenshot)
+        eightWheel[7] = .shortcut(.spotlight)
+        eightWheel.ring = .zoom
+        func wheelButtons() {
+            model.config.buttons[3] = .wheel(.standard)
+            model.config.buttons[2] = .wheel(eightWheel)
+        }
+        func wheelHeld(slot: Int?, buttons: [Int] = [3]) {
+            var m = Engine.Modes()
+            m.wheelHeld = true
+            m.gestureButtons = buttons
+            m.wheelSlot = slot
+            model.modes = m
+            model.pressed = Set(buttons)
+        }
+        add("buttons-wheel-page", "Wheel", "Top right a four-slot Wheel, top left an eight-slot one with Zoom on the ring: the editor under each row",
+            prepare: wheelButtons, cleanup: restoreButtons) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale)
+        }
+        add("buttons-wheel-narrow", "Wheel", "The Wheel editor at the smallest window's width (stacked)",
+            prepare: wheelButtons, cleanup: restoreButtons) { dark, scale in
+            card(page(.buttons, model).frame(width: AppDelegate.mainWindowMinSize.width - Theme.Space.sidebarWidth - Theme.Space.contentSide * 2),
+                 width: AppDelegate.mainWindowMinSize.width - Theme.Space.sidebarWidth, dark: dark, scale: scale)
+        }
+        add("buttons-wheel-held", "Wheel", "Holding top right and rolling right: Next Space lit in the editor, the armed ring on the sidebar ball",
+            prepare: { wheelButtons(); wheelHeld(slot: 2) },
+            cleanup: restoreButtons) { dark, scale in
+            mainWindow(model, tab: .buttons, dark: dark, scale: scale)
+        }
+        add("buttons-wheel-custom-ring", "Wheel", "A Wheel whose ring job is your own pair (Back and Forward)",
+            prepare: {
+                var w = WheelMenu.standard
+                w.ring = .custom
+                w.ringDown = .back
+                w.ringUp = .forward
+                model.config.buttons[3] = .wheel(w)
+            }, cleanup: restoreButtons) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale)
+        }
+        add("buttons-picker-wheel", "Wheel", "The picker for top right: Gesture and Wheel under Hold and roll") { dark, scale in
+            card(PopoverMock { ActionPickerPanel(current: .back, button: 3) { _ in } }, width: 470, dark: dark, scale: scale)
+        }
+        add("buttons-picker-wheel-slot", "Wheel", "The picker for a Wheel slot (quick actions only)") { dark, scale in
+            card(PopoverMock { ActionPickerPanel(current: .shortcut(.missionControl), purpose: .wheelSlot) { _ in } }, width: 470, dark: dark, scale: scale)
+        }
+        let fourLit = WheelOverlayModel(menu: .standard, selected: 0, dot: CGPoint(x: 0, y: -0.75),
+                                        ring: .init(job: .volume, clockwise: true, steps: 3))
+        let eightLit = WheelOverlayModel(menu: eightWheel, selected: 1, dot: CGPoint(x: 0.56, y: -0.56),
+                                         ring: .init(job: .zoom, clockwise: false, steps: 2))
+        add("wheel-overlay-4", "Wheel", "The Wheel on screen: four slots, Mission Control lit, the ring turning the volume up") { dark, scale in
+            wheelOverlay(fourLit, busy: false, dark: dark, scale: scale)
+        }
+        add("wheel-overlay-8", "Wheel", "Eight slots, New Tab lit (up right), the ring zooming out") { dark, scale in
+            wheelOverlay(eightLit, busy: false, dark: dark, scale: scale)
+        }
+        add("wheel-overlay-4-plain", "Wheel", "Just appeared: nothing lit yet, the ring not turned") { dark, scale in
+            wheelOverlay(WheelOverlayModel(menu: .standard, selected: nil, dot: .zero, ring: nil), busy: false, dark: dark, scale: scale)
+        }
+        add("wheel-overlay-4-busy", "Wheel", "Four slots over a bright, busy wallpaper (contrast)") { dark, scale in
+            wheelOverlay(fourLit, busy: true, dark: dark, scale: scale)
+        }
+        add("wheel-overlay-8-busy", "Wheel", "Eight slots over a bright, busy wallpaper (contrast)") { dark, scale in
+            wheelOverlay(eightLit, busy: true, dark: dark, scale: scale)
+        }
+
         func displays(_ n: Int, enabled: Bool = true) {
             let all = [DisplayInfo(key: "610-41271-1", name: "Built-in Retina Display", isMain: true,
                                    frame: CGRect(x: 0, y: 0, width: 1512, height: 982)),

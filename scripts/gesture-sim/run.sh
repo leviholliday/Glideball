@@ -7,6 +7,7 @@ cd "$(dirname "$0")/../.."
 OUT="${TMPDIR:-/tmp}/glide-gesture-sim"
 swiftc -O -swift-version 5 -o "$OUT" \
   Sources/Glide/Gestures.swift \
+  Sources/Glide/Wheel.swift \
   Sources/Glide/Config.swift \
   Sources/Glide/AppProfile.swift \
   Sources/Glide/ImportSafety.swift \

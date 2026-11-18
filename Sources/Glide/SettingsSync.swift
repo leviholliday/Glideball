@@ -220,12 +220,20 @@ final class SettingsSync {
             let merged = config.keepingNewerFeatures(from: local)
             config = merged.config
             keptNewer = merged.kept
-        } else if GlideSettingsFile.predatesGestureTuning(file.settings.writtenBy) {
-            // A 2.10 beta that knew gestures but not "Once per hold" or gesture
-            // distance wrote these: put back what it couldn't carry, quietly.
-            let merged = config.keepingGestureTuning(from: local)
-            config = merged.config
-            keptTuning = merged.kept
+        } else {
+            if GlideSettingsFile.predatesGestureTuning(file.settings.writtenBy) {
+                // A 2.10 beta that knew gestures but not "Once per hold" or gesture
+                // distance wrote these: put back what it couldn't carry, quietly.
+                let merged = config.keepingGestureTuning(from: local)
+                config = merged.config
+                keptTuning = merged.kept
+            }
+            if GlideSettingsFile.predatesWheel(file.settings.writtenBy) {
+                // A 2.10 beta before the Wheel skipped every Wheel button and combo: put them back.
+                let merged = config.keepingWheels(from: local)
+                config = merged.config
+                keptTuning = keptTuning || merged.kept
+            }
         }
         if Self.syncable(config) != Self.syncable(local) {
             config.enabled = local.enabled   // the pause switch stays per-Mac

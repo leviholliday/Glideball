@@ -509,6 +509,7 @@ extension ButtonAction {
         case .media: "media"
         case .openApp: "openApp"
         case .gesture: "gesture"
+        case .wheel: "wheel"
         }
     }
 }

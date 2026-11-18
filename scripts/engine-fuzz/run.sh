@@ -31,6 +31,7 @@ swiftc "${FLAGS[@]}" -swift-version 5 -o "$OUT" \
   Sources/Glide/EngineIO.swift \
   Sources/Glide/SmoothScroller.swift \
   Sources/Glide/Gestures.swift \
+  Sources/Glide/Wheel.swift \
   Sources/Glide/DisplayTracking.swift \
   Sources/Glide/DeviceBattery.swift \
   Sources/Glide/DeviceSupport.swift \
