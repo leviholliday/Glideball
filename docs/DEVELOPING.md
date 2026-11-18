@@ -170,7 +170,9 @@ scripts/render-ui.sh build/screens-de --lang de       # any translation, to chec
 scripts/render-ui.sh build/s --only 'settings-*,tour-*' --appearance dark --scale 1
 ```
 
-It builds, then draws each screen offscreen with demo data (a connected Kensington Expert Mouse, a month of stats, milestones part-way, three app setups, two combos, sync on with three Macs, a backup history) to `<screen>.<light|dark>.png`, plus `index.html` (a contact sheet: open it in a browser) and `manifest.json`. `--only` takes names, a name's variants (`overview` also matches `overview-page`) or globs. Options: `--appearance light|dark|both`, `--scale 1|2`, `--lang <code>`, `--no-build`. About a minute for everything.
+It builds, then draws each screen offscreen with demo data (a connected Kensington Expert Mouse, a month of stats, milestones part-way, three app setups, two combos, sync on with three Macs, a backup history) to `<screen>.<light|dark>.png`, plus `index.html` (a contact sheet: open it in a browser) and `manifest.json`. `--only` takes names, a name's variants (`overview` also matches `overview-page`) or globs. Options: `--appearance light|dark|both`, `--scale 1|2`, `--lang <code>`, `--no-build`. About 8 to 9 minutes for everything (288 screens, light and dark, 2x).
+
+One process can't draw every screen (SwiftUI's AttributeGraph runs out of table space after ~180 scenes), so a run of more than `RENDER_UI_BATCH` screens (default 60) is split: the script asks the binary for the list (`--list`), draws it in batches, one process after another (`--slice <from>,<count>`, each leaving a `.render-ui-part-*.json`), then joins them into one `index.html` and `manifest.json` (`--assemble`). The output is the same as one run's.
 
 Wide windows (`Views/PageLayout.swift`): pages are one column (680 pt, left) until they have 900 pt of room, then two columns (three-wide rows from 1,240), at most 1,360 pt and centered. `--only 'wide-*'` draws every tab in full screen at 1440, 1920 and 2560 wide (`wide-<w>-<tab>`, and `-page` for the whole page), in 1220 and 1440 windows (`wide-window-*`) and Overview at 3440. The self-test lays every tab out at 980, 1440 and 2560.
 
