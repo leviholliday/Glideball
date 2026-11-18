@@ -88,23 +88,27 @@ enum ImportReview {
         case .modifiedClick:
             return action.title
         case .gesture(let g):
-            let arrows: [(GestureDirection, String)] = [(.up, "↑"), (.down, "↓"), (.left, "←"), (.right, "→")]
-            var parts = arrows.compactMap { d, arrow in g[d].map { "\(arrow) \(describe($0.action))" } }
+            // Clockwise from up, as the ring lays them out; a More lists what's in it.
+            let arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"]
+            var parts = g.usedDirections.compactMap { d -> String? in
+                guard let step = g[d] else { return nil }
+                if let sub = step.more {
+                    let inside = sub.indices.compactMap { p in sub[p].map { "\(arrows[p]) \(describe($0.action))" } }
+                    let more = String(localized: "More", comment: "Gestures: a direction that opens a second ring of actions")
+                    return "\(arrows[d.place]) \(more)" + (inside.isEmpty ? "" : " (" + inside.joined(separator: ", ") + ")")
+                }
+                return "\(arrows[d.place]) \(describe(step.action))"
+            }
+            if g.ring == .custom, let cw = g.ringActions.clockwise, let ccw = g.ringActions.counterclockwise {
+                parts.append(String(localized: "ring: \(describe(ccw)) / \(describe(cw))", comment: "Wheel summary: what turning the scroll ring does each way"))
+            } else if g.ring != .off, g.ring != .scroll {
+                parts.append(String(localized: "ring: \(g.ring.title)", comment: "Wheel summary: the ring job, like “ring: Volume”"))
+            }
             if g.tap != .system { parts.append(String(localized: "tap: \(describe(g.tap))", comment: "Gesture summary: what a plain tap does")) }
-            let title = String(localized: "Gesture", comment: "Button action: hold the button and roll the ball up, down, left or right")
+            let title = ButtonAction.gesture(g).title
             return parts.isEmpty ? title : "\(title): " + parts.joined(separator: ", ")
         case .wheel(let w):
-            // Clockwise from up, as the Wheel lays them out.
-            let arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"]
-            var parts = w.usedPlaces.compactMap { p in w[p].map { "\(arrows[p]) \(describe($0))" } }
-            if let up = w.ringActions.up, let down = w.ringActions.down, w.ring == .custom {
-                parts.append(String(localized: "ring: \(describe(down)) / \(describe(up))", comment: "Wheel summary: what turning the scroll ring does each way"))
-            } else if w.ring != .off {
-                parts.append(String(localized: "ring: \(w.ring.title)", comment: "Wheel summary: the ring job, like “ring: Volume”"))
-            }
-            if w.tap != .system { parts.append(String(localized: "tap: \(describe(w.tap))", comment: "Gesture summary: what a plain tap does")) }
-            let title = String(localized: "Wheel", comment: "Button action: hold the button, roll the ball to pick from a ring of actions around the pointer")
-            return parts.isEmpty ? title : "\(title): " + parts.joined(separator: ", ")
+            return describe(.gesture(ButtonGesture(wheel: w)), on: button)
         case .switcher(let a):
             let title = String(localized: "Switcher", comment: "Button action: hold the button, roll the ball to pick a running app, let go to switch to it (like ⌘-Tab)")
             guard a.tap != .system else { return title }

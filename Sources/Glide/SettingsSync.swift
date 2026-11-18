@@ -240,6 +240,15 @@ final class SettingsSync {
                 config = merged.config
                 keptTuning = keptTuning || merged.kept
             }
+            if GlideSettingsFile.predatesGesturesMerge(file.settings.writtenBy) {
+                // A 2.10 beta before Gestures and the Wheel became one read each Gestures button
+                // as a plain four-way gesture and wrote that back: put back the rest (eight ways,
+                // the ring, More, Reverse) wherever it left the button alone. (Its own Wheels
+                // come in as Gestures shown right away: `clamped`.)
+                let merged = config.clamped().keepingGesturesMerge(from: local)
+                config = merged.config
+                keptTuning = keptTuning || merged.kept
+            }
         }
         if Self.syncable(config) != Self.syncable(local) {
             config.enabled = local.enabled   // the pause switch stays per-Mac

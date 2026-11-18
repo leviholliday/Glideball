@@ -376,6 +376,11 @@ enum SearchIndex {
 
     // MARK: Buttons and combos
 
+    /// What people might call Gestures and its ring (the Wheel's words too: it's part of Gestures now).
+    static var gesturesWords: String {
+        String(localized: "gestures, hold and roll, ring, wheel, radial menu, pie menu, more, show the ring, reverse", comment: "Search words for a Gestures button (comma-separated)")
+    }
+
     static func buttons(_ model: AppModel) -> [PaletteItem] {
         var out: [PaletteItem] = []
         for b in 0..<4 {
@@ -384,14 +389,19 @@ enum SearchIndex {
             let does = b == 0 ? String(localized: "Left click") : (action == .system ? AppModel.buttonDefault(b) : action.title)
             var words = [String(localized: "button, click, assign, remap", comment: "Search words for a trackball button (comma-separated)"), does]
             if case .gesture(let g) = action {
-                for step in [g.up, g.down, g.left, g.right].compactMap({ $0 }) { words.append(step.action.title) }
+                words.append(Self.gesturesWords)
+                for d in g.usedDirections {
+                    guard let step = g[d] else { continue }
+                    if let sub = step.more {
+                        words.append(String(localized: "More", comment: "Gestures: a direction that opens a second ring of actions"))
+                        for s in sub.compactMap({ $0 }) { words.append(s.action.title) }
+                    } else {
+                        words.append(step.action.title)
+                    }
+                }
+                if g.show != .never { words.append(String(localized: "Show the ring", comment: "Gestures editor: when the ring of actions shows around the pointer")) }
+                if g.ring != .scroll { words.append(g.ring.title) }
                 if g.tap != .system { words.append(g.tap.title) }
-            }
-            if case .wheel(let w) = action {
-                words.append(String(localized: "wheel, ring, radial menu, pie menu", comment: "Search words for a Wheel button (comma-separated)"))
-                for (_, a) in w.filled { words.append(a.title) }
-                words.append(w.ring.title)
-                if w.tap != .system { words.append(w.tap.title) }
             }
             if case .switcher(let s) = action {
                 words.append(String(localized: "switcher, switch apps, command tab, ⌘-Tab", comment: "Search words for a Switcher button (comma-separated)"))
@@ -407,13 +417,13 @@ enum SearchIndex {
                 PaletteRouter.openButton(b)
             })
         }
-        // The Wheel, findable before any button is one: opens top right's picker, where it's offered.
-        if !model.config.anyAction(\.isWheel) {
-            out.append(PaletteItem(id: "wheel", group: .buttons,
-                                   title: String(localized: "Make a button a Wheel", comment: "Search palette: set up the Wheel button action"),
-                                   detail: String(localized: "Hold it and a ring of actions appears around the pointer; roll toward one and let go.", comment: "Search palette: the Wheel"),
-                                   keywords: String(localized: "wheel, ring, radial menu, pie menu", comment: "Search words for a Wheel button (comma-separated)"),
-                                   symbol: "circle.dotted.circle", part: .clicks, trailing: GlideTab.buttons.title,
+        // Gestures, findable before any button is one: opens top right's picker, where it's offered.
+        if !model.config.anyAction(\.isGesture) {
+            out.append(PaletteItem(id: "gestures", group: .buttons,
+                                   title: String(localized: "Set up Gestures on a button", comment: "Search palette: set up the Gestures button action"),
+                                   detail: String(localized: "Hold it and roll the ball one way or another. It can show a ring of actions around the pointer.", comment: "Search palette: Gestures"),
+                                   keywords: Self.gesturesWords,
+                                   symbol: ButtonAction.gesturesSymbol, part: .clicks, trailing: GlideTab.buttons.title,
                                    findable: Findable.buttonID(3)) {
                 PaletteRouter.openButton(3)
             })

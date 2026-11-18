@@ -1,21 +1,27 @@
 import AppKit
 import SwiftUI
 
-// The Wheel's ring on screen: a Liquid Glass ring of slots around the held pointer,
-// the lit slot in the ball's blue, the ring job's readout in the ring's pink, and a
-// small dot in the hub that shows where the ball has "rolled" to. The engine decides
+// A Gestures button's ring on screen: a Liquid Glass ring of chips around the held pointer,
+// the lit one in the ball's blue, the ring job's readout in the ring's pink, and a small dot
+// in the hub that shows where the ball has "rolled" to. A More opens its own ring in place
+// (a little smaller, with a way back); a blind hold shows only the readout. The engine decides
 // everything (Wheel.swift, Gestures.swift) and hands this a `WheelOverlayModel` through
-// `EngineIO.showWheel`; this only draws it. The stand-in pointer (EngineIO's) stays on
-// top at the centre, so the pointer you're used to sits in the hub.
+// `EngineIO.showWheel`; this only draws it. The stand-in pointer (EngineIO's) stays on top at
+// the centre, so the pointer you're used to sits in the hub. (Still "Wheel" in the code: it
+// was the Wheel action in betas 24 to 27.)
 
-/// The sizes of the ring, for four and for eight slots.
+/// The sizes of the ring, for four and for eight places, and a More's (a little smaller).
 struct WheelLayout {
     let radius: CGFloat       // centre to a chip's centre
     let chip: CGSize
     let hub: CGFloat          // the hub's diameter
     static let four = WheelLayout(radius: 98, chip: CGSize(width: 92, height: 60), hub: 46)
     static let eight = WheelLayout(radius: 128, chip: CGSize(width: 78, height: 54), hub: 46)
-    static func `for`(_ menu: WheelMenu) -> WheelLayout { menu.eight ? eight : four }
+    static let subFour = WheelLayout(radius: 90, chip: CGSize(width: 84, height: 54), hub: 42)
+    static let subEight = WheelLayout(radius: 118, chip: CGSize(width: 72, height: 50), hub: 42)
+    static func `for`(_ m: WheelOverlayModel) -> WheelLayout {
+        m.sub ? (m.eight ? subEight : subFour) : (m.eight ? eight : four)
+    }
 
     /// The window: room for the ring, its glow and the readout under it, centred on the pointer.
     static let canvas = CGSize(width: 420, height: 470)
@@ -46,9 +52,22 @@ struct WheelOverlayView: View {
     var body: some View {
         ZStack {
             if let m = state.model {
-                ring(m)
-                    .scaleEffect(state.shown || reduceMotion ? 1 : 0.9)
-                    .opacity(state.shown ? 1 : 0)
+                Group {
+                    if m.showsRing {
+                        ring(m)
+                            // A More opening (or closing) swaps the ring in place: scale and fade
+                            // (Reduce Motion: fade only).
+                            .id(m.sub)
+                            .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.9)))
+                    } else if let r = m.ring {
+                        // A blind hold: only what the ring is doing, just under the pointer.
+                        WheelRingReadout(readout: r)
+                            .position(x: WheelLayout.centre.x, y: WheelLayout.centre.y + 44)
+                    }
+                }
+                .scaleEffect(state.shown || reduceMotion ? 1 : 0.9)
+                .opacity(state.shown ? 1 : 0)
+                .animation(.easeOut(duration: 0.12), value: m.sub)
             }
         }
         .frame(width: WheelLayout.canvas.width, height: WheelLayout.canvas.height, alignment: .topLeading)
@@ -57,8 +76,7 @@ struct WheelOverlayView: View {
     }
 
     private func ring(_ m: WheelOverlayModel) -> some View {
-        let layout = WheelLayout.for(m.menu)
-        let filled = Set(m.menu.filled.map(\.place))
+        let layout = WheelLayout.for(m)
         let band = layout.chip.height / 2 + 8
         let track = WheelTrack(inner: layout.radius - band, outer: layout.radius + band)
         return ZStack {
@@ -69,9 +87,8 @@ struct WheelOverlayView: View {
                 .overlay { track.stroke(Color.white.opacity(scheme == .dark ? 0.14 : 0.5), lineWidth: 0.5) }
                 .shadow(color: .black.opacity(scheme == .dark ? 0.35 : 0.12), radius: 18, y: 6)
                 .frame(width: (layout.radius + band) * 2, height: (layout.radius + band) * 2)
-            ForEach(m.menu.usedPlaces, id: \.self) { place in
-                WheelChip(action: filled.contains(place) ? m.menu[place] : nil,
-                          lit: m.selected == place, size: layout.chip)
+            ForEach(m.usedPlaces, id: \.self) { place in
+                WheelChip(slot: m.slots[place], lit: m.selected == place, size: layout.chip)
                     .offset(layout.offset(place))
             }
             WheelHub(dot: m.dot, size: layout.hub, lit: m.selected != nil)
@@ -101,21 +118,50 @@ struct WheelTrack: Shape {
     }
 }
 
-/// One slot: a glass chip with the action's symbol and a short name; lit in the ball's blue.
+/// One place: a glass chip with the action's symbol and a short name (or More, or the way
+/// back); lit in the ball's blue.
 struct WheelChip: View {
-    let action: ButtonAction?
+    let slot: WheelOverlayModel.Slot?
     let lit: Bool
     let size: CGSize
+
+    private var symbol: String {
+        switch slot {
+        case .action(let a): a.symbol
+        case .more: GestureStep.moreSymbol
+        case .back: "arrow.uturn.backward"
+        case nil: "circle.dashed"
+        }
+    }
+
+    private var title: String? {
+        switch slot {
+        case .action(let a): a.title
+        case .more: String(localized: "More", comment: "Gestures: a direction that opens a second ring of actions")
+        case .back: String(localized: "Back", comment: "Gestures: in a More's ring, the way back to the first ring")
+        case nil: nil
+        }
+    }
+
+    private var tint: AnyShapeStyle {
+        if lit { return AnyShapeStyle(.white) }
+        switch slot {
+        case nil: return AnyShapeStyle(.tertiary)
+        case .back: return AnyShapeStyle(.secondary)
+        case .more: return AnyShapeStyle(Theme.ball)
+        case .action: return AnyShapeStyle(.primary)
+        }
+    }
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: min(size.height / 2.4, 22), style: .continuous)
         VStack(spacing: 3) {
-            Image(systemName: action?.symbol ?? "circle.dashed")
+            Image(systemName: symbol)
                 .font(.system(size: size.height * 0.3, weight: lit ? .semibold : .medium))
                 .symbolRenderingMode(.hierarchical)
                 .frame(height: size.height * 0.36)
-            if let action {
-                Text(verbatim: action.title)
+            if let title {
+                Text(verbatim: title)
                     .font(.system(size: size.height < 58 ? 10 : 10.5, weight: lit ? .semibold : .medium))
                     .lineLimit(2)
                     .minimumScaleFactor(0.75)
@@ -123,7 +169,7 @@ struct WheelChip: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .foregroundStyle(lit ? AnyShapeStyle(.white) : action == nil ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.primary))
+        .foregroundStyle(tint)
         .padding(.horizontal, 6)
         .frame(width: size.width, height: size.height)
         .background {
@@ -135,7 +181,7 @@ struct WheelChip: View {
                 .opacity(lit ? 1 : 0)
         }
         .scaleEffect(lit ? 1.06 : 1)
-        .opacity(action == nil ? 0.55 : 1)
+        .opacity(slot == nil ? 0.55 : 1)
     }
 }
 
@@ -203,7 +249,7 @@ private final class WheelWindow: NSPanel {
     override func sendEvent(_ event: NSEvent) {}
 }
 
-/// Draws the Wheel for the engine (`EngineIO.wheelPresenter`). Main thread only.
+/// Draws the ring for the engine (`EngineIO.wheelPresenter`). Main thread only.
 @MainActor
 final class WheelOverlayPanel: WheelPresenting {
     static let shared = WheelOverlayPanel()

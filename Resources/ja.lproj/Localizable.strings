@@ -2661,3 +2661,35 @@
 "Hold this button and your open apps appear, the last one you used already picked. Roll the ball or turn the ring to choose another, and let go to switch. Esc cancels." = "このボタンを押し続けると開いているアプリが表示され、最後に使ったアプリが選ばれています。ボールを転がすかリングを回して別のアプリを選び、離すと切り替わります。Escでキャンセルします。";
 "Hold these buttons together and your open apps appear, the last one you used already picked. Roll the ball or turn the ring to choose another, and let go to switch. Esc cancels." = "これらのボタンを一緒に押し続けると開いているアプリが表示され、最後に使ったアプリが選ばれています。ボールを転がすかリングを回して別のアプリを選び、離すと切り替わります。Escでキャンセルします。";
 "A quick press, before the apps show." = "アプリが表示される前の短い押し。";
+
+/* Gestures and the Wheel as one action (Nov 18) */
+"After a pause" = "少し止めたら";
+"Back to the first ring" = "最初のリングに戻る";
+"Directions" = "方向";
+"First Ring" = "最初のリング";
+"Gestures ring" = "ジェスチャのリング";
+"Hold it and roll the ball one way or another. It can show a ring of actions around the pointer." = "押したままボールをどちらかに転がします。ポインタの周りにアクションのリングを表示することもできます。";
+"Hold the button and roll the ball: a different action each way. It can show them on a ring around the pointer." = "ボタンを押したままボールを転がすと、方向ごとに別のアクション。ポインタの周りのリングに表示することもできます。";
+"Hold the buttons together and roll the ball: a different action each way. It can show them on a ring around the pointer." = "ボタンを同時に押したままボールを転がすと、方向ごとに別のアクション。ポインタの周りのリングに表示することもできます。";
+"Hold these buttons together and roll the ball, and each way does something. A quick press does the tap." = "これらのボタンを同時に押したままボールを転がすと、方向ごとに何かが起こります。すばやく押すとタップです。";
+"Hold this button and roll the ball, and each way does something. A quick press does the tap." = "このボタンを押したままボールを転がすと、方向ごとに何かが起こります。すばやく押すとタップです。";
+"Make this way an ordinary action again" = "この方向を普通のアクションに戻す";
+"More" = "その他";
+"More ring" = "「その他」のリング";
+"Never" = "表示しない";
+"Not More" = "「その他」をやめる";
+"Nothing shows. Roll and the action happens straight away, as many times as you like in one hold." = "何も表示されません。転がすとすぐにアクションが起こり、1回の長押しで何度でも使えます。";
+"Open this ring to choose what’s in it" = "このリングを開いて中身を選ぶ";
+"Reverse" = "逆にする";
+"Right away" = "すぐに";
+"Roll quickly and the action happens straight away. Hold the ball still for a moment and the ring shows, so you can pick." = "すばやく転がすとすぐにアクションが起こります。ボールを少し止めるとリングが表示され、選べます。";
+"Rolling this way goes back to the first ring" = "この方向に転がすと最初のリングに戻ります";
+"Rolling this way opens a second ring of up to eight more actions." = "この方向に転がすと、最大8つのアクションが入った2つ目のリングが開きます。";
+"Scrolls as usual" = "いつもどおりスクロール";
+"Set up Gestures on a button" = "ボタンにジェスチャを設定";
+"Show the ring" = "リングを表示";
+"Swap which way of turning the ring does what" = "リングを回す向きと動作を入れ替える";
+"The ring scrolls as usual while you hold it." = "押している間も、リングはいつもどおりスクロールします。";
+"The ring shows as soon as you hold the button. Roll toward an action and let go to run it." = "ボタンを押すとすぐにリングが表示されます。アクションの方へ転がして離すと実行します。";
+"This is the ring More opens. Roll back through the middle to get to the first ring again; letting go in the middle cancels." = "これは「その他」で開くリングです。中央を通って戻ると最初のリングに戻り、中央で離すとキャンセルします。";
+"gestures, hold and roll, ring, wheel, radial menu, pie menu, more, show the ring, reverse" = "ジェスチャ, 押して転がす, リング, ホイール, ラジアルメニュー, パイメニュー, その他, リングを表示, 逆";

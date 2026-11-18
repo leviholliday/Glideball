@@ -2661,3 +2661,35 @@
 "Hold this button and your open apps appear, the last one you used already picked. Roll the ball or turn the ring to choose another, and let go to switch. Esc cancels." = "Tieni premuto questo pulsante e compaiono le app aperte, con l’ultima usata già scelta. Ruota la sfera o gira la ghiera per sceglierne un’altra e rilascia per passare. Esc annulla.";
 "Hold these buttons together and your open apps appear, the last one you used already picked. Roll the ball or turn the ring to choose another, and let go to switch. Esc cancels." = "Tieni premuti insieme questi pulsanti e compaiono le app aperte, con l’ultima usata già scelta. Ruota la sfera o gira la ghiera per sceglierne un’altra e rilascia per passare. Esc annulla.";
 "A quick press, before the apps show." = "Una pressione rapida, prima che compaiano le app.";
+
+/* Gestures and the Wheel as one action (Nov 18) */
+"After a pause" = "Dopo una pausa";
+"Back to the first ring" = "Torna al primo anello";
+"Directions" = "Direzioni";
+"First Ring" = "Primo anello";
+"Gestures ring" = "Anello dei gesti";
+"Hold it and roll the ball one way or another. It can show a ring of actions around the pointer." = "Tienilo premuto e fai rotolare la sfera in una direzione. Può mostrare un anello di azioni attorno al puntatore.";
+"Hold the button and roll the ball: a different action each way. It can show them on a ring around the pointer." = "Tieni premuto il tasto e fai rotolare la sfera: un’azione diversa per ogni direzione. Può mostrarle su un anello attorno al puntatore.";
+"Hold the buttons together and roll the ball: a different action each way. It can show them on a ring around the pointer." = "Tieni premuti i tasti insieme e fai rotolare la sfera: un’azione diversa per ogni direzione. Può mostrarle su un anello attorno al puntatore.";
+"Hold these buttons together and roll the ball, and each way does something. A quick press does the tap." = "Tieni premuti questi tasti insieme e fai rotolare la sfera: ogni direzione fa qualcosa. Una pressione rapida fa il tocco.";
+"Hold this button and roll the ball, and each way does something. A quick press does the tap." = "Tieni premuto questo tasto e fai rotolare la sfera: ogni direzione fa qualcosa. Una pressione rapida fa il tocco.";
+"Make this way an ordinary action again" = "Rendi di nuovo questa direzione un’azione normale";
+"More" = "Altro";
+"More ring" = "Anello Altro";
+"Never" = "Mai";
+"Not More" = "Non più Altro";
+"Nothing shows. Roll and the action happens straight away, as many times as you like in one hold." = "Non appare nulla. Fai rotolare e l’azione avviene subito, quante volte vuoi in una sola pressione.";
+"Open this ring to choose what’s in it" = "Apri questo anello per scegliere cosa contiene";
+"Reverse" = "Inverti";
+"Right away" = "Subito";
+"Roll quickly and the action happens straight away. Hold the ball still for a moment and the ring shows, so you can pick." = "Fai rotolare in fretta e l’azione avviene subito. Tieni ferma la sfera un attimo e appare l’anello, così puoi scegliere.";
+"Rolling this way goes back to the first ring" = "Rotolare in questa direzione torna al primo anello";
+"Rolling this way opens a second ring of up to eight more actions." = "Rotolare in questa direzione apre un secondo anello con fino a otto azioni in più.";
+"Scrolls as usual" = "Scorre come sempre";
+"Set up Gestures on a button" = "Imposta i gesti su un tasto";
+"Show the ring" = "Mostra l’anello";
+"Swap which way of turning the ring does what" = "Scambia cosa fa ciascun verso di rotazione dell’anello";
+"The ring scrolls as usual while you hold it." = "L’anello scorre come sempre mentre lo tieni premuto.";
+"The ring shows as soon as you hold the button. Roll toward an action and let go to run it." = "L’anello appare appena tieni premuto il tasto. Rotola verso un’azione e rilascia per eseguirla.";
+"This is the ring More opens. Roll back through the middle to get to the first ring again; letting go in the middle cancels." = "Questo è l’anello che apre Altro. Torna indietro passando dal centro per tornare al primo anello; rilasciare al centro annulla.";
+"gestures, hold and roll, ring, wheel, radial menu, pie menu, more, show the ring, reverse" = "gesti, tieni e rotola, anello, ruota, menu radiale, menu a torta, altro, mostra l’anello, inverti";

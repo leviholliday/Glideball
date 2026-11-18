@@ -86,13 +86,17 @@ struct GestureTuning: Equatable {
 enum GestureEffect: Equatable {
     /// Freeze (true) or free (false) the pointer.
     case freeze(Bool)
-    /// A direction fired: press and release this action now.
+    /// A direction fired while the hold was blind (no ring up): press and release this action now.
     case fire(ButtonAction, GestureDirection)
     /// The hold was a tap: perform this action for these buttons.
     case tap(ButtonAction, buttons: [Int])
-    /// A Wheel was let go with a slot lit: run that slot's action now (once, on release only).
+    /// Let go with a place lit on the ring: run that place's action now (once, on release only).
     case wheelPick(ButtonAction, place: Int)
-    /// The ring turned one step while a Wheel is held: run its ring job's action for that way.
+    /// A place that repeats as you roll, lit on the ring: run it now (while held: when it lights,
+    /// then every further stretch of rolling its way).
+    case ringRepeat(ButtonAction, place: Int)
+    /// The scroll ring turned one step while a Gestures button is held: run its ring job's action
+    /// for that way.
     case ringStep(ButtonAction, clockwise: Bool)
     /// A Switcher was let go with its panel up: switch to app `index` of `session`'s list
     /// (once, on release only).
@@ -107,13 +111,14 @@ enum GestureCancel: String {
 /// What kind of hold a press starts (`GestureRoute.begin`).
 enum HoldKind: Equatable {
     case gesture(ButtonGesture)
-    case wheel(WheelMenu)
     case switcher(AppSwitcher)
 
+    /// An old Wheel is Gestures, shown right away (`ButtonGesture(wheel:)`): `clamped()` turns
+    /// every one into that before the engine sees it, and this does the same for any it didn't.
     init?(_ action: ButtonAction) {
         switch action {
         case .gesture(let g): self = .gesture(g)
-        case .wheel(let w): self = .wheel(w)
+        case .wheel(let w): self = .gesture(ButtonGesture(wheel: w))
         case .switcher(let a): self = .switcher(a)
         default: return nil
         }
@@ -122,7 +127,6 @@ enum HoldKind: Equatable {
     var tapAction: ButtonAction {
         switch self {
         case .gesture(let g): g.tapAction
-        case .wheel(let w): w.tapAction
         case .switcher(let a): a.tapAction
         }
     }
@@ -155,10 +159,9 @@ enum GestureRoute: Equatable {
     /// 2. Only one gesture at a time; a second gesture button while one is held is ignored.
     /// 3. Gestures off, or no way to read the ball: the tap action, at once.
     ///
-    /// A Wheel (`ButtonAction.wheel`) follows the same rules and shares the one hold: a
-    /// Wheel and a gesture are never held at once. The Gestures switch doesn't turn Wheels
-    /// off (`wheelsEnabled` is separate, always on in the app today). The Switcher
-    /// (`ButtonAction.switcher`) is the same again, and follows `wheelsEnabled` too.
+    /// Every Gestures button follows the Gestures switch (`enabled`), ring or no ring. The
+    /// Switcher (`ButtonAction.switcher`) follows the same rules and shares the one hold, but
+    /// follows `wheelsEnabled` (always on in the app today).
     static func decide(action: ButtonAction, buttons: [Int], enabled: Bool, canReadBall: Bool,
                        gestureHeld: Bool, wheelsEnabled: Bool = true) -> GestureRoute {
         guard let kind = HoldKind(action) else { return .notGesture }
@@ -171,6 +174,16 @@ enum GestureRoute: Equatable {
 }
 
 /// One gesture hold at a time. Not thread-safe: the engine's input thread only.
+///
+/// A Gestures hold is **blind** (rolling fires a direction the moment it crosses the threshold,
+/// chained, continuous or once, as gestures always were) until its ring comes into play
+/// (`Hold.wheel`): right away (Show the ring: Right away), when the ball has been still for a
+/// moment with nothing fired (After a pause), or when the ball goes into a More. From then on
+/// for the rest of the hold it's the ring's way: the ball lights a place, letting go runs it once;
+/// a place that repeats as you roll runs as it lights and again every further step its way; More
+/// opens its own ring in place, and rolling back through the centre to the way back (opposite the
+/// More) returns to the first one. The scroll ring does the ring job all through, unless it's
+/// "Scrolls as usual".
 final class GestureMachine {
     struct Hold: Equatable {
         var buttons: [Int]
@@ -193,11 +206,27 @@ final class GestureMachine {
         /// "Once per hold" directions that have fired.
         var spent: Set<GestureDirection> = []
         var otherPress = false           // another button went down during the hold: no tap
-        /// A Wheel hold (nil: a gesture's). Its `gesture` is then empty but for the tap.
+        /// The ring, once it's in play (nil: blind).
         var wheel: WheelHold?
-        /// A Switcher hold (nil: a gesture's or a Wheel's), the same way.
+        /// A Switcher hold (nil: a Gestures one). Its `gesture` is then empty but for the tap.
         var switcher: SwitcherHold?
+        /// Esc, another trackball button or the ring's overlay lost: nothing more runs this hold.
+        var dismissed = false
+        /// The ring job: turned this hold (then no tap), how many steps, the last one.
+        var ringUsed = false
+        var ringSteps = 0
+        var lastRingStep = -Double.infinity
+        var lastRingClockwise: Bool?
+        /// The readout couldn't be drawn (or the watchdog took it): it isn't asked for again.
+        var readoutLost = false
+        /// After a pause: where the ball was last still, and since when.
+        var stillX = 0.0, stillY = 0.0
+        var lastMove: Double
     }
+
+    /// After a pause: the ring comes up once the ball has been this still (counts) for this long.
+    static let pauseSlop = 4.0
+    static let pauseToShow = 0.25
 
     /// The defaults; each hold gets its own (`begin`'s `tuning`) for its distance.
     var tuning = GestureTuning()
@@ -206,20 +235,38 @@ final class GestureMachine {
     private(set) var frozen = false
 
     var isHeld: Bool { hold != nil }
-    /// A Wheel is held (rather than a gesture).
+    /// A Gestures hold with its ring in play (shown, or about to be: Right away's short delay).
     var wheelHeld: Bool { hold?.wheel != nil }
     /// A Switcher is held.
     var switcherHeld: Bool { hold?.switcher != nil }
-    /// A Wheel or a Switcher is held: something on screen Esc can dismiss, and the ring is its.
-    var panelHeld: Bool { wheelHeld || switcherHeld }
+    /// Something on screen (or that may come up) Esc can dismiss: a ring or a Switcher.
+    var panelHeld: Bool {
+        guard let h = hold else { return false }
+        return h.switcher != nil || h.wheel != nil || h.gesture.mayShowRing
+    }
+    /// The scroll ring is the hold's (a ring job, or the Switcher's highlight): it never scrolls.
+    var ringTaken: Bool {
+        guard let h = hold else { return false }
+        return h.switcher != nil || h.gesture.takesRing
+    }
+    /// An After a pause hold still waiting for its pause (the engine looks again every so often).
+    var waitsForPause: Bool {
+        guard let h = hold else { return false }
+        return h.switcher == nil && h.wheel == nil && h.gesture.show == .afterPause && !h.dismissed && h.fired == 0
+    }
 
     /// Which way the roll is heading, for the UI's compass only (it decides nothing):
-    /// the larger axis from the origin once the ball has moved past the tap slop
-    /// from it, otherwise the last direction that fired (nil while it's still a tap).
+    /// the larger axis (or, with eight, the nearest way that does something) from the origin
+    /// once the ball has moved past the tap slop from it, otherwise the last direction that
+    /// fired (nil while it's still a tap). Blind holds only.
     var leaning: GestureDirection? {
         guard let h = hold, h.wheel == nil, h.switcher == nil else { return nil }
         let rx = h.dx - h.ox, ry = h.dy - h.oy
         if (rx * rx + ry * ry).squareRoot() >= h.tuning.tapSlop {
+            if h.gesture.eight {
+                let angle = WheelGeometry.angle(x: rx, y: ry)
+                return h.gesture.usedDirections.min { WheelGeometry.gap(angle, $0.place) < WheelGeometry.gap(angle, $1.place) }
+            }
             let horizontal = abs(rx) >= abs(ry)
             return Self.direction(axisHorizontal: horizontal, sign: horizontal ? rx : ry)
         }
@@ -231,22 +278,16 @@ final class GestureMachine {
         guard hold == nil, !buttons.isEmpty, !buttons.contains(0) else { return [] }
         var t = tuning ?? self.tuning
         t.maxHold = min(t.maxHold, self.tuning.maxHold)
-        hold = Hold(buttons: buttons.sorted(), gesture: gesture, tuning: t, start: now)
+        var h = Hold(buttons: buttons.sorted(), gesture: gesture, tuning: t, start: now, lastMove: now)
+        if gesture.show == .atOnce { h.wheel = Self.ring(h, level: nil) }
+        hold = h
         frozen = true
         return [.freeze(true)]
     }
 
-    /// Starts a Wheel hold, like `begin`. Refuses (no effects) for the primary button or
-    /// while anything is held.
+    /// Starts an old Wheel's hold: Gestures shown right away (`ButtonGesture(wheel:)`).
     func beginWheel(buttons: [Int], menu: WheelMenu, now: Double, tuning: GestureTuning? = nil) -> [GestureEffect] {
-        guard hold == nil, !buttons.isEmpty, !buttons.contains(0) else { return [] }
-        var t = tuning ?? self.tuning
-        t.maxHold = min(t.maxHold, self.tuning.maxHold)
-        var h = Hold(buttons: buttons.sorted(), gesture: ButtonGesture(tap: menu.tap), tuning: t, start: now)
-        h.wheel = WheelHold(menu: menu, geometry: WheelGeometry(t))
-        hold = h
-        frozen = true
-        return [.freeze(true)]
+        begin(buttons: buttons, gesture: ButtonGesture(wheel: menu), now: now, tuning: tuning)
     }
 
     /// Starts a Switcher hold, like `begin`. `session` names this hold's app list (the engine
@@ -255,11 +296,20 @@ final class GestureMachine {
         guard hold == nil, !buttons.isEmpty, !buttons.contains(0) else { return [] }
         var t = tuning ?? self.tuning
         t.maxHold = min(t.maxHold, self.tuning.maxHold)
-        var h = Hold(buttons: buttons.sorted(), gesture: ButtonGesture(tap: switcher.tap), tuning: t, start: now)
+        var h = Hold(buttons: buttons.sorted(), gesture: ButtonGesture(tap: switcher.tap), tuning: t, start: now, lastMove: now)
         h.switcher = SwitcherHold(session: session, step: t.commit, tapSlop: t.tapSlop)
         hold = h
         frozen = true
         return [.freeze(true)]
+    }
+
+    /// The ring for this hold at `level` (nil: the first one), centred where the ball is now.
+    private static func ring(_ h: Hold, level: Int?) -> WheelHold {
+        var w = WheelHold(level: level, steps: h.gesture.steps(level: level), eight: h.gesture.eight, geometry: WheelGeometry(h.tuning))
+        w.travel = h.travel
+        w.rawX = h.dx
+        w.rawY = h.dy
+        return w
     }
 
     /// The main thread built the list for `session`: its grid. Ignored unless that hold is
@@ -284,42 +334,72 @@ final class GestureMachine {
     }
 
     /// Another button went down while a gesture is held: the release won't be a tap.
-    /// A Wheel is dismissed: nothing runs at the release, and the ring goes away.
-    /// `dismissesWheel`: the trackball's own button does; another mouse's click doesn't
+    /// A hold that has (or may get) a ring is dismissed: nothing more runs, and the ring goes
+    /// away. `dismissesWheel`: the trackball's own button does; another mouse's click doesn't
     /// (its press never changes what the trackball holds, beyond the tap).
     func otherPress(_ button: Int, dismissesWheel: Bool = true) {
         guard var h = hold, !h.buttons.contains(button) else { return }
         h.otherPress = true
-        if dismissesWheel, h.wheel != nil { h.wheel?.dismissed = true; h.wheel?.selected = nil }
         if dismissesWheel, h.switcher != nil { h.switcher?.dismissed = true }
+        if dismissesWheel, h.switcher == nil, h.wheel != nil || h.gesture.mayShowRing { Self.dismiss(&h) }
         hold = h
     }
 
-    /// Esc while a Wheel or a Switcher is held: as another button would.
+    /// Esc while a ring (or the chance of one) or a Switcher is held, or the ring's overlay was
+    /// lost: as another button would.
     func dismissWheel() {
-        guard var h = hold, h.wheel != nil || h.switcher != nil else { return }
+        guard var h = hold, h.wheel != nil || h.switcher != nil || h.gesture.mayShowRing else { return }
         h.otherPress = true
-        h.wheel?.dismissed = true
-        h.wheel?.selected = nil
+        Self.dismiss(&h)
         h.switcher?.dismissed = true
         hold = h
     }
 
-    /// The Wheel's overlay as it should look now (nil: hidden, or no Wheel held). Brings the
-    /// ring up once `WheelHold.revealDelay` has passed since the press.
-    func wheelOverlay(now: Double) -> WheelOverlayModel? {
-        guard var h = hold, var w = h.wheel else { return nil }
-        if !w.revealed, now - h.start >= WheelHold.revealDelay {
-            w.revealed = true
-            h.wheel = w
-            hold = h
-        }
-        return w.overlay
+    /// The ring job's readout (alone, for a blind hold) couldn't be drawn: don't ask again.
+    /// Gestures go on as they were.
+    func readoutLost() {
+        guard var h = hold else { return }
+        h.readoutLost = true
+        hold = h
     }
 
-    /// One report from the scroll ring while a Wheel is held: a step of its ring job each
-    /// way, at most one per `minRepeatInterval` (the rest are dropped, never queued). It never
-    /// picks a slot. Nothing for a gesture hold (the ring scrolls as usual then).
+    private static func dismiss(_ h: inout Hold) {
+        h.dismissed = true
+        h.wheel?.dismissed = true
+        h.wheel?.selected = nil
+        h.wheel?.running = nil
+    }
+
+    /// The ring's overlay as it should look now (nil: hidden, or nothing to show). Brings the
+    /// ring up once `WheelHold.revealDelay` has passed since the press (Right away), or once the
+    /// ball has been still for `pauseToShow` with nothing fired (After a pause). A blind hold
+    /// shows only the ring job's readout, once the ring has been turned.
+    func wheelOverlay(now: Double) -> WheelOverlayModel? {
+        guard var h = hold, h.switcher == nil else { return nil }
+        if h.wheel == nil, waitsForPause, now - h.lastMove >= Self.pauseToShow {
+            // Held still: the ring comes up around the pointer, lit where the ball has got to.
+            var w = Self.ring(h, level: nil)
+            w.revealed = true
+            Self.place(&w, dx: h.dx - h.ox, dy: h.dy - h.oy)
+            w.selected = w.geometry.pick(x: w.x, y: w.y, current: nil, filled: w.selectable)
+            h.wheel = w
+        }
+        if var w = h.wheel, !w.revealed, now - h.start >= WheelHold.revealDelay {
+            w.revealed = true
+            h.wheel = w
+        }
+        hold = h
+        let readout = h.ringUsed ? h.lastRingClockwise.map { WheelOverlayModel.RingReadout(job: h.gesture.ring, clockwise: $0, steps: h.ringSteps) } : nil
+        if let w = h.wheel { return w.overlay(readout: readout) }
+        guard let readout, !h.dismissed, !h.readoutLost else { return nil }
+        return WheelOverlayModel(slots: Array(repeating: nil, count: 8), eight: h.gesture.eight, showsRing: false,
+                                 selected: nil, dot: .zero, ring: readout)
+    }
+
+    /// One report from the scroll ring while something is held: the Switcher's highlight, or a
+    /// step of the Gestures button's ring job each way, at most one per `minRepeatInterval` (the
+    /// rest are dropped, never queued). It never picks a place. Nothing when the ring job is
+    /// "Scrolls as usual" (the engine lets it scroll then).
     func ring(ticks: Int, now: Double) -> [GestureEffect] {
         if var h = hold, var s = h.switcher {
             // A Switcher: one app forward (clockwise) or back per report. Nothing runs.
@@ -329,18 +409,18 @@ final class GestureMachine {
             hold = h
             return []
         }
-        guard var h = hold, var w = h.wheel, ticks != 0, !w.dismissed else { return [] }
-        defer { h.wheel = w; hold = h }
+        guard var h = hold, h.gesture.takesRing, ticks != 0, !h.dismissed else { return [] }
+        defer { hold = h }
         // Clockwise on the Expert Mouse's ring reports negative ticks (it scrolls down).
         let clockwise = ticks < 0
-        w.ringUsed = true
-        w.revealed = true
-        w.lastRingClockwise = clockwise
-        let pair = w.menu.ringActions
-        guard let action = clockwise ? pair.up : pair.down,
-              now - w.lastRingStep >= h.tuning.minRepeatInterval else { return [] }
-        w.lastRingStep = now
-        w.ringSteps += 1
+        h.ringUsed = true
+        h.lastRingClockwise = clockwise
+        h.wheel?.revealed = true   // Right away: a ring turn brings it up at once, as the Wheel did
+        let pair = h.gesture.ringActions
+        guard let action = clockwise ? pair.clockwise : pair.counterclockwise,
+              now - h.lastRingStep >= h.tuning.minRepeatInterval else { return [] }
+        h.lastRingStep = now
+        h.ringSteps += 1
         return [.ringStep(action, clockwise: clockwise)]
     }
 
@@ -355,37 +435,98 @@ final class GestureMachine {
             hold = h
             return []
         }
-        if var w = h.wheel {
-            // A Wheel: the ball moves a point around the centre and the slot it points at lights.
-            // Nothing fires until the release.
-            w.rawX += dx
-            w.rawY += dy
-            w.travel = max(w.travel, (w.rawX * w.rawX + w.rawY * w.rawY).squareRoot())
-            w.x += dx
-            w.y += dy
-            let r = (w.x * w.x + w.y * w.y).squareRoot()
-            if r > w.geometry.reach { w.x *= w.geometry.reach / r; w.y *= w.geometry.reach / r }
-            if w.travel >= w.geometry.tapSlop { w.revealed = true }
-            if !w.dismissed {
-                w.selected = w.geometry.pick(x: w.x, y: w.y, current: w.selected, filled: w.menu.filled.map(\.place))
-            }
-            h.travel = max(h.travel, w.travel)
-            h.wheel = w
-            hold = h
-            return []
-        }
-        let t = h.tuning
         h.dx += dx
         h.dy += dy
         h.travel = max(h.travel, (h.dx * h.dx + h.dy * h.dy).squareRoot())
+        // After a pause: any real movement starts the wait again.
+        let sx = h.dx - h.stillX, sy = h.dy - h.stillY
+        if sx * sx + sy * sy > Self.pauseSlop * Self.pauseSlop {
+            h.stillX = h.dx
+            h.stillY = h.dy
+            h.lastMove = now
+        }
         defer { hold = h }
+        if var w = h.wheel {
+            let effects = Self.ringBall(&h, &w, dx: dx, dy: dy, now: now)
+            h.wheel = w
+            return effects
+        }
+        guard !h.dismissed else { return [] }
+        return h.gesture.eight ? Self.blindEight(&h, now: now) : Self.blindFour(&h, now: now)
+    }
 
+    /// Puts the ring's point at (dx, dy) from its centre, within its reach.
+    private static func place(_ w: inout WheelHold, dx: Double, dy: Double) {
+        w.x = dx
+        w.y = dy
+        let r = (w.x * w.x + w.y * w.y).squareRoot()
+        if r > w.geometry.reach { w.x *= w.geometry.reach / r; w.y *= w.geometry.reach / r }
+    }
+
+    /// The ring in play: the ball moves a point around the centre and the place it points at
+    /// lights. More opens its ring, the way back returns; a place that repeats runs as it lights.
+    private static func ringBall(_ h: inout Hold, _ w: inout WheelHold, dx: Double, dy: Double, now: Double) -> [GestureEffect] {
+        w.rawX += dx
+        w.rawY += dy
+        w.travel = h.travel
+        place(&w, dx: w.x + dx, dy: w.y + dy)
+        if w.travel >= w.geometry.tapSlop { w.revealed = true }
+        guard !w.dismissed else { return [] }
+        let before = w.selected
+        w.selected = w.geometry.pick(x: w.x, y: w.y, current: w.selected, filled: w.selectable)
+        guard let s = w.selected else { w.running = nil; return [] }
+        if s != before {
+            w.running = nil
+            if s == w.back {
+                // Back through the centre to where you came from: the first ring again.
+                w = ring(h, level: nil)
+                w.revealed = true
+                return []
+            }
+            if w.level == nil, w.steps[s]?.isMore == true {
+                // More: its ring opens in place, centred where the first one was.
+                w = ring(h, level: s)
+                w.revealed = true
+                return []
+            }
+            guard let step = w.steps[s], step.repeats, let action = step.firable else { return [] }
+            w.running = s
+            w.runProgress = 0
+            return repeatFire(&h, action, place: s, now: now)
+        }
+        guard w.running == s, let step = w.steps[s], step.repeats, let action = step.firable else { return [] }
+        let v = GestureDirection(place: s).vector
+        w.runProgress = max(0, w.runProgress + dx * v.x + dy * v.y)
+        guard w.runProgress >= h.tuning.step else { return [] }
+        // Steps consumed whether or not they fire: faster than the rate limit is dropped, not queued.
+        w.runProgress = w.runProgress.truncatingRemainder(dividingBy: h.tuning.step)
+        return repeatFire(&h, action, place: s, now: now)
+    }
+
+    private static func repeatFire(_ h: inout Hold, _ action: ButtonAction, place: Int, now: Double) -> [GestureEffect] {
+        guard now - h.lastFire >= h.tuning.minRepeatInterval else { return [] }
+        h.lastFire = now
+        h.fired += 1
+        return [.ringRepeat(action, place: place)]
+    }
+
+    /// Opens the More in `direction` from a blind hold: its ring comes up in place (a More ring
+    /// always shows, whatever Show the ring says), centred where the ball is now.
+    private static func openMore(_ h: inout Hold, _ direction: GestureDirection) {
+        var w = ring(h, level: direction.place)
+        w.revealed = true
+        h.wheel = w
+    }
+
+    /// Four directions, blind: exactly as gestures always were.
+    private static func blindFour(_ h: inout Hold, now: Double) -> [GestureEffect] {
+        let t = h.tuning
         // Just after a chained fire: the origin follows the ball, so the rest of
         // the same flick can't count toward the next fire.
         if let last = h.direction, !h.continuous, now - h.lastCross < t.chainCooldown {
             h.ox = h.dx
             h.oy = h.dy
-            h.peak = Self.isHorizontal(last) ? h.dx : h.dy
+            h.peak = isHorizontal(last) ? h.dx : h.dy
             return []
         }
 
@@ -395,7 +536,7 @@ final class GestureMachine {
         // ball was back near where the hold started (Levi, beta 17). A turn smaller than the tap
         // slop is a wobble, and keeps the forward roll toward the next step.
         if let last = h.direction {
-            let horizontal = Self.isHorizontal(last)
+            let horizontal = isHorizontal(last)
             let sign: Double = last == .right || last == .down ? 1 : -1
             let pos = horizontal ? h.dx : h.dy
             let origin = horizontal ? h.ox : h.oy
@@ -410,10 +551,10 @@ final class GestureMachine {
         let ax = abs(rx), ay = abs(ry)
         let horizontal = ax >= ay
         let major = max(ax, ay), minor = min(ax, ay)
-        let way = Self.direction(axisHorizontal: horizontal, sign: horizontal ? rx : ry)
+        let way = direction(axisHorizontal: horizontal, sign: horizontal ? rx : ry)
 
         // A continuous run carries on along its axis: every `step`, the larger axis is enough.
-        if let last = h.direction, h.continuous, Self.isHorizontal(last) == horizontal, h.gesture[way]?.repeats == true {
+        if let last = h.direction, h.continuous, isHorizontal(last) == horizontal, h.gesture[way]?.repeats == true {
             guard major >= t.step else { return [] }
             // Steps consumed whether or not they fire: rolling faster than the rate
             // limit is dropped, not queued. The origin keeps the remainder along the
@@ -439,6 +580,10 @@ final class GestureMachine {
         h.direction = way
         h.continuous = step?.repeats == true
         h.lastCross = now
+        if step?.isMore == true {
+            openMore(&h, way)
+            return []
+        }
         guard let step, let action = step.firable, !(step.once && h.spent.contains(way)),
               now - h.lastFire >= t.minRepeatInterval else { return [] }
         if step.once { h.spent.insert(way) }
@@ -447,8 +592,84 @@ final class GestureMachine {
         return [.fire(action, way)]
     }
 
+    /// Eight directions, blind: the same rules by angle. A fresh crossing needs the whole
+    /// distance from the origin, toward a way that does something (empty ones are skipped, so
+    /// the rest are wider), and a clear winner (10° nearer than the next, 8° once the hold has
+    /// fired, or twice the distance); a continuous way carries on every `step` along it, and
+    /// rolling back a step fires its opposite if that one repeats too.
+    private static func blindEight(_ h: inout Hold, now: Double) -> [GestureEffect] {
+        let t = h.tuning
+        if h.direction != nil, !h.continuous, now - h.lastCross < t.chainCooldown {
+            h.ox = h.dx
+            h.oy = h.dy
+            return []
+        }
+        var rx = h.dx - h.ox, ry = h.dy - h.oy
+        if let last = h.direction, h.continuous, h.gesture[last]?.repeats == true {
+            let v = last.vector
+            var along = rx * v.x + ry * v.y
+            // Rolling back: measured from where the ball turned (past a wobble), not the last fire.
+            if along > h.peak {
+                h.peak = along
+            } else if h.peak - along > t.tapSlop, h.peak > 0 {
+                h.ox += h.peak * v.x
+                h.oy += h.peak * v.y
+                h.peak = 0
+                rx = h.dx - h.ox
+                ry = h.dy - h.oy
+                along = rx * v.x + ry * v.y
+            }
+            let across = abs(-rx * v.y + ry * v.x)
+            let opposite = GestureDirection(place: last.place + 4)
+            var way: GestureDirection?
+            if along >= t.step, along >= across { way = last }
+            else if -along >= t.step, -along >= across, h.gesture[opposite]?.repeats == true { way = opposite }
+            if let way, let step = h.gesture[way], let action = step.firable {
+                let u = way.vector
+                let a = rx * u.x + ry * u.y
+                // The remainder stays along the way; across it starts fresh.
+                let keep = a - (a / t.step).rounded(.down) * t.step
+                h.ox = h.dx - keep * u.x
+                h.oy = h.dy - keep * u.y
+                h.peak = keep
+                h.direction = way
+                h.lastCross = now
+                guard now - h.lastFire >= t.minRepeatInterval else { return [] }
+                h.lastFire = now
+                h.fired += 1
+                return [.fire(action, way)]
+            }
+            if along > -t.tapSlop, across < t.commit { return [] }   // still on its way: nothing fresh yet
+        }
+        let r = (rx * rx + ry * ry).squareRoot()
+        guard r >= t.commit else { return [] }
+        let usable = h.gesture.usedDirections.filter { h.gesture[$0]?.isUsable == true }
+        let angle = WheelGeometry.angle(x: rx, y: ry)
+        let ranked = usable.sorted { WheelGeometry.gap(angle, $0.place) < WheelGeometry.gap(angle, $1.place) }
+        guard let best = ranked.first, let step = h.gesture[best] else { return [] }
+        let margin = h.direction == nil ? 10.0 : 8.0
+        let next = ranked.count > 1 ? WheelGeometry.gap(angle, ranked[1].place) : 180
+        guard WheelGeometry.gap(angle, best.place) + margin <= next || r >= t.commit * t.forceCommitFactor else { return [] }
+        h.ox = h.dx
+        h.oy = h.dy
+        h.peak = 0
+        h.direction = best
+        h.continuous = step.repeats
+        h.lastCross = now
+        if step.isMore {
+            openMore(&h, best)
+            return []
+        }
+        guard let action = step.firable, !(step.once && h.spent.contains(best)),
+              now - h.lastFire >= t.minRepeatInterval else { return [] }
+        if step.once { h.spent.insert(best) }
+        h.lastFire = now
+        h.fired += 1
+        return [.fire(action, best)]
+    }
+
     /// A button came up. Ends the hold if it's one of the hold's buttons: frees
-    /// the pointer, then taps if the ball stayed (nearly) still.
+    /// the pointer, then runs what the ring has lit, or taps if the ball stayed (nearly) still.
     func release(button: Int, now: Double) -> [GestureEffect] {
         guard let h = hold, h.buttons.contains(button) else { return [] }
         hold = nil
@@ -467,19 +688,21 @@ final class GestureMachine {
             }
             return effects
         }
+        guard !h.dismissed, now - h.start < h.tuning.maxHold else { return effects }
         if let w = h.wheel {
-            // A Wheel: the lit slot runs, once; or, if the ball stayed put and the ring wasn't
-            // turned, the tap. Rolled back to the centre, dismissed or past the time limit: nothing.
-            guard !w.dismissed, now - h.start < h.tuning.maxHold else { return effects }
-            if let place = w.selected, let action = w.menu[place].flatMap(WheelMenu.oneShot) {
+            // The ring: the lit place runs, once (one that repeats already ran as it lit); or, if
+            // the ball stayed put, the ring wasn't turned and nothing ran, the tap. Rolled back to
+            // the centre: nothing.
+            if let place = w.selected, place != w.back, let step = w.steps[place], !step.isMore, !step.repeats,
+               let action = step.firable {
                 effects.append(.wheelPick(action, place: place))
-            } else if !w.ringUsed, !h.otherPress, w.travel < w.geometry.tapSlop {
-                let tap = w.menu.tapAction
+            } else if w.level == nil, !h.ringUsed, !h.otherPress, h.fired == 0, h.travel < w.geometry.tapSlop {
+                let tap = h.gesture.tapAction
                 if tap != .disabled { effects.append(.tap(tap, buttons: h.buttons)) }
             }
             return effects
         }
-        if h.direction == nil, h.fired == 0, !h.otherPress, h.travel < h.tuning.tapSlop, now - h.start < h.tuning.maxHold {
+        if h.direction == nil, h.fired == 0, !h.otherPress, !h.ringUsed, h.travel < h.tuning.tapSlop {
             let tap = h.gesture.tapAction
             if tap != .disabled { effects.append(.tap(tap, buttons: h.buttons)) }
         }

@@ -34,25 +34,40 @@ extension GestureDirection {
         case .down: "arrow.down"
         case .left: "arrow.left"
         case .right: "arrow.right"
+        case .upRight: "arrow.up.right"
+        case .downRight: "arrow.down.right"
+        case .downLeft: "arrow.down.left"
+        case .upLeft: "arrow.up.left"
         }
     }
 
     var unit: CGVector {
-        switch self {
-        case .up: CGVector(dx: 0, dy: -1)
-        case .down: CGVector(dx: 0, dy: 1)
-        case .left: CGVector(dx: -1, dy: 0)
-        case .right: CGVector(dx: 1, dy: 0)
-        }
+        let v = vector
+        return CGVector(dx: v.x, dy: v.y)
     }
 
-    /// "Roll up", for VoiceOver and the live line.
+    /// "Roll up", for VoiceOver and the live line (a diagonal is named by its place).
     var rollTitle: String {
         switch self {
         case .up: String(localized: "Roll up", comment: "Gesture direction: roll the ball away from you")
         case .down: String(localized: "Roll down", comment: "Gesture direction: roll the ball toward you")
         case .left: String(localized: "Roll left", comment: "Gesture direction")
         case .right: String(localized: "Roll right", comment: "Gesture direction")
+        default: placeTitle
+        }
+    }
+
+    /// "Up", "Up right"…, for VoiceOver and a More's heading.
+    var placeTitle: String {
+        switch self {
+        case .up: String(localized: "Up", comment: "Wheel slot, straight up")
+        case .upRight: String(localized: "Up right", comment: "Wheel slot")
+        case .right: String(localized: "Right", comment: "Wheel slot")
+        case .downRight: String(localized: "Down right", comment: "Wheel slot")
+        case .down: String(localized: "Down", comment: "Wheel slot")
+        case .downLeft: String(localized: "Down left", comment: "Wheel slot")
+        case .left: String(localized: "Left", comment: "Wheel slot")
+        case .upLeft: String(localized: "Up left", comment: "Wheel slot")
         }
     }
 }
@@ -85,8 +100,16 @@ final class GestureFlashClock {
 
 // MARK: - The editor
 
-/// Under a gesture button's (or combo's) row: what each way does, the tap, sets,
-/// distance, and Try it.
+extension GestureStep {
+    /// The More chip's symbol, in the editor, the picker and the ring.
+    static let moreSymbol = "ellipsis.circle"
+}
+
+/// Under a Gestures button's (or combo's) row, laid out as the ring itself: what each way does
+/// (four or eight around the ball, any of them More), and beside it Show the ring, the
+/// directions, the tap, the scroll ring's job and Reverse, ready-made sets, distance and Try it.
+/// Clicking a More opens its ring in the same place, with a way back. (This is the Wheel's
+/// editor and the gesture compass made one, Nov 2026.)
 struct GestureEditor: View {
     let model: AppModel?
     /// The button, or the combo's buttons (sorted).
@@ -98,11 +121,14 @@ struct GestureEditor: View {
     @State private var tryEnd: Task<Void, Never>?
     /// What this hold has fired so far, in order (Try it shows it as a trail).
     @State private var trail: [Engine.GestureFlash] = []
+    /// The More being edited (its place), or nil for the first ring.
+    @State private var editing: Int?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// Renders: draw it in its "Try it" state, with this trail.
+    /// Renders: draw it in its "Try it" state, with this trail, or with this More open.
     nonisolated(unsafe) static var sandboxTrying = false
     nonisolated(unsafe) static var sandboxTrail: [Engine.GestureFlash]?
+    nonisolated(unsafe) static var sandboxEditing: Int?
 
     init(model: AppModel?, button: Int, gesture: Binding<ButtonGesture>) {
         self.init(model: model, buttons: [button], gesture: gesture)
@@ -116,14 +142,26 @@ struct GestureEditor: View {
 
     private var isCombo: Bool { buttons.count > 1 }
     private var modes: Engine.Modes { model?.modes ?? Engine.Modes() }
-    private var held: Bool { modes.gestureHeld && modes.gestureButtons == buttons }
-    private var leaning: GestureDirection? { held ? modes.gestureDirection : nil }
+    private var mine: Bool { modes.gestureButtons == buttons }
+    private var held: Bool { (modes.gestureHeld || modes.wheelHeld) && mine }
+    private var leaning: GestureDirection? { modes.gestureHeld && mine ? modes.gestureDirection : nil }
     private var flash: Engine.GestureFlash? {
         guard let f = clock.current(modes), f.buttons == buttons else { return nil }
         return f
     }
     private var isTrying: Bool { trying || Self.sandboxTrying }
     private var shownTrail: [Engine.GestureFlash] { (Self.sandboxTrail ?? trail).filter { $0.buttons == buttons } }
+    /// The More shown: only one that's still More (it may have been changed meanwhile).
+    private var level: Int? {
+        guard let p = Self.sandboxEditing ?? editing, gesture[GestureDirection(place: p)]?.isMore == true else { return nil }
+        return p
+    }
+    /// The place lit on the ring shown here: the way a blind hold leans, or the ring's lit place.
+    private var lit: Int? {
+        guard held else { return nil }
+        if modes.wheelHeld { return modes.wheelLevel == level ? modes.wheelSlot : nil }
+        return level == nil ? leaning?.place : nil
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -131,23 +169,16 @@ struct GestureEditor: View {
                 .font(Theme.Font.hint)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
+                .contentTransition(.opacity)
 
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .center, spacing: 22) {
-                    compass
-                    side.frame(maxWidth: 250, alignment: .leading)
-                }
-                VStack(alignment: .leading, spacing: 16) {
-                    compass.frame(maxWidth: .infinity)
-                    HStack(alignment: .top, spacing: 28) {
-                        VStack(alignment: .leading, spacing: 12) { tapBlock; distanceBlock }
-                        VStack(alignment: .leading, spacing: 12) { setsBlock; tryButton }
-                    }
-                }
-                VStack(alignment: .leading, spacing: 16) {
-                    compass.frame(maxWidth: .infinity)
-                    side
-                }
+            // One copy of each part, wrapped to the room there is (beside each other when wide,
+            // the ring above the two columns when not). ViewThatFits would build every layout
+            // it's offered, each a whole ring and both columns, and in render-ui that ran
+            // SwiftUI's graph out of room.
+            FlowLayout(spacing: 22, lineSpacing: 16) {
+                ringBlock
+                firstColumn.frame(width: 200, alignment: .leading)
+                secondColumn.frame(width: 240, alignment: .leading)
             }
 
             if isTrying { tryBanner.transition(.opacity.combined(with: .move(edge: .bottom))) }
@@ -157,7 +188,9 @@ struct GestureEditor: View {
         .padding(.top, 2)
         .padding(.bottom, 14)
         .animation(Theme.Motion.spring, value: isTrying)
-        .animation(reduceMotion ? nil : Theme.Motion.pressIn, value: leaning)
+        .animation(reduceMotion ? nil : Theme.Motion.spring, value: gesture.eight)
+        .animation(reduceMotion ? nil : Theme.Motion.spring, value: level)
+        .animation(reduceMotion ? nil : Theme.Motion.pressIn, value: lit)
         .onChange(of: modes.gestureFlash) { _, f in
             guard let f, f.buttons == buttons else { return }
             clock.show(f)
@@ -168,53 +201,167 @@ struct GestureEditor: View {
     }
 
     private var explanation: String {
-        isCombo
-            ? String(localized: "Hold these buttons together and roll the ball. Each way does something the moment you roll a few millimeters, as many times as you like in one hold; a quick press does the tap.",
-                     comment: "Gesture editor, under a combo's row")
-            : String(localized: "Hold this button and roll the ball. Each way does something the moment you roll a few millimeters, as many times as you like in one hold; a quick press does the tap.",
-                     comment: "Gesture editor, under a gesture button's row")
+        if level != nil {
+            return String(localized: "This is the ring More opens. Roll back through the middle to get to the first ring again; letting go in the middle cancels.",
+                          comment: "Gestures editor, while a More's ring is being edited")
+        }
+        return isCombo
+            ? String(localized: "Hold these buttons together and roll the ball, and each way does something. A quick press does the tap.",
+                     comment: "Gestures editor, under a combo's row")
+            : String(localized: "Hold this button and roll the ball, and each way does something. A quick press does the tap.",
+                     comment: "Gestures editor, under a Gestures button's row")
     }
 
-    // MARK: Compass
+    // MARK: The ring
 
-    private var compass: some View {
-        Grid(horizontalSpacing: 10, verticalSpacing: 10) {
-            GridRow {
-                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-                cell(.up)
-                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+    private var ringBlock: some View {
+        VStack(alignment: .center, spacing: 8) {
+            if let level {
+                HStack(spacing: 8) {
+                    Button {
+                        withAnimation(reduceMotion ? nil : Theme.Motion.spring) { editing = nil }
+                    } label: {
+                        Label("First Ring", systemImage: "chevron.backward")
+                    }
+                    .controlSize(.small)
+                    .help("Back to the first ring")
+                    Label {
+                        Text(verbatim: String(localized: "More", comment: "Gestures: a direction that opens a second ring of actions")
+                             + " · " + GestureDirection(place: level).placeTitle)
+                    } icon: {
+                        Image(systemName: GestureStep.moreSymbol)
+                    }
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Theme.ball)
+                }
             }
-            GridRow {
-                cell(.left)
-                GestureBall(leaning: leaning, held: held, fired: flash?.direction, size: 74)
-                cell(.right)
-            }
-            GridRow {
-                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-                cell(.down)
-                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+            ring
+        }
+    }
+
+    /// The eight places on a 3 × 3 grid around the ball, as the ring lays them out.
+    private var ring: some View {
+        let grid: [[Int?]] = [[7, 0, 1], [6, nil, 2], [5, 4, 3]]
+        let used = Set(gesture.usedDirections.map(\.place))
+        return Grid(horizontalSpacing: 10, verticalSpacing: 10) {
+            ForEach(0..<3, id: \.self) { row in
+                GridRow {
+                    ForEach(0..<3, id: \.self) { col in
+                        if let place = grid[row][col] {
+                            if used.contains(place) {
+                                cell(place)
+                            } else {
+                                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+                            }
+                        } else {
+                            GestureBall(leaning: level == nil ? leaning : nil, held: held,
+                                        fired: level == nil ? flash?.direction : nil, size: 74)
+                        }
+                    }
+                }
             }
         }
         .fixedSize()
+        .id(level ?? -1)
+        .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.94)))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(level == nil ? Text("Gestures ring", comment: "Gestures editor: VoiceOver name of the directions around the ball")
+                                         : Text("More ring", comment: "Gestures editor: VoiceOver name of a More's ring"))
     }
 
-    private func cell(_ d: GestureDirection) -> some View {
-        GestureDirectionCell(
-            direction: d,
-            step: Binding(get: { gesture[d] }, set: { gesture[d] = $0 }),
-            lit: leaning == d,
-            fired: flash != nil && flash?.direction == d,
-            fireSeq: flash?.direction == d ? flash?.seq ?? 0 : 0)
+    @ViewBuilder
+    private func cell(_ place: Int) -> some View {
+        let d = GestureDirection(place: place)
+        if let level {
+            if place == (level + 4) % 8 {
+                GestureBackChip()
+            } else {
+                GestureDirectionCell(
+                    direction: d,
+                    step: Binding(get: { gesture[GestureDirection(place: level)]?.more?[place] },
+                                  set: { new in
+                                      guard var sub = gesture[GestureDirection(place: level)]?.more else { return }
+                                      sub = GestureStep.normalizedMore(sub)
+                                      sub[place] = new
+                                      gesture[GestureDirection(place: level)] = .moreRing(sub)
+                                  }),
+                    lit: lit == place, fired: false, fireSeq: 0, ringOnly: true, onMore: nil, openMore: nil)
+            }
+        } else {
+            GestureDirectionCell(
+                direction: d,
+                step: Binding(get: { gesture[d] }, set: { gesture[d] = $0 }),
+                lit: lit == place,
+                fired: flash != nil && flash?.direction == d,
+                fireSeq: flash?.direction == d ? flash?.seq ?? 0 : 0,
+                ringOnly: gesture.show == .atOnce,
+                onMore: { gesture[d] = gesture[d]?.isMore == true ? gesture[d] : .moreRing() ; editing = place },
+                openMore: { withAnimation(reduceMotion ? nil : Theme.Motion.spring) { editing = place } })
+        }
     }
 
-    // MARK: Tap, sets, distance, Try it
+    // MARK: Show, directions, tap
 
-    private var side: some View {
+    private var firstColumn: some View {
         VStack(alignment: .leading, spacing: 14) {
+            showBlock
+            countBlock
             tapBlock
-            setsBlock
-            distanceBlock
-            tryButton
+        }
+    }
+
+    private var showBlock: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text("Show the ring", comment: "Gestures editor: when the ring of actions shows around the pointer")
+                .font(.system(size: 12, weight: .semibold))
+            Menu {
+                Picker(selection: $gesture.show) {
+                    ForEach(RingShow.allCases) { s in Text(verbatim: s.title).tag(s) }
+                } label: { EmptyView() }
+                .pickerStyle(.inline)
+            } label: {
+                Text(verbatim: gesture.show.title).font(.system(size: 12, weight: .medium))
+            }
+            .menuStyle(.button)
+            .buttonStyle(.borderless)
+            .fixedSize()
+            .tint(Theme.ball)
+            Text(verbatim: showHint)
+                .font(Theme.Font.hint)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// Talks about now: what holding the button does with this choice.
+    private var showHint: String {
+        switch gesture.show {
+        case .never: String(localized: "Nothing shows. Roll and the action happens straight away, as many times as you like in one hold.",
+                            comment: "Gestures editor: Show the ring hint, Never")
+        case .afterPause: String(localized: "Roll quickly and the action happens straight away. Hold the ball still for a moment and the ring shows, so you can pick.",
+                                 comment: "Gestures editor: Show the ring hint, After a pause")
+        case .atOnce: String(localized: "The ring shows as soon as you hold the button. Roll toward an action and let go to run it.",
+                             comment: "Gestures editor: Show the ring hint, Right away")
+        }
+    }
+
+    private var countBlock: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text("Directions", comment: "Gestures editor: four or eight directions")
+                .font(.system(size: 12, weight: .semibold))
+            Picker(selection: $gesture.eight) {
+                Text("4").tag(false)
+                Text("8").tag(true)
+            } label: { EmptyView() }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .fixedSize()
+            .help("Four slots are the easiest to hit; eight adds the diagonals.")
+            Text(gesture.eight ? String(localized: "Eight: the diagonals too.", comment: "Wheel editor: slot count hint")
+                               : String(localized: "Four: up, right, down and left. Empty ones are skipped, so the rest get wider.", comment: "Wheel editor: slot count hint"))
+                .font(Theme.Font.hint)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -225,50 +372,125 @@ struct GestureEditor: View {
     }
 
     private var tapBlock: some View {
-            VStack(alignment: .leading, spacing: 5) {
-                Text("Tap").font(.system(size: 12, weight: .semibold))
-                HStack(spacing: 8) {
-                    ActionPickerButton(action: tapShown, button: isCombo ? nil : buttons[0], purpose: .gestureTap) { gesture.tap = $0 }
-                        .overlay {
-                            RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous)
-                                .strokeBorder(Theme.buttons, lineWidth: 1.5)
-                                .shadow(color: Theme.buttons.opacity(0.6), radius: 6)
-                                .opacity(flash != nil && flash?.direction == nil ? 1 : 0)
-                                .allowsHitTesting(false)
-                        }
+        VStack(alignment: .leading, spacing: 5) {
+            Text("Tap").font(.system(size: 12, weight: .semibold))
+            ActionPickerButton(action: tapShown, button: isCombo ? nil : buttons[0], purpose: .gestureTap) { gesture.tap = $0 }
+                .overlay {
+                    RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous)
+                        .strokeBorder(Theme.buttons, lineWidth: 1.5)
+                        .shadow(color: Theme.buttons.opacity(0.6), radius: 6)
+                        .opacity(flash != nil && flash?.direction == nil ? 1 : 0)
+                        .allowsHitTesting(false)
                 }
-                Text("A press without rolling.")
-                    .font(Theme.Font.hint)
-                    .foregroundStyle(.secondary)
-            }
+            Text("A press without rolling.")
+                .font(Theme.Font.hint)
+                .foregroundStyle(.secondary)
+        }
     }
 
-    private var setsBlock: some View {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Ready-made sets").font(.system(size: 12, weight: .semibold))
-                FlowLayout(spacing: 6, lineSpacing: 6) {
-                    ForEach(ButtonGesture.suggestions) { s in
-                        let on = s.matches(gesture)
-                        Button {
-                            withAnimation(Theme.Motion.spring) { gesture = s.applied(to: gesture) }
-                            Sounds.shared.detent(pitch: 1.1, volume: 0.45, kind: .buttons)
-                        } label: {
-                            Label(s.title, systemImage: on ? "checkmark" : s.symbol)
-                                .font(.system(size: 11.5, weight: .medium))
-                                .padding(.horizontal, 9)
-                                .padding(.vertical, 4)
-                                .background {
-                                    Capsule().fill(on ? Theme.buttons.opacity(0.16) : Theme.groupFill)
-                                        .pixelBorder(Capsule(), on ? Theme.buttons.opacity(0.7) : Theme.groupBorder)
-                                }
-                                .contentShape(Capsule())
+    // MARK: Ring job, sets, distance, Try it
+
+    private var secondColumn: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            ringJobBlock
+            if level == nil { setsBlock }
+            distanceBlock
+            tryButton
+        }
+    }
+
+    private var ringJobBlock: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text("Scroll ring while held").font(.system(size: 12, weight: .semibold))
+            HStack(spacing: 10) {
+                Menu {
+                    Picker(selection: $gesture.ring) {
+                        ForEach(RingJob.allCases) { job in
+                            Label(job.title, systemImage: job.symbol).tag(job)
                         }
-                        .buttonStyle(PressableStyle())
-                        .help(String(localized: "Use the “\(s.title)” set", comment: "Tooltip on a gesture set; %@ is its name"))
-                        .accessibilityAddTraits(on ? .isSelected : [])
+                    } label: { EmptyView() }
+                    .pickerStyle(.inline)
+                } label: {
+                    Label(gesture.ring.title, systemImage: gesture.ring.symbol)
+                        .font(.system(size: 12, weight: .medium))
+                }
+                .menuStyle(.button)
+                .buttonStyle(.borderless)
+                .fixedSize()
+                .tint(Theme.ring)
+                if gesture.ring != .scroll && gesture.ring != .off {
+                    Toggle(isOn: $gesture.reverse) {
+                        Text("Reverse", comment: "Gestures editor: turn the ring job the other way round")
+                            .font(.system(size: 11.5, weight: .medium))
+                    }
+                    .toggleStyle(.checkbox)
+                    .tint(Theme.ring)
+                    .help("Swap which way of turning the ring does what")
+                }
+            }
+            if gesture.ring == .custom {
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.counterclockwise").font(.system(size: 10.5, weight: .bold)).foregroundStyle(Theme.ring)
+                        .help("Turning the ring counterclockwise")
+                    ActionPickerButton(action: gesture.ringDown ?? .disabled, purpose: .wheelSlot, showsKeys: false) {
+                        gesture.ringDown = $0 == .disabled ? nil : $0
+                    }
+                }
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.clockwise").font(.system(size: 10.5, weight: .bold)).foregroundStyle(Theme.ring)
+                        .help("Turning the ring clockwise")
+                    ActionPickerButton(action: gesture.ringUp ?? .disabled, purpose: .wheelSlot, showsKeys: false) {
+                        gesture.ringUp = $0 == .disabled ? nil : $0
                     }
                 }
             }
+            Text(verbatim: ringHint)
+                .font(Theme.Font.hint)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// Talks about now: what turning the ring does with this job.
+    private var ringHint: String {
+        switch gesture.ring {
+        case .volume: String(localized: "Turn the ring while you hold it to change the volume. It doesn’t scroll meanwhile.", comment: "Wheel editor: ring job hint")
+        case .brightness: String(localized: "Turn the ring while you hold it to change the screen’s brightness.", comment: "Wheel editor: ring job hint")
+        case .zoom: String(localized: "Turn the ring while you hold it to zoom in and out (⌘+ and ⌘−).", comment: "Wheel editor: ring job hint")
+        case .undo: String(localized: "Turn the ring back to undo, forward to redo.", comment: "Wheel editor: ring job hint")
+        case .tabs: String(localized: "Turn the ring while you hold it to move between tabs.", comment: "Wheel editor: ring job hint")
+        case .custom: String(localized: "One action for each way you turn the ring, a step per click.", comment: "Wheel editor: ring job hint")
+        case .scroll: String(localized: "The ring scrolls as usual while you hold it.", comment: "Gestures editor: ring job hint, Scrolls as usual")
+        case .off: String(localized: "The ring does nothing while you hold it.", comment: "Wheel editor: ring job hint")
+        }
+    }
+
+    private var setsBlock: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Ready-made sets").font(.system(size: 12, weight: .semibold))
+            FlowLayout(spacing: 6, lineSpacing: 6) {
+                ForEach(ButtonGesture.suggestions) { s in
+                    let on = s.matches(gesture)
+                    Button {
+                        withAnimation(Theme.Motion.spring) { gesture = s.applied(to: gesture) }
+                        Sounds.shared.detent(pitch: 1.1, volume: 0.45, kind: .buttons)
+                    } label: {
+                        Label(s.title, systemImage: on ? "checkmark" : s.symbol)
+                            .font(.system(size: 11.5, weight: .medium))
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 4)
+                            .background {
+                                Capsule().fill(on ? Theme.buttons.opacity(0.16) : Theme.groupFill)
+                                    .pixelBorder(Capsule(), on ? Theme.buttons.opacity(0.7) : Theme.groupBorder)
+                            }
+                            .contentShape(Capsule())
+                    }
+                    .buttonStyle(PressableStyle())
+                    .help(String(localized: "Use the “\(s.title)” set", comment: "Tooltip on a gesture set; %@ is its name"))
+                    .accessibilityAddTraits(on ? .isSelected : [])
+                }
+            }
+        }
     }
 
     /// This gesture's own distance, or the one all gestures use (the Gestures settings below the buttons).
@@ -299,15 +521,15 @@ struct GestureEditor: View {
 
     @ViewBuilder
     private var tryButton: some View {
-            if !isTrying, model != nil {
-                Button {
-                    startTrying()
-                } label: {
-                    Label("Try It", systemImage: "hand.raised")
-                }
-                .controlSize(.small)
-                .help("Practice without anything happening: the compass shows what each roll would do")
+        if !isTrying, model != nil {
+            Button {
+                startTrying()
+            } label: {
+                Label("Try It", systemImage: "hand.raised")
             }
+            .controlSize(.small)
+            .help("Practice without anything happening: the compass shows what each roll would do")
+        }
     }
 
     private var tryBanner: some View {
@@ -414,6 +636,25 @@ struct GestureEditor: View {
     }
 }
 
+/// In a More's ring, opposite the More: the way back to the first ring (nothing to set).
+private struct GestureBackChip: View {
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous)
+        Label {
+            Text("Back", comment: "Gestures: in a More's ring, the way back to the first ring")
+        } icon: {
+            Image(systemName: "arrow.uturn.backward")
+        }
+        .font(.system(size: 12, weight: .medium))
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 9)
+        .padding(.vertical, 5)
+        .background { shape.fill(Theme.groupFill.opacity(0.5)).pixelBorder(shape, Theme.groupBorder) }
+        .help("Rolling this way goes back to the first ring")
+        .accessibilityElement(children: .combine)
+    }
+}
+
 extension GestureStep.Mode {
     var title: String {
         switch self {
@@ -440,7 +681,7 @@ extension GestureStep.Mode {
     }
 }
 
-/// One direction: an arrow, what it does (a picker), and how it fires.
+/// One direction: what it does (a picker) and how it fires; or More, which opens its ring.
 private struct GestureDirectionCell: View {
     let direction: GestureDirection
     @Binding var step: GestureStep?
@@ -448,10 +689,66 @@ private struct GestureDirectionCell: View {
     let fired: Bool
     /// Changes with every fire of this direction, so each one in a chain flashes.
     let fireSeq: Int
+    /// Only ever picked on a showing ring (Right away, or inside a More): it runs once at the
+    /// release either way, so only "Repeats as you roll" is a choice worth showing.
+    var ringOnly = false
+    /// The first ring: More can be chosen here (it makes it and opens it), and opened.
+    let onMore: (() -> Void)?
+    let openMore: (() -> Void)?
 
     var body: some View {
         VStack(spacing: 4) {
-            ActionPickerButton(action: step?.action ?? .disabled, purpose: .gestureDirection, showsKeys: false) { picked in
+            if step?.isMore == true {
+                moreChip
+            } else {
+                picker
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text(verbatim: direction.rollTitle))
+    }
+
+    /// More: a chip that opens its ring, and a way to make it an action again.
+    @ViewBuilder
+    private var moreChip: some View {
+        let count = step?.more?.compactMap { $0 }.count ?? 0
+        Button {
+            openMore?()
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: GestureStep.moreSymbol).font(.system(size: 11.5, weight: .semibold))
+                Text("More", comment: "Gestures: a direction that opens a second ring of actions")
+                    .font(.system(size: 12, weight: .semibold))
+                Text(verbatim: "\(count)")
+                    .font(.system(size: 10.5, weight: .semibold).monospacedDigit())
+                    .foregroundStyle(.secondary)
+                Image(systemName: "chevron.forward").font(.system(size: 9, weight: .bold))
+            }
+            .foregroundStyle(Theme.ball)
+            .fixedSize()
+        }
+        .buttonStyle(ActionButtonStyle())
+        .overlay {
+            RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous)
+                .strokeBorder(Theme.ball.opacity(lit ? 1 : 0.35), lineWidth: lit ? 1.5 : 1)
+                .shadow(color: Theme.ball.opacity(lit ? 0.7 : 0), radius: 8)
+                .allowsHitTesting(false)
+        }
+        .help("Open this ring to choose what’s in it")
+        Button {
+            step = nil
+        } label: {
+            Label("Not More", systemImage: "xmark")
+                .font(.system(size: 10.5, weight: .medium))
+                .foregroundStyle(.secondary)
+        }
+        .buttonStyle(.borderless)
+        .help("Make this way an ordinary action again")
+    }
+
+    @ViewBuilder
+    private var picker: some View {
+            ActionPickerButton(action: step?.action ?? .disabled, purpose: .gestureDirection, showsKeys: false, onMore: onMore) { picked in
                 if picked == .disabled {
                     step = nil
                 } else if picked != step?.action {
@@ -471,8 +768,9 @@ private struct GestureDirectionCell: View {
                 SpringKeyframe(1.0, duration: 0.3)
             }
 
-            if let s = step {
-                let modes: [GestureStep.Mode] = s.action.repeatsWell ? [.chain, .continuous, .once] : [.chain, .once]
+            if let s = step, !(ringOnly && !s.action.repeatsWell) {
+                let modes: [GestureStep.Mode] = ringOnly ? [.chain, .continuous]
+                    : s.action.repeatsWell ? [.chain, .continuous, .once] : [.chain, .once]
                 Menu {
                     Picker(selection: Binding(get: { s.mode }, set: { step?.mode = $0 })) {
                         ForEach(modes, id: \.self) { m in
@@ -491,9 +789,6 @@ private struct GestureDirectionCell: View {
                 .fixedSize()
                 .help(s.mode.help)
             }
-        }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(Text(verbatim: direction.rollTitle))
     }
 }
 
@@ -527,7 +822,7 @@ struct GestureBall: View {
                 .overlay(Circle().strokeBorder(held ? Theme.buttons : Color.black.opacity(0.55), lineWidth: held ? 2 : 1.5))
                 .shadow(color: held ? Theme.buttons.opacity(0.55) : .clear, radius: 8)
                 .frame(width: size * 0.56, height: size * 0.56)
-            ForEach(GestureDirection.allCases, id: \.self) { d in
+            ForEach(GestureDirection.straight, id: \.self) { d in
                 let on = leaning == d || fired == d
                 Image(systemName: "chevron.\(d.rawValue)")
                     .font(.system(size: size * 0.11, weight: .heavy))
@@ -571,7 +866,7 @@ struct GestureHeldOverlay: View {
                 if modes.gestureHeld {
                     GestureArmedRing(size: s, pulse: flash?.seq ?? 0)
                         .transition(.opacity.combined(with: .scale(scale: 0.94)))
-                    ForEach(GestureDirection.allCases, id: \.self) { d in
+                    ForEach(GestureDirection.straight, id: \.self) { d in
                         let on = modes.gestureDirection == d || flash?.direction == d
                         Image(systemName: "chevron.\(d.rawValue)")
                             .font(.system(size: s * 0.085, weight: .heavy))

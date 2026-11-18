@@ -2661,3 +2661,35 @@
 "Hold this button and your open apps appear, the last one you used already picked. Roll the ball or turn the ring to choose another, and let go to switch. Esc cancels." = "Halte diese Taste gedrückt und deine geöffneten Apps erscheinen, die zuletzt benutzte ist schon ausgewählt. Rolle den Ball oder dreh den Ring, um eine andere zu wählen, und lass los zum Wechseln. Esc bricht ab.";
 "Hold these buttons together and your open apps appear, the last one you used already picked. Roll the ball or turn the ring to choose another, and let go to switch. Esc cancels." = "Halte diese Tasten zusammen gedrückt und deine geöffneten Apps erscheinen, die zuletzt benutzte ist schon ausgewählt. Rolle den Ball oder dreh den Ring, um eine andere zu wählen, und lass los zum Wechseln. Esc bricht ab.";
 "A quick press, before the apps show." = "Ein kurzer Druck, bevor die Apps erscheinen.";
+
+/* Gestures and the Wheel as one action (Nov 18) */
+"After a pause" = "Nach einer Pause";
+"Back to the first ring" = "Zurück zum ersten Ring";
+"Directions" = "Richtungen";
+"First Ring" = "Erster Ring";
+"Gestures ring" = "Gesten-Ring";
+"Hold it and roll the ball one way or another. It can show a ring of actions around the pointer." = "Halte sie gedrückt und rolle den Ball in eine Richtung. Sie kann einen Ring mit Aktionen um den Zeiger zeigen.";
+"Hold the button and roll the ball: a different action each way. It can show them on a ring around the pointer." = "Halte die Taste gedrückt und rolle den Ball: in jede Richtung eine andere Aktion. Sie können als Ring um den Zeiger erscheinen.";
+"Hold the buttons together and roll the ball: a different action each way. It can show them on a ring around the pointer." = "Halte die Tasten zusammen gedrückt und rolle den Ball: in jede Richtung eine andere Aktion. Sie können als Ring um den Zeiger erscheinen.";
+"Hold these buttons together and roll the ball, and each way does something. A quick press does the tap." = "Halte diese Tasten zusammen gedrückt und rolle den Ball, und jede Richtung macht etwas. Ein kurzer Druck macht das Tippen.";
+"Hold this button and roll the ball, and each way does something. A quick press does the tap." = "Halte diese Taste gedrückt und rolle den Ball, und jede Richtung macht etwas. Ein kurzer Druck macht das Tippen.";
+"Make this way an ordinary action again" = "Diese Richtung wieder zu einer normalen Aktion machen";
+"More" = "Mehr";
+"More ring" = "Mehr-Ring";
+"Never" = "Nie";
+"Not More" = "Kein Mehr";
+"Nothing shows. Roll and the action happens straight away, as many times as you like in one hold." = "Nichts wird angezeigt. Rolle, und die Aktion passiert sofort, so oft du willst in einem Halten.";
+"Open this ring to choose what’s in it" = "Diesen Ring öffnen, um seinen Inhalt zu wählen";
+"Reverse" = "Umkehren";
+"Right away" = "Sofort";
+"Roll quickly and the action happens straight away. Hold the ball still for a moment and the ring shows, so you can pick." = "Rolle schnell, und die Aktion passiert sofort. Halte den Ball kurz still, und der Ring erscheint, damit du wählen kannst.";
+"Rolling this way goes back to the first ring" = "Rollen in diese Richtung führt zurück zum ersten Ring";
+"Rolling this way opens a second ring of up to eight more actions." = "Rollen in diese Richtung öffnet einen zweiten Ring mit bis zu acht weiteren Aktionen.";
+"Scrolls as usual" = "Scrollt wie gewohnt";
+"Set up Gestures on a button" = "Gesten auf eine Taste legen";
+"Show the ring" = "Ring zeigen";
+"Swap which way of turning the ring does what" = "Tauschen, welche Drehrichtung was macht";
+"The ring scrolls as usual while you hold it." = "Der Ring scrollt wie gewohnt, während du sie gedrückt hältst.";
+"The ring shows as soon as you hold the button. Roll toward an action and let go to run it." = "Der Ring erscheint, sobald du die Taste gedrückt hältst. Rolle zu einer Aktion und lass los, um sie auszuführen.";
+"This is the ring More opens. Roll back through the middle to get to the first ring again; letting go in the middle cancels." = "Das ist der Ring, den Mehr öffnet. Rolle durch die Mitte zurück, um wieder zum ersten Ring zu kommen; loslassen in der Mitte bricht ab.";
+"gestures, hold and roll, ring, wheel, radial menu, pie menu, more, show the ring, reverse" = "gesten, halten und rollen, ring, rad, radialmenü, kreismenü, mehr, ring zeigen, umkehren";

@@ -2661,3 +2661,35 @@
 "Hold this button and your open apps appear, the last one you used already picked. Roll the ball or turn the ring to choose another, and let go to switch. Esc cancels." = "Mantenha este botão pressionado e seus apps abertos aparecem, com o último que você usou já escolhido. Role a bola ou gire o anel para escolher outro e solte para alternar. Esc cancela.";
 "Hold these buttons together and your open apps appear, the last one you used already picked. Roll the ball or turn the ring to choose another, and let go to switch. Esc cancels." = "Mantenha estes botões pressionados juntos e seus apps abertos aparecem, com o último que você usou já escolhido. Role a bola ou gire o anel para escolher outro e solte para alternar. Esc cancela.";
 "A quick press, before the apps show." = "Um toque rápido, antes de os apps aparecerem.";
+
+/* Gestures and the Wheel as one action (Nov 18) */
+"After a pause" = "Depois de uma pausa";
+"Back to the first ring" = "Voltar ao primeiro anel";
+"Directions" = "Direções";
+"First Ring" = "Primeiro anel";
+"Gestures ring" = "Anel de gestos";
+"Hold it and roll the ball one way or another. It can show a ring of actions around the pointer." = "Segure e role a bola para um lado ou outro. Ele pode mostrar um anel de ações em volta do ponteiro.";
+"Hold the button and roll the ball: a different action each way. It can show them on a ring around the pointer." = "Segure o botão e role a bola: uma ação diferente para cada lado. Ele pode mostrá-las em um anel em volta do ponteiro.";
+"Hold the buttons together and roll the ball: a different action each way. It can show them on a ring around the pointer." = "Segure os botões juntos e role a bola: uma ação diferente para cada lado. Ele pode mostrá-las em um anel em volta do ponteiro.";
+"Hold these buttons together and roll the ball, and each way does something. A quick press does the tap." = "Segure estes botões juntos e role a bola, e cada lado faz alguma coisa. Um toque rápido faz o toque.";
+"Hold this button and roll the ball, and each way does something. A quick press does the tap." = "Segure este botão e role a bola, e cada lado faz alguma coisa. Um toque rápido faz o toque.";
+"Make this way an ordinary action again" = "Tornar esta direção uma ação comum de novo";
+"More" = "Mais";
+"More ring" = "Anel Mais";
+"Never" = "Nunca";
+"Not More" = "Tirar Mais";
+"Nothing shows. Roll and the action happens straight away, as many times as you like in one hold." = "Nada aparece. Role e a ação acontece na hora, quantas vezes quiser em uma só pressão.";
+"Open this ring to choose what’s in it" = "Abrir este anel para escolher o que tem nele";
+"Reverse" = "Inverter";
+"Right away" = "Na hora";
+"Roll quickly and the action happens straight away. Hold the ball still for a moment and the ring shows, so you can pick." = "Role rápido e a ação acontece na hora. Deixe a bola parada por um instante e o anel aparece para você escolher.";
+"Rolling this way goes back to the first ring" = "Rolar para este lado volta ao primeiro anel";
+"Rolling this way opens a second ring of up to eight more actions." = "Rolar para este lado abre um segundo anel com até oito ações a mais.";
+"Scrolls as usual" = "Rola como sempre";
+"Set up Gestures on a button" = "Colocar gestos em um botão";
+"Show the ring" = "Mostrar o anel";
+"Swap which way of turning the ring does what" = "Trocar o que cada sentido de giro do anel faz";
+"The ring scrolls as usual while you hold it." = "O anel rola como sempre enquanto você segura.";
+"The ring shows as soon as you hold the button. Roll toward an action and let go to run it." = "O anel aparece assim que você segura o botão. Role até uma ação e solte para executá-la.";
+"This is the ring More opens. Roll back through the middle to get to the first ring again; letting go in the middle cancels." = "Este é o anel que Mais abre. Role de volta pelo meio para voltar ao primeiro anel; soltar no meio cancela.";
+"gestures, hold and roll, ring, wheel, radial menu, pie menu, more, show the ring, reverse" = "gestos, segurar e rolar, anel, roda, menu radial, menu circular, mais, mostrar o anel, inverter";

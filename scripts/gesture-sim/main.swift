@@ -68,7 +68,8 @@ final class Rig {
     var primaryReleases = 0
     var comboActions: [(ButtonAction, [Int])] = []  // a combo that formed and isn't a gesture
     var picks: [(ButtonAction, Int)] = []            // Wheel slots run (at the release)
-    var ringSteps: [(ButtonAction, Bool)] = []       // Wheel ring steps (while held)
+    var ringSteps: [(ButtonAction, Bool)] = []       // ring job steps (while held)
+    var ringRepeats: [(ButtonAction, Int)] = []      // a repeating place on the ring (while held)
     var picksWhileHeld = 0
     var switches: [(session: Int, index: Int)] = []  // Switcher: apps switched to (at the release)
     var switchesWhileHeld = 0
@@ -126,8 +127,14 @@ final class Rig {
                 if machine.isHeld { picksWhileHeld += 1 }
                 picks.append((a, place))
             case .ringStep(let a, let cw):
-                check(machine.wheelHeld, "a ring step only while a Wheel is held")
+                check(machine.isHeld && !machine.switcherHeld && machine.ringTaken, "a ring step only while a Gestures button with a ring job is held")
                 ringSteps.append((a, cw))
+            case .ringRepeat(let a, let place):
+                check(machine.wheelHeld, "a repeating place runs only while its ring is held")
+                check(machine.hold?.wheel?.steps[place]?.repeats == true, "only a place that repeats runs while held")
+                if let last = holdFires.last { check(now - last.t >= holdTuning.minRepeatInterval - 1e-9, "never two fires within \(holdTuning.minRepeatInterval) s") }
+                holdFires.append((now, GestureDirection(place: place), false))
+                ringRepeats.append((a, place))
             case .switchApp(let session, let index):
                 if machine.isHeld { switchesWhileHeld += 1 }
                 check(!switches.contains { $0.session == session }, "at most one switch per Switcher hold")
@@ -255,7 +262,7 @@ final class Rig {
 
     /// The scroll ring (Engine.hidWheel): a Wheel's ring job, or the Switcher's highlight, while one is held.
     func ring(_ ticks: Int) {
-        if machine.panelHeld { apply(machine.ring(ticks: ticks, now: now)) }
+        if machine.ringTaken { apply(machine.ring(ticks: ticks, now: now)) }
         invariants()
     }
 
@@ -292,7 +299,8 @@ final class Rig {
         check(frozen == machine.frozen, "the machine knows whether it froze the pointer")
         check(!(machine.hold?.buttons.contains(0) ?? false), "the primary button never holds a gesture")
         check(freezeOns - freezeOffs == (frozen ? 1 : 0), "every freeze has exactly one unfreeze (\(freezeOns) on, \(freezeOffs) off)")
-        check(fired.allSatisfy { isFireAndForget($0.0) }, "a gesture only fires press-and-release actions")
+        check(fired.allSatisfy { isFireAndForget($0.0) || $0.0 == .precisionToggle }, "a gesture only fires press-and-release actions")
+        check(ringRepeats.allSatisfy { isFireAndForget($0.0) || $0.0 == .precisionToggle }, "a repeating place only runs a one-shot")
         check(picks.allSatisfy { isFireAndForget($0.0) || $0.0 == .precisionToggle }, "a Wheel slot only runs a one-shot")
         check(ringSteps.allSatisfy { isFireAndForget($0.0) || $0.0 == .precisionToggle }, "a ring step only runs a one-shot")
         check(picksWhileHeld == 0, "a Wheel slot never runs while the Wheel is held")
@@ -534,9 +542,9 @@ do {
     }
 }
 
-section("the Wheel in settings files")
+section("old Wheels and gestures load as Gestures (settings files)")
 do {
-    var c = GlideConfig()
+    // A Wheel as betas 24 to 27 wrote it: every setting, through a real settings file.
     var w = WheelMenu.standard
     w.eight = true
     w[1] = .openApp(bundleID: "com.apple.Safari")
@@ -545,68 +553,271 @@ do {
     w.ringUp = .shortcut(.redo)
     w.ringDown = .back
     w.tap = .media(.playPause)
-    c.buttons[3] = .wheel(w)
-    c.buttons[2] = .wheel(WheelMenu.keeping(.middleClick))
-    c.chords = [Chord(buttons: [1, 3], action: .wheel(.standard))]
+    var old = GlideConfig()
+    old.buttons[3] = .wheel(w)
+    old.buttons[2] = .wheel(WheelMenu.keeping(.middleClick))
+    old.chords = [Chord(buttons: [1, 3], action: .wheel(.standard))]
     var p = AppProfile(bundleID: "com.example.app", name: "Example")
     p.buttons = [1: .wheel(.standard)]
-    c.appProfiles = [p]
-    check(c.requiredFileVersion == 2, "a Wheel makes the file version 2 (older Glideballs leave it alone)")
-    let file = GlideSettingsFile(config: c, exportedFrom: "Test")
-    let data = try! JSONEncoder().encode(file)
-    let back = try! JSONDecoder().decode(GlideSettingsFile.self, from: data)
-    check(back.config == c, "a file with Wheels round-trips without loss")
-    check(back.version == 2 && (try? back.validatedConfig()) == c, "and is accepted as version 2")
-    check(WheelMenu.keeping(.middleClick).tap == .middleClick, "turning a button into a Wheel keeps what it did as the tap")
-    check(WheelMenu.keeping(.wheel(w)) == w, "and a Wheel stays itself")
-    // What a Glideball before the Wheel does with it: skips just those buttons, keeps the rest.
-    let text = String(data: data, encoding: .utf8)!.replacingOccurrences(of: "\"wheel\"", with: "\"wheelFromTheFuture\"")
-    let old = try? JSONDecoder().decode(GlideSettingsFile.self, from: Data(text.utf8))
-    check(old != nil, "a file a build without the Wheel can't read still opens")
-    check(old?.config.buttons[3] == nil && old?.config.chords.isEmpty == true && old?.config.appProfiles.first?.buttons?.isEmpty == true,
-          "it skips just the Wheel buttons and combos")
-    // ...and sync puts them back after it (a beta before the Wheel wrote it).
-    if let older = old?.config {
-        check(GlideSettingsFile.predatesWheel("2.10-beta.22") && !GlideSettingsFile.predatesWheel(GlideSettingsFile.wheelSince)
-              && !GlideSettingsFile.predatesWheel("2.10") && GlideSettingsFile.predatesWheel(nil), "which betas predate the Wheel")
-        let merged = older.keepingWheels(from: c)
-        check(merged.kept && merged.config == c, "sync puts the Wheels an older beta dropped back")
-        let same = c.keepingWheels(from: c)
-        check(!same.kept && same.config == c, "and changes nothing when nothing was dropped")
-        var changed = older
-        changed.buttons[3] = .back   // the older Mac set the button explicitly: that wins
-        check(changed.keepingWheels(from: c).config.buttons[3] == .back, "a button the older one set explicitly wins")
-        let pre210 = older.keepingNewerFeatures(from: c)
-        check(pre210.config.buttons[3] == c.buttons[3] && pre210.kept, "a Glideball before 2.10 dropping it: put back too")
-    }
-    // A newer Glideball's Wheel: unknown slot actions and fields leave just that slot empty.
-    let newer = #"{"buttons":{"3":{"wheel":{"_0":{"slots":[{"back":{}},{"teleport":{"_0":1}},null,{"forward":{}}],"eight":true,"ring":"spaceship","hue":7,"tap":{"rocket":{}}}}}}}"#
-    let n = try? JSONDecoder().decode(GlideConfig.self, from: Data(newer.utf8))
-    if case .wheel(let nw)? = n?.buttons[3] {
-        check(nw.slots.count == 8 && nw[0] == .back && nw[1] == nil && nw[3] == .forward && nw.eight, "unknown slot actions are left empty, the rest kept")
-        check(nw.ring == .volume && nw.tap == .system, "an unknown ring job or tap falls back to the defaults")
-    } else {
-        check(false, "a newer Glideball's Wheel still loads")
-    }
-    // A minimal Wheel (every field missing) loads with defaults.
-    let bare = try? JSONDecoder().decode(GlideConfig.self, from: Data(#"{"buttons":{"2":{"wheel":{"_0":{}}}}}"#.utf8))
-    check(bare?.buttons[2] == .wheel(WheelMenu()), "a Wheel with no fields loads with the defaults")
-    // Clamping: a Wheel inside a Wheel or a gesture is dropped; hostile slots are cleaned.
+    old.appProfiles = [p]
+    // Encode it as the old build did (the config's own decode would already migrate it).
+    let oldFile = try! JSONEncoder().encode(GlideSettingsFile(config: old, exportedFrom: "Test"))
+    check(String(data: oldFile, encoding: .utf8)!.contains("\"wheel\""), "the old file really has Wheels in it")
+    let loaded = try! JSONDecoder().decode(GlideSettingsFile.self, from: oldFile).config
+    guard case .gesture(let g)? = loaded.buttons[3] else { check(false, "an old Wheel loads as Gestures"); fatalError() }
+    check(g.show == .atOnce, "an old Wheel shows its ring right away, as it did")
+    check(g.eight && g.ring == .custom && g.ringUp == .shortcut(.redo) && g.ringDown == .back && !g.reverse && g.tap == .media(.playPause),
+          "its four or eight, ring job (own pair), tap are kept")
+    check(g[.up]?.action == .shortcut(.missionControl) && g[.upRight]?.action == .openApp(bundleID: "com.apple.Safari")
+          && g[.right]?.action == .shortcut(.nextSpace) && g[.downRight]?.action == .holdShortcut(.wisprFlow)
+          && g[.down]?.action == .shortcut(.appExpose) && g[.left]?.action == .shortcut(.previousSpace) && g[.downLeft] == nil,
+          "each slot is the same direction")
+    check(GestureDirection.allCases.allSatisfy { g[$0].map { !$0.repeats && !$0.once && !$0.isMore } ?? true },
+          "each slot runs once at the release, as it did (no step repeats)")
+    check(g.distance == nil, "it follows the gesture distance, as the Wheel did")
+    check(loaded.buttons[2] == .gesture(ButtonGesture(wheel: WheelMenu.keeping(.middleClick))), "a second Wheel button too")
+    check(loaded.chords.first?.action == .gesture(ButtonGesture(wheel: .standard)), "a Wheel combo too")
+    check(loaded.appProfiles.first?.buttons?[1] == .gesture(ButtonGesture(wheel: .standard)), "and an app setup's Wheel")
+    check(!loaded.anyAction(\.isWheel), "nothing is left a Wheel")
+    // It behaves as the Wheel did: roll right and let go runs the right slot; a still press taps.
+    let r = Rig([3: loaded.buttons[3]!])
+    r.press(3); r.advance(0.3); r.roll(dx: 5, dy: 0, steps: 12); r.release(3)
+    check(r.picks.map(\.1) == [2] && r.taps.isEmpty && r.fired.isEmpty, "a loaded Wheel: roll right and let go runs Right, once")
+    let t = Rig([3: loaded.buttons[3]!])
+    t.press(3); t.advance(0.1); t.release(3)
+    check(t.taps.map(\.0) == [.media(.playPause)] && t.picks.isEmpty, "a loaded Wheel: a still press is its tap")
+
+    // A gesture as every build before the merge wrote it: loads unchanged, behaves as before.
+    let oldGesture = #"{"buttons":{"3":{"gesture":{"_0":{"up":{"action":{"media":{"_0":0}},"repeats":true},"left":{"action":{"shortcut":{"_0":{"keyCode":123,"modifiers":262144,"keyName":"←"}}},"repeats":false,"once":true},"tap":{"system":{}},"distance":"long"}}}}}"#
+    let og = try? JSONDecoder().decode(GlideConfig.self, from: Data(oldGesture.utf8))
+    guard case .gesture(let gg)? = og?.buttons[3] else { check(false, "an old gesture still loads"); fatalError() }
+    check(gg.show == .never && gg.ring == .scroll && !gg.eight && !gg.reverse && gg.ringUp == nil, "an old gesture: never shows a ring, the ring scrolls, four ways")
+    check(gg.up == GestureStep(.media(.volumeUp), repeats: true) && gg.left?.once == true && gg.distance == .long && gg.down == nil,
+          "its directions, modes and distance are kept")
+    let re = String(data: try! JSONEncoder().encode(ButtonAction.gesture(gg)), encoding: .utf8)!
+    check(!re.contains("show") && !re.contains("ring") && !re.contains("eight") && !re.contains("reverse") && !re.contains("more"),
+          "written back, an old-style gesture has no new fields (older builds read exactly what they wrote)")
+    let blind = Rig([3: .gesture(gg)])
+    blind.press(3); blind.roll(dx: -4, dy: 0, steps: 24); blind.release(3)
+    check(blind.fired.count == 1 && blind.fired[0].1 == .left && blind.picks.isEmpty && !blind.machine.isHeld, "an old gesture fires at once, blind, as before")
+    check(!blind.machine.panelHeld, "and Esc isn't taken for it (nothing to dismiss)")
+
+    // Clamping: a Wheel inside a gesture is dropped; hostile slots are cleaned; More is one level.
     var nested = WheelMenu()
     nested[0] = .wheel(.standard)
     nested[2] = .gesture(.standard)
     nested[4] = .modifiedClick(button: 99, modifiers: 0)
     nested.slots += [.back, .back]   // too many places
-    let cl = ButtonAction.wheel(nested).clamped()
-    if case .wheel(let cw)? = cl {
-        check(cw.slots.count == 8 && cw[0] == nil && cw[2] == nil && cw[4] == nil, "nested Wheels, gestures and impossible clicks are dropped from slots")
-    } else { check(false, "a hostile Wheel still clamps to a Wheel") }
-    var g = ButtonGesture.standard
-    g.up = GestureStep(.wheel(.standard))
-    check(ButtonAction.gesture(g).clamped().map { if case .gesture(let x) = $0 { x.up == nil } else { false } } == true, "a Wheel inside a gesture is dropped")
-    // Import: a shared Wheel is sanitized like a gesture (its apps and keys are listed).
-    check(ButtonAction.wheel(w).needsCaution, "a Wheel that opens an app or presses keys is listed in an import")
-    check(ButtonAction.wheel(w).sanitized() != nil && ButtonAction.wheel(w).sanitized(nested: true) == nil, "sanitized: kept at the top, dropped when nested")
+    if case .gesture(let cg)? = ButtonAction.wheel(nested).clamped() {
+        check(cg.up == nil && cg.right == nil && cg.down == nil && cg.show == .atOnce, "a hostile Wheel clamps to Gestures without its impossible slots")
+    } else { check(false, "a hostile Wheel still clamps to Gestures") }
+    var gw = ButtonGesture.standard
+    gw.up = GestureStep(.wheel(.standard))
+    check(ButtonAction.gesture(gw).clamped().map { if case .gesture(let x) = $0 { x.up == nil } else { false } } == true, "a Wheel inside a gesture is dropped")
+    var deep = ButtonGesture.standard
+    deep.up = .moreRing([GestureStep(.back), nil, GestureStep(.gesture(.standard)), nil, GestureStep(.forward)])
+    deep.up?.more?[6] = .moreRing([GestureStep(.back)])   // a More inside a More: only a hand-made file says that
+    if case .gesture(let dc)? = ButtonAction.gesture(deep).clamped(), let sub = dc.up?.more {
+        check(sub.count == 8 && sub[0] == GestureStep(.back) && sub[2] == nil && sub[6] == nil, "More: gestures and Mores inside are dropped")
+        check(sub[4] == nil, "More: its way back (opposite) is always empty")
+    } else { check(false, "a More still clamps to a More") }
+    // Import: a shared old Wheel is sanitized as Gestures (its apps and keys are listed).
+    check(ButtonAction.wheel(w).needsCaution, "an old Wheel that opens an app or presses keys is listed in an import")
+    if case .gesture(let sg)? = ButtonAction.wheel(w).sanitized() { check(sg.show == .atOnce && sg.eight, "a shared old Wheel imports as Gestures shown right away") }
+    else { check(false, "a shared old Wheel imports as Gestures") }
+    check(ButtonAction.wheel(w).sanitized(nested: true) == nil, "sanitized: dropped when nested")
+    var moreShare = ButtonGesture.standard
+    moreShare.right = .moreRing([GestureStep(.openApp(bundleID: "com.example.x"))])
+    check(ButtonAction.gesture(moreShare).needsCaution, "an app opened from inside a More is listed in an import")
+}
+
+section("Gestures settings: new fields, older builds, sync")
+do {
+    var g = ButtonGesture.keeping(.back)
+    check(g.show == .afterPause && g.ring == .volume && g.tap == .back, "a new Gestures button: ring after a pause, volume on the ring, the old action as the tap")
+    g.eight = true
+    g[.upRight] = GestureStep(.shortcut(.newTab))
+    g[.down] = .moreRing([nil, nil, GestureStep(.media(.mute)), nil, GestureStep(.shortcut(.screenshot), repeats: false, once: true)])
+    g.reverse = true
+    g.ring = .custom
+    g.ringUp = .forward
+    g.ringDown = .back
+    var c = GlideConfig()
+    c.buttons[3] = .gesture(g)
+    c.chords = [Chord(buttons: [1, 3], action: .gesture(g))]
+    check(c.requiredFileVersion == 2, "Gestures make the file version 2, as gestures always did")
+    let data = try! JSONEncoder().encode(GlideSettingsFile(config: c, exportedFrom: "Test"))
+    let back = try! JSONDecoder().decode(GlideSettingsFile.self, from: data)
+    check(back.config == c, "a file with every new Gestures field round-trips without loss")
+    // What a Glideball from before the merge reads: the four straight ways (More doing nothing), tap, distance.
+    struct OldStep: Decodable { var action: ButtonAction; var repeats: Bool?; var once: Bool? }
+    struct OldGesture: Decodable { var up, down, left, right: OldStep?; var tap: ButtonAction? }
+    struct OldWrap: Decodable { var gesture: Inner?; struct Inner: Decodable { var _0: OldGesture } }
+    let one = try! JSONEncoder().encode(ButtonAction.gesture(g))
+    let seen = try? JSONDecoder().decode(OldWrap.self, from: one).gesture?._0
+    check(seen != nil, "an older build still reads it as a gesture")
+    check(seen?.down?.action == .disabled && seen?.up?.action == .shortcut(.missionControl) && seen?.tap == .back,
+          "an older build: More is a direction that does nothing, the rest as they are")
+    check(g.asOlderBuildSees.down == GestureStep(.disabled) && g.asOlderBuildSees.upRight == nil && g.asOlderBuildSees.show == .never,
+          "asOlderBuildSees matches what it would write back")
+    // ...and sync puts the rest back after it.
+    var older = c
+    older.buttons[3] = .gesture(g.asOlderBuildSees)
+    older.chords[0].action = .gesture(g.asOlderBuildSees)
+    check(GlideSettingsFile.predatesGesturesMerge("2.10-beta.27") && !GlideSettingsFile.predatesGesturesMerge(GlideSettingsFile.gesturesMergeSince)
+          && !GlideSettingsFile.predatesGesturesMerge("2.10") && !GlideSettingsFile.predatesGesturesMerge(nil), "which betas predate the merge")
+    let merged = older.keepingGesturesMerge(from: c)
+    check(merged.kept && merged.config == c, "sync puts back what an older beta dropped (button and combo)")
+    let same = c.keepingGesturesMerge(from: c)
+    check(!same.kept && same.config == c, "and changes nothing when nothing was dropped")
+    var changed = older
+    var edited = g.asOlderBuildSees
+    edited.tap = .forward   // the older Mac changed it: that wins
+    changed.buttons[3] = .gesture(edited)
+    check(changed.keepingGesturesMerge(from: c).config.buttons[3] == .gesture(edited), "a gesture the older one changed wins")
+    // A newer Glideball's fields and values: unknown ones fall back, never the whole button.
+    let newer = #"{"buttons":{"3":{"gesture":{"_0":{"up":{"action":{"back":{}},"repeats":false},"upRight":{"action":{"teleport":{}}},"left":{"action":{"disabled":{}},"more":[{"action":{"forward":{}},"repeats":false},{"action":{"rocket":{}}},null]},"show":"hologram","ring":"spaceship","eight":true,"reverse":7,"hue":3}}}}}"#
+    let n = try? JSONDecoder().decode(GlideConfig.self, from: Data(newer.utf8))
+    if case .gesture(let ng)? = n?.buttons[3] {
+        check(ng.up?.action == .back && ng.upRight == nil && ng.eight, "a newer Glideball's Gestures: unknown actions leave just that way empty")
+        check(ng.show == .never && ng.ring == .scroll && !ng.reverse, "unknown Show and ring job fall back to how gestures were")
+        check(ng.left?.more?[0]?.action == .forward && ng.left?.more?[1] == nil, "More: an unknown action empties just its place")
+    } else {
+        check(false, "a newer Glideball's Gestures still load")
+    }
+}
+
+section("Gestures: Show the ring, More, Reverse, eight blind")
+do {
+    /// The engine looks every 50 ms while an After a pause hold waits (`Engine.beginHold`).
+    func wait(_ r: Rig, _ seconds: Double) {
+        var t = 0.0
+        while t < seconds - 1e-9 { r.advance(0.05); t += 0.05; _ = r.machine.wheelOverlay(now: r.now) }
+    }
+    var pause = ButtonGesture.standard
+    pause.show = .afterPause
+    pause.ring = .volume
+    // A quick flick and release never brings the ring up, and fires at once.
+    let f = Rig([3: .gesture(pause)])
+    f.press(3)
+    for _ in 0..<6 { f.advance(0.005); f.ball(0, -30); _ = f.machine.wheelOverlay(now: f.now) }
+    let shownDuringFlick = f.machine.wheelHeld
+    f.release(3)
+    check(!shownDuringFlick && f.fired.map(\.1) == [.up] && f.picks.isEmpty, "After a pause: a quick flick fires at once and never shows the ring")
+    // Held still: the ring comes up; roll right and let go runs Right.
+    let p = Rig([3: .gesture(pause)])
+    p.press(3); wait(p, 0.2)
+    let early = p.machine.wheelHeld
+    wait(p, 0.1)
+    check(!early && p.machine.wheelHeld && p.machine.wheelOverlay(now: p.now) != nil, "After a pause: the ring shows once the ball has been still for a moment")
+    p.roll(dx: 5, dy: 0, steps: 12); p.release(3)
+    check(p.picks.map(\.1) == [2] && p.fired.isEmpty, "After a pause: then rolling right and letting go runs Right, once")
+    // A slow roll that never stops long enough: blind all the way.
+    let s = Rig([3: .gesture(pause)])
+    s.press(3)
+    for _ in 0..<40 { s.advance(0.05); s.ball(1.5, 0); _ = s.machine.wheelOverlay(now: s.now) }
+    check(!s.machine.wheelHeld && s.fired.map(\.1) == [.right], "After a pause: a slow, steady roll fires blind (it never paused)")
+    s.release(3)
+    // Still and let go: the tap, whether or not the ring came up.
+    let t1 = Rig([3: .gesture(pause)]); t1.press(3); wait(t1, 0.1); t1.release(3)
+    let t2 = Rig([3: .gesture(pause)]); t2.press(3); wait(t2, 0.4); t2.release(3)
+    check(t1.taps.count == 1 && t2.taps.count == 1 && t2.picks.isEmpty, "After a pause: a still press is the tap, ring or no ring")
+    // Something fired: the ring never comes up in that hold.
+    let n = Rig([3: .gesture(pause)]); n.press(3); n.roll(dx: 0, dy: -6, steps: 12); wait(n, 0.5)
+    check(!n.machine.wheelHeld && n.fired.count == 1, "After a pause: once something fired, holding still doesn't bring the ring up")
+    n.release(3)
+
+    // More, on a ring shown right away: up opens a second ring in place.
+    var more = ButtonGesture.standard
+    more.show = .atOnce
+    more.up = .moreRing([nil, nil, GestureStep(.shortcut(.screenshot)), nil, nil, nil, GestureStep(.shortcut(.lockScreen))])
+    let m = Rig([3: .gesture(more)])
+    m.press(3); m.advance(0.3); m.roll(dx: 0, dy: -5, steps: 12)
+    check(m.machine.hold?.wheel?.level == 0 && m.machine.hold?.wheel?.selected == nil, "More: rolling into it opens its ring, nothing lit, centred")
+    check(m.machine.wheelOverlay(now: m.now)?.sub == true && m.machine.wheelOverlay(now: m.now)?.slots[4] == .back, "More: its ring shows, with the way back opposite")
+    check(m.fired.isEmpty && m.picks.isEmpty && m.ringRepeats.isEmpty, "More: opening it runs nothing")
+    m.roll(dx: 5, dy: 0, steps: 12); m.release(3)
+    check(m.picks.count == 1 && m.picks[0].0 == .shortcut(.screenshot), "More: roll right in it and let go runs its Right")
+    let mc = Rig([3: .gesture(more)])
+    mc.press(3); mc.advance(0.3); mc.roll(dx: 0, dy: -5, steps: 12); mc.release(3)
+    check(mc.picks.isEmpty && mc.taps.isEmpty && mc.fired.isEmpty, "More: let go in the middle of its ring: nothing runs")
+    let mb = Rig([3: .gesture(more)])
+    mb.press(3); mb.advance(0.3); mb.roll(dx: 0, dy: -5, steps: 12); mb.roll(dx: 0, dy: 5, steps: 12)
+    check(mb.machine.hold?.wheel?.level == nil, "More: back through the middle toward where you came from: the first ring again")
+    mb.roll(dx: 5, dy: 0, steps: 12); mb.release(3)
+    check(mb.picks.map(\.1) == [2] && mb.picks[0].0 == .shortcut(.nextSpace), "More: back on the first ring, Right runs the first ring's Right")
+    let md = Rig([3: .gesture(more)])
+    md.press(3); md.advance(0.3); md.roll(dx: 0, dy: -5, steps: 12); md.machine.dismissWheel(); md.roll(dx: 5, dy: 0, steps: 12); md.release(3)
+    check(md.picks.isEmpty && md.taps.isEmpty, "More: Esc in its ring: nothing runs")
+    for reason in [GestureCancel.pause, .unplug, .sleep, .tapDisabled, .quit] {
+        let x = Rig([3: .gesture(more)])
+        x.press(3); x.advance(0.3); x.roll(dx: 0, dy: -5, steps: 12); x.roll(dx: 5, dy: 0, steps: 12); x.cancel(reason); x.release(3)
+        check(x.picks.isEmpty && !x.frozen && x.machine.wheelOverlay(now: x.now) == nil, "More: \(reason.rawValue) mid-hold: nothing runs, nothing shows, pointer free")
+    }
+    // Blind (Never): More still works, direction then direction; its ring shows (always).
+    var blindMore = more
+    blindMore.show = .never
+    let bm = Rig([3: .gesture(blindMore)])
+    bm.press(3); bm.roll(dx: 0, dy: -6, steps: 12)
+    check(bm.machine.hold?.wheel?.level == 0 && bm.machine.wheelOverlay(now: bm.now) != nil, "More, blind: rolling up opens it, and its ring shows")
+    bm.roll(dx: -6, dy: 0, steps: 12); bm.release(3)
+    check(bm.picks.count == 1 && bm.picks[0].0 == .shortcut(.lockScreen) && bm.fired.isEmpty, "More, blind: up then left runs More's Left")
+    check(blindMore.mayShowRing && !ButtonGesture.standard.mayShowRing, "a Never gesture with a More can still show a ring; one without can't")
+
+    // A place that repeats as you roll, on a showing ring: runs as it lights, then every step its way.
+    var vol = ButtonGesture.media
+    vol.show = .atOnce
+    let v = Rig([3: .gesture(vol)])
+    v.press(3); v.advance(0.3); v.roll(dx: 0, dy: -5, steps: 40); v.release(3)
+    check(v.ringRepeats.count >= 2 && v.ringRepeats.allSatisfy { $0.0 == .media(.volumeUp) && $0.1 == 0 } && v.picks.isEmpty,
+          "a repeating place on the ring runs as it lights and again as you keep rolling, and not again at the release (\(v.ringRepeats.count))")
+
+    // The ring job and Reverse.
+    var rev = ButtonGesture.standard
+    rev.ring = .volume
+    let rr = Rig([3: .gesture(rev)])
+    rr.press(3); rr.advance(0.1); rr.ring(-1); rr.advance(0.1); rr.release(3)
+    rev.reverse = true
+    let rv = Rig([3: .gesture(rev)])
+    rv.press(3); rv.advance(0.1); rv.ring(-1); rv.advance(0.1); rv.release(3)
+    check(rr.ringSteps.map(\.0) == [.media(.volumeUp)] && rv.ringSteps.map(\.0) == [.media(.volumeDown)], "Reverse swaps which way of the ring does what")
+    check(rr.taps.isEmpty && rv.taps.isEmpty, "a release after turning the ring is no tap")
+    let scroll = Rig([3: .gesture(.standard)])
+    scroll.press(3)
+    check(!scroll.machine.ringTaken, "Scrolls as usual (an old gesture's): the ring isn't taken")
+    scroll.release(3)
+    check(ButtonGesture(wheel: .standard).ringActions.clockwise == .media(.volumeUp), "an old Wheel's ring job is the same way round")
+
+    // Eight directions, blind.
+    var eight = ButtonGesture.standard
+    eight.eight = true
+    eight[.upRight] = GestureStep(.shortcut(.newTab))
+    let e = Rig([3: .gesture(eight)])
+    e.press(3); e.roll(dx: 4, dy: -4, steps: 12); e.release(3)
+    check(e.fired.map(\.1) == [.upRight], "eight, blind: rolling up and right fires up right")
+    let e2 = Rig([3: .gesture(eight)])
+    e2.press(3); e2.roll(dx: 0, dy: -5, steps: 12); e2.release(3)
+    check(e2.fired.map(\.1) == [.up], "eight, blind: straight up still fires up")
+    var sparse = ButtonGesture()
+    sparse.eight = true
+    sparse[.upRight] = GestureStep(.shortcut(.newTab))
+    sparse[.downLeft] = GestureStep(.shortcut(.closeTab))
+    let sp = Rig([3: .gesture(sparse)])
+    sp.press(3); sp.roll(dx: 1, dy: -5, steps: 12); sp.release(3)
+    check(sp.fired.map(\.1) == [.upRight], "eight, blind: empty ways are skipped, so the rest are wide targets")
+    var eightVol = ButtonGesture()
+    eightVol.eight = true
+    eightVol[.upRight] = GestureStep(.media(.volumeUp), repeats: true)
+    eightVol[.downLeft] = GestureStep(.media(.volumeDown), repeats: true)
+    let ev = Rig([3: .gesture(eightVol)])
+    ev.press(3); ev.roll(dx: 4, dy: -4, steps: 40); ev.roll(dx: -4, dy: 4, steps: 40); ev.release(3)
+    let ups = ev.fired.filter { $0.1 == .upRight }.count, downs = ev.fired.filter { $0.1 == .downLeft }.count
+    check(ups >= 3 && downs >= 2, "eight, blind: a diagonal that repeats keeps going, and rolling back runs its opposite (\(ups) up, \(downs) down)")
+    // The Gestures switch covers every Gestures button now, ring or not.
+    var ringOn = ButtonGesture.standard
+    ringOn.show = .atOnce
+    let off = GestureRoute.decide(action: .gesture(ringOn), buttons: [3], enabled: false, canReadBall: true, gestureHeld: false)
+    check(off == .tapInstead(.system), "the Gestures switch off: a ring Gestures button does its tap")
 }
 
 // MARK: - The Switcher
@@ -826,7 +1037,7 @@ do {
     check(ButtonAction.gesture(g).clamped().map { if case .gesture(let x) = $0 { x.up == nil } else { false } } == true, "a Switcher inside a gesture is dropped")
     var w = WheelMenu()
     w[0] = .switcher(.standard)
-    check(ButtonAction.wheel(w).clamped().map { if case .wheel(let x) = $0 { x[0] == nil } else { false } } == true, "a Switcher in a Wheel slot is dropped")
+    check(ButtonAction.wheel(w).clamped().map { if case .gesture(let x) = $0 { x.up == nil } else { false } } == true, "a Switcher in an old Wheel's slot is dropped")
     check(ButtonAction.switcher(.standard).sanitized() != nil && ButtonAction.switcher(.standard).sanitized(nested: true) == nil, "sanitized: kept at the top, dropped when nested")
     check(ButtonAction.switcher(AppSwitcher(tap: .shortcut(.copy))).needsCaution && !ButtonAction.switcher(.standard).needsCaution,
           "a Switcher is listed in an import only when its tap presses keys")

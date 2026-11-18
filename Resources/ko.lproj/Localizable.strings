@@ -2661,3 +2661,35 @@
 "Hold this button and your open apps appear, the last one you used already picked. Roll the ball or turn the ring to choose another, and let go to switch. Esc cancels." = "이 버튼을 길게 누르면 열린 앱이 나타나고, 마지막으로 사용한 앱이 이미 선택되어 있어요. 볼을 굴리거나 링을 돌려 다른 앱을 고르고 놓으면 전환돼요. Esc를 누르면 취소돼요.";
 "Hold these buttons together and your open apps appear, the last one you used already picked. Roll the ball or turn the ring to choose another, and let go to switch. Esc cancels." = "이 버튼들을 함께 길게 누르면 열린 앱이 나타나고, 마지막으로 사용한 앱이 이미 선택되어 있어요. 볼을 굴리거나 링을 돌려 다른 앱을 고르고 놓으면 전환돼요. Esc를 누르면 취소돼요.";
 "A quick press, before the apps show." = "앱이 나타나기 전의 짧은 누름.";
+
+/* Gestures and the Wheel as one action (Nov 18) */
+"After a pause" = "잠시 멈추면";
+"Back to the first ring" = "첫 번째 링으로 돌아가기";
+"Directions" = "방향";
+"First Ring" = "첫 번째 링";
+"Gestures ring" = "제스처 링";
+"Hold it and roll the ball one way or another. It can show a ring of actions around the pointer." = "누른 채로 볼을 원하는 방향으로 굴리세요. 포인터 주위에 동작 링을 보여 줄 수도 있습니다.";
+"Hold the button and roll the ball: a different action each way. It can show them on a ring around the pointer." = "버튼을 누른 채 볼을 굴리면 방향마다 다른 동작이 실행됩니다. 포인터 주위의 링에 보여 줄 수도 있습니다.";
+"Hold the buttons together and roll the ball: a different action each way. It can show them on a ring around the pointer." = "버튼들을 함께 누른 채 볼을 굴리면 방향마다 다른 동작이 실행됩니다. 포인터 주위의 링에 보여 줄 수도 있습니다.";
+"Hold these buttons together and roll the ball, and each way does something. A quick press does the tap." = "이 버튼들을 함께 누른 채 볼을 굴리면 방향마다 무언가를 합니다. 짧게 누르면 탭입니다.";
+"Hold this button and roll the ball, and each way does something. A quick press does the tap." = "이 버튼을 누른 채 볼을 굴리면 방향마다 무언가를 합니다. 짧게 누르면 탭입니다.";
+"Make this way an ordinary action again" = "이 방향을 다시 일반 동작으로";
+"More" = "더 보기";
+"More ring" = "더 보기 링";
+"Never" = "안 함";
+"Not More" = "더 보기 해제";
+"Nothing shows. Roll and the action happens straight away, as many times as you like in one hold." = "아무것도 표시되지 않습니다. 굴리면 바로 동작하고, 한 번 누르는 동안 원하는 만큼 반복할 수 있습니다.";
+"Open this ring to choose what’s in it" = "이 링을 열어 안에 넣을 것을 고르기";
+"Reverse" = "반대로";
+"Right away" = "바로";
+"Roll quickly and the action happens straight away. Hold the ball still for a moment and the ring shows, so you can pick." = "빠르게 굴리면 바로 동작합니다. 볼을 잠시 멈추면 링이 나타나 고를 수 있습니다.";
+"Rolling this way goes back to the first ring" = "이쪽으로 굴리면 첫 번째 링으로 돌아갑니다";
+"Rolling this way opens a second ring of up to eight more actions." = "이쪽으로 굴리면 최대 8개의 동작이 더 있는 두 번째 링이 열립니다.";
+"Scrolls as usual" = "평소처럼 스크롤";
+"Set up Gestures on a button" = "버튼에 제스처 설정";
+"Show the ring" = "링 표시";
+"Swap which way of turning the ring does what" = "링을 돌리는 방향별 동작을 서로 바꾸기";
+"The ring scrolls as usual while you hold it." = "누르고 있는 동안에도 링은 평소처럼 스크롤합니다.";
+"The ring shows as soon as you hold the button. Roll toward an action and let go to run it." = "버튼을 누르자마자 링이 나타납니다. 동작 쪽으로 굴린 뒤 손을 떼면 실행됩니다.";
+"This is the ring More opens. Roll back through the middle to get to the first ring again; letting go in the middle cancels." = "더 보기가 여는 링입니다. 가운데를 지나 되돌아가면 첫 번째 링으로 돌아가고, 가운데에서 손을 떼면 취소됩니다.";
+"gestures, hold and roll, ring, wheel, radial menu, pie menu, more, show the ring, reverse" = "제스처, 누르고 굴리기, 링, 휠, 방사형 메뉴, 파이 메뉴, 더 보기, 링 표시, 반대로";

@@ -119,21 +119,29 @@ extension ButtonAction {
         case .openApp(let id): return ImportText.isBundleID(id) ? self : nil
         case .gesture(let g):
             guard !nested else { return nil }
+            func plain(_ step: GestureStep?) -> GestureStep? {
+                guard let step, step.more == nil, let a = step.action.sanitized(nested: true) else { return nil }
+                return GestureStep(a, repeats: step.repeats, once: step.once)
+            }
             var out = ButtonGesture()
             for d in GestureDirection.allCases {
-                if let step = g[d], let a = step.action.sanitized(nested: true) { out[d] = GestureStep(a, repeats: step.repeats, once: step.once) }
+                guard let step = g[d] else { continue }
+                // More holds plain steps only (one level), never another More.
+                out[d] = step.more.map { .moreRing($0.prefix(8).map(plain)) } ?? plain(step)
             }
             out.tap = g.tap.sanitized(nested: true) ?? .system
             out.distance = g.distance
+            out.eight = g.eight
+            out.show = g.show
+            out.ring = g.ring
+            out.ringUp = g.ringUp?.sanitized(nested: true)
+            out.ringDown = g.ringDown?.sanitized(nested: true)
+            out.reverse = g.reverse
             return .gesture(out)
         case .wheel(let w):
+            // An old Wheel in a share is Gestures, shown right away.
             guard !nested else { return nil }
-            var out = WheelMenu(eight: w.eight, ring: w.ring)
-            out.slots = WheelMenu.normalized(w.slots.map { $0?.sanitized(nested: true) })
-            out.ringUp = w.ringUp?.sanitized(nested: true)
-            out.ringDown = w.ringDown?.sanitized(nested: true)
-            out.tap = w.tap.sanitized(nested: true) ?? .system
-            return .wheel(out)
+            return ButtonAction.gesture(ButtonGesture(wheel: w)).sanitized()
         case .switcher(let a):
             guard !nested else { return nil }
             return .switcher(AppSwitcher(tap: a.tap.sanitized(nested: true) ?? .system))
@@ -147,7 +155,10 @@ extension ButtonAction {
     var needsCaution: Bool {
         switch self {
         case .openApp, .shortcut, .holdShortcut: true
-        case .gesture(let g): GestureDirection.allCases.contains { g[$0]?.action.needsCaution == true } || g.tap.needsCaution
+        case .gesture(let g):
+            GestureDirection.allCases.contains { d in
+                g[d]?.action.needsCaution == true || g[d]?.more?.contains { $0?.action.needsCaution == true } == true
+            } || g.tap.needsCaution || g.ringUp?.needsCaution == true || g.ringDown?.needsCaution == true
         case .wheel(let w): w.slots.contains { $0?.needsCaution == true } || w.ringUp?.needsCaution == true
             || w.ringDown?.needsCaution == true || w.tap.needsCaution
         case .switcher(let a): a.tap.needsCaution
