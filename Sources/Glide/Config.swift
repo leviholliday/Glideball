@@ -1221,7 +1221,11 @@ struct ButtonGesture: Codable, Hashable {
     static func keeping(_ previous: ButtonAction) -> ButtonGesture {
         if case .gesture(let old) = previous { return old }
         var g = ButtonGesture.standard
-        g.tap = previous
+        switch previous {
+        case .wheel(let w): g.tap = w.tap
+        case .switcher(let s): g.tap = s.tap
+        default: g.tap = previous
+        }
         return g
     }
 

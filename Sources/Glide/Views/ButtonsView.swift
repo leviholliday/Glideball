@@ -608,9 +608,14 @@ struct ButtonRow: View {
                 WheelEditor(model: model, buttons: [index], menu: Binding(get: { w }, set: { action = .wheel($0) }))
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
+            if case .switcher(let s) = action, index != 0 {
+                SwitcherEditor(model: model, buttons: [index], switcher: Binding(get: { s }, set: { action = .switcher($0) }))
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
         }
         .animation(Theme.Motion.spring, value: action.isGesture)
         .animation(Theme.Motion.spring, value: action.isWheel)
+        .animation(Theme.Motion.spring, value: action.isSwitcher)
     }
 
     private var row: some View {
