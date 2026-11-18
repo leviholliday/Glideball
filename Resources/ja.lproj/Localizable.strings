@@ -2649,3 +2649,15 @@
 "ring: %@ / %@" = "リング：%@ / %@";
 "wheel, ring, radial menu, pie menu" = "ホイール, リング, 放射状メニュー, 円形メニュー, wheel, ring";
 "Wheel slots" = "ホイールのスロット";
+
+/* The Switcher */
+"Switcher" = "アプリスイッチャー";
+"Make a button a Switcher" = "ボタンをアプリスイッチャーにする";
+"Hold it to see your open apps, roll to pick one, let go to switch. Like ⌘-Tab." = "押し続けると開いているアプリが表示され、ボールを転がして選び、離すと切り替わります。⌘-Tabと同じです。";
+"switcher, switch apps, command tab, ⌘-Tab" = "アプリスイッチャー, アプリ切り替え, コマンドタブ, ⌘-Tab, switcher";
+"Like ⌘-Tab: hold it and your open apps appear. Roll or turn the ring to pick one, and let go to switch." = "⌘-Tabと同じ：押し続けると開いているアプリが表示されます。転がすかリングを回して選び、離すと切り替わります。";
+"app switcher command tab windows" = "アプリ スイッチャー 切り替え コマンド タブ ウインドウ";
+"Includes your primary click, so this combo does the Switcher’s tap instead of the Switcher." = "主クリックを含むため、このコンボはアプリスイッチャーの代わりにそのタップを実行します。";
+"Hold this button and your open apps appear, the last one you used already picked. Roll the ball or turn the ring to choose another, and let go to switch. Esc cancels." = "このボタンを押し続けると開いているアプリが表示され、最後に使ったアプリが選ばれています。ボールを転がすかリングを回して別のアプリを選び、離すと切り替わります。Escでキャンセルします。";
+"Hold these buttons together and your open apps appear, the last one you used already picked. Roll the ball or turn the ring to choose another, and let go to switch. Esc cancels." = "これらのボタンを一緒に押し続けると開いているアプリが表示され、最後に使ったアプリが選ばれています。ボールを転がすかリングを回して別のアプリを選び、離すと切り替わります。Escでキャンセルします。";
+"A quick press, before the apps show." = "アプリが表示される前の短い押し。";

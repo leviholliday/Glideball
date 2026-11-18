@@ -2649,3 +2649,15 @@
 "ring: %@ / %@" = "링: %@ / %@";
 "wheel, ring, radial menu, pie menu" = "휠, 링, 방사형 메뉴, 원형 메뉴, wheel, ring";
 "Wheel slots" = "휠 칸";
+
+/* The Switcher */
+"Switcher" = "앱 전환기";
+"Make a button a Switcher" = "버튼을 앱 전환기로 만들기";
+"Hold it to see your open apps, roll to pick one, let go to switch. Like ⌘-Tab." = "길게 누르면 열린 앱이 보이고, 굴려서 하나를 고른 다음 놓으면 전환돼요. ⌘-Tab처럼요.";
+"switcher, switch apps, command tab, ⌘-Tab" = "앱 전환기, 앱 전환, 커맨드 탭, ⌘-Tab, switcher";
+"Like ⌘-Tab: hold it and your open apps appear. Roll or turn the ring to pick one, and let go to switch." = "⌘-Tab처럼: 길게 누르면 열린 앱이 나타나요. 굴리거나 링을 돌려 하나를 고르고 놓으면 전환돼요.";
+"app switcher command tab windows" = "앱 전환기 전환 커맨드 탭 윈도우";
+"Includes your primary click, so this combo does the Switcher’s tap instead of the Switcher." = "주 클릭이 포함되어 있어 이 조합은 앱 전환기 대신 앱 전환기의 탭을 실행해요.";
+"Hold this button and your open apps appear, the last one you used already picked. Roll the ball or turn the ring to choose another, and let go to switch. Esc cancels." = "이 버튼을 길게 누르면 열린 앱이 나타나고, 마지막으로 사용한 앱이 이미 선택되어 있어요. 볼을 굴리거나 링을 돌려 다른 앱을 고르고 놓으면 전환돼요. Esc를 누르면 취소돼요.";
+"Hold these buttons together and your open apps appear, the last one you used already picked. Roll the ball or turn the ring to choose another, and let go to switch. Esc cancels." = "이 버튼들을 함께 길게 누르면 열린 앱이 나타나고, 마지막으로 사용한 앱이 이미 선택되어 있어요. 볼을 굴리거나 링을 돌려 다른 앱을 고르고 놓으면 전환돼요. Esc를 누르면 취소돼요.";
+"A quick press, before the apps show." = "앱이 나타나기 전의 짧은 누름.";
