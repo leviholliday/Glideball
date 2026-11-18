@@ -213,6 +213,22 @@ struct CombosCard: View {
                                 .transition(.opacity.combined(with: .move(edge: .top)))
                         }
                     }
+                    if case .switcher(let s) = chord.action {
+                        if chord.buttons.contains(0) {
+                            // Never on the primary button (see GestureRoute.decide): say what happens instead.
+                            Label("Includes your primary click, so this combo does the Switcher’s tap instead of the Switcher.",
+                                  systemImage: "info.circle")
+                                .font(Theme.Font.hint)
+                                .foregroundStyle(.secondary)
+                                .padding(.leading, ButtonRow.dividerInset)
+                                .padding(.trailing, Theme.Space.rowHorizontal)
+                                .padding(.bottom, 10)
+                        } else {
+                            SwitcherEditor(model: model, buttons: chord.buttons,
+                                           switcher: Binding(get: { s }, set: { actionBinding(chord.id).wrappedValue = .switcher($0) }))
+                                .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
+                    }
                     if case .gesture(let g) = chord.action {
                         if chord.buttons.contains(0) {
                             // Gestures never use the primary button (see GestureRoute.decide): say what happens instead.

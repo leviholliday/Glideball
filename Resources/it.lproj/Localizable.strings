@@ -2649,3 +2649,15 @@
 "ring: %@ / %@" = "ghiera: %@ / %@";
 "wheel, ring, radial menu, pie menu" = "ruota, anello, menu radiale, menu circolare, wheel, ring";
 "Wheel slots" = "Posizioni della Ruota";
+
+/* The Switcher */
+"Switcher" = "Selettore app";
+"Make a button a Switcher" = "Trasforma un pulsante in selettore app";
+"Hold it to see your open apps, roll to pick one, let go to switch. Like ⌘-Tab." = "Tienilo premuto per vedere le app aperte, ruota per sceglierne una e rilascia per passare. Come ⌘-Tab.";
+"switcher, switch apps, command tab, ⌘-Tab" = "selettore app, cambia app, comando tab, ⌘-Tab, switcher";
+"Like ⌘-Tab: hold it and your open apps appear. Roll or turn the ring to pick one, and let go to switch." = "Come ⌘-Tab: tienilo premuto e compaiono le app aperte. Ruota la sfera o gira la ghiera per sceglierne una e rilascia per passare.";
+"app switcher command tab windows" = "selettore app cambia comando tab finestre";
+"Includes your primary click, so this combo does the Switcher’s tap instead of the Switcher." = "Include il clic principale, quindi questa combinazione esegue il tocco del selettore app invece del selettore.";
+"Hold this button and your open apps appear, the last one you used already picked. Roll the ball or turn the ring to choose another, and let go to switch. Esc cancels." = "Tieni premuto questo pulsante e compaiono le app aperte, con l’ultima usata già scelta. Ruota la sfera o gira la ghiera per sceglierne un’altra e rilascia per passare. Esc annulla.";
+"Hold these buttons together and your open apps appear, the last one you used already picked. Roll the ball or turn the ring to choose another, and let go to switch. Esc cancels." = "Tieni premuti insieme questi pulsanti e compaiono le app aperte, con l’ultima usata già scelta. Ruota la sfera o gira la ghiera per sceglierne un’altra e rilascia per passare. Esc annulla.";
+"A quick press, before the apps show." = "Una pressione rapida, prima che compaiano le app.";

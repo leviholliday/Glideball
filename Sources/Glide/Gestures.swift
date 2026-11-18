@@ -94,6 +94,9 @@ enum GestureEffect: Equatable {
     case wheelPick(ButtonAction, place: Int)
     /// The ring turned one step while a Wheel is held: run its ring job's action for that way.
     case ringStep(ButtonAction, clockwise: Bool)
+    /// A Switcher was let go with its panel up: switch to app `index` of `session`'s list
+    /// (once, on release only).
+    case switchApp(session: Int, index: Int)
 }
 
 /// Why a hold ended without its release.
@@ -105,11 +108,13 @@ enum GestureCancel: String {
 enum HoldKind: Equatable {
     case gesture(ButtonGesture)
     case wheel(WheelMenu)
+    case switcher(AppSwitcher)
 
     init?(_ action: ButtonAction) {
         switch action {
         case .gesture(let g): self = .gesture(g)
         case .wheel(let w): self = .wheel(w)
+        case .switcher(let a): self = .switcher(a)
         default: return nil
         }
     }
@@ -118,6 +123,7 @@ enum HoldKind: Equatable {
         switch self {
         case .gesture(let g): g.tapAction
         case .wheel(let w): w.tapAction
+        case .switcher(let a): a.tapAction
         }
     }
 }
@@ -151,13 +157,14 @@ enum GestureRoute: Equatable {
     ///
     /// A Wheel (`ButtonAction.wheel`) follows the same rules and shares the one hold: a
     /// Wheel and a gesture are never held at once. The Gestures switch doesn't turn Wheels
-    /// off (`wheelsEnabled` is separate, always on in the app today).
+    /// off (`wheelsEnabled` is separate, always on in the app today). The Switcher
+    /// (`ButtonAction.switcher`) is the same again, and follows `wheelsEnabled` too.
     static func decide(action: ButtonAction, buttons: [Int], enabled: Bool, canReadBall: Bool,
                        gestureHeld: Bool, wheelsEnabled: Bool = true) -> GestureRoute {
         guard let kind = HoldKind(action) else { return .notGesture }
         if buttons.contains(0) { return buttons.count == 1 ? .notGesture : .tapInstead(kind.tapAction) }
         if gestureHeld { return .ignore }
-        let on = if case .wheel = kind { wheelsEnabled } else { enabled }
+        let on = if case .gesture = kind { enabled } else { wheelsEnabled }
         guard on, canReadBall else { return .tapInstead(kind.tapAction) }
         return .begin
     }
@@ -188,6 +195,8 @@ final class GestureMachine {
         var otherPress = false           // another button went down during the hold: no tap
         /// A Wheel hold (nil: a gesture's). Its `gesture` is then empty but for the tap.
         var wheel: WheelHold?
+        /// A Switcher hold (nil: a gesture's or a Wheel's), the same way.
+        var switcher: SwitcherHold?
     }
 
     /// The defaults; each hold gets its own (`begin`'s `tuning`) for its distance.
@@ -199,12 +208,16 @@ final class GestureMachine {
     var isHeld: Bool { hold != nil }
     /// A Wheel is held (rather than a gesture).
     var wheelHeld: Bool { hold?.wheel != nil }
+    /// A Switcher is held.
+    var switcherHeld: Bool { hold?.switcher != nil }
+    /// A Wheel or a Switcher is held: something on screen Esc can dismiss, and the ring is its.
+    var panelHeld: Bool { wheelHeld || switcherHeld }
 
     /// Which way the roll is heading, for the UI's compass only (it decides nothing):
     /// the larger axis from the origin once the ball has moved past the tap slop
     /// from it, otherwise the last direction that fired (nil while it's still a tap).
     var leaning: GestureDirection? {
-        guard let h = hold, h.wheel == nil else { return nil }
+        guard let h = hold, h.wheel == nil, h.switcher == nil else { return nil }
         let rx = h.dx - h.ox, ry = h.dy - h.oy
         if (rx * rx + ry * ry).squareRoot() >= h.tuning.tapSlop {
             let horizontal = abs(rx) >= abs(ry)
@@ -236,6 +249,40 @@ final class GestureMachine {
         return [.freeze(true)]
     }
 
+    /// Starts a Switcher hold, like `begin`. `session` names this hold's app list (the engine
+    /// numbers them). Refuses (no effects) for the primary button or while anything is held.
+    func beginSwitcher(buttons: [Int], switcher: AppSwitcher, session: Int, now: Double, tuning: GestureTuning? = nil) -> [GestureEffect] {
+        guard hold == nil, !buttons.isEmpty, !buttons.contains(0) else { return [] }
+        var t = tuning ?? self.tuning
+        t.maxHold = min(t.maxHold, self.tuning.maxHold)
+        var h = Hold(buttons: buttons.sorted(), gesture: ButtonGesture(tap: switcher.tap), tuning: t, start: now)
+        h.switcher = SwitcherHold(session: session, step: t.commit, tapSlop: t.tapSlop)
+        hold = h
+        frozen = true
+        return [.freeze(true)]
+    }
+
+    /// The main thread built the list for `session`: its grid. Ignored unless that hold is
+    /// still the one held.
+    func switcherReady(session: Int, grid: SwitcherGrid) {
+        guard var h = hold, var s = h.switcher, s.session == session, s.grid == nil else { return }
+        s.ready(grid)
+        h.switcher = s
+        hold = h
+    }
+
+    /// The Switcher's panel as it should look now (nil: hidden, or no Switcher held). Lets it
+    /// show once `SwitcherHold.revealDelay` has passed since the press.
+    func switcherOverlay(now: Double) -> SwitcherOverlayModel? {
+        guard var h = hold, var s = h.switcher else { return nil }
+        if !s.revealed, now - h.start >= SwitcherHold.revealDelay {
+            s.revealed = true
+            h.switcher = s
+            hold = h
+        }
+        return s.overlay
+    }
+
     /// Another button went down while a gesture is held: the release won't be a tap.
     /// A Wheel is dismissed: nothing runs at the release, and the ring goes away.
     /// `dismissesWheel`: the trackball's own button does; another mouse's click doesn't
@@ -244,15 +291,17 @@ final class GestureMachine {
         guard var h = hold, !h.buttons.contains(button) else { return }
         h.otherPress = true
         if dismissesWheel, h.wheel != nil { h.wheel?.dismissed = true; h.wheel?.selected = nil }
+        if dismissesWheel, h.switcher != nil { h.switcher?.dismissed = true }
         hold = h
     }
 
-    /// Esc while a Wheel is held: as another button would.
+    /// Esc while a Wheel or a Switcher is held: as another button would.
     func dismissWheel() {
-        guard var h = hold, h.wheel != nil else { return }
+        guard var h = hold, h.wheel != nil || h.switcher != nil else { return }
         h.otherPress = true
         h.wheel?.dismissed = true
         h.wheel?.selected = nil
+        h.switcher?.dismissed = true
         hold = h
     }
 
@@ -272,6 +321,14 @@ final class GestureMachine {
     /// way, at most one per `minRepeatInterval` (the rest are dropped, never queued). It never
     /// picks a slot. Nothing for a gesture hold (the ring scrolls as usual then).
     func ring(ticks: Int, now: Double) -> [GestureEffect] {
+        if var h = hold, var s = h.switcher {
+            // A Switcher: one app forward (clockwise) or back per report. Nothing runs.
+            guard ticks != 0 else { return [] }
+            s.ring(clockwise: ticks < 0)
+            h.switcher = s
+            hold = h
+            return []
+        }
         guard var h = hold, var w = h.wheel, ticks != 0, !w.dismissed else { return [] }
         defer { h.wheel = w; hold = h }
         // Clockwise on the Expert Mouse's ring reports negative ticks (it scrolls down).
@@ -290,6 +347,14 @@ final class GestureMachine {
     /// Raw ball movement (+x right, +y toward you).
     func ball(dx: Double, dy: Double, now: Double) -> [GestureEffect] {
         guard var h = hold, dx.isFinite, dy.isFinite else { return [] }
+        if var s = h.switcher {
+            // A Switcher: the ball moves the highlight across the grid. Nothing runs until the release.
+            s.ball(dx: dx, dy: dy)
+            h.travel = max(h.travel, s.travel)
+            h.switcher = s
+            hold = h
+            return []
+        }
         if var w = h.wheel {
             // A Wheel: the ball moves a point around the centre and the slot it points at lights.
             // Nothing fires until the release.
@@ -389,6 +454,19 @@ final class GestureMachine {
         hold = nil
         frozen = false
         var effects: [GestureEffect] = [.freeze(false)]
+        if var s = h.switcher {
+            // A Switcher: with its panel up (or due), the lit app, once. Before that, a still
+            // press is the tap. Dismissed or past the time limit: nothing.
+            guard !s.dismissed, now - h.start < h.tuning.maxHold else { return effects }
+            if now - h.start >= SwitcherHold.revealDelay { s.revealed = true }
+            if s.shown {
+                effects.append(.switchApp(session: s.session, index: s.index))
+            } else if !s.ringUsed, !h.otherPress, s.travel < s.tapSlop {
+                let tap = h.gesture.tapAction
+                if tap != .disabled { effects.append(.tap(tap, buttons: h.buttons)) }
+            }
+            return effects
+        }
         if let w = h.wheel {
             // A Wheel: the lit slot runs, once; or, if the ball stayed put and the ring wasn't
             // turned, the tap. Rolled back to the centre, dismissed or past the time limit: nothing.

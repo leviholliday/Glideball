@@ -466,6 +466,54 @@ extension RenderUI {
             wheelOverlay(eightLit, busy: true, dark: dark, scale: scale)
         }
 
+        // The Switcher: its row on the Buttons page, the picker, a held Switcher, and its panel
+        // on screen (made-up apps with generated icons: never what's running on this Mac).
+        func switcherButtons() {
+            model.config.buttons[3] = .switcher(.standard)
+        }
+        add("buttons-switcher-page", "Switcher", "Top right is a Switcher: its row and the short editor under it",
+            prepare: switcherButtons, cleanup: restoreButtons) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale)
+        }
+        add("buttons-switcher-combo", "Switcher", "A combo (top left + top right) that's a Switcher, its tap set to Mission Control",
+            prepare: {
+                model.config.chords = [Chord(buttons: [2, 3], action: .switcher(AppSwitcher(tap: .shortcut(.missionControl))))]
+            }, cleanup: restoreButtons) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale)
+        }
+        add("buttons-switcher-held", "Switcher", "Holding top right: the armed ring on the sidebar ball and the row lit",
+            prepare: {
+                switcherButtons()
+                var m = Engine.Modes()
+                m.switcherHeld = true
+                m.gestureButtons = [3]
+                model.modes = m
+                model.pressed = [3]
+            }, cleanup: restoreButtons) { dark, scale in
+            mainWindow(model, tab: .buttons, dark: dark, scale: scale)
+        }
+        add("buttons-picker-switcher", "Switcher", "The picker for top right: Gesture, Wheel and Switcher under Hold and roll") { dark, scale in
+            card(PopoverMock { ActionPickerPanel(current: .back, button: 3) { _ in } }, width: 470, dark: dark, scale: scale)
+        }
+        add("switcher-overlay-few", "Switcher", "Five apps in one row, the previous one lit (a hold and release flips to it)") { dark, scale in
+            switcherOverlay(apps: 5, selected: 1, busy: false, dark: dark, scale: scale)
+        }
+        add("switcher-overlay-two", "Switcher", "Just two apps: the other one lit") { dark, scale in
+            switcherOverlay(apps: 2, selected: 1, busy: false, dark: dark, scale: scale)
+        }
+        add("switcher-overlay-many", "Switcher", "24 apps: three rows of eight, rolled down to the middle row") { dark, scale in
+            switcherOverlay(apps: 24, selected: 12, busy: false, dark: dark, scale: scale)
+        }
+        add("switcher-overlay-scroll", "Switcher", "40 apps on a short display: two rows on screen, scrolled to the last ones") { dark, scale in
+            switcherOverlay(apps: 40, selected: 35, firstRow: 3, maxRows: 2, busy: false, dark: dark, scale: scale)
+        }
+        add("switcher-overlay-busy", "Switcher", "Nine apps over a bright, busy wallpaper (contrast)") { dark, scale in
+            switcherOverlay(apps: 9, selected: 1, busy: true, dark: dark, scale: scale)
+        }
+        add("switcher-overlay-many-busy", "Switcher", "24 apps over a bright, busy wallpaper (contrast)") { dark, scale in
+            switcherOverlay(apps: 24, selected: 5, busy: true, dark: dark, scale: scale)
+        }
+
         func displays(_ n: Int, enabled: Bool = true) {
             let all = [DisplayInfo(key: "610-41271-1", name: "Built-in Retina Display", isMain: true,
                                    frame: CGRect(x: 0, y: 0, width: 1512, height: 982)),

@@ -2649,3 +2649,15 @@
 "ring: %@ / %@" = "滚动环：%@ / %@";
 "wheel, ring, radial menu, pie menu" = "轮盘, 环, 径向菜单, 饼状菜单, wheel, ring";
 "Wheel slots" = "轮盘位置";
+
+/* The Switcher */
+"Switcher" = "应用切换器";
+"Make a button a Switcher" = "将按钮设为应用切换器";
+"Hold it to see your open apps, roll to pick one, let go to switch. Like ⌘-Tab." = "按住即可查看打开的应用，滚动选择一个，松开即可切换。就像 ⌘-Tab。";
+"switcher, switch apps, command tab, ⌘-Tab" = "应用切换器, 切换应用, Command Tab, ⌘-Tab, switcher";
+"Like ⌘-Tab: hold it and your open apps appear. Roll or turn the ring to pick one, and let go to switch." = "就像 ⌘-Tab：按住后会显示打开的应用。滚动轨迹球或转动滚动环选择一个，松开即可切换。";
+"app switcher command tab windows" = "应用 切换器 切换 Command Tab 窗口";
+"Includes your primary click, so this combo does the Switcher’s tap instead of the Switcher." = "包含你的主按钮点按，因此此组合会执行应用切换器的轻点操作，而不是应用切换器。";
+"Hold this button and your open apps appear, the last one you used already picked. Roll the ball or turn the ring to choose another, and let go to switch. Esc cancels." = "按住此按钮会显示打开的应用，并已选中你上次使用的应用。滚动轨迹球或转动滚动环选择其他应用，松开即可切换。按 Esc 取消。";
+"Hold these buttons together and your open apps appear, the last one you used already picked. Roll the ball or turn the ring to choose another, and let go to switch. Esc cancels." = "同时按住这些按钮会显示打开的应用，并已选中你上次使用的应用。滚动轨迹球或转动滚动环选择其他应用，松开即可切换。按 Esc 取消。";
+"A quick press, before the apps show." = "在应用出现前快速按一下。";

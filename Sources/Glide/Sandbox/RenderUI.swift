@@ -295,6 +295,99 @@ enum RenderUI {
         return Offscreen.render(view, size: size, chrome: .plain, appearance: appearance(dark), scale: scale)
     }
 
+    /// Made-up apps for the Switcher's pictures: generated icons (a rounded square in two
+    /// colors with an SF Symbol), so a picture never depends on what's running on this Mac.
+    static func fakeSwitcherEntries(_ n: Int) -> [SwitcherEntry] {
+        let kinds: [(String, String, NSColor, NSColor)] = [
+            ("Compass", "safari", .systemTeal, .systemBlue), ("Letters", "envelope.fill", .systemBlue, .systemIndigo),
+            ("Notebook", "note.text", .systemYellow, .systemOrange), ("Terminal", "terminal.fill", .darkGray, .black),
+            ("Studio", "paintbrush.pointed.fill", .systemPink, .systemPurple), ("Tunes", "music.note", .systemRed, .systemPink),
+            ("Calendar", "calendar", .systemRed, .systemOrange), ("Photos", "camera.macro", .systemOrange, .systemPink),
+            ("Files", "folder.fill", .systemCyan, .systemBlue), ("Chat", "bubble.left.and.bubble.right.fill", .systemGreen, .systemTeal),
+            ("Maps", "map.fill", .systemGreen, .systemMint), ("Sheets", "tablecells.fill", .systemGreen, .systemTeal),
+            ("Slides", "rectangle.on.rectangle.angled.fill", .systemOrange, .systemYellow), ("Code", "chevron.left.forwardslash.chevron.right", .systemIndigo, .systemPurple),
+            ("Weather", "cloud.sun.fill", .systemBlue, .systemCyan), ("Reminders", "checklist", .systemOrange, .systemRed),
+            ("Books", "book.fill", .systemOrange, .systemBrown), ("Podcasts", "mic.fill", .systemPurple, .systemIndigo),
+            ("Settings", "gearshape.fill", .systemGray, .darkGray), ("Preview", "doc.richtext.fill", .systemBlue, .systemTeal),
+            ("Clock", "clock.fill", .black, .darkGray), ("Contacts", "person.crop.circle.fill", .systemBrown, .systemOrange),
+            ("Stocks", "chart.line.uptrend.xyaxis", .darkGray, .black), ("Voice Memos", "waveform", .systemRed, .systemPink),
+        ]
+        return (0..<n).map { i in
+            let k = kinds[i % kinds.count]
+            let name = i < kinds.count ? k.0 : "\(k.0) \(i / kinds.count + 1)"
+            return SwitcherEntry(id: i, name: name, icon: fakeAppIcon(k.1, k.2, k.3), windows: [1, 3, 0, 2, 1, 1, 5, 0][i % 8],
+                                 hidden: i % 11 == 7, app: nil)
+        }
+    }
+
+    static func fakeAppIcon(_ symbol: String, _ top: NSColor, _ bottom: NSColor) -> NSImage {
+        NSImage(size: NSSize(width: 128, height: 128), flipped: false) { r in
+            let body = r.insetBy(dx: 12, dy: 12)
+            let path = NSBezierPath(roundedRect: body, xRadius: 23, yRadius: 23)
+            NSGradient(starting: top, ending: bottom)?.draw(in: path, angle: -90)
+            NSColor.white.withAlphaComponent(0.18).setStroke()
+            path.lineWidth = 1
+            path.stroke()
+            let config = NSImage.SymbolConfiguration(pointSize: 46, weight: .semibold).applying(.init(paletteColors: [.white]))
+            if let s = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)?.withSymbolConfiguration(config) {
+                s.draw(in: NSRect(x: r.midX - s.size.width / 2, y: r.midY - s.size.height / 2, width: s.size.width, height: s.size.height))
+            }
+            return true
+        }
+    }
+
+    /// The Switcher's panel as it shows on a display: the real `SwitcherOverlayView` on a stand-in
+    /// wallpaper (`busy`: a bright, many-colored one, to judge contrast), with the stand-in pointer
+    /// where the hold left it.
+    static func switcherOverlay(apps: Int, selected: Int, firstRow: Int = 0, maxRows: Int = 3, busy: Bool,
+                                dark: Bool, scale: CGFloat) -> NSBitmapImageRep? {
+        let entries = fakeSwitcherEntries(apps)
+        let grid = SwitcherGrid.fitting(count: apps, maxColumns: SwitcherLayout.maxColumns, maxRows: maxRows)
+        let state = SwitcherOverlayState()
+        state.entries = entries
+        state.model = SwitcherOverlayModel(session: 1, grid: grid, selected: selected, firstRow: firstRow)
+        state.shown = true
+        let canvas = SwitcherLayout.canvas(grid)
+        let size = CGSize(width: max(canvas.width + 120, 720), height: canvas.height + 120)
+        let wallpaper: [Color] = busy
+            ? [Color(red: 1.0, green: 0.85, blue: 0.3), Color(red: 0.95, green: 0.35, blue: 0.45), Color(red: 0.25, green: 0.65, blue: 0.95), .white]
+            : dark ? [Color(red: 0.08, green: 0.1, blue: 0.2), Color(red: 0.2, green: 0.12, blue: 0.3), Color(red: 0.05, green: 0.2, blue: 0.25)]
+                   : [Color(red: 0.75, green: 0.86, blue: 0.97), Color(red: 0.96, green: 0.9, blue: 0.86), Color(red: 0.86, green: 0.93, blue: 0.88)]
+        let view = ZStack(alignment: .topLeading) {
+            LinearGradient(colors: wallpaper, startPoint: .topLeading, endPoint: .bottomTrailing)
+            // Something to read through the glass: a window and a few lines of text.
+            RoundedRectangle(cornerRadius: 12).fill(dark ? Color(white: 0.16) : .white)
+                .frame(width: size.width * 0.55, height: size.height * 0.7).offset(x: 40, y: 40)
+            VStack(alignment: .leading, spacing: 9) {
+                ForEach(0..<14, id: \.self) { i in
+                    Text(verbatim: ["Quarterly notes", "Draft the release post", "Ship the beta tonight", "Test on the Expert Mouse",
+                                    "Roll to pick an app", "Lunch at noon", "Glideball", "Reply to Sam", "Backups on",
+                                    "Order more coffee", "Fix the ring direction", "Read chapter 4", "Call home", "Gym at 6"][i])
+                        .font(.system(size: 13, weight: i == 0 ? .bold : .regular))
+                        .foregroundStyle(dark ? Color.white.opacity(0.85) : Color.black.opacity(0.8))
+                }
+            }
+            .offset(x: 64, y: 60)
+            if busy {
+                ForEach(0..<6, id: \.self) { i in
+                    Circle().fill([Color.red, .green, .orange, .purple, .cyan, .yellow][i].opacity(0.85))
+                        .frame(width: 90, height: 90)
+                        .offset(x: CGFloat(i) * size.width / 6, y: CGFloat(i % 3) * size.height / 3)
+                }
+            }
+            SwitcherOverlayView(state: state)
+                .frame(width: canvas.width, height: canvas.height)
+                .offset(x: (size.width - canvas.width) / 2, y: (size.height - canvas.height) / 2)
+            // The stand-in pointer, still where the hold left it (off to one side).
+            Image(nsImage: NSCursor.arrow.image)
+                .position(x: size.width * 0.18 + NSCursor.arrow.image.size.width / 2,
+                          y: size.height * 0.2 + NSCursor.arrow.image.size.height / 2)
+        }
+        .frame(width: size.width, height: size.height)
+        .clipped()
+        return Offscreen.render(view, size: size, chrome: .plain, appearance: appearance(dark), scale: scale)
+    }
+
     /// Glideball › Settings…, through the real `SettingsWindowController` (toolbar tabs and all).
     static func settings(_ pane: SettingsPane, dark: Bool, scale: CGFloat) -> NSBitmapImageRep? {
         UserDefaults.standard.set(pane.rawValue, forKey: SettingsWindowController.lastPaneKey)

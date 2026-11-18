@@ -2649,3 +2649,15 @@
 "ring: %@ / %@" = "Ring: %@ / %@";
 "wheel, ring, radial menu, pie menu" = "rad, ring, radialmenü, kreismenü, wheel, pie menu";
 "Wheel slots" = "Rad-Felder";
+
+/* The Switcher */
+"Switcher" = "App-Umschalter";
+"Make a button a Switcher" = "Eine Taste zum App-Umschalter machen";
+"Hold it to see your open apps, roll to pick one, let go to switch. Like ⌘-Tab." = "Halte sie gedrückt, um deine geöffneten Apps zu sehen, rolle zum Auswählen und lass los zum Wechseln. Wie ⌘-Tab.";
+"switcher, switch apps, command tab, ⌘-Tab" = "app-umschalter, apps wechseln, befehlstaste tab, ⌘-Tab, switcher";
+"Like ⌘-Tab: hold it and your open apps appear. Roll or turn the ring to pick one, and let go to switch." = "Wie ⌘-Tab: Halte sie gedrückt und deine geöffneten Apps erscheinen. Rolle oder dreh den Ring, um eine auszuwählen, und lass los zum Wechseln.";
+"app switcher command tab windows" = "app umschalter wechseln befehl tab fenster";
+"Includes your primary click, so this combo does the Switcher’s tap instead of the Switcher." = "Enthält deinen Primärklick, daher macht diese Kombi das Tippen des App-Umschalters statt des App-Umschalters.";
+"Hold this button and your open apps appear, the last one you used already picked. Roll the ball or turn the ring to choose another, and let go to switch. Esc cancels." = "Halte diese Taste gedrückt und deine geöffneten Apps erscheinen, die zuletzt benutzte ist schon ausgewählt. Rolle den Ball oder dreh den Ring, um eine andere zu wählen, und lass los zum Wechseln. Esc bricht ab.";
+"Hold these buttons together and your open apps appear, the last one you used already picked. Roll the ball or turn the ring to choose another, and let go to switch. Esc cancels." = "Halte diese Tasten zusammen gedrückt und deine geöffneten Apps erscheinen, die zuletzt benutzte ist schon ausgewählt. Rolle den Ball oder dreh den Ring, um eine andere zu wählen, und lass los zum Wechseln. Esc bricht ab.";
+"A quick press, before the apps show." = "Ein kurzer Druck, bevor die Apps erscheinen.";

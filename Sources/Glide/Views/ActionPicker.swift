@@ -359,7 +359,7 @@ struct ActionPickerPanel: View {
         var catalog = ActionCatalog.all.filter { allowed($0.action) }
         if button == nil { catalog.removeAll { $0.action == .system } }   // a combo has no "normal"
         var out: [PickerSection] = []
-        let holdAndRoll = [gestureEntry(q), wheelEntry(q)].compactMap { $0 }
+        let holdAndRoll = [gestureEntry(q), wheelEntry(q), switcherEntry(q)].compactMap { $0 }
 
         if q.isEmpty {
             // What it does now, then what was chosen lately (or a few good first picks), then everything.
@@ -448,6 +448,26 @@ struct ActionPickerPanel: View {
         return PickerEntry(id: "wheel", title: title, detail: detail,
                            icon: .symbol("circle.dotted.circle"), isCurrent: current?.isWheel ?? false,
                            activate: { choose(.wheel(WheelMenu.keeping(current ?? .system))) })
+    }
+
+    /// "Switcher": offered wherever Gesture is (never on the primary button).
+    private func switcherEntry(_ q: String) -> PickerEntry? {
+        guard purpose == .button else { return nil }
+        if let comboButtons {
+            guard comboButtons.count > 1, !comboButtons.contains(0) else { return nil }
+        } else {
+            guard let button, button != 0 else { return nil }
+        }
+        let title = String(localized: "Switcher", comment: "Button action: hold the button, roll the ball to pick a running app, let go to switch to it (like ⌘-Tab)")
+        let detail = String(localized: "Like ⌘-Tab: hold it and your open apps appear. Roll or turn the ring to pick one, and let go to switch.",
+                            comment: "Action picker: Switcher")
+        let words = title + " " + detail + " " + String(localized: "app switcher command tab windows", comment: "Action picker: extra search words for Switcher")
+        if !q.isEmpty, !q.split(separator: " ").allSatisfy({ words.range(of: $0, options: [.caseInsensitive, .diacriticInsensitive]) != nil }) {
+            return nil
+        }
+        return PickerEntry(id: "switcher", title: title, detail: detail,
+                           icon: .symbol(AppSwitcher.symbol), isCurrent: current?.isSwitcher ?? false,
+                           activate: { choose(.switcher(AppSwitcher.keeping(current ?? .system))) })
     }
 
     /// "Gesture": offered for the three free buttons and for combos without the primary

@@ -393,6 +393,10 @@ enum SearchIndex {
                 words.append(w.ring.title)
                 if w.tap != .system { words.append(w.tap.title) }
             }
+            if case .switcher(let s) = action {
+                words.append(String(localized: "switcher, switch apps, command tab, ⌘-Tab", comment: "Search words for a Switcher button (comma-separated)"))
+                if s.tap != .system { words.append(s.tap.title) }
+            }
             out.append(PaletteItem(id: "button:\(b)", group: .buttons,
                                    title: String(localized: "\(name): \(does)", comment: "Search palette: a trackball button and what it does, like “Top right: Back”"),
                                    detail: b == 0 ? String(localized: "Your primary click stays a left click, so Glideball can never lock you out.")
@@ -410,6 +414,17 @@ enum SearchIndex {
                                    detail: String(localized: "Hold it and a ring of actions appears around the pointer; roll toward one and let go.", comment: "Search palette: the Wheel"),
                                    keywords: String(localized: "wheel, ring, radial menu, pie menu", comment: "Search words for a Wheel button (comma-separated)"),
                                    symbol: "circle.dotted.circle", part: .clicks, trailing: GlideTab.buttons.title,
+                                   findable: Findable.buttonID(3)) {
+                PaletteRouter.openButton(3)
+            })
+        }
+        // The Switcher, the same way.
+        if !model.config.anyAction(\.isSwitcher) {
+            out.append(PaletteItem(id: "switcher", group: .buttons,
+                                   title: String(localized: "Make a button a Switcher", comment: "Search palette: set up the Switcher button action (⌘-Tab for the trackball)"),
+                                   detail: String(localized: "Hold it to see your open apps, roll to pick one, let go to switch. Like ⌘-Tab.", comment: "Search palette: the Switcher"),
+                                   keywords: String(localized: "switcher, switch apps, command tab, ⌘-Tab", comment: "Search words for a Switcher button (comma-separated)"),
+                                   symbol: AppSwitcher.symbol, part: .clicks, trailing: GlideTab.buttons.title,
                                    findable: Findable.buttonID(3)) {
                 PaletteRouter.openButton(3)
             })

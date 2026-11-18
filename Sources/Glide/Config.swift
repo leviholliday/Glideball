@@ -94,6 +94,10 @@ enum ButtonAction: Codable, Hashable {
     /// letting go runs it; the scroll ring does the Wheel's ring job meanwhile. Never on the
     /// primary button.
     indirect case wheel(WheelMenu)
+    /// Hold the button: a panel of the running apps appears (most recent first, like ⌘-Tab),
+    /// the ball and the scroll ring move the highlight and letting go switches to that app.
+    /// Never on the primary button.
+    indirect case switcher(AppSwitcher)
 
     struct Preset: Identifiable {
         /// Shown in menus (localized).
@@ -162,6 +166,8 @@ enum ButtonAction: Codable, Hashable {
               symbol: "dot.arrowtriangles.up.right.down.left.circle", action: .gesture(.standard)),
         .init(title: String(localized: "Wheel", comment: "Button action: hold the button, roll the ball to pick from a ring of actions around the pointer"),
               symbol: "circle.dotted.circle", action: .wheel(.standard)),
+        .init(title: String(localized: "Switcher", comment: "Button action: hold the button, roll the ball to pick a running app, let go to switch to it (like ⌘-Tab)"),
+              symbol: AppSwitcher.symbol, action: .switcher(.standard)),
         .init(title: String(localized: "Do nothing"), symbol: "nosign", action: .disabled),
     ]
 
@@ -178,6 +184,7 @@ enum ButtonAction: Codable, Hashable {
             return String(localized: "Open \(name)", comment: "Button action: opens an app; %@ is the app’s name")
         case .gesture: return String(localized: "Gesture", comment: "Button action: hold the button and roll the ball up, down, left or right")
         case .wheel: return String(localized: "Wheel", comment: "Button action: hold the button, roll the ball to pick from a ring of actions around the pointer")
+        case .switcher: return String(localized: "Switcher", comment: "Button action: hold the button, roll the ball to pick a running app, let go to switch to it (like ⌘-Tab)")
         case .media(.brightnessUp): return String(localized: "Brightness Up")
         case .media(.brightnessDown): return String(localized: "Brightness Down")
         default: break
@@ -189,6 +196,7 @@ enum ButtonAction: Codable, Hashable {
         if case .openApp = self { return "app" }
         if case .gesture = self { return "dot.arrowtriangles.up.right.down.left.circle" }
         if case .wheel = self { return "circle.dotted.circle" }
+        if case .switcher = self { return AppSwitcher.symbol }
         if self == .media(.brightnessUp) { return "sun.max" }
         if self == .media(.brightnessDown) { return "sun.min" }
         return Self.presets.first(where: { $0.action == self })?.symbol ?? "keyboard"
@@ -669,15 +677,16 @@ extension ButtonAction {
     /// Added after 2.9: a Glideball before this one drops it when reading settings.
     var isNewerFeature: Bool {
         switch self {
-        case .gesture, .media, .openApp, .wheel: true
+        case .gesture, .media, .openApp, .wheel, .switcher: true
         default: false
         }
     }
 
     var isGesture: Bool { if case .gesture = self { true } else { false } }
     var isWheel: Bool { if case .wheel = self { true } else { false } }
-    /// Hold and roll: a gesture or a Wheel (the pointer stays put while it's held).
-    var holdsTheBall: Bool { isGesture || isWheel }
+    var isSwitcher: Bool { if case .switcher = self { true } else { false } }
+    /// Hold and roll: a gesture, a Wheel or the Switcher (the pointer stays put while it's held).
+    var holdsTheBall: Bool { isGesture || isWheel || isSwitcher }
 
     /// As a gesture direction, whether "keep going as you roll" makes sense for it
     /// (volume, zoom, tabs, undo), rather than once per hold (Mission Control).
@@ -783,6 +792,13 @@ extension GlideConfig {
         return (merged.config.clamped(), merged.kept)
     }
 
+    /// Settings written by a 2.10 beta before the Switcher (`GlideSettingsFile.switcherSince`),
+    /// merged with this Mac's: as `keepingWheels`, for Switcher buttons and combos.
+    func keepingSwitchers(from local: GlideConfig) -> (config: GlideConfig, kept: Bool) {
+        let merged = keepingActions(\.isSwitcher, from: local)
+        return (merged.config.clamped(), merged.kept)
+    }
+
     /// Settings written by a Glideball that knew gestures but not chained gestures,
     /// gesture distance and Steady hands (2.10 betas before `GlideSettingsFile.gestureTuningSince`),
     /// merged with this Mac's (`local`). It read and wrote back the gestures without
@@ -849,6 +865,19 @@ extension GlideSettingsFile {
     static func predatesWheel(_ writtenBy: String?) -> Bool {
         guard let writtenBy else { return true }
         guard let v = SettingsVersion(writtenBy), let since = SettingsVersion(wheelSince) else { return false }
+        return v < since
+    }
+
+    /// The first Glideball that knows the Switcher (`ButtonAction.switcher`). A 2.10 beta before
+    /// it reads version 2 files but skips every Switcher, so sync puts them back after it
+    /// (`keepingSwitchers`).
+    static let switcherSince = "2.10-beta.25"
+
+    /// Written by a Glideball that would have dropped Switcher buttons (none at all: see
+    /// `predatesGestureTuning`, whose merge already covers them).
+    static func predatesSwitcher(_ writtenBy: String?) -> Bool {
+        guard let writtenBy else { return true }
+        guard let v = SettingsVersion(writtenBy), let since = SettingsVersion(switcherSince) else { return false }
         return v < since
     }
 
@@ -1103,7 +1132,7 @@ struct GestureStep: Codable, Hashable {
         switch action {
         case .holdShortcut(let s): .shortcut(s)
         case .shortcut, .media, .openApp, .leftClick, .rightClick, .middleClick, .back, .forward, .modifiedClick: action
-        case .system, .disabled, .precisionHold, .precisionToggle, .ballScrollHold, .dragLock, .gesture, .wheel: nil
+        case .system, .disabled, .precisionHold, .precisionToggle, .ballScrollHold, .dragLock, .gesture, .wheel, .switcher: nil
         }
     }
 }
@@ -1192,7 +1221,11 @@ struct ButtonGesture: Codable, Hashable {
     static func keeping(_ previous: ButtonAction) -> ButtonGesture {
         if case .gesture(let old) = previous { return old }
         var g = ButtonGesture.standard
-        g.tap = previous
+        switch previous {
+        case .wheel(let w): g.tap = w.tap
+        case .switcher(let s): g.tap = s.tap
+        default: g.tap = previous
+        }
         return g
     }
 
@@ -1220,7 +1253,7 @@ struct ButtonGesture: Codable, Hashable {
     var tapAction: ButtonAction {
         switch tap {
         case .holdShortcut(let s): .shortcut(s)
-        case .precisionHold, .ballScrollHold, .gesture, .wheel: .disabled
+        case .precisionHold, .ballScrollHold, .gesture, .wheel, .switcher: .disabled
         default: tap
         }
     }
@@ -1351,7 +1384,7 @@ struct WheelMenu: Codable, Hashable {
     var tapAction: ButtonAction {
         switch tap {
         case .holdShortcut(let s): .shortcut(s)
-        case .precisionHold, .ballScrollHold, .gesture, .wheel: .disabled
+        case .precisionHold, .ballScrollHold, .gesture, .wheel, .switcher: .disabled
         default: tap
         }
     }
@@ -1366,7 +1399,7 @@ struct WheelMenu: Codable, Hashable {
         case .holdShortcut(let s): .shortcut(s)
         case .shortcut, .media, .openApp, .leftClick, .rightClick, .middleClick, .back, .forward, .modifiedClick,
              .precisionToggle: action
-        case .system, .disabled, .precisionHold, .ballScrollHold, .dragLock, .gesture, .wheel: nil
+        case .system, .disabled, .precisionHold, .ballScrollHold, .dragLock, .gesture, .wheel, .switcher: nil
         }
     }
 
@@ -1379,7 +1412,7 @@ struct WheelMenu: Codable, Hashable {
     static func keeping(_ previous: ButtonAction) -> WheelMenu {
         if case .wheel(let old) = previous { return old }
         var w = standard
-        if case .gesture(let g) = previous { w.tap = g.tap } else { w.tap = previous }
+        if case .gesture(let g) = previous { w.tap = g.tap } else if case .switcher(let a) = previous { w.tap = a.tap } else { w.tap = previous }
         return w
     }
 
@@ -1411,6 +1444,55 @@ struct WheelMenu: Codable, Hashable {
         try c.encode(ring, forKey: .ring)
         try c.encodeIfPresent(ringUp, forKey: .ringUp)
         try c.encodeIfPresent(ringDown, forKey: .ringDown)
+        try c.encode(tap, forKey: .tap)
+    }
+}
+
+// MARK: - The Switcher
+
+/// A Switcher button: ⌘-Tab for the trackball. Hold it and a panel of the running apps
+/// appears (most recent first, the current one first and the previous one lit), the ball and
+/// the scroll ring move the highlight, and letting go switches to it. A quick press does
+/// `tap`. Never on the primary button (see `GestureRoute`).
+struct AppSwitcher: Codable, Hashable {
+    /// A quick press without rolling or turning, before the panel shows (`.system`: the
+    /// button's own click).
+    var tap: ButtonAction = .system
+
+    init(tap: ButtonAction = .system) { self.tap = tap }
+
+    static let symbol = "square.grid.2x2"
+    static let standard = AppSwitcher()
+
+    /// The tap as it's performed: a held shortcut is a quick press, held modes do nothing.
+    var tapAction: ButtonAction {
+        switch tap {
+        case .holdShortcut(let s): .shortcut(s)
+        case .precisionHold, .ballScrollHold, .gesture, .wheel, .switcher: .disabled
+        default: tap
+        }
+    }
+
+    /// Turning a button into a Switcher keeps what it did as the tap.
+    static func keeping(_ previous: ButtonAction) -> AppSwitcher {
+        switch previous {
+        case .switcher(let old): old
+        case .gesture(let g): AppSwitcher(tap: g.tap)
+        case .wheel(let w): AppSwitcher(tap: w.tap)
+        default: AppSwitcher(tap: previous)
+        }
+    }
+
+    // Every field has a default, so a newer build's extra fields (or none) still load.
+    private enum CodingKeys: String, CodingKey { case tap }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        tap = (try? c.decodeIfPresent(ButtonAction.self, forKey: .tap)) ?? .system
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(tap, forKey: .tap)
     }
 }
@@ -1524,6 +1606,10 @@ extension ButtonAction {
             w.ringDown = w.ringDown?.clamped(insideGesture: true)
             w.tap = w.tap.clamped(insideGesture: true) ?? .system
             return .wheel(w)
+        case .switcher(var a):
+            guard !insideGesture else { return nil }
+            a.tap = a.tap.clamped(insideGesture: true) ?? .system
+            return .switcher(a)
         default:
             return self
         }
