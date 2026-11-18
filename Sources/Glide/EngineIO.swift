@@ -92,6 +92,10 @@ class EngineIO {
 
     func post(_ event: CGEvent, tap: CGEventTapLocation) { event.post(tap: tap) }
 
+    /// Posts a plain move (`Engine.resyncPointer`) through the HID event stream, so the stream's next
+    /// movement starts where the pointer was just put rather than where the stream had got to.
+    func postResync(_ event: CGEvent) { event.post(tap: .cghidEventTap) }
+
     // MARK: The stand-in pointer
 
     /// Shows a picture of the pointer at `point` (a global Quartz point: top-left origin) and

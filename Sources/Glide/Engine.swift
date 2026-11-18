@@ -172,6 +172,7 @@ final class Engine {
         private var count: [Int64: Int] = [:]
         func contains(_ b: Int64) -> Bool { (count[b] ?? 0) > 0 }
         func count(_ b: Int64) -> Int { count[b] ?? 0 }
+        var isEmpty: Bool { !count.values.contains { $0 > 0 } }
         mutating func insert(_ b: Int64) { count[b, default: 0] += 1 }
         mutating func remove(_ b: Int64) { count[b] = max(0, (count[b] ?? 0) - 1) }
         /// What macOS says is down now (one each: it can't say how many hold it); counts
@@ -534,6 +535,7 @@ final class Engine {
             if self.ballScrollHeld { self.endBallScroll(latched: false, glide: false) }
             self.ballScrolling = false
             self.syncFreeze()
+            self.endLanding()   // nobody's looking: nothing to put back
             self.scroller.stopAll()
             self.endDragLock()
             if self.precisionHeld { self.endPrecisionHold() }
@@ -1838,6 +1840,7 @@ final class Engine {
         case .tapDisabledByTimeout, .tapDisabledByUserInput:
             // A gesture's release may have gone by while the tap was off: free the pointer now.
             cancelGesture(.tapDisabled)
+            endLanding()   // moves went by unseen: where the pointer should be isn't known any more
             // The pointer moved freely while the tap was off; a hold still on (a keyboard
             // Scroll with ball) keeps it where it is now instead of pulling it back.
             if anchor != nil, let p = io.cursorLocation() {
@@ -1866,12 +1869,18 @@ final class Engine {
         case .mouseMoved where anchor != nil:
             followOtherMouse(at: event.location)   // another mouse's move: the hold moves with it
             return pass
+        case .mouseMoved where landing != nil && !dragLocked:
+            landed(event, trackball: trackballMoving)   // just after a hold: no hop
+            return pass
         case .leftMouseDragged, .rightMouseDragged, .otherMouseDragged:
             if anchor != nil {
                 if trackballMoving { holdStats.tapDrags += 1; holdPointer(seen: event.location) } else { followOtherMouse(at: event.location) }
+            } else if landing != nil {
+                landed(event, trackball: trackballMoving)
             }
             return handleButton(event, .drag)
         case .mouseMoved where dragLocked:
+            if landing != nil { landed(event, trackball: trackballMoving) }
             // macOS may not count our synthetic press as a held button, so it
             // reports plain moves: make them the drag the lock promised.
             Self.retarget(event, to: 0, .drag)
@@ -2544,6 +2553,7 @@ final class Engine {
     private func syncFreeze() {
         let frozen = ballScrolling || gestureFrozen
         if frozen, anchor == nil {
+            endLanding()   // a new hold: the last one's landing is over
             anchor = io.cursorLocation()
             otherMovedSinceAnchor = false
             anchorBeforeFollow = nil
@@ -2554,8 +2564,17 @@ final class Engine {
             if let a = anchor {
                 // The real pointer comes back exactly where the stand-in was, so nothing jumps:
                 // put there before it's freed (the re-associate below lets it move at once).
-                if standInAt != nil, let tap, io.tapIsEnabled(tap), !io.warpPointer(a) { holdStats.failedWarps += 1 }
+                var lands = false
+                if standInAt != nil, let tap, io.tapIsEnabled(tap) {
+                    if !io.warpPointer(a) { holdStats.failedWarps += 1 }
+                    // What the two witnesses say as the stand-in goes: macOS's answer (just after
+                    // the put-back) and the last move event the trackball sent during the hold.
+                    holdStats.letGoAsked = io.cursorLocation().map { Self.distance($0, a) }
+                    holdStats.letGoSeen = holdStats.lastSeen.map { Self.distance($0, a) }
+                    lands = true
+                }
                 logHoldStats()
+                if lands { beginLanding(at: a) }
             }
             anchor = nil
             holdRecheck?.invalidate()
@@ -2565,6 +2584,8 @@ final class Engine {
         }
         let began = frozen && lastHoldWarp < 0
         io.freezePointer(frozen)
+        // Just let go: the event stream starts again from the held spot too (`resyncPointer`).
+        if !frozen, let l = landing, l.moves == 0, l.hops == 0, landingFresh { landingFresh = false; resyncPointer(at: l.spot) }
         syncMoveTap()
         if began { holdPointer(renew: true) }   // macOS starts ignoring the ball before it first moves
         syncStandIn()   // up after the first put-back; down after the pointer is free
@@ -2668,6 +2689,10 @@ final class Engine {
         /// The stand-in pointer: never needed (no tap), shown, or why it wasn't (or came down early).
         var standIn = StandIn.none
         enum StandIn { case none, shown, failed(String) }
+        /// The location on the trackball's latest move or drag event during the hold.
+        var lastSeen: CGPoint?
+        /// As the stand-in went: how far macOS's answer and that last move event were from the held spot.
+        var letGoAsked: Double?, letGoSeen: Double?
     }
     private var holdStats = HoldStats()
 
@@ -2684,7 +2709,21 @@ final class Engine {
                            + (s.followsUnseen > 0 ? ", \(s.followsUnseen) a pointer HID doesn't show (the trackpad)" : "")
                            + "; other devices' movement counted as the trackball's \(s.echoes.values.reduce(0, +)) times\(byKey(s.echoes))"
                            + "; macOS's location behind the move event \(s.queryLagged) times, missing \(s.noLocation) times"
-                           + "; " + standInNote(s.standIn))
+                           + "; " + standInNote(s.standIn)
+                           + letGoNote(s))
+    }
+
+    /// Where the real pointer was as the stand-in went (`syncFreeze`): macOS's answer just after the
+    /// last put-back, and the trackball's last move event of the hold. A big second number with a
+    /// small first one is macOS's event stream running ahead of where the pointer was put.
+    private func letGoNote(_ s: HoldStats) -> String {
+        guard s.letGoAsked != nil || s.letGoSeen != nil else { return "" }
+        func pt(_ d: Double?) -> String { d.map { String(format: "%.0f pt", $0) } ?? "unknown" }
+        return "; let go: macOS's location \(pt(s.letGoAsked)) from the held spot, the last move event \(pt(s.letGoSeen))"
+    }
+
+    static func distance(_ p: CGPoint, _ q: CGPoint) -> Double {
+        Double(max(abs(p.x - q.x), abs(p.y - q.y)))
     }
 
     private func standInNote(_ s: HoldStats.StandIn) -> String {
@@ -2766,6 +2805,7 @@ final class Engine {
         }
         let asked = io.cursorLocation()
         if asked == nil { holdStats.noLocation += 1 }
+        if let seen { holdStats.lastSeen = seen }
         if otherMovedSinceAnchor {
             if let p = seen ?? asked { follow(to: p) }
             return false
@@ -2839,10 +2879,107 @@ final class Engine {
     }
     static let holdRecheckInterval = 0.004
 
-    /// The plain-move tap is on while a Drag lock needs its moves turned into drags, or while
-    /// the pointer is held (a keyboard Scroll with ball has no button down, so no drags).
+    // MARK: The landing: the first moments after a hold lets the pointer go
+
+    /// Levi, beta 30: "after i do a command and let go the mouse jumps like to a different spot."
+    /// His logs show two kinds of hold. In most, macOS's answer for the pointer's location moves
+    /// with the ball and every put-back (`warpPointer`) shows in it. In the others ("macOS's
+    /// location behind the move event" on every put-back, no rechecks, furthest up to 188 pt)
+    /// macOS's answer stays on the held spot the whole hold while the trackball's own drag events
+    /// say the pointer is further and further away in the direction of the roll: macOS's event
+    /// stream doesn't take up the put-backs (Mac Mouse Fix saw the same: "CGWarpMouseCursorPosition
+    /// only taking effect after a few CGEvents", WarpDeltaCompensator.h). Those are the long rolls
+    /// a command needs (volume, a repeating direction). Letting go put the pointer on the held spot,
+    /// which macOS's answer believed, but the next movement came from where the event stream had
+    /// got to: the hop. So letting go now also posts a move to the held spot through the HID event
+    /// stream itself (`resyncPointer`), and for `landingWindow` after, a trackball move that lands
+    /// much further from where the pointer was than the move itself went (its own delta) is put
+    /// back to where that move should have taken it (`landed`). Each hold's log line says where the
+    /// two witnesses were as the stand-in went; a `pointer landing:` line says what the first moves
+    /// after it did, and any hop it put back.
+    private struct Landing {
+        var spot: CGPoint            // where the pointer should be now
+        var moves = 0
+        var first: (offset: Double, step: Double)?
+        var hops = 0
+        var furthestHop = 0.0
+    }
+    private var landing: Landing?
+    private var landingFresh = false   // begun, its resync not posted yet
+    private var landingTimer: EngineTimer?
+    static let landingWindow = 0.25
+    /// A move may land this much further from where the pointer was than its own delta says
+    /// (rounding, the screen's edge) before it counts as a hop.
+    static let landingSlack = 8.0
+
+    /// scripts/engine-fuzz: the landing is on.
+    var landingForChecks: Bool { landing != nil }
+
+    private func beginLanding(at p: CGPoint) {
+        landingTimer?.invalidate()
+        landing = Landing(spot: p)
+        landingFresh = true
+        landingTimer = io.schedule(Self.landingWindow, repeats: false) { [unowned self] in
+            landingTimer = nil
+            endLanding()
+        }
+    }
+
+    /// The landing's over (its time, a new hold, pause, sleep, quit): its line, if anything moved.
+    private func endLanding() {
+        landingTimer?.invalidate()
+        landingTimer = nil
+        guard let l = landing else { return }
+        landing = nil
+        if l.moves > 0 {
+            let first = l.first.map { String(format: "first move %.0f pt from the held spot (its own move %.0f pt)", $0.offset, $0.step) } ?? ""
+            diagnostics.record("pointer landing: \(l.moves) moves, \(first)"
+                               + (l.hops > 0 ? String(format: ", %d hops put back (furthest %.0f pt)", l.hops, l.furthestHop) : ", no hop"))
+        }
+        syncMoveTap()
+    }
+
+    /// A move after the hold let go. Another device's moves just say where the pointer is now;
+    /// the trackball's must land about where its own delta takes the pointer from there; one that
+    /// doesn't is put there, and apps see it there.
+    private func landed(_ event: CGEvent, trackball: Bool) {
+        guard var l = landing else { return }
+        defer { landing = l }
+        let p = event.location
+        guard trackball else { l.spot = p; return }
+        let dx = event.getDoubleValueField(.mouseEventDeltaX), dy = event.getDoubleValueField(.mouseEventDeltaY)
+        let step = max(abs(dx), abs(dy))
+        let offset = Self.distance(p, l.spot)
+        l.moves += 1
+        if l.first == nil { l.first = (offset, step) }
+        guard offset > step + Self.landingSlack else { l.spot = p; return }
+        // A hop: macOS's event stream was somewhere else. The pointer goes where this move
+        // should have taken it, and apps see it there.
+        let to = CGPoint(x: l.spot.x + CGFloat(dx), y: l.spot.y + CGFloat(dy))
+        l.hops += 1
+        l.furthestHop = max(l.furthestHop, offset)
+        _ = io.warpPointer(to)
+        resyncPointer(at: to)
+        io.freezePointer(false)   // re-associates: no suppression after this put-back, the pointer moves on at once
+        event.location = to
+        l.spot = to
+    }
+
+    /// Posts a plain move to `p` through the HID event stream (tagged as Glideball's, so the tap
+    /// passes it), so the stream's next movement starts where the pointer was put. Only with no
+    /// button down for apps: a move then would read as letting go of a drag.
+    private func resyncPointer(at p: CGPoint) {
+        guard appButtons.isEmpty, !leftDown else { return }
+        guard let e = CGEvent(mouseEventSource: Self.keySource, mouseType: .mouseMoved, mouseCursorPosition: p, mouseButton: .left) else { return }
+        e.setIntegerValueField(.eventSourceUserData, value: Self.syntheticTag)
+        io.postResync(e)
+    }
+
+    /// The plain-move tap is on while a Drag lock needs its moves turned into drags, while
+    /// the pointer is held (a keyboard Scroll with ball has no button down, so no drags), and
+    /// for the landing just after a hold.
     private func syncMoveTap() {
-        if dragLocked || anchor != nil { installMoveTap() } else { removeMoveTap() }
+        if dragLocked || anchor != nil || landing != nil { installMoveTap() } else { removeMoveTap() }
     }
 
     /// Ends the hold (or the latch). The ball stops scrolling once neither is left.
@@ -3379,6 +3516,7 @@ final class Engine {
         ballScrollHeld = false
         ballScrollLatched = false
         syncFreeze()   // frees the pointer: nothing holds it now
+        endLanding()   // paused, quit or unplugged: Glideball doesn't touch the pointer after
         scroller.stopAll()   // a flywheel still coasting stops here: nothing scrolls after a pause or unplug
         endDragLock()
         precisionHeld = false
