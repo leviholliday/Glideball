@@ -2623,14 +2623,30 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
     var neverVolC = GlideConfig()
     neverVolC.buttons[3] = .gesture(neverVol)
     let upRoll = roll(0, -5, 12)
+    var sideG = ButtonGesture.standard   // More on the right (with its own right), volume up repeating
+    sideG.show = .atOnce
+    sideG.right = .moreRing([nil, nil, GestureStep(.shortcut(.screenshot)), nil, nil, nil, nil])
+    sideG[.left] = GestureStep(.shortcut(.lockScreen))
+    sideG[.up] = GestureStep(.media(.volumeUp), repeats: true)
+    var sideC = GlideConfig()
+    sideC.buttons[3] = .gesture(sideG)
     let merged: [(String, [GlideConfig], [Op])] = [
         ("gestures: More opened, let go in the middle: nothing runs", [moreC], down(3) + slow + upRoll + up(3) + settle),
-        ("gestures: More opened, then right and let go runs More's right", [moreC], down(3) + slow + upRoll + right + up(3) + settle),
+        ("gestures: More opened, then right and let go runs More's right", [moreC], down(3) + slow + upRoll + [.wait(0.25)] + right + up(3) + settle),
         ("gestures: More opened, then the watchdog: nothing runs, nothing shows", [moreC],
          down(3) + slow + upRoll + [.wheelOverlay(2), .wait(0.3)] + right + up(3) + settle),
+        // Beta 30 (Levi): the roll into More carried on into its ring's place that way, and the
+        // roll back to Back carried on into the first ring's place opposite More. Now a ring that
+        // opens or comes back settles: nothing in it lights or runs until the hand rests or turns.
+        ("gestures: More with the roll carrying on: nothing in its ring runs", [sideC],
+         down(3) + slow + roll(6, 0, 50) + up(3) + settle),
+        ("gestures: Back with the roll carrying on: nothing in the first ring runs", [sideC],
+         down(3) + slow + roll(6, 0, 12) + [.wait(0.25)] + roll(-6, 0, 50) + up(3) + settle),
+        ("gestures: More, a rest, then on the same way runs its place that way", [sideC],
+         down(3) + slow + roll(6, 0, 20) + [.wait(0.25)] + roll(6, 0, 12) + up(3) + settle),
         ("gestures: More opened blind (Never), then a pause: down, nothing runs", [moreBlindC],
          down(3) + upRoll + right + [.pause, .resume] + up(3) + settle),
-        ("gestures: More, blind: up then left runs More's left", [moreBlindC], down(3) + upRoll + roll(-5, 0, 12) + up(3) + settle),
+        ("gestures: More, blind: up then left runs More's left", [moreBlindC], down(3) + upRoll + roll(-5, 0, 30) + up(3) + settle),
         ("gestures: After a pause, a fast flick: no overlay ever requested", [pauseC],
          down(3) + [.kBall(0, -30), .wait(0.004), .kBall(0, -30)] + up(3) + settle),
         ("gestures: After a pause, held still: the ring comes up and right runs", [pauseC], down(3) + [.wait(0.4)] + right + up(3) + settle),
@@ -3080,6 +3096,12 @@ let expectations: [String: (World) -> String?] = [
     "gestures: More opened, then the watchdog: nothing runs, nothing shows": { w in wheelDid(w, holds: 1, picks: 0, shows: 1) },
     "gestures: More opened blind (Never), then a pause: down, nothing runs": { w in
         wheelDid(w, holds: 1, picks: 0, shows: 1) ?? (w.gestureFires == 0 ? nil : "\(w.gestureFires) fires") },
+    "gestures: More with the roll carrying on: nothing in its ring runs": { w in
+        wheelDid(w, holds: 1, picks: 0, shows: 1) ?? (w.gestureFires == 0 && w.wheelRepeats == 0 ? nil : "\(w.gestureFires) fires, \(w.wheelRepeats) repeats") },
+    "gestures: Back with the roll carrying on: nothing in the first ring runs": { w in
+        wheelDid(w, holds: 1, picks: 0, shows: 1) ?? (w.gestureFires == 0 && w.wheelRepeats == 0 ? nil : "\(w.gestureFires) fires, \(w.wheelRepeats) repeats") },
+    "gestures: More, a rest, then on the same way runs its place that way": { w in
+        wheelDid(w, holds: 1, picks: 1, shows: 1) ?? (w.modes.wheelFlash?.kind == .slot(2) && w.modes.wheelLevel == nil ? nil : "ran \(String(describing: w.modes.wheelFlash))") },
     "gestures: More, blind: up then left runs More's left": { w in
         wheelDid(w, holds: 1, picks: 1, shows: 1) ?? (w.modes.wheelFlash?.kind == .slot(6) && w.gestureFires == 0 ? nil : "ran \(String(describing: w.modes.wheelFlash))") },
     "gestures: After a pause, a fast flick: no overlay ever requested": { w in

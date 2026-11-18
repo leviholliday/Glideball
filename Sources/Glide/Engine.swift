@@ -3271,7 +3271,21 @@ final class Engine {
             wheelReveal?.invalidate()
             wheelReveal = nil
         }
+        // A ring settling after More or Back arms when the hand rests, with no ball report to say
+        // so: the engine looks every 50 ms until it has (the overlay then shows it ready).
+        if anchor != nil, gestures.wheelSettling {
+            if wheelSettle == nil {
+                wheelSettle = io.schedule(0.05, repeats: true) { [unowned self] in
+                    syncWheel()
+                    publishModes()
+                }
+            }
+        } else if let t = wheelSettle {
+            t.invalidate()
+            wheelSettle = nil
+        }
     }
+    private var wheelSettle: EngineTimer?
 
     /// Both: the Wheel's ring and the Switcher's panel (only one is ever held).
     private func syncPanels() {

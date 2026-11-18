@@ -474,6 +474,8 @@ extension RenderUI {
                                                      ring: .init(job: .zoom, clockwise: false, steps: 2))
         let moreModel = WheelOverlayModel.of(withMore, level: 0, selected: 2, dot: CGPoint(x: 0.75, y: 0), ring: nil)
         let moreModel8 = WheelOverlayModel.of(moreEight, level: 0, selected: nil, dot: .zero, ring: nil)
+        var moreSettling = WheelOverlayModel.of(withMore, level: 0, selected: nil, dot: .zero, ring: nil)
+        moreSettling.settling = true
         let readout = WheelOverlayModel(slots: Array(repeating: nil, count: 8), eight: false, showsRing: false, selected: nil,
                                         dot: .zero, ring: .init(job: .volume, clockwise: true, steps: 4))
         add("ring-overlay-4", "Gestures ring", "The ring on screen: four, Mission Control lit, the ring turning the volume up") { dark, scale in
@@ -487,6 +489,9 @@ extension RenderUI {
         }
         add("ring-overlay-more-8", "Gestures ring", "More's ring with eight directions, just opened") { dark, scale in
             wheelOverlay(moreModel8, busy: false, dark: dark, scale: scale)
+        }
+        add("ring-overlay-more-settling", "Gestures ring", "More's ring the moment it opens: nothing lit, waiting for the hand to settle") { dark, scale in
+            wheelOverlay(moreSettling, busy: false, dark: dark, scale: scale)
         }
         add("ring-overlay-readout", "Gestures ring", "A blind hold (Never) turning the volume: only the ring job's readout") { dark, scale in
             wheelOverlay(readout, busy: false, dark: dark, scale: scale)
