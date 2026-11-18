@@ -380,8 +380,9 @@ final class Engine {
             done.signal()
         }
         _ = done.wait(timeout: .now() + 0.5)
-        // Even if the input thread were stuck, never leave the cursor frozen.
+        // Even if the input thread were stuck, never leave the cursor frozen or hidden.
         io.freezePointer(false)
+        io.hideStandIn()
     }
 
     /// Quit: gives the trackball macOS's own pointer and scroll speed back.
@@ -1697,6 +1698,7 @@ final class Engine {
             noteButtonsAlreadyDown("tap back on", clearTokens: true)   // what went by while it was off
             syncTap()
             if let moveTap { io.tapEnable(moveTap, true) }
+            syncStandIn()   // to the hold's new place, or down if the tap didn't come back
             // So may the release of a button holding a key or remapped to another button:
             // the failsafe lets go of them once the trackball says the button is up.
             if heldByButton { startHoldFailsafe() }
@@ -2367,17 +2369,81 @@ final class Engine {
             anchorBeforeFollow = nil
             holdStats = HoldStats()
             lastHoldWarp = -1
+            standInGaveUp = false
         } else if !frozen {
-            if anchor != nil { logHoldStats() }
+            if let a = anchor {
+                // The real pointer comes back exactly where the stand-in was, so nothing jumps:
+                // put there before it's freed (the re-associate below lets it move at once).
+                if standInAt != nil, let tap, io.tapIsEnabled(tap), !io.warpPointer(a) { holdStats.failedWarps += 1 }
+                logHoldStats()
+            }
             anchor = nil
             holdRecheck?.invalidate()
             holdRecheck = nil
+            unseenFollow?.invalidate()
+            unseenFollow = nil
         }
         let began = frozen && lastHoldWarp < 0
         io.freezePointer(frozen)
         syncMoveTap()
         if began { holdPointer(renew: true) }   // macOS starts ignoring the ball before it first moves
+        syncStandIn()   // up after the first put-back; down after the pointer is free
     }
+
+    /// The stand-in pointer (`EngineIO.showStandIn`) is up exactly while the pointer is held with
+    /// the tap on, at the hold's anchor; the real pointer is hidden under it. It follows the anchor
+    /// (another mouse, the tap coming back) and comes down with the hold, by every path that ends
+    /// one, since they all come through `syncFreeze`. If it can't be shown, or the watchdog took
+    /// it down, the hold goes on as before beta 23, without one.
+    private func syncStandIn() {
+        let want: CGPoint? = {
+            // Without Input Monitoring nothing tells the trackball's movement apart, so nothing holds the pointer still: no stand-in.
+            guard let a = anchor, hid, !standInGaveUp, let tap, io.tapIsEnabled(tap) else { return nil }
+            return a
+        }()
+        if let p = want {
+            guard p != standInAt else { return }
+            if io.showStandIn(at: p) {
+                if standInAt == nil {
+                    holdStats.standIn = .shown
+                    standInKeeper?.invalidate()
+                    standInKeeper = io.schedule(Self.standInKeepInterval, repeats: true) { [unowned self] in
+                        guard standInAt != nil else { return }
+                        if !io.keepStandIn() { standInLost() }
+                    }
+                }
+                standInAt = p
+            } else {
+                standInLost()
+            }
+        } else if standInAt != nil {
+            standInAt = nil
+            standInKeeper?.invalidate()
+            standInKeeper = nil
+            io.hideStandIn()
+        }
+    }
+
+    /// The stand-in couldn't be shown or was taken down for us: the rest of this hold goes without.
+    private func standInLost() {
+        standInGaveUp = true
+        if anchor != nil { holdStats.standIn = .failed(io.standInProblem() ?? "unknown") }
+        standInAt = nil
+        standInKeeper?.invalidate()
+        standInKeeper = nil
+        io.hideStandIn()   // whatever is left of it (the real pointer is shown only if it was hidden)
+    }
+
+    /// Where the stand-in pointer is, while it's up. Input thread only.
+    private var standInAt: CGPoint?
+    private var standInGaveUp = false        // this hold goes without one
+    private var standInKeeper: EngineTimer?  // tells EngineIO's watchdog the engine is alive
+    /// Well inside `EngineIO.standInLease`.
+    static let standInKeepInterval = 0.25
+
+    /// The hold's anchor and the stand-in's place, for scripts/engine-fuzz.
+    var holdAnchorForChecks: CGPoint? { anchor }
+    var standInForChecks: CGPoint? { standInAt }
 
     // The system-wide hold. Input thread only.
     private var anchor: CGPoint?                     // where the pointer stays while frozen
@@ -2409,17 +2475,22 @@ final class Engine {
         /// Times the hold moved to follow another mouse, by device key; and how many of those
         /// the trackball reported within `echoWindow` of, so they were put back.
         var follows: [Int: Int] = [:], followsUndone = 0
+        /// Times it moved to follow a pointer HID never showed (the trackpad).
+        var followsUnseen = 0
         /// Other devices' movement counted as the trackball's (`echoWindow`, or a known echo device), by key.
         var echoes: [Int: Int] = [:]
         /// A trackball move event said the pointer had moved while macOS's location said it hadn't,
         /// and times macOS gave no location at all.
         var queryLagged = 0, noLocation = 0
+        /// The stand-in pointer: never needed (no tap), shown, or why it wasn't (or came down early).
+        var standIn = StandIn.none
+        enum StandIn { case none, shown, failed(String) }
     }
     private var holdStats = HoldStats()
 
     private func logHoldStats() {
         let s = holdStats
-        guard s.hidMoves > 0 || s.tapMoves > 0 || s.tapDrags > 0 || !s.follows.isEmpty else { return }
+        guard s.hidMoves > 0 || s.tapMoves > 0 || s.tapDrags > 0 || !s.follows.isEmpty || s.followsUnseen > 0 else { return }
         func byKey(_ d: [Int: Int]) -> String {
             d.isEmpty ? "" : " (" + d.sorted { $0.key < $1.key }.map { "\(Self.describe($0.key)) ×\($0.value)" }.joined(separator: ", ") + ")"
         }
@@ -2427,8 +2498,18 @@ final class Engine {
                                   s.hidMoves, s.tapMoves, s.tapDrags, s.warps, s.failedWarps, s.rechecks, s.renewals, s.maxOffset)
                            + "; followed another mouse \(s.follows.values.reduce(0, +)) times\(byKey(s.follows))"
                            + (s.followsUndone > 0 ? ", \(s.followsUndone) put back (the trackball reported with it)" : "")
+                           + (s.followsUnseen > 0 ? ", \(s.followsUnseen) a pointer HID doesn't show (the trackpad)" : "")
                            + "; other devices' movement counted as the trackball's \(s.echoes.values.reduce(0, +)) times\(byKey(s.echoes))"
-                           + "; macOS's location behind the move event \(s.queryLagged) times, missing \(s.noLocation) times")
+                           + "; macOS's location behind the move event \(s.queryLagged) times, missing \(s.noLocation) times"
+                           + "; " + standInNote(s.standIn))
+    }
+
+    private func standInNote(_ s: HoldStats.StandIn) -> String {
+        switch s {
+        case .none: return "no stand-in"
+        case .shown: return "stand-in shown"
+        case .failed(let why): return "no stand-in (\(why))"
+        }
     }
 
     /// The latest movement came from the trackball (its HID report, just now), not another mouse.
@@ -2449,6 +2530,7 @@ final class Engine {
             if let before = anchorBeforeFollow, anchor != nil, now - followAt < Self.echoWindow {
                 anchor = before
                 holdStats.followsUndone += 1
+                syncStandIn()
             }
             otherMoveAt = -1
         }
@@ -2474,13 +2556,14 @@ final class Engine {
     }
 
     /// The hold moves to where another mouse put the pointer.
-    private func follow(to p: CGPoint) {
+    private func follow(to p: CGPoint, unseen: Bool = false) {
         let now = io.now()
         if anchorBeforeFollow == nil || now - followAt >= Self.echoWindow { anchorBeforeFollow = anchor }
         followAt = now
         anchor = p
         otherMovedSinceAnchor = false
-        holdStats.follows[otherMoveKey, default: 0] += 1
+        if unseen { holdStats.followsUnseen += 1 } else { holdStats.follows[otherMoveKey, default: 0] += 1 }
+        syncStandIn()
     }
 
     /// Puts the pointer back on its anchor if the trackball moved it. Another mouse moving
@@ -2494,7 +2577,10 @@ final class Engine {
     /// True if the pointer was off its anchor.
     @discardableResult
     private func holdPointer(seen: CGPoint? = nil, renew: Bool = false) -> Bool {
-        guard let a = anchor, let tap, io.tapIsEnabled(tap) else { return false }   // no tap: never fight the pointer
+        guard let a = anchor, let tap, io.tapIsEnabled(tap) else {   // no tap: never fight the pointer
+            if standInAt != nil { syncStandIn() }   // ...and never hide it
+            return false
+        }
         let asked = io.cursorLocation()
         if asked == nil { holdStats.noLocation += 1 }
         if otherMovedSinceAnchor {
@@ -2524,9 +2610,27 @@ final class Engine {
     /// that mouse put it, so the hold stays there. Done here, as the move lands, rather than at
     /// the trackball's next report, which may already have moved the pointer too.
     private func followOtherMouse(at seen: CGPoint?) {
-        guard anchor != nil, otherMovedSinceAnchor, !lastMotionWasTrackball, let p = seen ?? io.cursorLocation() else { return }
-        follow(to: p)
+        guard let a = anchor else { return }
+        if otherMovedSinceAnchor, !lastMotionWasTrackball, let p = seen ?? io.cursorLocation() {
+            follow(to: p)
+            return
+        }
+        // A pointer HID never shows (the trackpad) moved it while the trackball is quiet: the hold
+        // goes with it, so the stand-in is where the real pointer is rather than the real pointer
+        // moving out of sight (a keyboard Scroll with ball, say, while using the trackpad). Before
+        // beta 23 the hold stayed and the trackball's next report pulled the pointer back.
+        // Not at once: the trackball's own move event can come before its HID report, and following
+        // that would make the stand-in jump. Only if the trackball hasn't reported `echoWindow` later.
+        guard hid, !trackballMoving, unseenFollow == nil, let p = seen, max(abs(p.x - a.x), abs(p.y - a.y)) > 0.5 else { return }
+        let movedAt = io.now()
+        unseenFollow = io.schedule(Self.echoWindow, repeats: false) { [unowned self] in
+            unseenFollow = nil
+            guard let a = anchor, lastKMotion < movedAt, !otherMovedSinceAnchor, let p = io.cursorLocation(),
+                  max(abs(p.x - a.x), abs(p.y - a.y)) > 0.5 else { return }
+            follow(to: p, unseen: true)
+        }
     }
+    private var unseenFollow: EngineTimer?
 
     /// The trackball's own HID report while the pointer is held. That report usually reaches
     /// the engine before WindowServer has moved the pointer for it, so a look right now finds

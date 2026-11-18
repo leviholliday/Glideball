@@ -4,6 +4,15 @@ import CoreGraphics
 import IOKit.hid
 import QuartzCore
 
+/// The stand-in pointer's window: never key or main, never clicked (`EngineIO.showStandIn`),
+/// and never nudged back onto a screen, so its hot spot can sit at any edge.
+private final class StandInWindow: NSPanel {
+    override var canBecomeKey: Bool { false }
+    override var canBecomeMain: Bool { false }
+    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect { frameRect }
+    override func sendEvent(_ event: NSEvent) {}
+}
+
 /// Something the engine scheduled that can be called off.
 protocol EngineTimer: AnyObject {
     func invalidate()
@@ -82,6 +91,183 @@ class EngineIO {
     }
 
     func post(_ event: CGEvent, tap: CGEventTapLocation) { event.post(tap: tap) }
+
+    // MARK: The stand-in pointer
+
+    /// Shows a picture of the pointer at `point` (a global Quartz point: top-left origin) and
+    /// hides the real one, or moves the picture there if it's already up. The real pointer goes on
+    /// being put back underneath (`warpPointer`); the picture is what makes the hold look dead still,
+    /// since the real pointer can't be stopped from leaving for a moment on a fast roll.
+    /// This is Mac Mouse Fix's "puppet cursor" (PointerFreeze.m), our own code.
+    ///
+    /// The picture goes up first and the real pointer is hidden after it (on the main thread, in
+    /// that order), so there's never a moment with neither. Hiding works with another app in
+    /// front only after a private WindowServer switch ("SetsCursorInBackground"); without it this
+    /// returns false and the hold works as before, without a stand-in (`standInProblem` says why).
+    /// The engine must call `keepStandIn` at least every `standInLease`, or the main thread takes
+    /// the stand-in down and shows the real pointer: a stuck input thread can't leave it hidden.
+    /// Callable from any thread.
+    func showStandIn(at point: CGPoint) -> Bool {
+        guard let problem = Self.backgroundCursorProblem else {
+            standIn.lock.lock()
+            let firstGen = standIn.wanted == nil ? standIn.gen : nil
+            if firstGen != nil { standIn.problem = nil }   // a new hold
+            standIn.wanted = point
+            standIn.keptAt = now()
+            standIn.lock.unlock()
+            DispatchQueue.main.async { [self] in placeStandIn(firstShowOf: firstGen) }
+            return true
+        }
+        standIn.lock.withLock { standIn.problem = problem }
+        return false
+    }
+
+    /// Shows the real pointer (at once, on the calling thread) and takes the stand-in down (on the
+    /// main thread). Safe to call any number of times, from any thread: the real pointer is only
+    /// shown if this put it out of sight, so hiding and showing always pair up.
+    func hideStandIn() {
+        standIn.lock.lock()
+        dropStandIn()
+        standIn.lock.unlock()
+        if Thread.isMainThread { removeStandInIfUnwanted() } else { DispatchQueue.main.async { [self] in removeStandInIfUnwanted() } }
+    }
+
+    /// The engine is alive and the hold still wants its stand-in. False if it's gone (the watchdog
+    /// took it down, or showing it failed): the hold goes on without one.
+    func keepStandIn() -> Bool {
+        standIn.lock.withLock {
+            guard standIn.wanted != nil else { return false }
+            standIn.keptAt = now()
+            return true
+        }
+    }
+
+    /// Why the stand-in couldn't be shown, or was taken down early, if it was (for the hold's log line).
+    func standInProblem() -> String? { standIn.lock.withLock { standIn.problem } }
+
+    static let standInLease: CFTimeInterval = 0.75
+
+    /// Thread-shared stand-in state, under `lock`. The window itself is main-thread only.
+    private final class StandInState {
+        let lock = NSLock()
+        var gen = 0                  // bumped by every take-down: a show queued before it does nothing
+        var wanted: CGPoint?         // where the stand-in should be (nil: not wanted)
+        var cursorHidden = false     // this hid the real pointer and hasn't shown it again
+        var keptAt: CFTimeInterval = 0
+        var problem: String?
+        // Main thread only:
+        var window: NSWindow?
+        var view: NSImageView?
+        var hotSpot = CGPoint.zero
+        var watchdog: Timer?
+    }
+    private let standIn = StandInState()
+
+    /// Under `standIn.lock`: not wanted any more, and the real pointer shown if this hid it.
+    private func dropStandIn() {
+        standIn.gen &+= 1
+        standIn.wanted = nil
+        if standIn.cursorHidden {
+            standIn.cursorHidden = false
+            if CGDisplayShowCursor(CGMainDisplayID()) != .success { standIn.problem = "showing the pointer again failed" }
+        }
+    }
+
+    /// Main thread: the stand-in drawn where it's wanted, then the real pointer hidden.
+    private func placeStandIn(firstShowOf gen: Int?) {
+        standIn.lock.lock()
+        guard let p = standIn.wanted, gen.map({ $0 == standIn.gen }) ?? true else { standIn.lock.unlock(); return }
+        standIn.lock.unlock()
+        if gen != nil || standIn.window == nil { prepareStandIn() }   // the pointer's look, fresh each hold
+        guard let window = standIn.window else { return }
+        window.setFrameOrigin(Self.cocoaOrigin(of: p, hotSpot: standIn.hotSpot, height: window.frame.height))
+        if !window.isVisible { window.orderFrontRegardless() }
+        guard gen != nil else { return }
+        standIn.lock.lock()
+        if gen == standIn.gen, standIn.wanted != nil, !standIn.cursorHidden {   // not taken down meanwhile
+            if CGDisplayHideCursor(CGMainDisplayID()) == .success {
+                standIn.cursorHidden = true
+            } else {
+                standIn.problem = "hiding the pointer failed"
+                dropStandIn()
+            }
+        }
+        standIn.lock.unlock()
+        removeStandInIfUnwanted()
+        guard standIn.watchdog == nil else { return }
+        let timer = Timer(timeInterval: 0.25, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            standIn.lock.lock()
+            if standIn.wanted != nil, now() - standIn.keptAt > Self.standInLease {
+                standIn.problem = "the engine stopped answering, so the real pointer came back"
+                dropStandIn()
+            }
+            standIn.lock.unlock()
+            removeStandInIfUnwanted()
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        standIn.watchdog = timer
+    }
+
+    /// Main thread: the window gone once nothing wants it.
+    private func removeStandInIfUnwanted() {
+        guard standIn.lock.withLock({ standIn.wanted == nil }) else { return }
+        standIn.window?.orderOut(nil)
+        standIn.watchdog?.invalidate()
+        standIn.watchdog = nil
+    }
+
+    /// Main thread: the window, and the pointer's current look (an I-beam over text, say) at its
+    /// size; the arrow if macOS won't say. AppKit draws it sharp on whichever display it's on.
+    private func prepareStandIn() {
+        let cursor = NSCursor.currentSystem ?? NSCursor.arrow
+        let image = cursor.image.size.width > 0 ? cursor.image : NSCursor.arrow.image
+        standIn.hotSpot = cursor.image.size.width > 0 ? cursor.hotSpot : NSCursor.arrow.hotSpot
+        let size = image.size
+        if standIn.window == nil {
+            let w = StandInWindow(contentRect: NSRect(origin: .zero, size: size), styleMask: [.borderless, .nonactivatingPanel],
+                                  backing: .buffered, defer: false)
+            w.isOpaque = false
+            w.backgroundColor = .clear
+            w.hasShadow = false
+            w.ignoresMouseEvents = true
+            w.level = NSWindow.Level(Int(CGWindowLevelForKey(.cursorWindow)) + 1)   // above everything
+            w.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle, .fullScreenAuxiliary]
+            w.animationBehavior = .none
+            w.isReleasedWhenClosed = false
+            w.hidesOnDeactivate = false
+            w.becomesKeyOnlyIfNeeded = true
+            let v = NSImageView(frame: NSRect(origin: .zero, size: size))
+            v.imageScaling = .scaleNone
+            w.contentView = v
+            standIn.window = w
+            standIn.view = v
+        }
+        standIn.view?.image = image
+        standIn.view?.frame = NSRect(origin: .zero, size: size)
+        standIn.window?.setContentSize(size)
+    }
+
+    /// Where a window of `height` goes (AppKit's bottom-left coordinates) so the pointer image's
+    /// hot spot sits on Quartz point `p`.
+    static func cocoaOrigin(of p: CGPoint, hotSpot: CGPoint, height: CGFloat) -> NSPoint {
+        let primaryHeight = CGDisplayBounds(CGMainDisplayID()).height
+        return NSPoint(x: p.x - hotSpot.x, y: primaryHeight - (p.y - hotSpot.y) - height)
+    }
+
+    /// Lets this app hide the pointer while another app is in front (`CGDisplayHideCursor` only
+    /// works for the front app otherwise). A private WindowServer call, looked up at run time so
+    /// a macOS without it just means no stand-in. Nil once done; why not, otherwise. Done once.
+    private static let backgroundCursorProblem: String? = {
+        typealias ConnectionFn = @convention(c) () -> Int32
+        typealias SetPropertyFn = @convention(c) (Int32, Int32, CFString, CFTypeRef) -> Int32
+        let handle = UnsafeMutableRawPointer(bitPattern: -2)   // RTLD_DEFAULT: every loaded image
+        guard let c = dlsym(handle, "_CGSDefaultConnection") ?? dlsym(handle, "CGSMainConnectionID"),
+              let s = dlsym(handle, "CGSSetConnectionProperty") else { return "macOS has no background-cursor switch" }
+        let connection = unsafeBitCast(c, to: ConnectionFn.self)()
+        let result = unsafeBitCast(s, to: SetPropertyFn.self)(connection, connection, "SetsCursorInBackground" as CFString, kCFBooleanTrue)
+        return result == 0 ? nil : "the background-cursor switch failed (\(result))"
+    }()
 
     /// The mouse buttons macOS currently has down (any mouse), for when the tap was off.
     func buttonsDown() -> Set<Int64> {
