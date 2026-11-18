@@ -170,11 +170,14 @@ final class Engine {
         mutating func insert(_ b: Int64) { count[b, default: 0] += 1 }
         mutating func remove(_ b: Int64) { count[b] = max(0, (count[b] ?? 0) - 1) }
         /// What macOS says is down now (one each: it can't say how many hold it); counts
-        /// already known stay as they are (nothing went by unseen).
-        mutating func refresh(_ down: Set<Int64>) {
+        /// already known stay as they are (nothing went by unseen). `inFlight`: buttons whose
+        /// release or press the engine has just posted and macOS may not have had yet: their
+        /// counts stand whatever it says.
+        mutating func refresh(_ down: Set<Int64>, inFlight: Set<Int64> = []) {
             var next: [Int64: Int] = [:]
-            for b in down { next[b] = max(1, count[b] ?? 0) }
-            count = next
+            for b in down { next[b] = inFlight.contains(b) ? count[b] ?? 0 : max(1, count[b] ?? 0) }
+            for b in inFlight where !down.contains(b) { next[b] = count[b] ?? 0 }
+            count = next.filter { $0.value > 0 }
         }
         mutating func set(_ counts: [Int64: Int]) { count = counts }
     }
@@ -1323,7 +1326,10 @@ final class Engine {
             kUpAt[b] = now
             reportSeq &+= 1
             kUpSeq[b] = reportSeq
-            if kOpen.contains(b) { kReleasedSince.insert(b) }
+            if kOpen.contains(b) {
+                kReleasedSince.insert(b)
+                if countedAtTapBack.contains(b) { checkCountedRelease(b) }
+            }
             if deferredUps.contains(where: { $0.button == b }) {
                 if (otherPresses[b]?.isEmpty ?? true) && !othersHold(b) {
                     settleDeferredUp(b, .evidence)   // nobody else holds it: the waiting release was the trackball's
@@ -1379,6 +1385,7 @@ final class Engine {
         kOpen.remove(b)
         kReleasedSince.remove(b)
         kUpAt[b] = nil
+        if countedAtTapBack.remove(b) != nil { appButtons.remove(b) }   // its release went by too
         diagnostics.record("release of button \(b) never came after the trackball let go of it: that press is over")
         if pending.contains(where: { $0.button == b }) { flushPending(); postedForStale.insert(b) }
         if overrides[b] != nil, releaseOverride(b) { postedForStale.insert(b) }
@@ -1497,6 +1504,7 @@ final class Engine {
                 return unseenRelease(event, b)
             }
             kOpen.remove(b)
+            countedAtTapBack.remove(b)
             return routeButton(event, .up)
         case .other, .nobody, .wait:
             if owner != .other, !kOpen.contains(b) { kTokens[b] = nil }   // as above
@@ -1661,7 +1669,13 @@ final class Engine {
     private func noteButtonsAlreadyDown(_ why: String, clearTokens: Bool) {
         let down = io.buttonsDown()
         guard clearTokens else {
-            appButtons.refresh(down)   // nothing went by unseen: the counts stand
+            // Nothing went by unseen: the counts stand. (Not raised by macOS's word for a button
+            // whose release the engine posted a moment ago, a Drag lock's ended by a press at a
+            // replug, say: macOS can still say down, and a release with no press would follow.
+            // Found by scripts/fuzz.sh, seed 1011727.)
+            let now = io.now()
+            let inFlight = Set(notedAtPost.filter { $0.value.contains { now - $0 < 0.25 } }.keys.map { $0 >> 1 })
+            appButtons.refresh(down, inFlight: inFlight)
             return noteTrackballHeld(why)
         }
         // Presses released meanwhile (not one that ended a Drag lock: apps never had it, so
@@ -1683,10 +1697,14 @@ final class Engine {
         }
         let remapTargets = overrides.values.compactMap { if case .remap(let t, _) = $0 { t } else { nil } }
         var counts: [Int64: Int] = [:]
+        countedAtTapBack = []
         for b in down.union(otherPresses.keys).union(kOpen).union(remapTargets).union(dragLocked ? [0] : []) {
             var n = (otherPresses[b] ?? []).filter { !$0.swallowed }.count
             // (Not a press the trackball has reported letting go of: its release went by.)
-            if kOpen.contains(b), !kReleasedSince.contains(b), overrides[b] == nil, !pending.contains(where: { $0.button == b }) { n += 1 }
+            if kOpen.contains(b), !kReleasedSince.contains(b), overrides[b] == nil, !pending.contains(where: { $0.button == b }) {
+                n += 1
+                if down.contains(b) { countedAtTapBack.insert(b) }
+            }
             n += remapTargets.filter { $0 == b }.count
             if dragLocked && b == 0 { n += 1 }
             let leaving = !(notedAtPost[b << 1 | 1]?.isEmpty ?? true)
@@ -1713,6 +1731,25 @@ final class Engine {
             if let h = io.heldButtons(k, deviceObjects[k] ?? nil) { held.formUnion(h) }
         }
         return held
+    }
+
+    /// The trackball's open presses counted as holding their button for apps when the tap came
+    /// back (`noteButtonsAlreadyDown`): each one's release may have gone by just before, its HID
+    /// report only arriving now.
+    private var countedAtTapBack = Set<Int64>()
+
+    /// The trackball reported letting go of `b`, whose open press was counted when the tap came
+    /// back. Its release normally follows its report at once; if none has come within
+    /// `ownerWindow`, it went by while the tap was off, and apps don't have the button down for
+    /// it any more. (Another device holding the same button kept macOS's answer at "down", so the
+    /// engine went on thinking the left button was down: Precision's moves became drags apps saw
+    /// with no button down. Found by scripts/fuzz.sh, seed 1002889.)
+    private func checkCountedRelease(_ b: Int64) {
+        _ = io.schedule(Self.ownerWindow, repeats: false) { [unowned self] in
+            guard self.kOpen.contains(b), self.kReleasedSince.contains(b), self.countedAtTapBack.remove(b) != nil else { return }
+            self.appButtons.remove(b)
+            self.diagnostics.record("release of button \(b) went by while the tap was off: not down for apps")
+        }
     }
 
     /// The trackball's buttons held whose presses went by unseen (`noteButtonsAlreadyDown`).
