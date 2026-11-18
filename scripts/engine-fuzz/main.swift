@@ -1642,6 +1642,7 @@ final class World {
                 case .ring:
                     wheelRingSteps += 1
                     if !m.wheelHeld { fail("wheel", "a ring step with no Wheel held") }
+                    if h.dismissed { fail("wheel", "a ring step after the Wheel was dismissed (Esc, or the watchdog)") }
                     h.ringTurned = true
                     h.ringSteps.append(io.clock)
                     if h.ringSteps.count > 1, io.clock - h.ringSteps[h.ringSteps.count - 2] < 0.05 - 1e-9 {
@@ -2270,6 +2271,16 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
         ("wheel: the tap switched off mid-hold: down, nothing runs", [wheelC], down(3) + slow + right + [.tapOff(1), .kBall(5, 0)] + up(3) + settle),
         ("wheel: past the 30 s limit: down, nothing runs", [wheelC], down(3) + slow + right + [.wait(31)] + up(3) + settle),
         ("wheel: the watchdog takes the ring down: nothing runs", [wheelC], down(3) + slow + right + [.wheelOverlay(2), .wait(0.5)] + up(3) + settle),
+        // Seed 146703711: the watchdog took the ring down and the release came before the engine's
+        // keeper had asked again (a held-up input thread's first event): the slot ran unseen.
+        ("wheel: the watchdog takes the ring down, released at once: nothing runs", [wheelCombo],
+         down(1, 3) + [.kBall(-3, 90), .wheelOverlay(2)] + up(1) + up(3) + settle),
+        ("wheel: the watchdog takes the ring down, the ring turned at once: no step", [wheelZoom],
+         down(3) + slow + right + [.wheelOverlay(2), .kWheel(-1)] + up(3) + settle),
+        // Seeds 129 and 336: after the watchdog, the next roll changed what the ring showed and the
+        // engine drew it again, as if nothing had happened, and the slot ran at the release.
+        ("wheel: the watchdog takes the ring down, then a roll: not drawn again, nothing runs", [wheelC],
+         down(3) + [.kBall(6, 90), .wheelOverlay(2), .kBall(-8, 90), .kBall(90, 0)] + up(3) + settle),
         ("wheel: nothing to draw it with: nothing runs, the pointer still freed", [wheelC], [.wheelOverlay(1)] + down(3) + slow + right + up(3) + settle),
         ("wheel: another mouse moves the hold: the ring follows the anchor", [wheelC],
          down(3) + slow + right + [.wait(0.3), .oBall, .wait(0.1)] + up(3) + settle),
@@ -2577,6 +2588,9 @@ let expectations: [String: (World) -> String?] = [
     "wheel: the tap switched off mid-hold: down, nothing runs": { w in wheelDid(w, holds: 1, picks: 0, shows: 1) },
     "wheel: past the 30 s limit: down, nothing runs": { w in wheelDid(w, holds: 1, picks: 0, shows: 1) },
     "wheel: the watchdog takes the ring down: nothing runs": { w in wheelDid(w, holds: 1, picks: 0, shows: 1) },
+    "wheel: the watchdog takes the ring down, released at once: nothing runs": { w in wheelDid(w, holds: 1, picks: 0, shows: 1) },
+    "wheel: the watchdog takes the ring down, the ring turned at once: no step": { w in wheelDid(w, holds: 1, picks: 0, ring: 0, shows: 1) },
+    "wheel: the watchdog takes the ring down, then a roll: not drawn again, nothing runs": { w in wheelDid(w, holds: 1, picks: 0, shows: 1) },
     "wheel: nothing to draw it with: nothing runs, the pointer still freed": { w in wheelDid(w, holds: 1, picks: 0, shows: 0) },
     "wheel: another mouse moves the hold: the ring follows the anchor": { w in wheelDid(w, holds: 1, picks: 1, shows: 1) },
 ]
