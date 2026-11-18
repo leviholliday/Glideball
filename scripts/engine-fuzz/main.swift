@@ -34,6 +34,15 @@
 //               another trackball button; ring steps only while held, at most 20 a second, and
 //               ring turns never scroll while a Wheel is held; the tap only after a hold with no
 //               ring turn and no slot; the key tap (for Esc) is on only while a Wheel is held
+//   switcher    a Switcher hold never includes the primary button; a Wheel, a gesture and a
+//               Switcher are never held at once; its panel is up only while it's held with the
+//               pointer frozen and its list ready, at the hold's anchor, kept alive for EngineIO's
+//               watchdog, its lit app in the list and on screen, and down after every way a hold
+//               ends (release, pause, quit, unplug, sleep, the tap switched off, the 30 s limit,
+//               the watchdog); it switches apps only after the release, at most once per hold,
+//               to an app in that hold's list, never after Esc, another trackball button or the
+//               watchdog; ring turns never scroll while it's held; the tap only before its panel
+//               shows, with no roll or ring turn; the main thread's list may come late or never
 //   others      other mice and the trackpad pass through untouched, and paired, even pressing
 //               the same button number as the trackball at overlapping times (either's HID
 //               report before or after its event); their press or release never ends or
@@ -202,6 +211,58 @@ final class FakeIO: EngineIO {
         wheelKeptAt = clock
         return true
     }
+    /// The Switcher's panel, as the engine asked for it, and its lists (built "on the main thread").
+    var switcher: (model: SwitcherOverlayModel, at: CGPoint)?
+    var switcherKeptAt = 0.0
+    var switcherShows = 0
+    var switcherWorks = true         // false: the panel can't be drawn
+    var switcherLists = true         // false: nothing builds lists (render-ui, self-test): only the tap
+    var switcherDropped = false      // the watchdog took it down this hold (World.apply)
+    var switcherFault: String?
+    var listDelay = 0.0              // how long the main thread takes to build a list (infinity: never)
+    var listGrid = SwitcherGrid.fitting(count: 6, maxColumns: 8, maxRows: 3)
+    var pendingLists: [(due: Double, session: Int, grid: SwitcherGrid, ready: (SwitcherGrid) -> Void)] = []
+    var lists: [Int: SwitcherGrid] = [:]   // this engine's holds' lists, by session (a relaunch starts over)
+    var activatedSessions: Set<Int> = []
+    var activations: [(session: Int, index: Int)] = []
+    override func prepareSwitcher(session: Int, near point: CGPoint, ready: @escaping (SwitcherGrid) -> Void) -> Bool {
+        guard switcherLists else { return false }
+        if lists[session] != nil { switcherFault = "two lists asked for Switcher hold \(session)" }
+        lists[session] = listGrid
+        if listDelay.isFinite { pendingLists.append((clock + listDelay, session, listGrid, ready)) }
+        return true
+    }
+    override func showSwitcher(_ model: SwitcherOverlayModel, at point: CGPoint) -> Bool {
+        guard switcherWorks else { return false }
+        if !frozen { switcherFault = "the Switcher was shown while nothing held the pointer" }
+        if lists[model.session] != model.grid { switcherFault = "the panel's grid isn't its list's" }
+        if switcher == nil { switcherShows += 1; switcherKeptAt = clock }
+        switcher = (model, point)
+        return true
+    }
+    override func hideSwitcher() { switcher = nil }
+    override func keepSwitcher() -> Bool {
+        guard switcher != nil else { return false }
+        switcherKeptAt = clock
+        return true
+    }
+    override func activateSwitcher(session: Int, index: Int) {
+        if !activatedSessions.insert(session).inserted { switcherFault = "Switcher hold \(session) switched apps twice" }
+        if let g = lists[session] {
+            if index < 0 || index >= g.count { switcherFault = "switched to app \(index) of \(g.count)" }
+        } else {
+            switcherFault = "switched apps for a hold that never had a list"
+        }
+        if switcher != nil { switcherFault = "switched apps with the panel still up" }
+        activations.append((session, index))
+    }
+    /// The main thread hands over the lists that are due.
+    func deliverLists() {
+        while let i = pendingLists.firstIndex(where: { $0.due <= clock }) {
+            let l = pendingLists.remove(at: i)
+            l.ready(l.grid)
+        }
+    }
     var keyTap: CFMachPort?
     override func post(_ event: CGEvent, tap: CGEventTapLocation) { posted.append(event) }
     var appButtons: () -> Set<Int64> = { [] }
@@ -324,6 +385,10 @@ enum Op: CustomStringConvertible {
     case standIn(Int)         // 0: the stand-in works, 1: macOS has no background-cursor switch, 2: the watchdog takes it down
     case esc                  // Esc pressed and let go (the Wheel's key tap sees it only while one is held)
     case wheelOverlay(Int)    // 0: the overlay can be drawn, 1: nothing to draw it with, 2: the watchdog takes it down
+    /// The Switcher: 0 its panel works, 1 can't be drawn, 2 the watchdog takes it down, 3 nothing
+    /// builds lists, 4 lists come at once, 5 after 0.4 s, 6 never; 7… the next lists have
+    /// [0, 1, 2, 6, 13, 24, 40][n - 7] apps.
+    case switcherPanel(Int)
 
     var description: String {
         switch self {
@@ -372,6 +437,9 @@ enum Op: CustomStringConvertible {
         case .standIn(let m): ["standInWorks", "standInUnavailable", "standInWatchdogTakesItDown"][m]
         case .esc: "escape"
         case .wheelOverlay(let m): ["wheelOverlayWorks", "wheelOverlayUnavailable", "wheelOverlayWatchdogTakesItDown"][m]
+        case .switcherPanel(let m): m < 7 ? ["switcherWorks", "switcherCantDraw", "switcherWatchdogTakesItDown", "switcherNoLists",
+                                             "switcherListsAtOnce", "switcherListsSlow", "switcherListsNever"][m]
+                                          : "switcherApps(\(World.switcherCounts[m - 7]))"
         }
     }
 }
@@ -409,10 +477,15 @@ func randomAction(_ r: inout RNG) -> ButtonAction {
     case 6: return .ballScrollHold
     case 7: return .dragLock
     case 8:
-        return .wheel(randomWheel(&r))
+        return r.chance(0.5) ? .wheel(randomWheel(&r)) : .switcher(randomSwitcher(&r))
     default:
         return .gesture(randomGesture(&r))
     }
+}
+
+/// A Switcher: its own click as the tap, or any other tap (hold-type ones too: they must never hold).
+func randomSwitcher(_ r: inout RNG) -> AppSwitcher {
+    r.chance(0.7) ? .standard : AppSwitcher(tap: randomAction(&r))
 }
 
 /// A Wheel: the standard one or slots remixed (hold-type actions too: they must never run),
@@ -461,7 +534,10 @@ func randomConfig(_ r: inout RNG) -> GlideConfig {
         if set.count >= 2 || r.chance(0.1) { c.chords.append(Chord(buttons: set.sorted(), action: action)) }
     }
     // A combo with the primary button set to a gesture (only a file can say so): never a gesture.
-    if r.chance(0.15) { c.chords.append(Chord(buttons: [0, 1 + r.int(4)], action: r.chance(0.5) ? .wheel(randomWheel(&r)) : .gesture(randomGesture(&r)))) }
+    if r.chance(0.15) {
+        let held: ButtonAction = r.chance(0.33) ? .wheel(randomWheel(&r)) : r.chance(0.5) ? .switcher(randomSwitcher(&r)) : .gesture(randomGesture(&r))
+        c.chords.append(Chord(buttons: [0, 1 + r.int(4)], action: held))
+    }
     if r.chance(0.6) { c = c.withoutPrimaryChords() }
     c.gesturesEnabled = r.chance(0.8)
     c.gestureDistance = r.pick(GestureDistance.allCases)
@@ -500,8 +576,11 @@ func randomConfig(_ r: inout RNG) -> GlideConfig {
 func gestureHeavy(_ c: GlideConfig, _ r: inout RNG) -> GlideConfig {
     var c = c
     c.gesturesEnabled = r.chance(0.95)
-    for b in 1...4 where r.chance(0.6) { c.buttons[b] = r.chance(0.4) ? .wheel(randomWheel(&r)) : .gesture(randomGesture(&r)) }
-    for i in c.chords.indices where r.chance(0.6) { c.chords[i].action = r.chance(0.4) ? .wheel(randomWheel(&r)) : .gesture(randomGesture(&r)) }
+    func holdy() -> ButtonAction {
+        r.chance(0.3) ? .wheel(randomWheel(&r)) : r.chance(0.4) ? .switcher(randomSwitcher(&r)) : .gesture(randomGesture(&r))
+    }
+    for b in 1...4 where r.chance(0.6) { c.buttons[b] = holdy() }
+    for i in c.chords.indices where r.chance(0.6) { c.chords[i].action = holdy() }
     return c
 }
 
@@ -631,6 +710,11 @@ final class World {
     var wheelHold: (buttons: [Int], ringSteps: [Double], picks: Int, dismissed: Bool, ringTurned: Bool)?
     var lastWheelSeq = 0
     var wheelHolds = 0, wheelPicks = 0, wheelRingSteps = 0, wheelTaps = 0, wheelOverlays = 0
+    // The Switcher hold now (or the last one): see `observe(_:)`.
+    var switcherHold: (buttons: [Int], switched: Int, dismissed: Bool, ringTurned: Bool, rolled: Bool, shown: Bool)?
+    var lastSwitcherSeq = 0
+    var switcherHolds = 0, switcherSwitches = 0, switcherTaps = 0, switcherPanels = 0
+    static let switcherCounts = [0, 1, 2, 6, 13, 24, 40]
 
     static let modifierCodes: Set<UInt16> = [UInt16(kVK_Control), UInt16(kVK_Option), UInt16(kVK_Shift), UInt16(kVK_Command)]
 
@@ -696,6 +780,7 @@ final class World {
         }
         engine.scroller.output = { [unowned self] d in
             if self.modes.wheelHeld, d != 0 { self.fail("wheel", "the ring scrolled \(d) points while a Wheel is held") }
+            if self.modes.switcherHeld, d != 0 { self.fail("switcher", "the ring scrolled \(d) points while a Switcher is held") }
             self.scrolled(abs(d))
         }
         engine.scroller.ballOutput = { [unowned self] x, y in self.scrolled((x * x + y * y).squareRoot()) }
@@ -1027,6 +1112,7 @@ final class World {
     /// key queue, and the main thread's callbacks — until nothing is left.
     func settle() {
         var rounds = 0
+        io.deliverLists()
         while !io.posted.isEmpty || !io.keyWork.isEmpty || !io.mainWork.isEmpty {
             rounds += 1
             if rounds > 10_000 { fail("hang", "the engine keeps posting"); break }
@@ -1061,10 +1147,13 @@ final class World {
             // The display link ticks every 1/120 s whatever the input does (it used to be counted
             // from each wait's start, so a run of short waits drew no frames at all).
             let nextFrame = engine.scroller.wantsFrames ? max(io.clock, lastFrameAt + 1.0 / 120) : Double.infinity
-            let t = min(nextTimer?.fireAt ?? .infinity, nextFrame)
+            let nextList = io.pendingLists.map(\.due).min() ?? .infinity
+            let t = min(nextTimer?.fireAt ?? .infinity, nextFrame, nextList)
             guard t <= end else { break }
             io.clock = max(io.clock, t)
-            if let timer = nextTimer, timer.fireAt <= t {
+            if nextList <= t {
+                io.deliverLists()
+            } else if let timer = nextTimer, timer.fireAt <= t {
                 if timer.repeats { timer.fireAt += max(timer.interval, 0.001) } else { timer.valid = false }
                 if tracing { print(String(format: "        (timer #%d, every %.3f s, at +%.3f)", timer.order, timer.interval, io.clock - lastScrollInput)) }
                 timer.body()
@@ -1466,6 +1555,13 @@ final class World {
                 io.hideStandIn()
             }
         case .esc:
+            let switcherWasHeld = modes.switcherHeld
+            defer {
+                if switcherWasHeld, bypass == 0 {
+                    if io.switcher != nil { fail("switcher", "Esc didn't take the Switcher's panel down") }
+                    switcherHold?.dismissed = true
+                }
+            }
             let wasHeld = modes.wheelHeld
             for down in [true, false] {
                 let e = CGEvent(keyboardEventSource: nil, virtualKey: UInt16(kVK_Escape), keyDown: down)!
@@ -1485,6 +1581,22 @@ final class World {
                 io.wheelDropped = true
                 io.hideWheel()
                 wheelHold?.dismissed = true
+            }
+        case .switcherPanel(let m):
+            switch m {
+            case 0: io.switcherWorks = true; io.switcherLists = true
+            case 1: io.switcherWorks = false
+            case 2:
+                // EngineIO's watchdog: the engine stopped answering, so the panel is taken down.
+                guard io.switcher != nil else { return }
+                io.switcherDropped = true
+                io.hideSwitcher()
+                switcherHold?.dismissed = true
+            case 3: io.switcherLists = false
+            case 4: io.switcherLists = true; io.listDelay = 0
+            case 5: io.switcherLists = true; io.listDelay = 0.4
+            case 6: io.listDelay = .infinity
+            default: io.listGrid = SwitcherGrid.fitting(count: Self.switcherCounts[m - 7], maxColumns: 2 + (m % 7), maxRows: 1 + (m % 3))
             }
         case .setMode(let m, let w):
             let mode: Engine.ToggleMode = [.precision, .ballScroll, .dragLock][m]
@@ -1524,8 +1636,9 @@ final class World {
         // a held button's press the engine saw).
         let held = kDown.contains(b) && kRawHeld.isDisjoint(with: kDown)
         let keys = held ? Set(keysDown.filter { $0.value > 0 }.keys) : []
-        let gesture = (modes.gestureHeld || modes.wheelHeld) && Set(modes.gestureButtons).isSubset(of: kDown), ball = held && modes.ballScrolling
+        let gesture = (modes.gestureHeld || modes.wheelHeld || modes.switcherHeld) && Set(modes.gestureButtons).isSubset(of: kDown), ball = held && modes.ballScrolling
         let wheelUp = io.wheel != nil
+        let switcherUp = io.switcher != nil
         let bypassBefore = bypass
         body()
         settle()
@@ -1536,8 +1649,9 @@ final class World {
         // trackball's release ending its hold, as it should.
         if io.clock - lastKReleaseAt < 0.11 { return }
         if let k = keys.first(where: { (keysDown[$0] ?? 0) == 0 }) { fail("others", "\(what) let go of key \(k), held by the trackball") }
-        if gesture && !modes.gestureHeld && !modes.wheelHeld { fail("others", "\(what) ended the trackball's gesture or Wheel hold") }
+        if gesture && !modes.gestureHeld && !modes.wheelHeld && !modes.switcherHeld { fail("others", "\(what) ended the trackball's gesture, Wheel or Switcher hold") }
         if wheelUp, modes.wheelHeld, io.wheel == nil, !io.wheelDropped { fail("others", "\(what) took the trackball's Wheel down") }
+        if switcherUp, modes.switcherHeld, io.switcher == nil, !io.switcherDropped { fail("others", "\(what) took the trackball's Switcher down") }
         if ball && !modes.ballScrolling { fail("others", "\(what) ended Scroll with ball") }
     }
 
@@ -1558,6 +1672,10 @@ final class World {
         modes = Engine.Modes()
         lastFlashSeq = 0
         lastWheelSeq = 0
+        lastSwitcherSeq = 0
+        io.pendingLists.removeAll()   // the old process's main thread is gone with it
+        io.lists.removeAll()          // and the new one numbers its holds from 1 again
+        io.activatedSessions.removeAll()
         io.keyTap = nil
         quitDone = false
         wire()
@@ -1627,6 +1745,39 @@ final class World {
             io.wheelDropped = false
         }
         if m.wheelHeld && m.gestureButtons.contains(0) { fail("wheel", "Wheel held on \(m.gestureButtons), with the primary button") }
+        if m.switcherHeld && (m.gestureHeld || m.wheelHeld) { fail("switcher", "a Switcher held with a gesture or a Wheel") }
+        if m.switcherHeld && !modes.switcherHeld {
+            if m.gestureButtons.contains(0) { fail("switcher", "a Switcher hold on \(m.gestureButtons) includes the primary button") }
+            switcherHolds += 1
+            switcherHold = (m.gestureButtons, 0, false, false, false, false)
+            io.switcherDropped = false
+        }
+        if m.switcherHeld && m.gestureButtons.contains(0) { fail("switcher", "Switcher held on \(m.gestureButtons), with the primary button") }
+        if let f = m.switcherFlash, f.seq != lastSwitcherSeq {
+            if f.seq != lastSwitcherSeq + 1 { fail("switcher", "Switcher flash \(lastSwitcherSeq) jumped to \(f.seq)") }
+            lastSwitcherSeq = f.seq
+            if var h = switcherHold {
+                if f.buttons != h.buttons { fail("switcher", "a Switcher on \(h.buttons) flashed as \(f.buttons)") }
+                switch f.kind {
+                case .switched:
+                    switcherSwitches += 1
+                    h.switched += 1
+                    if m.switcherHeld { fail("switcher", "switched apps while the Switcher is still held") }
+                    if h.switched > 1 { fail("switcher", "\(h.switched) switches in one hold") }
+                    if h.dismissed { fail("switcher", "switched apps after it was dismissed (Esc, or the watchdog)") }
+                case .tap:
+                    switcherTaps += 1
+                    if m.switcherHeld { fail("switcher", "a Switcher tap while it's still held") }
+                    if h.ringTurned { fail("switcher", "a Switcher tap after the ring was turned") }
+                    if h.shown { fail("switcher", "a Switcher tap after its panel showed") }
+                    if h.switched > 0 { fail("switcher", "a Switcher tap after it switched") }
+                    if h.dismissed { fail("switcher", "a Switcher tap after it was dismissed") }
+                }
+                switcherHold = h
+            } else {
+                fail("switcher", "a Switcher did something (\(f.kind)) with no hold")
+            }
+        }
         if let f = m.wheelFlash, f.seq != lastWheelSeq {
             if f.seq != lastWheelSeq + 1 { fail("wheel", "Wheel flash \(lastWheelSeq) jumped to \(f.seq)") }
             lastWheelSeq = f.seq
@@ -1705,7 +1856,7 @@ final class World {
     // MARK: The rules
 
     func mustBeReleased(_ when: String, modesToo: Bool = true) {
-        if modesToo, modes.precision || modes.ballScrolling || modes.dragLocked || modes.gestureHeld || modes.wheelHeld {
+        if modesToo, modes.precision || modes.ballScrolling || modes.dragLocked || modes.gestureHeld || modes.wheelHeld || modes.switcherHeld {
             fail("modes", "after \(when) a mode is still on: \(modes)")
         }
         if !modesToo, modes.ballScrolling || modes.dragLocked || modes.gestureHeld {
@@ -1715,6 +1866,8 @@ final class World {
         if io.standIn != nil || io.realHidden { fail("standin", "the stand-in is still up (the real pointer hidden) after \(when)") }
         if io.wheel != nil { fail("wheel", "the Wheel's ring is still on screen after \(when)") }
         if modes.wheelHeld { fail("wheel", "a Wheel is still held after \(when)") }
+        if io.switcher != nil { fail("switcher", "the Switcher's panel is still on screen after \(when)") }
+        if modes.switcherHeld { fail("switcher", "a Switcher is still held after \(when)") }
         if let k = keysDown.first(where: { $0.value > 0 }) { fail("released", "key \(k.key) still down after \(when)") }
         if let m = modifierEvents.first(where: { $0.value % 2 != 0 }) { fail("released", "modifier key \(m.key) still down after \(when)") }
         for (b, n) in appK where n > 0 && !tainted.contains(b) {
@@ -1729,11 +1882,12 @@ final class World {
         // "Connected" is the truth, unless a removal went missing and nothing has checked since.
         if !stale && io.clock >= plugGraceUntil && connected != kConnected { fail("connected", "status says connected = \(connected), the trackball is \(kConnected ? "plugged in" : "unplugged")") }
         checkStandIn()
-        if io.frozen != (modes.ballScrolling || modes.gestureHeld || modes.wheelHeld) {
-            fail("modes", "pointer frozen = \(io.frozen) but Scroll with ball = \(modes.ballScrolling), gesture = \(modes.gestureHeld), Wheel = \(modes.wheelHeld)")
+        if io.frozen != (modes.ballScrolling || modes.gestureHeld || modes.wheelHeld || modes.switcherHeld) {
+            fail("modes", "pointer frozen = \(io.frozen) but Scroll with ball = \(modes.ballScrolling), gesture = \(modes.gestureHeld), Wheel = \(modes.wheelHeld), Switcher = \(modes.switcherHeld)")
         }
         checkWheel()
-        if !enabled && (modes.precision || modes.ballScrolling || modes.dragLocked || modes.gestureHeld || modes.wheelHeld) {
+        checkSwitcher()
+        if !enabled && (modes.precision || modes.ballScrolling || modes.dragLocked || modes.gestureHeld || modes.wheelHeld || modes.switcherHeld) {
             fail("modes", "a mode is on while paused: \(modes)")
         }
         checkTimed()
@@ -1778,7 +1932,31 @@ final class World {
             if w.model.selected != modes.wheelSlot, modes.wheelHeld { fail("wheel", "the ring lights \(String(describing: w.model.selected)), the engine says \(String(describing: modes.wheelSlot))") }
         }
         if engine.wheelForChecks != nil, io.wheel == nil, !io.wheelDropped { fail("wheel", "the engine thinks the ring is up but it isn't") }
-        if io.keyTap != nil, !modes.wheelHeld, engine.keyTapForChecks != nil, !engine.escHeldForChecks { fail("wheel", "the key tap is on with no Wheel held") }
+        if io.keyTap != nil, !modes.wheelHeld, !modes.switcherHeld, engine.keyTapForChecks != nil, !engine.escHeldForChecks {
+            fail("wheel", "the key tap is on with no Wheel or Switcher held")
+        }
+    }
+
+    /// The Switcher's panel: up only while a Switcher is held with the pointer frozen, at the
+    /// hold's anchor, kept alive for EngineIO's watchdog, its lit app in the list and on screen;
+    /// never left up. (EngineIO's fake checks the switches themselves: once per hold, in the list.)
+    func checkSwitcher() {
+        if let f = io.switcherFault { io.switcherFault = nil; fail("switcher", f) }
+        if let s = io.switcher {
+            switcherPanels += 1
+            if !modes.switcherHeld { fail("switcher", "the Switcher's panel is up with no Switcher held") }
+            if !io.frozen { fail("switcher", "the Switcher's panel is up while nothing holds the pointer") }
+            if s.at != engine.holdAnchorForChecks { fail("switcher", "the panel is at \(s.at), the hold at \(String(describing: engine.holdAnchorForChecks))") }
+            if io.clock - io.switcherKeptAt > EngineIO.standInLease { fail("switcher", "the engine stopped keeping the Switcher (EngineIO's watchdog would take it down)") }
+            let g = s.model.grid
+            if g.count == 0 { fail("switcher", "the panel is up with no apps in it") }
+            if s.model.selected < 0 || s.model.selected >= g.count { fail("switcher", "app \(s.model.selected) of \(g.count) is lit") }
+            let row = s.model.selected / g.columns
+            if row < s.model.firstRow || row >= s.model.firstRow + g.visibleRows { fail("switcher", "the lit app's row \(row) is off screen (rows \(s.model.firstRow)… of \(g.visibleRows))") }
+            switcherHold?.shown = true
+        }
+        if engine.switcherForChecks != nil, io.switcher == nil, !io.switcherDropped { fail("switcher", "the engine thinks the panel is up but it isn't") }
+        if io.activations.count > switcherSwitches { fail("switcher", "\(io.activations.count) apps switched to, \(switcherSwitches) switches seen") }
     }
 
     /// A trackpad move during a quiet hold: by then the stand-in must be where the real pointer is.
@@ -1901,6 +2079,7 @@ func generate(seed: UInt64, count: Int) -> (configs: [GlideConfig], ops: [Op]) {
         (0.3, { r in .standIn(r.int(3)) }),
         (1.2, { _ in .esc }),
         (0.25, { r in .wheelOverlay(r.int(3)) }),
+        (0.35, { r in .switcherPanel(r.int(14)) }),
     ]
     let total = weights.reduce(0) { $0 + $1.0 }
     for _ in 0..<count {
@@ -1932,10 +2111,12 @@ func run(_ configs: [GlideConfig], _ ops: [Op]) -> (Failure, Int)? {
     if let f = w.violations.first { return (f, ops.count) }
     statFires += w.gestureFires; statChained += w.chainedFires; statTaps += w.gestureTaps; statHolds += w.gestureHolds
     statWheelHolds += w.wheelHolds; statWheelPicks += w.wheelPicks; statWheelRing += w.wheelRingSteps; statWheelTaps += w.wheelTaps
+    statSwitcherHolds += w.switcherHolds; statSwitches += w.switcherSwitches; statSwitcherTaps += w.switcherTaps; statSwitcherPanels += w.io.switcherShows
     return nil
 }
 var statFires = 0, statChained = 0, statTaps = 0, statHolds = 0
 var statWheelHolds = 0, statWheelPicks = 0, statWheelRing = 0, statWheelTaps = 0
+var statSwitcherHolds = 0, statSwitches = 0, statSwitcherTaps = 0, statSwitcherPanels = 0
 
 /// Delta debugging: the smallest list of ops (that we can find quickly) that still
 /// breaks the same rule.
@@ -1980,6 +2161,7 @@ extension ButtonAction {
         switch self {
         case .gesture(let g): "gesture(tap: \(g.tap.short))"
         case .wheel(let w): "wheel(\(w.filled.count) slots, ring \(w.ring.rawValue), tap: \(w.tap.short))"
+        case .switcher(let a): "switcher(tap: \(a.tap.short))"
         case .shortcut(let s): "shortcut(\(s.keyCode))"
         case .holdShortcut(let s): "holdShortcut(\(s.keyCode))"
         default: "\(self)"
@@ -2271,10 +2453,67 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
         ("wheel: past the 30 s limit: down, nothing runs", [wheelC], down(3) + slow + right + [.wait(31)] + up(3) + settle),
         ("wheel: the watchdog takes the ring down: nothing runs", [wheelC], down(3) + slow + right + [.wheelOverlay(2), .wait(0.5)] + up(3) + settle),
         ("wheel: nothing to draw it with: nothing runs, the pointer still freed", [wheelC], [.wheelOverlay(1)] + down(3) + slow + right + up(3) + settle),
+        ("wheel: the watchdog takes the ring down right before the release: nothing runs", [wheelC],
+         down(3) + slow + right + [.wheelOverlay(2)] + up(3) + settle),
         ("wheel: another mouse moves the hold: the ring follows the anchor", [wheelC],
          down(3) + slow + right + [.wait(0.3), .oBall, .wait(0.1)] + up(3) + settle),
     ]
     gestureCases += wheels
+    // The Switcher (Nov 18): ⌘-Tab for the trackball. The list comes from the main thread (late,
+    // or never, in some cases); the release switches once; every way a hold ends switches nothing.
+    var swC = GlideConfig()
+    swC.buttons[3] = .switcher(.standard)
+    var swFly = swC
+    swFly.scrollMode = .flywheel
+    var swCombo = GlideConfig()
+    swCombo.chords = [Chord(buttons: [1, 3], action: .switcher(.standard))]
+    var swPrimary = GlideConfig()
+    swPrimary.chords = [Chord(buttons: [0, 2], action: .switcher(.standard))]
+    swPrimary.buttons[0] = .switcher(.standard)
+    var swMix = GlideConfig()
+    swMix.buttons[3] = .switcher(.standard)
+    swMix.buttons[2] = .wheel(.standard)
+    swMix.buttons[1] = .gesture(.standard)
+    let switchers: [(String, [GlideConfig], [Op])] = [
+        ("switcher: held still and let go flips to the previous app", [swC], down(3) + slow + up(3) + settle),
+        ("switcher: roll right and let go switches to the next one, once, after the release", [swC], down(3) + slow + right + up(3) + settle),
+        ("switcher: a quick still press is the tap", [swC], down(3) + [.wait(0.1)] + up(3) + settle),
+        ("switcher: a flick and release before the panel's delay still switches", [swC],
+         down(3) + [.kBall(30, 0), .wait(0.004), .kBall(30, 0)] + up(3) + settle),
+        ("switcher: ring turns step the highlight, never scroll, and the release switches", [swFly],
+         flick + down(3) + (0..<3).flatMap { _ in [Op.kWheel(-1), .wait(0.03)] } + up(3) + settle),
+        ("switcher: Esc dismisses it", [swC], down(3) + slow + right + [.esc] + right + up(3) + settle),
+        ("switcher: another trackball button dismisses it", [swC], down(3) + slow + right + down(1) + up(1) + up(3) + settle),
+        ("switcher: another mouse clicks meanwhile: the Switcher stays", [swC],
+         down(3) + slow + right + [.oPress(1), .oRelease(1), .wait(0.2)] + up(3) + settle),
+        ("switcher: on a combo, the first button up switches", [swCombo], down(1, 3) + slow + right + up(3) + [.kBall(30, 0)] + up(1) + settle),
+        ("switcher: never on the primary button, alone or in a combo", [swPrimary],
+         down(0) + slow + right + up(0) + down(2, 0) + slow + right + up(0, 2) + settle),
+        ("switcher: never held with a Wheel or a gesture", [swMix],
+         down(3) + slow + down(2) + right + down(1) + up(2) + up(1) + up(3) + settle),
+        ("switcher: paused mid-hold: down, nothing switches", [swC], down(3) + slow + right + [.pause, .resume] + up(3) + settle),
+        ("switcher: the Mac sleeps mid-hold: down, nothing switches", [swC], down(3) + slow + right + [.sleep, .wake] + up(3) + settle),
+        ("switcher: quit mid-hold: down, nothing switches", [swC], down(3) + slow + right + [.quit] + up(3) + settle),
+        ("switcher: unplugged mid-hold: down, nothing switches", [swC], down(3) + slow + right + [.unplug(0), .wait(1), .replug(0)] + settle),
+        ("switcher: the tap switched off mid-hold: down, nothing switches", [swC], down(3) + slow + right + [.tapOff(1), .kBall(5, 0)] + up(3) + settle),
+        ("switcher: past the 30 s limit: down, nothing switches", [swC], down(3) + slow + right + [.wait(31)] + up(3) + settle),
+        ("switcher: the watchdog takes the panel down: nothing switches", [swC],
+         down(3) + slow + right + [.switcherPanel(2), .wait(0.5)] + up(3) + settle),
+        ("switcher: the watchdog takes the panel down right before the release: nothing switches", [swC],
+         down(3) + slow + right + [.switcherPanel(2)] + up(3) + settle),
+        ("switcher: the panel can't be drawn: nothing switches, the pointer still freed", [swC],
+         [.switcherPanel(1)] + down(3) + slow + right + up(3) + settle),
+        ("switcher: nothing builds lists: a quick press is still the tap, a hold does nothing", [swC],
+         [.switcherPanel(3)] + down(3) + [.wait(0.1)] + up(3) + down(3) + slow + right + up(3) + settle),
+        ("switcher: the list comes late: the roll before it still counts", [swC],
+         [.switcherPanel(5)] + down(3) + right + [.wait(0.5)] + up(3) + settle),
+        ("switcher: the list never comes: nothing switches", [swC], [.switcherPanel(6)] + down(3) + slow + right + up(3) + settle),
+        ("switcher: 40 apps, rolled far down: the lit row stays on screen", [swC],
+         [.switcherPanel(13)] + down(3) + slow + roll(0, 6, 60) + up(3) + settle),
+        ("switcher: another mouse moves the hold: the panel follows the anchor", [swC],
+         down(3) + slow + right + [.wait(0.3), .oBall, .wait(0.1)] + up(3) + settle),
+    ]
+    gestureCases += switchers
     let older: [(String, [GlideConfig], [Op])] = [
         ("held shortcut, unplugged while held: the key comes up",
          [hold], [.kPress(3, hidFirst: true), .unplug(2), .wait(1)]),
@@ -2578,8 +2817,49 @@ let expectations: [String: (World) -> String?] = [
     "wheel: past the 30 s limit: down, nothing runs": { w in wheelDid(w, holds: 1, picks: 0, shows: 1) },
     "wheel: the watchdog takes the ring down: nothing runs": { w in wheelDid(w, holds: 1, picks: 0, shows: 1) },
     "wheel: nothing to draw it with: nothing runs, the pointer still freed": { w in wheelDid(w, holds: 1, picks: 0, shows: 0) },
+    "wheel: the watchdog takes the ring down right before the release: nothing runs": { w in wheelDid(w, holds: 1, picks: 0, shows: 1) },
+    "switcher: the watchdog takes the panel down right before the release: nothing switches": { w in switcherDid(w, holds: 1, to: [], shows: 1) },
     "wheel: another mouse moves the hold: the ring follows the anchor": { w in wheelDid(w, holds: 1, picks: 1, shows: 1) },
+    "switcher: held still and let go flips to the previous app": { w in switcherDid(w, holds: 1, to: [1], shows: 1) },
+    "switcher: roll right and let go switches to the next one, once, after the release": { w in switcherDid(w, holds: 1, to: [2], shows: 1) },
+    "switcher: a quick still press is the tap": { w in
+        switcherDid(w, holds: 1, to: [], taps: 1, shows: 0) },
+    "switcher: a flick and release before the panel's delay still switches": { w in switcherDid(w, holds: 1, to: [2]) },
+    "switcher: ring turns step the highlight, never scroll, and the release switches": { w in switcherDid(w, holds: 1, to: [4], shows: 1) },
+    "switcher: Esc dismisses it": { w in switcherDid(w, holds: 1, to: [], shows: 1) },
+    "switcher: another trackball button dismisses it": { w in switcherDid(w, holds: 1, to: [], shows: 1) },
+    "switcher: another mouse clicks meanwhile: the Switcher stays": { w in switcherDid(w, holds: 1, to: [2], shows: 1) },
+    "switcher: on a combo, the first button up switches": { w in switcherDid(w, holds: 1, to: [2], shows: 1) },
+    "switcher: never on the primary button, alone or in a combo": { w in switcherDid(w, holds: 0, to: [], shows: 0) },
+    "switcher: never held with a Wheel or a gesture": { w in
+        switcherDid(w, holds: 1, to: [], shows: 1) ?? (w.wheelHolds == 0 && w.gestureHolds == 0 ? nil : "a Wheel or gesture started during the Switcher hold") },
+    "switcher: paused mid-hold: down, nothing switches": { w in switcherDid(w, holds: 1, to: [], shows: 1) },
+    "switcher: the Mac sleeps mid-hold: down, nothing switches": { w in switcherDid(w, holds: 1, to: [], shows: 1) },
+    "switcher: quit mid-hold: down, nothing switches": { w in switcherDid(w, holds: 1, to: [], shows: 1) },
+    "switcher: unplugged mid-hold: down, nothing switches": { w in switcherDid(w, holds: 1, to: [], shows: 1) },
+    "switcher: the tap switched off mid-hold: down, nothing switches": { w in switcherDid(w, holds: 1, to: [], shows: 1) },
+    "switcher: past the 30 s limit: down, nothing switches": { w in switcherDid(w, holds: 1, to: [], shows: 1) },
+    "switcher: the watchdog takes the panel down: nothing switches": { w in switcherDid(w, holds: 1, to: [], shows: 1) },
+    "switcher: the panel can't be drawn: nothing switches, the pointer still freed": { w in switcherDid(w, holds: 1, to: [], shows: 0) },
+    "switcher: nothing builds lists: a quick press is still the tap, a hold does nothing": { w in switcherDid(w, holds: 2, to: [], taps: 1, shows: 0) },
+    "switcher: the list comes late: the roll before it still counts": { w in switcherDid(w, holds: 1, to: [2], shows: 1) },
+    "switcher: the list never comes: nothing switches": { w in switcherDid(w, holds: 1, to: [], shows: 0) },
+    "switcher: 40 apps, rolled far down: the lit row stays on screen": { w in
+        switcherDid(w, holds: 1, to: nil, shows: 1) ?? (w.io.activations.count == 1 ? nil : "\(w.io.activations.count) switches") },
+    "switcher: another mouse moves the hold: the panel follows the anchor": { w in switcherDid(w, holds: 1, to: [2], shows: 1) },
 ]
+
+/// What the Switcher did over a case: holds, the apps switched to (nil: don't judge which), taps,
+/// times its panel went up.
+func switcherDid(_ w: World, holds: Int, to: [Int]?, taps: Int = 0, shows: Int? = nil) -> String? {
+    if w.switcherHolds != holds { return "\(w.switcherHolds) Switcher holds, expected \(holds)" }
+    let went = w.io.activations.map(\.index)
+    if let to, went != to { return "switched to \(went), expected \(to)" }
+    if w.switcherTaps != taps { return "\(w.switcherTaps) Switcher taps, expected \(taps)" }
+    if let shows, w.io.switcherShows != shows { return "the panel went up \(w.io.switcherShows) times, expected \(shows)" }
+    if w.io.switcher != nil { return "the panel is still up at the end" }
+    return nil
+}
 
 /// What the Wheel did over a case: holds, slots run, ring steps, taps, times its ring went up.
 func wheelDid(_ w: World, holds: Int, picks: Int, ring: Int = 0, taps: Int = 0, shows: Int? = nil) -> String? {
@@ -2661,6 +2941,7 @@ while true {
 let secs = Date().timeIntervalSince(started)
 print("  gestures: \(statHolds) holds, \(statFires) fires (\(statChained) chained), \(statTaps) taps")
 print("  wheels: \(statWheelHolds) holds, \(statWheelPicks) slots run, \(statWheelRing) ring steps, \(statWheelTaps) taps")
+print("  switchers: \(statSwitcherHolds) holds, \(statSwitcherPanels) panels shown, \(statSwitches) switches, \(statSwitcherTaps) taps")
 print(String(format: "%d seeds, %d events in %.1f s (%.0f events/s): %@", seedIndex, totalEvents, secs,
              Double(totalEvents) / max(secs, 0.001), failed == 0 ? "all rules held" : "\(failed) FAILED"))
 exit(failed == 0 ? 0 : 1)

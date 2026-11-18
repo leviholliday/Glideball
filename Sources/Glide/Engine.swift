@@ -2129,6 +2129,11 @@ final class Engine {
                 return pass
             case .gesture:
                 if phase == .up {
+                    // The Wheel's ring or the Switcher's panel the watchdog took down (the input
+                    // thread was stuck): what you can't see doesn't run, even if the release comes
+                    // before the next keep would have noticed.
+                    if wheelShown != nil, !io.keepWheel() { wheelLost() }
+                    if switcherShown != nil, !io.keepSwitcher() { switcherLost() }
                     let effects = gestures.release(button: Int(button), now: io.now())
                     // A combo gesture ends with its first button up; the others finish silently.
                     for (b, other) in overrides {
