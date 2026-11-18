@@ -733,6 +733,8 @@ final class World {
     // The Wheel hold now (or the last one): see `observe(_:)`.
     var wheelHold: (buttons: [Int], ringSteps: [Double], picks: Int, dismissed: Bool, ringTurned: Bool, repeats: [Double])?
     var lastWheelSeq = 0
+    /// The Gestures button the hold now (or the last one) started with.
+    var holdGesture: ButtonGesture?
     var wheelHolds = 0, wheelPicks = 0, wheelRingSteps = 0, wheelTaps = 0, wheelOverlays = 0, wheelRepeats = 0
     // The Switcher hold now (or the last one): see `observe(_:)`.
     var switcherHold: (buttons: [Int], switched: Int, dismissed: Bool, ringTurned: Bool, rolled: Bool, shown: Bool)?
@@ -806,7 +808,7 @@ final class World {
             return k == self.kKey ? Set(self.kDown.map(Int64.init)) : []
         }
         engine.scroller.output = { [unowned self] d in
-            if self.modes.wheelHeld || self.modes.gestureHeld, d != 0, self.heldGesture(self.modes.gestureButtons)?.takesRing == true {
+            if self.modes.wheelHeld || self.modes.gestureHeld, d != 0, self.holdGesture?.takesRing == true {
                 self.fail("wheel", "the ring scrolled \(d) points while a ring job holds it")
             }
             if self.modes.switcherHeld, d != 0 { self.fail("switcher", "the ring scrolled \(d) points while a Switcher is held") }
@@ -1602,7 +1604,7 @@ final class World {
                 }
             }
             let wasHeld = modes.wheelHeld
-            let dismissable = wasHeld || (modes.gestureHeld && heldGesture(modes.gestureButtons)?.mayShowRing == true)
+            let dismissable = wasHeld || (modes.gestureHeld && holdGesture?.mayShowRing == true)
             for down in [true, false] {
                 let e = CGEvent(keyboardEventSource: nil, virtualKey: UInt16(kVK_Escape), keyDown: down)!
                 e.flags = io.kbFlags
@@ -1784,6 +1786,8 @@ final class World {
         // whose ring comes up (After a pause, More) carries on with it.
         if (m.wheelHeld || m.gestureHeld) && !modes.wheelHeld && !modes.gestureHeld {
             wheelHold = (m.gestureButtons, [], 0, false, false, [])
+            // The settings can change mid-hold; the engine keeps the gesture it started with.
+            holdGesture = heldGesture(m.gestureButtons)
             io.wheelDropped = false
         }
         if m.wheelHeld && !modes.wheelHeld {
@@ -1990,7 +1994,7 @@ final class World {
             if w.model.showsRing, w.model.selected != modes.wheelSlot, modes.wheelHeld { fail("wheel", "the ring lights \(String(describing: w.model.selected)), the engine says \(String(describing: modes.wheelSlot))") }
         }
         if engine.wheelForChecks != nil, io.wheel == nil, !io.wheelDropped { fail("wheel", "the engine thinks the ring is up but it isn't") }
-        let mayDismiss = modes.wheelHeld || modes.switcherHeld || (modes.gestureHeld && heldGesture(modes.gestureButtons)?.mayShowRing == true)
+        let mayDismiss = modes.wheelHeld || modes.switcherHeld || (modes.gestureHeld && holdGesture?.mayShowRing == true)
         if io.keyTap != nil, !mayDismiss, engine.keyTapForChecks != nil, !engine.escHeldForChecks {
             fail("wheel", "the key tap is on with no Wheel or Switcher held")
         }
