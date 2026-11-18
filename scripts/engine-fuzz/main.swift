@@ -684,9 +684,11 @@ final class World {
     var tainted = Set<Int>()            // a raw (tap-off) event touched this button
     var taintedO = Set<Int>()           // ...another device's button (judged apart from the trackball's)
     var passedThrough = Set<Int>()
+    var glideDown: [Int: Int] = [:]           // presses Glideball posted itself, not let go of yet
     var heldThroughRelaunch = Set<Int>()      // down because the trackball's own press of it passed: macOS's state
     var heldReadable = true                   // the engine can read the trackball's held buttons (EngineIO.heldButtons)
     var appO: [Int: Int] = [:]
+    var appTotal: [Int: Int] = [:]      // every button down for apps, by anyone
     var keysDown: [UInt16: Int] = [:]
     var modifierEvents: [UInt16: Int] = [:]
     var outCount: [Int: Int] = [:]
@@ -771,9 +773,12 @@ final class World {
             k == oKey || (self.echo && k == echoKey) || (self.kConnected && (k == self.kKey || k == self.kAux) && self.io.clock >= self.aliveAt) || (self.reused && k == self.kKey)
         }
         io.identityNow = { [unowned self] k in self.identityOf(k) }
-        io.appButtons = { [unowned self] in
-            Set(self.appK.filter { $0.value > 0 }.keys.map(Int64.init)).union(self.appO.filter { $0.value > 0 }.keys.map(Int64.init))
-        }
+        // macOS's answer: what apps have down by the presses and releases they saw, not by whose
+        // side the fuzzer counted each on. (When the engine can't tell two devices' releases apart
+        // and gives one's event for the other's, the per-side counts drift; macOS's doesn't. Seed
+        // 1024311: the per-side union kept a trackpad press "down" after both had let go, so the
+        // engine never forgot it.)
+        io.appButtons = { [unowned self] in Set(self.appTotal.filter { $0.value > 0 }.keys.map(Int64.init)) }
         io.held = { [unowned self] k in
             guard self.heldReadable, self.kConnected, k == self.kKey || k == self.kAux else { return nil }
             return k == self.kKey ? Set(self.kDown.map(Int64.init)) : []
@@ -1022,6 +1027,8 @@ final class World {
                 if phase == 0 { pendingPrimary.removeAll { $0.id == id } }
             }
             let isOther = info.map { $0.source == .other || $0.source == .trackpad } ?? false
+            // What macOS has down, whoever pressed it: every press apps saw less every release.
+            if phase == 0 { appTotal[b, default: 0] += 1 } else if phase == 1 { appTotal[b] = max(0, (appTotal[b] ?? 0) - 1) }
             if phase != 2 && keepOutLog {
                 let who = info.map { "\($0.source)" } ?? (synthetic ? "glideball" : "?")
                 outLog.append("\(who) \(phase == 0 ? "down" : "up") \(b)\(raw ? " raw" : "")")
@@ -1049,6 +1056,7 @@ final class World {
             switch phase {
             case 0:
                 if let info, info.source == .kensington, info.button == b { passedThrough.insert(b) }   // as is, or replayed after a combo wait
+                if info == nil { glideDown[b, default: 0] += 1 }   // Glideball's own (a Drag lock's, say)
                 // A press macOS delivered past a switched-off tap: apps see it as it is. Judged
                 // like any other, except onto a button they already have down (that's macOS's).
                 if raw { if down > 0 { tainted.insert(b) } }
@@ -1059,7 +1067,13 @@ final class World {
                 if raw, !tainted.contains(b) { tainted.insert(b); taintedWhileOff.insert(b) }
                 appK[b] = down + 1
             case 1:
-                let ownPassed = passedThrough.remove(b) != nil
+                // Glideball's own release of its own press (a Drag lock's) isn't the end of the
+                // trackball's press that passed as itself (seed 1015448: a Drag lock started while
+                // the tap was off and the trackball held the left button; its end at a pause took
+                // the trackball's press for gone, and its still-held button was judged stuck).
+                let ownPassed: Bool
+                if info == nil, let n = glideDown[b], n > 0 { glideDown[b] = n - 1; ownPassed = false }
+                else { ownPassed = passedThrough.remove(b) != nil }
                 // A release past the switched-off tap whose press apps never saw (Glideball had
                 // mapped it): macOS's doing, not the engine's. (Apps may have the button down for
                 // something else, a button remapped to it, which this release then lets go of.)
@@ -1075,6 +1089,7 @@ final class World {
                 // nothing apps saw: what they have down, a button remapped to this one, stays.)
                 let unpaired = raw && info?.source == .kensington && info?.button == b && !ownPassed && !kRawHeld.contains(b) && kConnected
                 if !unpaired { appK[b] = max(0, down - 1) }
+                if appK[b] == 0 { glideDown[b] = nil }
                 // (Not while another device's side of the button is still unknowable: what the
                 // engine made of that can still decide whose a later release is.)
                 if appK[b] == 0 && !raw && !kDown.contains(b) && !taintedO.contains(b) { tainted.remove(b) }
@@ -2004,6 +2019,10 @@ final class World {
             // another mouse): they stay out of it until they come back to zero.
             tainted = Set(appK.filter { $0.value > 0 }.keys).union(appO.filter { $0.value > 0 }.keys)
             taintedO = Set(appO.filter { $0.value > 0 }.keys)
+            // Those stay out until they come back to zero, not just until the tap is next back on
+            // (a count left over from the trackball's and another device's releases told apart the
+            // other way round, seed 583, was judged again at the next replug).
+            taintedWhileOff.removeAll()
             passedThrough.removeAll(); swallowedOther.removeAll(); awaiting.removeAll()
         }
         // (Another mouse's press can be taken for the trackball's, see `ambiguous`: then it holds too.)
@@ -2568,7 +2587,94 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
         ("its own button with a modifier, after a button remapped to it", [selfMod],
          [.kPress(1, hidFirst: true), .kPress(2, hidFirst: true), .kRelease(2, hidFirst: true), .kRelease(1, hidFirst: true), .wait(1)]),
     ]
-    return gestureCases + older
+    // Fresh seeds from a 10-minute run (Nov 18; the seed numbers are beta 24's fuzzer's, whose
+    // random streams have changed since). Each is the minimized sequence that failed.
+    var selfCtrl = GlideConfig()
+    selfCtrl.buttons[1] = .modifiedClick(button: 1, modifiers: CGEventFlags.maskControl.rawValue)
+    var primaryComboLock = GlideConfig()
+    primaryComboLock.buttons[4] = .dragLock
+    primaryComboLock.chords = [Chord(buttons: [0, 2, 3], action: .openApp(bundleID: "com.example.app"))]
+    var wheelOn14 = GlideConfig()
+    wheelOn14.buttons[0] = .disabled
+    wheelOn14.scrollMode = .follow
+    wheelOn14.chords = [Chord(buttons: [2, 4], action: .dragLock), Chord(buttons: [1, 4], action: .wheel(.standard))]
+    var gestureOn13 = GlideConfig()
+    gestureOn13.buttons[2] = .ballScrollHold
+    gestureOn13.buttons[3] = .forward
+    gestureOn13.buttons[4] = .shortcut(.missionControl)
+    gestureOn13.scrollMode = .flywheel
+    var tapLeft = ButtonGesture.standard
+    tapLeft.tap = .leftClick
+    var tapPrecision = ButtonGesture.standard
+    tapPrecision.tap = .precisionHold
+    gestureOn13.chords = [Chord(buttons: [1, 3], action: .gesture(tapLeft)), Chord(buttons: [1, 4], action: .dragLock),
+                          Chord(buttons: [1, 4], action: .gesture(tapPrecision))]
+    var rights = GlideConfig()
+    rights.buttons = [0: .rightClick, 1: .rightClick, 2: .precisionHold, 3: .ballScrollHold, 4: .precisionHold]
+    var lockCombo = GlideConfig()
+    lockCombo.scrollMode = .follow
+    lockCombo.buttons = [0: .precisionToggle, 1: .system, 3: .dragLock]
+    var mid = GlideConfig()
+    mid.buttons = [0: .middleClick, 1: .dragLock]
+    mid.gesturesEnabled = false
+    mid.scrollMode = .follow
+    var ctrlTo4 = GlideConfig()
+    ctrlTo4.buttons = [0: .gesture(ButtonGesture(tap: .back)), 2: .modifiedClick(button: 4, modifiers: CGEventFlags.maskControl.rawValue),
+                       3: .shortcut(.copy), 4: .ballScrollHold]
+    ctrlTo4.scrollMode = .flywheel
+    var precise2 = GlideConfig()
+    precise2.buttons = [0: .forward, 1: .precisionHold, 2: .precisionHold, 3: .leftClick, 4: .disabled]
+    precise2.scrollMode = .follow
+    var wheel4 = GlideConfig()
+    wheel4.buttons = [1: .dragLock, 2: .media(.volumeUp), 3: .switcher(.standard), 4: .wheel(.standard)]
+    wheel4.chords = [Chord(buttons: [1, 3], action: .middleClick)]
+    wheel4.scrollMode = .flywheel
+    var g1 = GlideConfig()
+    g1.buttons = [1: .gesture(.standard), 2: .switcher(.standard), 3: .precisionToggle, 4: .wheel(.standard)]
+    var g3 = GlideConfig()
+    g3.buttons = [1: .gesture(ButtonGesture(tap: .dragLock)), 2: .switcher(.standard), 3: .gesture(.standard), 4: .gesture(.standard)]
+    g3.scrollMode = .flywheel
+    var w1 = GlideConfig()
+    w1.buttons = [1: .wheel(.standard), 2: .switcher(AppSwitcher(tap: .openApp(bundleID: "com.example.app"))), 3: .switcher(.standard)]
+    w1.scrollMode = .follow
+    let fresh: [(String, [GlideConfig], [Op])] = [
+        ("seed 1002133: a button remapped to a ⌃-click of itself, its release past a switched-off tap: released once", [selfCtrl],
+         [.kPress(1, hidFirst: true), .tapOff(3), .kRelease(1, hidFirst: true)]),
+        ("seed 1000426: the primary held through a relaunch, then Drag lock: its release doesn't let go of the lock", [primaryComboLock],
+         [.kPress(0, hidFirst: true), .quit, .kPress(4, hidFirst: true), .kRelease(0, hidFirst: true), .kBall(-3, 0)]),
+        ("seed 1000390: another mouse on the trackball's button around a missed removal: its release reaches apps", [wheelOn14],
+         [.kWheel(-1), .kPress(1, hidFirst: true), .oBall, .kPress(3, hidFirst: true), .kWheel(-1), .kPress(4, hidFirst: true),
+          .unplug(2), .lateValues, .oPress(1), .replug(0), .kBall(15, 0), .kWheel(1), .kBall(19, 0), .kWheel(-1), .unplug(3),
+          .oRelease(1), .oPress(1), .replugHeld(1, 0), .wake, .kRelease(1, hidFirst: false), .kPress(4, hidFirst: true),
+          .overlap(1, 1 + 16 + 64 + 128)]),
+        ("seed 1002818: another mouse on the trackball's button after a missed removal and Quick assign: its release reaches apps", [gestureOn13],
+         [.kPress(4, hidFirst: true), .kPress(1, hidFirst: false), .unplug(2), .oBall, .replug(0), .kWheel(-1), .unplug(3),
+          .replugHeld(1, 2), .kRelease(1, hidFirst: true), .wait(0.031), .learn, .wait(0.031), .overlap(1, 3 + 16 + 64 + 128)]),
+        ("seed 1003589: the primary held through a relaunch, the trackpad on it too: its release has its press", [rights, lockCombo],
+         [.front(0), .kPress(0, hidFirst: true), .quit, .oPress(0), .overlap(0, 2 + 8 + 16 + 32), .kPress(0, hidFirst: true),
+          .kRelease(0, hidFirst: true), .config(1), .oRelease(0), .kPress(3, hidFirst: true), .padClick(0)]),
+        ("seed 1002889: the primary's release past a switched-off tap, another mouse holding it too: Precision's moves stay moves",
+         [precise2],
+         [.kPress(0, hidFirst: true), .oPress(0), .tapOff(2), .kBall(3, 0), .kRelease(0, hidFirst: false), .wait(1.419), .wait(1.014),
+          .oRelease(0), .kPress(2, hidFirst: true), .kPress(4, hidFirst: true), .kBall(7, 0)]),
+        ("seed 1011727: a keyboard Drag lock ended by a press as the trackball comes back: its release isn't let through", [wheel4],
+         [.kPress(4, hidFirst: true), .kWheel(1), .oPress(1), .unplug(3), .setMode(2, 2), .replugHeld(0, 0)]),
+        ("seed 1025370: a trackpad click past a switched-off tap, then another mouse's click inside a gesture hold: each release its own", [g1],
+         [.kPress(0, hidFirst: true), .tapOff(1), .padClick(1), .overlap(1, 0 + 64)]),
+        ("seed 1020309: the same with the trackpad first and a shadow pointer beside: each release its own", [g3],
+         [.kPress(2, hidFirst: true), .tapOff(1), .overlap(3, 3 + 32 + 64), .overlap(3, 2 + 64 + 128)]),
+        ("seed 1024311: a Wheel's release past a switched-off tap, a trackpad click on it, a shadow pointer beside: later clicks paired", [w1],
+         [.kPress(1, hidFirst: true), .padClick(1), .tapOff(1), .kRelease(1, hidFirst: true), .wait(0.486), .wait(1.681),
+          .kPress(1, hidFirst: true), .overlap(1, 1 + 8 + 16 + 64 + 128)]),
+        // (The fuzzer's own bookkeeping, these two: see `glideDown`, and `taintedWhileOff` where `ambiguous` clears.)
+        ("seed 1015448: the primary pressed while the tap was off, a keyboard Drag lock, then a pause: the held button is macOS's",
+         [GlideConfig()], [.tapOff(3), .kPress(0, hidFirst: true), .setMode(2, 2), .kBall(-8, 0), .oWheel(-1), .pause]),
+        ("seed 583: a press past a switched-off tap on the trackball's button, a shadow pointer beside: judged again only at zero",
+         [mid, ctrlTo4],
+         [.unplug(2), .oPress(2), .replug(3), .config(1), .overlap(4, 5 + 8 + 32), .wait(1.167), .overlap(2, 4 + 16 + 128),
+          .unplug(0), .replug(0), .overlap(4, 0 + 8 + 16 + 32)]),
+    ]
+    return gestureCases + older + fresh
 }
 
 // MARK: - Main
@@ -2896,9 +3002,21 @@ func expectLog(_ w: World, _ want: [String]) -> String? {
 }
 print("▸ regression cases")
 keepOutLog = true
+// FUZZ_TRACE_CASE=text: a play-by-play of the regression cases whose names contain it.
+let traceCase = ProcessInfo.processInfo.environment["FUZZ_TRACE_CASE"]
 for (name, configs, ops) in regressionCases() {
     echoShadow = name.contains("shadow pointer")
-    if let (f, i) = run(configs, ops) {
+    tracing = traceCase.map { name.contains($0) } ?? false
+    let result = run(configs, ops)
+    if tracing, let w = lastWorld {
+        tracing = false
+        w.engine.diagnostics.flush()
+        print("    the engine's own log:")
+        for line in ((try? String(contentsOf: Diagnostics.url, encoding: .utf8)) ?? "").split(separator: "\n").suffix(40) {
+            print("      | \(line)")
+        }
+    }
+    if let (f, i) = result {
         failed += 1
         print("  ✗ \(name): \(f) at op \(i)")
     } else if let w = lastWorld, let problem = expectations[name]?(w) {
