@@ -5,7 +5,7 @@ import SwiftUI
 
 /// `Glide --scroll-bench [--pages overview,pointer,…|all] [--sizes 980x680,1440x900] [--seconds 3]
 ///                       [--hz 120] [--appearance dark|light] [--performance smooth|efficient|minimal]
-///                       [--no-feed] [--no-hold] [--drive wheel|offset] [--json file]`
+///                       [--no-feed] [--no-hold] [--damage] [--drive wheel|offset] [--json file]`
 ///
 /// How smoothly each page scrolls while the trackball is being used: the same
 /// thing the owner does when he spins the scroll ring over Glideball's own window.
@@ -73,6 +73,8 @@ enum ScrollBench {
         var json: URL?
         /// Measure without holding the live pictures while the page scrolls (as before 2.10-beta.15).
         var hold = true
+        /// Composite only what changed each frame (as WindowServer does), not the whole window.
+        var damageOnly = false
     }
 
     struct Result {
@@ -104,7 +106,7 @@ enum ScrollBench {
         args.removeAll { $0 == "--scroll-bench" }
         func fail(_ message: String) -> Never {
             print("error: \(message)")
-            print("usage: Glide --scroll-bench [--pages overview,pointer,…|all] [--sizes 980x680,1440x900] [--seconds 3] [--hz 120] [--appearance dark|light] [--performance smooth|efficient|minimal] [--no-feed] [--no-hold] [--drive wheel|offset] [--json file]")
+            print("usage: Glide --scroll-bench [--pages overview,pointer,…|all] [--sizes 980x680,1440x900] [--seconds 3] [--hz 120] [--appearance dark|light] [--performance smooth|efficient|minimal] [--no-feed] [--no-hold] [--damage] [--drive wheel|offset] [--json file]")
             exit(2)
         }
         func value(after flag: String) -> String? {
@@ -149,6 +151,7 @@ enum ScrollBench {
         if let j = value(after: "--json") { o.json = URL(fileURLWithPath: j) }
         if let i = args.firstIndex(of: "--no-feed") { args.remove(at: i); o.feed = false }
         if let i = args.firstIndex(of: "--no-hold") { args.remove(at: i); o.hold = false }
+        if let i = args.firstIndex(of: "--damage") { args.remove(at: i); o.damageOnly = true }
         let unknown = args.filter { $0.hasPrefix("--") }
         if !unknown.isEmpty { fail("unknown option \(unknown[0])") }
         return o
@@ -249,6 +252,7 @@ enum ScrollBench {
             return result
         }
         defer { renderer.restore() }
+        renderer.damageOnly = o.damageOnly
         let busy = BusyMeter()
         _ = renderer.render()   // the first frame builds every texture; not a scroll frame
         // As if the page had been open a moment (right after a page change, a move isn't a scroll).
@@ -312,6 +316,11 @@ enum ScrollBench {
             if model.live.lightAwake { result.litFrames += 1 }
         }
         _ = position
+        if o.damageOnly { print(String(format: "  (%@ %dx%d: median update region %.0f%% of the window)", target.name, Int(size.width), Int(size.height), 100 * percentile(renderer.damage, 0.5))) }
+        if renderer.retaken > 0 || content.layer !== renderer.lentLayer {
+            print("  (\(target.name) \(Int(size.width))x\(Int(size.height)): AppKit took the window's layer back \(renderer.retaken)× and it was lent again"
+                  + (content.layer !== renderer.lentLayer ? "; the view has a new layer, so the composite times are of an old one" : "") + ")")
+        }
         result.counts = PerfProbe.take()
         // Let the light and the trace settle before the next page, so each starts the same way.
         model.pageStopped()
@@ -394,6 +403,8 @@ enum ScrollBench {
     /// `Offscreen.image` does for one picture), so each frame can be composited and timed.
     final class LentRenderer {
         private let layer: CALayer
+        var lentLayer: CALayer { layer }
+        private let holder: CALayer
         private let parent: CALayer?
         private let index: UInt32?
         private let frame: CGRect
@@ -415,7 +426,7 @@ enum ScrollBench {
             self.layer = layer
             let root = CALayer()
             root.frame = CGRect(x: 0, y: 0, width: w, height: h)
-            let holder = CALayer()
+            holder = CALayer()
             holder.anchorPoint = .zero
             holder.bounds = CGRect(origin: .zero, size: bounds.size)
             holder.position = .zero
@@ -432,11 +443,29 @@ enum ScrollBench {
             CATransaction.flush()
         }
 
+        /// Times AppKit took the layer back into the window mid-run.
+        private(set) var retaken = 0
+        var damageOnly = false
+        /// Each frame's update region, as a share of the window.
+        var damage: [Double] = []
+
         /// Composites one frame of the whole window and waits for the GPU; ms.
         func render() -> Double {
+            // AppKit sometimes puts the view's layer back into the window's own tree (a
+            // page's layout changing under the sidebar did it on Overview); the renderer
+            // then had nothing to draw and frames "took" 0.05 ms. Lend it again.
+            if layer.superlayer !== holder {
+                retaken += 1
+                layer.removeFromSuperlayer()
+                holder.addSublayer(layer)
+                layer.frame = CGRect(origin: .zero, size: holder.bounds.size)
+                CATransaction.flush()
+            }
             let t0 = CACurrentMediaTime()
             renderer.beginFrame(atTime: CACurrentMediaTime(), timeStamp: nil)
-            renderer.addUpdate(renderer.bounds)
+            if !damageOnly { renderer.addUpdate(renderer.bounds) }
+            let ub = renderer.updateBounds()
+            damage.append(ub.isNull ? 0 : Double(ub.width * ub.height / (renderer.bounds.width * renderer.bounds.height)))
             renderer.render()
             renderer.endFrame()
             let fence = queue.makeCommandBuffer()
@@ -477,7 +506,10 @@ enum ScrollBench {
                          name, size, r.cpu.count,
                          percentile(r.cpu, 0.5), percentile(r.cpu, 0.95), r.cpu.max() ?? 0,
                          percentile(r.gpu, 0.5), percentile(r.gpu, 0.95), r.gpu.max() ?? 0,
-                         over, Double(r.travel), r.phaseSeen ? "yes" : "no", 100 * Double(r.litFrames) / Double(max(r.cpu.count, 1))))
+                         over, Double(r.travel), r.phaseSeen ? "yes" : "no", 100 * Double(r.litFrames) / Double(max(r.cpu.count, 1)))
+                  // A page with little to scroll still composites every frame, but it hardly moves:
+                  // its numbers say more about the window than about scrolling.
+                  + (r.range < 200 ? String(format: "  (scrolls only %.0f pt)", Double(r.range)) : ""))
         }
         print("")
         print("over: frames whose main + comp went past the budget. held: the page reported scrolling (AppModel.pageScrolling).")

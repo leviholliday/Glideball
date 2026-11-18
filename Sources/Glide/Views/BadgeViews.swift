@@ -27,6 +27,7 @@ struct BadgeTile: View {
         let color = m.color
         let shape = RoundedRectangle(cornerRadius: size * 0.27, style: .continuous)
         ZStack {
+            ZStack {
             if earned {
                 // A lit tile: the color glowing from inside, light catching the top edge.
                 Group {
@@ -51,6 +52,9 @@ struct BadgeTile: View {
                         .shadow(color: color.opacity(0.6), radius: 3)
                 }
             }
+            }
+            // The tile and its glow drawn once (see `flattened`), not again every frame a page scrolls.
+            .flattened(room: size * 0.6 + 4)
             Image(systemName: m.symbol)
                 .font(.system(size: size * 0.39, weight: .semibold))
                 .foregroundStyle(earned ? AnyShapeStyle(.white) : AnyShapeStyle(.tertiary))

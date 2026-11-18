@@ -144,6 +144,7 @@ private struct AppSetupRow: View {
                     HStack(spacing: 5) {
                         StatusDot(color: Theme.ok, size: 7)
                             .shadow(color: Theme.ok, radius: 3)
+                            .flattened(room: 8)
                         Text("Active now")
                             .font(Theme.Font.hint.weight(.medium))
                             .foregroundStyle(.secondary)

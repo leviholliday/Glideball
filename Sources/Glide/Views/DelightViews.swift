@@ -307,6 +307,7 @@ private struct ProgressHeader: View {
                             style: StrokeStyle(lineWidth: 4, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                     .shadow(color: Theme.ball.opacity(0.6), radius: 4)
+                    .flattened(room: 10)
                 Text("\(done)")
                     .font(Theme.Font.numeral(15))
                     .contentTransition(.numericText(value: Double(done)))
@@ -323,6 +324,7 @@ private struct ProgressHeader: View {
                             .fill(LinearGradient(colors: [Theme.orbCyan, Theme.ball], startPoint: .leading, endPoint: .trailing))
                             .frame(width: max(6, g.size.width * shown))
                             .shadow(color: Theme.ball.opacity(0.55), radius: 4)
+                            .flattened(room: 10)
                     }
                 }
                 .frame(height: 5)

@@ -205,7 +205,7 @@ scripts/scroll-bench.sh --no-hold                    # without holding the live 
 scripts/scroll-bench.sh --no-feed                    # just the scroll, nothing live
 ```
 
-Other options: `--hz`, `--appearance light|dark`, `--performance smooth|efficient|minimal`, `--drive wheel|offset`, `--json file`, `--no-build`.
+Other options: `--hz`, `--appearance light|dark`, `--performance smooth|efficient|minimal`, `--drive wheel|offset`, `--damage` (composite only what Core Animation says changed, as WindowServer does, and print how much of the window that was; while the sidebar trackball moves it's nearly all of it), `--json file`, `--no-build`. A page that can scroll less than 200 pt at a size is marked: it still composites every frame, but its numbers say little about scrolling.
 
 What holds while a page scrolls: only the live graphs (`LiveFeed.held`; Pointer's Swift Charts curve was the expensive one). The trackball and the hand's light stay live. The trackball's moving parts are Core Animation layers set straight from a display link (`TrackballMotion`, `Views/TrackballLayers.swift`): SwiftUI draws the parts that never move and four layer slots sit between them, so a frame is a few opacity, transform and contents changes, with the ball's surface redrawn in Core Graphics only when it has turned. In the bench, `Trackball frame` should be about 30 a second per trackball on screen while the feed is on and every other view near 0. Offscreen the display link never fires, so it follows the bench's ticks too.
 
