@@ -450,6 +450,9 @@ private struct SidebarRow: View {
             })
         .allowsWindowActivationEvents(true)
         .onHover { hovering = $0 }
+        // A hover whose exit never came (the pointer hidden or put back by a held button, a
+        // page switched from the keyboard) doesn't outlive a change of page.
+        .onChange(of: selected) { hovering = false }
         .help(String(localized: "\(tab.title) (⇧\(tab.order + 1) or ⌘\(tab.order + 1))", comment: "Sidebar tooltip: a page's name and its two shortcuts"))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: tab.title))
