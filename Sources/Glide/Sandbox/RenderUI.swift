@@ -260,6 +260,41 @@ enum RenderUI {
         return Offscreen.renderTall(v, width: width, appearance: appearance(dark), scale: scale)
     }
 
+    /// The Wheel's ring as it shows over a desktop: the real `WheelOverlayView` on a stand-in
+    /// wallpaper (`busy`: a bright, many-colored one, to judge contrast), with the pointer at
+    /// its centre as the stand-in pointer draws it.
+    static func wheelOverlay(_ m: WheelOverlayModel, busy: Bool, dark: Bool, scale: CGFloat) -> NSBitmapImageRep? {
+        let state = WheelOverlayState()
+        state.model = m
+        state.shown = true
+        let size = WheelLayout.canvas
+        let wallpaper: [Color] = busy
+            ? [Color(red: 1.0, green: 0.85, blue: 0.3), Color(red: 0.95, green: 0.35, blue: 0.45), Color(red: 0.25, green: 0.65, blue: 0.95), .white]
+            : dark ? [Color(red: 0.08, green: 0.1, blue: 0.2), Color(red: 0.2, green: 0.12, blue: 0.3), Color(red: 0.05, green: 0.2, blue: 0.25)]
+                   : [Color(red: 0.75, green: 0.86, blue: 0.97), Color(red: 0.96, green: 0.9, blue: 0.86), Color(red: 0.86, green: 0.93, blue: 0.88)]
+        let view = ZStack(alignment: .topLeading) {
+            LinearGradient(colors: wallpaper, startPoint: .topLeading, endPoint: .bottomTrailing)
+            // Something to read through the glass: a window's edge and a few lines of text.
+            RoundedRectangle(cornerRadius: 12).fill(dark ? Color(white: 0.16) : .white).frame(width: 250, height: 300).offset(x: -40, y: 60)
+            VStack(alignment: .leading, spacing: 9) {
+                ForEach(0..<9, id: \.self) { i in
+                    Text(verbatim: ["Quarterly notes", "Draft the release post", "Ship the beta tonight", "Test on the Expert Mouse",
+                                    "Ring job: volume", "Lunch at noon", "Glideball", "Reply to Sam", "Backups on"][i])
+                        .font(.system(size: 13, weight: i == 0 ? .bold : .regular))
+                        .foregroundStyle(dark ? Color.white.opacity(0.85) : Color.black.opacity(0.8))
+                }
+            }
+            .offset(x: -16, y: 80)
+            WheelOverlayView(state: state)
+            Image(nsImage: NSCursor.arrow.image)
+                .position(x: WheelLayout.centre.x + NSCursor.arrow.image.size.width / 2 - NSCursor.arrow.hotSpot.x,
+                          y: WheelLayout.centre.y + NSCursor.arrow.image.size.height / 2 - NSCursor.arrow.hotSpot.y)
+        }
+        .frame(width: size.width, height: size.height)
+        .clipped()
+        return Offscreen.render(view, size: size, chrome: .plain, appearance: appearance(dark), scale: scale)
+    }
+
     /// Glideball › Settings…, through the real `SettingsWindowController` (toolbar tabs and all).
     static func settings(_ pane: SettingsPane, dark: Bool, scale: CGFloat) -> NSBitmapImageRep? {
         UserDefaults.standard.set(pane.rawValue, forKey: SettingsWindowController.lastPaneKey)

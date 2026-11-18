@@ -49,7 +49,7 @@ enum MenuBarIcon {
         if !model.config.enabled { return .paused }
         if !model.status.deviceConnected { return .notConnected }
         let m = model.modes
-        if m.dragLocked || m.ballScrolling || m.gestureHeld { return .held }
+        if m.dragLocked || m.ballScrolling || m.gestureHeld || m.wheelHeld { return .held }
         if m.precision { return .precision }
         return .on
     }

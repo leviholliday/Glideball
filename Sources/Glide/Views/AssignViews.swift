@@ -197,6 +197,22 @@ struct CombosCard: View {
                     .padding(.horizontal, Theme.Space.rowHorizontal)
                     .padding(.vertical, 8)
                     .frame(minHeight: Theme.Space.rowMinHeight)
+                    if case .wheel(let w) = chord.action {
+                        if chord.buttons.contains(0) {
+                            // Never on the primary button (see GestureRoute.decide): say what happens instead.
+                            Label("Includes your primary click, so this combo does the Wheel’s tap instead of the Wheel.",
+                                  systemImage: "info.circle")
+                                .font(Theme.Font.hint)
+                                .foregroundStyle(.secondary)
+                                .padding(.leading, ButtonRow.dividerInset)
+                                .padding(.trailing, Theme.Space.rowHorizontal)
+                                .padding(.bottom, 10)
+                        } else {
+                            WheelEditor(model: model, buttons: chord.buttons,
+                                        menu: Binding(get: { w }, set: { actionBinding(chord.id).wrappedValue = .wheel($0) }))
+                                .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
+                    }
                     if case .gesture(let g) = chord.action {
                         if chord.buttons.contains(0) {
                             // Gestures never use the primary button (see GestureRoute.decide): say what happens instead.
@@ -214,7 +230,7 @@ struct CombosCard: View {
                         }
                     }
                 }
-                .animation(Theme.Motion.spring, value: chord.action.isGesture)
+                .animation(Theme.Motion.spring, value: chord.action.holdsTheBall)
             }
             NewComboRow(chords: $chords)
         }
@@ -235,7 +251,7 @@ struct NewComboRow: View {
     private var sorted: [Int] { picked.sorted() }
     private var duplicate: Bool { chords.contains { $0.buttons == sorted } }
     /// Gestures never use the primary button (see GestureRoute.decide).
-    private var gestureWithPrimary: Bool { action.isGesture && picked.contains(0) }
+    private var gestureWithPrimary: Bool { action.holdsTheBall && picked.contains(0) }
     private var canAdd: Bool { picked.count >= 2 && !duplicate && !gestureWithPrimary }
 
     var body: some View {

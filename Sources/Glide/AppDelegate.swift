@@ -47,6 +47,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         installKeyMonitor()
         handleTerminateSignal()
         setUpStatusItem()
+        WheelOverlayPanel.install()   // before the engine starts: a Wheel's ring has something to draw it
         _ = AppModel.shared   // starts the engine
         watchModes()
         startHotKeys()
