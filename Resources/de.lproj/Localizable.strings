@@ -2598,3 +2598,11 @@
 "Used at least once" = "Mindestens einmal genutzt";
 "Window layout" = "Fensteraufteilung";
 "You can let Glideball send me crash reports, and anonymous stats on which settings you use. It’s off unless you pick it. If you already said yes, the stats now cover more settings, and Settings › Privacy lists every one." = "Du kannst Glideball erlauben, mir Absturzberichte und eine anonyme Statistik zu deinen genutzten Einstellungen zu senden. Das ist aus, bis du es auswählst. Wenn du schon zugestimmt hast: Die Statistik umfasst jetzt mehr Einstellungen, und Einstellungen › Datenschutz zeigt jede einzelne.";
+
+/* Sidebar search button (beta 23) */
+"Search button in the sidebar" = "Suchtaste in der Seitenleiste";
+"A search button sits above the pages. ⌘K and ⌘F open search too." = "Über den Seiten sitzt eine Suchtaste. ⌘K und ⌘F öffnen die Suche ebenfalls.";
+"The sidebar shows only the pages. ⌘K and ⌘F still open search." = "Die Seitenleiste zeigt nur die Seiten. ⌘K und ⌘F öffnen die Suche weiterhin.";
+"Show or hide the search button above the pages." = "Die Suchtaste über den Seiten ein- oder ausblenden.";
+"search, find, command k, sidebar, hide, button" = "suche, suchen, finden, befehl k, seitenleiste, ausblenden, taste";
+"Search settings and actions (⌘K or ⌘F)" = "Einstellungen und Aktionen durchsuchen (⌘K oder ⌘F)";

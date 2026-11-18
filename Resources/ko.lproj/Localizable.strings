@@ -2598,3 +2598,11 @@
 "Used at least once" = "한 번 이상 사용함";
 "Window layout" = "윈도우 레이아웃";
 "You can let Glideball send me crash reports, and anonymous stats on which settings you use. It’s off unless you pick it. If you already said yes, the stats now cover more settings, and Settings › Privacy lists every one." = "Glideball이 충돌 보고서와 사용하는 설정에 대한 익명 통계를 보내도록 할 수 있습니다. 직접 선택하기 전까지는 꺼져 있습니다. 이미 허용했다면 이제 통계에 더 많은 설정이 포함되며, 설정 › 개인정보 보호에서 모두 확인할 수 있습니다.";
+
+/* Sidebar search button (beta 23) */
+"Search button in the sidebar" = "사이드바의 검색 버튼";
+"A search button sits above the pages. ⌘K and ⌘F open search too." = "페이지 위에 검색 버튼이 있습니다. ⌘K와 ⌘F로도 검색을 열 수 있습니다.";
+"The sidebar shows only the pages. ⌘K and ⌘F still open search." = "사이드바에 페이지만 표시됩니다. ⌘K와 ⌘F로는 계속 검색을 열 수 있습니다.";
+"Show or hide the search button above the pages." = "페이지 위의 검색 버튼을 표시하거나 가립니다.";
+"search, find, command k, sidebar, hide, button" = "검색, 찾기, 커맨드 k, 사이드바, 가리기, 버튼";
+"Search settings and actions (⌘K or ⌘F)" = "설정 및 동작 검색(⌘K 또는 ⌘F)";

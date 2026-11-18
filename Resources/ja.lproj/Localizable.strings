@@ -2598,3 +2598,11 @@
 "Used at least once" = "1回以上使用";
 "Window layout" = "ウインドウのレイアウト";
 "You can let Glideball send me crash reports, and anonymous stats on which settings you use. It’s off unless you pick it. If you already said yes, the stats now cover more settings, and Settings › Privacy lists every one." = "Glideballからクラッシュレポートと、使っている設定の匿名の統計を送ってもらえます。選ぶまではオフです。すでに許可している場合、統計に含まれる設定が増えました。設定 › プライバシーにすべて表示されます。";
+
+/* Sidebar search button (beta 23) */
+"Search button in the sidebar" = "サイドバーの検索ボタン";
+"A search button sits above the pages. ⌘K and ⌘F open search too." = "ページの上に検索ボタンがあります。⌘Kと⌘Fでも検索を開けます。";
+"The sidebar shows only the pages. ⌘K and ⌘F still open search." = "サイドバーにはページだけが表示されます。⌘Kと⌘Fでは引き続き検索を開けます。";
+"Show or hide the search button above the pages." = "ページの上の検索ボタンを表示または非表示にします。";
+"search, find, command k, sidebar, hide, button" = "検索, 探す, 見つける, コマンド k, サイドバー, 隠す, ボタン";
+"Search settings and actions (⌘K or ⌘F)" = "設定とアクションを検索（⌘Kまたは⌘F）";

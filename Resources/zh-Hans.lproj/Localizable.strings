@@ -2598,3 +2598,11 @@
 "Used at least once" = "至少用过一次";
 "Window layout" = "窗口布局";
 "You can let Glideball send me crash reports, and anonymous stats on which settings you use. It’s off unless you pick it. If you already said yes, the stats now cover more settings, and Settings › Privacy lists every one." = "你可以让 Glideball 向我发送崩溃报告，以及关于你在用哪些设置的匿名统计。在你选择之前它是关闭的。如果你已经同意，统计现在涵盖更多设置，“设置 › 隐私”会列出每一项。";
+
+/* Sidebar search button (beta 23) */
+"Search button in the sidebar" = "边栏中的搜索按钮";
+"A search button sits above the pages. ⌘K and ⌘F open search too." = "页面上方有一个搜索按钮。⌘K 和 ⌘F 也能打开搜索。";
+"The sidebar shows only the pages. ⌘K and ⌘F still open search." = "边栏只显示页面。⌘K 和 ⌘F 仍可打开搜索。";
+"Show or hide the search button above the pages." = "显示或隐藏页面上方的搜索按钮。";
+"search, find, command k, sidebar, hide, button" = "搜索, 查找, command k, 边栏, 隐藏, 按钮";
+"Search settings and actions (⌘K or ⌘F)" = "搜索设置和操作（⌘K 或 ⌘F）";
