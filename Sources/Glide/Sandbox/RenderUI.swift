@@ -3,6 +3,13 @@ import SwiftUI
 
 /// `Glide --render-ui <dir> [--appearance light|dark|both] [--only a,b*,…] [--scale 1|2] [--lang de]`
 ///
+/// SwiftUI can't draw every screen in one process (AttributeGraph runs out of
+/// table space after ~180 scenes), so `scripts/render-ui.sh` splits a big run:
+/// `--list` prints the selected screen names and exits; `--slice <from>,<count>`
+/// draws only that part of the selection and writes `.render-ui-part-<from>.json`
+/// instead of the contact sheet; `--assemble` (no drawing) joins the parts into
+/// `index.html` and `manifest.json` and deletes them.
+///
 /// Draws every screen of Glideball to `<dir>/<screen>.<light|dark>.png`, offscreen,
 /// with demo data (DemoData.swift), plus `index.html` (a contact sheet) and
 /// `manifest.json`. Nothing is shown, nothing live runs (Sandbox.swift). Exits 0
@@ -17,6 +24,9 @@ enum RenderUI {
         var only: [String] = []
         var scale: CGFloat = 2
         var lang: String?
+        var list = false
+        var slice: Range<Int>?
+        var assemble = false
     }
 
     struct Screen {
@@ -33,6 +43,7 @@ enum RenderUI {
 
     static func start() {
         let options = parse()
+        if options.assemble { assemble(options) }
         if let lang = options.lang { relaunchIn(lang) }
         let app = NSApplication.shared
         app.setActivationPolicy(.prohibited)   // no Dock icon, never in front
@@ -59,7 +70,7 @@ enum RenderUI {
         var args = Array(CommandLine.arguments.dropFirst())
         func fail(_ message: String) -> Never {
             print("error: \(message)")
-            print("usage: Glide --render-ui <dir> [--appearance light|dark|both] [--only name,name*,…] [--scale 1|2] [--lang <code>]")
+            print("usage: Glide --render-ui <dir> [--appearance light|dark|both] [--only name,name*,…] [--scale 1|2] [--lang <code>] [--list | --slice <from>,<count> | --assemble]")
             exit(2)
         }
         func value(after flag: String) -> String? {
@@ -91,6 +102,13 @@ enum RenderUI {
                 fail("no \(lang) translation in this build (have: \(Set(Bundle.main.localizations).sorted().joined(separator: ", ")))")
             }
             o.lang = lang
+        }
+        if let i = args.firstIndex(of: "--list") { o.list = true; args.remove(at: i) }
+        if let i = args.firstIndex(of: "--assemble") { o.assemble = true; args.remove(at: i) }
+        if let s = value(after: "--slice") {
+            let parts = s.split(separator: ",").compactMap { Int($0) }
+            guard parts.count == 2, parts[0] >= 0, parts[1] > 0 else { fail("--slice is <from>,<count>") }
+            o.slice = parts[0]..<(parts[0] + parts[1])
         }
         // AppKit's own arguments (-AppleLanguages, set by relaunchIn) are left alone.
         let unknown = args.filter { $0.hasPrefix("--") }
@@ -126,6 +144,12 @@ enum RenderUI {
         Offscreen.layoutScale = o.scale
         DemoData.seed()
         let model = AppModel.shared
+        if o.list {   // names only: nothing drawn, so none of the settling below
+            let names = all(model).map(\.name).filter { n in o.only.isEmpty || o.only.contains { matches(n, $0) } }
+            if names.isEmpty { print("error: --only matched nothing"); exit(2) }
+            names.forEach { print($0) }
+            exit(0)
+        }
         DemoData.prime(model)
         settleSync(model)
         stub(.releases(newer: false))
@@ -133,10 +157,16 @@ enum RenderUI {
         waitUntil(3) { model.updates.manualCheck == .upToDate }
 
         let screens = all(model)
-        let selected = screens.filter { s in o.only.isEmpty || o.only.contains { matches(s.name, $0) } }
+        var selected = screens.filter { s in o.only.isEmpty || o.only.contains { matches(s.name, $0) } }
         if selected.isEmpty {
             print("error: --only matched nothing. Screens: \(screens.map(\.name).joined(separator: ", "))")
             exit(2)
+        }
+        if let slice = o.slice {
+            let total = selected.count
+            selected = Array(selected[min(slice.lowerBound, total)..<min(slice.upperBound, total)])
+            if selected.isEmpty { print("error: --slice \(slice.lowerBound) is past the \(total) screens selected"); exit(2) }
+            print("render-ui: screens \(slice.lowerBound + 1)–\(slice.lowerBound + selected.count) of \(total)")
         }
         let lang = Bundle.main.preferredLocalizations.first ?? "en"
         print("render-ui: \(selected.count) screens × \(o.appearances.count) appearance(s) at \(Int(o.scale))x, language \(lang) → \(o.dir.path)")
@@ -172,10 +202,21 @@ enum RenderUI {
             }
             screen.cleanup()
         }
-        writeIndex(o, lang: lang, written: written.map { ($0.screen.name, $0.screen.group, $0.screen.title, $0.file, $0.dark, $0.size) })
+        let pictures = written.map { Picture(name: $0.screen.name, group: $0.screen.group, title: $0.screen.title,
+                                             file: $0.file, dark: $0.dark, width: Int($0.size.width), height: Int($0.size.height)) }
+        if let slice = o.slice {
+            let part = Part(lang: lang, scale: Int(o.scale), from: slice.lowerBound, pictures: pictures)
+            do {
+                try JSONEncoder().encode(part).write(to: o.dir.appendingPathComponent(".render-ui-part-\(slice.lowerBound).json"), options: .atomic)
+            } catch {
+                problems.append("part file: \(error.localizedDescription)")
+            }
+        } else {
+            writeIndex(o, lang: lang, written: pictures)
+        }
         let elapsed = Date().timeIntervalSince(started)
         if problems.isEmpty {
-            print("render-ui: wrote \(written.count) pictures and index.html in \(String(format: "%.1f", elapsed)) s")
+            print("render-ui: wrote \(written.count) pictures\(o.slice == nil ? " and index.html" : "") in \(String(format: "%.1f", elapsed)) s")
             exit(0)
         }
         print("render-ui: \(problems.count) problem(s):")
@@ -489,8 +530,48 @@ enum RenderUI {
 
     // MARK: Contact sheet
 
-    private static func writeIndex(_ o: Options, lang: String,
-                                   written: [(name: String, group: String, title: String, file: String, dark: Bool, size: NSSize)]) {
+    struct Picture: Codable {
+        let name, group, title, file: String
+        let dark: Bool
+        let width, height: Int
+    }
+
+    /// What one `--slice` run drew, for `--assemble`.
+    struct Part: Codable {
+        let lang: String
+        let scale: Int
+        let from: Int
+        let pictures: [Picture]
+    }
+
+    /// `--assemble`: joins the `--slice` runs' part files, in order, into one contact sheet.
+    private static func assemble(_ o: Options) -> Never {
+        let fm = FileManager.default
+        let files = ((try? fm.contentsOfDirectory(at: o.dir, includingPropertiesForKeys: nil)) ?? [])
+            .filter { $0.lastPathComponent.hasPrefix(".render-ui-part-") && $0.pathExtension == "json" }
+        var parts: [Part] = []
+        for f in files {
+            guard let data = try? Data(contentsOf: f), let part = try? JSONDecoder().decode(Part.self, from: data) else {
+                print("error: can't read \(f.path)")
+                exit(1)
+            }
+            parts.append(part)
+        }
+        parts.sort { $0.from < $1.from }
+        guard let first = parts.first else {
+            print("error: no part files in \(o.dir.path)")
+            exit(1)
+        }
+        var opts = o
+        opts.scale = CGFloat(first.scale)
+        let pictures = parts.flatMap(\.pictures)
+        writeIndex(opts, lang: first.lang, written: pictures)
+        files.forEach { try? fm.removeItem(at: $0) }
+        print("render-ui: joined \(parts.count) parts, \(pictures.count) pictures, into index.html")
+        exit(0)
+    }
+
+    private static func writeIndex(_ o: Options, lang: String, written: [Picture]) {
         func esc(_ s: String) -> String {
             s.replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "<", with: "&lt;")
                 .replacingOccurrences(of: ">", with: "&gt;").replacingOccurrences(of: "\"", with: "&quot;")
@@ -527,7 +608,7 @@ enum RenderUI {
             html += "<h2>\(esc(g))</h2>\n<div class=\"grid\">\n"
             for w in written where w.group == g {
                 html += """
-                <figure><a href="\(esc(w.file))"><img src="\(esc(w.file))" alt="\(esc(w.title)), \(w.dark ? "dark" : "light")" loading="lazy" width="\(Int(w.size.width))" height="\(Int(w.size.height))"></a>
+                <figure><a href="\(esc(w.file))"><img src="\(esc(w.file))" alt="\(esc(w.title)), \(w.dark ? "dark" : "light")" loading="lazy" width="\(w.width)" height="\(w.height)"></a>
                 <figcaption><span>\(esc(w.title)) · \(w.dark ? "dark" : "light")</span><code>\(esc(w.file))</code></figcaption></figure>
 
                 """
@@ -539,7 +620,7 @@ enum RenderUI {
 
         let manifest: [[String: Any]] = written.map {
             ["screen": $0.name, "group": $0.group, "title": $0.title, "file": $0.file,
-             "appearance": $0.dark ? "dark" : "light", "width": Int($0.size.width), "height": Int($0.size.height)]
+             "appearance": $0.dark ? "dark" : "light", "width": $0.width, "height": $0.height]
         }
         if let data = try? JSONSerialization.data(withJSONObject: ["language": lang, "scale": Int(o.scale), "version": version,
                                                                    "pictures": manifest],
