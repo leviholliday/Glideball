@@ -398,7 +398,7 @@ struct ScrollControls: View {
                          hint: .verbatim(ScrollHints.flyGlide(config.flyGlide)),
                          tint: Theme.ring, defaultValue: Self.defaults.flyGlide)
                 .findable(.flyGlide)
-            ToggleRow(title: "Smooth scrolling", subtitle: "Off = plain steps, exactly like a basic mouse",
+            ToggleRow(title: "Smooth scrolling", subtitle: config.smoothScrolling ? "Each notch glides the page instead of jumping it" : "Off: plain steps, exactly like a basic mouse",
                       symbol: "water.waves", isOn: $config.smoothScrolling)
                 .findable(.smoothScrolling)
             SettingRow(title: "Kensington feel",
@@ -478,7 +478,7 @@ struct ScrollControls: View {
 
     var feelSection: some View {
         SectionBlock(title: "Feel") {
-            ToggleRow(title: "Smooth scrolling", subtitle: "Off = plain steps, exactly like a basic mouse",
+            ToggleRow(title: "Smooth scrolling", subtitle: config.smoothScrolling ? "Each notch glides the page instead of jumping it" : "Off: plain steps, exactly like a basic mouse",
                       symbol: "water.waves", isOn: $config.smoothScrolling)
                 .findable(.smoothScrolling)
             TuningSlider(title: "Distance per notch", symbol: "arrow.up.and.down",
@@ -513,18 +513,14 @@ struct ScrollControls: View {
                 .findable(.throwToCoast)
             TuningSlider(title: "Throw distance", symbol: "ruler",
                          value: $config.throwAmount, range: 0...1,
-                         format: { ScrollControls.seconds(SmoothScroller.throwDuration(speed: ThrowCurve.typicalSpeed(config), throwAmount: $0)) },
+                         // The same typical flick as the hint under it, in the same unit, so the two agree.
+                         format: { String(localized: "\(Int(SmoothScroller.throwDuration(speed: min(ThrowCurve.typicalSpeed(config), SmoothScroller.throwMaxSpeed), throwAmount: $0) * 1000)) ms", comment: "Milliseconds") },
                          lowLabel: "Short", highLabel: "Long",
                          hint: .verbatim(ScrollHints.throwReach(config)),
                          tint: Theme.ring, defaultValue: Self.defaults.throwAmount)
                 .disabled(!config.throwEnabled)
                 .findable(.throwDistance)
         }
-    }
-
-    /// "1.5 s"
-    static func seconds(_ s: Double) -> String {
-        String(localized: "\(s.decimals(1)) s", comment: "Seconds, e.g. “1.5 s”")
     }
 
     // MARK: Every mode but Native

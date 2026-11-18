@@ -50,7 +50,7 @@ struct WelcomeNameStep: View {
                 }
                 .disabled(!store.hasName)
             }
-            Label("It isn’t synced, backed up, or sent with stats or crash reports. Change it any time in Settings › General.",
+            Label("It isn’t synced, backed up, or sent with stats or crash reports. Change it any time in Settings › Sharing.",
                   systemImage: "lock")
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(.secondary)

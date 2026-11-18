@@ -512,7 +512,7 @@
 
 "The download isn’t the expected Glideball %@." = "Der Download ist nicht das erwartete Glideball %@.";
 
-"Couldn’t read Glideball’s own signature to compare against." = "Glides eigene Signatur konnte nicht zum Vergleich gelesen werden.";
+"Couldn’t read Glideball’s own signature to compare against." = "Glideballs eigene Signatur konnte nicht zum Vergleich gelesen werden.";
 
 "The update isn’t signed by Glideball’s developer, so it wasn’t installed." = "Das Update ist nicht vom Entwickler von Glideball signiert und wurde daher nicht installiert.";
 
@@ -1149,7 +1149,6 @@
 
 "Slippery" = "Rutschig";
 
-"Off = plain steps, exactly like a basic mouse" = "Aus = einfache Schritte, genau wie bei einer Standardmaus";
 
 "Smooth scrolling" = "Weiches Scrollen";
 
@@ -1185,7 +1184,6 @@
 "Short" = "Kurz";
 
 /* Seconds, e.g. “1.5 s” */
-"%@ s" = "%@ s";
 
 "Direction" = "Richtung";
 
@@ -1313,7 +1311,7 @@
 "Before import" = "Vor dem Import";
 "Before restore" = "Vor dem Wiederherstellen";
 "Couldn’t back up: %@" = "Sichern fehlgeschlagen: %@";
-"Every day of the last two weeks, then one a month for a year. Each backup is about a kilobyte, and only made when something changed." = "Jeder Tag der letzten zwei Wochen, danach eins pro Monat für ein Jahr. Jedes Backup ist etwa ein Kilobyte groß und wird nur angelegt, wenn sich etwas geändert hat.";
+"Every day of the last two weeks, then one a month for a year. Each backup is about two kilobytes, and only made when something changed." = "Jeder Tag der letzten zwei Wochen, danach eins pro Monat für ein Jahr. Jedes Backup ist etwa zwei Kilobyte groß und wird nur angelegt, wenn sich etwas geändert hat.";
 "Monthly" = "Monatlich";
 "Off · %@ · %@" = "Aus · %@ · %@";
 "On, nothing backed up yet" = "An, noch nichts gesichert";
@@ -1554,32 +1552,23 @@
 "A new look" = "Ein neuer Look";
 "A ruler to try scrolling on" = "Ein Lineal, um das Scrollen auszuprobieren";
 "Closing the window keeps Glideball running" = "Wenn du das Fenster schließt, läuft Glideball weiter";
-"Crash reports, only if you want" = "Absturzberichte, nur wenn du willst";
 "Every version, on the Glideball website" = "Alle Versionen, auf der Glideball-Website";
 "For your Kensington trackball" = "Für deinen Kensington-Trackball";
 "Full changelog" = "Alle Änderungen";
 "Give it a flick over the ruler and watch how far it glides." = "Dreh den Ring mit Schwung über dem Lineal und schau, wie weit die Seite gleitet.";
-"Glideball › Settings (⌘,) has everything that used to sit at the bottom of Overview, plus a new set of soft sounds you can turn off with one switch." = "In Glideball › Einstellungen (⌘,) steht alles, was früher unten in der Übersicht war, dazu neue, leise Töne, die du mit einem Schalter ausschaltest.";
-"Here’s what changed since 2.9.1. Most of it is how Glideball looks and sounds; your settings are all still here." = "Das hat sich seit 2.9.1 geändert. Vor allem sieht und klingt Glideball anders; deine Einstellungen sind alle noch da.";
 "How Glideball uses these, on the Glideball website" = "Wofür Glideball sie braucht, auf der Glideball-Website";
 "It works. %lld of 4 found." = "Es funktioniert. %lld von 4 gefunden.";
 "Let’s set up your trackball. It takes about a minute." = "Lass uns deinen Trackball einrichten. Das dauert etwa eine Minute.";
 "Open Settings › %@" = "Einstellungen › %@ öffnen";
 "Open it again from the Dock or the menu bar." = "Öffne es wieder über das Dock oder die Menüleiste.";
 "Pause any time with %@" = "Pausieren jederzeit mit %@";
-"Pausing puts your speed back" = "Pausieren stellt dein Tempo wieder her";
 "Pick a pointer speed" = "Wähle ein Zeigertempo";
 "Press Return to go on, or use the arrow keys." = "Drück den Zeilenschalter, um weiterzugehen, oder nutze die Pfeiltasten.";
-"Raycast and scripts" = "Raycast und Skripte";
 "Roll the ball after each one to feel the difference." = "Roll nach jeder Stufe die Kugel, um den Unterschied zu spüren.";
-"Settings get their own window" = "Einstellungen haben ein eigenes Fenster";
 "Show Me" = "Zeigen";
 "Skip Tour" = "Tour überspringen";
 "Spin the scroll ring" = "Dreh den Scrollring";
-"There’s a sidebar now, with your trackball at the top. Roll the ball, turn the ring or press a button and it moves with you. Glideball has a new icon too." = "Es gibt jetzt eine Seitenleiste mit deinem Trackball ganz oben. Roll die Kugel, dreh den Ring oder drück eine Taste, und er bewegt sich mit. Glideball hat auch ein neues Symbol.";
-"Turn on Allow Raycast and scripts and you can pause Glideball, switch Precision or change the scroll mode from Raycast or a glideball:// link." = "Schalte „Raycast und Skripte erlauben“ ein, dann kannst du Glideball pausieren, die Präzision umschalten oder den Scrollmodus ändern, aus Raycast oder über einen glideball://-Link.";
 "What’s new in Glideball %@" = "Neu in Glideball %@";
-"When you pause or quit Glideball, your trackball goes back to exactly the tracking speed in System Settings, so it always feels the same." = "Wenn du Glideball pausierst oder beendest, bekommt dein Trackball genau das Tempo aus den Systemeinstellungen zurück, damit er sich immer gleich anfühlt.";
 "Your trackball goes straight back to plain macOS. Press it again to resume." = "Dein Trackball verhält sich sofort wieder wie unter normalem macOS. Drück es noch einmal, um weiterzumachen.";
 "You’re all set" = "Alles bereit";
 /* Stage 2: the Settings window, the sheets, sounds and the app icon */
@@ -1988,9 +1977,7 @@
 "Battery %@" = "Akku %@";
 "Bluetooth" = "Bluetooth";
 "Connect another display to set a speed for each." = "Schließ einen weiteren Bildschirm an, um für jeden ein Tempo festzulegen.";
-"Gesture" = "Geste";
 "Hold and roll" = "Halten und rollen";
-"Hold the button and roll the ball: a different action each way." = "Taste halten und die Kugel rollen: in jede Richtung eine andere Aktion.";
 "Hold this button on your trackball and roll." = "Halte diese Taste an deinem Trackball und roll.";
 "Hold top right and roll: sideways switches Spaces, up opens Mission Control, down shows the app’s windows. Hold top left and roll for volume and tracks. A quick press still does what it did." = "Oben rechts halten und rollen: seitwärts wechselt den Space, nach oben öffnet Mission Control, nach unten zeigt die Fenster der App. Oben links halten und rollen für Lautstärke und Titel. Ein kurzer Druck macht weiter, was er vorher gemacht hat.";
 "Main display" = "Hauptbildschirm";
@@ -2169,7 +2156,7 @@
 "Button preset: %@" = "Tastenvorgabe: %@";
 "Button presets" = "Tastenvorgaben";
 "Buttons and combos" = "Tasten und Kombis";
-"Buttons set to Gesture: hold and roll the ball to do things." = "Tasten auf Geste: Halte und roll die Kugel, um etwas auszulösen.";
+"Buttons set to Gestures: hold and roll the ball to do things." = "Tasten auf Gesten: Halte und roll die Kugel, um etwas auszulösen.";
 "Changelog" = "Änderungsprotokoll";
 "Choose whether Glideball sends crash reports, and a few anonymous stats." = "Wähle, ob Glideball Absturzberichte und ein paar anonyme Statistiken sendet.";
 "Choose which things make a sound: pausing, modes, buttons, milestones." = "Wähle, welche Dinge einen Ton abspielen: Pause, Modi, Tasten, Meilensteine.";
@@ -2430,16 +2417,13 @@
 "Fires each time you roll this way, even several times in one hold, mixed with the other directions." = "Löst jedes Mal aus, wenn du in diese Richtung rollst, auch mehrmals pro Halten und gemischt mit den anderen Richtungen.";
 "Fires once per hold, however far you roll." = "Löst einmal pro Halten aus, egal wie weit du rollst.";
 "Gesture distance" = "Gestenweg";
-"Hold the buttons together and roll the ball: a different action each way." = "Tasten zusammen halten und die Kugel rollen: in jede Richtung eine andere Aktion.";
-"Hold these buttons together and roll the ball. Each way does something the moment you roll a few millimeters, as many times as you like in one hold; a quick press does the tap." = "Halte diese Tasten zusammen und roll die Kugel. Jede Richtung löst aus, sobald du ein paar Millimeter rollst, so oft du willst pro Halten; ein kurzer Druck macht das Tippen.";
 "Hold these buttons together on your trackball and roll." = "Halte diese Tasten an deinem Trackball zusammen und roll.";
-"Hold this button and roll the ball. Each way does something the moment you roll a few millimeters, as many times as you like in one hold; a quick press does the tap." = "Halte diese Taste und roll die Kugel. Jede Richtung löst aus, sobald du ein paar Millimeter rollst, so oft du willst pro Halten; ein kurzer Druck macht das Tippen.";
 "How far you roll before a direction fires. Short suits small, quick rolls; Long ignores more by accident." = "Wie weit du rollst, bis eine Richtung auslöst. Kurz passt zu kleinen, schnellen Bewegungen; Lang ignoriert mehr Versehen.";
 "How far you roll before a direction fires: about 2, 3 or 4.5 mm. A gesture can have its own." = "Wie weit du rollst, bis eine Richtung auslöst: etwa 2, 3 oder 4,5 mm. Jede Geste kann ihren eigenen haben.";
 "Includes your primary click, so this combo does the gesture’s tap instead of a gesture." = "Enthält deinen Hauptklick, deshalb macht diese Kombi das Tippen der Geste statt einer Geste.";
 "Keeps going for as long as you keep rolling." = "Läuft weiter, solange du weiterrollst.";
-"Like Other Gestures" = "Wie andere Gesten";
-"Like Other Gestures (%@)" = "Wie andere Gesten (%@)";
+"Like other gestures" = "Wie andere Gesten";
+"Like other gestures (%@)" = "Wie andere Gesten (%@)";
 "Steady hands" = "Ruhige Hand";
 "What fired in this hold" = "Was bei diesem Halten ausgelöst hat";
 
@@ -2507,12 +2491,12 @@
 "Gesture buttons and the gesture settings" = "Gestentasten und Gesteneinstellungen";
 "How it moves" = "Wie es sich bewegt";
 "Includes or leaves out this part" = "Nimmt diesen Teil auf oder lässt ihn weg";
-"It isn’t synced, backed up, or sent with stats or crash reports. Change it any time in Settings › General." = "Er wird nicht synchronisiert, nicht gesichert und nie mit Statistiken oder Absturzberichten gesendet. Du kannst ihn jederzeit unter Einstellungen › Allgemein ändern.";
+"It isn’t synced, backed up, or sent with stats or crash reports. Change it any time in Settings › Sharing." = "Er wird nicht synchronisiert, nicht gesichert und nie mit Statistiken oder Absturzberichten gesendet. Du kannst ihn jederzeit unter Einstellungen › Teilen ändern.";
 "Left out" = "Weggelassen";
 "Links and files you share don’t say who they’re from." = "Geteilte Links und Dateien sagen nicht, von wem sie sind.";
 "Look and sound" = "Aussehen und Ton";
 "Main speed" = "Hauptgeschwindigkeit";
-"No name goes with it. You can add one in Settings › General." = "Es wird kein Name mitgeschickt. Du kannst unter Einstellungen › Allgemein einen hinzufügen.";
+"No name goes with it. You can add one in Settings › Sharing." = "Es wird kein Name mitgeschickt. Du kannst unter Einstellungen › Teilen einen hinzufügen.";
 "Nothing ticked would change anything." = "Nichts Angehaktes würde etwas ändern.";
 "Nothing yet. Tick what you want to send." = "Noch nichts. Hake an, was du senden möchtest.";
 "On shared links and files" = "In geteilten Links und Dateien";
@@ -2540,7 +2524,7 @@
 "What should Glideball call you?" = "Wie soll Glideball dich nennen?";
 "Whoever opens a link or file you share sees “From %@”." = "Wer einen geteilten Link oder eine Datei öffnet, sieht „Von %@“.";
 "Whoever opens one sees “From %@”." = "Wer einen öffnet, sieht „Von %@“.";
-"Your name, “%@”, goes with the link and file. You can change that in Settings › General." = "Dein Name, „%@“, geht mit dem Link und der Datei mit. Das kannst du unter Einstellungen › Allgemein ändern.";
+"Your name, “%@”, goes with the link and file. You can change that in Settings › Sharing." = "Dein Name, „%@“, geht mit dem Link und der Datei mit. Das kannst du unter Einstellungen › Teilen ändern.";
 "an app" = "eine App";
 "name, link, file, from" = "Name, Link, Datei, von";
 "name, picture, badge, recap" = "Name, Bild, Abzeichen, Rückblick";
@@ -2597,7 +2581,6 @@
 "Under %@" = "Unter %@";
 "Used at least once" = "Mindestens einmal genutzt";
 "Window layout" = "Fensteraufteilung";
-"You can let Glideball send me crash reports, and anonymous stats on which settings you use. It’s off unless you pick it. If you already said yes, the stats now cover more settings, and Settings › Privacy lists every one." = "Du kannst Glideball erlauben, mir Absturzberichte und eine anonyme Statistik zu deinen genutzten Einstellungen zu senden. Das ist aus, bis du es auswählst. Wenn du schon zugestimmt hast: Die Statistik umfasst jetzt mehr Einstellungen, und Einstellungen › Datenschutz zeigt jede einzelne.";
 
 /* Sidebar search button (beta 23) */
 "Search button in the sidebar" = "Suchtaste in der Seitenleiste";
@@ -2618,17 +2601,10 @@
 "Eight: the diagonals too." = "Acht: auch die Diagonalen.";
 "Four slots are the easiest to hit; eight adds the diagonals." = "Vier Felder sind am leichtesten zu treffen; acht ergänzen die Diagonalen.";
 "Four: up, right, down and left. Empty ones are skipped, so the rest get wider." = "Vier: oben, rechts, unten und links. Leere werden übersprungen, so werden die anderen breiter.";
-"Hold it and a ring of actions appears around the pointer. Roll toward one and let go; the scroll ring turns the volume meanwhile." = "Halte sie, und ein Ring aus Aktionen erscheint um den Zeiger. Roll zu einer hin und lass los; der Scrollring regelt dabei die Lautstärke.";
-"Hold it and a ring of actions appears around the pointer; roll toward one and let go." = "Halte sie, und ein Ring aus Aktionen erscheint um den Zeiger; roll zu einer hin und lass los.";
-"Hold these buttons together and a ring of actions appears around the pointer. Roll toward one and let go to run it, or roll back to the middle to cancel. A quick press does the tap." = "Halte diese Tasten zusammen, und ein Ring aus Aktionen erscheint um den Zeiger. Roll zu einer hin und lass los, um sie auszuführen, oder roll zurück zur Mitte, um abzubrechen. Ein kurzer Druck macht das Tippen.";
-"Hold this button and a ring of actions appears around the pointer. Roll toward one and let go to run it, or roll back to the middle to cancel. A quick press does the tap." = "Halte diese Taste, und ein Ring aus Aktionen erscheint um den Zeiger. Roll zu einer hin und lass los, um sie auszuführen, oder roll zurück zur Mitte, um abzubrechen. Ein kurzer Druck macht das Tippen.";
-"Includes your primary click, so this combo does the Wheel’s tap instead of the Wheel." = "Enthält deinen Primärklick, daher macht diese Kombi das Tippen des Rads statt des Rads.";
 "Left" = "Links";
-"Make a button a Wheel" = "Eine Taste zum Rad machen";
 "One action for each way you turn the ring, a step per click." = "Eine Aktion für jede Drehrichtung des Rings, ein Schritt pro Raste.";
 "Right" = "Rechts";
 "Scroll ring while held" = "Scrollring beim Halten";
-"Slots" = "Felder";
 "The ring does nothing while you hold it." = "Der Ring macht nichts, solange du die Taste hältst.";
 "Turn the ring back to undo, forward to redo." = "Dreh den Ring zurück zum Widerrufen, vor zum Wiederholen.";
 "Turn the ring while you hold it to change the screen’s brightness." = "Dreh den Ring, während du die Taste hältst, um die Bildschirmhelligkeit zu ändern.";
@@ -2641,14 +2617,11 @@
 "Up" = "Oben";
 "Up left" = "Oben links";
 "Up right" = "Oben rechts";
-"Wheel" = "Rad";
 "Your own pair" = "Eigenes Paar";
 "Zoom" = "Zoom";
 "radial pie menu ring dial" = "radial kreismenü tortenmenü ring drehregler rad";
 "ring: %@" = "Ring: %@";
 "ring: %@ / %@" = "Ring: %@ / %@";
-"wheel, ring, radial menu, pie menu" = "rad, ring, radialmenü, kreismenü, wheel, pie menu";
-"Wheel slots" = "Rad-Felder";
 
 /* The Switcher */
 "Switcher" = "App-Umschalter";
@@ -2693,3 +2666,32 @@
 "The ring shows as soon as you hold the button. Roll toward an action and let go to run it." = "Der Ring erscheint, sobald du die Taste gedrückt hältst. Rolle zu einer Aktion und lass los, um sie auszuführen.";
 "This is the ring More opens. Roll back through the middle to get to the first ring again; letting go in the middle cancels." = "Das ist der Ring, den Mehr öffnet. Rolle durch die Mitte zurück, um wieder zum ersten Ring zu kommen; loslassen in der Mitte bricht ab.";
 "gestures, hold and roll, ring, wheel, radial menu, pie menu, more, show the ring, reverse" = "gesten, halten und rollen, ring, rad, radialmenü, kreismenü, mehr, ring zeigen, umkehren";
+
+/* What’s New 2.10: Gestures, the Switcher, search and sharing */
+"Hold a button set to Gestures and roll the ball, and each way does something. It can show a ring of actions around the pointer, and the scroll ring can turn the volume while you hold it." = "Halte eine Taste mit Gesten gedrückt und roll die Kugel: Jede Richtung macht etwas. Gesten können einen Ring mit Aktionen um den Zeiger zeigen, und der Scrollring kann beim Halten die Lautstärke ändern.";
+"The Switcher" = "Der App-Umschalter";
+"It’s ⌘-Tab for your trackball. Hold a button set to Switcher, roll the ball or turn the ring to pick one of your open apps, and let go to switch to it." = "⌘-Tab für deinen Trackball. Halte eine Taste mit App-Umschalter gedrückt, roll die Kugel oder dreh den Ring, um eine deiner geöffneten Apps zu wählen, und lass los, um zu ihr zu wechseln.";
+"There’s a sidebar with your trackball at the top, moving with your hand. Settings have their own window (⌘,), and there’s a new icon and a set of soft sounds." = "Es gibt eine Seitenleiste mit deinem Trackball ganz oben, der sich mit deiner Hand bewegt. Die Einstellungen haben ein eigenes Fenster (⌘,), dazu kommen ein neues Symbol und leise Töne.";
+"Search for anything" = "Alles finden";
+"Press ⌘K, or click Search in the sidebar, to find any setting or do things like pause Glideball or try a pointer speed." = "Drück ⌘K oder klick in der Seitenleiste auf Suche, um jede Einstellung zu finden oder etwas zu tun, etwa Glideball pausieren oder ein Zeigertempo ausprobieren.";
+"Send your setup, or just part of it, as a link, a file or a picture, and whoever opens it sees what would change first. The Sync page can bring over your KensingtonWorks settings too." = "Schick dein Setup oder nur einen Teil davon als Link, Datei oder Bild; wer es öffnet, sieht zuerst, was sich ändern würde. Die Sync-Seite kann auch deine Einstellungen aus KensingtonWorks übernehmen.";
+
+/* Search: Gestures settings */
+"shaky, tremor, wobble, dead zone, accidental, gestures" = "zittrig, Zittern, wackeln, Totzone, versehentlich, Gesten";
+
+/* Scrolling: Smooth scrolling's hint follows the switch */
+"Each notch glides the page instead of jumping it" = "Jede Raste lässt die Seite gleiten, statt sie springen zu lassen";
+"Off: plain steps, exactly like a basic mouse" = "Aus: einfache Schritte, genau wie bei einer Standardmaus";
+
+/* Gestures: a place on a showing ring runs when you let go */
+"When you let go" = "Beim Loslassen";
+"Runs once, when you let go with this place lit." = "Läuft einmal, wenn du loslässt, während dieser Platz leuchtet.";
+
+/* Buttons: the Switcher's distance */
+"How far you roll to move the Switcher one app: about 2, 3 or 4.5 mm." = "Wie weit du rollst, damit der App-Umschalter eine App weitergeht: etwa 2, 3 oder 4,5 mm.";
+
+/* Privacy: crash reports only, nothing sent yet */
+"Nothing yet. A crash report only goes out if Glideball crashes." = "Noch nichts. Ein Absturzbericht wird nur gesendet, wenn Glideball abstürzt.";
+
+/* What’s New 2.10: the line under the title */
+"Here’s what changed since 2.9.1. Your settings are all still here." = "Das hat sich seit 2.9.1 geändert. Deine Einstellungen sind alle noch da.";

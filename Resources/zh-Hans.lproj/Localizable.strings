@@ -1149,7 +1149,6 @@
 
 "Slippery" = "顺滑";
 
-"Off = plain steps, exactly like a basic mouse" = "关 = 逐格滚动，就像普通鼠标一样";
 
 "Smooth scrolling" = "平滑滚动";
 
@@ -1185,7 +1184,6 @@
 "Short" = "短";
 
 /* Seconds, e.g. “1.5 s” */
-"%@ s" = "%@ 秒";
 
 "Direction" = "方向";
 
@@ -1313,7 +1311,7 @@
 "Before import" = "导入前";
 "Before restore" = "恢复前";
 "Couldn’t back up: %@" = "无法备份：%@";
-"Every day of the last two weeks, then one a month for a year. Each backup is about a kilobyte, and only made when something changed." = "最近两周每天一份，之后一年内每月一份。每份备份约 1 KB，只在设置有变化时才会创建。";
+"Every day of the last two weeks, then one a month for a year. Each backup is about two kilobytes, and only made when something changed." = "最近两周每天一份，之后一年内每月一份。每份备份约 2 KB，只在设置有变化时才会创建。";
 "Monthly" = "每月";
 "Off · %@ · %@" = "已关闭 · %@ · %@";
 "On, nothing backed up yet" = "已开启，尚无备份";
@@ -1554,32 +1552,23 @@
 "A new look" = "全新外观";
 "A ruler to try scrolling on" = "用来试试滚动的标尺";
 "Closing the window keeps Glideball running" = "关闭窗口后 Glideball 仍会继续运行";
-"Crash reports, only if you want" = "崩溃报告，仅在你愿意时发送";
 "Every version, on the Glideball website" = "所有版本，见 Glideball 网站";
 "For your Kensington trackball" = "为你的 Kensington 轨迹球而做";
 "Full changelog" = "完整更新记录";
 "Give it a flick over the ruler and watch how far it glides." = "在标尺上用力拨一下滚动环，看看它能滑多远。";
-"Glideball › Settings (⌘,) has everything that used to sit at the bottom of Overview, plus a new set of soft sounds you can turn off with one switch." = "Glideball › 设置（⌘,）里有以前放在“概览”底部的所有内容，还有一组新的轻柔音效，一个开关就能全部关掉。";
-"Here’s what changed since 2.9.1. Most of it is how Glideball looks and sounds; your settings are all still here." = "这是 2.9.1 以来的变化。大多是 Glideball 的外观和声音；你的设置都还在。";
 "How Glideball uses these, on the Glideball website" = "Glideball 为什么需要这些（Glideball 网站）";
 "It works. %lld of 4 found." = "成功了。已找到 %lld 个，共 4 个。";
 "Let’s set up your trackball. It takes about a minute." = "来设置你的轨迹球吧，大约需要一分钟。";
 "Open Settings › %@" = "打开“设置” › %@";
 "Open it again from the Dock or the menu bar." = "可从程序坞或菜单栏再次打开。";
 "Pause any time with %@" = "随时按 %@ 暂停";
-"Pausing puts your speed back" = "暂停会恢复你的速度";
 "Pick a pointer speed" = "选择指针速度";
 "Press Return to go on, or use the arrow keys." = "按 Return 键继续，或使用方向键。";
-"Raycast and scripts" = "Raycast 和脚本";
 "Roll the ball after each one to feel the difference." = "每选一个都滚动一下球，感受区别。";
-"Settings get their own window" = "设置有了自己的窗口";
 "Show Me" = "显示";
 "Skip Tour" = "跳过导览";
 "Spin the scroll ring" = "转动滚动环";
-"There’s a sidebar now, with your trackball at the top. Roll the ball, turn the ring or press a button and it moves with you. Glideball has a new icon too." = "现在有了边栏，你的轨迹球就在最上方。滚动球、转动滚动环或按下按钮，它都会跟着动。Glideball 也有了新图标。";
-"Turn on Allow Raycast and scripts and you can pause Glideball, switch Precision or change the scroll mode from Raycast or a glideball:// link." = "开启“允许 Raycast 和脚本”后，你可以通过 Raycast 或 glideball:// 链接暂停 Glideball、切换精准模式或更改滚动模式。";
 "What’s new in Glideball %@" = "Glideball %@ 的新功能";
-"When you pause or quit Glideball, your trackball goes back to exactly the tracking speed in System Settings, so it always feels the same." = "暂停或退出 Glideball 时，你的轨迹球会准确恢复到“系统设置”里的跟踪速度，手感始终如一。";
 "Your trackball goes straight back to plain macOS. Press it again to resume." = "你的轨迹球会立刻恢复为普通 macOS 的样子。再按一次即可继续。";
 "You’re all set" = "一切就绪";
 /* Stage 2: the Settings window, the sheets, sounds and the app icon */
@@ -1988,9 +1977,7 @@
 "Battery %@" = "电池 %@";
 "Bluetooth" = "Bluetooth";
 "Connect another display to set a speed for each." = "再连接一台显示器，就能为每台设置速度。";
-"Gesture" = "手势";
 "Hold and roll" = "按住并滚动";
-"Hold the button and roll the ball: a different action each way." = "按住按键并滚动轨迹球：每个方向一个不同的操作。";
 "Hold this button on your trackball and roll." = "按住轨迹球上的这个按键并滚动。";
 "Hold top right and roll: sideways switches Spaces, up opens Mission Control, down shows the app’s windows. Hold top left and roll for volume and tracks. A quick press still does what it did." = "按住右上并滚动：左右切换空间，向上打开调度中心，向下显示 App 的窗口。按住左上并滚动可调音量和切换曲目。快速按一下仍执行原来的操作。";
 "Main display" = "主显示器";
@@ -2169,7 +2156,7 @@
 "Button preset: %@" = "按钮预设：%@";
 "Button presets" = "按钮预设";
 "Buttons and combos" = "按钮和组合键";
-"Buttons set to Gesture: hold and roll the ball to do things." = "按钮已设为手势：按住并滚动球即可执行操作。";
+"Buttons set to Gestures: hold and roll the ball to do things." = "按钮已设为手势：按住并滚动球即可执行操作。";
 "Changelog" = "更新日志";
 "Choose whether Glideball sends crash reports, and a few anonymous stats." = "选择 Glideball 是否发送崩溃报告和少量匿名统计。";
 "Choose which things make a sound: pausing, modes, buttons, milestones." = "选择哪些情况会发出声音：暂停、模式、按钮、里程碑。";
@@ -2430,16 +2417,13 @@
 "Fires each time you roll this way, even several times in one hold, mixed with the other directions." = "每次朝这个方向滚动都会触发，一次按住中可以触发多次，也可以和其他方向混用。";
 "Fires once per hold, however far you roll." = "每次按住只触发一次，无论滚动多远。";
 "Gesture distance" = "手势距离";
-"Hold the buttons together and roll the ball: a different action each way." = "同时按住这些按键并滚动轨迹球：每个方向一个不同的操作。";
-"Hold these buttons together and roll the ball. Each way does something the moment you roll a few millimeters, as many times as you like in one hold; a quick press does the tap." = "同时按住这些按键并滚动轨迹球。滚动几毫米就会立即执行该方向的操作，一次按住中可以执行任意多次；快速按一下则执行轻点操作。";
 "Hold these buttons together on your trackball and roll." = "同时按住轨迹球上的这些按键并滚动。";
-"Hold this button and roll the ball. Each way does something the moment you roll a few millimeters, as many times as you like in one hold; a quick press does the tap." = "按住这个按键并滚动轨迹球。滚动几毫米就会立即执行该方向的操作，一次按住中可以执行任意多次；快速按一下则执行轻点操作。";
 "How far you roll before a direction fires. Short suits small, quick rolls; Long ignores more by accident." = "触发一个方向前需要滚动的距离。“短”适合小而快的滚动；“长”会忽略更多误操作。";
 "How far you roll before a direction fires: about 2, 3 or 4.5 mm. A gesture can have its own." = "触发一个方向前需要滚动的距离：约 2、3 或 4.5 毫米。每个手势也可以单独设置。";
 "Includes your primary click, so this combo does the gesture’s tap instead of a gesture." = "包含你的主要点按，所以这个组合键执行手势的轻点操作，而不是手势。";
 "Keeps going for as long as you keep rolling." = "只要你一直滚动就会持续执行。";
-"Like Other Gestures" = "与其他手势相同";
-"Like Other Gestures (%@)" = "与其他手势相同（%@）";
+"Like other gestures" = "与其他手势相同";
+"Like other gestures (%@)" = "与其他手势相同（%@）";
 "Steady hands" = "防手抖";
 "What fired in this hold" = "这次按住时触发的操作";
 
@@ -2507,12 +2491,12 @@
 "Gesture buttons and the gesture settings" = "手势按键和手势设置";
 "How it moves" = "移动手感";
 "Includes or leaves out this part" = "包含或排除这一部分";
-"It isn’t synced, backed up, or sent with stats or crash reports. Change it any time in Settings › General." = "它不会同步、不会备份，也不会随统计或崩溃报告发送。随时可在“设置 › 通用”中更改。";
+"It isn’t synced, backed up, or sent with stats or crash reports. Change it any time in Settings › Sharing." = "它不会同步、不会备份，也不会随统计或崩溃报告发送。随时可在“设置 › 分享”中更改。";
 "Left out" = "已排除";
 "Links and files you share don’t say who they’re from." = "你分享的链接和文件不会显示来自谁。";
 "Look and sound" = "外观与声音";
 "Main speed" = "主速度";
-"No name goes with it. You can add one in Settings › General." = "不会附带名字。可在“设置 › 通用”中添加。";
+"No name goes with it. You can add one in Settings › Sharing." = "不会附带名字。可在“设置 › 分享”中添加。";
 "Nothing ticked would change anything." = "已勾选的部分不会改变任何设置。";
 "Nothing yet. Tick what you want to send." = "还没有选。勾选你想发送的内容。";
 "On shared links and files" = "显示在分享的链接和文件中";
@@ -2540,7 +2524,7 @@
 "What should Glideball call you?" = "Glideball 该怎么称呼你？";
 "Whoever opens a link or file you share sees “From %@”." = "打开你分享的链接或文件的人会看到“来自 %@”。";
 "Whoever opens one sees “From %@”." = "打开的人会看到“来自 %@”。";
-"Your name, “%@”, goes with the link and file. You can change that in Settings › General." = "你的名字“%@”会随链接和文件一起发送。可在“设置 › 通用”中更改。";
+"Your name, “%@”, goes with the link and file. You can change that in Settings › Sharing." = "你的名字“%@”会随链接和文件一起发送。可在“设置 › 分享”中更改。";
 "an app" = "某个 App";
 "name, link, file, from" = "名字, 链接, 文件, 来自";
 "name, picture, badge, recap" = "名字, 图片, 徽章, 回顾";
@@ -2597,7 +2581,6 @@
 "Under %@" = "低于 %@";
 "Used at least once" = "至少用过一次";
 "Window layout" = "窗口布局";
-"You can let Glideball send me crash reports, and anonymous stats on which settings you use. It’s off unless you pick it. If you already said yes, the stats now cover more settings, and Settings › Privacy lists every one." = "你可以让 Glideball 向我发送崩溃报告，以及关于你在用哪些设置的匿名统计。在你选择之前它是关闭的。如果你已经同意，统计现在涵盖更多设置，“设置 › 隐私”会列出每一项。";
 
 /* Sidebar search button (beta 23) */
 "Search button in the sidebar" = "边栏中的搜索按钮";
@@ -2618,17 +2601,10 @@
 "Eight: the diagonals too." = "八个：加上斜向。";
 "Four slots are the easiest to hit; eight adds the diagonals." = "四个位置最容易选中；八个会加上斜向。";
 "Four: up, right, down and left. Empty ones are skipped, so the rest get wider." = "四个：上、右、下、左。空位会被跳过，其余的会变宽。";
-"Hold it and a ring of actions appears around the pointer. Roll toward one and let go; the scroll ring turns the volume meanwhile." = "按住它，指针周围会出现一圈操作。朝其中一个滚动后松开；同时滚动环可调节音量。";
-"Hold it and a ring of actions appears around the pointer; roll toward one and let go." = "按住它，指针周围会出现一圈操作；朝其中一个滚动后松开。";
-"Hold these buttons together and a ring of actions appears around the pointer. Roll toward one and let go to run it, or roll back to the middle to cancel. A quick press does the tap." = "同时按住这些按键，指针周围会出现一圈操作。朝其中一个滚动后松开即可执行，滚回中间则取消。快速按一下则执行轻点操作。";
-"Hold this button and a ring of actions appears around the pointer. Roll toward one and let go to run it, or roll back to the middle to cancel. A quick press does the tap." = "按住这个按键，指针周围会出现一圈操作。朝其中一个滚动后松开即可执行，滚回中间则取消。快速按一下则执行轻点操作。";
-"Includes your primary click, so this combo does the Wheel’s tap instead of the Wheel." = "包含你的主要点按，所以这个组合键会执行轮盘的轻点操作，而不是轮盘。";
 "Left" = "左";
-"Make a button a Wheel" = "把按键设为轮盘";
 "One action for each way you turn the ring, a step per click." = "滚动环每个转动方向对应一个操作，每格一步。";
 "Right" = "右";
 "Scroll ring while held" = "按住时的滚动环";
-"Slots" = "位置";
 "The ring does nothing while you hold it." = "按住时滚动环不执行任何操作。";
 "Turn the ring back to undo, forward to redo." = "向后转动滚动环撤销，向前转动重做。";
 "Turn the ring while you hold it to change the screen’s brightness." = "按住时转动滚动环可调节屏幕亮度。";
@@ -2641,14 +2617,11 @@
 "Up" = "上";
 "Up left" = "左上";
 "Up right" = "右上";
-"Wheel" = "轮盘";
 "Your own pair" = "自定一对";
 "Zoom" = "缩放";
 "radial pie menu ring dial" = "radial pie 径向 饼状菜单 环 拨盘 轮盘";
 "ring: %@" = "滚动环：%@";
 "ring: %@ / %@" = "滚动环：%@ / %@";
-"wheel, ring, radial menu, pie menu" = "轮盘, 环, 径向菜单, 饼状菜单, wheel, ring";
-"Wheel slots" = "轮盘位置";
 
 /* The Switcher */
 "Switcher" = "应用切换器";
@@ -2693,3 +2666,32 @@
 "The ring shows as soon as you hold the button. Roll toward an action and let go to run it." = "一按住按钮圆环就会出现。朝一个操作滚动，松开即可执行。";
 "This is the ring More opens. Roll back through the middle to get to the first ring again; letting go in the middle cancels." = "这是“更多”打开的圆环。经过中间滚回去即可回到第一个圆环；在中间松开则取消。";
 "gestures, hold and roll, ring, wheel, radial menu, pie menu, more, show the ring, reverse" = "手势, 按住滚动, 圆环, 滚轮, 径向菜单, 饼状菜单, 更多, 显示圆环, 反向";
+
+/* What’s New 2.10: Gestures, the Switcher, search and sharing */
+"Hold a button set to Gestures and roll the ball, and each way does something. It can show a ring of actions around the pointer, and the scroll ring can turn the volume while you hold it." = "按住设为“手势”的按钮并滚动轨迹球，每个方向都能做一件事。它还可以在指针周围显示一圈操作，按住时滚动环还能调节音量。";
+"The Switcher" = "应用切换器";
+"It’s ⌘-Tab for your trackball. Hold a button set to Switcher, roll the ball or turn the ring to pick one of your open apps, and let go to switch to it." = "这是轨迹球上的 ⌘-Tab。按住设为“应用切换器”的按钮，滚动轨迹球或转动滚动环选择一个打开的应用，松开即可切换过去。";
+"There’s a sidebar with your trackball at the top, moving with your hand. Settings have their own window (⌘,), and there’s a new icon and a set of soft sounds." = "边栏最上方是你的轨迹球，会随你的手一起动。设置有了自己的窗口（⌘,），还有新图标和一组轻柔的音效。";
+"Search for anything" = "搜索任何内容";
+"Press ⌘K, or click Search in the sidebar, to find any setting or do things like pause Glideball or try a pointer speed." = "按 ⌘K，或点按边栏中的“搜索”，即可找到任何设置，还能直接执行操作，比如暂停 Glideball 或试用一个指针速度。";
+"Send your setup, or just part of it, as a link, a file or a picture, and whoever opens it sees what would change first. The Sync page can bring over your KensingtonWorks settings too." = "把你的配置全部或其中一部分，以链接、文件或图片的形式发出去，对方会先看到会改什么。“同步”页面也可以导入你的 KensingtonWorks 设置。";
+
+/* Search: Gestures settings */
+"shaky, tremor, wobble, dead zone, accidental, gestures" = "手抖, 颤抖, 晃动, 死区, 误触, 手势";
+
+/* Scrolling: Smooth scrolling's hint follows the switch */
+"Each notch glides the page instead of jumping it" = "每一格都让页面平滑滑动，而不是跳动";
+"Off: plain steps, exactly like a basic mouse" = "关：逐格滚动，就像普通鼠标一样";
+
+/* Gestures: a place on a showing ring runs when you let go */
+"When you let go" = "松开时";
+"Runs once, when you let go with this place lit." = "在此位置亮起时松开，执行一次。";
+
+/* Buttons: the Switcher's distance */
+"How far you roll to move the Switcher one app: about 2, 3 or 4.5 mm." = "在应用切换器中移到下一个应用需要滚动的距离：约 2、3 或 4.5 毫米。";
+
+/* Privacy: crash reports only, nothing sent yet */
+"Nothing yet. A crash report only goes out if Glideball crashes." = "还没有发送任何内容。只有 Glideball 崩溃时才会发送崩溃报告。";
+
+/* What’s New 2.10: the line under the title */
+"Here’s what changed since 2.9.1. Your settings are all still here." = "这是 2.9.1 以来的变化。你的设置都还在。";

@@ -111,7 +111,7 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>lld</string>
 			<key>other</key>
-			<string>Glideで記録を残せるようになりました：すでに%lld個のバッジを獲得済み</string>
+			<string>Glideballで記録を残せるようになりました：すでに%lld個のバッジを獲得済み</string>
 		</dict>
 	</dict>
 </dict>

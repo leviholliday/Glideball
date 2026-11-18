@@ -102,7 +102,7 @@ struct ButtonsView: View {
         }
     }
 
-    static let findables: [Findable] = [.buttonPresets, .combos]
+    static let findables: [Findable] = [.buttonPresets, .combos, .gestureDistance, .steadyHands]
 }
 
 // MARK: - Gesture settings
@@ -113,9 +113,13 @@ struct GestureSettingsCard: View {
     @Bindable var model: AppModel
 
     var body: some View {
-        SectionBlock(title: "Gestures") {
+        // With only Switchers (no Gestures button) these still set how far a roll moves
+        // the Switcher's pick, so the section says so instead of talking about gestures.
+        let onlySwitcher = !model.config.anyAction(\.isGesture)
+        SectionBlock(title: onlySwitcher ? "Switcher" : "Gestures") {
             SettingRow(title: "Gesture distance",
-                       hint: "How far you roll before a direction fires: about 2, 3 or 4.5 mm. A gesture can have its own.",
+                       hint: onlySwitcher ? "How far you roll to move the Switcher one app: about 2, 3 or 4.5 mm."
+                                          : "How far you roll before a direction fires: about 2, 3 or 4.5 mm. A gesture can have its own.",
                        symbol: "ruler", tint: Theme.buttons) {
                 Picker("Gesture distance", selection: $model.config.gestureDistance) {
                     ForEach(GestureDistance.allCases) { d in Text(verbatim: d.title).tag(d) }
@@ -124,11 +128,27 @@ struct GestureSettingsCard: View {
                 .labelsHidden()
                 .fixedSize()
             }
+            .findable(Findable.gestureDistance)
             ToggleRow(title: "Steady hands",
                       subtitle: "A wider dead zone and a clearer roll before anything fires, so a shaky press stays a tap.",
                       symbol: "hand.raised", isOn: $model.config.gestureSteadyHands, tint: Theme.buttons)
+                .findable(Findable.steadyHands)
         }
     }
+}
+
+extension Findable {
+    /// Only on the page while a button or combo holds the ball (`GestureSettingsCard`).
+    static let gestureDistance = Findable(
+        id: "gesture-distance", title: String(localized: "Gesture distance"),
+        detail: String(localized: "How far you roll before a direction fires: about 2, 3 or 4.5 mm. A gesture can have its own."),
+        keywords: SearchIndex.gesturesWords,
+        symbol: "ruler", place: .tab(.buttons), part: .clicks, sometimes: true)
+    static let steadyHands = Findable(
+        id: "gesture-steady-hands", title: String(localized: "Steady hands"),
+        detail: String(localized: "A wider dead zone and a clearer roll before anything fires, so a shaky press stays a tap."),
+        keywords: String(localized: "shaky, tremor, wobble, dead zone, accidental, gestures", comment: "Search words for Steady hands, a Gestures setting (comma-separated)"),
+        symbol: "hand.raised", place: .tab(.buttons), part: .clicks, sometimes: true)
 }
 
 extension Findable {

@@ -403,7 +403,7 @@ private struct ProfileEditor: View {
     }
 
     private static func remapped(_ buttons: [Int: ButtonAction]) -> String {
-        let n = buttons.filter { $0.key != 0 && $0.value != .system }.count
+        let n = buttons.filter { $0.key != 0 && !$0.value.isNormal(for: $0.key) }.count
         return n == 0 ? String(localized: "default buttons", comment: "After “Following your main setup ·”")
                       : String(localized: "\(n) remapped", comment: "Number of buttons that do something other than normal")
     }
