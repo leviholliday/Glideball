@@ -1205,6 +1205,7 @@ final class Engine {
         // A Wheel held: the ring is its dial (its ring job), in every scroll mode and with any
         // modifier. It never also scrolls.
         if gestures.wheelHeld {
+            if wheelShown != nil, !io.keepWheel() { wheelLost() }   // the watchdog took it down meanwhile: dismissed
             applyGesture(gestures.ring(ticks: ticks, now: now))
             syncWheel()
             publishModes()
@@ -2109,6 +2110,10 @@ final class Engine {
                 return pass
             case .gesture:
                 if phase == .up {
+                    // The Wheel's ring may have been taken down by EngineIO's watchdog since the
+                    // keeper last asked (the input thread was held up, and this release is the first
+                    // thing it handles after): then the slot the person could no longer see doesn't run.
+                    if wheelShown != nil, gestures.hold?.buttons.contains(Int(button)) == true, !io.keepWheel() { wheelLost() }
                     let effects = gestures.release(button: Int(button), now: io.now())
                     // A combo gesture ends with its first button up; the others finish silently.
                     for (b, other) in overrides {
@@ -2942,6 +2947,10 @@ final class Engine {
     /// ring revealed and not dismissed, centred on the hold's anchor. It comes down with the hold
     /// by every path that ends one: they all go through `syncFreeze`, which calls this.
     private func syncWheel() {
+        // EngineIO's watchdog may have taken the ring down since the keeper last asked (the input
+        // thread was held up): that dismisses this hold's Wheel before anything else happens, so
+        // it's never shown again and nothing it lit runs. (Seeds 146703711, 129, 135, 237, 306, 336.)
+        if wheelShown != nil, !io.keepWheel() { wheelLost() }
         let want: WheelOverlayModel? = anchor == nil ? nil : gestures.wheelOverlay(now: io.now())
         if let m = want, let a = anchor {
             guard m != wheelShown || a != wheelShownAt else { return }
