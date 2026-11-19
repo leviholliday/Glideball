@@ -522,7 +522,12 @@ enum SelfTest {
                       && model.config.buttons[0] == before.buttons[0] && model.config.buttons[1] == before.buttons[1]
                       && model.config.enabled == before.enabled, "Apply didn't apply the code, or changed what it couldn't")
             try check(model.config.chords.contains { $0.buttons == [1, 2] && $0.action == .openApp(bundleID: "com.apple.Notes") }, "the combo for Notes wasn't added")
-            try check(model.backups.backups.first?.kind == .beforeAI && model.toast?.action == .undoImport, "no \"before AI setup\" checkpoint, or no Undo")
+            // A checkpoint is skipped when the newest backup already holds these settings
+            // (an earlier step's), so what counts is that the newest backup can put them back.
+            var safe = before; safe.enabled = true
+            let newest = try unwrap(model.backups.backups.first, "no backup before the AI setup")
+            try check((newest.kind == .beforeAI || model.backups.load(newest) == safe) && model.toast?.action == .undoImport,
+                      "no \"before AI setup\" checkpoint (or an equal newest backup), or no Undo")
             try draw(SetupWithAISheet(model: model), "Set up with AI, applied")
             model.undoAISetup()
             try check(model.config == before && !flow.applied, "Undo in the sheet didn't put everything back")
