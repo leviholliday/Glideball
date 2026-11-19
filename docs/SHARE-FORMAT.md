@@ -229,8 +229,15 @@ What's different from a share:
   ID of an app already in the person's setup. Never guessed: an app that isn't found is left out.
 - **Only what changes.** `parts` is worked out from the fields there. `scroll` and `sounds` are laid
   over the person's current values, and so are an app setup's areas, its buttons, and the combos (a
-  combo for the same buttons replaces that one, `"remove": true` takes one away). `null` on an app
-  setup's area hands it back to the main setup. A code can't delete an app setup.
+  combo for the same buttons, in any order, replaces that one's action, `"remove": true` takes one
+  away). A code can't delete an app setup.
+- **`null` works in exactly three places** (the prompt's rules say the same, and import-sim checks
+  both): in an app setup, on `trackingSpeed`, `scroll`, `buttons`, `combos` or one of its buttons
+  (back to what the main setup has: for one button, the main setup's action at the time); as a
+  combo's `action` (the combo goes, like `"remove": true`); inside a gesture or a More (that place,
+  tap or setting is empty or the usual one, as if it were left out). Anywhere else (a main setup's
+  setting or button, a scroll or sound key, `look`) it's left out with a note
+  (`SetupCodeReader.nullHint`) saying where null works.
 - **Never read from a code**: button 0 (the primary button), `from`, `writtenBy`, `displaySpeeds`,
   global shortcuts, the pause switch, a whole settings object (`config`), and a Switcher's `hidden`
   (the apps it already hides stay hidden). Each is listed as left out if it's there.
@@ -243,7 +250,11 @@ Finding the code (`SetupCode.object(in:)`): at most 256 KB of text; the `{…}` 
 `"glideball-ai-setup"` first, then the biggest blocks; read as it is, then tidied (curly quotes
 straightened, `//` and `/* */` comments and trailing commas dropped, never inside a string); at most
 64 KB of JSON, nested at most 32. A code that starts and never ends says it's cut off. Text that's a
-share's own JSON goes to the share decoder as it is.
+share's own JSON goes to the share decoder as it is. A code that came back HTML-escaped (a chat page's
+or an email's copy) is read with `&quot; &#34; &#x22; &#39; &#x27; &apos; &lt; &gt; &amp;` undone
+(`&amp;` last), but only after it couldn't be read as it is, and only when it's clearly an escaped
+code (`SetupCode.htmlUnescaped`: `&quot;` around its words, `{&quot;` or `&quot;format&quot;`, and no
+real `{"` or `":` in it).
 
 In the paste box (`ImportPaste.read(_:codes:codeFirst:)`): a Glideball link in the text is still
 found by the link rules above, unless the text is marked as a code. A code wrapped in or beside a
@@ -260,8 +271,9 @@ action, range, default, enum case and setting), the person's setup round-trippin
 private in it, nine golden codes as chatbots write them (`fixtures/setup-codes/`), hostile ones
 (huge, deep, wrong types, control and bidi characters, spoofed key names, paths and commands as app
 names, codes pretending to be links) and 7,500 fuzzed ones: nothing may change the primary button,
-the pause switch, global shortcuts or per-display speeds, and every Open or shortcut is marked in the
-preview.
+the pause switch, global shortcuts or per-display speeds, every Open or shortcut is marked in the
+preview (inside a gesture or a More, on its own line), and nothing destructive gets through Apply
+without its tick (see "Shortcuts that are hard to take back" in DEVELOPING.md).
 
 ## Beta 12 shares (still read)
 

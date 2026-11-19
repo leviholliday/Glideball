@@ -608,8 +608,35 @@ final class AppModel {
         let file: GlideSettingsFile
     }
 
-    @ObservationIgnored var configBeforeImport: GlideConfig?
+    @ObservationIgnored var configBeforeImport: GlideConfig? {
+        // A preset or a restore puts its own "before" here: Undo Last Import is then about that, not an import.
+        didSet { importUndo = nil }
+    }
     @ObservationIgnored private var toastDismissal: DispatchWorkItem?
+
+    /// The last import's Undo, for the keyboard and the menus (Undo Last Import, ⌘Z in the
+    /// window). Set by an import's Apply; gone after `importUndoLasts`, after an Undo, or once a
+    /// preset or a restore comes after it. `applied` is what the import made, to tell whether
+    /// things changed since (then the Undo saves them as a backup first).
+    struct ImportUndo { let at: TimeInterval; let applied: GlideConfig }
+    @ObservationIgnored var importUndo: ImportUndo?
+    /// How long after an import its Undo stays in the menus: long enough to try the new setup
+    /// for a while, short enough that it isn't there tomorrow undoing something else.
+    static let importUndoLasts: TimeInterval = 30 * 60
+
+    /// Whether Undo Last Import can run now.
+    var canUndoImport: Bool {
+        guard let u = importUndo, configBeforeImport != nil else { return false }
+        return ProcessInfo.processInfo.systemUptime - u.at < Self.importUndoLasts
+    }
+
+    /// Undo Last Import (the File menu, the menu-bar icon's menu, ⌘Z in the window): the same
+    /// Undo as the toast's. Anything changed since the import is saved as a backup first.
+    func undoLastImport() {
+        guard canUndoImport, let u = importUndo else { return }
+        if config != u.applied { backups.checkpoint(config, kind: .beforeRestore) }
+        undoImport()
+    }
 
     // What's New, "Glideball has a new look" and the "A small favor" card take
     // turns: see `showNextPrompt()` in WhatsNew.swift.
@@ -716,6 +743,7 @@ final class AppModel {
         configBeforeImport = config
         lookBeforeImport = nil; soundsBeforeImport = nil
         config = incoming
+        importUndo = ImportUndo(at: ProcessInfo.processInfo.systemUptime, applied: config)
         pendingImport = nil
         show(.init(symbol: "arrow.down.doc.fill", text: String(localized: "Imported “\(pending.fileName)”"), action: .undoImport))
     }

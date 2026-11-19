@@ -167,6 +167,106 @@ extension ButtonAction {
     }
 }
 
+// MARK: Shortcuts that are hard to take back
+
+/// How much one press of a shortcut from outside can do. The review shows every
+/// shortcut an import brings (amber, "presses keys"); these get a reason, and the
+/// destructive ones a red flag and a tick of their own before Apply includes them.
+enum ShortcutRisk: Int, Comparable, Sendable {
+    /// Closes something, or opens a window you can close again: amber, with why.
+    case mild = 1
+    /// Deletes, quits or logs out: red, and left out unless it's ticked.
+    case destructive = 2
+    static func < (a: ShortcutRisk, b: ShortcutRisk) -> Bool { a.rawValue < b.rawValue }
+}
+
+/// macOS's own shortcuts that one stray press could make you regret, by key and exact
+/// modifiers (fn aside). Kept short and honest: only what macOS (or Finder, or nearly
+/// every app) does with them. Harmless ones aren't here: ⌃⌘Q only locks the screen, ⌘W is
+/// Close Tab. The shutdown and restart ones (⌃⌥⌘⏏, ⌃⌘⏏, the power key) can't be written as
+/// a shortcut here: Eject and Power have no key code a button can press.
+///
+/// Letters are matched by what the key types on this Mac's keyboard layout with ⌘ held
+/// (`KeyNames`), as macOS matches menu shortcuts: key code 12 is ⌘Q on a US keyboard and
+/// ⌘A on a French one. ⌫ and ⎋ are the same key everywhere.
+enum RiskyShortcuts {
+    enum Key: Equatable {
+        case code(UInt16)
+        case letter(String)
+    }
+
+    enum Kind: CaseIterable {
+        case emptyTrashNow, emptyTrash, deleteNow, moveToTrash, logOutNow, logOut, quitApp, forceQuitHeld, forceQuitWindow, closeAll
+    }
+
+    static let delete: UInt16 = 51   // kVK_Delete (⌫)
+    static let escape: UInt16 = 53   // kVK_Escape (⎋)
+
+    static func key(_ kind: Kind) -> (key: Key, modifiers: CGEventFlags) {
+        switch kind {
+        case .emptyTrashNow: (.code(delete), [.maskAlternate, .maskShift, .maskCommand])
+        case .emptyTrash: (.code(delete), [.maskShift, .maskCommand])
+        case .deleteNow: (.code(delete), [.maskAlternate, .maskCommand])
+        case .moveToTrash: (.code(delete), [.maskCommand])
+        case .logOutNow: (.letter("Q"), [.maskAlternate, .maskShift, .maskCommand])
+        case .logOut: (.letter("Q"), [.maskShift, .maskCommand])
+        case .quitApp: (.letter("Q"), [.maskCommand])
+        case .forceQuitHeld: (.code(escape), [.maskAlternate, .maskShift, .maskCommand])
+        case .forceQuitWindow: (.code(escape), [.maskAlternate, .maskCommand])
+        case .closeAll: (.letter("W"), [.maskAlternate, .maskCommand])
+        }
+    }
+
+    static func risk(_ kind: Kind) -> ShortcutRisk {
+        switch kind {
+        case .forceQuitWindow, .closeAll: .mild
+        default: .destructive
+        }
+    }
+
+    /// Why, in a few plain words, for the review.
+    static func why(_ kind: Kind) -> String {
+        switch kind {
+        case .emptyTrashNow: String(localized: "Empties the Trash without asking.", comment: "Import review: why a keyboard shortcut is flagged (⌥⇧⌘⌫)")
+        case .emptyTrash: String(localized: "Empties the Trash (Finder asks first).", comment: "Import review: why a keyboard shortcut is flagged (⇧⌘⌫)")
+        case .deleteNow: String(localized: "Deletes the selected files for good, skipping the Trash (Finder asks first).", comment: "Import review: why a keyboard shortcut is flagged (⌥⌘⌫)")
+        case .moveToTrash: String(localized: "Moves the selected files to the Trash, and deletes things in many apps.", comment: "Import review: why a keyboard shortcut is flagged (⌘⌫)")
+        case .logOutNow: String(localized: "Logs you out without asking. Unsaved work can be lost.", comment: "Import review: why a keyboard shortcut is flagged (⌥⇧⌘Q)")
+        case .logOut: String(localized: "Logs you out (macOS asks first).", comment: "Import review: why a keyboard shortcut is flagged (⇧⌘Q)")
+        case .quitApp: String(localized: "Quits the app in front, often without asking.", comment: "Import review: why a keyboard shortcut is flagged (⌘Q)")
+        case .forceQuitHeld: String(localized: "Held down, force quits the app in front. Unsaved work is lost.", comment: "Import review: why a keyboard shortcut is flagged (⌥⇧⌘⎋)")
+        case .forceQuitWindow: String(localized: "Opens the Force Quit window.", comment: "Import review: why a keyboard shortcut is flagged (⌥⌘⎋)")
+        case .closeAll: String(localized: "Closes every window of the app in front.", comment: "Import review: why a keyboard shortcut is flagged (⌥⌘W)")
+        }
+    }
+
+    private static let compared: CGEventFlags = [.maskShift, .maskControl, .maskAlternate, .maskCommand]
+
+    /// What this shortcut is, if it's on the list.
+    static func kind(_ s: KeyShortcut) -> Kind? {
+        let mods = CGEventFlags(rawValue: s.modifiers).intersection(compared)
+        return Kind.allCases.first { kind in
+            let (key, want) = key(kind)
+            guard mods == want else { return false }
+            switch key {
+            case .code(let c): return s.keyCode == c
+            case .letter(let l):
+                return KeyNames.us[Int(s.keyCode)] != nil && KeyNames.name(s.keyCode, command: true).uppercased() == l
+            }
+        }
+    }
+}
+
+extension ButtonAction {
+    /// The shortcut this action presses or holds, if it's one.
+    var pressedShortcut: KeyShortcut? {
+        switch self {
+        case .shortcut(let s), .holdShortcut(let s): s
+        default: nil
+        }
+    }
+}
+
 enum ImportSanitize {
     static func buttons(_ map: [Int: ButtonAction]?) -> [Int: ButtonAction] {
         var out: [Int: ButtonAction] = [:]

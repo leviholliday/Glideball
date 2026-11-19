@@ -207,8 +207,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
            NSApp.currentEvent?.type == .keyDown, MainActor.assumeIsolated({ AppShortcuts.isTyping }) {
             return false
         }
+        if item.action == #selector(undoLastImport) {
+            // Only there while an import can be undone; in the menu-bar icon's menu it's hidden otherwise.
+            let ok = MainActor.assumeIsolated { AppModel.shared.canUndoImport }
+            if item.menu === statusMenu { item.isHidden = !ok }
+            return ok
+        }
         return true
     }
+
+    /// File › Undo Last Import and the menu-bar icon's menu: a way back after an import that
+    /// needs neither the trackball's buttons nor Glideball's window.
+    @objc func undoLastImport(_ sender: Any?) { MainActor.assumeIsolated { AppModel.shared.undoLastImport() } }
 
     @objc private func exportSettings() { showWindow(); AppModel.shared.exportSettings() }
     @objc private func importSettings() { showWindow(); AppModel.shared.importSettings() }
@@ -380,6 +390,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         // Scroll with ball and Drag lock act at the pointer, which is up here
         // in the menu bar after choosing an item — so only Precision is offered.
         precisionItem = menu.addItem(withTitle: String(localized: "Precision"), action: #selector(togglePrecision), keyEquivalent: "")
+        menu.addItem(withTitle: String(localized: "Undo Last Import", comment: "Menu item: puts back the settings from before the last shared setup, file or setup code was applied"),
+                     action: #selector(undoLastImport), keyEquivalent: "").isHidden = true
         menu.addItem(.separator())
         menu.addItem(withTitle: String(localized: "Settings…"), action: #selector(openSettings), keyEquivalent: ",")
         menu.addItem(withTitle: String(localized: "Check for Updates…"), action: #selector(checkForUpdates), keyEquivalent: "")
@@ -608,6 +620,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                          action: #selector(openPasteBox), keyEquivalent: "").target = self
         fileMenu.addItem(withTitle: String(localized: "Set Up with AI…", comment: "File menu and the Import menu: opens Set up with AI (copy a prompt for a chatbot, paste back its setup code)"),
                          action: #selector(openAISetup), keyEquivalent: "").target = self
+        fileMenu.addItem(withTitle: String(localized: "Undo Last Import", comment: "Menu item: puts back the settings from before the last shared setup, file or setup code was applied"),
+                         action: #selector(undoLastImport), keyEquivalent: "").target = self
         fileMenu.addItem(.separator())
         AppShortcuts.addItem("close", title: String(localized: "Close Window"), action: #selector(NSWindow.performClose(_:)), to: fileMenu, target: nil)
         fileItem.submenu = fileMenu
@@ -700,8 +714,16 @@ final class MainWindow: NSWindow {
         AppModel.shared.importFromClipboard(quiet: true)
     }
 
+    /// Edit › Undo (⌘Z) with nothing being typed: undoes the last import while it still can
+    /// (`AppModel.canUndoImport`). A text field takes ⌘Z first, for its own typing.
+    @objc func undo(_ sender: Any?) {
+        guard !AppShortcuts.isTyping else { return }
+        AppModel.shared.undoLastImport()
+    }
+
     override func validateMenuItem(_ item: NSMenuItem) -> Bool {
         if item.action == #selector(paste(_:)) { return !AppShortcuts.isTyping }
+        if item.action == #selector(undo(_:)) { return !AppShortcuts.isTyping && AppModel.shared.canUndoImport }
         return super.validateMenuItem(item)
     }
 }

@@ -224,7 +224,7 @@ Sharing (RenderSharing.swift): Share…'s checklist (`share-sheet-checklist`, `-
 
 Pasting and copying (RenderPaste.swift): the paste box (`paste-box-empty`, `-valid`, `-wrong-host`, `-damaged`, `-command`), the Import menu beside Share (`paste-import-menu`), `sync-import-paste`, and the copy beat frozen at moments of its motion (`CopyBeat.sandboxTime`): `copy-beat-picture-<ms>` (Share…'s picture panel at 30–1,200 ms), `copy-beat-post-x`, `copy-beat-link-<ms>` (Copy Link in the checklist sheet), `copy-beat-sheet-picture` and `copy-beat-chip`.
 
-Set up with AI (RenderAISetup.swift): `ai-setup-start`, `-whats-in-it`, `-show-prompt`, `-app-names-out`, `-copied`, `-code` (a chatbot's whole answer pasted), `-code-left-out`, `-cut-off`, `-not-a-code`, `-matches`, `-review` (the preview inside the sheet, with Left out), `-applied`, and `-paste-a-link` (a code in Paste a Link…).
+Set up with AI (RenderAISetup.swift): `ai-setup-start`, `-whats-in-it`, `-show-prompt`, `-app-names-out`, `-copied`, `-code` (a chatbot's whole answer pasted), `-code-left-out`, `-cut-off`, `-not-a-code`, `-matches`, `-review` (the preview inside the sheet, with Left out), `-review-risky` (red flags and amber notes), `-review-nested` and `-review-nested-ticked` (an app setup's gesture place by place, Empty Trash on a More's diagonal), `-applied`, and `-paste-a-link` (a code in Paste a Link…).
 
 Search finds what each page declares: every row sits inside a `.findable(...)` whose `Findable` is written next to it, and the self-test fails if a drawn row isn't inside one or a `Findable` isn't drawn.
 
@@ -355,6 +355,39 @@ Receiving is the dangerous side, since any page can open the link:
   app or press keys are marked, and an Open shows its bundle ID. Only Apply changes anything, and only
   the ticked parts: a backup checkpoint, the change, Undo in the toast (which puts the ball color and
   sounds back too).
+- **Every place is shown.** A button or combo that becomes Gestures or a Switcher is one row whose
+  summary has only what's about the whole gesture (ring job, Show the ring, eight directions); under
+  it, every place is a line of its own (`ImportReview.places`/`row`): each direction, each place in a
+  More ("→ More › ↗"), the tap and the ring's own pair, changed ones bold with what was there struck
+  through, unchanged ones dim, places that go empty as "Empty". Same in app setups and combos.
+- **Shortcuts that are hard to take back** (`RiskyShortcuts` in `ImportSafety.swift`), by key and
+  exact modifiers (fn aside), letters by what the key types on this Mac's layout with ⌘ (so ⌘Q is
+  matched as macOS matches menu shortcuts). Red, `destructive`: ⌥⇧⌘⌫ (Empty Trash without asking),
+  ⇧⌘⌫ (Empty Trash), ⌥⌘⌫ (delete immediately), ⌘⌫ (Move to Trash, deletes in many apps), ⌥⇧⌘Q
+  (log out without asking), ⇧⌘Q (log out), ⌘Q (quit the front app), ⌥⇧⌘⎋ (held: force quit the front
+  app). Amber with a reason, `mild`: ⌥⌘⎋ (the Force Quit window), ⌥⌘W (close all windows). Not flagged:
+  ⌃⌘Q (Lock Screen), ⌘W (Close Tab) and every other shortcut (still amber, "presses keys", as before).
+  ⌃⌥⌘⏏, ⌃⌘⏏ and the power key can't be a button's shortcut (no key code), so they aren't listed. Only
+  a place the import changes is flagged, never a shortcut you already have there, and holdKeys counts
+  like keys. Each red flag sits on its exact place with its reason and its own tick, off by default;
+  Apply runs `ImportReview.leavingOut` on whatever any import would give (links, files, setup codes,
+  KensingtonWorks), so an unticked one is left out: a button or combo keeps what it does now (a new
+  combo isn't added), a place in a gesture stays empty (a More with nothing left goes too), a tap is
+  the button's own click. import-sim checks the list, the layout, the nested flag (Empty Trash on a
+  More's diagonal inside an app setup) and, for every share, file, KensingtonWorks, golden, hostile
+  and fuzzed code, that nothing destructive is left after `leavingOut` and that ticking every flag
+  changes nothing.
+- **Amber notes** (`ImportChange.note`): a pointer speed at least twice or at most half what it was
+  (main or an app's), and a Precision speed at or above the pointer speed. Glideball still takes them
+  (within the sliders); the note is so a big change is no surprise, and the way back is below.
+- **The way back without the mouse.** The footer says the bottom-left button always clicks and how to
+  undo. For 30 minutes after an import's Apply (`AppModel.importUndoLasts`), Undo Last Import is in
+  the File menu and the menu-bar icon's menu (hidden there otherwise), and ⌘Z on the main window does
+  it when nothing's being typed (`MainWindow.undo(_:)`); Set up with AI's Applied step's Undo is ⌘Z
+  too. A preset or restore after it, or an Undo, takes it away. If you've changed settings since the
+  import, they're saved as a backup ("before restore") before the Undo. Self-test: "set up with AI".
+  render-ui: `ai-setup-review-risky`, `-nested`, `-nested-ticked`, `share-preview-risky`, `-ticked`.
+  (A whole settings file, Import Settings…, has its own Replace preview and isn't flagged yet.)
 - One preview at a time; anything arriving while one is open, or in the 1.5 s after it closes, is dropped.
   Links also share the URL rate limit (20 a second).
 - The URL is at most 2,100 characters, `d` once and at most 2,048, inflated into a fixed 64 KB buffer

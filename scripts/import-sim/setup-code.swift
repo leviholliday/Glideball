@@ -301,6 +301,44 @@ func runSetupCodeTests() {
     check(moreAction?.isGesture == true && moreNotes.isEmpty, "the reference's More example left out: \(moreNotes.map(\.hint))")
     check(reference.contains(AIReference.moreExample), "the More example isn't in the reference")
 
+    // What the reference says about how things behave is what they do.
+    // Precision: its own absolute speed, used instead of the pointer's (and an app's, and a display's).
+    var precise = GlideConfig()
+    precise.trackingSpeed = 9
+    precise.precisionSpeed = 1.5
+    precise.displaySpeeds.enabled = true
+    precise.displaySpeeds.speeds = ["d": 20]
+    check(PointerSpeed.effective(precise, display: "d", precision: true) == 1.5 && PointerSpeed.effective(precise, display: "d", precision: false) == 20
+          && PointerSpeed.effective(precise, display: nil, precision: false) == 9, "Precision isn't the absolute speed the reference says")
+    check(reference.contains("the whole pointer speed while Precision is on") && reference.contains("used instead of it")
+          && reference.contains("Keep it below trackingSpeed"), "the reference doesn't say plainly what precisionSpeed is")
+    // Combos: the same buttons, in any order, replace that combo's action.
+    check(reference.contains("A combo with the same buttons as one I have (in any order) replaces") && reference.contains("\"remove\": true} takes one away"),
+          "the reference doesn't say how a combo is replaced or removed")
+    // Modes: left out, a step is "chain", or "continuous" for exactly volume and zoom.
+    check(reference.contains("Leave mode out unless you need it: the default is \"chain\"") && reference.contains("or \"continuous\" for volume and zoom"),
+          "the reference doesn't give the default mode")
+    for p in ButtonAction.presets.map(\.action) + AIReferenceLists.mediaKeys.map({ ButtonAction.media($0) }) {
+        let volumeOrZoom = [ButtonAction.media(.volumeUp), .media(.volumeDown), .shortcut(.zoomIn), .shortcut(.zoomOut)].contains(p)
+        check((SetupCode.defaultMode(p) == .continuous) == volumeOrZoom, "\(AIReference.text(p))'s default mode isn't what the reference says")
+    }
+    // More: the place opposite its own direction is the way back, with the reference's two examples.
+    check(reference.contains("a More on \"right\" can't use \"left\"; a More on \"downRight\" can't use \"upLeft\""), "the reference doesn't show More's way back")
+    for (dir, back) in [("right", "left"), ("downRight", "upLeft"), ("up", "down"), ("downLeft", "upRight")] {
+        let (_, notes) = readAction("{\"gesture\": {\"\(dir)\": {\"more\": {\"\(back)\": \"back\", \"\(dir == "up" ? "left" : "up")\": \"forward\"}}}}")
+        check(notes.map(\.path) == ["buttons.2.gesture.\(dir).more.\(back)"], "a More on \(dir): its way back isn't \(back): \(notes.map(\.path))")
+    }
+    // null: the code's rules say where it works; the reader does exactly that ("null works where the rules say").
+    check(AIReference.codeRules.contains("null only works in an app setup (\"trackingSpeed\", \"scroll\", \"buttons\", \"combos\" or one button: back to the main")
+          && AIReference.codeRules.contains("as a combo's \"action\" (removes it) and inside a gesture or More (that place is empty). Elsewhere, leave the key out."),
+          "the rules don't say where null works")
+    check(!reference.contains("null goes back"), "the reference says something about null the rules don't")
+    // The conversation: power users, a look for anything odd, the three things that matter most.
+    for line in ["ask what's working and", "never suggest something I already have", "precisionSpeed at or above trackingSpeed",
+                 "a shortcut that deletes, quits or logs out on an", "These three matter most", "A good small setup now"] {
+        check(AIReference.talk.contains(line), "the conversation lost \"\(line)\"")
+    }
+
     // MARK: The person's setup, written and read back
 
     section("The prompt: your setup goes in as a code Glideball reads back, and nothing private goes with it")
@@ -463,6 +501,39 @@ func runSetupCodeTests() {
         let p = c.profile(for: "com.apple.Safari")
         check(p?.trackingSpeed == nil && p?.chords == nil && p?.scroll?.nativeScrollSpeed == 4 && p?.scroll?.scrollMode == .native, "null didn't hand an area back, or a scroll key wasn't laid over the app's own")
     }
+    // null works where the rules say, and nowhere else.
+    if let c = after(#""apps":[{"app":"Safari","buttons":{"2":null,"1":"keys:cmd+t"}}]"#, "an app's button back to the main setup's") {
+        let p = c.profile(for: "com.apple.Safari")
+        check(p?.buttons?[2] == rich.buttons[2] && p?.buttons?[1] == .shortcut(.newTab) && p?.buttons?[3] == .forward, "null on an app's button: \(String(describing: p?.buttons))")
+        check(c.resolved(for: "com.apple.Safari").buttons[2] == rich.buttons[2], "null on an app's button doesn't do what the main setup does")
+    }
+    if let c = after(#""apps":[{"app":"Safari","buttons":null}]"#, "an app's buttons back to the main setup's") {
+        check(c.profile(for: "com.apple.Safari")?.buttons == nil && c.profile(for: "com.apple.Safari")?.trackingSpeed == 3, "\"buttons\": null in an app")
+    }
+    if let c = after(#""combos":[{"buttons":[3,2],"action":null}]"#, "a combo's action null") {
+        check(!c.chords.contains { $0.buttons == [2, 3] } && c.chords.count == rich.chords.count - 1, "a combo's null action didn't remove it")
+    }
+    if let c = after(#""buttons":{"3":{"gesture":{"up":"keys:cmd+c","down":null,"left":{"do":null},"right":{"more":null},"tap":null,"show":null,"ring":null,"reverse":null,"eight":null,"distance":null,"upRight":{"more":{"up":null,"right":"back"}},"ringUp":null}}}"#,
+                     "null inside a gesture") {
+        if case .gesture(let g)? = c.buttons[3] {
+            check(g.up?.action == .shortcut(.copy) && g.down == nil && g.left == nil && g.right == nil && g.tap == .system && g.show == ButtonGesture().show
+                  && g.ring == ButtonGesture().ring && g.upRight?.more?[2]?.action == .back && g.upRight?.more?[0] == nil, "null inside a gesture: \(g)")
+        } else { check(false, "null inside a gesture: no gesture") }
+    }
+    for (body, path) in [(#""trackingSpeed":null,"buttons":{"3":"forward"}"#, "trackingSpeed"), (#""scroll":{"flyGlide":null},"buttons":{"3":"forward"}"#, "scroll.flyGlide"),
+                         (#""buttons":{"2":null,"3":"forward"}"#, "buttons.2"), (#""sounds":{"volume":null},"buttons":{"3":"forward"}"#, "sounds.volume"),
+                         (#""look":null,"buttons":{"3":"forward"}"#, "look"), (#""combos":null,"buttons":{"3":"forward"}"#, "combos")] {
+        if let r = reading(code(body), over: rich, "null in \(path)") {
+            check(r.notes.count == 1 && r.notes[0].path == path && r.notes[0].hint == SetupCodeReader.nullHint, "null in \(path): \(r.notes.map { $0.path + ": " + $0.hint })")
+            var want = rich
+            want.buttons[3] = .forward
+            check(same(r.share.applied(to: rich), want), "null in \(path) changed something")
+        }
+    }
+    if let r = reading(code(#""apps":[{"app":"Safari","buttons":{"2":null}}]"#), over: rich, "the hint names every place null works") {
+        _ = r
+        for place in ["app setup", "combo's \"action\"", "inside a gesture"] { check(SetupCodeReader.nullHint.contains(place), "the null hint doesn't name \(place)") }
+    }
     if let r = reading(code(#""apps":[{"app":"Safari"},{"app":"Notes"},{"app":"Notes","trackingSpeed":2},{"app":"notes","trackingSpeed":9}]"#), over: rich, "app setups with nothing in them") {
         check(r.share.apps?.map(\.bundleID) == ["com.apple.Notes"] && r.share.apps?.first?.trackingSpeed == 2 && r.notes.count == 1, "empty or repeated app setups: \(String(describing: r.share.apps?.map(\.bundleID))) \(r.notes.map(\.hint))")
     }
@@ -572,19 +643,35 @@ func runSetupCodeTests() {
         check(c.trackingSpeed == 6 && c.reverseScroll && c.scrollMode == rich.scrollMode && r.notes.isEmpty, "a whole reply: the last code wasn't the one read (speed \(c.trackingSpeed))")
     }
     check(readCode(fixture("8-cut-off.txt"), over: rich).failureProblem == .cutOff, "a code cut off mid-way: \(readCode(fixture("8-cut-off.txt"), over: rich))")
-    // The end of a whole conversation, written by playing the chatbot on the real prompt (over the
-    // sample setup the prompt was written from): read with nothing left out.
-    if let r = reading(fixture("10-conversation.txt"), over: sampleConfig(), "a whole conversation's last answer") {
-        let c = r.share.applied(to: sampleConfig())
-        check(r.notes.isEmpty && Set(r.share.parts) == [.buttons, .gestures, .combos, .app("com.figma.Desktop")], "a conversation: \(r.share.parts.map(\.id)) \(r.notes.map(\.hint))")
-        check(c.buttons[2] == .holdShortcut(.wisprFlow) && c.gestureSteadyHands && c.chords.first { $0.buttons == [2, 3] }?.action == .media(.playPause),
-              "a conversation: top left, Steady hands or the combo")
+    // The end of a whole conversation, written by playing the chatbot on the real prompt (the one
+    // GLIDE_PROMPT_OUT writes: an already customized setup, so it asks what to keep): read with
+    // nothing left out. It keeps what was liked, replaces a combo by its buttons (in another
+    // order), hands Safari's speed back with null, and adds a More on a diagonal.
+    var typical = sampleConfig()
+    typical.buttons[3] = .gesture(ButtonGesture.keeping(.back))
+    if let r = reading(fixture("10-conversation.txt"), over: typical, "a whole conversation's last answer") {
+        let c = r.share.applied(to: typical)
+        check(r.notes.isEmpty && Set(r.share.parts) == [.gestures, .combos, .app("com.apple.Safari"), .app("com.figma.Desktop")],
+              "a conversation: \(r.share.parts.map(\.id)) \(r.notes.map(\.hint))")
+        check(c.buttons[2] == typical.buttons[2] && c.buttons[1] == typical.buttons[1] && c.gestureSteadyHands, "a conversation: what was kept changed, or Steady hands")
+        check(c.chords.count == typical.chords.count && c.chords.first { $0.buttons == [2, 3] }?.action == .media(.playPause)
+              && c.chords.first { $0.buttons == [1, 3] }?.action == typical.chords.first { $0.buttons == [1, 3] }?.action, "a conversation: the combo wasn't replaced in place")
+        let safari = c.profile(for: "com.apple.Safari")
+        check(safari?.trackingSpeed == nil && safari?.buttons == typical.profile(for: "com.apple.Safari")?.buttons, "a conversation: Safari is \(String(describing: safari))")
         let figma = c.profile(for: "com.figma.Desktop")
         check(figma?.trackingSpeed == 3 && figma?.scroll?.scrollMode == .follow && figma?.scroll?.scrollDistance == 22 && figma?.buttons?[1] == .precisionHold,
               "a conversation: Figma is \(String(describing: figma))")
-        if case .gesture(let g)? = c.buttons[3] { check(g.tap == .back && g.ring == .volume && g.show == .afterPause, "a conversation: top right's gesture") }
-        else { check(false, "a conversation: top right isn't Gestures") }
-        codeIsSafe(r, over: sampleConfig(), "a whole conversation's last answer")
+        if case .gesture(let g)? = c.buttons[3] {
+            let more = g.downRight?.more
+            check(g.tap == .back && g.ring == .volume && g.show == .afterPause && g.eight && g.left?.action == .shortcut(.previousSpace)
+                  && more?[0]?.action == .shortcut(.screenshot) && more?[2]?.action == .shortcut(.screenshotTools) && more?[4]?.action == .shortcut(.emoji)
+                  && more?[7] == nil, "a conversation: top right's gesture is \(g)")
+        } else { check(false, "a conversation: top right isn't Gestures") }
+        // The review lists the More's places one by one.
+        let row = ImportReview.changes(from: typical, to: c).first { $0.title == ImportReview.buttonName(3) }
+        check(row?.details.contains { $0.id == "downRight.more.up" && $0.changed } == true && row?.details.contains { $0.id == "left" && !$0.changed } == true,
+              "a conversation: the review doesn't show the More's places: \(row?.details.map(\.id) ?? [])")
+        codeIsSafe(r, over: typical, "a whole conversation's last answer")
     }
     if let r = reading(fixture("9-no-format.txt"), over: rich, "a code without its first line") {
         let c = r.share.applied(to: rich)
@@ -792,6 +879,26 @@ func runSetupCodeTests() {
         check(r.share.apps?.first?.bundleID == "com.microsoft.VSCode" && r.share.buttons?[1] == .openApp(bundleID: "com.apple.Notes"), "tidying changed a name")
     }
     check(SetupCode.tidied(#"{"a":"x, } // y /* z */ ”",}"#) == #"{"a":"x, } // y /* z */ ”"}"#, "tidying reached into a string: \(SetupCode.tidied(#"{"a":"x, } // y /* z */ ”",}"#))")
+
+    // A code that came back HTML-escaped (a chat page's copy, an email): read once it's clearly one.
+    func escaped(_ s: String, apostrophe: String = "&#39;") -> String {
+        s.replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "\"", with: "&quot;").replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;").replacingOccurrences(of: "'", with: apostrophe)
+    }
+    let quoted = code(#""trackingSpeed":7,"buttons":{"2":"keys:cmd+'","3":"keys:cmd+shift+."},"apps":[{"app":"Visual Studio Code","buttons":{"1":"keys:cmd+opt+left"}}]"#)
+    for (what, text) in [("escaped", escaped(quoted)), ("escaped, &#x27;", escaped(quoted, apostrophe: "&#x27;")), ("escaped in prose", "Here it is:\n<pre><code>" + escaped(quoted) + "</code></pre>"),
+                         ("escaped, spaced", escaped(quoted).replacingOccurrences(of: "{", with: "{ ")), ("escaped, upper-case entities", escaped(quoted).replacingOccurrences(of: "&quot;", with: "&QUOT;").replacingOccurrences(of: "{&QUOT;", with: "{&quot;"))] {
+        if let r = reading(text, over: rich, "a code \(what)") {
+            check(r.share.trackingSpeed == 7 && r.share.buttons?[2] == .shortcut(KeyShortcut(keyCode: 39, modifiers: cmd)) && r.share.apps?.first?.bundleID == "com.microsoft.VSCode" && r.notes.isEmpty,
+                  "a code \(what) didn't come back whole: \(r.notes.map(\.hint))")
+        }
+    }
+    // Not when it isn't clearly an escaped code: real JSON whose text has an entity in it stays as it is.
+    check(SetupCode.htmlUnescaped(code(#""buttons":{"1":"open:AT&amp;T &quot;Mail&quot;"}"#)) == nil, "a real code with an entity in a string was unescaped")
+    check(SetupCode.htmlUnescaped("Use &quot;Copy&quot; &amp; paste it") == nil, "prose with entities was taken for a code")
+    check(SetupCode.htmlUnescaped(escaped(quoted)) != nil && SetupCode.htmlUnescaped("&amp;quot;{&quot;a&quot;:1}") == "&quot;{\"a\":1}",
+          "&amp; isn't undone last")
+    check(readCode("&quot;hello&quot; {&quot;not&quot;: &quot;a setup&quot;}", over: rich).failureProblem == .notASetup, "escaped JSON that isn't a code read as one")
 
     // MARK: Fuzz
 

@@ -86,6 +86,39 @@ extension RenderUI {
             flow.text = mistakes
             model.reviewAICode()
         })
+        // Shortcuts that are hard to take back, red where they sit and left out unless ticked; a big
+        // jump in pointer speed and a Precision faster than it, in amber.
+        let risky = """
+        ```json
+        {"format": "glideball-ai-setup", "version": 1, "trackingSpeed": 20, "precisionSpeed": 3,
+         "buttons": {"2": "keys:cmd+q"},
+         "combos": [{"buttons": [1, 2], "action": "keys:cmd+shift+delete"}]}
+        ```
+        """
+        // Everything inside an app setup's gesture, one place to a line: Empty Trash on a More's diagonal.
+        let nested = """
+        ```json
+        {"format": "glideball-ai-setup", "version": 1,
+         "apps": [{"app": "Figma", "buttons": {"3": {"gesture": {"up": "keys:cmd+c", "left": "keys:cmd+z", "down": "keys:cmd+shift+z",
+           "right": {"more": {"up": "keys:cmd+v", "upRight": "keys:cmd+opt+shift+delete", "down": "keys:cmd+d"}}, "tap": "back"}}}}]}
+        ```
+        """
+        add("ai-setup-review-risky", "Review: ⌘Q on a button and ⇧⌘⌫ on a combo flagged red and left out; a big speed jump noted", prepare: {
+            flow.copied = true
+            flow.text = risky
+            model.reviewAICode()
+        })
+        add("ai-setup-review-nested", "Review: an app setup's gesture place by place, Empty Trash flagged on the More's diagonal", prepare: {
+            flow.copied = true
+            flow.text = nested
+            model.reviewAICode()
+        })
+        add("ai-setup-review-nested-ticked", "The same, with that one place ticked to include", draw: { dark, scale in
+            guard case .code(let r) = model.aiReading(nested) else { return nil }
+            let i = IncomingSetup(source: .aiCode, content: .shared(r.share), leftOut: r.notes)
+            let ids = model.changes(for: i).flatMap(\.risks).map(\.id)
+            return sheet(IncomingSetupSheet(model: model, incoming: i, confirmed: Set(ids)), dark: dark, scale: scale)
+        })
         add("ai-setup-applied", "Applied: Copy My Setup, the note, Undo", prepare: {
             flow.copied = true
             flow.text = mistakes

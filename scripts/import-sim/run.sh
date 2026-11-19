@@ -16,6 +16,7 @@ swiftc -O -swift-version 5 -o "$OUT" \
   Sources/Glide/AIReference.swift \
   Sources/Glide/KensingtonWorks.swift \
   Sources/Glide/DeviceSupport.swift \
+  Sources/Glide/DisplayTracking.swift \
   scripts/import-sim/setup-code.swift \
   Sources/Glide/ImportPaste.swift \
   Sources/Glide/ExternalControl.swift \

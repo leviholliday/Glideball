@@ -70,6 +70,28 @@ extension RenderUI {
                 let i = IncomingSetup(source: .link, content: .shared(s))
                 return sheet(IncomingSetupSheet(model: model, incoming: i, chosen: Set(s.parts).subtracting([.combos, .look])), dark: dark, scale: scale)
             })
+        // A link with shortcuts that are hard to take back: ⌘Q on a button, Empty Trash on a
+        // More's diagonal inside a gesture, Force Quit's window on a combo. Each flagged where it sits.
+        func riskyShare() -> SharedSetup? {
+            var them = DemoData.config
+            var g = ButtonGesture.keeping(.back)
+            g.eight = true
+            g.downRight = .moreRing([GestureStep(.shortcut(.screenshot)), nil, GestureStep(.shortcut(KeyShortcut.make(51, "⌫", [.maskAlternate, .maskShift, .maskCommand]))),
+                                     nil, GestureStep(.shortcut(.emoji)), nil, nil, nil])
+            them.buttons[2] = .shortcut(KeyShortcut.make(12, "Q", .maskCommand))
+            them.buttons[3] = .gesture(g)
+            them.chords = [Chord(buttons: [2, 3], action: .shortcut(KeyShortcut.make(53, "⎋", [.maskAlternate, .maskCommand])))]
+            return SharedSetup.make([SharePart.buttons, .gestures, .combos], from: them, look: nil, sounds: nil)
+        }
+        add("share-preview-risky", "A link with ⌘Q, Empty Trash inside a gesture's More, and Force Quit: flagged where each sits, unticked",
+            draw: preview { riskyShare().map { IncomingSetup(source: .link, content: .shared($0)) } })
+        add("share-preview-risky-ticked", "The same, with every red flag ticked to include",
+            draw: { dark, scale in
+                guard let s = riskyShare() else { return nil }
+                let i = IncomingSetup(source: .link, content: .shared(s))
+                let ids = model.changes(for: i).flatMap(\.risks).map(\.id)
+                return sheet(IncomingSetupSheet(model: model, incoming: i, confirmed: Set(ids)), dark: dark, scale: scale)
+            })
         add("share-preview-beta12", "A beta 12 link (one kind), read as its parts") { dark, scale in
             // {"format":"glideball-share","version":1,"kind":"pointer","trackingSpeed":12,"precisionSpeed":0.5}
             let json = #"{"format":"glideball-share","version":1,"kind":"pointer","trackingSpeed":12,"precisionSpeed":0.5,"writtenBy":"2.10-beta.12"}"#

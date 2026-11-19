@@ -107,7 +107,9 @@ enum AIReference {
         t.append("")
         t.append("POINTER")
         t.append("\"trackingSpeed\" \(range(SettingRanges.trackingSpeed)) (default \(show(d.trackingSpeed)); macOS's own slider stops at 3, so the default is already quick).")
-        t.append("\"precisionSpeed\" \(range(SettingRanges.precisionSpeed)) (default \(show(d.precisionSpeed))): the slower speed while a Precision button is held or toggled on.")
+        // PointerSpeed.effective: while Precision is on, precisionSpeed is the speed, full stop.
+        t.append("\"precisionSpeed\" \(range(SettingRanges.precisionSpeed)) (default \(show(d.precisionSpeed))): the whole pointer speed while Precision is on, on trackingSpeed's scale")
+        t.append("  and used instead of it (and of an app's own). Keep it below trackingSpeed, or Precision isn't slower.")
 
         // Scrolling, from the table the reader reads with
         t.append("")
@@ -156,16 +158,18 @@ enum AIReference {
         t.append("BUTTONS  \"buttons\": {\"1\": action, \"2\": action, \"3\": action}. List only the buttons you change.")
         t.append("")
         t.append("COMBOS  \"combos\": [{\"buttons\": [2, 3], \"action\": action}]. Two to four buttons pressed together (button 0 can be one of them).")
-        t.append("List only the combos you add or change; my others stay. {\"buttons\": [2, 3], \"remove\": true} takes one away. At most \(ImportLimits.maxChords).")
+        t.append("List only the combos you add or change; my others stay. A combo with the same buttons as one I have (in any order) replaces")
+        t.append("its action. {\"buttons\": [2, 3], \"remove\": true} takes one away. At most \(ImportLimits.maxChords).")
 
         // Gestures
         t.append("")
         t.append("GESTURES  hold the button and roll the ball; the pointer stays put while it's held.")
         t.append("{\"gesture\": {\"up\": step, \"down\": step, \"left\": step, \"right\": step, \"tap\": action, \"show\": \"\(RingShow.afterPause.rawValue)\", \"ring\": \"\(RingJob.scroll.rawValue)\"}}")
-        t.append("step: an action, or {\"do\": action, \"mode\": …}. Modes: \"\(GestureStep.Mode.chain.rawValue)\" fires each time I roll that way (the usual one), "
-                 + "\"\(GestureStep.Mode.continuous.rawValue)\" keeps firing as I roll (volume and zoom do this unless you say otherwise), \"\(GestureStep.Mode.once.rawValue)\" fires once per hold.")
+        t.append("step: an action, or {\"do\": action, \"mode\": …}. Leave mode out unless you need it: the default is \"\(GestureStep.Mode.chain.rawValue)\" (fires each time I roll that way), "
+                 + "or \"\(GestureStep.Mode.continuous.rawValue)\" for volume and zoom (keeps firing as I roll). \"\(GestureStep.Mode.once.rawValue)\" fires once per hold.")
         t.append("  A step can be keys, media, open, a click, back, forward or precisionToggle. Nothing that has to be held down.")
-        t.append("  A step can also be a second ring, More: {\"more\": {\"up\": step, \"right\": step}}. Leave out the direction opposite the More's own (that's the way back). One level only.")
+        t.append("  A step can also be a second ring, More: {\"more\": {\"up\": step, \"right\": step}}. One level only. The place opposite its own")
+        t.append("  direction is the way back: a More on \"right\" can't use \"left\"; a More on \"downRight\" can't use \"upLeft\".")
         t.append("\"tap\": what a quick press without rolling does (\"system\" is the button's own click). Keep what the button did as its tap when you can.")
         t.append("\"eight\": true adds the diagonals " + GestureDirection.allCases.filter(\.isDiagonal).map { "\"\($0.rawValue)\"" }.joined(separator: " ") + ".")
         t.append("\"show\": " + RingShow.allCases.map { "\"\($0.rawValue)\" (\(about($0)))" }.joined(separator: ", ") + ".")
@@ -183,7 +187,7 @@ enum AIReference {
         // App setups
         t.append("")
         t.append("APP SETUPS  \"apps\": [{\"app\": \"Safari\", \"trackingSpeed\": 3, \"scroll\": {…}, \"buttons\": {…}, \"combos\": […]}]")
-        t.append("Used while that app is in front. Give the app's name; list only what you change for it. A part you leave out stays as it is (the main setup's, if the app has none of its own); null goes back to the main setup's. A code can't delete an app setup.")
+        t.append("Used while that app is in front. Give the app's name; list only what you change for it. A part you leave out stays as it is (the main setup's, if the app has none of its own). A code can't delete an app setup.")
 
         // Look and sound
         t.append("")
@@ -279,34 +283,37 @@ enum AIReference {
     Be warm and personable: react to what I tell you like a person would, a little humour is fine,
     and keep each reply short (a few sentences; shorter still if we're talking out loud).
 
-    Find out, over a few turns:
+    Read my setup first. If it's already customized, I've put work into it: ask what's working and
+    what to keep before you suggest changes, and never suggest something I already have. Ask early,
+    in plain words, about anything odd: no single button left that right-clicks, combos that clash or
+    cover a button I use on its own, precisionSpeed at or above trackingSpeed, a gesture direction or
+    More that does nothing, a shortcut that deletes, quits or logs out on an easy-to-hit button.
+
+    Find out, over a few turns. These three matter most, so ask them first:
     - what I'd like the trackball to do better for me, in my own words;
     - what I do on this Mac most days, and which three or four apps I live in;
-    - what I reached for the keyboard or the menu bar for most in the last hour of work;
-    - what annoys me about the trackball right now (too fast, too slow, the scrolling, a button I never use);
-    - which hand I use, and whether anything hurts or gets tired (wrist, thumb, fingers);
-    - whether I'd like a few things I'll remember, or a lot of power I'm willing to learn.
+    - whether anything hurts or gets tired (wrist, thumb, fingers), and which hand I use.
+    The rest only if it helps: what I last reached for the keyboard or menu bar for; what annoys me
+    about the trackball; whether I want a few things I'll remember or a lot of power I'll learn.
+    Once you have the three, suggest one thing I can try right away. A good small setup now beats a
+    perfect one later.
 
     How to ask:
     - One question at a time, two or three at most. Then wait for my answer.
     - Ask about what I did, not what I might want. "What did you do right before that?" beats "would
       you like a shortcut for that?"
     - Say back what you heard in a sentence before you suggest anything, so I can correct you.
-    - Follow up on anything vague or surprising. If I mention something in passing, ask about it.
+    - Follow up on anything vague, surprising or mentioned in passing.
     - Bring your own ideas, and say why each one fits what I told you. Offer two or three and let me
       pick. Good ones often come from what I'm not using: an idle button, two buttons pressed
       together, a gesture, the scroll ring doing volume while a button is held, dictation on a
       button, the Switcher, a different setup for one app.
     - Describe what it's like in the hand: "hold the top right button and flick the ball left to go
-      back a desktop". Use Glideball's own names when you name a feature. No setting names like
-      flyGlide unless I ask.
-    - After my first few answers, offer one small change I can try right away. I can come back for more.
-    - Before a big change (a gesture replacing a button I use every day), check that I really want to
-      give up what the button does now. You can usually keep it as the gesture's tap.
+      back a desktop". Use Glideball's own names, not setting names like flyGlide unless I ask.
     - If I ask for something Glideball can't do, say so plainly and offer the nearest thing it can do.
     - Keep a running list of what we've decided. Before you write the code, read it back to me and ask
       if it's right.
-    If I seem done, stop asking. A good small setup now beats a perfect one later.
+    If I seem done, stop asking.
     </how_to_talk_with_me>
     """
 
@@ -321,6 +328,8 @@ enum AIReference {
         t.append("- Use only what the reference lists. Don't invent actions or settings: Glideball leaves out anything")
         t.append("  it doesn't know and tells me, and nothing you write can run a command on my Mac.")
         t.append("- Never include button 0.")
+        t.append("- null only works in an app setup (\"trackingSpeed\", \"scroll\", \"buttons\", \"combos\" or one button: back to the main")
+        t.append("  setup's), as a combo's \"action\" (removes it) and inside a gesture or More (that place is empty). Elsewhere, leave the key out.")
         t.append("Above the block, list in plain words what the code changes. Below it, tell me: \"Copy the code, go back")
         t.append("to Glideball and paste it. Glideball shows every change before anything is applied, and you can undo it.\"")
         t.append("If we're talking out loud, don't read the code aloud. Say it's in the chat as text.")
@@ -330,10 +339,8 @@ enum AIReference {
             t.append(e.code)
         }
         t.append("")
-        t.append("Changing it later: if I come back and say what felt wrong, give me a new code with just the fix. If")
-        t.append("I've changed things in Glideball since, I'll paste my setup again (Glideball has a \"Copy my setup\"")
-        t.append("button); go by the newest one I've pasted. If Glideball left something out, I'll paste its note; fix")
-        t.append("that and give me a new code.")
+        t.append("Later: if I say what felt wrong, give me a new code with just the fix. If I paste my setup again, go by")
+        t.append("the newest one. If I paste Glideball's note about what it left out, fix that in a new code.")
         t.append("</the_setup_code>")
         return t.joined(separator: "\n")
     }

@@ -556,6 +556,43 @@ enum SelfTest {
             try draw(IncomingSetupSheet(model: model, incoming: pending), "a chatbot's code in the usual preview")
             model.cancelIncoming()
             try check(model.config == before, "a code in Paste a Link… changed something before Apply")
+
+            // Shortcuts that delete, quit or log out: flagged, left out unless ticked, and a way
+            // back without the trackball's buttons (Undo Last Import, ⌘Z in the window).
+            let risky = """
+            {"format": "glideball-ai-setup", "version": 1, "buttons": {"2": "keys:cmd+q", "3": "forward"},
+             "apps": [{"app": "Figma", "buttons": {"3": {"gesture": {"up": "keys:cmd+c", "right": {"more": {"upRight": "keys:cmd+opt+shift+delete"}}}}}}]}
+            """
+            flow.text = risky
+            model.reviewAICode()
+            let riskyIncoming = try unwrap(flow.reviewing, "a code with ⌘Q didn't open the preview")
+            let flags = model.changes(for: riskyIncoming).flatMap(\.risks).filter { $0.tier == .destructive }
+            try check(flags.count == 2 && flags.contains { $0.id.hasSuffix("#right.more.upRight") }, "the red flags aren't where they sit: \(flags.map(\.id))")
+            try draw(SetupWithAISheet(model: model), "the preview with red flags")
+            model.applyAIReview(parts: nil)
+            try check(model.config.buttons[3] == .forward && model.config.buttons[2] == before.buttons[2], "an unticked ⌘Q was applied, or the rest wasn't")
+            if case .gesture(let g)? = model.config.profile(for: "com.figma.Desktop")?.buttons?[3] {
+                try check(g.up?.action == .shortcut(.copy) && g.right == nil, "an unticked Empty Trash in a More was applied")
+            } else { throw Failure("the app setup's gesture wasn't applied around the flag") }
+            try check(model.canUndoImport, "Undo Last Import isn't there after an import")
+            let window = try unwrap(delegate.window as? MainWindow, "the main window isn't a MainWindow")
+            let undoItem = NSMenuItem(title: "Undo", action: Selector(("undo:")), keyEquivalent: "z")
+            try check(window.validateMenuItem(undoItem), "⌘Z doesn't undo the import on the main window")
+            let fileUndo = NSMenuItem(title: "Undo Last Import", action: #selector(AppDelegate.undoLastImport(_:)), keyEquivalent: "")
+            try check(delegate.validateMenuItem(fileUndo), "Undo Last Import is off in the menus after an import")
+            window.undo(nil)
+            try check(model.config == before && !model.canUndoImport && !window.validateMenuItem(undoItem) && !delegate.validateMenuItem(fileUndo),
+                      "⌘Z on the window didn't undo the import, or Undo stayed on")
+            flow.text = risky
+            model.reviewAICode()
+            let ticked = try unwrap(flow.reviewing, "the code didn't open the preview again")
+            model.applyAIReview(parts: nil, confirmed: Set(model.changes(for: ticked).flatMap(\.risks).map(\.id)))
+            try check(model.config.buttons[2] == .shortcut(KeyShortcut(keyCode: 12, modifiers: CGEventFlags.maskCommand.rawValue)), "a ticked ⌘Q wasn't applied")
+            model.config.trackingSpeed += 1   // a change of your own after the import
+            delegate.undoLastImport(nil)
+            try check(model.config == before && model.backups.backups.first?.kind == .beforeRestore,
+                      "Undo Last Import didn't put things back, or didn't save what you'd changed since")
+            flow.reset()
             return "prompt built (\(AIReference.roughTokens(prompt)) tokens), app names left out on request; copy, paste, review inside the sheet, Cancel, Apply (before AI setup checkpoint), Undo; your own setup matches; ⌘V and Paste a Link… take a code"
         }
 

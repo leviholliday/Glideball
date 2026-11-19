@@ -2834,3 +2834,26 @@
 "Your setup makes this a long prompt. If the chatbot cuts it short, leave app names out and copy it again." = "설정이 많아서 프롬프트가 길어요. 챗봇이 중간에 자르면 앱 이름을 빼고 다시 복사하세요.";
 "ai, chatbot, chatgpt, claude, gemini, assistant, help me, set up, setup code, paste code, voice, dictation, ideas, suggestions" = "ai, 챗봇, chatgpt, claude, gemini, 어시스턴트, 도와줘, 설정, 설정 코드, 코드 붙여넣기, 음성, 받아쓰기, 아이디어, 제안";
 "Your trackball’s model, Glideball’s version and the language Glideball is in" = "트랙볼 모델, Glideball 버전, Glideball 언어";
+
+/* Import review: shortcuts that delete, quit or log out; nested places; Undo Last Import */
+"A big jump from %@: much faster than you have it. Try it before you keep it." = "%@에서 크게 바뀌어요. 지금보다 훨씬 빨라요. 계속 쓰기 전에 먼저 써 보세요.";
+"A big jump from %@: much slower than you have it. Try it before you keep it." = "%@에서 크게 바뀌어요. 지금보다 훨씬 느려요. 계속 쓰기 전에 먼저 써 보세요.";
+"Closes every window of the app in front." = "앞에 있는 앱의 모든 윈도우를 닫아요.";
+"Deletes the selected files for good, skipping the Trash (Finder asks first)." = "선택한 파일을 휴지통을 거치지 않고 완전히 삭제해요(Finder가 먼저 물어봐요).";
+"Empties the Trash (Finder asks first)." = "휴지통을 비워요(Finder가 먼저 물어봐요).";
+"Empties the Trash without asking." = "묻지 않고 휴지통을 비워요.";
+"Empty" = "비어 있음";
+"Held down, force quits the app in front. Unsaved work is lost." = "길게 누르면 앞에 있는 앱을 강제 종료해요. 저장하지 않은 작업은 사라져요.";
+"Include this shortcut" = "이 단축키 포함하기";
+"Logs you out (macOS asks first)." = "로그아웃해요(macOS가 먼저 물어봐요).";
+"Logs you out without asking. Unsaved work can be lost." = "묻지 않고 로그아웃해요. 저장하지 않은 작업이 사라질 수 있어요.";
+"Moves the selected files to the Trash, and deletes things in many apps." = "선택한 파일을 휴지통으로 옮기고, 많은 앱에서는 무언가를 삭제해요.";
+"Opens the Force Quit window." = "강제 종료 윈도우를 열어요.";
+"Presses a shortcut that deletes, quits or logs out" = "삭제하거나, 종료하거나, 로그아웃하는 단축키를 눌러요";
+"Quits the app in front, often without asking." = "앞에 있는 앱을 종료해요. 묻지 않을 때가 많아요.";
+"Ring ↺" = "링 ↺";
+"Ring ↻" = "링 ↻";
+"Shortcuts flagged in red are left out unless you tick them." = "빨간색으로 표시된 단축키는 체크하지 않으면 빠져요.";
+"That’s no slower than your pointer speed, so Precision won’t slow the pointer down." = "포인터 속도보다 느리지 않아서, 정밀 모드가 포인터를 느리게 하지 않아요.";
+"The bottom-left button always clicks. To undo, press ⌘Z in Glideball or choose Undo Last Import in the File menu or the menu-bar icon’s menu." = "왼쪽 아래 버튼은 항상 클릭이에요. 되돌리려면 Glideball에서 ⌘Z를 누르거나, 파일 메뉴 또는 메뉴 막대 아이콘의 메뉴에서 '마지막 가져오기 실행 취소'를 선택하세요.";
+"Undo Last Import" = "마지막 가져오기 실행 취소";
