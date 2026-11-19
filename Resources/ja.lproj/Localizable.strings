@@ -1757,7 +1757,7 @@
 "Click with ⌘ held: opens links in a background tab." = "⌘を押しながらクリック：リンクをバックグラウンドのタブで開きます。";
 "Click with ⌥ held." = "⌥を押しながらクリック。";
 "Closes the tab or window in front." = "手前のタブまたはウインドウを閉じます。";
-"Colors the trackball everywhere in Glideball, and the light it throws. Ball blue, ring pink and buttons amber stay the same in charts and badges, so they always mean the same thing." = "Glideball全体のトラックボールと、そこから放たれる光に色をつけます。ボールの青、リングのピンク、ボタンのアンバーは、グラフやバッジでも変わらないので、いつも同じ意味で使えます。";
+"Colors the trackball everywhere in Glideball, the light it throws, and the Gestures ring and Switcher you steer with the ball. Ball blue, ring pink and buttons amber stay the same in charts and badges, so they always mean the same thing." = "Glideball全体のトラックボールとそこから放たれる光、そしてボールで操作するジェスチャのリングとアプリスイッチャーに色をつけます。ボールの青、リングのピンク、ボタンのアンバーは、グラフやバッジでも変わらないので、いつも同じ意味で使えます。";
 "Combo maker" = "コンボメーカー";
 "Copied. Paste it anywhere." = "コピーしました。どこにでもペーストできます。";
 "Copies what’s selected." = "選択中のものをコピーします。";

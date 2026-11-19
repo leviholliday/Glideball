@@ -805,6 +805,34 @@ enum SelfTest {
             return "a click stays a click; a hold puts the preset on the engine only, for 20 s with the card let go and in other apps (with the floating panel); Keep writes it as Apply does; Put mine back, 20 s, pause, unplug, sleep, the user switched, quit, the window closing, the page, Quick Assign, the tour and another card take it off; settings and what's saved never change"
         }
 
+        step("the ball's light follows the ball color, readable") {
+            // The Gestures ring, its editor and the Switcher's lens are lit in `Theme.light`. Every
+            // ball color, and custom ones at the extremes (yellow, near-white, white, very dark,
+            // black, a grey), keep it showing on dark and pale glass, its labels and its ink readable.
+            let customs: [(String, UInt32)] = [("yellow", 0xFFE070), ("near-white", 0xF4F2EC), ("white", 0xFFFFFF),
+                                               ("very dark", 0x101018), ("black", 0x000000), ("grey", 0x808080), ("default", 0x2EC99A)]
+            let themes = BallTheme.curated.filter { $0.id != "orb" }.map { ($0.id, $0) }
+                + customs.map { ("custom \($0.0)", BallTheme.custom([OrbRGB(hex: 0xFFFFFF), OrbRGB(hex: $0.1), OrbRGB(hex: 0x000000)])) }
+            let white = OrbRGB(1, 1, 1), darkGlass = OrbRGB(hex: 0x1E1E22)
+            var worst = (label: 99.0, name: "")
+            for (name, theme) in themes {
+                let v = theme.lightValues
+                try check(v.dark.luminance >= BallTheme.darkLightFloor - 0.005, "\(name): its light is too dark to show on dark glass")
+                try check(v.light.luminance <= BallTheme.lightLightCeiling + 0.005, "\(name): its light is too pale to show on light glass")
+                for fill in [v.dark, v.light] {
+                    let c = fill.contrast(BallTheme.label(on: fill))
+                    try check(c >= 2.3, "\(name): the lit chip's label reads at \(String(format: "%.2f", c)):1")
+                    if c < worst.label { worst = (c, name) }
+                }
+                let base = theme.palette.mid
+                let inkDark = base.luminance(0.30, toward: white), inkLight = base.luminance(0.18, toward: OrbRGB(0, 0, 0))
+                try check(inkDark.contrast(darkGlass) >= 4.5 && inkLight.contrast(white) >= 4.5, "\(name): a More's name in its color doesn't read")
+            }
+            // The Orb is exactly ball blue, as before.
+            try check(BallTheme.orb.light == Theme.ball && BallTheme.orb.lightInk == Theme.ball, "the Orb's light isn't ball blue")
+            return "\(themes.count) ball colors: the light shows on dark and pale glass, labels at least \(String(format: "%.1f", worst.label)):1 (\(worst.name)), ink at least 4.5:1"
+        }
+
         step("menu bar panel") {
             try check(MenuBarPanelController.shared.opens == .menu, "the menu-bar icon should open its menu unless the panel is picked")
             try check(!MenuBarPanelController.shared.isOpen && !model.panelOpen, "the panel is open")

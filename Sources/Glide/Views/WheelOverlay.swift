@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 // A Gestures button's ring on screen: a Liquid Glass ring of chips around the held pointer,
-// the lit one in the ball's blue, the ring job's readout in the ring's pink, and a small dot
+// the lit one in the ball's light (`Theme.light`: ball blue, or the ball color's), the ring job's readout in the ring's pink, and a small dot
 // in the hub that shows where the ball has "rolled" to. A More opens its own ring in place
 // (a little smaller, with a way back); a blind hold shows only the readout. The engine decides
 // everything (Wheel.swift, Gestures.swift) and hands this a `WheelOverlayModel` through
@@ -547,7 +547,7 @@ struct RingOrbit: GeometryEffect {
 }
 
 /// The ring of light that rolls outward as the ring comes up: a thin band whose radius grows from
-/// `start` to `end` while it thins and fades. White at its core over the ball's blue.
+/// `start` to `end` while it thins and fades. White at its core over the ball's light (`Theme.light`: ball blue, or the ball color's).
 struct WheelWave: View {
     /// 0 (at the hub) to 1 (at the band's outer edge).
     var progress: Double
@@ -560,7 +560,7 @@ struct WheelWave: View {
     var body: some View {
         ZStack {
             WheelWaveBand(progress: progress, start: start, end: end, from: from, thick: 5, thin: 0.75)
-                .fill(Theme.ball)
+                .fill(Theme.light)
             WheelWaveBand(progress: progress, start: start, end: end, from: from, thick: 2, thin: 0.3)
                 .fill(Color.white.opacity(0.9))
         }
@@ -624,9 +624,9 @@ struct WheelBeam: View {
         let half = spread / 720
         ZStack {
             WheelBeamShape(inner: inner, outer: outer, spread: spread)
-                .fill(AngularGradient(stops: [.init(color: Theme.ball.opacity(0), location: 0.75 - half),
-                                              .init(color: Theme.ball, location: 0.75),
-                                              .init(color: Theme.ball.opacity(0), location: 0.75 + half)], center: .center))
+                .fill(AngularGradient(stops: [.init(color: Theme.light.opacity(0), location: 0.75 - half),
+                                              .init(color: Theme.light, location: 0.75),
+                                              .init(color: Theme.light.opacity(0), location: 0.75 + half)], center: .center))
             // A paler core, so it reads as light and not as a blue wedge.
             WheelBeamShape(inner: inner, outer: outer, spread: spread * 0.45)
                 .fill(AngularGradient(stops: [.init(color: .white.opacity(0), location: 0.75 - half * 0.45),
@@ -725,7 +725,7 @@ private struct WheelTicks: View {
     }
 }
 
-/// The light under the lit chip: the ball's blue, a lit top edge and a soft glow, as if the ball
+/// The light under the lit chip: the ball's light (`Theme.light`: ball blue, or the ball color's), a lit top edge and a soft glow, as if the ball
 /// were lighting it. It brightens for a moment each time the lit place runs, and blooms when the
 /// release runs it.
 struct WheelLight: View {
@@ -739,13 +739,13 @@ struct WheelLight: View {
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: min(size.height / 2.4, 22), style: .continuous)
         shape
-            .fill(LinearGradient(colors: [Theme.ball.opacity(0.92), Theme.ball], startPoint: .top, endPoint: .bottom))
+            .fill(LinearGradient(colors: [Theme.light.opacity(0.92), Theme.light], startPoint: .top, endPoint: .bottom))
             .overlay { shape.strokeBorder(LinearGradient(colors: [.white.opacity(0.6), .white.opacity(0.08)], startPoint: .top, endPoint: .bottom), lineWidth: 1) }
             .frame(width: size.width, height: size.height)
             .keyframeAnimator(initialValue: 0.0, trigger: pulse) { content, glow in
                 let g = max(glow, hold)
                 content
-                    .shadow(color: Theme.ball.opacity(0.55 + g * 0.45), radius: 8 + g * (bloom ? 18 : 10))
+                    .shadow(color: Theme.light.opacity(0.55 + g * 0.45), radius: 8 + g * (bloom ? 18 : 10))
                     .scaleEffect(1.06 + g * 0.08)
             } keyframes: { _ in
                 SpringKeyframe(1, duration: bloom ? 0.06 : 0.07)
@@ -806,11 +806,11 @@ struct WheelChip: View {
     }
 
     private var tint: AnyShapeStyle {
-        if lit { return AnyShapeStyle(.white) }
+        if lit { return AnyShapeStyle(Theme.onLight) }
         switch slot {
         case nil: return AnyShapeStyle(.tertiary)
         case .back: return AnyShapeStyle(.secondary)
-        case .more: return AnyShapeStyle(Theme.ball)
+        case .more: return AnyShapeStyle(Theme.lightInk)
         case .action: return AnyShapeStyle(.primary)
         }
     }
@@ -889,8 +889,8 @@ struct WheelCharge: View {
     var body: some View {
         shape
             .trim(from: 0, to: reduceMotion ? 1 : progress)
-            .stroke(Color.white.opacity(reduceMotion ? 0.4 + progress * 0.5 : 0.9), style: StrokeStyle(lineWidth: 2, lineCap: .round))
-            .shadow(color: Theme.ball.opacity(0.8), radius: 4)
+            .stroke(Theme.onLight.opacity(reduceMotion ? 0.4 + progress * 0.5 : 0.9), style: StrokeStyle(lineWidth: 2, lineCap: .round))
+            .shadow(color: Theme.light.opacity(0.8), radius: 4)
             .onAppear {
                 withAnimation(.linear(duration: WheelHold.confirmDwell)) { progress = 1 }
             }
@@ -915,9 +915,9 @@ struct WheelHub: View {
                 .glassEffect(.regular, in: Circle())
                 .frame(width: size, height: size)
             Circle()
-                .fill(Theme.ball)
+                .fill(Theme.light)
                 .frame(width: 9, height: 9)
-                .shadow(color: Theme.ball.opacity(min(1, (lit ? 0.9 : 0.5) + ignite * 0.5)), radius: (lit ? 6 : 3) + ignite * 11)
+                .shadow(color: Theme.light.opacity(min(1, (lit ? 0.9 : 0.5) + ignite * 0.5)), radius: (lit ? 6 : 3) + ignite * 11)
                 .offset(x: dot.x * travel, y: dot.y * travel)
                 .opacity(settling ? 0 : 1)
         }

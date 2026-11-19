@@ -3,7 +3,7 @@ import SwiftUI
 
 // The Switcher's panel on screen: a Liquid Glass panel centred on the display the pointer is
 // on, the running apps as big icons in a grid (most recent first). The ball lights it: a soft
-// glass lens in the ball's blue sits under the lit app and glides from icon to icon, its light
+// glass lens in the ball's light (`Theme.light`: ball blue, or the ball color's) sits under the lit app and glides from icon to icon, its light
 // spilling across the glass; the lit icon lifts and grows, its neighbours a little (like the
 // Dock), and only the lit app's name shows, crisp, under it. The engine decides everything
 // (Switcher.swift, Gestures.swift) and hands this a `SwitcherOverlayModel` through
@@ -191,7 +191,7 @@ struct SwitcherPanel: View {
         let core = ZStack(alignment: .topLeading) {
             // The ball's light, spilling across the glass from the lit app (it glides with it,
             // and leans ahead of it toward where the ball is rolling).
-            RadialGradient(colors: [Theme.ball.opacity(dark ? 0.30 : 0.22), Theme.ball.opacity(dark ? 0.08 : 0.05), .clear],
+            RadialGradient(colors: [Theme.light.opacity(dark ? 0.30 : 0.22), Theme.light.opacity(dark ? 0.08 : 0.05), .clear],
                            center: .center, startRadius: 0, endRadius: cell.width * 1.7)
                 .frame(width: cell.width * 3.4, height: cell.width * 3.4)
                 .offset(x: lean.width * SwitcherLayout.lightLean, y: lean.height * SwitcherLayout.lightLean)
@@ -310,7 +310,7 @@ struct SwitcherFlare: View {
     }
 }
 
-/// The lens under the lit app: a piece of glass tinted the ball's blue, lit from the top, with
+/// The lens under the lit app: a piece of glass tinted the ball's light (`Theme.light`: ball blue, or the ball color's), lit from the top, with
 /// a soft bloom under it. One for the whole panel, so it glides from app to app.
 struct SwitcherLens: View {
     @Environment(\.colorScheme) private var scheme
@@ -319,17 +319,17 @@ struct SwitcherLens: View {
         let shape = RoundedRectangle(cornerRadius: 24, style: .continuous)
         let dark = scheme == .dark
         shape
-            .fill(LinearGradient(colors: [Theme.ball.opacity(dark ? 0.34 : 0.17), Theme.ball.opacity(dark ? 0.16 : 0.09)],
+            .fill(LinearGradient(colors: [Theme.light.opacity(dark ? 0.34 : 0.17), Theme.light.opacity(dark ? 0.16 : 0.09)],
                                  startPoint: .top, endPoint: .bottom))
             .overlay {
-                // Light falling on its top edge, and a fine rim in the ball's blue.
+                // Light falling on its top edge, and a fine rim in the ball's light (`Theme.light`: ball blue, or the ball color's).
                 shape.strokeBorder(LinearGradient(colors: [.white.opacity(dark ? 0.55 : 1), .white.opacity(0.0)],
                                                   startPoint: .top, endPoint: .center), lineWidth: dark ? 1 : 1.5)
             }
-            .overlay { shape.strokeBorder(Theme.ball.opacity(dark ? 0.55 : 0.32), lineWidth: 0.75) }
+            .overlay { shape.strokeBorder(Theme.light.opacity(dark ? 0.55 : 0.32), lineWidth: 0.75) }
             .background {
                 // The bloom: the ball's light under the glass.
-                shape.fill(Theme.ball.opacity(dark ? 0.55 : 0.32))
+                shape.fill(Theme.light.opacity(dark ? 0.55 : 0.32))
                     .blur(radius: 16)
                     .padding(6)
             }
@@ -363,7 +363,7 @@ struct SwitcherCell: View {
                 .brightness(solo ? 0.06 * bloom : 0)
                 .background {
                     if solo {
-                        Circle().fill(Theme.ball.opacity(0.55 * bloom))
+                        Circle().fill(Theme.light.opacity(0.55 * bloom))
                             .blur(radius: 18)
                             .padding(-6)
                     }

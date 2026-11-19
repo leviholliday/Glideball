@@ -626,6 +626,38 @@ extension RenderUI {
         add("ring-overlay-dial-8", "Gestures ring motion", "Eight, zooming, on a busy desktop: the rim dial") { dark, scale in
             wheelOverlay(eightModel, busy: true, dark: dark, scale: scale, dial: 1)
         }
+        // The ring, its editor and the Switcher's lens in the ball color (`Theme.light`): two
+        // curated ones, and custom ones at the extremes (a yellow that needs dark labels, and a
+        // very dark navy that has to be lifted to show on dark glass). The readout stays pink.
+        let colorCases: [(String, String, () -> Void)] = [
+            ("ember", "Ember", { BallThemeStore.shared.choose("ember") }),
+            ("forest", "Forest", { BallThemeStore.shared.choose("forest") }),
+            ("yellow", "a custom yellow", { BallThemeStore.shared.setCustom(1, to: OrbRGB(hex: 0xFFE070)) }),
+            ("navy", "a custom very dark navy", { BallThemeStore.shared.setCustom(1, to: OrbRGB(hex: 0x14143A)) }),
+        ]
+        let colorBack = {
+            BallThemeStore.shared.setCustom(1, to: OrbRGB(hex: 0x2EC99A))
+            BallThemeStore.shared.choose("orb")
+        }
+        for (id, name, use) in colorCases {
+            add("ring-overlay-color-\(id)", "Ball color on the ring", "The ring in \(name): Mission Control lit, the volume readout still pink",
+                prepare: use, cleanup: colorBack) { dark, scale in
+                wheelOverlay(fourModel, busy: false, dark: dark, scale: scale, dial: 1)
+            }
+            add("ring-overlay-color-\(id)-more", "Ball color on the ring", "\(name): More lit and filling, on a busy desktop",
+                prepare: use, cleanup: colorBack) { dark, scale in
+                wheelOverlay(moreCharging, busy: true, dark: dark, scale: scale)
+            }
+            add("switcher-overlay-color-\(id)", "Ball color on the ring", "The Switcher's lens in \(name)",
+                prepare: use, cleanup: colorBack) { dark, scale in
+                switcherOverlay(apps: 6, selected: 2, busy: false, lean: (5, 0), dark: dark, scale: scale)
+            }
+            add("buttons-ring-color-\(id)", "Ball color on the ring", "The editor's ring in \(name), held and rolled right (whole page)",
+                prepare: { use(); ringButtons(); ringHeld(slot: 2) },
+                cleanup: { colorBack(); restoreButtons() }) { dark, scale in
+                fullPage(page(.buttons, model), dark: dark, scale: scale)
+            }
+        }
 
         // The Switcher: its row on the Buttons page, the picker, a held Switcher, and its panel
         // on screen (made-up apps with generated icons: never what's running on this Mac).

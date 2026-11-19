@@ -48,6 +48,18 @@ enum Theme {
     static var orbMagenta: Color { BallTheme.current.glow[3] }
     static var orb: [Color] { BallTheme.current.glow }
 
+    // The ball's light where you steer with the ball (the Gestures ring and its editor, the
+    // Switcher's lens): it follows the ball color too, since it's the orb's light the ball is
+    // throwing there. Ball blue with the Orb. Each is kept readable in light and dark for any
+    // color, a custom one included (`BallTheme.light`).
+
+    /// The light itself: the lit chip, the beam, the wave, the hub's dot, the lens.
+    static var light: Color { BallTheme.current.light }
+    /// Text and symbols on that light (white, or near-black on a light one like yellow).
+    static var onLight: Color { BallTheme.current.onLight }
+    /// Text and symbols drawn in the light's color on glass or the page (a More's name).
+    static var lightInk: Color { BallTheme.current.lightInk }
+
     // MARK: Surfaces and text
 
     /// The stage everything sits on (under the atmosphere's light): near-black
@@ -235,6 +247,29 @@ struct OrbRGB: Equatable, Hashable, Codable {
     }
 
     func mix(_ o: OrbRGB, _ t: Double) -> OrbRGB { OrbRGB(r + (o.r - r) * t, g + (o.g - g) * t, b + (o.b - b) * t) }
+
+    /// Relative luminance (WCAG), 0 black … 1 white.
+    var luminance: Double {
+        func lin(_ c: Double) -> Double { let c = max(0, min(1, c)); return c <= 0.04045 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4) }
+        return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+    }
+    /// WCAG contrast ratio against `o` (1 … 21).
+    func contrast(_ o: OrbRGB) -> Double {
+        let a = luminance, b = o.luminance
+        return (max(a, b) + 0.05) / (min(a, b) + 0.05)
+    }
+    /// Mixed toward `toward` just enough to reach `target` luminance (rising toward white, or
+    /// falling toward black); already there: unchanged.
+    func luminance(_ target: Double, toward: OrbRGB) -> OrbRGB {
+        let rising = toward.luminance > luminance
+        if rising ? luminance >= target : luminance <= target { return self }
+        var lo = 0.0, hi = 1.0
+        for _ in 0..<24 {
+            let t = (lo + hi) / 2, l = mix(toward, t).luminance
+            if rising ? l < target : l > target { lo = t } else { hi = t }
+        }
+        return mix(toward, hi)
+    }
     func scaled(_ k: Double) -> OrbRGB { OrbRGB(r * k, g * k, b * k) }
     var color: Color { Color(.sRGB, red: r, green: g, blue: b) }
     var nsColor: NSColor { NSColor(srgbRed: r, green: g, blue: b, alpha: 1) }
@@ -314,6 +349,47 @@ struct BallTheme: Identifiable, Equatable {
 
     /// The theme in use (`BallThemeStore`).
     static var current: BallTheme { BallThemeStore.shared.theme }
+
+    // MARK: Its light where you steer with the ball (`Theme.light`)
+
+    /// The light (`Theme.light`): the ball's body color, the Orb's ball blue. With any other
+    /// color it's kept able to glow: in dark mode at least luminance 0.16 (a very dark color is
+    /// lifted toward white, so it still shows on dark glass), in light mode at most 0.42 (a
+    /// very light one, yellow or near-white, is deepened, so it still shows on pale glass).
+    var light: Color { lightColors.light }
+    /// Text and symbols on the light (`Theme.onLight`): white, unless white would read worse
+    /// than near-black there (under 2.4:1, about what white on the Orb's dark-mode blue has).
+    var onLight: Color { lightColors.on }
+    /// The light's color as text on glass or the page (`Theme.lightInk`): at least 0.30
+    /// luminance in dark mode, at most 0.18 in light, so a More's name reads (4.5:1 or so).
+    var lightInk: Color { lightColors.ink }
+
+    /// The light's sRGB values in dark and light mode (the self-test and the pictures check them).
+    var lightValues: (dark: OrbRGB, light: OrbRGB) {
+        let base = palette.mid
+        return (base.luminance(Self.darkLightFloor, toward: OrbRGB(1, 1, 1)), base.luminance(Self.lightLightCeiling, toward: OrbRGB(0, 0, 0)))
+    }
+    static let darkLightFloor = 0.16, lightLightCeiling = 0.42
+    /// What's written on a light of this color.
+    static func label(on fill: OrbRGB) -> OrbRGB {
+        let white = OrbRGB(1, 1, 1), ink = OrbRGB(hex: 0x14161C)
+        return fill.contrast(white) >= 2.4 || fill.contrast(white) >= fill.contrast(ink) ? white : ink
+    }
+
+    private var lightColors: (light: Color, on: Color, ink: Color) {
+        if id == "orb" { return (Theme.ball, .white, Theme.ball) }
+        if let c = Self.lightCache[palette] { return c }
+        let v = lightValues, base = palette.mid
+        func dynamic(_ dark: OrbRGB, _ light: OrbRGB) -> Color {
+            let d = dark.nsColor, l = light.nsColor
+            return Color(nsColor: NSColor(name: nil) { Theme.isDark($0) ? d : l })
+        }
+        let c = (dynamic(v.dark, v.light), dynamic(Self.label(on: v.dark), Self.label(on: v.light)),
+                 dynamic(base.luminance(0.30, toward: OrbRGB(1, 1, 1)), base.luminance(0.18, toward: OrbRGB(0, 0, 0))))
+        Self.lightCache[palette] = c
+        return c
+    }
+    nonisolated(unsafe) private static var lightCache: [OrbPalette: (light: Color, on: Color, ink: Color)] = [:]
 }
 
 /// Which ball color this Mac uses (Settings › Look › Ball color), and the

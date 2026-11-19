@@ -1757,7 +1757,7 @@
 "Click with ⌘ held: opens links in a background tab." = "⌘를 누른 채 클릭: 링크를 백그라운드 탭에서 열어요.";
 "Click with ⌥ held." = "⌥를 누른 채 클릭.";
 "Closes the tab or window in front." = "맨 앞의 탭이나 윈도우를 닫아요.";
-"Colors the trackball everywhere in Glideball, and the light it throws. Ball blue, ring pink and buttons amber stay the same in charts and badges, so they always mean the same thing." = "Glideball 전체의 트랙볼과 그 빛에 색을 입혀요. 볼 파란색, 링 분홍색, 버튼 호박색은 차트와 배지에서도 그대로여서 항상 같은 뜻이에요.";
+"Colors the trackball everywhere in Glideball, the light it throws, and the Gestures ring and Switcher you steer with the ball. Ball blue, ring pink and buttons amber stay the same in charts and badges, so they always mean the same thing." = "Glideball 전체의 트랙볼과 그 빛, 그리고 볼로 조작하는 제스처 링과 앱 전환기에 색을 입혀요. 볼 파란색, 링 분홍색, 버튼 호박색은 차트와 배지에서도 그대로여서 항상 같은 뜻이에요.";
 "Combo maker" = "콤보 메이커";
 "Copied. Paste it anywhere." = "복사됨. 어디에든 붙여넣으세요.";
 "Copies what’s selected." = "선택한 항목을 복사해요.";

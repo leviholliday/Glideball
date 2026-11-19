@@ -1757,7 +1757,7 @@
 "Click with ⌘ held: opens links in a background tab." = "按住 ⌘ 点按：在后台标签页中打开链接。";
 "Click with ⌥ held." = "按住 ⌥ 点按。";
 "Closes the tab or window in front." = "关闭最前面的标签页或窗口。";
-"Colors the trackball everywhere in Glideball, and the light it throws. Ball blue, ring pink and buttons amber stay the same in charts and badges, so they always mean the same thing." = "为 Glideball 中各处的轨迹球及其投射的光着色。球的蓝色、环的粉色和按钮的琥珀色在图表和徽章中保持不变，因此始终代表同样的含义。";
+"Colors the trackball everywhere in Glideball, the light it throws, and the Gestures ring and Switcher you steer with the ball. Ball blue, ring pink and buttons amber stay the same in charts and badges, so they always mean the same thing." = "为 Glideball 中各处的轨迹球、它投射的光，以及你用球操控的手势环和应用切换器着色。球的蓝色、环的粉色和按钮的琥珀色在图表和徽章中保持不变，因此始终代表同样的含义。";
 "Combo maker" = "组合键达人";
 "Copied. Paste it anywhere." = "已拷贝。可粘贴到任何地方。";
 "Copies what’s selected." = "拷贝所选内容。";
