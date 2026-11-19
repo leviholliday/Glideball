@@ -912,6 +912,19 @@ extension GlideSettingsFile {
     /// (`keepingSwitchers`).
     static let switcherSince = "2.10-beta.25"
 
+    /// The first Glideball that keeps a Switcher's hidden apps (`AppSwitcher.hidden`). A 2.10
+    /// beta before it reads a Switcher without them and writes it back that way, so sync puts
+    /// them back after it (`keepingSwitcherHidden`). Set this to the beta it ships in.
+    static let switcherHiddenSince = "2.10-beta.33"
+
+    /// Written by a Glideball that would have dropped a Switcher's hidden apps (no `writtenBy`
+    /// is older still: it drops the Switcher altogether, `keepingNewerFeatures`).
+    static func predatesSwitcherHidden(_ writtenBy: String?) -> Bool {
+        guard let writtenBy else { return false }
+        guard let v = SettingsVersion(writtenBy), let since = SettingsVersion(switcherHiddenSince) else { return false }
+        return v < since
+    }
+
     /// Written by a Glideball that would have dropped Switcher buttons (none at all: see
     /// `predatesGestureTuning`, whose merge already covers them).
     static func predatesSwitcher(_ writtenBy: String?) -> Bool {
@@ -1734,8 +1747,36 @@ struct AppSwitcher: Codable, Hashable {
     /// A quick press without rolling or turning, before the panel shows (`.system`: the
     /// button's own click).
     var tap: ButtonAction = .system
+    /// Apps this Switcher leaves out, by bundle ID, in the order they were hidden (from the
+    /// panel itself: another trackball button while an app is lit). Settings only: kept in
+    /// the settings file, backups and sync like every other setting, never in stats, and left
+    /// out of a setup shared with someone else (`withoutHiddenApps`). Optional in the file
+    /// (written only when there are some), so older builds and older files load as before.
+    var hidden: [String] = []
 
-    init(tap: ButtonAction = .system) { self.tap = tap }
+    init(tap: ButtonAction = .system, hidden: [String] = []) {
+        self.tap = tap
+        self.hidden = Self.cleaned(hidden)
+    }
+
+    /// At most this many hidden apps per Switcher (anything past it is dropped, oldest kept).
+    static let maxHidden = 64
+
+    /// Hidden apps as they're kept: plausible bundle IDs only (letters, digits, dots, hyphens,
+    /// underscores, at most 155 bytes), each once, at most `maxHidden`.
+    static func cleaned(_ list: [String]) -> [String] {
+        var seen: Set<String> = []
+        var out: [String] = []
+        for id in list where out.count < maxHidden && isBundleID(id) && seen.insert(id).inserted { out.append(id) }
+        return out
+    }
+
+    private static func isBundleID(_ s: String) -> Bool {
+        guard (1...155).contains(s.utf8.count), !s.hasPrefix("."), !s.hasSuffix("."), !s.contains("..") else { return false }
+        return s.unicodeScalars.allSatisfy { u in
+            u.isASCII && (CharacterSet.alphanumerics.contains(u) || u == "." || u == "-" || u == "_")
+        }
+    }
 
     static let symbol = "square.grid.2x2"
     static let standard = AppSwitcher()
@@ -1760,16 +1801,137 @@ struct AppSwitcher: Codable, Hashable {
     }
 
     // Every field has a default, so a newer build's extra fields (or none) still load.
-    private enum CodingKeys: String, CodingKey { case tap }
+    private enum CodingKeys: String, CodingKey { case tap, hidden }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         tap = (try? c.decodeIfPresent(ButtonAction.self, forKey: .tap)) ?? .system
+        hidden = Self.cleaned((try? c.decodeIfPresent([String].self, forKey: .hidden)) ?? [])
     }
 
     func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(tap, forKey: .tap)
+        if !hidden.isEmpty { try c.encode(hidden, forKey: .hidden) }
+    }
+}
+
+extension ButtonAction {
+    /// The same action, a Switcher without its hidden apps (what a shared setup carries).
+    var withoutHiddenApps: ButtonAction {
+        guard case .switcher(var a) = self, !a.hidden.isEmpty else { return self }
+        a.hidden = []
+        return .switcher(a)
+    }
+
+    /// A Switcher that hides apps.
+    var hidesApps: Bool { if case .switcher(let a) = self { !a.hidden.isEmpty } else { false } }
+}
+
+extension GlideConfig {
+    /// Hides (or shows again) app `bundleID` in the Switcher on `buttons` (one button, or a
+    /// combo's buttons) that was in effect with `appSetup`'s app in front: that app setup's own
+    /// Switcher when it has its own buttons (or combos), otherwise the main setup's. Nil when
+    /// there's no such Switcher (it was changed meanwhile), or nothing would change.
+    func settingSwitcherApp(_ bundleID: String, hidden: Bool, buttons: [Int], appSetup: String?) -> GlideConfig? {
+        let buttons = buttons.sorted()
+        func change(_ action: ButtonAction?) -> ButtonAction? {
+            guard case .switcher(var a)? = action else { return nil }
+            let before = a.hidden
+            if hidden {
+                if !a.hidden.contains(bundleID) { a.hidden = AppSwitcher.cleaned(a.hidden + [bundleID]) }
+            } else {
+                a.hidden.removeAll { $0 == bundleID }
+            }
+            return a.hidden == before ? nil : .switcher(a)
+        }
+        /// True: changed; false: that Switcher, nothing to change; nil: no Switcher there.
+        func apply(_ map: inout [Int: ButtonAction], _ chords: inout [Chord]) -> Bool? {
+            if buttons.count == 1 {
+                guard case .switcher? = map[buttons[0]] else { return nil }
+                guard let new = change(map[buttons[0]]) else { return false }
+                map[buttons[0]] = new
+                return true
+            }
+            guard let i = chords.firstIndex(where: { $0.buttons.sorted() == buttons }), chords[i].action.isSwitcher else { return nil }
+            guard let new = change(chords[i].action) else { return false }
+            chords[i].action = new
+            return true
+        }
+        var out = self
+        // The app setup in effect, when it has its own buttons (or combos): its Switcher was the one held.
+        if let id = appSetup, let i = out.appProfiles.firstIndex(where: { $0.bundleID == id }) {
+            var p = out.appProfiles[i]
+            if buttons.count == 1 ? p.buttons != nil : p.chords != nil {
+                var map = p.buttons ?? [:]
+                var chords = p.chords ?? []
+                guard apply(&map, &chords) == true else { return nil }
+                if buttons.count == 1 { p.buttons = map } else { p.chords = chords }
+                out.appProfiles[i] = p
+                return out
+            }
+        }
+        var map = out.buttons
+        var chords = out.chords
+        guard apply(&map, &chords) == true else { return nil }
+        out.buttons = map
+        out.chords = chords
+        return out
+    }
+
+    /// Every Switcher in these settings that hides apps: where it is and what it hides.
+    var switchersHidingApps: [(buttons: [Int], appSetup: String?, hidden: [String])] {
+        var out: [(buttons: [Int], appSetup: String?, hidden: [String])] = []
+        func collect(_ map: [Int: ButtonAction]?, _ chords: [Chord]?, _ setup: String?) {
+            for (b, a) in (map ?? [:]).sorted(by: { $0.key < $1.key }) {
+                if case .switcher(let s) = a, !s.hidden.isEmpty { out.append(([b], setup, s.hidden)) }
+            }
+            for c in chords ?? [] {
+                if case .switcher(let s) = c.action, !s.hidden.isEmpty { out.append((c.buttons.sorted(), setup, s.hidden)) }
+            }
+        }
+        collect(buttons, chords, nil)
+        for p in appProfiles { collect(p.buttons, p.chords, p.bundleID) }
+        return out
+    }
+
+    /// Settings written by a 2.10 beta before hidden apps (`GlideSettingsFile.switcherHiddenSince`),
+    /// merged with this Mac's: it read each Switcher without its hidden apps and wrote it back
+    /// that way, so wherever it left a Switcher's tap alone, this Mac's hidden apps come back.
+    /// Returns whether any did.
+    func keepingSwitcherHidden(from local: GlideConfig) -> (config: GlideConfig, kept: Bool) {
+        var out = self
+        var kept = false
+        func restore(_ incoming: ButtonAction, _ mine: ButtonAction?) -> ButtonAction {
+            guard case .switcher(var a) = incoming, a.hidden.isEmpty, case .switcher(let m)? = mine,
+                  !m.hidden.isEmpty, m.tap == a.tap else { return incoming }
+            a.hidden = m.hidden
+            kept = true
+            return .switcher(a)
+        }
+        func merge(_ buttons: inout [Int: ButtonAction], _ mine: [Int: ButtonAction]) {
+            for (b, a) in buttons { buttons[b] = restore(a, mine[b]) }
+        }
+        func merge(_ chords: inout [Chord], _ mine: [Chord]) {
+            for i in chords.indices {
+                let m = mine.first { $0.id == chords[i].id } ?? mine.first { $0.buttons == chords[i].buttons }
+                chords[i].action = restore(chords[i].action, m?.action)
+            }
+        }
+        merge(&out.buttons, local.buttons)
+        merge(&out.chords, local.chords)
+        for i in out.appProfiles.indices {
+            guard let mine = local.appProfiles.first(where: { $0.bundleID == out.appProfiles[i].bundleID }) else { continue }
+            if var b = out.appProfiles[i].buttons, let mb = mine.buttons {
+                merge(&b, mb)
+                out.appProfiles[i].buttons = b
+            }
+            if var c = out.appProfiles[i].chords, let mc = mine.chords {
+                merge(&c, mc)
+                out.appProfiles[i].chords = c
+            }
+        }
+        return (out, kept)
     }
 }
 
@@ -1895,6 +2057,7 @@ extension ButtonAction {
         case .switcher(var a):
             guard !insideGesture else { return nil }
             a.tap = a.tap.clamped(insideGesture: true) ?? .system
+            a.hidden = AppSwitcher.cleaned(a.hidden)
             return .switcher(a)
         default:
             return self

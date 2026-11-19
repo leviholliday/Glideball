@@ -2,20 +2,31 @@ import AppKit
 import SwiftUI
 
 // The Switcher's panel on screen: a Liquid Glass panel centred on the display the pointer is
-// on, the running apps as big icons in a grid (most recent first), the lit one lifted on a
-// glass highlight in the ball's blue. The engine decides everything (Switcher.swift,
-// Gestures.swift) and hands this a `SwitcherOverlayModel` through `EngineIO.showSwitcher`;
-// this builds the app list when a hold starts, draws it, and switches at the release.
+// on, the running apps as big icons in a grid (most recent first). The ball lights it: a soft
+// glass lens in the ball's blue sits under the lit app and glides from icon to icon, its light
+// spilling across the glass; the lit icon lifts and grows, its neighbours a little (like the
+// Dock), and only the lit app's name shows, crisp, under it. The engine decides everything
+// (Switcher.swift, Gestures.swift) and hands this a `SwitcherOverlayModel` through
+// `EngineIO.showSwitcher`; this builds the app list when a hold starts, draws it, and switches
+// at the release. Another trackball button hides the lit app from this Switcher (the engine
+// says which place; this knows which app, and saves its bundle ID in the Switcher's settings).
 //
 // Privacy: the list (names, icons, window counts) lives only here, on the main thread, only in
 // memory, from the start of a hold until its release (or a few seconds after it). The engine
 // only ever sees how many apps there are and how they're laid out. Nothing about which apps
-// are running is logged, saved, sent or put in diagnostics. No new permissions: names and
-// icons come from NSRunningApplication, window counts from CGWindowList without titles (no
-// Screen Recording, no Accessibility).
+// are running is logged, saved, sent or put in diagnostics; a hidden app's bundle ID goes only
+// into the settings (never stats). No new permissions: names and icons come from
+// NSRunningApplication, window counts from CGWindowList without titles (no Screen Recording,
+// no Accessibility).
+//
+// Motion: the open grows and fades in (a 0.22 s spring), the close fades out in 0.1 s, the
+// light glides with the guide's selection spring, and a hidden app's row closes up the same
+// way. Reduce Motion: fades only (the light cross-fades from app to app, nothing scales or
+// slides). Everything moves only when the model changes, so nothing animates while it's away.
 
 /// One app in the panel.
 struct SwitcherEntry: Identifiable {
+    /// Its place in the hold's list (as it came, before anything was hidden).
     let id: Int
     let name: String
     let icon: NSImage
@@ -25,102 +36,139 @@ struct SwitcherEntry: Identifiable {
     let hidden: Bool
     /// The app itself (nil for render-ui's made-up entries).
     let app: NSRunningApplication?
+    /// What hiding it from the Switcher saves (nil: it has none, so it can't be kept hidden).
+    var bundleID: String? = nil
 }
 
 /// The panel's sizes. One cell per app; the grid comes from `SwitcherGrid` (Switcher.swift).
 enum SwitcherLayout {
-    static let cell = CGSize(width: 112, height: 128)
+    static let cell = CGSize(width: 112, height: 124)
     static let icon: CGFloat = 76
     static let padding: CGFloat = 22
     static let radius: CGFloat = 30
+    /// The hint line under the grid ("Top left: hide app"), when there's a button to do it with.
+    static let footer: CGFloat = 26
     /// Never more than this many across (a wider panel stops reading as one glance).
     static let maxColumns = 8
     /// Room around the panel for its shadow and the lit cell's lift and glow.
     static let margin: CGFloat = 40
+    /// How much the lit icon grows and lifts, and how fast that falls off with distance (cells).
+    static let litScale: CGFloat = 0.16
+    static let litLift: CGFloat = 7
+    static let falloff: CGFloat = 1.1
 
     /// The panel itself (without the margin) for `grid`.
-    static func panelSize(_ grid: SwitcherGrid) -> CGSize {
+    static func panelSize(_ grid: SwitcherGrid, footer: Bool = false) -> CGSize {
         CGSize(width: CGFloat(max(1, min(grid.columns, grid.count))) * cell.width + padding * 2,
-               height: CGFloat(min(grid.visibleRows, max(1, grid.rows))) * cell.height + padding * 2)
+               height: CGFloat(min(grid.visibleRows, max(1, grid.rows))) * cell.height + padding * 2 + (footer ? Self.footer : 0))
     }
 
     /// The window: the panel and its margin.
-    static func canvas(_ grid: SwitcherGrid) -> CGSize {
-        let p = panelSize(grid)
+    static func canvas(_ grid: SwitcherGrid, footer: Bool = false) -> CGSize {
+        let p = panelSize(grid, footer: footer)
         return CGSize(width: p.width + margin * 2, height: p.height + margin * 2)
     }
 
     /// The grid that fits on a display whose usable area is `area`: at most 90% of its width
     /// and 80% of its height, so it never runs off screen.
-    static func grid(count: Int, in area: CGSize) -> SwitcherGrid {
+    static func grid(count: Int, in area: CGSize, frontFirst: Bool = true) -> SwitcherGrid {
         let across = Int(((area.width * 0.9) - padding * 2 - margin * 2) / cell.width)
-        let down = Int(((area.height * 0.8) - padding * 2 - margin * 2) / cell.height)
-        return SwitcherGrid.fitting(count: count, maxColumns: min(maxColumns, max(1, across)), maxRows: max(1, down))
+        let down = Int(((area.height * 0.8) - padding * 2 - footer - margin * 2) / cell.height)
+        return SwitcherGrid.fitting(count: count, maxColumns: min(maxColumns, max(1, across)), maxRows: max(1, down), frontFirst: frontFirst)
     }
+
+    /// The Dock's magnification: 1 at a distance, `1 + litScale` on the lit app.
+    static func closeness(_ distance: CGFloat) -> CGFloat { exp(-(distance * distance) / falloff) }
 }
 
 /// What the panel shows, observed by the view (main thread only).
 @MainActor
 @Observable
 final class SwitcherOverlayState {
+    /// Every app in the hold's list, as it came (the model says which are hidden).
     var entries: [SwitcherEntry] = []
     var model: SwitcherOverlayModel?
     /// Drives the in and out animation: false while it's leaving.
     var shown = false
+    /// The button named in the hint ("Top left"), or nil when there's none to hide an app with.
+    var hideButton: String?
 }
 
 struct SwitcherOverlayView: View {
     let state: SwitcherOverlayState
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         ZStack {
             if let m = state.model, !state.entries.isEmpty {
-                panel(m)
-                    .scaleEffect(state.shown || reduceMotion ? 1 : 0.94)
+                SwitcherPanel(model: m, entries: state.entries, hideButton: state.hideButton)
+                    .scaleEffect(state.shown || reduceMotion ? 1 : 0.97)
                     .opacity(state.shown ? 1 : 0)
+                    .transition(reduceMotion ? .opacity : .scale(scale: 0.94).combined(with: .opacity))
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .allowsHitTesting(false)
         .accessibilityHidden(true)
     }
+}
 
-    private func panel(_ m: SwitcherOverlayModel) -> some View {
+/// The panel: glass, the light, the apps, and the hint.
+struct SwitcherPanel: View {
+    let model: SwitcherOverlayModel
+    let entries: [SwitcherEntry]
+    let hideButton: String?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        let m = model
         let g = m.grid
-        let size = SwitcherLayout.panelSize(g)
+        let gone = Set(m.hidden)
+        let showing = entries.filter { !gone.contains($0.id) }
+        let size = SwitcherLayout.panelSize(g, footer: hideButton != nil)
+        let gridHeight = size.height - (hideButton != nil ? SwitcherLayout.footer : 0)
         let shape = RoundedRectangle(cornerRadius: SwitcherLayout.radius, style: .continuous)
         let cell = SwitcherLayout.cell
         let columns = max(1, g.columns)
-        let selected = min(max(0, m.selected), state.entries.count - 1)
-        let col = selected % columns, row = selected / columns
+        let selected = min(max(0, m.selected), max(0, showing.count - 1))
+        let litCol = CGFloat(selected % columns), litRow = CGFloat(selected / columns)
         let scrolls = g.rows > g.visibleRows
+        let shift = -CGFloat(m.firstRow) * cell.height
+        let litCentre = CGPoint(x: SwitcherLayout.padding + (litCol + 0.5) * cell.width,
+                                y: SwitcherLayout.padding + (litRow + 0.5) * cell.height + shift)
+        let dark = scheme == .dark
+        let motion: Animation = reduceMotion ? .easeOut(duration: 0.14) : .spring(response: 0.26, dampingFraction: 0.86)
         return ZStack(alignment: .topLeading) {
-            // Everything that scrolls: the highlight under the icons, then the icons.
+            // The ball's light, spilling across the glass from the lit app (it glides with it).
+            RadialGradient(colors: [Theme.ball.opacity(dark ? 0.30 : 0.22), Theme.ball.opacity(dark ? 0.08 : 0.05), .clear],
+                           center: .center, startRadius: 0, endRadius: cell.width * 1.7)
+                .frame(width: cell.width * 3.4, height: cell.width * 3.4)
+                .position(litCentre)
+                .blendMode(dark ? .plusLighter : .normal)
+            // Everything that scrolls: the lens under the lit app, then the apps.
             ZStack(alignment: .topLeading) {
-                SwitcherHighlight()
-                    .frame(width: cell.width - 8, height: cell.height - 8)
-                    .offset(x: CGFloat(col) * cell.width + 4, y: CGFloat(row) * cell.height + 4)
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(0..<g.rows, id: \.self) { r in
-                        HStack(spacing: 0) {
-                            ForEach(r * columns..<min(state.entries.count, (r + 1) * columns), id: \.self) { i in
-                                SwitcherCell(entry: state.entries[i], lit: i == selected)
-                                    .frame(width: cell.width, height: cell.height)
-                            }
-                        }
-                    }
+                if !reduceMotion {
+                    SwitcherLens()
+                        .frame(width: cell.width - 10, height: cell.height - 8)
+                        .offset(x: litCol * cell.width + 5, y: litRow * cell.height + 4)
+                }
+                ForEach(Array(showing.enumerated()), id: \.element.id) { i, entry in
+                    let col = CGFloat(i % columns), row = CGFloat(i / columns)
+                    let distance = ((col - litCol) * (col - litCol) + (row - litRow) * (row - litRow) * 1.4).squareRoot()
+                    SwitcherCell(entry: entry, lit: i == selected,
+                                 closeness: reduceMotion ? (i == selected ? 1 : 0) : SwitcherLayout.closeness(distance))
+                        .frame(width: cell.width, height: cell.height)
+                        .offset(x: col * cell.width, y: row * cell.height)
+                        .transition(reduceMotion ? .opacity : .scale(scale: 0.5).combined(with: .opacity))
                 }
             }
-            .offset(y: -CGFloat(m.firstRow) * cell.height)
+            .offset(y: shift)
             .padding(SwitcherLayout.padding)
-            // Rows that scroll away end at the panel's own edge (the padding stays room for the glow).
-            .frame(width: size.width, height: size.height, alignment: .topLeading)
-            .clipShape(shape)
+            .frame(width: size.width, height: gridHeight, alignment: .topLeading)
             // Scrolled rows fade out into the padding instead of peeking in at the edge.
             .mask {
-                let edge = SwitcherLayout.padding / size.height
+                let edge = SwitcherLayout.padding / gridHeight
                 LinearGradient(stops: scrolls
                                    ? [.init(color: .clear, location: 0), .init(color: .black, location: edge),
                                       .init(color: .black, location: 1 - edge), .init(color: .clear, location: 1)]
@@ -137,114 +185,235 @@ struct SwitcherOverlayView: View {
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(.secondary)
                 .padding(.vertical, 3)
-                .frame(width: size.width, height: size.height)
+                .frame(width: size.width, height: gridHeight)
+            }
+            if let hideButton {
+                SwitcherHint(button: hideButton, undoable: m.undoable, hiddenCount: m.hidden.count)
+                    .frame(width: size.width, height: SwitcherLayout.footer + 8)
+                    .offset(y: size.height - SwitcherLayout.footer - 16)
             }
         }
-        .frame(width: size.width, height: size.height)
+        .frame(width: size.width, height: size.height, alignment: .topLeading)
+        .clipShape(shape)
         .glassEffect(.regular, in: shape)
         .overlay {
             // A lit top edge, like light falling on glass.
-            shape.strokeBorder(LinearGradient(colors: [.white.opacity(scheme == .dark ? 0.28 : 0.7), .white.opacity(scheme == .dark ? 0.04 : 0.15)],
+            shape.strokeBorder(LinearGradient(colors: [.white.opacity(dark ? 0.30 : 0.75), .white.opacity(dark ? 0.04 : 0.15)],
                                               startPoint: .top, endPoint: .bottom), lineWidth: 0.75)
         }
-        .shadow(color: .black.opacity(scheme == .dark ? 0.45 : 0.18), radius: 24, y: 10)
-        .animation(reduceMotion ? nil : .spring(response: 0.2, dampingFraction: 0.84), value: m.selected)
-        .animation(reduceMotion ? nil : .spring(response: 0.26, dampingFraction: 0.88), value: m.firstRow)
+        .shadow(color: .black.opacity(dark ? 0.45 : 0.16), radius: 26, y: 12)
+        .animation(motion, value: m.selected)
+        .animation(motion, value: m.hidden)
+        .animation(reduceMotion ? .easeOut(duration: 0.14) : .spring(response: 0.28, dampingFraction: 0.88), value: m.firstRow)
     }
 }
 
-/// The lit cell's glass, in the ball's blue, with a soft glow: the ball lighting it.
-struct SwitcherHighlight: View {
+/// The lens under the lit app: a piece of glass tinted the ball's blue, lit from the top, with
+/// a soft bloom under it. One for the whole panel, so it glides from app to app.
+struct SwitcherLens: View {
+    @Environment(\.colorScheme) private var scheme
+
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: 22, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: 24, style: .continuous)
+        let dark = scheme == .dark
         shape
-            .fill(LinearGradient(colors: [Theme.ball.opacity(0.78), Theme.ball.opacity(0.95)], startPoint: .top, endPoint: .bottom))
-            .glassEffect(.regular.tint(Theme.ball.opacity(0.35)), in: shape)
-            .overlay { shape.strokeBorder(LinearGradient(colors: [.white.opacity(0.7), .white.opacity(0.1)], startPoint: .top, endPoint: .bottom), lineWidth: 1) }
-            .shadow(color: Theme.ball.opacity(0.6), radius: 12)
-            .offset(y: -3)
+            .fill(LinearGradient(colors: [Theme.ball.opacity(dark ? 0.34 : 0.17), Theme.ball.opacity(dark ? 0.16 : 0.09)],
+                                 startPoint: .top, endPoint: .bottom))
+            .overlay {
+                // Light falling on its top edge, and a fine rim in the ball's blue.
+                shape.strokeBorder(LinearGradient(colors: [.white.opacity(dark ? 0.55 : 1), .white.opacity(0.0)],
+                                                  startPoint: .top, endPoint: .center), lineWidth: dark ? 1 : 1.5)
+            }
+            .overlay { shape.strokeBorder(Theme.ball.opacity(dark ? 0.55 : 0.32), lineWidth: 0.75) }
+            .background {
+                // The bloom: the ball's light under the glass.
+                shape.fill(Theme.ball.opacity(dark ? 0.55 : 0.32))
+                    .blur(radius: 16)
+                    .padding(6)
+            }
     }
 }
 
-/// One app: its icon, big, the window count when there are several, and its name.
+/// One app: its icon (lifted and grown by how close it is to the lit app), the window count
+/// when there are several, and, for the lit app only, its name.
 struct SwitcherCell: View {
     let entry: SwitcherEntry
     let lit: Bool
+    /// 1 on the lit app, falling to 0 a couple of apps away (the Dock's magnification).
+    let closeness: CGFloat
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
-        VStack(spacing: 7) {
+        let scale = reduceMotion ? 1 : 1 + SwitcherLayout.litScale * closeness
+        let lift = reduceMotion ? 0 : -SwitcherLayout.litLift * closeness
+        VStack(spacing: 0) {
             Image(nsImage: entry.icon)
                 .resizable()
                 .interpolation(.high)
                 .frame(width: SwitcherLayout.icon, height: SwitcherLayout.icon)
-                .shadow(color: .black.opacity(lit ? 0.3 : 0.18), radius: lit ? 8 : 4, y: lit ? 5 : 2)
                 .opacity(entry.hidden && !lit ? 0.55 : 1)
                 .overlay(alignment: .topTrailing) {
                     if entry.windows >= 2 {
                         Text(entry.windows, format: .number)
-                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .font(.system(size: 10.5, weight: .bold, design: .rounded))
                             .monospacedDigit()
                             .foregroundStyle(.white)
-                            .padding(.horizontal, 6)
-                            .frame(minWidth: 20, minHeight: 20)
-                            .background(Capsule().fill(lit ? Color.black.opacity(0.45) : Color.black.opacity(0.55)))
-                            .overlay { Capsule().strokeBorder(.white.opacity(0.35), lineWidth: 0.5) }
-                            .offset(x: 6, y: -4)
+                            .padding(.horizontal, 5)
+                            .frame(minWidth: 18, minHeight: 18)
+                            .background(Capsule().fill(Color.black.opacity(0.5)))
+                            .overlay { Capsule().strokeBorder(.white.opacity(0.3), lineWidth: 0.5) }
+                            .offset(x: 5, y: -3)
                     }
                 }
+                // Lifted things cast a longer, softer shadow.
+                .shadow(color: .black.opacity(0.16 + 0.16 * closeness), radius: 3 + 7 * closeness, y: 2 + 5 * closeness)
+                .scaleEffect(scale, anchor: .bottom)
+                .offset(y: lift)
+                .frame(height: SwitcherLayout.icon + 22, alignment: .bottom)
+            Spacer(minLength: 0)
+            // Only the lit app's name, at its real size (never scaled, so it stays crisp).
             Text(verbatim: entry.name)
-                .font(.system(size: lit ? 12 : 11, weight: lit ? .semibold : .medium))
-                .foregroundStyle(lit ? AnyShapeStyle(.white) : AnyShapeStyle(.secondary))
-                .shadow(color: lit ? .black.opacity(0.25) : .clear, radius: 1, y: 0.5)
+                .font(.system(size: 12.5, weight: .semibold))
+                .foregroundStyle(.primary)
                 .lineLimit(1)
                 .truncationMode(.middle)
-                .padding(.horizontal, 8)
+                .padding(.horizontal, 6)
+                .opacity(lit ? 1 : 0)
+                .padding(.bottom, 12)
         }
-        .scaleEffect(lit && !reduceMotion ? 1.06 : 1)
-        .offset(y: lit && !reduceMotion ? -3 : 0)
+        .background {
+            // Reduce Motion: no gliding lens, so each app has its own, cross-fading.
+            if reduceMotion {
+                SwitcherLens().padding(.horizontal, 5).padding(.vertical, 4).opacity(lit ? 1 : 0)
+            }
+        }
+    }
+}
+
+/// The line under the apps: how to hide one, and, straight after a hide, how to bring it back.
+/// It fades in a moment after the panel opens, so a quick flip never has to read it.
+struct SwitcherHint: View {
+    /// The button that does it ("Top left").
+    let button: String
+    let undoable: Bool
+    let hiddenCount: Int
+    @State private var visible = false
+
+    var body: some View {
+        HStack(spacing: 6) {
+            if undoable {
+                Image(systemName: "eye.slash")
+                    .font(.system(size: 10.5, weight: .semibold))
+                Text("Hidden", comment: "Switcher panel, just after an app was hidden from it (then: “· [button] Undo”)")
+                Text(verbatim: "·").foregroundStyle(.tertiary)
+                chip
+                Text("Undo", comment: "Switcher panel: press the named button again to bring back the app just hidden")
+            } else {
+                chip
+                Text("Hide app", comment: "Switcher panel hint: pressing the named trackball button hides the lit app from the Switcher")
+            }
+        }
+        .font(.system(size: 11, weight: .medium))
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
+        .opacity(visible || undoable || hiddenCount > 0 ? 1 : 0)
+        .animation(.easeOut(duration: 0.15), value: undoable)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.3).delay(0.7)) { visible = true }
+        }
+    }
+
+    /// The button's name in a small keycap, with an amber dot (buttons are amber).
+    private var chip: some View {
+        HStack(spacing: 4) {
+            Circle().fill(Theme.buttons).frame(width: 5, height: 5)
+            Text(verbatim: button)
+        }
+        .font(.system(size: 10.5, weight: .semibold))
+        .foregroundStyle(.primary.opacity(0.8))
+        .padding(.horizontal, 7)
+        .frame(height: 18)
+        .background(Capsule().fill(.primary.opacity(0.07)))
+        .overlay { Capsule().strokeBorder(.primary.opacity(0.14), lineWidth: 0.5) }
     }
 }
 
 // MARK: - The app list
 
 /// The apps in the order you last used them, kept in memory while Glideball runs (never saved):
-/// what ⌘-Tab's order is made of. Main thread only.
+/// what ⌘-Tab's order is made of. Every running app has a place in it from the moment Glideball
+/// starts (the windows' front-to-back order then, then newest first), and only ever moves when
+/// you use it: so the apps you haven't touched stay where they were from one hold to the next,
+/// instead of reshuffling by whatever windows happen to be on screen. Main thread only.
 @MainActor
 final class SwitcherRecents {
     static let shared = SwitcherRecents()
     private(set) var order: [pid_t] = []
-    private var observer: NSObjectProtocol?
+    private var observers: [NSObjectProtocol] = []
 
     func start() {
-        guard observer == nil else { return }
-        if let front = NSWorkspace.shared.frontmostApplication { order = [front.processIdentifier] }
-        observer = NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didActivateApplicationNotification,
-                                                                     object: nil, queue: .main) { note in
-            guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else { return }
-            let pid = app.processIdentifier
-            MainActor.assumeIsolated {
-                var o = SwitcherRecents.shared.order
-                o.removeAll { $0 == pid }
-                o.insert(pid, at: 0)
-                SwitcherRecents.shared.order = Array(o.prefix(64))
-            }
+        guard observers.isEmpty else { return }
+        order = Self.seed()
+        let center = NSWorkspace.shared.notificationCenter
+        func app(_ note: Notification) -> pid_t? {
+            (note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication)?.processIdentifier
         }
+        observers.append(center.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { note in
+            guard let pid = app(note) else { return }
+            MainActor.assumeIsolated { SwitcherRecents.shared.used(pid) }
+        })
+        observers.append(center.addObserver(forName: NSWorkspace.didLaunchApplicationNotification, object: nil, queue: .main) { note in
+            guard let pid = app(note) else { return }
+            MainActor.assumeIsolated { SwitcherRecents.shared.launched(pid) }
+        })
+        observers.append(center.addObserver(forName: NSWorkspace.didTerminateApplicationNotification, object: nil, queue: .main) { note in
+            guard let pid = app(note) else { return }
+            MainActor.assumeIsolated { SwitcherRecents.shared.order.removeAll { $0 == pid } }
+        })
     }
 
-    /// The running apps with a Dock icon (regular activation policy), ⌘-Tab's order: the one
-    /// in front first, then the most recently used, then the rest by their windows' stacking
-    /// order, then by launch. With each one's windows on screen.
-    func apps() -> [SwitcherEntry] {
-        let running = NSWorkspace.shared.runningApplications.filter { $0.activationPolicy == .regular && !$0.isTerminated }
-        let (windows, stacking) = Self.windowsByApp()
+    /// Used (it came to the front): first.
+    private func used(_ pid: pid_t) {
+        order.removeAll { $0 == pid }
+        order.insert(pid, at: 0)
+        if order.count > 128 { order.removeLast(order.count - 128) }
+    }
+
+    /// Just opened (it usually comes to the front too, which moves it up): second, behind the app
+    /// in front, as ⌘-Tab puts it.
+    private func launched(_ pid: pid_t) {
+        guard !order.contains(pid) else { return }
+        order.insert(pid, at: min(1, order.count))
+    }
+
+    /// The order at start: the app in front, then the rest by their windows' stacking, then by launch.
+    private static func seed() -> [pid_t] {
+        var out: [pid_t] = []
+        func put(_ pid: pid_t) { if !out.contains(pid) { out.append(pid) } }
+        if let front = NSWorkspace.shared.frontmostApplication { put(front.processIdentifier) }
+        windowsByApp().stacking.forEach(put)
+        NSWorkspace.shared.runningApplications
+            .filter { $0.activationPolicy == .regular }
+            .sorted { ($0.launchDate ?? .distantPast) > ($1.launchDate ?? .distantPast) }
+            .forEach { put($0.processIdentifier) }
+        return out
+    }
+
+    /// The running apps with a Dock icon (regular activation policy) in ⌘-Tab's order: the one in
+    /// front first, then the rest as they were last used (`order`), any it somehow missed last,
+    /// newest first. Leaves out `hiding` (bundle IDs). With each one's windows on screen.
+    func apps(hiding: Set<String> = []) -> [SwitcherEntry] {
+        let running = NSWorkspace.shared.runningApplications.filter {
+            $0.activationPolicy == .regular && !$0.isTerminated && !hiding.contains($0.bundleIdentifier ?? "")
+        }
+        let windows = Self.windowsByApp().counts
         let front = NSWorkspace.shared.frontmostApplication?.processIdentifier
         var rank: [pid_t: Int] = [:]
         var next = 0
         func put(_ pid: pid_t) { if rank[pid] == nil { rank[pid] = next; next += 1 } }
         if let front { put(front) }
         order.forEach(put)
-        stacking.forEach(put)
         let sorted = running.enumerated().sorted { a, b in
             let ra = rank[a.element.processIdentifier] ?? Int.max, rb = rank[b.element.processIdentifier] ?? Int.max
             if ra != rb { return ra < rb }
@@ -254,7 +423,8 @@ final class SwitcherRecents {
         return sorted.prefix(96).enumerated().map { i, app in
             let icon = app.icon ?? NSWorkspace.shared.icon(for: .application)
             return SwitcherEntry(id: i, name: app.localizedName ?? app.bundleIdentifier ?? "?", icon: icon,
-                                 windows: windows[app.processIdentifier] ?? 0, hidden: app.isHidden, app: app)
+                                 windows: windows[app.processIdentifier] ?? 0, hidden: app.isHidden, app: app,
+                                 bundleID: app.bundleIdentifier)
         }
     }
 
@@ -297,12 +467,16 @@ private final class SwitcherWindow: NSPanel {
 final class SwitcherOverlayPanel: SwitcherPresenting {
     static let shared = SwitcherOverlayPanel()
 
+    /// Saves a hide (or a show again) in the Switcher's settings: the app's bundle ID, whether
+    /// it's hidden, and the Switcher's button (or combo). Set by the app (`AppModel`).
+    static var onHiddenChange: ((_ bundleID: String, _ hidden: Bool, _ buttons: [Int]) -> Void)?
+
     private let state = SwitcherOverlayState()
     private var window: NSPanel?
     private var leaving: DispatchWorkItem?
     private var lastSelected: Int?
     /// The hold's list and the display it's for. Only the latest hold's, only until it's used.
-    private var list: (session: Int, entries: [SwitcherEntry], grid: SwitcherGrid, area: CGRect)?
+    private var list: (session: Int, entries: [SwitcherEntry], grid: SwitcherGrid, area: CGRect, buttons: [Int], hideButton: String?)?
     private var forget: DispatchWorkItem?
 
     /// Hooks it up to the engine and starts keeping the order apps were used in. Once, at launch.
@@ -311,8 +485,14 @@ final class SwitcherOverlayPanel: SwitcherPresenting {
         SwitcherRecents.shared.start()
     }
 
-    nonisolated func prepareSwitcher(session: Int, near point: CGPoint) -> SwitcherGrid {
-        MainActor.assumeIsolated { prepare(session: session, near: point) }
+    /// The button the hint names for hiding an app: another of the trackball's buttons that isn't
+    /// the primary one and isn't the Switcher's own (top left first, then bottom right, then top right).
+    static func hideButton(besides buttons: [Int]) -> String? {
+        [2, 1, 3].first { !buttons.contains($0) }.map(AppModel.buttonName)
+    }
+
+    nonisolated func prepareSwitcher(session: Int, near point: CGPoint, buttons: [Int], hidden: [String]) -> SwitcherGrid {
+        MainActor.assumeIsolated { prepare(session: session, near: point, buttons: buttons, hidden: hidden) }
     }
 
     nonisolated func showSwitcher(_ model: SwitcherOverlayModel, near point: CGPoint) {
@@ -327,15 +507,21 @@ final class SwitcherOverlayPanel: SwitcherPresenting {
         MainActor.assumeIsolated { activate(session: session, index: index) }
     }
 
-    private func prepare(session: Int, near point: CGPoint) -> SwitcherGrid {
-        let entries = SwitcherRecents.shared.apps()
+    nonisolated func switcherAppHidden(session: Int, index: Int, hidden: Bool) {
+        MainActor.assumeIsolated { appHidden(session: session, index: index, hidden: hidden) }
+    }
+
+    private func prepare(session: Int, near point: CGPoint, buttons: [Int], hidden: [String]) -> SwitcherGrid {
+        let entries = SwitcherRecents.shared.apps(hiding: Set(hidden))
+        let front = NSWorkspace.shared.frontmostApplication?.processIdentifier
+        let frontFirst = front != nil && entries.first?.app?.processIdentifier == front
         // The display the pointer is on (Quartz's top-left point to AppKit's bottom-left).
         let primary = CGDisplayBounds(CGMainDisplayID()).height
         let cocoa = NSPoint(x: point.x, y: primary - point.y)
         let screen = NSScreen.screens.first { NSMouseInRect(cocoa, $0.frame, false) } ?? NSScreen.main ?? NSScreen.screens.first
         let area = screen?.visibleFrame ?? CGRect(x: 0, y: 0, width: 1440, height: 900)
-        let grid = SwitcherLayout.grid(count: entries.count, in: area.size)
-        list = (session, entries, grid, area)
+        let grid = SwitcherLayout.grid(count: entries.count, in: area.size, frontFirst: frontFirst)
+        list = (session, entries, grid, area, buttons, Self.hideButton(besides: buttons))
         forgetLater(after: 40)   // a hold never lasts longer than 30 s
         return grid
     }
@@ -345,34 +531,42 @@ final class SwitcherOverlayPanel: SwitcherPresenting {
         let window = self.window ?? make()
         leaving?.cancel()
         leaving = nil
+        let gone = Set(model.hidden)
+        let showing = list.entries.filter { !gone.contains($0.id) }
         if model.selected != lastSelected, lastSelected != nil {
             Sounds.shared.detent(pitch: 1.0 + Double(model.selected % 8) * 0.03, volume: 0.3, kind: .buttons)
         }
-        if model.selected != lastSelected, NSWorkspace.shared.isVoiceOverEnabled, list.entries.indices.contains(model.selected) {
+        if model.selected != lastSelected || model.hidden != state.model?.hidden,
+           NSWorkspace.shared.isVoiceOverEnabled, showing.indices.contains(model.selected) {
             NSAccessibility.post(element: NSApp as Any, notification: .announcementRequested,
-                                 userInfo: [.announcement: list.entries[model.selected].name, .priority: NSAccessibilityPriorityLevel.high.rawValue])
+                                 userInfo: [.announcement: showing[model.selected].name, .priority: NSAccessibilityPriorityLevel.high.rawValue])
         }
         lastSelected = model.selected
         let appearing = !window.isVisible || !state.shown
         if appearing {
-            let size = SwitcherLayout.canvas(model.grid)
+            // Sized once for the whole list as it came: hiding an app only ever shrinks the panel
+            // inside it, so nothing re-centres or jumps while it's up.
+            let size = SwitcherLayout.canvas(list.grid, footer: list.hideButton != nil)
             let a = list.area
             let origin = NSPoint(x: (a.midX - size.width / 2).rounded(), y: (a.midY - size.height / 2).rounded())
             window.setFrame(NSRect(origin: origin, size: size), display: false)
             state.entries = list.entries
-        }
-        state.model = model
-        if appearing {
+            state.hideButton = list.hideButton
             window.orderFrontRegardless()
-            state.shown = false
-            withAnimation(.easeOut(duration: 0.12)) { state.shown = true }
+            // It grows and fades in (the panel's own transition; Reduce Motion: a fade).
+            withAnimation(.spring(response: 0.22, dampingFraction: 0.9)) {
+                state.model = model
+                state.shown = true
+            }
+        } else {
+            state.model = model
         }
     }
 
     private func hide() {
         lastSelected = nil
         guard let window, window.isVisible, leaving == nil else { return }
-        withAnimation(.easeIn(duration: 0.07)) { state.shown = false }
+        withAnimation(.easeIn(duration: 0.1)) { state.shown = false }
         let work = DispatchWorkItem { [weak self] in
             guard let self else { return }
             window.orderOut(nil)
@@ -381,8 +575,15 @@ final class SwitcherOverlayPanel: SwitcherPresenting {
             leaving = nil
         }
         leaving = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08, execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.11, execute: work)
         forgetLater(after: 3)   // the release's switch, if any, comes right after this
+    }
+
+    /// The engine hid (or brought back) app `index` of the list: saved in the Switcher's settings.
+    private func appHidden(session: Int, index: Int, hidden: Bool) {
+        guard let list, list.session == session, list.entries.indices.contains(index),
+              let id = list.entries[index].bundleID else { return }
+        Self.onHiddenChange?(id, hidden, list.buttons)
     }
 
     /// The release: switch to the lit app the way ⌘-Tab does (its windows forward), un-hiding it

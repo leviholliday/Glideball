@@ -327,13 +327,23 @@ class EngineIO {
     /// Asks the main thread to build the app list for Switcher hold `session` (on the display
     /// that has `point`) and calls `ready` with its grid, on the main thread. False (and no
     /// call) if there's nothing to build it with. The list never leaves the main thread.
-    func prepareSwitcher(session: Int, near point: CGPoint, ready: @escaping (SwitcherGrid) -> Void) -> Bool {
+    /// `buttons` is the Switcher's button (or combo) and `hidden` the bundle IDs it leaves out
+    /// (its own settings, not what's running).
+    func prepareSwitcher(session: Int, near point: CGPoint, buttons: [Int], hidden: [String],
+                         ready: @escaping (SwitcherGrid) -> Void) -> Bool {
         guard Self.switcherPresenter != nil else { return false }
         DispatchQueue.main.async {
             guard let presenter = Self.switcherPresenter else { return }
-            ready(presenter.prepareSwitcher(session: session, near: point))
+            ready(presenter.prepareSwitcher(session: session, near: point, buttons: buttons, hidden: hidden))
         }
         return true
+    }
+
+    /// App `index` of Switcher hold `session`'s list was hidden from its Switcher (`hidden`)
+    /// or brought back: the main thread, which knows which app that is, saves it. Queued on the
+    /// main thread before the panel's next drawing, so the two never disagree.
+    func switcherAppHidden(session: Int, index: Int, hidden: Bool) {
+        DispatchQueue.main.async { Self.switcherPresenter?.switcherAppHidden(session: session, index: index, hidden: hidden) }
     }
 
     /// Shows the Switcher's panel (on the display it was prepared for), or updates it. The

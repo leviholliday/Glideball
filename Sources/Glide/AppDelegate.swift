@@ -50,6 +50,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         WheelOverlayPanel.install()   // before the engine starts: a Wheel's ring has something to draw it
         SwitcherOverlayPanel.install()   // the same for the Switcher's panel (and it starts keeping the order apps were used in)
         _ = AppModel.shared   // starts the engine
+        // An app hidden from the Switcher's panel (or brought back) goes into that Switcher's settings.
+        SwitcherOverlayPanel.onHiddenChange = { id, hidden, buttons in AppModel.shared.setSwitcherApp(id, hidden: hidden, buttons: buttons) }
         watchModes()
         startHotKeys()
         ExternalControlCenter.shared.start()   // status.json, if "Allow Raycast and scripts" is on

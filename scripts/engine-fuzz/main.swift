@@ -235,17 +235,42 @@ final class FakeIO: EngineIO {
     var lists: [Int: SwitcherGrid] = [:]   // this engine's holds' lists, by session (a relaunch starts over)
     var activatedSessions: Set<Int> = []
     var activations: [(session: Int, index: Int)] = []
-    override func prepareSwitcher(session: Int, near point: CGPoint, ready: @escaping (SwitcherGrid) -> Void) -> Bool {
+    /// Apps hidden from the Switcher, as the main thread was told (session → places in its list).
+    var hiddenApps: [Int: [Int]] = [:]
+    var hideCalls = 0
+    override func prepareSwitcher(session: Int, near point: CGPoint, buttons: [Int], hidden: [String],
+                                  ready: @escaping (SwitcherGrid) -> Void) -> Bool {
         guard switcherLists else { return false }
         if lists[session] != nil { switcherFault = "two lists asked for Switcher hold \(session)" }
+        if buttons.contains(0) { switcherFault = "a Switcher list asked for a hold on the primary button" }
         lists[session] = listGrid
         if listDelay.isFinite { pendingLists.append((clock + listDelay, session, listGrid, ready)) }
         return true
     }
+    override func switcherAppHidden(session: Int, index: Int, hidden: Bool) {
+        hideCalls += 1
+        guard let g = lists[session] else { switcherFault = "hid an app of a hold that never had a list"; return }
+        if index < 0 || index >= g.count { switcherFault = "hid app \(index) of \(g.count)" }
+        if switcher == nil { switcherFault = "hid an app with no panel up" }
+        var list = hiddenApps[session] ?? []
+        if hidden {
+            if list.contains(index) { switcherFault = "hid app \(index) twice in one hold" }
+            list.append(index)
+        } else {
+            if list.last != index { switcherFault = "brought back app \(index), not the last one hidden" }
+            list.removeAll { $0 == index }
+        }
+        hiddenApps[session] = list
+    }
     override func showSwitcher(_ model: SwitcherOverlayModel, at point: CGPoint) -> Bool {
         guard switcherWorks else { return false }
         if !frozen { switcherFault = "the Switcher was shown while nothing held the pointer" }
-        if lists[model.session] != model.grid { switcherFault = "the panel's grid isn't its list's" }
+        if let list = lists[model.session] {
+            if model.grid != list.keeping(list.count - model.hidden.count) { switcherFault = "the panel's grid isn't its list's (less what's hidden)" }
+            if model.hidden != (hiddenApps[model.session] ?? []) { switcherFault = "the panel hides \(model.hidden), the main thread was told \(hiddenApps[model.session] ?? [])" }
+        } else {
+            switcherFault = "the panel's list was never asked for"
+        }
         if switcher == nil { switcherShows += 1; switcherKeptAt = clock }
         switcher = (model, point)
         return true
@@ -260,6 +285,7 @@ final class FakeIO: EngineIO {
         if !activatedSessions.insert(session).inserted { switcherFault = "Switcher hold \(session) switched apps twice" }
         if let g = lists[session] {
             if index < 0 || index >= g.count { switcherFault = "switched to app \(index) of \(g.count)" }
+            if (hiddenApps[session] ?? []).contains(index) { switcherFault = "switched to app \(index), hidden this hold" }
         } else {
             switcherFault = "switched apps for a hold that never had a list"
         }
@@ -1773,6 +1799,7 @@ final class World {
         io.pendingLists.removeAll()   // the old process's main thread is gone with it
         io.lists.removeAll()          // and the new one numbers its holds from 1 again
         io.activatedSessions.removeAll()
+        io.hiddenApps.removeAll()
         io.keyTap = nil
         quitDone = false
         wire()
@@ -2233,12 +2260,12 @@ func run(_ configs: [GlideConfig], _ ops: [Op]) -> (Failure, Int)? {
     statFires += w.gestureFires; statChained += w.chainedFires; statTaps += w.gestureTaps; statHolds += w.gestureHolds
     statWheelHolds += w.wheelHolds; statWheelPicks += w.wheelPicks; statWheelRing += w.wheelRingSteps; statWheelTaps += w.wheelTaps
     statWheelRepeats += w.wheelRepeats
-    statSwitcherHolds += w.switcherHolds; statSwitches += w.switcherSwitches; statSwitcherTaps += w.switcherTaps; statSwitcherPanels += w.io.switcherShows
+    statSwitcherHolds += w.switcherHolds; statSwitches += w.switcherSwitches; statSwitcherTaps += w.switcherTaps; statSwitcherPanels += w.io.switcherShows; statSwitcherHides += w.io.hideCalls
     return nil
 }
 var statFires = 0, statChained = 0, statTaps = 0, statHolds = 0
 var statWheelHolds = 0, statWheelPicks = 0, statWheelRing = 0, statWheelTaps = 0, statWheelRepeats = 0
-var statSwitcherHolds = 0, statSwitches = 0, statSwitcherTaps = 0, statSwitcherPanels = 0
+var statSwitcherHolds = 0, statSwitches = 0, statSwitcherTaps = 0, statSwitcherPanels = 0, statSwitcherHides = 0
 
 /// Delta debugging: the smallest list of ops (that we can find quickly) that still
 /// breaks the same rule.
@@ -2711,7 +2738,37 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
         ("switcher: ring turns step the highlight, never scroll, and the release switches", [swFly],
          flick + down(3) + (0..<3).flatMap { _ in [Op.kWheel(-1), .wait(0.03)] } + up(3) + settle),
         ("switcher: Esc dismisses it", [swC], down(3) + slow + right + [.esc] + right + up(3) + settle),
-        ("switcher: another trackball button dismisses it", [swC], down(3) + slow + right + down(1) + up(1) + up(3) + settle),
+        ("switcher: the primary button dismisses it, and is still a plain click", [swC], down(3) + slow + right + down(0) + up(0) + up(3) + settle),
+    ]
+    gestureCases += switchers
+    // Hiding an app from the panel (beta 33): another trackball button while it's up. Its press
+    // and release never reach apps, nothing stays held, and every way out still frees everything.
+    let hides: [(String, [GlideConfig], [Op])] = [
+        ("switcher hide: another button hides the lit app, and no click leaks", [swC],
+         down(3) + slow + right + down(1) + up(1) + up(3) + settle),
+        ("switcher hide: pressed again before moving brings it back", [swC],
+         down(3) + slow + right + down(1) + up(1) + down(2) + up(2) + up(3) + settle),
+        ("switcher hide: hide, roll on, hide again: two hidden, the release names the right app", [swC],
+         down(3) + slow + down(1) + up(1) + right + down(2) + up(2) + up(3) + settle),
+        ("switcher hide: the hide button held past the Switcher's release", [swC],
+         down(3) + slow + right + down(1) + up(3) + [.kBall(20, 0), .wait(0.1)] + up(1) + settle),
+        ("switcher hide: unplugged with the hide button down: nothing held, nothing switches", [swC],
+         down(3) + slow + right + down(1) + [.unplug(0), .wait(1), .replug(0)] + settle),
+        ("switcher hide: paused with the hide button down: nothing held, nothing switches", [swC],
+         down(3) + slow + right + down(1) + [.pause, .resume] + up(1) + up(3) + settle),
+        ("switcher hide: the tap switched off with the hide button down", [swC],
+         down(3) + slow + right + down(1) + [.tapOff(1), .kBall(5, 0)] + up(1) + up(3) + settle),
+        ("switcher hide: another button before the panel shows dismisses it (and does its own click)", [swC],
+         down(3) + [.wait(0.05)] + down(1) + up(1) + up(3) + settle),
+        ("switcher hide: the watchdog took the panel down: the press hides nothing", [swC],
+         down(3) + slow + right + [.switcherPanel(2)] + down(1) + up(1) + up(3) + settle),
+        ("switcher hide: a combo Switcher, its free button hides", [swCombo],
+         down(1, 3) + slow + right + down(2) + up(2) + up(3) + up(1) + settle),
+        ("switcher hide: a repeat press of the Switcher's own button never hides", [swC],
+         down(3) + slow + right + [.kPress(3, hidFirst: true)] + up(3) + settle),
+    ]
+    gestureCases += hides
+    let switchers2: [(String, [GlideConfig], [Op])] = [
         ("switcher: another mouse clicks meanwhile: the Switcher stays", [swC],
          down(3) + slow + right + [.oPress(1), .oRelease(1), .wait(0.2)] + up(3) + settle),
         ("switcher: on a combo, the first button up switches", [swCombo], down(1, 3) + slow + right + up(3) + [.kBall(30, 0)] + up(1) + settle),
@@ -2741,7 +2798,7 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
         ("switcher: another mouse moves the hold: the panel follows the anchor", [swC],
          down(3) + slow + right + [.wait(0.3), .oBall, .wait(0.1)] + up(3) + settle),
     ]
-    gestureCases += switchers
+    gestureCases += switchers2
     let older: [(String, [GlideConfig], [Op])] = [
         ("held shortcut, unplugged while held: the key comes up",
          [hold], [.kPress(3, hidFirst: true), .unplug(2), .wait(1)]),
@@ -3199,12 +3256,42 @@ let expectations: [String: (World) -> String?] = [
     "switcher: a flick and release before the panel's delay still switches": { w in switcherDid(w, holds: 1, to: [2]) },
     "switcher: ring turns step the highlight, never scroll, and the release switches": { w in switcherDid(w, holds: 1, to: [4], shows: 1) },
     "switcher: Esc dismisses it": { w in switcherDid(w, holds: 1, to: [], shows: 1) },
-    "switcher: another trackball button dismisses it": { w in switcherDid(w, holds: 1, to: [], shows: 1) },
+    "switcher: the primary button dismisses it, and is still a plain click": { w in
+        switcherDid(w, holds: 1, to: [], shows: 1) ?? expectLog(w, ["kensington down 0", "kensington up 0"]) },
+    "switcher hide: another button hides the lit app, and no click leaks": { w in
+        switcherDid(w, holds: 1, to: [3], shows: 1) ?? hid(w, [2], calls: 1) ?? expectLog(w, []) },
+    "switcher hide: pressed again before moving brings it back": { w in
+        switcherDid(w, holds: 1, to: [2], shows: 1) ?? hid(w, [], calls: 2) ?? expectLog(w, []) },
+    "switcher hide: hide, roll on, hide again: two hidden, the release names the right app": { w in
+        // Places 0–5; lit 1, hidden; lit is now 2 (place 2); right: place 3, hidden; lit place 4.
+        switcherDid(w, holds: 1, to: [4], shows: 1) ?? hid(w, [1, 3], calls: 2) ?? expectLog(w, []) },
+    "switcher hide: the hide button held past the Switcher's release": { w in
+        switcherDid(w, holds: 1, to: [3], shows: 1) ?? hid(w, [2], calls: 1) ?? expectLog(w, []) },
+    "switcher hide: unplugged with the hide button down: nothing held, nothing switches": { w in
+        // (Unplugging lets go of the buttons in macOS itself: those raw releases are the
+        // system's; the hard rules check apps never see a press the engine left down.)
+        switcherDid(w, holds: 1, to: [], shows: 1) ?? hid(w, [2], calls: 1)
+            ?? (w.outLog.contains { $0.hasPrefix("kensington down") } ? "apps saw a press: \(w.outLog)" : nil) },
+    "switcher hide: paused with the hide button down: nothing held, nothing switches": { w in
+        switcherDid(w, holds: 1, to: [], shows: 1) ?? hid(w, [2], calls: 1) ?? expectLog(w, []) },
+    "switcher hide: the tap switched off with the hide button down": { w in
+        switcherDid(w, holds: 1, to: [], shows: 1) ?? hid(w, [2], calls: 1) },
+    "switcher hide: another button before the panel shows dismisses it (and does its own click)": { w in
+        switcherDid(w, holds: 1, to: [], shows: 0) ?? hid(w, [], calls: 0) ?? expectLog(w, ["kensington down 1", "kensington up 1"]) },
+    "switcher hide: the watchdog took the panel down: the press hides nothing": { w in
+        switcherDid(w, holds: 1, to: [], shows: 1) ?? hid(w, [], calls: 0) },
+    "switcher hide: a combo Switcher, its free button hides": { w in
+        switcherDid(w, holds: 1, to: [3], shows: 1) ?? hid(w, [2], calls: 1) ?? expectLog(w, []) },
+    "switcher hide: a repeat press of the Switcher's own button never hides": { w in
+        switcherDid(w, holds: 1, to: nil, shows: 1) ?? hid(w, [], calls: 0) },
     "switcher: another mouse clicks meanwhile: the Switcher stays": { w in switcherDid(w, holds: 1, to: [2], shows: 1) },
     "switcher: on a combo, the first button up switches": { w in switcherDid(w, holds: 1, to: [2], shows: 1) },
     "switcher: never on the primary button, alone or in a combo": { w in switcherDid(w, holds: 0, to: [], shows: 0) },
     "switcher: never held with a Wheel or a gesture": { w in
-        switcherDid(w, holds: 1, to: [], shows: 1) ?? (w.wheelHolds == 0 && w.gestureHolds == 0 ? nil : "a Wheel or gesture started during the Switcher hold") },
+        // With the panel up, the Wheel's and the gesture's buttons are just other buttons: each
+        // hides the lit app (places 1, then 3 after the roll right), and the release goes to place 4.
+        switcherDid(w, holds: 1, to: [4], shows: 1) ?? hid(w, [1, 3], calls: 2)
+            ?? (w.wheelHolds == 0 && w.gestureHolds == 0 ? nil : "a Wheel or gesture started during the Switcher hold") },
     "switcher: paused mid-hold: down, nothing switches": { w in switcherDid(w, holds: 1, to: [], shows: 1) },
     "switcher: the Mac sleeps mid-hold: down, nothing switches": { w in switcherDid(w, holds: 1, to: [], shows: 1) },
     "switcher: quit mid-hold: down, nothing switches": { w in switcherDid(w, holds: 1, to: [], shows: 1) },
@@ -3230,6 +3317,14 @@ func switcherDid(_ w: World, holds: Int, to: [Int]?, taps: Int = 0, shows: Int? 
     if w.switcherTaps != taps { return "\(w.switcherTaps) Switcher taps, expected \(taps)" }
     if let shows, w.io.switcherShows != shows { return "the panel went up \(w.io.switcherShows) times, expected \(shows)" }
     if w.io.switcher != nil { return "the panel is still up at the end" }
+    return nil
+}
+
+/// The apps hidden from the Switcher in the case's (only) hold, as the main thread was told, and how often it was told.
+func hid(_ w: World, _ places: [Int], calls: Int) -> String? {
+    let got = w.io.hiddenApps.values.first ?? []
+    if got != places { return "hidden \(got), expected \(places)" }
+    if w.io.hideCalls != calls { return "\(w.io.hideCalls) hide calls, expected \(calls)" }
     return nil
 }
 
@@ -3325,7 +3420,7 @@ while true {
 let secs = Date().timeIntervalSince(started)
 print("  gestures: \(statHolds) holds, \(statFires) fires (\(statChained) chained), \(statTaps) taps")
 print("  rings: \(statWheelHolds) holds, \(statWheelPicks) places run, \(statWheelRepeats) repeats, \(statWheelRing) ring steps, \(statWheelTaps) taps")
-print("  switchers: \(statSwitcherHolds) holds, \(statSwitcherPanels) panels shown, \(statSwitches) switches, \(statSwitcherTaps) taps")
+print("  switchers: \(statSwitcherHolds) holds, \(statSwitcherPanels) panels shown, \(statSwitches) switches, \(statSwitcherTaps) taps, \(statSwitcherHides) hides or undos")
 print(String(format: "%d seeds, %d events in %.1f s (%.0f events/s): %@", seedIndex, totalEvents, secs,
              Double(totalEvents) / max(secs, 0.001), failed == 0 ? "all rules held" : "\(failed) FAILED"))
 exit(failed == 0 ? 0 : 1)

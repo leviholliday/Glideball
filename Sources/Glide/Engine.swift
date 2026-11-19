@@ -2153,6 +2153,30 @@ final class Engine {
         let pass = Unmanaged.passUnretained(event)
         let button = event.getIntegerValueField(.mouseEventButtonNumber)
 
+        // Another trackball button while the Switcher's panel is up (never the primary button,
+        // never the hold's own): it hides the lit app, or brings back the one just hidden. The
+        // press and its release are the Switcher's: nothing reaches apps, nothing stays held. A
+        // panel EngineIO's watchdog took down hides nothing: the press dismisses it, as before.
+        if phase == .down, button != 0, gestures.switcherHeld, switcherShown != nil, !io.keepSwitcher() { switcherLost() }
+        if phase == .down, button != 0, gestures.switcherHeld, switcherShown != nil, pending.isEmpty,
+           let result = gestures.switcherHide(button: Int(button)) {
+            overrides[button] = .swallow
+            if let session = gestures.hold?.switcher?.session {
+                switch result {
+                case .hid(let app):
+                    diagnostics.record("switcher: hid an app")   // never which
+                    io.switcherAppHidden(session: session, index: app, hidden: true)
+                case .restored(let app):
+                    diagnostics.record("switcher: brought an app back")
+                    io.switcherAppHidden(session: session, index: app, hidden: false)
+                case .nothing:
+                    break
+                }
+            }
+            syncPanels()
+            publishModes()
+            return nil
+        }
         // Any other press during a gesture hold means the release isn't a tap.
         if phase == .down, gestures.isHeld { gestures.otherPress(Int(button)); syncPanels(); publishModes() }
 
@@ -3289,7 +3313,7 @@ final class Engine {
             scroller.stopRing()   // the ring steps the highlight now: nothing it set going keeps scrolling
             applyGesture(effects)
             startHoldFailsafe()
-            beginSwitcherList()
+            if case .switcher(let a) = kind { beginSwitcherList(buttons: buttons.map { Int($0) }, hidden: a.hidden) }
             return
         }
         if case .gesture(let g) = kind {
@@ -3379,7 +3403,7 @@ final class Engine {
 
     /// A Switcher hold began: asks the main thread for its app list (the engine only ever gets
     /// back how many and how they're laid out), and brings the panel up after its short delay.
-    private func beginSwitcherList() {
+    private func beginSwitcherList(buttons: [Int], hidden: [String]) {
         guard let session = gestures.hold?.switcher?.session else { return }
         switcherReveal?.invalidate()
         switcherReveal = io.schedule(SwitcherHold.revealDelay + 0.001, repeats: false) { [unowned self] in
@@ -3387,7 +3411,7 @@ final class Engine {
             publishModes()
         }
         let near = anchor ?? io.cursorLocation() ?? .zero
-        let asked = io.prepareSwitcher(session: session, near: near) { [weak self] grid in
+        let asked = io.prepareSwitcher(session: session, near: near, buttons: buttons, hidden: hidden) { [weak self] grid in
             self?.perform { [weak self] in self?.switcherReady(session: session, grid: grid) }
         }
         if !asked { diagnostics.record("switcher: no panel to show (the tap still works)") }

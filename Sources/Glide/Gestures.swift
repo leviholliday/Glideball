@@ -324,7 +324,7 @@ final class GestureMachine {
     /// still the one held.
     func switcherReady(session: Int, grid: SwitcherGrid) {
         guard var h = hold, var s = h.switcher, s.session == session, s.grid == nil else { return }
-        s.ready(grid)
+        s.ready(grid, now: h.lastMove)
         h.switcher = s
         hold = h
     }
@@ -339,6 +339,19 @@ final class GestureMachine {
             hold = h
         }
         return s.overlay
+    }
+
+    /// Another trackball button (never the primary one, never the hold's own) while a Switcher's
+    /// panel is up: hides the lit app from this Switcher, or brings back the one just hidden.
+    /// Nil when it isn't the Switcher's to take (no Switcher, its panel not up): the press then
+    /// goes on as `otherPress`.
+    func switcherHide(button: Int) -> SwitcherHold.HideResult? {
+        guard button != 0, var h = hold, var s = h.switcher, !h.buttons.contains(button), s.shown else { return nil }
+        let result = s.hideLit()
+        h.otherPress = true
+        h.switcher = s
+        hold = h
+        return result
     }
 
     /// Another button went down while a gesture is held: the release won't be a tap.
@@ -475,8 +488,9 @@ final class GestureMachine {
         guard var h = hold, dx.isFinite, dy.isFinite else { return [] }
         if var s = h.switcher {
             // A Switcher: the ball moves the highlight across the grid. Nothing runs until the release.
-            s.ball(dx: dx, dy: dy)
+            s.ball(dx: dx, dy: dy, now: now)
             h.travel = max(h.travel, s.travel)
+            h.lastMove = now
             h.switcher = s
             hold = h
             return []
@@ -742,8 +756,8 @@ final class GestureMachine {
             // press is the tap. Dismissed or past the time limit: nothing.
             guard !s.dismissed, now - h.start < h.tuning.maxHold else { return effects }
             if now - h.start >= SwitcherHold.revealDelay { s.revealed = true }
-            if s.shown {
-                effects.append(.switchApp(session: s.session, index: s.index))
+            if s.shown, let app = s.litInList {
+                effects.append(.switchApp(session: s.session, index: app))
             } else if !s.ringUsed, !h.otherPress, s.travel < s.tapSlop {
                 let tap = h.gesture.tapAction
                 if tap != .disabled { effects.append(.tap(tap, buttons: h.buttons)) }

@@ -240,6 +240,13 @@ final class SettingsSync {
                 config = merged.config
                 keptTuning = keptTuning || merged.kept
             }
+            if GlideSettingsFile.predatesSwitcherHidden(file.settings.writtenBy) {
+                // A 2.10 beta before hidden apps read each Switcher without them and wrote it back
+                // that way: put this Mac's back wherever it left the Switcher alone.
+                let merged = config.keepingSwitcherHidden(from: local)
+                config = merged.config
+                keptTuning = keptTuning || merged.kept
+            }
             if GlideSettingsFile.predatesGesturesMerge(file.settings.writtenBy) {
                 // A 2.10 beta before Gestures and the Wheel became one read each Gestures button
                 // as a plain four-way gesture and wrote that back: put back the rest (eight ways,

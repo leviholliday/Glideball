@@ -144,7 +144,7 @@ extension ButtonAction {
             return ButtonAction.gesture(ButtonGesture(wheel: w)).sanitized()
         case .switcher(let a):
             guard !nested else { return nil }
-            return .switcher(AppSwitcher(tap: a.tap.sanitized(nested: true) ?? .system))
+            return .switcher(AppSwitcher(tap: a.tap.sanitized(nested: true) ?? .system, hidden: a.hidden.filter(ImportText.isBundleID)))
         case .system, .leftClick, .rightClick, .middleClick, .back, .forward, .disabled,
              .precisionHold, .precisionToggle, .ballScrollHold, .dragLock, .media:
             return self

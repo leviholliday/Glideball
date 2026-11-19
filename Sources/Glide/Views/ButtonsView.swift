@@ -103,7 +103,7 @@ struct ButtonsView: View {
         }
     }
 
-    static let findables: [Findable] = [.buttonPresets, .combos, .gestureDistance, .steadyHands]
+    static let findables: [Findable] = [.buttonPresets, .combos, .gestureDistance, .steadyHands, .switcherHiddenApps]
 }
 
 // MARK: - Gesture settings

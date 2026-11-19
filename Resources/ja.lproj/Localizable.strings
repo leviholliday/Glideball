@@ -2722,3 +2722,12 @@
 
 /* Buttons page, a folded Switcher editor's summary */
 "Shows your open apps" = "開いているアプリを表示";
+
+/* The Switcher: hiding apps from it (Nov 18) */
+"Hidden" = "非表示にしました";
+"Hide app" = "アプリを非表示";
+"Hidden from the Switcher" = "アプリスイッチャーで非表示";
+"None. To leave an app out, press %@ while it’s lit in the Switcher." = "なし。アプリを除外するには、アプリスイッチャーでそのアプリが選ばれているときに%@を押します。";
+"Show %@ in the Switcher again" = "%@をアプリスイッチャーに再表示";
+"Apps a Switcher leaves out. Show one again here, or hide one right from the Switcher with another button." = "アプリスイッチャーに表示しないアプリです。ここで再表示するか、アプリスイッチャーで別のボタンを押して非表示にできます。";
+"hide app, hidden apps, exclude, leave out, remove app, show again, switcher" = "アプリを非表示, 非表示のアプリ, 除外, 外す, アプリを削除, 再表示, アプリスイッチャー, スイッチャー, switcher";
