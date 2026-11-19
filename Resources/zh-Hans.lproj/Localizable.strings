@@ -1894,9 +1894,6 @@
 "Selects everything." = "选中全部内容。";
 "Sends the window in front to the Dock." = "将最前面的窗口收到程序坞。";
 "Sets all your buttons and a few combos at once. You can undo it. Or hold one down to try it first." = "一次设定好你所有的按钮和几个组合键。可以撤销。也可以按住其中一个先试试。";
-"Trying %@. Let go to put your own buttons back." = "正在试用“%@”。松开就恢复你自己的按钮。";
-"Let go to put yours back" = "松开即可恢复你的设置";
-"Hold the pointer’s button down on it to try it; let go to put your own buttons back." = "在它上面按住指针按钮即可试用；松开就恢复你自己的按钮。";
 "Setting up and exploring" = "设置与探索";
 "Share your Glideball" = "分享你的 Glideball";
 "Shows every open window and your Spaces." = "显示所有已打开的窗口和你的空间。";
@@ -2736,3 +2733,10 @@
 "auto update, automatic updates, background update, self update, silent update" = "自动更新, 自动安装, 后台更新, 静默更新, auto update";
 "Glideball updated itself to %@." = "Glideball 已自动更新到 %@。";
 "%@ is downloaded. Glideball switches to it once you’ve been away from your trackball for a few minutes." = "%@ 已下载。你几分钟没有使用轨迹球后，Glideball 会切换到新版本。";
+"Put mine back" = "恢复我的设置";
+"Put your own buttons back now" = "立即恢复你自己的按钮设置";
+"Put your own buttons back now (Esc)" = "立即恢复你自己的按钮设置（Esc）";
+"Make this preset yours. You can undo it." = "将此预设设为你的设置。可以撤销。";
+"Make this preset yours. You can undo it. (Return)" = "将此预设设为你的设置。可以撤销。（Return）";
+"Hold the pointer’s button down on it to try it on your trackball for 20 seconds." = "在上面按住指针按钮，即可在轨迹球上试用 20 秒。";
+"Trying %@. Press its buttons here or in any app; Keep makes it yours." = "正在试用%@。在这里或任何 App 中按它的按钮；点“保留”即可设为你的设置。";

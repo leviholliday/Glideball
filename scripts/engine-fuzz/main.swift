@@ -439,6 +439,9 @@ enum Op: CustomStringConvertible {
     /// builds lists, 4 lists come at once, 5 after 0.4 s, 6 never; 7… the next lists have
     /// [0, 1, 2, 6, 13, 24, 40][n - 7] apps.
     case switcherPanel(Int)
+    /// Hold to try on, as the app does it: `ButtonPreset.all[n]` laid over whatever setup is
+    /// in effect (the app in front's included), after it's resolved; -1 puts theirs back.
+    case wear(Int)
 
     var description: String {
         switch self {
@@ -492,6 +495,7 @@ enum Op: CustomStringConvertible {
         case .switcherPanel(let m): m < 7 ? ["switcherWorks", "switcherCantDraw", "switcherWatchdogTakesItDown", "switcherNoLists",
                                              "switcherListsAtOnce", "switcherListsSlow", "switcherListsNever"][m]
                                           : "switcherApps(\(World.switcherCounts[m - 7]))"
+        case .wear(let n): n < 0 ? "putYoursBack" : "tryOn(\(ButtonPreset.all[n % ButtonPreset.all.count].id))"
         }
     }
 }
@@ -702,6 +706,7 @@ final class World {
     var mainConfig: GlideConfig
     var enabled = true
     var front = -1
+    var wearing: ButtonPreset?   // a preset being tried on (`Op.wear`)
     var quitDone = false
 
     // The hardware.
@@ -930,6 +935,7 @@ final class World {
     var resolved: GlideConfig {
         var c = mainConfig.resolved(for: front >= 0 ? "app.\(front)" : nil)
         c.enabled = enabled
+        if let wearing, enabled { c = c.tryingOn(wearing) }   // `TryOn.applied`: never while paused
         return c
     }
 
@@ -1544,6 +1550,7 @@ final class World {
             push()
         case .pause:
             guard enabled else { return }
+            wearing = nil              // a preset being tried goes with the pause, first (AppModel.config)
             engine.releaseHeldKeys()   // what AppModel does on a pause, in this order
             engine.releaseAll()
             enabled = false            // (releaseAll re-applies Glide's speed; the update hands it back)
@@ -1557,6 +1564,8 @@ final class World {
             push()
         case .unplug(let mode):
             guard kConnected else { return }
+            // A preset being tried goes once the status says unplugged (AppModel.status).
+            defer { if wearing != nil { wearing = nil; push() } }
             let held = kDown.sorted()
             if mode == 1 || mode == 3 { for b in held { apply(.kRelease(b, hidFirst: true)) } }
             kConnected = false
@@ -1641,6 +1650,7 @@ final class World {
             watched = on
         case .sleep:
             engine.releaseForSleep()
+            if wearing != nil { wearing = nil; push() }   // TryOn's sleep notice
             settle()
             mustBeReleased("sleep", modesToo: false)
             scrollMuted = true
@@ -1705,6 +1715,9 @@ final class World {
                 // A blind hold's readout alone going doesn't dismiss it (its gestures go on).
                 if shown.model.showsRing { wheelHold?.dismissed = true }
             }
+        case .wear(let n):
+            wearing = n < 0 ? nil : ButtonPreset.all[n % ButtonPreset.all.count]
+            push()
         case .switcherPanel(let m):
             switch m {
             case 0: io.switcherWorks = true; io.switcherLists = true
@@ -1735,6 +1748,7 @@ final class World {
         case .beta(let on):
             engine.setBetaProgram(on)
         case .quit:
+            if wearing != nil { wearing = nil; push() }   // AppDelegate.applicationWillTerminate: the try first
             engine.releaseHeldKeys()   // AppDelegate.applicationWillTerminate, in this order
             engine.releaseAll()
             engine.handBackPointer()
@@ -2996,10 +3010,45 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
     add("try on: the tap switched off mid-hold (the mouse-up is lost)", spaces,
         seq(d0, on, d2, one(.tapOff(2)), u2, u0, w(0.3), off, settle, own2))
     add("try on: quit mid-hold", gesturesOn, seq(d0, on, d3, r6, one(.quit)))
-    add("try on: held past the 30 s limit with a tried-on gesture held", gesturesOn,
+    add("try on: a tried-on gesture held past the try's end and the gesture's own 30 s limit", gesturesOn,
         seq(d0, on, d3, w(31), off, u3, u0, settle, own2))
     add("try on: taken off and put on again within one press", spaces,
         seq(d0, on, d2, off, again, u2, d3, off, u3, u0, settle))
+    // Round 2 (Nov 19): the try latches. The card is let go at once and the preset is worn for
+    // 20 s, hands free, in Glideball or another app (laid over that app's own setup, as
+    // `AppModel.pushToEngine` does: `Op.wear`); it ends by Keep, Put mine back (each a click
+    // with the primary button), the time running out, or any of the app's other exits, at any
+    // moment of what the buttons are doing.
+    func wear(_ id: String) -> [Op] { [.wear(ButtonPreset.all.firstIndex { $0.id == id }!)] }
+    let putBack: [Op] = [.wear(-1)], click = seq(d0, u0)   // Keep's or Put mine back's click
+    let latched = seq(d0, w(0.4), wear("spaces"), u0), latchedG = seq(d0, w(0.4), wear("gestures"), u0)
+    var mineApps = mine
+    var app0 = AppProfile(bundleID: "app.0", name: "App")
+    app0.buttons = [2: .back]
+    mineApps.appProfiles = [app0]
+    var kept = mine
+    kept.apply(preset("spaces"))
+    add("try on, latched: the card let go at once, then the preset's buttons with both hands, then Put mine back", [mine],
+        seq(latched, d2, u2, w(0.2), d3, u3, w(2), click, putBack, settle, own2))
+    add("try on, latched: in another app with its own setup, the preset over it, then back", [mineApps],
+        seq(latched, one(.front(0)), d2, u2, w(0.3), one(.front(-1)), click, putBack, settle, own2))
+    add("try on, latched: the time runs out in the middle of a tried-on gesture", [mine],
+        seq(latchedG, d3, r6, w(19.5), putBack, r6, u3, settle, own2))
+    add("try on, latched: Put mine back clicked while a tried-on button is still down", [mine],
+        seq(latched, d2, w(0.1), click, putBack, w(0.2), u2, settle, own2))
+    add("try on, latched: Keep clicked while a tried-on press waits for its combo partner", [mine, kept],
+        seq(latched, d2, w(0.02), click, one(.config(1)), putBack, w(0.3), u2, settle, d2, u2, settle))
+    add("try on, latched: another card pressed mid-try: the first comes off, the second goes on", [mine],
+        seq(latched, d2, u2, w(0.2), d0, putBack, w(0.4), wear("gestures"), u0, d3, r6, u3, w(0.2), click, putBack, settle, own2))
+    add("try on, latched: paused with a tried-on gesture held, the card long let go", [mine],
+        seq(latchedG, d3, r6, one(.pause), one(.resume), u3, settle, own2))
+    add("try on, latched: the Mac sleeps with a tried-on button down", [mine],
+        seq(latched, d2, w(0.1), one(.sleep), one(.wake), w(1), u2, settle, own2))
+    add("try on, latched: unplugged mid-try, a tried-on gesture held", [mine],
+        seq(latchedG, d3, r6, one(.unplug(0)), w(1), one(.replug(0)), w(2), own2))
+    // (Not last: quitting writes out and starts over the press timing the run checks at the end.)
+    tryOns.insert(("try on, latched: quit mid-try (nothing comes back after a relaunch)", [mine],
+                   seq(latchedG, d3, r6, one(.quit))), at: tryOns.count - 9)
     return gestureCases + older + fresh + tryOns
 }
 
@@ -3212,8 +3261,27 @@ let expectations: [String: (World) -> String?] = [
     "try on: the Mac sleeps mid-hold": { w in cardClick(w, keys: [kVK_Space: 0]) },
     "try on: the tap switched off mid-hold (the mouse-up is lost)": { w in
         w.outLog.filter { $0 == "key down \(kVK_ANSI_C)" }.count == 1 ? nil : "the person's own top-left button didn't work after: \(w.outLog)" },
-    "try on: held past the 30 s limit with a tried-on gesture held": { w in cardClick(w, keys: [kVK_ANSI_C: 1]) },
+    "try on: a tried-on gesture held past the try's end and the gesture's own 30 s limit": { w in cardClick(w, keys: [kVK_ANSI_C: 1]) },
     "try on: taken off and put on again within one press": { w in cardClick(w, keys: [kVK_LeftArrow: 1, kVK_Space: 1]) },
+    "try on, latched: the card let go at once, then the preset's buttons with both hands, then Put mine back": { w in
+        cardClick(w, times: 2, keys: [kVK_LeftArrow: 1, kVK_RightArrow: 1, kVK_ANSI_C: 1, kVK_Space: 0]) },
+    "try on, latched: in another app with its own setup, the preset over it, then back": { w in
+        cardClick(w, times: 2, keys: [kVK_LeftArrow: 1, kVK_ANSI_C: 1])
+            ?? (w.outLog.contains { $0.hasPrefix("kensington down 3") } ? "the app setup's Back went through under the preset: \(w.outLog)" : nil) },
+    "try on, latched: the time runs out in the middle of a tried-on gesture": { w in
+        cardClick(w, keys: [kVK_ANSI_C: 1, kVK_Space: 0]) ?? (w.gestureHolds + w.wheelHolds == 1 ? nil : "\(w.gestureHolds) gesture holds, \(w.wheelHolds) ring holds") },
+    "try on, latched: Put mine back clicked while a tried-on button is still down": { w in
+        cardClick(w, times: 2, keys: [kVK_LeftArrow: 1, kVK_ANSI_C: 1]) },
+    "try on, latched: Keep clicked while a tried-on press waits for its combo partner": { w in
+        cardClick(w, times: 2, keys: [kVK_LeftArrow: 2, kVK_ANSI_C: 0]) },
+    "try on, latched: another card pressed mid-try: the first comes off, the second goes on": { w in
+        cardClick(w, times: 3, keys: [kVK_LeftArrow: 1, kVK_ANSI_C: 1]) },
+    "try on, latched: paused with a tried-on gesture held, the card long let go": { w in cardClick(w, keys: [kVK_ANSI_C: 1]) },
+    "try on, latched: the Mac sleeps with a tried-on button down": { w in
+        w.outLog.filter { $0 == "key down \(kVK_ANSI_C)" }.count == 1 ? nil : "the person's own top-left button didn't work after: \(w.outLog)" },
+    "try on, latched: unplugged mid-try, a tried-on gesture held": { w in
+        w.outLog.filter { $0 == "key down \(kVK_ANSI_C)" }.count == 1 ? nil : "the person's own top-left button didn't work after: \(w.outLog)" },
+    "try on, latched: quit mid-try (nothing comes back after a relaunch)": { w in cardClick(w) },
     "chained gesture: left, up, left in one hold fires twice left only if not once": { w in
         w.hold?.byDirection == [.left: 1, .up: 1] ? nil : "fired \(w.hold?.byDirection ?? [:]), expected left once (once per hold) and up once" },
     "chained gesture: right three times, numbered 1, 2, 3": { w in

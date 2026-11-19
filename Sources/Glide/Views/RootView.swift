@@ -214,6 +214,20 @@ struct RootView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
             .ignoresSafeArea(.container, edges: .top)
         }
+        // A preset being tried on (TryOn.swift): its time left, Keep and Put mine back, up in
+        // the title bar over the page. (In another app, the floating panel shows the same.)
+        .overlay(alignment: .top) {
+            ZStack(alignment: .top) {
+                if model.tryOn.isTrying {
+                    TryOnPill(tryOn: model.tryOn)
+                        .padding(.top, model.fullScreen ? 10 : 9)
+                        .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.92, anchor: .top)))
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .ignoresSafeArea(.container, edges: .top)
+        }
+        .animation(Theme.Motion.spring, value: model.tryOn.isTrying)
         .overlay(alignment: .bottom) {
             if let toast = model.toast {
                 ToastView(toast: toast, model: model)

@@ -15,7 +15,7 @@ struct ButtonsView: View {
     /// Renders: draw the map previewing this preset.
     nonisolated(unsafe) static var sandboxPreview: String?
 
-    /// The preset whose card is held down and being tried on (TryOn.swift), if one is.
+    /// The preset being tried on (TryOn.swift), if one is.
     private var trying: ButtonPreset? {
         guard let s = model.tryOn.session else { return nil }
         return ButtonPreset.all.first { PresetStrip.tryID($0) == s.id }
@@ -203,7 +203,7 @@ struct ButtonMap: View {
         VStack(alignment: .leading, spacing: Theme.Space.titleToGroup) {
             let tryName = trying?.title ?? ""
             SectionTitle(title: nil, caption: trying != nil
-                         ? "Trying \(tryName). Let go to put your own buttons back."
+                         ? "Trying \(tryName). Press its buttons here or in any app; Keep makes it yours."
                          : preview == nil
                          ? "Click a button here, or press it on your trackball, to choose what it does."
                          : "Previewing a preset. Nothing changes until you apply it.") {
@@ -399,7 +399,7 @@ private struct PadTargets: View {
 /// Ready-made sets, each a card with a tiny map of what it does. Clicking one
 /// previews it on the map above; Apply sets every button and combo at once
 /// (after a backup, with Undo in the toast). Holding one tries it on: the trackball
-/// wears it until you let go (TryOn.swift).
+/// wears it for 20 seconds, hands free, until you keep it or put yours back (TryOn.swift).
 struct PresetStrip: View {
     let model: AppModel
     @Binding var preview: ButtonPreset?
@@ -413,7 +413,13 @@ struct PresetStrip: View {
             SectionTitle(title: "Presets", caption: "Sets all your buttons and a few combos at once. You can undo it. Or hold one down to try it first.")
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
                 ForEach(ButtonPreset.all) { p in
-                    PresetCard(preset: p, applied: current?.id == p.id, selected: preview?.id == p.id, tryOn: model.tryOn) {
+                    PresetCard(preset: p, applied: current?.id == p.id, selected: preview?.id == p.id, tryOn: model.tryOn,
+                               keep: {
+                                   withAnimation(Theme.Motion.spring) {
+                                       model.applyPreset(p)
+                                       preview = nil
+                                   }
+                               }) {
                         withAnimation(Theme.Motion.spring) { preview = preview?.id == p.id ? nil : p }
                         Sounds.shared.detent(pitch: 1.1, volume: 0.45)
                     }
@@ -439,6 +445,8 @@ struct PresetCard: View {
     let applied: Bool
     let selected: Bool
     let tryOn: TryOn
+    /// Keep, while it's tried: the preset becomes yours, as Apply makes it.
+    let keep: () -> Void
     let action: () -> Void
     @State private var hovering = false
     /// The pointer's button is down on the card (and still over it).
@@ -466,11 +474,15 @@ struct PresetCard: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                     if trying {
-                        Text("Let go to put yours back", comment: "Preset card, while it's held down and being tried on")
+                        TryOnClock(tryOn: tryOn) { _, time in
+                            HStack(spacing: 0) {
+                                Text("Trying it", comment: "Try for 10 s: the countdown's title, no value known")
+                                Text(verbatim: " · " + time).monospacedDigit()
+                            }
                             .font(.system(size: 10.5, weight: .medium))
                             .foregroundStyle(Theme.buttons)
-                            .lineLimit(2)
-                            .fixedSize(horizontal: false, vertical: true)
+                            .lineLimit(1)
+                        }
                     } else if applied {
                         Label("In use", systemImage: "checkmark")
                             .font(.system(size: 10.5, weight: .medium))
@@ -490,7 +502,8 @@ struct PresetCard: View {
             .background {
                 let lit = selected || trying
                 shape.fill(lit ? Theme.buttons.opacity(0.12) : hovering ? Theme.hoverFill : Theme.groupFill)
-                    .pixelBorder(shape, lit ? Theme.buttons : applied ? Theme.ball.opacity(0.6) : Theme.groupBorder)
+                    // (Tried on: the edge is the time left, drawn over it, so the rest of it is quiet.)
+                    .pixelBorder(shape, trying ? Theme.buttons.opacity(0.3) : lit ? Theme.buttons : applied ? Theme.ball.opacity(0.6) : Theme.groupBorder)
                     .shadow(color: lit ? Theme.buttons.opacity(trying ? 0.5 : 0.35) : .clear, radius: trying ? 11 : 8)
                     .flattened(room: 20)
             }
@@ -504,6 +517,16 @@ struct PresetCard: View {
                         .shadow(color: Theme.buttons.opacity(0.7), radius: 3)
                         .padding(0.75)
                 }
+                // Tried on: the same line of light, now draining back the way it came as the
+                // time runs out (all the way round when it starts, gone when yours come back).
+                if trying {
+                    TryOnClock(tryOn: tryOn) { fraction, _ in
+                        shape.trim(from: 0, to: max(0, min(1, fraction)))
+                            .stroke(Theme.buttons, style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
+                            .shadow(color: Theme.buttons.opacity(0.7), radius: 3)
+                            .padding(0.75)
+                    }
+                }
             }
             .contentShape(shape)
         }
@@ -516,7 +539,9 @@ struct PresetCard: View {
                              down = true
                              // The one in use has nothing to try: it's what the trackball does now.
                              if !applied {
-                                 tryOn.press(id: id, name: preset.title) { $0 = $0.tryingOn(preset) }
+                                 tryOn.press(id: id, name: preset.title, change: { $0 = $0.tryingOn(preset) }, keep: keep)
+                             } else {
+                                 tryOn.end(.replaced)   // (a press on it still ends another card's try)
                              }
                          },
                          onInside: { inside in
@@ -543,13 +568,13 @@ struct PresetCard: View {
         }
         .onChange(of: trying) { _, _ in
             guard PresetCard.sandboxCharge == nil else { return }
-            // Tried on: the wind-up is done (the card's own lit edge takes over). Let go: gone.
+            // Tried on: the wind-up is done (the draining edge takes over from the full line). Over: gone.
             var t = Transaction()
             t.disablesAnimations = true
             withTransaction(t) { charge = 0 }
         }
         .accessibilityLabel(Text(verbatim: preset.title + ". " + preset.detail))
-        .accessibilityHint(Text("Hold the pointer’s button down on it to try it; let go to put your own buttons back.",
+        .accessibilityHint(Text("Hold the pointer’s button down on it to try it on your trackball for 20 seconds.",
                                 comment: "VoiceOver hint on a button preset card"))
         .accessibilityAddTraits(selected ? .isSelected : [])
     }

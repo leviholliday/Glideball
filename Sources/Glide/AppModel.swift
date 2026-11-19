@@ -331,6 +331,10 @@ final class AppModel {
         engine.onStatus = { [weak self] s in self?.status = s }
         engine.onModes = { [weak self] m in self?.modes = m }
         tryOn.push = { [weak self] in self?.pushToEngine() }
+        tryOn.showHUD = { [weak self] on in
+            guard let self else { return }
+            MainActor.assumeIsolated { TryOnHUD.show(on, self.tryOn) }
+        }
         tryOn.conditions = { [weak self] in
             guard let self else { return TryOn.Conditions(enabled: false) }
             return TryOn.Conditions(enabled: self.config.enabled, connected: self.status.deviceConnected,
@@ -441,7 +445,7 @@ final class AppModel {
     private func frontmostChanged(_ app: NSRunningApplication?) {
         let isGlide = app?.processIdentifier == ProcessInfo.processInfo.processIdentifier
         let id = app?.bundleIdentifier
-        if !isGlide { tryOn.end(.deactivated) }
+        // (A preset being tried goes on in the app in front, over its own setup: that's where you'd try it.)
         if glideIsFrontmost != isGlide { glideIsFrontmost = isGlide }
         if frontmostBundleID != id { frontmostBundleID = id }
         pushToEngine()
@@ -459,7 +463,7 @@ final class AppModel {
     /// Sends the setup for whoever's in front to the engine, if it changed.
     func pushToEngine() {
         var resolved = config.resolved(for: profileTarget)
-        tryOn.applied(to: &resolved)   // a preset card held down: worn by the engine only, never saved
+        tryOn.applied(to: &resolved)   // a preset being tried on: worn by the engine only, never saved
         if mappingsSuspended {
             resolved.buttons = [:]
             resolved.chords = []
@@ -922,7 +926,7 @@ final class AppModel {
     func windowStateChanged(visible: Bool, key: Bool) {
         if key && !windowIsKey { showAutoUpdateNoteIfDue() }
         if windowIsKey != key { windowIsKey = key }
-        if !key { tryOn.end(.windowLeft) }
+        tryOn.syncHUD()   // a preset being tried: its floating panel shows while the window doesn't have the keys
         let changed = visible != windowVisible
         let becameVisible = visible && changed
         if changed { windowVisible = visible }

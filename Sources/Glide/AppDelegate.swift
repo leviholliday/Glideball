@@ -314,6 +314,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func windowDidChangeOcclusionState(_ notification: Notification) { reportWindowState() }
 
     func windowWillClose(_ notification: Notification) {
+        // A preset being tried goes with the window (switching apps keeps it; closing is "done").
+        AppModel.shared.tryOn.end(.windowClosed)
         reportWindowState(closing: true)
         // Closing the window ends the tour (and gives the buttons their mappings back).
         if AppModel.shared.showingWelcomeTour { AppModel.shared.closeWelcomeTour() }

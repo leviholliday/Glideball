@@ -288,20 +288,34 @@ extension RenderUI {
             cleanup: { PresetCard.sandboxCharge = nil; model.tryOn.sandboxShow() }) { dark, scale in
             fullPage(page(.buttons, model), dark: dark, scale: scale)
         }
-        add("buttons-try-on", "Buttons and picker", "Still holding: the trackball wears Media, the map shows it, and letting go puts yours back",
-            prepare: {
-                let p = ButtonPreset.all.first { $0.id == "media" }!
-                model.tryOn.sandboxShow(trying: .init(id: "preset:media", name: p.title)) { $0 = $0.tryingOn(p) }
-            },
-            cleanup: { model.tryOn.sandboxShow() }) { dark, scale in
+        // Then it latches: let go and try it with both hands for 20 s, here or in another app.
+        func trying(_ id: String, left: Double) {
+            let p = ButtonPreset.all.first { $0.id == id }!
+            TryOn.sandboxRemaining = left
+            model.tryOn.sandboxShow(trying: .init(id: PresetStrip.tryID(p), name: p.title, endsAt: Date())) { $0 = $0.tryingOn(p) }
+        }
+        func notTrying() { TryOn.sandboxRemaining = nil; model.tryOn.sandboxShow() }
+        add("buttons-try-on", "Buttons and picker", "Tried on, card let go: the trackball wears Media with 14 s left, the card's edge draining, the map showing it",
+            prepare: { trying("media", left: 14) }, cleanup: notTrying) { dark, scale in
             fullPage(page(.buttons, model), dark: dark, scale: scale)
         }
-        add("buttons-try-on-window", "Buttons and picker", "The same in the window, as it opens",
-            prepare: {
-                let p = ButtonPreset.all.first { $0.id == "gestures" }!
-                model.tryOn.sandboxShow(trying: .init(id: "preset:gestures", name: p.title)) { $0 = $0.tryingOn(p) }
-            },
-            cleanup: { model.tryOn.sandboxShow() }) { dark, scale in
+        add("buttons-try-on-window", "Buttons and picker", "The same in the window: the countdown, Put mine back and Keep up in the title bar",
+            prepare: { trying("gestures", left: 17) }, cleanup: notTrying) { dark, scale in
+            mainWindow(model, tab: .buttons, dark: dark, scale: scale)
+        }
+        add("buttons-try-on-ending", "Buttons and picker", "The last seconds: 3 s left, the edge nearly gone",
+            prepare: { trying("media", left: 2.4) }, cleanup: notTrying) { dark, scale in
+            mainWindow(model, tab: .buttons, dark: dark, scale: scale)
+        }
+        add("buttons-try-on-hud", "Buttons and picker", "Trying Media in another app: the floating panel at the top of the screen, 9 s left",
+            prepare: { trying("media", left: 9) }, cleanup: notTrying) { dark, scale in
+            tryOnHUD(model, busy: false, dark: dark, scale: scale)
+        }
+        add("buttons-try-on-hud-busy", "Buttons and picker", "The floating panel over a bright, busy wallpaper",
+            prepare: { trying("gestures", left: 12) }, cleanup: notTrying) { dark, scale in
+            tryOnHUD(model, busy: true, dark: dark, scale: scale)
+        }
+        add("buttons-try-on-over", "Buttons and picker", "After the time ran out: your own buttons, the card and the map as they were, no countdown anywhere") { dark, scale in
             mainWindow(model, tab: .buttons, dark: dark, scale: scale)
         }
         add("buttons-preset-applied", "Buttons and picker", "The Media preset in use",

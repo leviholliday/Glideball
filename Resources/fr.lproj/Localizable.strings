@@ -1894,9 +1894,6 @@
 "Selects everything." = "Sélectionne tout.";
 "Sends the window in front to the Dock." = "Envoie la fenêtre au premier plan dans le Dock.";
 "Sets all your buttons and a few combos at once. You can undo it. Or hold one down to try it first." = "Règle tous vos boutons et quelques combos d’un coup. Vous pouvez annuler. Ou maintenez-en un enfoncé pour l’essayer d’abord.";
-"Trying %@. Let go to put your own buttons back." = "Vous essayez %@. Relâchez pour retrouver vos boutons.";
-"Let go to put yours back" = "Relâchez pour retrouver les vôtres";
-"Hold the pointer’s button down on it to try it; let go to put your own buttons back." = "Maintenez le bouton du pointeur enfoncé dessus pour l’essayer ; relâchez pour retrouver vos boutons.";
 "Setting up and exploring" = "Prise en main et exploration";
 "Share your Glideball" = "Partagez votre Glideball";
 "Shows every open window and your Spaces." = "Affiche toutes les fenêtres ouvertes et vos Spaces.";
@@ -2736,3 +2733,10 @@
 "auto update, automatic updates, background update, self update, silent update" = "mise à jour automatique, mises à jour automatiques, mise à jour en arrière-plan, mise à jour silencieuse, auto update";
 "Glideball updated itself to %@." = "Glideball s’est mis à jour tout seul vers la version %@.";
 "%@ is downloaded. Glideball switches to it once you’ve been away from your trackball for a few minutes." = "La version %@ est téléchargée. Glideball bascule dessus quand vous n’avez pas touché à votre trackball depuis quelques minutes.";
+"Put mine back" = "Remettre les miens";
+"Put your own buttons back now" = "Remettre vos propres boutons maintenant";
+"Put your own buttons back now (Esc)" = "Remettre vos propres boutons maintenant (Échap)";
+"Make this preset yours. You can undo it." = "Adopter ce préréglage. Vous pouvez l’annuler.";
+"Make this preset yours. You can undo it. (Return)" = "Adopter ce préréglage. Vous pouvez l’annuler. (Retour)";
+"Hold the pointer’s button down on it to try it on your trackball for 20 seconds." = "Maintenez le bouton du pointeur enfoncé dessus pour l’essayer sur votre trackball pendant 20 secondes.";
+"Trying %@. Press its buttons here or in any app; Keep makes it yours." = "Essai de %@. Appuyez sur ses boutons ici ou dans n’importe quelle app ; Garder l’adopte.";
