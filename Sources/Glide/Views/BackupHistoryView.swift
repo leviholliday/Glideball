@@ -362,6 +362,7 @@ private struct BackupRow: View {
         case .beforeImport: "square.and.arrow.down"
         case .beforeRestore: "arrow.uturn.backward"
         case .beforePreset: "square.grid.2x2"
+        case .beforeAI: "text.bubble"
         case .manual: "hand.tap"
         }
     }
@@ -372,6 +373,7 @@ private struct BackupRow: View {
         case .beforeImport: String(localized: "Before import", comment: "Kind of backup")
         case .beforeRestore: String(localized: "Before restore", comment: "Kind of backup")
         case .beforePreset: String(localized: "Before preset", comment: "Kind of backup: saved just before a button preset was applied")
+        case .beforeAI: String(localized: "Before AI setup", comment: "Kind of backup: saved just before a setup code from a chatbot was applied (Set up with AI)")
         case .manual: String(localized: "Saved by you", comment: "Kind of backup")
         }
     }

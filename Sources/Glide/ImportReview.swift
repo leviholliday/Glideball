@@ -89,21 +89,42 @@ enum ImportReview {
             return action.title
         case .gesture(let g):
             // Clockwise from up, as the ring lays them out; a More lists what's in it.
+            // Everything about it that can differ is in the words (how a direction fires, the
+            // ring, eight ways, its own distance): two gestures that read the same are the same,
+            // so a preview never calls a change "nothing".
             let arrows = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"]
+            func fires(_ step: GestureStep) -> String {
+                switch step.mode {
+                case .chain: describe(step.action)
+                case .continuous: describe(step.action) + " · " + String(localized: "Keeps going", comment: "Gesture direction: fires again and again for as long as you keep rolling")
+                case .once: describe(step.action) + " · " + String(localized: "Once per hold", comment: "Gesture direction: fires once")
+                }
+            }
             var parts = g.usedDirections.compactMap { d -> String? in
                 guard let step = g[d] else { return nil }
                 if let sub = step.more {
-                    let inside = sub.indices.compactMap { p in sub[p].map { "\(arrows[p]) \(describe($0.action))" } }
+                    let inside = sub.indices.compactMap { p in sub[p].map { "\(arrows[p]) \(fires($0))" } }
                     let more = String(localized: "More", comment: "Gestures: a direction that opens a second ring of actions")
                     return "\(arrows[d.place]) \(more)" + (inside.isEmpty ? "" : " (" + inside.joined(separator: ", ") + ")")
                 }
-                return "\(arrows[d.place]) \(describe(step.action))"
+                return "\(arrows[d.place]) \(fires(step))"
             }
-            if g.ring == .custom, let cw = g.ringActions.clockwise, let ccw = g.ringActions.counterclockwise {
-                parts.append(String(localized: "ring: \(describe(ccw)) / \(describe(cw))", comment: "Wheel summary: what turning the scroll ring does each way"))
-            } else if g.ring != .off, g.ring != .scroll {
-                parts.append(String(localized: "ring: \(g.ring.title)", comment: "Wheel summary: the ring job, like “ring: Volume”"))
+            if g.eight { parts.append(String(localized: "8 directions", comment: "Buttons page, a folded Gestures editor's summary")) }
+            if g.ring == .custom, g.ringUp != nil || g.ringDown != nil {
+                let cw = g.ringActions.clockwise.map { describe($0) } ?? "–"
+                let ccw = g.ringActions.counterclockwise.map { describe($0) } ?? "–"
+                parts.append(String(localized: "ring: \(ccw) / \(cw)", comment: "Wheel summary: what turning the scroll ring does each way"))
+            } else if g.ring != .scroll {
+                var job = g.ring.title
+                if g.reverse { job += " · " + String(localized: "Reverse", comment: "Gestures editor: turn the ring job the other way round") }
+                parts.append(String(localized: "ring: \(job)", comment: "Wheel summary: the ring job, like “ring: Volume”"))
             }
+            switch g.show {
+            case .never: break
+            case .afterPause: parts.append(String(localized: "Ring after a pause", comment: "Buttons page, a folded Gestures editor's summary: Show the ring is After a pause"))
+            case .atOnce: parts.append(String(localized: "Ring right away", comment: "Buttons page, a folded Gestures editor's summary: Show the ring is Right away"))
+            }
+            if let d = g.distance { parts.append(String(localized: "Distance") + ": " + d.title) }
             if g.tap != .system { parts.append(String(localized: "tap: \(describe(g.tap))", comment: "Gesture summary: what a plain tap does")) }
             let title = ButtonAction.gesture(g).title
             return parts.isEmpty ? title : "\(title): " + parts.joined(separator: ", ")

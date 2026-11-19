@@ -103,14 +103,20 @@ extension RenderUI {
                 PopoverMock {
                     VStack(alignment: .leading, spacing: 2) {
                         ForEach(Array([String(localized: "Paste a Link…", comment: "File menu and the Import menu: opens the box a shared link is pasted into"),
-                                       String(localized: "Import a File…")].enumerated()), id: \.offset) { i, title in
-                            Text(verbatim: title)
-                                .font(.system(size: 13))
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 4)
-                                .frame(width: 200, alignment: .leading)
-                                .background(i == 0 ? RoundedRectangle(cornerRadius: 5).fill(Theme.ball) : nil)
-                                .foregroundStyle(i == 0 ? Color.white : Color.primary)
+                                       String(localized: "Import a File…"), "",
+                                       String(localized: "Set Up with AI…", comment: "File menu and the Import menu: opens Set up with AI (copy a prompt for a chatbot, paste back its setup code)")]
+                                .enumerated()), id: \.offset) { i, title in
+                            if title.isEmpty {
+                                Divider().padding(.vertical, 3).frame(width: 200)
+                            } else {
+                                Text(verbatim: title)
+                                    .font(.system(size: 13))
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 4)
+                                    .frame(width: 200, alignment: .leading)
+                                    .background(i == 0 ? RoundedRectangle(cornerRadius: 5).fill(Theme.ball) : nil)
+                                    .foregroundStyle(i == 0 ? Color.white : Color.primary)
+                            }
                         }
                     }
                     .padding(5)

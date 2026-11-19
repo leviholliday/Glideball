@@ -1,0 +1,7 @@
+Sure! Top left becomes the Switcher (a quick press still does a middle click), and bottom right holds dictation.
+
+```
+{"format":"glideball-ai-setup","version":1,
+ "buttons":{"2":{"switcher":{"tap":"middleClick"}},"1":"holdKeys:ctrl+space"},
+ "combos":[{"buttons":[2,3],"action":"switcher"}]}
+```

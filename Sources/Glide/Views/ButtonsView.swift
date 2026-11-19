@@ -43,6 +43,10 @@ struct ButtonsView: View {
                 .findable(.buttonPresets)
                 .pageColumn(.trailing)
 
+            SetupWithAIRow(model: model)
+                .findable(.setUpWithAI)
+                .pageColumn(.trailing)
+
             SectionBlock(title: "Your buttons", caption: "Press a button on your trackball: its row lights up.",
                          dividerInset: ButtonRow.dividerInset) {
                 ForEach(buttons, id: \.index) { b in
@@ -115,7 +119,7 @@ struct ButtonsView: View {
         }
     }
 
-    static let findables: [Findable] = [.buttonPresets, .combos, .gestureDistance, .steadyHands, .switcherHiddenApps]
+    static let findables: [Findable] = [.buttonPresets, .setUpWithAI, .combos, .gestureDistance, .steadyHands, .switcherHiddenApps]
 }
 
 // MARK: - Gesture settings

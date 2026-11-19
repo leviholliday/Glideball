@@ -123,6 +123,9 @@ struct RootView: View {
         .sheet(isPresented: $model.showingShortcuts) {
             ShortcutsSheet(model: model)
         }
+        .sheet(isPresented: $model.showingAISetup) {
+            SetupWithAISheet(model: model)
+        }
         .sheet(item: $model.sharingPicture) { request in
             SharePanel(card: request.card, done: { model.sharingPicture = nil })
         }

@@ -1,0 +1,13 @@
+Voici le code :
+
+{
+  “format”: “glideball-ai-setup”,
+  “version”: 1,
+  // the page follows the ring
+  “scroll”: { “scrollMode”: “Follow”, “scrollDistance”: 18, “throwEnabled”: false, },
+  “ballScrollSpeed”: 2,
+  “sounds”: { “volume”: 0.5, “kinds”: { “ticks”: false } }, /* quieter */
+  “look”: { “theme”: “ocean” },
+}
+
+Copiez le code, revenez dans Glideball et collez-le.

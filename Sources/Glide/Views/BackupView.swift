@@ -359,6 +359,12 @@ private struct ImportSection: View {
                 Button("Paste a Link…") { model.openPasteBox() }
                     .controlSize(.small)
             }
+            SettingRow(title: "Set up with AI",
+                       hint: "Talk your setup through with a chatbot, then paste back the code it writes. You see what changes first.",
+                       symbol: "text.bubble") {
+                Button("Set Up with AI…") { model.showAISetup() }
+                    .controlSize(.small)
+            }
         }
         .overlay {
             RoundedRectangle(cornerRadius: Theme.Radius.group, style: .continuous)

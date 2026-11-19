@@ -11,8 +11,12 @@ swiftc -O -swift-version 5 -o "$OUT" \
   Sources/Glide/ImportSafety.swift \
   Sources/Glide/SharedSetup.swift \
   Sources/Glide/ImportReview.swift \
+  Sources/Glide/SetupCode.swift \
+  Sources/Glide/SetupCodeReader.swift \
+  Sources/Glide/AIReference.swift \
   Sources/Glide/KensingtonWorks.swift \
   Sources/Glide/DeviceSupport.swift \
+  scripts/import-sim/setup-code.swift \
   Sources/Glide/ImportPaste.swift \
   Sources/Glide/ExternalControl.swift \
   Sources/Glide/Commands.swift \

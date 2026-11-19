@@ -1308,6 +1308,7 @@ extension RenderUI {
         }
         list += sharingScreens(model)   // RenderSharing.swift
         list += pasteScreens(model)     // RenderPaste.swift
+        list += aiSetupScreens(model)   // RenderAISetup.swift
         return list
     }
 

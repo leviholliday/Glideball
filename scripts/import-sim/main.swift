@@ -436,6 +436,7 @@ func accepted(_ text: String, _ what: String, carrier: ImportPaste.Carrier? = ni
         if let carrier { check(c == carrier, "\(what): read as \(c), not \(carrier)") }
     case .refused(let why): check(false, "\(what): refused (\(why.rawValue))")
     case .empty: check(false, "\(what): read as empty")
+    case .code, .codeRefused: check(false, "\(what): read as a setup code without being asked to")
     }
 }
 func refused(_ text: String, _ what: String, _ why: ImportPaste.Refusal? = nil) {
@@ -443,6 +444,7 @@ func refused(_ text: String, _ what: String, _ why: ImportPaste.Refusal? = nil) 
     case .share: check(false, "\(what): ACCEPTED")
     case .empty: check(false, "\(what): read as empty")
     case .refused(let r): if let why { check(r == why, "\(what): refused as “\(r.rawValue)”, expected “\(why.rawValue)”") }
+    case .code, .codeRefused: check(false, "\(what): read as a setup code without being asked to")
     }
 }
 
@@ -842,6 +844,8 @@ if case .failure(.notAFile) = KensingtonWorks.read(tmp) {} else { check(false, "
 let big = tmp.appendingPathComponent("big.json")
 FileManager.default.createFile(atPath: big.path, contents: Data(repeating: 0x20, count: KensingtonWorks.maxBytes + 10))
 if case .failure(.tooBig) = KensingtonWorks.read(big) {} else { check(false, "a 2 MB file wasn't refused") }
+
+runSetupCodeTests()   // setup-code.swift: "Set up with AI"
 
 print(failures == 0 ? "PASS import-sim: \(checks) checks" : "FAIL import-sim: \(failures) of \(checks) checks failed")
 exit(failures == 0 ? 0 : 1)

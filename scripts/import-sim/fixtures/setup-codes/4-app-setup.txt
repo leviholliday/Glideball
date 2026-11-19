@@ -1,0 +1,20 @@
+```json
+{
+  "format": "glideball-ai-setup",
+  "version": 1,
+  "apps": [
+    {
+      "app": "Figma",
+      "trackingSpeed": 3,
+      "scroll": { "scrollMode": "follow", "scrollDistance": 10 },
+      "buttons": { "1": "precisionHold", "3": "keys:cmd+z" },
+      "combos": [ { "buttons": [2, 3], "action": "keys:cmd+shift+z" } ]
+    },
+    {
+      "app": "safari",
+      "buttons": { "2": "keys:cmd+t" }
+    }
+  ],
+  "combos": [ { "buttons": [1, 2], "action": "open:Notes" } ]
+}
+```

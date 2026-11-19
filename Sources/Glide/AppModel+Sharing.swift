@@ -24,6 +24,11 @@ struct IncomingSetup: Identifiable {
         case link
         case file(String)
         case kensingtonWorks
+        /// A setup code a chatbot wrote, pasted into Set up with AI (SetupCode.swift). It
+        /// never shows a sender's name: a code can't say who it's from.
+        case aiCode
+        /// A shared setup's own text, pasted into the same box.
+        case pasted
     }
 
     enum Content {
@@ -34,6 +39,8 @@ struct IncomingSetup: Identifiable {
     let id = UUID()
     let source: Source
     let content: Content
+    /// What a setup code asked for that Glideball left out, and why (Set up with AI).
+    var leftOut: [SetupCode.Note] = []
 
     /// The parts a share holds (none for KensingtonWorks, which is all or nothing).
     var parts: [SharePart] {
@@ -69,11 +76,13 @@ struct IncomingSetup: Identifiable {
 
     var kind: ShareKind? { share?.kind }
 
-    /// The sender's name as they typed it (never checked), if they sent it.
-    var from: String? { share?.from }
+    /// The sender's name as they typed it (never checked), if they sent it. Never for a
+    /// chatbot's code.
+    var from: String? { source == .aiCode ? nil : share?.from }
 
     /// The headline: "A shared scroll feel", "Settings from KensingtonWorks".
     var title: String {
+        if source == .aiCode { return String(localized: "A setup from a chatbot", comment: "Import preview title: a setup code a chatbot wrote (Set up with AI)") }
         switch content {
         case .kensingtonWorks: return String(localized: "Your KensingtonWorks settings", comment: "Import preview title")
         case .shared(let s):
@@ -104,6 +113,9 @@ struct IncomingSetup: Identifiable {
         switch source {
         case .link: String(localized: "From a link. Nothing has changed yet.", comment: "Import preview: where a shared setup came from")
         case .file(let name): String(localized: "From the file “\(name)”. Nothing has changed yet.", comment: "Import preview: where a shared setup came from")
+        case .aiCode: String(localized: "Written by a chatbot. Check it like you’d check anything from someone else. Nothing has changed yet.",
+                             comment: "Import preview: where a setup code came from (Set up with AI)")
+        case .pasted: String(localized: "From what you pasted. Nothing has changed yet.", comment: "Import preview: a shared setup pasted as text")
         case .kensingtonWorks:
             if case .kensingtonWorks(let k) = content {
                 String(localized: "Found on this Mac, for your \(k.deviceName). Glideball only reads them; KensingtonWorks’ files stay as they are.",
@@ -276,13 +288,21 @@ extension AppModel {
     /// typed (`quiet`). Only ever on the person's own action; the clipboard is read once,
     /// here, and nothing is sent anywhere. A link goes straight to its preview. A link
     /// Glideball won't open goes into the paste box, which says why. Text with no link in
-    /// it: from the menu, a toast; from ⌘V, nothing (it wasn't meant for us).
+    /// it: from the menu, a toast; from ⌘V, nothing (it wasn't meant for us). A setup code
+    /// from a chatbot (it says "glideball-ai-setup") opens Set up with AI with the code in
+    /// its box, where it's read and reviewed.
     func importFromClipboard(quiet: Bool) {
         let text = Self.readClipboard() ?? ""
+        if text.utf8.count <= SetupCode.maxPasteBytes, text.contains(SetupCode.formatMarker) {
+            showAISetup(text: text)
+            return
+        }
         let reading = ImportPaste.read(text)
         switch reading {
         case .share(let share, _):
             receiveShare(share, from: .link, cooldown: false)
+        case .code, .codeRefused:   // only from read(_:codes:)
+            showAISetup(text: text)
         case .refused(.noLink), .empty:
             guard !quiet else { return }
             show(.init(symbol: "doc.on.clipboard", text: String(localized: "There’s no Glideball link on the clipboard.", comment: "Toast after Import Setup from Clipboard")))
@@ -304,7 +324,7 @@ extension AppModel {
         present(IncomingSetup(source: .kensingtonWorks, content: .kensingtonWorks(imp)), cooldown: false)
     }
 
-    private func present(_ incoming: IncomingSetup, cooldown: Bool = true) {
+    func present(_ incoming: IncomingSetup, cooldown: Bool = true) {
         guard pendingIncoming == nil, queuedIncoming == nil, pendingImport == nil, shareRequest == nil else { return }   // one at a time
         if cooldown, ProcessInfo.processInfo.systemUptime - lastIncomingClosed < Self.incomingCooldown { return }
         if !Sandbox.isActive { (NSApp.delegate as? AppDelegate)?.showWindow() }
@@ -326,6 +346,15 @@ extension AppModel {
     /// Apply: a backup checkpoint, the change (only `parts`, or all of it), and a toast with Undo.
     func applyIncoming(parts chosen: Set<SharePart>? = nil) {
         guard let incoming = pendingIncoming else { return }
+        pendingIncoming = nil
+        lastIncomingClosed = ProcessInfo.processInfo.systemUptime
+        apply(incoming, parts: chosen)
+    }
+
+    /// The same for anything that was previewed (the sheet's, or the one inside Set up with
+    /// AI). Returns whether something changed.
+    @discardableResult
+    func apply(_ incoming: IncomingSetup, parts chosen: Set<SharePart>? = nil) -> Bool {
         var updated = incoming.applied(to: config, parts: chosen)
         updated.enabled = config.enabled
         updated.buttons[0] = config.buttons[0]
@@ -334,13 +363,11 @@ extension AppModel {
         let sounds = incoming.sounds(parts: chosen)
         let before = ShareSounds.current
         let soundsChange = sounds != nil && sounds != before
-        pendingIncoming = nil
-        lastIncomingClosed = ProcessInfo.processInfo.systemUptime
         guard updated != config || lookChanges || soundsChange else {
             show(.init(symbol: "checkmark.circle.fill", text: String(localized: "Your settings already match")))
-            return
+            return false
         }
-        backups.checkpoint(config, kind: .beforeImport)
+        backups.checkpoint(config, kind: incoming.source == .aiCode ? .beforeAI : .beforeImport)
         configBeforeImport = config
         lookBeforeImport = lookChanges ? BallThemeStore.shared.look : nil
         soundsBeforeImport = soundsChange ? before : nil
@@ -350,9 +377,12 @@ extension AppModel {
         if soundsChange, let sounds { sounds.use() }
         let text: String = switch incoming.content {
         case .kensingtonWorks: String(localized: "Imported your KensingtonWorks settings", comment: "Toast")
-        case .shared: String(localized: "Applied “\(incoming.title)”", comment: "Toast; the name of a button preset")
+        case .shared:
+            incoming.source == .aiCode ? String(localized: "Applied your new setup", comment: "Toast: a setup code from a chatbot was applied (Set up with AI)")
+                : String(localized: "Applied “\(incoming.title)”", comment: "Toast; the name of a button preset")
         }
         show(.init(symbol: "arrow.down.doc.fill", text: text, action: .undoImport))
+        return true
     }
 
     /// Every setting the preview would change (all of it).

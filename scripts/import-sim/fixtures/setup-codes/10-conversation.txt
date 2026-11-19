@@ -1,0 +1,23 @@
+Here's the plan we landed on, read back one more time:
+
+- **Top left** (the one you never use) becomes your Wispr Flow key: hold it, talk, let go.
+- **Top right** stays Back when you tap it, but hold it and roll to switch desktops (left and right), Mission Control (up) and App Exposé (down). If you pause, a little ring shows what's where. While you hold it, the scroll ring turns the volume.
+- **Both top buttons together** play or pause your music.
+- **In Figma only:** a slower pointer, the page follows the scroll ring and goes further per tick, and bottom right becomes a "hold for precision" button for nudging things.
+- **Steady hands** is on, so a wobble while you hold a button won't count as a roll.
+
+```json
+{
+  "format": "glideball-ai-setup",
+  "version": 1,
+  "buttons": {
+    "2": "holdKeys:ctrl+space",
+    "3": {"gesture": {"left": "keys:ctrl+left", "right": "keys:ctrl+right", "up": "keys:ctrl+up", "down": "keys:ctrl+down", "tap": "back", "show": "afterPause", "ring": "volume"}}
+  },
+  "combos": [{"buttons": [2, 3], "action": "media:playPause"}],
+  "apps": [{"app": "Figma", "trackingSpeed": 3, "scroll": {"scrollMode": "follow", "scrollDistance": 22}, "buttons": {"1": "precisionHold"}}],
+  "gestureSteadyHands": true
+}
+```
+
+Copy the code, go back to Glideball and paste it. Glideball shows every change before anything is applied, and you can undo it.
