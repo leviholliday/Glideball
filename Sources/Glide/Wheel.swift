@@ -28,11 +28,19 @@ struct WheelGeometry: Equatable {
     /// Below this much roll a release can still be the tap.
     var tapSlop: Double
 
-    init(_ t: GestureTuning) {
+    init(_ t: GestureTuning, careful: Bool = false) {
         tapSlop = t.tapSlop
         select = max(t.commit * 0.75, t.tapSlop + 12)
         release = min(t.tapSlop * 1.25, select - 8)
         reach = select * 2.5
+        if careful {
+            // A More's ring, or the first ring after Back: a choice needs a longer roll from the
+            // middle, so the hand settling (or a roll that's still on its way) lights nothing.
+            let base = select
+            select = base * WheelHold.carefulScale
+            release = min(release * WheelHold.carefulScale, select - 8)
+            reach = max(reach, select * 1.8)
+        }
     }
 
     /// Which used place the point (x, y) picks among `filled`, given the one lit now.
@@ -91,20 +99,45 @@ struct WheelHold: Equatable {
     /// and the roll that brought it there can't carry on into it (Levi, beta 30: rolling into a
     /// More on the right ran the sub ring's right; rolling back to Back ran the first ring's left).
     /// Until it's armed the ball moves nothing: for `settle` all movement is ignored; after that it
-    /// arms once the ball has been at rest for `restToArm`, or has rolled the tap slop in a clearly
-    /// different way from the one it came in by (more than `entryCone` off it). Rolling on the way
-    /// it came is ignored until a rest, so going on that way needs a deliberate pause.
+    /// arms once the ball has been at rest for `restToArm`, or has rolled `armTurn` × the tap slop in
+    /// a clearly different way from the one it came in by (more than `entryCone` off it). Rolling on
+    /// the way it came is ignored until a rest, so going on that way needs a deliberate pause.
     var armed = true
     var settleUntil = -Double.infinity
     /// The way the roll came in (a unit vector, +y toward you), and the roll since the settle.
     var entryX = 0.0, entryY = 0.0
     var probeX = 0.0, probeY = 0.0
+    /// A More's ring, or the first ring after Back (beta 32): a choice needs `carefulScale` times
+    /// the usual roll from the middle, and a place that repeats as you roll only lights at first;
+    /// it starts once you roll on its way a step, or stay on it for `repeatDwell`.
+    var careful = false
+    /// When the lit place lit (for a More or Back to open, or a careful repeat to start, by dwelling).
+    var litSince = -Double.infinity
+    /// A careful ring's repeating place has started (fired once since it lit).
+    var runStarted = false
+    /// Never shown until a More opens (a blind hold, Show the ring: Never, that rolled into a More).
+    var quiet = false
 
     /// The ring appears this long after the press if nothing else brought it up (Right away).
     static let revealDelay = 0.18
-    static let settle = 0.16
-    static let restToArm = 0.1
-    static let entryCone = 50.0
+
+    // How More and Back behave (beta 32, Levi on beta 31: "way too eager", "a little jumpy").
+    // All tunable here; docs/DEVELOPING.md says the same in words.
+    /// Lighting More (or Back) only lights it. It opens once it has stayed lit this long...
+    static let confirmDwell = 0.35
+    /// ...or at once if the roll goes on out to this share of the ring's reach (a longer roll).
+    static let pushFraction = 0.9
+    /// A careful ring's distances, times the first ring's.
+    static let carefulScale = 1.5
+    /// A careful ring's repeating place starts after this long lit, if the roll hasn't started it.
+    static let repeatDwell = 0.3
+    /// A ring that just opened or came back ignores all movement for this long...
+    static let settle = 0.2
+    /// ...then arms once the ball has been at rest this long...
+    static let restToArm = 0.12
+    /// ...or has rolled `armTurn` × the tap slop more than `entryCone` degrees off the way it came in.
+    static let entryCone = 60.0
+    static let armTurn = 2.0
 
     /// Where a More ring's way back is: opposite the More that opened it.
     var back: Int? { level.map { ($0 + 4) % 8 } }
@@ -125,6 +158,29 @@ struct WheelHold: Equatable {
         y = 0
         selected = nil
         running = nil
+        runStarted = false
+        litSince = -.infinity
+    }
+
+    /// Whether place `p` opens something rather than running it: a More (first ring) or the way back.
+    func opens(_ p: Int) -> Bool {
+        p == back || (level == nil && steps.indices.contains(p) && steps[p]?.isMore == true)
+    }
+
+    /// The lit More or Back has been confirmed: it stayed lit `confirmDwell`, or the roll went on out
+    /// to `pushFraction` of the reach.
+    func confirmed(now: Double) -> Bool {
+        guard armed, let s = selected, opens(s) else { return false }
+        return now - litSince >= Self.confirmDwell || (x * x + y * y).squareRoot() >= geometry.reach * Self.pushFraction
+    }
+
+    /// Something only time can bring: a ring settling, a lit More or Back waiting to open, a careful
+    /// ring's repeating place waiting to start. The engine looks every 50 ms while it's so.
+    var waiting: Bool {
+        guard !dismissed else { return false }
+        if !armed { return true }
+        guard let s = selected else { return false }
+        return opens(s) || (careful && running == s && !runStarted)
     }
 
     /// Arms the ring by time alone: the settle is over and the ball has been at rest (`quietFor`).
@@ -153,7 +209,7 @@ struct WheelHold: Equatable {
         probeX += dx
         probeY += dy
         let r = (probeX * probeX + probeY * probeY).squareRoot()
-        guard r >= geometry.tapSlop else { return false }
+        guard r >= geometry.tapSlop * Self.armTurn else { return false }
         if (probeX * entryX + probeY * entryY) / r > cos(Self.entryCone * .pi / 180) {
             // Still the roll that brought the ring here: ignored.
             probeX = 0
@@ -188,6 +244,15 @@ struct WheelOverlayModel: Equatable {
     var selected: Int?
     /// A ring that just opened or came back and can't light anything yet (`WheelHold.armed`).
     var settling = false
+    /// A More's ring: the place of the More that opened it (its chips grow out of that chip, and
+    /// shrink back into it on Back), and the first ring's slots, drawn dimmed behind it.
+    var level: Int?
+    var behind: [Slot?]?
+    /// The lit place is a More or Back that opens once it has stayed lit `WheelHold.confirmDwell`
+    /// (the chip fills up meanwhile).
+    var opening: Int?
+    /// Counts each run of a repeating place this hold, so its chip can pulse.
+    var pulse = 0
     /// Where the ball has rolled to, -1…1 of the ring's reach each way (+y down), in steps
     /// of 1/16 so a slow roll doesn't redraw it for every count.
     var dot: CGPoint
@@ -215,20 +280,31 @@ struct WheelOverlayModel: Equatable {
 }
 
 extension WheelHold {
-    /// The ring as it should look now; nil while it's hidden.
-    func overlay(readout: WheelOverlayModel.RingReadout?) -> WheelOverlayModel? {
-        guard revealed, !dismissed else { return nil }
+    /// The ring as it should look now; nil while it's hidden. `first`: the first ring's steps, drawn
+    /// behind a More's ring.
+    func overlay(readout: WheelOverlayModel.RingReadout?, first: [GestureStep?]? = nil, pulse: Int = 0) -> WheelOverlayModel? {
+        guard revealed, !dismissed, !quiet else { return nil }
         let q = 16.0
         func step(_ v: Double) -> CGFloat { CGFloat((max(-1, min(1, v / geometry.reach)) * q).rounded() / q) }
-        let slots: [WheelOverlayModel.Slot?] = (0..<8).map { p in
-            guard usedPlaces.contains(p) else { return nil }
+        var m = WheelOverlayModel(slots: Self.slots(steps, eight: eight, back: back), eight: eight, sub: level != nil, showsRing: true,
+                                  selected: selected, settling: !armed, dot: CGPoint(x: step(x), y: step(y)), ring: readout)
+        m.level = level
+        if level != nil, let first { m.behind = Self.slots(first, eight: eight, back: nil) }
+        if armed, let s = selected, opens(s) { m.opening = s }
+        m.pulse = pulse
+        return m
+    }
+
+    /// What each place shows, for a ring of `steps` (with its way back at `back`).
+    static func slots(_ steps: [GestureStep?], eight: Bool, back: Int?) -> [WheelOverlayModel.Slot?] {
+        let used = eight ? Array(0..<8) : [0, 2, 4, 6]
+        return (0..<8).map { p in
+            guard used.contains(p) else { return nil }
             if p == back { return .back }
             guard let s = steps.indices.contains(p) ? steps[p] : nil else { return nil }
             if s.isMore { return .more }
             return s.firable.map { _ in .action(s.action) }
         }
-        return WheelOverlayModel(slots: slots, eight: eight, sub: level != nil, showsRing: true, selected: selected,
-                                 settling: !armed, dot: CGPoint(x: step(x), y: step(y)), ring: readout)
     }
 }
 
@@ -239,7 +315,7 @@ extension WheelOverlayModel {
         var w = WheelHold(level: level, steps: gesture.steps(level: level), eight: gesture.eight, geometry: WheelGeometry(GestureTuning()))
         w.revealed = true
         w.selected = selected
-        var m = w.overlay(readout: ring) ?? WheelOverlayModel(slots: [], eight: gesture.eight, dot: .zero)
+        var m = w.overlay(readout: ring, first: gesture.steps(level: nil)) ?? WheelOverlayModel(slots: [], eight: gesture.eight, dot: .zero)
         m.dot = dot
         return m
     }
@@ -250,4 +326,6 @@ protocol WheelPresenting: AnyObject {
     /// Shows the ring centred on `point` (global Quartz coordinates), or updates it.
     func showWheel(_ model: WheelOverlayModel, at point: CGPoint)
     func hideWheel()
+    /// The release ran the place lit at `place` (its chip pulses as the ring goes).
+    func wheelRan(place: Int)
 }

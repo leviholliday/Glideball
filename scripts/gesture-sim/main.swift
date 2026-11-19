@@ -260,6 +260,12 @@ final class Rig {
         if machine.isHeld { apply(machine.ball(dx: dx, dy: dy, now: now)) }
     }
 
+    /// The engine's 50 ms look while the ring waits on time (`Engine.syncWheel`, `wheelTick`).
+    func tickRing() {
+        if machine.wheelWaiting { apply(machine.wheelTick(now: now)) }
+        invariants()
+    }
+
     /// The scroll ring (Engine.hidWheel): a Wheel's ring job, or the Switcher's highlight, while one is held.
     func ring(_ ticks: Int) {
         if machine.ringTaken { apply(machine.ring(ticks: ticks, now: now)) }
@@ -727,83 +733,146 @@ do {
     check(!n.machine.wheelHeld && n.fired.count == 1, "After a pause: once something fired, holding still doesn't bring the ring up")
     n.release(3)
 
-    // More, on a ring shown right away: up opens a second ring in place.
+    // More and Back (beta 32; Levi on beta 31: More "feels way too eager", "a little jumpy").
+    // Lighting More only lights it: it opens after staying on it a moment (`confirmDwell`) or a
+    // longer roll out (`pushFraction` of the reach). Its ring, and the first one after Back, settle,
+    // then need a longer roll from the middle (`carefulScale`); one-shots run only at the release.
+    /// Time passing with the button held, as the engine sees it: a look every 50 ms (`wheelTick`).
+    func dwell(_ r: Rig, _ seconds: Double) {
+        var t = 0.0
+        while t < seconds - 1e-9 { r.advance(0.05); t += 0.05; r.tickRing(); _ = r.machine.wheelOverlay(now: r.now) }
+    }
     var more = ButtonGesture.standard
     more.show = .atOnce
     more.up = .moreRing([nil, nil, GestureStep(.shortcut(.screenshot)), nil, nil, nil, GestureStep(.shortcut(.lockScreen))])
+    // Lighting More doesn't open it.
+    let lit = Rig([3: .gesture(more)])
+    lit.press(3); dwell(lit, 0.3); lit.roll(dx: 0, dy: -5, steps: 12)
+    let litModel = lit.machine.wheelOverlay(now: lit.now)
+    check(lit.machine.hold?.wheel?.level == nil && lit.machine.hold?.wheel?.selected == 0 && litModel?.opening == 0,
+          "More: rolling onto it lights it (filling up), it doesn't open yet")
+    lit.release(3)
+    check(lit.picks.isEmpty && lit.taps.isEmpty && lit.fired.isEmpty && lit.ringRepeats.isEmpty, "More lit, not opened, let go: nothing runs")
+    // Crossing it on the way somewhere else doesn't open it either.
+    let cross = Rig([3: .gesture(more)])
+    cross.press(3); dwell(cross, 0.3); cross.roll(dx: 0, dy: -5, steps: 8); cross.roll(dx: 5, dy: 0, steps: 14)
+    let crossLevel = cross.machine.hold?.wheel?.level
+    cross.release(3)
+    check(crossLevel == nil && cross.picks.map(\.1) == [2] && cross.picks.first?.0 == .shortcut(.nextSpace),
+          "More crossed on the way to Right: More never opens, Right runs (level \(String(describing: crossLevel)))")
+    // A moment on More opens it: centred, nothing lit, settling.
     let m = Rig([3: .gesture(more)])
-    m.press(3); m.advance(0.3); m.roll(dx: 0, dy: -5, steps: 12)
-    check(m.machine.hold?.wheel?.level == 0 && m.machine.hold?.wheel?.selected == nil, "More: rolling into it opens its ring, nothing lit, centred")
-    check(m.machine.wheelOverlay(now: m.now)?.sub == true && m.machine.wheelOverlay(now: m.now)?.slots[4] == .back, "More: its ring shows, with the way back opposite")
+    m.press(3); dwell(m, 0.3); m.roll(dx: 0, dy: -5, steps: 12); dwell(m, 0.4)
+    check(m.machine.hold?.wheel?.level == 0 && m.machine.hold?.wheel?.selected == nil, "More: staying on it a moment opens its ring, nothing lit, centred")
+    let mm = m.machine.wheelOverlay(now: m.now)
+    check(mm?.sub == true && mm?.slots[4] == .back && mm?.level == 0 && mm?.behind?[0] == .more, "More: its ring shows, Back opposite, the first ring behind it")
     check(m.fired.isEmpty && m.picks.isEmpty && m.ringRepeats.isEmpty, "More: opening it runs nothing")
-    m.advance(0.25); m.roll(dx: 5, dy: 0, steps: 12); m.release(3)
-    check(m.picks.count == 1 && m.picks[0].0 == .shortcut(.screenshot), "More: roll right in it and let go runs its Right")
+    // Highlight then let go runs exactly one.
+    dwell(m, 0.2); m.roll(dx: 5, dy: 0, steps: 20); m.release(3)
+    check(m.picks.count == 1 && m.picks[0].0 == .shortcut(.screenshot) && m.ringRepeats.isEmpty && m.fired.isEmpty,
+          "More: highlight Right in its ring and let go runs it, exactly once (\(m.picks.count))")
+    // Its ring needs a longer roll than the first one: a first-ring distance lights nothing in it.
+    let short = Rig([3: .gesture(more)])
+    short.press(3); dwell(short, 0.3); short.roll(dx: 0, dy: -5, steps: 12); dwell(short, 0.6)
+    short.roll(dx: 5, dy: 0, steps: 9)   // 45 counts: past the first ring's 36, short of More's 54
+    let shortLit = short.machine.hold?.wheel?.selected
+    short.release(3)
+    check(shortLit == nil && short.picks.isEmpty, "More's ring: a first-ring-sized roll lights nothing (lit \(String(describing: shortLit)))")
+    // Open More, then let go in the middle: nothing.
     let mc = Rig([3: .gesture(more)])
-    mc.press(3); mc.advance(0.3); mc.roll(dx: 0, dy: -5, steps: 12); mc.release(3)
-    check(mc.picks.isEmpty && mc.taps.isEmpty && mc.fired.isEmpty, "More: let go in the middle of its ring: nothing runs")
+    mc.press(3); dwell(mc, 0.3); mc.roll(dx: 0, dy: -5, steps: 12); dwell(mc, 0.4); mc.release(3)
+    check(mc.picks.isEmpty && mc.taps.isEmpty && mc.fired.isEmpty, "More opened, let go in the middle of its ring: nothing runs")
+    // Roll on through More without stopping: the long roll opens it, the rest of the roll is ignored.
+    let through = Rig([3: .gesture(more)])
+    through.press(3); dwell(through, 0.3); through.roll(dx: 0, dy: -6, steps: 60)
+    let throughLevel = through.machine.hold?.wheel?.level, throughLit = through.machine.hold?.wheel?.selected
+    through.release(3)
+    check(throughLevel == 0 && throughLit == nil && through.picks.isEmpty && through.ringRepeats.isEmpty && through.fired.isEmpty,
+          "More rolled straight through: it opens, and nothing in its ring lights or runs (level \(String(describing: throughLevel)), lit \(String(describing: throughLit)))")
+    // Back: lit, then a moment on it, returns to the first ring (careful from then on).
     let mb = Rig([3: .gesture(more)])
-    mb.press(3); mb.advance(0.3); mb.roll(dx: 0, dy: -5, steps: 12); mb.advance(0.25); mb.roll(dx: 0, dy: 5, steps: 12)
-    check(mb.machine.hold?.wheel?.level == nil, "More: back through the middle toward where you came from: the first ring again")
-    mb.advance(0.25); mb.roll(dx: 5, dy: 0, steps: 12); mb.release(3)
-    check(mb.picks.map(\.1) == [2] && mb.picks[0].0 == .shortcut(.nextSpace), "More: back on the first ring, Right runs the first ring's Right")
+    mb.press(3); dwell(mb, 0.3); mb.roll(dx: 0, dy: -5, steps: 12); dwell(mb, 0.6)
+    mb.roll(dx: 0, dy: 5, steps: 14)
+    let backLit = mb.machine.hold?.wheel?.selected, backStill = mb.machine.hold?.wheel?.level
+    dwell(mb, 0.4)
+    check(backLit == 4 && backStill == 0 && mb.machine.hold?.wheel?.level == nil && mb.machine.hold?.wheel?.careful == true,
+          "Back: lighting it waits; a moment on it returns to the first ring (lit \(String(describing: backLit)))")
+    dwell(mb, 0.2); mb.roll(dx: 5, dy: 0, steps: 20); mb.release(3)
+    check(mb.picks.map(\.1) == [2] && mb.picks[0].0 == .shortcut(.nextSpace), "Back, then Right and let go runs the first ring's Right, once")
     let md = Rig([3: .gesture(more)])
-    md.press(3); md.advance(0.3); md.roll(dx: 0, dy: -5, steps: 12); md.machine.dismissWheel(); md.advance(0.25); md.roll(dx: 5, dy: 0, steps: 12); md.release(3)
+    md.press(3); dwell(md, 0.3); md.roll(dx: 0, dy: -5, steps: 12); dwell(md, 0.6); md.machine.dismissWheel(); md.roll(dx: 5, dy: 0, steps: 20); md.release(3)
     check(md.picks.isEmpty && md.taps.isEmpty, "More: Esc in its ring: nothing runs")
     for reason in [GestureCancel.pause, .unplug, .sleep, .tapDisabled, .quit] {
         let x = Rig([3: .gesture(more)])
-        x.press(3); x.advance(0.3); x.roll(dx: 0, dy: -5, steps: 12); x.advance(0.25); x.roll(dx: 5, dy: 0, steps: 12); x.cancel(reason); x.release(3)
+        x.press(3); dwell(x, 0.3); x.roll(dx: 0, dy: -5, steps: 12); dwell(x, 0.6); x.roll(dx: 5, dy: 0, steps: 20); x.cancel(reason); x.release(3)
         check(x.picks.isEmpty && !x.frozen && x.machine.wheelOverlay(now: x.now) == nil, "More: \(reason.rawValue) mid-hold: nothing runs, nothing shows, pointer free")
     }
-    // Blind (Never): More still works, direction then direction; its ring shows (always).
+    // Blind (Never): More still works without looking: a longer roll that way, then the other way.
     var blindMore = more
     blindMore.show = .never
+    let bq = Rig([3: .gesture(blindMore)])
+    bq.press(3); bq.roll(dx: 0, dy: -6, steps: 10)
+    check(bq.machine.hold?.wheel?.level == nil && bq.machine.wheelOverlay(now: bq.now) == nil, "More, blind: just past the distance it's lit, unseen, not open")
+    bq.release(3)
+    check(bq.picks.isEmpty && bq.fired.isEmpty && bq.taps.isEmpty, "More, blind, lit and let go: nothing runs")
     let bm = Rig([3: .gesture(blindMore)])
-    bm.press(3); bm.roll(dx: 0, dy: -6, steps: 12)
-    check(bm.machine.hold?.wheel?.level == 0 && bm.machine.wheelOverlay(now: bm.now) != nil, "More, blind: rolling up opens it, and its ring shows")
+    bm.press(3); bm.roll(dx: 0, dy: -6, steps: 30)
+    check(bm.machine.hold?.wheel?.level == 0 && bm.machine.wheelOverlay(now: bm.now) != nil, "More, blind: rolling on up opens it, and its ring shows")
     bm.roll(dx: -6, dy: 0, steps: 30); bm.release(3)
     check(bm.picks.count == 1 && bm.picks[0].0 == .shortcut(.lockScreen) && bm.fired.isEmpty, "More, blind: up then left (one turning roll) runs More's Left")
+    // Fast blind use of the other directions is as it was.
+    let fast = Rig([3: .gesture(blindMore)])
+    fast.press(3); fast.roll(dx: 6, dy: 0, steps: 10); fast.release(3)
+    check(fast.fired.map(\.1) == [.right] && fast.machine.hold == nil, "More, blind: a flick another way fires at once, as before")
 
-    // Beta 30 (Levi): rolling into More carried straight on into the sub ring's place that way,
-    // and rolling back to Back carried on into the first ring's place opposite More. A ring that
-    // opens or comes back settles: nothing moves, lights or runs until the hand rests or clearly turns.
+    // Rolling into More and on, then Back and on: never carries into the place that way.
     var side = ButtonGesture.standard
     side.show = .atOnce
-    side.right = .moreRing([nil, nil, GestureStep(.shortcut(.screenshot)), nil, nil, nil, nil])   // More on the right, with its own right
+    side.right = .moreRing([GestureStep(.media(.volumeUp), repeats: true), nil, GestureStep(.shortcut(.screenshot)), nil, nil, nil, nil])   // More on the right
     side[.left] = GestureStep(.shortcut(.lockScreen))
     side[.up] = GestureStep(.media(.volumeUp), repeats: true)
     let carry = Rig([3: .gesture(side)])
-    carry.press(3); carry.advance(0.3)
+    carry.press(3); dwell(carry, 0.3)
     carry.roll(dx: 6, dy: 0, steps: 60)   // into More and on, without stopping, for half a second
     let litWhileCarrying = carry.machine.hold?.wheel?.selected
     carry.release(3)
     check(carry.picks.isEmpty && carry.fired.isEmpty && carry.ringRepeats.isEmpty && litWhileCarrying == nil,
           "More with the roll carrying on: nothing in its ring lights or runs (\(carry.picks.count) picks, lit \(String(describing: litWhileCarrying)))")
     let carryOn = Rig([3: .gesture(side)])
-    carryOn.press(3); carryOn.advance(0.3); carryOn.roll(dx: 6, dy: 0, steps: 20)
+    carryOn.press(3); dwell(carryOn, 0.3); carryOn.roll(dx: 6, dy: 0, steps: 20)
     let settling = carryOn.machine.wheelOverlay(now: carryOn.now)?.settling == true
-    carryOn.advance(0.2); _ = carryOn.machine.wheelOverlay(now: carryOn.now)
+    dwell(carryOn, 0.3)
     let armedAfterRest = carryOn.machine.wheelOverlay(now: carryOn.now)?.settling == false
-    carryOn.roll(dx: 6, dy: 0, steps: 12); carryOn.release(3)
+    carryOn.roll(dx: 6, dy: 0, steps: 20); carryOn.release(3)
     check(settling && armedAfterRest && carryOn.picks.map(\.0) == [.shortcut(.screenshot)],
           "More: after a rest, rolling on the same way runs its place that way (settling \(settling), armed \(armedAfterRest))")
     let back = Rig([3: .gesture(side)])
-    back.press(3); back.advance(0.3); back.roll(dx: 6, dy: 0, steps: 12); back.advance(0.25)
+    back.press(3); dwell(back, 0.3); back.roll(dx: 6, dy: 0, steps: 20); dwell(back, 0.3)
     back.roll(dx: -6, dy: 0, steps: 60)   // back to Back and on, without stopping
-    let backLevel = back.machine.hold?.wheel?.level, backLit = back.machine.hold?.wheel?.selected
+    let backLevel = back.machine.hold?.wheel?.level, backLit2 = back.machine.hold?.wheel?.selected
     back.release(3)
-    check(backLevel == nil && backLit == nil && back.picks.isEmpty && back.ringRepeats.isEmpty,
-          "Back with the roll carrying on: the first ring, in its middle, and nothing in it runs (level \(String(describing: backLevel)), lit \(String(describing: backLit)))")
-    let backTurn = Rig([3: .gesture(side)])
-    backTurn.press(3); backTurn.advance(0.3); backTurn.roll(dx: 6, dy: 0, steps: 12); backTurn.advance(0.25)
-    backTurn.roll(dx: -6, dy: 0, steps: 12)   // to Back
-    backTurn.roll(dx: 0, dy: -6, steps: 40)   // turning up without a pause: up repeats once it's armed
-    backTurn.release(3)
-    check(backTurn.ringRepeats.count >= 1 && backTurn.picks.isEmpty,
-          "Back, then a clear turn up: the first ring's Up runs (\(backTurn.ringRepeats.count) repeats)")
+    check(backLevel == nil && backLit2 == nil && back.picks.isEmpty && back.ringRepeats.isEmpty,
+          "Back with the roll carrying on: the first ring, in its middle, and nothing in it runs (level \(String(describing: backLevel)), lit \(String(describing: backLit2)))")
     let quick = Rig([3: .gesture(side)])
-    quick.press(3); quick.advance(0.3); quick.roll(dx: 6, dy: 0, steps: 10); quick.roll(dx: -6, dy: 0, steps: 10)
+    quick.press(3); dwell(quick, 0.3); quick.roll(dx: 6, dy: 0, steps: 20); quick.roll(dx: -6, dy: 0, steps: 20)
     quick.release(3)
     check(quick.picks.isEmpty && quick.ringRepeats.isEmpty, "More, then straight back inside the settle: nothing runs")
+    // A repeating place in More's ring: lighting it only lights it; rolling on its way starts it,
+    // and then it goes on continuously while held (no let-go needed).
+    let rep = Rig([3: .gesture(side)])
+    rep.press(3); dwell(rep, 0.3); rep.roll(dx: 6, dy: 0, steps: 20); dwell(rep, 0.3)
+    rep.roll(dx: 0, dy: -5, steps: 12)   // 60 counts up: lit
+    let repLit = rep.machine.hold?.wheel?.selected, repBefore = rep.ringRepeats.count
+    rep.roll(dx: 0, dy: -5, steps: 40)   // on up: starts, then repeats every step
+    let repWhileHeld = rep.ringRepeats.count
+    rep.release(3)
+    check(repLit == 0 && repBefore == 0 && repWhileHeld >= 2 && rep.ringRepeats.count == repWhileHeld && rep.picks.isEmpty,
+          "More's ring: a repeating place lights first, then runs continuously as you roll on (\(repBefore) at the light, \(repWhileHeld) held)")
+    let repDwell = Rig([3: .gesture(side)])
+    repDwell.press(3); dwell(repDwell, 0.3); repDwell.roll(dx: 6, dy: 0, steps: 20); dwell(repDwell, 0.3)
+    repDwell.roll(dx: 0, dy: -5, steps: 12); dwell(repDwell, 0.4)
+    check(repDwell.ringRepeats.count == 1, "More's ring: staying on a repeating place a moment starts it (\(repDwell.ringRepeats.count))")
+    repDwell.release(3)
     check(blindMore.mayShowRing && !ButtonGesture.standard.mayShowRing, "a Never gesture with a More can still show a ring; one without can't")
 
     // A place that repeats as you roll, on a showing ring: runs as it lights, then every step its way.

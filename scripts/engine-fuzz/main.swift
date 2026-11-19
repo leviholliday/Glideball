@@ -166,9 +166,10 @@ final class FakeIO: EngineIO {
     var standInFault: String?        // a rule the engine broke, for World.checkAlways
     /// Where the real pointer was when the hold let it go with the stand-in still up.
     var freedAt: (cursor: CGPoint, standIn: CGPoint, tapOn: Bool)?
+    var lastFreed: (cursor: CGPoint, standIn: CGPoint, tapOn: Bool)?   // the same, kept for a case's verdict
     override func freezePointer(_ f: Bool) {
-        if f && anchorExpect == nil { anchorExpect = cursor; standInDropped = false; standInRefused = false }
-        if !f { anchorExpect = nil; if frozen, let s = standIn { freedAt = (cursor, s, mainTap.map { tapIsEnabled($0) } ?? false) } }
+        if f && anchorExpect == nil { anchorExpect = Engine.heldSpot(cursor); standInDropped = false; standInRefused = false }
+        if !f { anchorExpect = nil; if frozen, let s = standIn { freedAt = (cursor, s, mainTap.map { tapIsEnabled($0) } ?? false); lastFreed = freedAt } }
         frozen = f
     }
     override func showStandIn(at point: CGPoint) -> Bool {
@@ -204,10 +205,13 @@ final class FakeIO: EngineIO {
     var wheelWorks = true            // false: nothing to draw it with (render-ui, self-test)
     var wheelDropped = false         // the watchdog took it down this hold (World.apply)
     var wheelFault: String?
+    /// A More's ring was drawn this case.
+    var subShown = false
     override func showWheel(_ model: WheelOverlayModel, at point: CGPoint) -> Bool {
         guard wheelWorks else { return false }
         if !frozen { wheelFault = "the Wheel was shown while nothing held the pointer" }
         if wheel == nil { wheelShows += 1; wheelKeptAt = clock }
+        if model.sub { subShown = true }
         wheel = (model, point)
         return true
     }
@@ -371,6 +375,8 @@ enum Op: CustomStringConvertible {
     case kHop(Int, Int, hx: Int, hy: Int)
     case kWheel(Int)
     case oPress(Int), oRelease(Int), oWheel(Int), oBall
+    /// The pointer between whole points, as macOS's location usually is (beta 31's press hop).
+    case cursorFraction
     case oReleaseCGFirst(Int) // another mouse's release, its HID report after the CG event
     /// The trackball and another mouse or the trackpad on the same button number (World.apply).
     case overlap(Int, Int)
@@ -425,6 +431,7 @@ enum Op: CustomStringConvertible {
         case .replugHeld(let b, let m): "replugWithButtonHeld(\(b), \(["report before open", "report after add", "unreadable"][m % 3]))"
         case .oWheel(let t): "otherMouseWheel(\(t))"
         case .oBall: "otherMouseMove"
+        case .cursorFraction: "pointerBetweenPoints"
         case .padClick(let b): "trackpadClick(\(b))"
         case .padScroll: "trackpadScroll"
         case .padMove: "trackpadMove"
@@ -708,6 +715,7 @@ final class World {
     var plugGraceUntil = -1e9   // until then "connected" and "works" aren't judged
     var oddReplug = false       // the latest replug was published late in some way (Op.replug bits 1-8)
     var hopsSeen = 0            // kHop moves the landing judged
+    var grabFrom: CGPoint?      // where `cursorFraction` put the pointer
     var holdDisturbed = false   // the trackball moved during such a replug while the pointer was held
     var holdCheckAt: Double?    // a held pointer moved with nothing after it: back on its anchor by then
     let echo = echoShadow       // the shadow pointer echoes the trackball's every movement
@@ -1004,7 +1012,7 @@ final class World {
         taintedWhileOff.removeAll()
         // While the tap was off the pointer moved freely (never stuck); a hold that's still
         // on keeps it where it is now, rather than jumping it back.
-        if io.frozen { io.anchorExpect = io.cursor }
+        if io.frozen { io.anchorExpect = Engine.heldSpot(io.cursor) }
     }
 
     /// Other mice and the trackpad: what went in comes out, once, unchanged.
@@ -1400,6 +1408,10 @@ final class World {
             e.setIntegerValueField(srcField, value: Int64(id))
             deliver(e, source: .other)
             if let out = lastOut[id], out.type != .scrollWheel { fail("others", "another mouse's scroll came out as type \(out.type.rawValue)") }
+        case .cursorFraction:
+            guard !io.frozen else { return }
+            io.cursor = CGPoint(x: io.cursor.x.rounded(.down) + 0.6, y: io.cursor.y.rounded(.down) + 0.7)
+            grabFrom = io.cursor
         case .oBall:
             // Another mouse moving within the few milliseconds a trackball move is still being put
             // back: which part of the pointer's offset is whose can't be told, so that hold isn't judged.
@@ -1409,7 +1421,7 @@ final class World {
             hid(oKey, page: kHIDPage_GenericDesktop, usage: kHIDUsage_GD_X, value: 3)
             do {   // another mouse always moves the pointer; the hold follows it
                 io.cursor.x = min(io.cursor.x + 3, 3000)
-                if io.frozen { io.anchorExpect = io.cursor }
+                if io.frozen { io.anchorExpect = Engine.heldSpot(io.cursor) }
             }
             if let b = oDown.min() {
                 let id = newID(InputInfo(source: .other, button: b, type: World.type(b, 2), flags: io.kbFlags, time: io.clock))
@@ -2405,6 +2417,11 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
                          [.front(1)] + down(3) + fast + [.wait(0.1)] + up(3) + [.kHop(3, 1, hx: 160, hy: -40)] + settle))
     gestureCases.append(("landing: after Scroll with ball, a hop then ordinary moves", [scrollHold],
                          down(4) + fast + up(4) + [.kHop(-2, 0, hx: -90, hy: 0), .kBall(4, 2), .wait(0.01), .kBall(3, 0)] + settle))
+    // Beta 31 (Levi): pressing a Gestures button made the pointer jump "just a tad", usually right.
+    // macOS's location is between whole points; the warp lands on the whole point and the stand-in's
+    // window on the nearest pixel, a pixel apart. The held spot is now the whole point.
+    gestureCases.append(("grab: the pointer between whole points: held, drawn and let go on the whole point", [g],
+                         [.cursorFraction] + down(3) + fast + [.wait(0.1)] + up(3) + settle))
     gestureCases.append(("landing: ordinary moves after letting go are left alone", [g],
                          down(3) + fast + [.wait(0.1)] + up(3) + [.kBall(6, 0), .wait(0.01), .kBall(5, -2), .wait(0.3), .kBall(4, 0)] + settle))
     gestureCases.append(("replugged with new IDs, old ones still listed dead: connected, then not", [holdKey],
@@ -2623,30 +2640,43 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
     var neverVolC = GlideConfig()
     neverVolC.buttons[3] = .gesture(neverVol)
     let upRoll = roll(0, -5, 12)
+    let moment = [Op.wait(0.45)]   // a moment on a lit More or Back: it opens (`WheelHold.confirmDwell`)
     var sideG = ButtonGesture.standard   // More on the right (with its own right), volume up repeating
     sideG.show = .atOnce
     sideG.right = .moreRing([nil, nil, GestureStep(.shortcut(.screenshot)), nil, nil, nil, nil])
     sideG[.left] = GestureStep(.shortcut(.lockScreen))
     sideG[.up] = GestureStep(.media(.volumeUp), repeats: true)
+    sideG.right = .moreRing([GestureStep(.media(.volumeUp), repeats: true), nil, GestureStep(.shortcut(.screenshot)), nil, nil, nil, nil])
     var sideC = GlideConfig()
     sideC.buttons[3] = .gesture(sideG)
     let merged: [(String, [GlideConfig], [Op])] = [
-        ("gestures: More opened, let go in the middle: nothing runs", [moreC], down(3) + slow + upRoll + up(3) + settle),
-        ("gestures: More opened, then right and let go runs More's right", [moreC], down(3) + slow + upRoll + [.wait(0.25)] + right + up(3) + settle),
+        // Beta 32 (Levi on beta 31: More "feels way too eager"): lighting More only lights it; a
+        // moment on it (`WheelHold.confirmDwell`) or a longer roll opens it. Its ring settles, then
+        // needs a longer roll; nothing in it runs until the release, but for a repeating place.
+        ("gestures: More opened, let go in the middle: nothing runs", [moreC], down(3) + slow + upRoll + moment + up(3) + settle),
+        ("gestures: More opened, then right and let go runs More's right", [moreC], down(3) + slow + upRoll + moment + [.wait(0.25)] + right + up(3) + settle),
+        ("gestures: More opened, highlight then let go runs exactly one", [moreC],
+         down(3) + slow + upRoll + moment + [.wait(0.25)] + right + [.wait(0.5)] + up(3) + settle),
+        ("gestures: More lit but not opened, let go: nothing runs", [moreC], down(3) + slow + upRoll + up(3) + settle),
+        ("gestures: More crossed on the way to Right: More never opens, Right runs", [moreC],
+         down(3) + slow + roll(0, -5, 8) + roll(5, 0, 14) + up(3) + settle),
+        ("gestures: roll on through More: it opens, nothing runs", [moreC], down(3) + slow + roll(0, -6, 60) + up(3) + settle),
         ("gestures: More opened, then the watchdog: nothing runs, nothing shows", [moreC],
-         down(3) + slow + upRoll + [.wheelOverlay(2), .wait(0.3)] + right + up(3) + settle),
+         down(3) + slow + upRoll + moment + [.wheelOverlay(2), .wait(0.3)] + right + up(3) + settle),
         // Beta 30 (Levi): the roll into More carried on into its ring's place that way, and the
         // roll back to Back carried on into the first ring's place opposite More. Now a ring that
         // opens or comes back settles: nothing in it lights or runs until the hand rests or turns.
         ("gestures: More with the roll carrying on: nothing in its ring runs", [sideC],
          down(3) + slow + roll(6, 0, 50) + up(3) + settle),
         ("gestures: Back with the roll carrying on: nothing in the first ring runs", [sideC],
-         down(3) + slow + roll(6, 0, 12) + [.wait(0.25)] + roll(-6, 0, 50) + up(3) + settle),
+         down(3) + slow + roll(6, 0, 12) + moment + [.wait(0.25)] + roll(-6, 0, 50) + up(3) + settle),
         ("gestures: More, a rest, then on the same way runs its place that way", [sideC],
          down(3) + slow + roll(6, 0, 20) + [.wait(0.25)] + roll(6, 0, 12) + up(3) + settle),
+        ("gestures: More's repeating place lights, then runs continuously as you roll on", [sideC],
+         down(3) + slow + roll(6, 0, 20) + [.wait(0.3)] + roll(0, -5, 12) + roll(0, -5, 40) + up(3) + settle),
         ("gestures: More opened blind (Never), then a pause: down, nothing runs", [moreBlindC],
-         down(3) + upRoll + right + [.pause, .resume] + up(3) + settle),
-        ("gestures: More, blind: up then left runs More's left", [moreBlindC], down(3) + upRoll + roll(-5, 0, 30) + up(3) + settle),
+         down(3) + roll(0, -6, 20) + right + [.pause, .resume] + up(3) + settle),
+        ("gestures: More, blind: up then left runs More's left", [moreBlindC], down(3) + roll(0, -6, 20) + roll(-5, 0, 30) + up(3) + settle),
         ("gestures: After a pause, a fast flick: no overlay ever requested", [pauseC],
          down(3) + [.kBall(0, -30), .wait(0.004), .kBall(0, -30)] + up(3) + settle),
         ("gestures: After a pause, held still: the ring comes up and right runs", [pauseC], down(3) + [.wait(0.4)] + right + up(3) + settle),
@@ -3043,6 +3073,11 @@ let expectations: [String: (World) -> String?] = [
         w.hopsSeen == 1 && w.io.resyncs >= 2 ? standInShown(w, 1) : "\(w.hopsSeen) hops judged, \(w.io.resyncs) moves posted (expected 1, at least 2)" },
     "landing: after Scroll with ball, a hop then ordinary moves": { w in
         w.hopsSeen == 1 ? standInShown(w, 1) : "\(w.hopsSeen) hops judged" },
+    "grab: the pointer between whole points: held, drawn and let go on the whole point": { w in
+        guard let from = w.grabFrom, let freed = w.io.lastFreed else { return "no hold to judge" }
+        let spot = CGPoint(x: from.x.rounded(.down), y: from.y.rounded(.down))   // where a warp lands
+        return freed.standIn == spot && freed.cursor == spot ? standInShown(w, 1)
+            : "held at \(from): the stand-in at \(freed.standIn), let go at \(freed.cursor), expected \(spot)" },
     "landing: ordinary moves after letting go are left alone": { w in
         w.io.resyncs == 1 ? standInShown(w, 1) : "\(w.io.resyncs) moves posted, expected 1 (at the release)" },
     "stand-in unavailable: the hold works as before": { w in
@@ -3090,7 +3125,22 @@ let expectations: [String: (World) -> String?] = [
         wheelDid(w, holds: 1, picks: 1, shows: 1) ?? (w.modes.wheelFlash?.kind == .slot(2) ? nil : "ran \(String(describing: w.modes.wheelFlash))") },
     "wheel: a still press is the tap": { w in wheelDid(w, holds: 1, picks: 0, taps: 1) },
     "gestures: More opened, let go in the middle: nothing runs": { w in
-        wheelDid(w, holds: 1, picks: 0, shows: 1) ?? (w.gestureFires == 0 && w.gestureTaps == 0 ? nil : "\(w.gestureFires) fires, \(w.gestureTaps) taps") },
+        wheelDid(w, holds: 1, picks: 0, shows: 1) ?? (w.gestureFires == 0 && w.gestureTaps == 0 && w.io.subShown ? nil
+            : "\(w.gestureFires) fires, \(w.gestureTaps) taps, More's ring shown \(w.io.subShown)") },
+    "gestures: More opened, highlight then let go runs exactly one": { w in
+        wheelDid(w, holds: 1, picks: 1, shows: 1) ?? (w.modes.wheelFlash?.kind == .slot(2) && w.gestureFires == 0 && w.wheelRepeats == 0 && w.io.subShown ? nil
+            : "ran \(String(describing: w.modes.wheelFlash)), \(w.gestureFires) fires, \(w.wheelRepeats) repeats") },
+    "gestures: More lit but not opened, let go: nothing runs": { w in
+        wheelDid(w, holds: 1, picks: 0, shows: 1) ?? (w.gestureFires == 0 && w.gestureTaps == 0 && !w.io.subShown ? nil
+            : "\(w.gestureFires) fires, \(w.gestureTaps) taps, More's ring shown \(w.io.subShown)") },
+    "gestures: More crossed on the way to Right: More never opens, Right runs": { w in
+        wheelDid(w, holds: 1, picks: 1, shows: 1) ?? (w.modes.wheelFlash?.kind == .slot(2) && !w.io.subShown ? nil
+            : "ran \(String(describing: w.modes.wheelFlash)), More's ring shown \(w.io.subShown)") },
+    "gestures: roll on through More: it opens, nothing runs": { w in
+        wheelDid(w, holds: 1, picks: 0, shows: 1) ?? (w.gestureFires == 0 && w.wheelRepeats == 0 && w.io.subShown ? nil
+            : "\(w.gestureFires) fires, \(w.wheelRepeats) repeats, More's ring shown \(w.io.subShown)") },
+    "gestures: More's repeating place lights, then runs continuously as you roll on": { w in
+        wheelDid(w, holds: 1, picks: 0, shows: 1) ?? (w.wheelRepeats >= 2 && w.gestureFires == 0 ? nil : "\(w.wheelRepeats) repeats (expected 2 or more), \(w.gestureFires) fires") },
     "gestures: More opened, then right and let go runs More's right": { w in
         wheelDid(w, holds: 1, picks: 1, shows: 1) ?? (w.modes.wheelFlash?.kind == .slot(2) && w.gestureFires == 0 ? nil : "ran \(String(describing: w.modes.wheelFlash))") },
     "gestures: More opened, then the watchdog: nothing runs, nothing shows": { w in wheelDid(w, holds: 1, picks: 0, shows: 1) },

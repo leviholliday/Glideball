@@ -115,7 +115,7 @@ class EngineIO {
         guard let problem = Self.backgroundCursorProblem else {
             standIn.lock.lock()
             let firstGen = standIn.wanted == nil ? standIn.gen : nil
-            if firstGen != nil { standIn.problem = nil }   // a new hold
+            if firstGen != nil { standIn.problem = nil; standIn.placedOffset = nil }   // a new hold
             standIn.wanted = point
             standIn.keptAt = now()
             standIn.lock.unlock()
@@ -149,6 +149,10 @@ class EngineIO {
     /// Why the stand-in couldn't be shown, or was taken down early, if it was (for the hold's log line).
     func standInProblem() -> String? { standIn.lock.withLock { standIn.problem } }
 
+    /// How far (x, y; +y down) the stand-in's hot spot landed from where it was wanted, the first
+    /// time it was placed this hold; nil if it hasn't been yet. For the `pointer grab:` line.
+    func standInOffset() -> CGPoint? { standIn.lock.withLock { standIn.placedOffset } }
+
     static let standInLease: CFTimeInterval = 0.75
 
     /// Thread-shared stand-in state, under `lock`. The window itself is main-thread only.
@@ -159,6 +163,9 @@ class EngineIO {
         var cursorHidden = false     // this hid the real pointer and hasn't shown it again
         var keptAt: CFTimeInterval = 0
         var problem: String?
+        /// Where the picture's hot spot first landed on screen this hold, against where it was
+        /// wanted (`standInOffset`, for the `pointer grab:` line).
+        var placedOffset: CGPoint?
         // Main thread only:
         var window: NSWindow?
         var view: NSImageView?
@@ -187,6 +194,10 @@ class EngineIO {
         window.setFrameOrigin(Self.cocoaOrigin(of: p, hotSpot: standIn.hotSpot, height: window.frame.height))
         if !window.isVisible { window.orderFrontRegardless() }
         guard gen != nil else { return }
+        // Where the hot spot really is, read back from the window (AppKit puts windows on whole pixels).
+        let f = window.frame
+        let tip = CGPoint(x: f.minX + standIn.hotSpot.x, y: CGDisplayBounds(CGMainDisplayID()).height - f.maxY + standIn.hotSpot.y)
+        standIn.lock.withLock { standIn.placedOffset = CGPoint(x: tip.x - p.x, y: tip.y - p.y) }
         standIn.lock.lock()
         if gen == standIn.gen, standIn.wanted != nil, !standIn.cursorHidden {   // not taken down meanwhile
             if CGDisplayHideCursor(CGMainDisplayID()) == .success {
@@ -292,6 +303,14 @@ class EngineIO {
 
     /// Takes the Wheel's ring down. Safe to call any number of times, from any thread.
     func hideWheel() { wheel.hide() }
+
+    /// The release is about to run the ring's place `place`: the overlay pulses that chip as it
+    /// goes (call it before the hold ends, so it's on the main thread before the take-down).
+    /// Drawing only; nothing waits for it.
+    func wheelRan(place: Int) {
+        guard Self.wheelPresenter != nil else { return }
+        DispatchQueue.main.async { Self.wheelPresenter?.wheelRan(place: place) }
+    }
 
     /// The engine is alive and still wants the ring up. False if the watchdog took it down.
     func keepWheel() -> Bool { wheel.keep() }

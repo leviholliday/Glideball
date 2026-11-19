@@ -1222,6 +1222,7 @@ final class Engine {
         case (kHIDPage_Button, let b) where b >= 1:
             telemetry.button(b - 1, down: v != 0)
             if v != 0 {
+                if anchor == nil { hidGrab = (io.now(), 0) }   // for `pointer grab:`
                 hidButtonsByDevice[k, default: []].insert(b)
                 kensingtonReportsButtons = true
                 hidButtonSeen = true
@@ -1844,7 +1845,7 @@ final class Engine {
             // The pointer moved freely while the tap was off; a hold still on (a keyboard
             // Scroll with ball) keeps it where it is now instead of pulling it back.
             if anchor != nil, let p = io.cursorLocation() {
-                anchor = p   // here and now: the trackball's next move may already be on its way
+                anchor = Self.heldSpot(p)   // here and now: the trackball's next move may already be on its way
                 otherMovedSinceAnchor = false
                 anchorBeforeFollow = nil
             }
@@ -2095,6 +2096,11 @@ final class Engine {
             let (isK, device) = attributePress(button)
             guard isK else { return otherPress(event, button, device: device) }
             kUnseen.remove(button)
+            if anchor == nil {   // for `pointer grab:`
+                let now = io.now()
+                grabPress = GrabPress(at: now, spot: event.location, hidBefore: hidGrab.map { now - $0.at }, movesBefore: hidGrab?.moves ?? 0)
+                hidGrab = nil
+            }
             // The trackball's press of a button that is still waiting for a combo partner, or still
             // has an override: its release was lost. The old press goes through (or lets go of
             // what it holds) first, so this one can never leave a key or a button stuck; this
@@ -2554,10 +2560,14 @@ final class Engine {
         let frozen = ballScrolling || gestureFrozen
         if frozen, anchor == nil {
             endLanding()   // a new hold: the last one's landing is over
-            anchor = io.cursorLocation()
+            let raw = io.cursorLocation()
+            anchor = raw.map(Self.heldSpot)
             otherMovedSinceAnchor = false
             anchorBeforeFollow = nil
             holdStats = HoldStats()
+            let press = grabPress.flatMap { io.now() - $0.at < 1 ? $0 : nil }
+            holdStats.grab = Grab(raw: raw, press: press, since: press.map { io.now() - $0.at })
+            grabPress = nil
             lastHoldWarp = -1
             standInGaveUp = false
         } else if !frozen {
@@ -2573,6 +2583,7 @@ final class Engine {
                     holdStats.letGoSeen = holdStats.lastSeen.map { Self.distance($0, a) }
                     lands = true
                 }
+                logGrab()
                 logHoldStats()
                 if lands { beginLanding(at: a) }
             }
@@ -2587,7 +2598,10 @@ final class Engine {
         // Just let go: the event stream starts again from the held spot too (`resyncPointer`).
         if !frozen, let l = landing, l.moves == 0, l.hops == 0, landingFresh { landingFresh = false; resyncPointer(at: l.spot) }
         syncMoveTap()
-        if began { holdPointer(renew: true) }   // macOS starts ignoring the ball before it first moves
+        if began {
+            holdPointer(renew: true)   // macOS starts ignoring the ball before it first moves
+            if let a = anchor { holdStats.grab?.firstPut = io.cursorLocation().map { Self.distance($0, a) } }
+        }
         syncStandIn()   // up after the first put-back; down after the pointer is free
         syncPanels()    // the Wheel's ring and the Switcher's panel go with their hold: every way a hold ends comes through here
         syncKeyTap()
@@ -2693,8 +2707,74 @@ final class Engine {
         var lastSeen: CGPoint?
         /// As the stand-in went: how far macOS's answer and that last move event were from the held spot.
         var letGoAsked: Double?, letGoSeen: Double?
+        /// How the hold took the pointer (`pointer grab:`).
+        var grab: Grab?
     }
     private var holdStats = HoldStats()
+
+    // MARK: The grab: the moment a hold takes the pointer
+
+    /// Levi, beta 31: letting go was perfect, but pressing a Gestures button made the pointer jump
+    /// "just a tad", usually to the right. Every hold in his log said "kept still 1 times" and
+    /// "let go: macOS's location 1 pt from the held spot": the held spot was macOS's location as it
+    /// was, a fraction of a point (744.55, 370.96), but `CGWarpMouseCursorPosition` drops the
+    /// fraction (a warp to 846.75, 271.75 on his Mac reads back 846, 271), so after the first
+    /// put-back the real pointer sat up to a point up and left of the held spot, and every later
+    /// look found it "off" and put it back again (never "kept still"). The stand-in, a window placed
+    /// at the fractional spot, was rounded to the nearest pixel by AppKit: up to a pixel right of
+    /// (and below) where the real pointer had been drawn. That pixel is the tad, and it's right
+    /// whenever the fraction is past a half. So the held spot is now on the whole-point grid the
+    /// warp lands on (`heldSpot`), and the stand-in's window lands there exactly.
+    static func heldSpot(_ p: CGPoint) -> CGPoint {
+        CGPoint(x: p.x.rounded(.down), y: p.y.rounded(.down))
+    }
+
+    /// The trackball's latest button-down that reached the tap, and how much the ball moved after
+    /// it, until a hold took the pointer (if one does).
+    struct GrabPress {
+        var at: CFTimeInterval
+        var spot: CGPoint
+        /// The button's own HID report came this long before its press reached the tap (if it did),
+        /// with this many ball movements in between.
+        var hidBefore: CFTimeInterval?
+        var movesBefore = 0
+        var ballMoves = 0
+    }
+    private var grabPress: GrabPress?
+    private var hidGrab: (at: CFTimeInterval, moves: Int)?
+
+    /// What the `pointer grab:` line says about one hold's first moment.
+    struct Grab {
+        var raw: CGPoint?          // macOS's location as the hold began (the held spot is this, snapped)
+        var press: GrabPress?      // the press that began it, if it was one (under a second old)
+        var since: CFTimeInterval? // how long after that press
+        var firstPut: Double?      // macOS's location after the first put-back, from the held spot
+    }
+
+    /// One line per hold about how it took the pointer, so a hop at the press shows up in the next
+    /// real-hardware log: how far macOS's location was from the held spot's grid, how far the pointer
+    /// moved (and how many ball movements came) between the button-down and the hold, where the
+    /// first put-back landed, and where the stand-in's tip ended up on screen against the held spot.
+    private func logGrab() {
+        guard let g = holdStats.grab else { return }
+        let shown = if case .shown = holdStats.standIn { true } else { false }
+        guard shown || holdStats.hidMoves > 0 || holdStats.tapMoves > 0 || holdStats.tapDrags > 0 else { return }
+        func pt(_ d: Double?) -> String { d.map { String(format: "%.1f pt", $0) } ?? "unknown" }
+        var line = "pointer grab: held spot snapped \(pt(g.raw.map { Self.distance($0, Self.heldSpot($0)) })) from macOS's location"
+        if let p = g.press, let since = g.since, let raw = g.raw {
+            line += String(format: "; the press event came %.0f ms before, %@ from there, %d ball movements between", since * 1000, pt(Self.distance(p.spot, raw)), p.ballMoves)
+            if let h = p.hidBefore { line += String(format: "; the button's HID report %.0f ms before the press event, %d ball movements between", h * 1000, p.movesBefore) }
+        } else {
+            line += "; not begun by a button press just before"
+        }
+        line += "; the first put-back landed \(pt(g.firstPut)) from the held spot"
+        if shown, let off = io.standInOffset() {
+            line += String(format: "; the stand-in's tip %+.1f, %+.1f pt from it", off.x, off.y)
+        } else {
+            line += "; no stand-in placed"
+        }
+        diagnostics.record(line)
+    }
 
     private func logHoldStats() {
         let s = holdStats
@@ -2743,6 +2823,7 @@ final class Engine {
     /// movement too (an echo that arrived first): it no longer counts as another mouse's, and
     /// if the hold already followed it, the hold goes back to where it was.
     private func trackballMoved(_ now: CFTimeInterval) {
+        if anchor == nil { grabPress?.ballMoves += 1; hidGrab?.moves += 1 }
         if now - otherMoveAt < Self.echoWindow {
             if otherMovedSinceAnchor {
                 otherMovedSinceAnchor = false
@@ -2782,7 +2863,7 @@ final class Engine {
         let now = io.now()
         if anchorBeforeFollow == nil || now - followAt >= Self.echoWindow { anchorBeforeFollow = anchor }
         followAt = now
-        anchor = p
+        anchor = Self.heldSpot(p)
         otherMovedSinceAnchor = false
         if unseen { holdStats.followsUnseen += 1 } else { holdStats.follows[otherMoveKey, default: 0] += 1 }
         syncStandIn()
@@ -3271,11 +3352,14 @@ final class Engine {
             wheelReveal?.invalidate()
             wheelReveal = nil
         }
-        // A ring settling after More or Back arms when the hand rests, with no ball report to say
-        // so: the engine looks every 50 ms until it has (the overlay then shows it ready).
-        if anchor != nil, gestures.wheelSettling {
+        // What only time brings to the ring, with no ball report to say so: a ring settling after
+        // More or Back arms when the hand rests, a lit More or Back opens after a moment on it, a
+        // careful ring's repeating place starts after a moment on it. The engine looks every 50 ms
+        // while one of those is waiting (`GestureMachine.wheelTick`).
+        if anchor != nil, gestures.wheelWaiting {
             if wheelSettle == nil {
                 wheelSettle = io.schedule(0.05, repeats: true) { [unowned self] in
+                    applyGesture(gestures.wheelTick(now: io.now()))
                     syncWheel()
                     publishModes()
                 }
@@ -3421,6 +3505,10 @@ final class Engine {
     }
 
     private func applyGesture(_ effects: [GestureEffect]) {
+        // A release that runs a ring place: the overlay pulses it as it goes (before the take-down).
+        if wheelShown != nil, let place = effects.lazy.compactMap({ if case .wheelPick(_, let p) = $0 { p } else { nil } }).first {
+            io.wheelRan(place: place)
+        }
         for effect in effects {
             switch effect {
             case .freeze(let on):
