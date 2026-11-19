@@ -2740,3 +2740,27 @@
 "Make this preset yours. You can undo it. (Return)" = "このプリセットを自分の設定にします。取り消すこともできます。（Return）";
 "Hold the pointer’s button down on it to try it on your trackball for 20 seconds." = "ポインタのボタンを押したままにすると、トラックボールで20秒間試せます。";
 "Trying %@. Press its buttons here or in any app; Keep makes it yours." = "%@を試用中。ここでもほかのアプリでもボタンを押してみてください。「保持」で自分の設定になります。";
+
+/* Pasting a shared link (Views/PasteViews.swift) */
+"A link someone sent you. You see what it changes first, and nothing is sent anywhere." = "誰かから送られてきたリンクです。何が変わるかを先に確認でき、どこにも何も送信されません。";
+"Import Setup from Clipboard" = "クリップボードから設定を読み込む";
+"Import a File…" = "ファイルを読み込む…";
+"Nothing is sent anywhere. Glideball reads the link right here on your Mac." = "どこにも何も送信されません。Glideball はこの Mac 上でリンクを読み取ります。";
+"Open a setup someone sent you as a link. You see what it changes first." = "リンクで送られてきた設定を開きます。何が変わるかを先に確認できます。";
+"Open a setup someone shared with you: paste its link, or choose its file" = "共有された設定を開く：リンクをペーストするか、ファイルを選択します";
+"Paste a Glideball link someone sent you. You’ll see exactly what it would change before anything does, the same as opening it from the website." = "誰かから送られてきた Glideball のリンクをペーストしてください。何かが変わる前に、何が変わるかを正確に確認できます。Web サイトから開いた場合と同じです。";
+"Paste a Link…" = "リンクをペースト…";
+"Paste a shared link" = "共有リンクをペースト";
+"Paste what’s on the clipboard into the box" = "クリップボードの内容を入力欄にペースト";
+"Review Changes…" = "変更内容を確認…";
+"Shared link" = "共有リンク";
+"That isn’t a Glideball share link, so it won’t be opened. They start with https://glideball.netlify.app/s/#." = "Glideball の共有リンクではないため、開きません。共有リンクは https://glideball.netlify.app/s/# で始まります。";
+"That link is damaged or cut off. Ask for it again, or for the file." = "リンクが壊れているか、途中で切れています。もう一度送ってもらうか、ファイルをもらってください。";
+"That was shared from a newer Glideball. Update Glideball, then paste it again." = "新しいバージョンの Glideball で共有されたものです。Glideball をアップデートしてから、もう一度ペーストしてください。";
+"That’s a Glideball command link, not a shared setup. Pasting only opens shared setups." = "これは Glideball のコマンドリンクで、共有された設定ではありません。ペーストで開けるのは共有された設定だけです。";
+"That’s a lot of text for a link. Paste just the link." = "リンクにしてはテキストが長すぎます。リンクだけをペーストしてください。";
+"There’s more than one setup in that. Paste one link at a time." = "複数の設定が含まれています。リンクは 1 つずつペーストしてください。";
+"There’s no Glideball link in that. Shared links start with glideball.netlify.app/s/#." = "Glideball のリンクが見つかりません。共有リンクは glideball.netlify.app/s/# で始まります。";
+"There’s no Glideball link on the clipboard." = "クリップボードに Glideball のリンクがありません。";
+"paste, link, url, import, shared setup, clipboard, friend, open link" = "ペースト, 貼り付け, リンク, url, 読み込む, 共有設定, クリップボード, 友達, リンクを開く";
+"Paste with ⌘V, or click Paste. Glideball only reads the clipboard when you do." = "⌘V でペーストするか、「ペースト」をクリックします。Glideball がクリップボードを読むのはそのときだけです。";

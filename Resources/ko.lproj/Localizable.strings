@@ -2740,3 +2740,27 @@
 "Make this preset yours. You can undo it. (Return)" = "이 프리셋을 내 설정으로 해요. 실행 취소할 수 있어요. (Return)";
 "Hold the pointer’s button down on it to try it on your trackball for 20 seconds." = "포인터 버튼을 누른 채로 있으면 트랙볼에서 20초 동안 써 볼 수 있어요.";
 "Trying %@. Press its buttons here or in any app; Keep makes it yours." = "%@ 시험 중이에요. 여기나 다른 앱에서 버튼을 눌러 보세요. ‘유지’를 누르면 내 설정이 돼요.";
+
+/* Pasting a shared link (Views/PasteViews.swift) */
+"A link someone sent you. You see what it changes first, and nothing is sent anywhere." = "누군가 보내 준 링크예요. 무엇이 바뀌는지 먼저 볼 수 있고, 아무것도 어디로도 보내지 않아요.";
+"Import Setup from Clipboard" = "클립보드에서 설정 가져오기";
+"Import a File…" = "파일 가져오기…";
+"Nothing is sent anywhere. Glideball reads the link right here on your Mac." = "아무것도 어디로도 보내지 않아요. Glideball은 이 Mac에서 바로 링크를 읽어요.";
+"Open a setup someone sent you as a link. You see what it changes first." = "링크로 받은 설정을 열어요. 무엇이 바뀌는지 먼저 볼 수 있어요.";
+"Open a setup someone shared with you: paste its link, or choose its file" = "공유받은 설정 열기: 링크를 붙여넣거나 파일을 선택해요";
+"Paste a Glideball link someone sent you. You’ll see exactly what it would change before anything does, the same as opening it from the website." = "누군가 보내 준 Glideball 링크를 붙여넣으세요. 무엇이든 바뀌기 전에 무엇이 바뀌는지 정확히 볼 수 있어요. 웹사이트에서 열 때와 같아요.";
+"Paste a Link…" = "링크 붙여넣기…";
+"Paste a shared link" = "공유 링크 붙여넣기";
+"Paste what’s on the clipboard into the box" = "클립보드에 있는 내용을 상자에 붙여넣어요";
+"Review Changes…" = "변경 사항 검토…";
+"Shared link" = "공유 링크";
+"That isn’t a Glideball share link, so it won’t be opened. They start with https://glideball.netlify.app/s/#." = "Glideball 공유 링크가 아니라서 열지 않아요. 공유 링크는 https://glideball.netlify.app/s/#로 시작해요.";
+"That link is damaged or cut off. Ask for it again, or for the file." = "링크가 손상되었거나 잘렸어요. 다시 보내 달라고 하거나 파일을 받아 보세요.";
+"That was shared from a newer Glideball. Update Glideball, then paste it again." = "더 새로운 Glideball에서 공유된 거예요. Glideball을 업데이트한 다음 다시 붙여넣어 보세요.";
+"That’s a Glideball command link, not a shared setup. Pasting only opens shared setups." = "Glideball 명령 링크예요. 공유된 설정이 아니에요. 붙여넣기로는 공유된 설정만 열어요.";
+"That’s a lot of text for a link. Paste just the link." = "링크치고는 텍스트가 너무 길어요. 링크만 붙여넣으세요.";
+"There’s more than one setup in that. Paste one link at a time." = "설정이 두 개 이상 들어 있어요. 링크를 하나씩 붙여넣으세요.";
+"There’s no Glideball link in that. Shared links start with glideball.netlify.app/s/#." = "Glideball 링크가 없어요. 공유 링크는 glideball.netlify.app/s/#로 시작해요.";
+"There’s no Glideball link on the clipboard." = "클립보드에 Glideball 링크가 없어요.";
+"paste, link, url, import, shared setup, clipboard, friend, open link" = "붙여넣기, 링크, url, 가져오기, 공유 설정, 클립보드, 친구, 링크 열기";
+"Paste with ⌘V, or click Paste. Glideball only reads the clipboard when you do." = "⌘V로 붙여넣거나 붙여넣기를 클릭하세요. Glideball은 그때만 클립보드를 읽어요.";

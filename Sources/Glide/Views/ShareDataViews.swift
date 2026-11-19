@@ -105,7 +105,6 @@ struct SmallFavorCard: View {
 struct ShareDataSettings: View {
     @Bindable private var share = ShareData.shared
     @State private var confirmingDelete = false
-    @State private var copied = false
     /// How the last Delete My Data went (the main window, where toasts appear, may be closed).
     @State private var deleted: Bool? = ShareDataSettings.sandboxDeleted
     /// `--render-ui`: start as if a delete just finished (or failed).
@@ -214,17 +213,12 @@ struct ShareDataSettings: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             if let id = share.installID {
-                Button {
+                CopyButton(id: "install-id", help: Text("Copy the install ID")) {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(id, forType: .string)
-                    copied = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) { copied = false }
-                } label: {
-                    Label(copied ? "Copied" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc")
-                        .contentTransition(.symbolEffect(.replace))
+                    return .copied(nil)
                 }
                 .buttonStyle(ChipButtonStyle())
-                .help("Copy the install ID")
             }
         }
         .padding(.horizontal, Theme.Space.rowHorizontal)

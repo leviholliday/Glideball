@@ -2740,3 +2740,27 @@
 "Make this preset yours. You can undo it. (Return)" = "将此预设设为你的设置。可以撤销。（Return）";
 "Hold the pointer’s button down on it to try it on your trackball for 20 seconds." = "在上面按住指针按钮，即可在轨迹球上试用 20 秒。";
 "Trying %@. Press its buttons here or in any app; Keep makes it yours." = "正在试用%@。在这里或任何 App 中按它的按钮；点“保留”即可设为你的设置。";
+
+/* Pasting a shared link (Views/PasteViews.swift) */
+"A link someone sent you. You see what it changes first, and nothing is sent anywhere." = "别人发给你的链接。你会先看到它会改变什么，并且不会向任何地方发送任何内容。";
+"Import Setup from Clipboard" = "从剪贴板导入设置";
+"Import a File…" = "导入文件…";
+"Nothing is sent anywhere. Glideball reads the link right here on your Mac." = "不会向任何地方发送任何内容。Glideball 就在你的 Mac 上读取链接。";
+"Open a setup someone sent you as a link. You see what it changes first." = "打开别人以链接形式发给你的设置。你会先看到它会改变什么。";
+"Open a setup someone shared with you: paste its link, or choose its file" = "打开别人与你共享的设置：粘贴它的链接，或选取它的文件";
+"Paste a Glideball link someone sent you. You’ll see exactly what it would change before anything does, the same as opening it from the website." = "粘贴别人发给你的 Glideball 链接。在任何改动发生之前，你会准确看到它会改变什么，和从网站打开时一样。";
+"Paste a Link…" = "粘贴链接…";
+"Paste a shared link" = "粘贴共享链接";
+"Paste what’s on the clipboard into the box" = "将剪贴板中的内容粘贴到框中";
+"Review Changes…" = "检查更改…";
+"Shared link" = "共享链接";
+"That isn’t a Glideball share link, so it won’t be opened. They start with https://glideball.netlify.app/s/#." = "这不是 Glideball 的共享链接，因此不会打开。共享链接以 https://glideball.netlify.app/s/# 开头。";
+"That link is damaged or cut off. Ask for it again, or for the file." = "该链接已损坏或被截断。请对方重新发送，或者发送文件。";
+"That was shared from a newer Glideball. Update Glideball, then paste it again." = "这是由较新版本的 Glideball 共享的。请更新 Glideball，然后再粘贴一次。";
+"That’s a Glideball command link, not a shared setup. Pasting only opens shared setups." = "这是 Glideball 的命令链接，不是共享的设置。粘贴只会打开共享的设置。";
+"That’s a lot of text for a link. Paste just the link." = "作为链接来说文字太多了。只粘贴链接即可。";
+"There’s more than one setup in that. Paste one link at a time." = "其中包含不止一个设置。请一次粘贴一个链接。";
+"There’s no Glideball link in that. Shared links start with glideball.netlify.app/s/#." = "里面没有 Glideball 链接。共享链接以 glideball.netlify.app/s/# 开头。";
+"There’s no Glideball link on the clipboard." = "剪贴板中没有 Glideball 链接。";
+"paste, link, url, import, shared setup, clipboard, friend, open link" = "粘贴, 链接, url, 导入, 共享设置, 剪贴板, 朋友, 打开链接";
+"Paste with ⌘V, or click Paste. Glideball only reads the clipboard when you do." = "用 ⌘V 粘贴，或点按“粘贴”。只有在你这样做时，Glideball 才会读取剪贴板。";

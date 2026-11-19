@@ -245,7 +245,6 @@ struct GeneralSettingsPane: View {
 /// Glideball and macOS each say about the connection (moved out of General in beta 14).
 struct TrackballSettingsPane: View {
     @Bindable var model: AppModel
-    @State private var copied = false
 
     var body: some View {
         SettingsPage {
@@ -259,16 +258,11 @@ struct TrackballSettingsPane: View {
             }
             SectionBlock(title: "Connection", dividerInset: SettingsLayout.symbolInset) {
                 SettingsRow(title: "Connection details", hint: connectionHint, symbol: "cable.connector") {
-                    Button {
+                    CopyButton(id: "connection-details", help: Text("What Glideball and macOS each say about your trackball right now.")) {
                         model.copyConnectionDetails(toast: false)
-                        copied = true
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { copied = false }
-                    } label: {
-                        Label(copied ? "Copied" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc")
-                            .contentTransition(.symbolEffect(.replace))
+                        return .copied(nil)
                     }
                     .buttonStyle(ChipButtonStyle())
-                    .help("What Glideball and macOS each say about your trackball right now.")
                 }
                 .findable(.connectionDetails)
             }

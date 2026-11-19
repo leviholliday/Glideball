@@ -499,6 +499,7 @@ struct SharePanel: View {
             }
             .frame(width: 384, height: 240)
             .pixelBorder(RoundedRectangle(cornerRadius: 12, style: .continuous), Theme.groupBorder)
+            .copySource("picture")
 
             Text("The picture is made on your Mac. It only goes somewhere if you share it.")
                 .font(Theme.Font.hint)
@@ -516,11 +517,7 @@ struct SharePanel: View {
                 .buttonStyle(.borderedProminent)
                 .tint(Theme.ball)
                 .background(SharingAnchor(holder: anchor))
-                Button {
-                    copy()
-                } label: {
-                    Label("Copy", systemImage: "doc.on.doc")
-                }
+                CopyButton(id: "copy", source: "picture", copy: copy, sandboxGhost: { (image ?? Self.sandboxImage)?.cgImage.map { .picture($0) } })
                 Button {
                     save()
                 } label: {
@@ -538,12 +535,15 @@ struct SharePanel: View {
                     .lineLimit(1)
                     .fixedSize()
                 ForEach(SocialSite.allCases) { site in
-                    Button(site.name) { post(site) }
+                    CopyButton(id: "site-" + site.rawValue, source: "picture", title: Text(verbatim: site.name),
+                               copiedTitle: Text(verbatim: site.name), symbol: nil,
+                               help: Text(verbatim: site == .instagram
+                                          ? String(localized: "Saves the picture to Downloads and opens Instagram")
+                                          : String(localized: "Copies the picture and opens \(site.name) to paste it into a post",
+                                                   comment: "Share panel button tooltip; %@ is X, LinkedIn or Facebook")),
+                               copy: { post(site) },
+                               sandboxGhost: { (image ?? Self.sandboxImage)?.cgImage.map { .picture($0) } })
                         .controlSize(.small)
-                        .help(site == .instagram
-                              ? String(localized: "Saves the picture to Downloads and opens Instagram")
-                              : String(localized: "Copies the picture and opens \(site.name) to paste it into a post",
-                                       comment: "Share panel button tooltip; %@ is X, LinkedIn or Facebook"))
                 }
                 Spacer(minLength: 0)
             }
@@ -565,6 +565,7 @@ struct SharePanel: View {
         }
         .padding(18)
         .frame(width: Self.width, height: Self.height, alignment: .top)
+        .copyStage()   // ghosts fly over the panel; its size never changes
         .onAppear {
             if let ready = Self.sandboxImage { image = ready; note = Self.sandboxDone } else { draw() }
         }
@@ -589,9 +590,10 @@ struct SharePanel: View {
         picker.show(relativeTo: view.bounds, of: view, preferredEdge: .minY)
     }
 
-    private func copy() {
-        guard let image, ShareImage.copy(image) else { return }
+    private func copy() -> CopyOutcome {
+        guard let image, ShareImage.copy(image) else { return .failed }
         say(String(localized: "Copied. Paste it anywhere."))
+        return .copied(image.cgImage.map { .picture($0) })
     }
 
     private func save() {
@@ -609,19 +611,20 @@ struct SharePanel: View {
     }
 
     /// Copies the picture (and for Instagram saves it to Downloads), then opens the site's composer.
-    private func post(_ site: SocialSite) {
-        guard let image, let items = items() else { return }
+    private func post(_ site: SocialSite) -> CopyOutcome {
+        guard let image, let items = items() else { return .failed }
         ShareImage.copy(image)
         if site == .instagram {
             guard ShareImage.save(image, name: card.fileName, in: ShareImage.downloads) != nil else {
-                return say(String(localized: "Couldn’t save it to Downloads. Try Save as PNG… instead."))
+                say(String(localized: "Couldn’t save it to Downloads. Try Save as PNG… instead."))
+                return .failed
             }
             say(String(localized: "Saved to Downloads. Instagram only takes uploads from its app or site."))
         } else {
             say(String(localized: "Picture copied. Paste it into the post."))
         }
-        guard !Sandbox.isActive, let url = items.composers[site] else { return }
-        NSWorkspace.shared.open(url)
+        if !Sandbox.isActive, let url = items.composers[site] { NSWorkspace.shared.open(url) }
+        return .copied(image.cgImage.map { .picture($0) })
     }
 
     private func say(_ text: String) {

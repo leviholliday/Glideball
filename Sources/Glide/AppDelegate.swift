@@ -212,6 +212,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     @objc private func exportSettings() { showWindow(); AppModel.shared.exportSettings() }
     @objc private func importSettings() { showWindow(); AppModel.shared.importSettings() }
+    @objc private func importFromClipboard() { showWindow(); MainActor.assumeIsolated { AppModel.shared.importFromClipboard(quiet: false) } }
+    @objc private func openPasteBox() { showWindow(); MainActor.assumeIsolated { AppModel.shared.openPasteBox() } }
 
     /// View › Search… (⌘K, ⌘F): the search palette over the main window.
     @objc func openSearch(_ sender: Any?) { MainActor.assumeIsolated { CommandPalette.shared.toggle() } }
@@ -597,6 +599,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let fileMenu = NSMenu(title: String(localized: "File", comment: "Menu bar title"))
         AppShortcuts.addItem("export", title: String(localized: "Export Settings…"), action: #selector(exportSettings), to: fileMenu, target: self)
         AppShortcuts.addItem("import", title: String(localized: "Import Settings…"), action: #selector(importSettings), to: fileMenu, target: self)
+        // Not a `Commands` entry: those can be reached by glideball:// URLs, and a web page
+        // must never be able to make Glideball read the clipboard.
+        fileMenu.addItem(withTitle: String(localized: "Import Setup from Clipboard", comment: "File menu: open a shared link that's on the clipboard"),
+                         action: #selector(importFromClipboard), keyEquivalent: "").target = self
+        fileMenu.addItem(withTitle: String(localized: "Paste a Link…", comment: "File menu and the Import menu: opens the box a shared link is pasted into"),
+                         action: #selector(openPasteBox), keyEquivalent: "").target = self
         fileMenu.addItem(.separator())
         AppShortcuts.addItem("close", title: String(localized: "Close Window"), action: #selector(NSWindow.performClose(_:)), to: fileMenu, target: nil)
         fileItem.submenu = fileMenu
@@ -677,5 +685,20 @@ final class MainWindow: NSWindow {
             return
         }
         super.keyDown(with: event)
+    }
+
+    /// Edit › Paste (⌘V) with nothing in the window that takes text: a Glideball link on
+    /// the clipboard opens its preview. A text field, the search field or a shortcut being
+    /// recorded is earlier in the responder chain and takes ⌘V first, so this only runs
+    /// when nothing's being typed. The clipboard is read here, on the keypress, and never
+    /// to decide whether the menu item is on (that would read it whenever a menu opens).
+    @objc func paste(_ sender: Any?) {
+        guard !AppShortcuts.isTyping else { return }
+        AppModel.shared.importFromClipboard(quiet: true)
+    }
+
+    override func validateMenuItem(_ item: NSMenuItem) -> Bool {
+        if item.action == #selector(paste(_:)) { return !AppShortcuts.isTyping }
+        return super.validateMenuItem(item)
     }
 }

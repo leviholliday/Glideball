@@ -154,6 +154,42 @@ never as HTML; nothing from a share becomes a URL, an image or a style except th
 hex colors (set as CSS custom properties); and the `glideball://` link is built from `d` only after
 `d` passed every check.
 
+## Pasting a link (the Mac app)
+
+Since 19 Nov 2026 (after 2.10 beta 35) a link can be pasted into Glideball itself: Import › Paste a Link… on every page
+(and Sync › Import, File › Paste a Link…, search), File › Import Setup from Clipboard, or ⌘V on the
+main window while nothing in it takes text. `ImportPaste.swift` reads the text; what it finds goes
+through `SharedSetup.decode(linkPayload:)` (or `ExternalControl.parseImport` itself, for a pasted
+`glideball://` link) and on to the same preview, clamps, backup checkpoint and Undo as
+`glideball://import`. The one difference: the 1.5 s pause after a preview closes doesn't apply,
+since that's there to stop a page firing links and a paste is the person's own click.
+
+The clipboard is read only on that click or keypress, never when the box opens, never to enable a
+menu item, never in the background. In `--self-test` and `--render-ui` it isn't read at all.
+
+The rule:
+
+- At most 16,384 bytes of text; more is refused unread.
+- Invisible format characters (Unicode Cf: zero-width spaces, soft hyphens, direction overrides)
+  are removed, since chat apps put them inside long links. Nothing else is normalized: no case
+  folding beyond ASCII, no NFKC, so a fullwidth or Cyrillic look-alike never matches.
+- The text is cut into words at whitespace and at `" ' \` < > ( ) [ ] { } | *`, curly quotes and
+  `« »`; then `. , ; : ! ?` are taken off a word's end. So a link in a sentence, quotes, Markdown or
+  angle brackets is found.
+- A word is accepted only when it is exactly `https://glideball.netlify.app/s/#<d>` (scheme and host
+  in any ASCII case, then exactly `/s/#`) or a `glideball://import?d=<d>` link that
+  `ExternalControl.parseImport` accepts. Everything else is refused even if what follows its `#`
+  decodes: `http://`, no scheme, `www.`, a port, a user, a trailing dot, a query, another path,
+  `glideball.netlify.app.evil.com`, `evil.com/glideball.netlify.app/s/#…`, punycode and other
+  look-alikes. A `glideball://` link that isn't `import` (`glideball://pause`) is refused: a paste
+  never runs a command.
+- With no link in it, the whole text (trimmed) may be a bare `<d>`: 24 to 2,048 of `A–Z a–z 0–9 - _`.
+- Two different setups in one paste are refused; the same one twice (or its web and app links side
+  by side) is one. A refused `glideball://import` link refuses the whole paste.
+- A link split over two lines reads as damaged (a line break ends a word).
+
+`scripts/import-sim` ("Pasting") checks every case above, plus 2,000 mangled messages.
+
 ## Beta 12 shares (still read)
 
 `kind` was one of these, with `version`, `format`, `writtenBy` and only that part's fields. Each is

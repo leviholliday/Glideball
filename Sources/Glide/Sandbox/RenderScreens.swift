@@ -1307,6 +1307,7 @@ extension RenderUI {
             updatePanel(model, dark: dark, scale: scale)
         }
         list += sharingScreens(model)   // RenderSharing.swift
+        list += pasteScreens(model)     // RenderPaste.swift
         return list
     }
 

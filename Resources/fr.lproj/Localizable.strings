@@ -2740,3 +2740,27 @@
 "Make this preset yours. You can undo it. (Return)" = "Adopter ce préréglage. Vous pouvez l’annuler. (Retour)";
 "Hold the pointer’s button down on it to try it on your trackball for 20 seconds." = "Maintenez le bouton du pointeur enfoncé dessus pour l’essayer sur votre trackball pendant 20 secondes.";
 "Trying %@. Press its buttons here or in any app; Keep makes it yours." = "Essai de %@. Appuyez sur ses boutons ici ou dans n’importe quelle app ; Garder l’adopte.";
+
+/* Pasting a shared link (Views/PasteViews.swift) */
+"A link someone sent you. You see what it changes first, and nothing is sent anywhere." = "Un lien que quelqu’un vous a envoyé. Vous voyez d’abord ce qu’il change, et rien n’est envoyé nulle part.";
+"Import Setup from Clipboard" = "Importer la configuration depuis le presse-papiers";
+"Import a File…" = "Importer un fichier…";
+"Nothing is sent anywhere. Glideball reads the link right here on your Mac." = "Rien n’est envoyé nulle part. Glideball lit le lien ici même, sur votre Mac.";
+"Open a setup someone sent you as a link. You see what it changes first." = "Ouvrez une configuration qu’on vous a envoyée sous forme de lien. Vous voyez d’abord ce qu’elle change.";
+"Open a setup someone shared with you: paste its link, or choose its file" = "Ouvrir une configuration partagée avec vous : collez son lien ou choisissez son fichier";
+"Paste a Glideball link someone sent you. You’ll see exactly what it would change before anything does, the same as opening it from the website." = "Collez un lien Glideball qu’on vous a envoyé. Vous verrez exactement ce qu’il changerait avant que quoi que ce soit change, comme en l’ouvrant depuis le site web.";
+"Paste a Link…" = "Coller un lien…";
+"Paste a shared link" = "Coller un lien partagé";
+"Paste what’s on the clipboard into the box" = "Coller le contenu du presse-papiers dans le champ";
+"Review Changes…" = "Vérifier les changements…";
+"Shared link" = "Lien partagé";
+"That isn’t a Glideball share link, so it won’t be opened. They start with https://glideball.netlify.app/s/#." = "Ce n’est pas un lien de partage Glideball, il ne sera donc pas ouvert. Ces liens commencent par https://glideball.netlify.app/s/#.";
+"That link is damaged or cut off. Ask for it again, or for the file." = "Ce lien est abîmé ou coupé. Demandez-le à nouveau, ou demandez le fichier.";
+"That was shared from a newer Glideball. Update Glideball, then paste it again." = "Cela a été partagé depuis une version plus récente de Glideball. Mettez Glideball à jour, puis collez-le à nouveau.";
+"That’s a Glideball command link, not a shared setup. Pasting only opens shared setups." = "C’est un lien de commande Glideball, pas une configuration partagée. Coller n’ouvre que des configurations partagées.";
+"That’s a lot of text for a link. Paste just the link." = "C’est beaucoup de texte pour un lien. Collez seulement le lien.";
+"There’s more than one setup in that. Paste one link at a time." = "Il y a plus d’une configuration. Collez un lien à la fois.";
+"There’s no Glideball link in that. Shared links start with glideball.netlify.app/s/#." = "Il n’y a pas de lien Glideball. Les liens partagés commencent par glideball.netlify.app/s/#.";
+"There’s no Glideball link on the clipboard." = "Il n’y a pas de lien Glideball dans le presse-papiers.";
+"paste, link, url, import, shared setup, clipboard, friend, open link" = "coller, lien, url, importer, configuration partagée, presse-papiers, ami, ouvrir un lien";
+"Paste with ⌘V, or click Paste. Glideball only reads the clipboard when you do." = "Collez avec ⌘V ou cliquez sur Coller. Glideball ne lit le presse-papiers que lorsque vous le faites.";

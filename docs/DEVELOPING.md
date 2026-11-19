@@ -222,6 +222,8 @@ Round 4: the search palette (`search`, `-recent`, `-speed`, `-speed-number`, `-m
 
 Sharing (RenderSharing.swift): Share…'s checklist (`share-sheet-checklist`, `-some` with a name going with it, `-none`), the receive preview with parts unticked and a sender's name (`share-preview-parts`) and a beta 12 link (`share-preview-beta12`), the pictures with and without a name (`share-card-checklist`, `share-card-overview`, `share-card-badge`, each also `-named`), `settings-sharing-named` and `tour-name-filled`. The website's share page has its own pictures: `node scripts/share-page-shots.mjs [folder]` (headless Chrome, a few payloads at 1440 and 390 wide).
 
+Pasting and copying (RenderPaste.swift): the paste box (`paste-box-empty`, `-valid`, `-wrong-host`, `-damaged`, `-command`), the Import menu beside Share (`paste-import-menu`), `sync-import-paste`, and the copy beat frozen at moments of its motion (`CopyBeat.sandboxTime`): `copy-beat-picture-<ms>` (Share…'s picture panel at 30–1,200 ms), `copy-beat-post-x`, `copy-beat-link-<ms>` (Copy Link in the checklist sheet), `copy-beat-sheet-picture` and `copy-beat-chip`.
+
 Search finds what each page declares: every row sits inside a `.findable(...)` whose `Findable` is written next to it, and the self-test fails if a drawn row isn't inside one or a `Findable` isn't drawn.
 
 How it draws: each view is hosted in a window that's never ordered front, given a moment to settle (onAppear, async work), and its layer tree is drawn by Core Animation's own renderer (`CARenderer`) into a Metal texture: the renderer that draws windows on screen, so Liquid Glass, materials and vibrancy come out as they do in the app. AppKit's `cacheDisplay` (try `GLIDE_RENDER_ENGINE=appkit`) leaves glass empty and text in it black; `ImageRenderer` can't draw AppKit controls or scroll views. The window claims to be key, so controls, switches and traffic lights draw in their active colors. Animations are switched off, so everything is drawn where its animation would end.
@@ -312,6 +314,17 @@ name and on with the first one. It goes on share pictures, badge pictures and th
 first switch, and into a link or file's `from` with the second.
 
 Receiving is the dangerous side, since any page can open the link:
+- A link can also be pasted into Glideball (Import › Paste a Link…, File › Import Setup from Clipboard,
+  ⌘V on the main window when nothing takes text). `ImportPaste.swift` finds it and it goes the same
+  way as `glideball://import`; the exact rule is in [SHARE-FORMAT.md](SHARE-FORMAT.md#pasting-a-link-the-mac-app).
+  The clipboard is read only on that click or key (`AppModel.readClipboard`, never in the sandbox).
+  "Import Setup from Clipboard" is deliberately not a `Commands` entry, so no URL can make Glideball
+  read the clipboard.
+- Copying something to share (Copy Link, a picture's Copy, Post on, the Copy chips) is one component,
+  `CopyButton` (`Views/CopyBeat.swift`): the copy happens on the click, then a ghost of what was
+  copied arcs into the button (0.28 s), which pops to 108% with its icon morphing into a check and a
+  glow in the ball's theme color, settling by 0.85 s; "Copied" stays 1.5 s. Reduce Motion: a
+  crossfade to the check. The timeline is paused whenever nothing is moving.
 - A link or file opens a preview sheet over Glideball's window listing every setting that would change,
   part by part, before and after (`ImportReview.swift`), each part with a checkbox to leave it out; a
   sender's name shows as "From …, the name they typed, not checked by Glideball". Actions that open an

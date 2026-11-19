@@ -356,6 +356,98 @@ enum SelfTest {
             return "link and file previewed, nothing changed until Apply; checkpoint, Undo; one at a time; 3 hostile links refused; KensingtonWorks previewed; Share… and its picture drawn"
         }
 
+        step("pasting a shared link") {
+            // The paste box, ⌘V and Import Setup from Clipboard go the way a glideball://import link
+            // goes: the same preview, nothing until Apply, a checkpoint and Undo. The clipboard here
+            // is the test's own text, never the real one.
+            let before = model.config
+            var theirs = before
+            theirs.trackingSpeed = before.trackingSpeed == 12 ? 13 : 12
+            theirs.buttons[2] = .shortcut(.copy)
+            let share = try unwrap(SharedSetup.make([.pointer, .buttons], from: theirs, look: nil, sounds: nil), "couldn't make a share")
+            let web = try unwrap(share.link(), "no link").absoluteString
+            let message = "Here’s my setup: \(web). Enjoy!"
+            guard case .share(let read, .web) = ImportPaste.read(message) else { throw Failure("a link in a message wasn't read") }
+            try check((try? read.fileData()) == (try? share.fileData()), "the pasted link read as a different setup")
+            let wrong = web.replacingOccurrences(of: "glideball.netlify.app/", with: "glideball.netlify.app.evil.com/")
+            try check(ImportPaste.read(wrong).refusal == .notGlideball, "a look-alike host was accepted")
+
+            defer {
+                AppModel.readClipboard = { nil }
+                model.pasteBox = nil
+                model.pendingIncoming = nil
+                model.queuedIncoming = nil
+                model.incomingIgnoresLaunch = false
+                model.lastIncomingClosed = -.infinity
+            }
+            model.incomingIgnoresLaunch = true
+            model.lastIncomingClosed = ProcessInfo.processInfo.systemUptime   // a preview just closed: a link from a page would be dropped
+            model.openPasteBox()
+            try check(model.pasteBox != nil && model.promptShowing, "Paste a Link… didn't open the box, or something else could show over it")
+            try draw(PasteLinkSheet(model: model, request: PasteBoxRequest(text: message)), "the paste box with a link")
+            model.reviewPasted(read)
+            try check(model.pasteBox == nil, "Review Changes… left the box open")
+            if model.pendingIncoming == nil {
+                // It waited while the box closed; it takes its turn like any preview that waited.
+                try check(model.queuedIncoming != nil, "the pasted link was dropped")
+                if WhatsNew.isPending || AppIconChoice.shared.promptDue || model.showingWelcomeTour {
+                    model.pendingIncoming = model.queuedIncoming
+                    model.queuedIncoming = nil
+                } else {
+                    try check(model.presentNextPrompt(ignoringWindow: true) == .importPreview, "the pasted link's preview didn't take its turn")
+                }
+            }
+            let pending = try unwrap(model.pendingIncoming, "a pasted link didn't open a preview")
+            try check(pending.source == .link && (try? pending.share?.fileData()) == (try? share.fileData()), "the preview isn't the pasted link's")
+            try check(model.config == before, "pasting changed settings before Apply")
+            model.applyIncoming()
+            try check(model.config.trackingSpeed == theirs.trackingSpeed && model.config.buttons[0] == before.buttons[0], "Apply didn't apply the pasted link")
+            // (The checkpoint isn't a new file when the newest backup already holds these settings.)
+            var saved = before
+            saved.enabled = true
+            try check(model.backups.backups.first.flatMap(model.backups.load) == saved && model.toast?.action == .undoImport,
+                      "no checkpoint of the settings before, or no Undo, after a pasted link")
+            model.undoImport()
+            try check(model.config == before, "Undo didn't put a pasted link back")
+
+            // Import Setup from Clipboard, and ⌘V on the window.
+            model.lastIncomingClosed = -.infinity
+            AppModel.readClipboard = { "  \(web)\n" }
+            model.importFromClipboard(quiet: true)
+            try check(model.pendingIncoming != nil && model.pasteBox == nil, "⌘V with a link on the clipboard didn't open its preview")
+            model.cancelIncoming()
+            try check(model.config == before, "Cancel after ⌘V changed something")
+            AppModel.readClipboard = { wrong }
+            model.importFromClipboard(quiet: true)
+            try check(model.pendingIncoming == nil && model.pasteBox?.text == wrong, "a look-alike link on the clipboard didn't go to the box to say why")
+            model.pasteBox = nil
+            AppModel.readClipboard = { "glideball://pause" }
+            model.importFromClipboard(quiet: false)
+            try check(model.config.enabled == before.enabled && model.pendingIncoming == nil && model.pasteBox != nil, "a pasted command link did something")
+            model.pasteBox = nil
+            let toastBefore = model.toast?.id
+            AppModel.readClipboard = { "just some text I copied" }
+            model.importFromClipboard(quiet: true)
+            try check(model.pasteBox == nil && model.pendingIncoming == nil && model.toast?.id == toastBefore, "⌘V with ordinary text on the clipboard did something")
+            model.importFromClipboard(quiet: false)
+            try check(model.pasteBox == nil && model.toast?.id != toastBefore, "Import Setup from Clipboard with no link said nothing")
+
+            // ⌘V reaches the main window when nothing in it takes text (Edit › Paste has no target).
+            let window = try unwrap(delegate.window as? MainWindow, "the main window isn't a MainWindow")
+            // From the window's content (the SwiftUI hosting view, first responder when a control in
+            // the window has the focus ring), not just from the window itself.
+            var responder: NSResponder? = window.contentView
+            var taker: NSResponder?
+            while let r = responder {
+                if r.responds(to: #selector(NSText.paste(_:))) { taker = r; break }
+                responder = r.nextResponder
+            }
+            try check(taker === window, "⌘V on the window goes to \(taker.map { String(describing: type(of: $0)) } ?? "nothing"), not the window")
+            let item = NSMenuItem(title: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+            try check(window.validateMenuItem(item), "Edit › Paste is off on the main window")
+            return "a link in a message read and previewed (cooldown or not), Apply, checkpoint, Undo; the clipboard: a link, a look-alike, a command link, plain text; ⌘V reaches the window"
+        }
+
         step("search index") {
             // Every row on every page and Settings tab sits inside a `.findable`, and every
             // Findable is drawn on its page: the index can't drift from the pages.

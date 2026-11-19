@@ -2740,3 +2740,27 @@
 "Make this preset yours. You can undo it. (Return)" = "Tornar este preset seu. Dá para desfazer. (Return)";
 "Hold the pointer’s button down on it to try it on your trackball for 20 seconds." = "Mantenha o botão do ponteiro pressionado sobre ele para testá-lo no seu trackball por 20 segundos.";
 "Trying %@. Press its buttons here or in any app; Keep makes it yours." = "Testando %@. Pressione os botões dele aqui ou em qualquer app; Manter o torna seu.";
+
+/* Pasting a shared link (Views/PasteViews.swift) */
+"A link someone sent you. You see what it changes first, and nothing is sent anywhere." = "Um link que alguém enviou para você. Você vê primeiro o que ele muda, e nada é enviado para lugar nenhum.";
+"Import Setup from Clipboard" = "Importar configuração da área de transferência";
+"Import a File…" = "Importar um arquivo…";
+"Nothing is sent anywhere. Glideball reads the link right here on your Mac." = "Nada é enviado para lugar nenhum. O Glideball lê o link aqui mesmo no seu Mac.";
+"Open a setup someone sent you as a link. You see what it changes first." = "Abra uma configuração que alguém enviou como link. Você vê primeiro o que ela muda.";
+"Open a setup someone shared with you: paste its link, or choose its file" = "Abrir uma configuração compartilhada com você: cole o link ou escolha o arquivo";
+"Paste a Glideball link someone sent you. You’ll see exactly what it would change before anything does, the same as opening it from the website." = "Cole um link do Glideball que alguém enviou para você. Você vai ver exatamente o que ele mudaria antes de qualquer mudança, como ao abrir pelo site.";
+"Paste a Link…" = "Colar um link…";
+"Paste a shared link" = "Colar um link compartilhado";
+"Paste what’s on the clipboard into the box" = "Colar no campo o que está na área de transferência";
+"Review Changes…" = "Revisar alterações…";
+"Shared link" = "Link compartilhado";
+"That isn’t a Glideball share link, so it won’t be opened. They start with https://glideball.netlify.app/s/#." = "Isso não é um link de compartilhamento do Glideball, então não vai ser aberto. Eles começam com https://glideball.netlify.app/s/#.";
+"That link is damaged or cut off. Ask for it again, or for the file." = "Esse link está danificado ou cortado. Peça de novo, ou peça o arquivo.";
+"That was shared from a newer Glideball. Update Glideball, then paste it again." = "Isso foi compartilhado por um Glideball mais novo. Atualize o Glideball e cole de novo.";
+"That’s a Glideball command link, not a shared setup. Pasting only opens shared setups." = "Isso é um link de comando do Glideball, não uma configuração compartilhada. Colar só abre configurações compartilhadas.";
+"That’s a lot of text for a link. Paste just the link." = "É muito texto para um link. Cole só o link.";
+"There’s more than one setup in that. Paste one link at a time." = "Tem mais de uma configuração aí. Cole um link de cada vez.";
+"There’s no Glideball link in that. Shared links start with glideball.netlify.app/s/#." = "Não tem nenhum link do Glideball aí. Links compartilhados começam com glideball.netlify.app/s/#.";
+"There’s no Glideball link on the clipboard." = "Não há nenhum link do Glideball na área de transferência.";
+"paste, link, url, import, shared setup, clipboard, friend, open link" = "colar, link, url, importar, configuração compartilhada, área de transferência, amigo, abrir link";
+"Paste with ⌘V, or click Paste. Glideball only reads the clipboard when you do." = "Cole com ⌘V ou clique em Colar. O Glideball só lê a área de transferência quando você faz isso.";

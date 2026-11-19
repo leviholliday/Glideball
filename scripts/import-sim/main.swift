@@ -418,6 +418,147 @@ for kind in [ShareKind.buttons, .everything, .appSetup] {
     check(a.buttons[0] == nil && a.appProfiles.allSatisfy { $0.buttons?[0] == nil }, "\(kind): the primary button changed")
 }
 
+// MARK: - Pasting a link (ImportPaste.swift)
+
+section("Pasting: only Glideball's own links, anywhere in a message")
+var pastedFriend = GlideConfig()
+pastedFriend.trackingSpeed = 9.5
+pastedFriend.scrollMode = .follow
+let pasteShare = SharedSetup.make([.pointer, .scrolling], from: pastedFriend, look: nil, sounds: nil, name: "Sam")!
+let pd = pasteShare.payload!
+let pasteWeb = "https://glideball.netlify.app/s/#" + pd
+let pasteApp = "glideball://import?d=" + pd
+let expected = try! pasteShare.fileData()
+func accepted(_ text: String, _ what: String, carrier: ImportPaste.Carrier? = nil) {
+    switch ImportPaste.read(text) {
+    case .share(let s, let c):
+        check((try? s.fileData()) == expected, "\(what): read as a different setup")
+        if let carrier { check(c == carrier, "\(what): read as \(c), not \(carrier)") }
+    case .refused(let why): check(false, "\(what): refused (\(why.rawValue))")
+    case .empty: check(false, "\(what): read as empty")
+    }
+}
+func refused(_ text: String, _ what: String, _ why: ImportPaste.Refusal? = nil) {
+    switch ImportPaste.read(text) {
+    case .share: check(false, "\(what): ACCEPTED")
+    case .empty: check(false, "\(what): read as empty")
+    case .refused(let r): if let why { check(r == why, "\(what): refused as “\(r.rawValue)”, expected “\(why.rawValue)”") }
+    }
+}
+
+// The same path as a glideball://import link: what the URL handler decodes is what a paste gives.
+if case .success(let viaURL)? = ExternalControl.parseImport(URL(string: pasteApp)!) {
+    check((try? viaURL.fileData()) == expected, "the URL handler read the link differently")
+} else { check(false, "the URL handler refused the app link") }
+
+accepted(pasteWeb, "the website link", carrier: .web)
+accepted(pasteApp, "the app link", carrier: .app)
+accepted(pd, "a bare payload", carrier: .bare)
+accepted("  \n\t" + pasteWeb + "\n\n ", "a link with whitespace around it")
+accepted("\n " + pd + " \n", "a bare payload with whitespace around it", carrier: .bare)
+accepted("Try my scroll feel, it’s so smooth: \(pasteWeb). Let me know!", "a link in a sentence, a full stop after it")
+accepted("<\(pasteWeb)>", "a link in angle brackets")
+accepted("“\(pasteWeb)”", "a link in curly quotes")
+accepted("«\(pasteWeb)»", "a link in guillemets")
+accepted("\"\(pasteWeb)\"", "a link in straight quotes")
+accepted("[my setup](\(pasteWeb))", "a Markdown link")
+accepted("**\(pasteWeb)**", "a bold Markdown link")
+accepted("(\(pasteApp))", "an app link in brackets")
+accepted("HTTPS://GLIDEBALL.NETLIFY.APP/s/#" + pd, "an upper-case scheme and host")
+accepted("https://glideball.netlify.app/s/#" + String(pd.prefix(40)) + "\u{200B}" + String(pd.dropFirst(40)), "a zero-width space inside the payload")
+accepted("https://glideball.netlify.app/s/#" + String(pd.prefix(40)) + "\u{00AD}" + String(pd.dropFirst(40)), "a soft hyphen inside the payload")
+accepted("\(pasteWeb)\nor in the app: \(pasteApp)", "the page's link and the app's, the same setup")
+accepted("\(pasteWeb) \(pasteWeb)", "the same link twice")
+
+// Wrong hosts and look-alikes: refused even though the payload after # decodes.
+refused("http://glideball.netlify.app/s/#" + pd, "http instead of https", .notGlideball)
+refused("https://glideball.netlify.app.evil.com/s/#" + pd, "glideball.netlify.app.evil.com", .notGlideball)
+refused("https://evil.com/glideball.netlify.app/s/#" + pd, "evil.com/glideball.netlify.app", .notGlideball)
+refused("https://evil.com/?u=https://glideball.netlify.app/s/#" + pd, "our link inside another site's query", .notGlideball)
+refused("https://glideball.netlify.app@evil.com/s/#" + pd, "user@host", .notGlideball)
+refused("https://user@glideball.netlify.app/s/#" + pd, "a user before the host", .notGlideball)
+refused("https://glideball.netlify.app:443/s/#" + pd, "a port", .notGlideball)
+refused("https://glideball.netlify.app./s/#" + pd, "a trailing dot on the host", .notGlideball)
+refused("https://www.glideball.netlify.app/s/#" + pd, "www.", .notGlideball)
+refused("https://glideball.netlify.com/s/#" + pd, ".com instead of .app", .notGlideball)
+refused("https://glideball-netlify.app/s/#" + pd, "a hyphen for a dot", .notGlideball)
+refused("https://glideball.netlify.app/S/#" + pd, "/S/ (paths are case-sensitive)", .notGlideball)
+refused("https://glideball.netlify.app/s#" + pd, "/s# without the slash", .notGlideball)
+refused("https://glideball.netlify.app/s/index.html#" + pd, "/s/index.html#", .notGlideball)
+refused("https://glideball.netlify.app/s/?d=" + pd, "the payload in a query", .notGlideball)
+refused("https://glideball.netlify.app/s/?ref=x#" + pd, "a query before the #", .notGlideball)
+refused("https://glideball.netlify.app/x/#" + pd, "another path", .notGlideball)
+refused("glideball.netlify.app/s/#" + pd, "no scheme", .notGlideball)
+refused("ftp://glideball.netlify.app/s/#" + pd, "ftp", .notGlideball)
+refused("https://gl\u{0456}deball.netlify.app/s/#" + pd, "a Cyrillic і in the host", .notGlideball)
+refused("https://glideba\u{04CF}l.netlify.app/s/#" + pd, "a Cyrillic ӏ for an l", .notGlideball)
+refused("https://xn--glideball-9za.netlify.app/s/#" + pd, "a punycode look-alike", .notGlideball)
+refused("\u{FF48}\u{FF54}\u{FF54}\u{FF50}\u{FF53}://glideball.netlify.app/s/#" + pd, "a fullwidth scheme")
+refused("ｈｔｔｐｓ：／／ｇｌｉｄｅｂａｌｌ．ｎｅｔｌｉｆｙ．ａｐｐ／ｓ／＃" + pd, "an all-fullwidth link")
+refused("https://\u{202E}ppa.yfilten.llabedilg/s/#" + pd, "a right-to-left override showing a reversed host", .notGlideball)
+refused("https://glideball.netlify.app\u{2215}s\u{2215}#" + pd, "division slashes for slashes", .notGlideball)
+refused("https://glideball.netlify.app/s/#" + pd + "&utm_source=x", "junk after the payload", .damaged)
+refused("https://glideball.netlify.app/s/#" + pd + "%41", "percent-encoding in the payload", .damaged)
+refused("https://glideball.netlify.app/s/#" + String(pd.dropLast(30)), "a cut-off link", .damaged)
+refused("https://glideball.netlify.app/s/#" + String(pd.prefix(50)) + "\n" + String(pd.dropFirst(50)), "a link broken over two lines", .damaged)
+refused("https://glideball.netlify.app/s/#", "the prefix with nothing after it", .damaged)
+refused("https://glideball.netlify.app/s/#" + bomb, "a deflate bomb in a real link", .damaged)
+refused("https://glideball.netlify.app/s/#" + String(repeating: "A", count: 3000), "a 3,000-character payload", .damaged)
+refused("https://glideball.netlify.app/s/#" + packed("{\"format\":\"glideball-share\",\"version\":99,\"kind\":\"pointer\",\"trackingSpeed\":5}"),
+        "a share from a newer version", .newerVersion)
+refused("https://glideball.netlify.app/s/#" + packed(String(repeating: "[", count: 5000) + String(repeating: "]", count: 5000)), "deep nesting", .damaged)
+refused("https://glideball.netlify.app/s/#" + packed("{\"version\":1,\"config\":{}}"), "a settings file in a link", .damaged)
+
+// glideball:// links that aren't a shared setup: never run, never a command.
+refused("glideball://pause", "glideball://pause", .notAShare)
+refused("glideball://pointer-speed?value=80", "glideball://pointer-speed", .notAShare)
+refused("GLIDEBALL://toggle", "an upper-case command", .notAShare)
+refused("glideball://import?d=" + pd + "&d=" + pd, "two d's (the URL handler refuses it)", .damaged)
+refused("glideball://import/evil?d=" + pd, "a path on the import link", .damaged)
+refused("glideball://user@import?d=" + pd, "a user on the import link")
+refused("glideball://import?d=AAAA", "a broken app link", .damaged)
+refused("glideball://import?d=" + String(repeating: "A", count: 2200), "an app link over 2,100 characters", .damaged)
+refused("\(pasteWeb) glideball://import?d=\(pd)&d=\(pd)", "a good link beside a refused app link")
+
+// Two setups, too much, nothing.
+let otherShare = SharedSetup.make([.pointer], from: GlideConfig(), look: nil, sounds: nil)!.link()!.absoluteString
+refused("\(pasteWeb)\n\(otherShare)", "two different setups", .severalLinks)
+refused(pasteWeb + String(repeating: " ", count: ImportPaste.maxTextBytes), "more than 16 KB", .tooLong)
+refused(String(repeating: "x", count: 1_000_000), "a megabyte", .tooLong)
+refused("hello", "a word", .noLink)
+refused("Hey, can you send me your setup?", "a sentence", .noLink)
+refused("AAAAAAAAAAAAAAAAAAAAAAA", "a 23-character bare word", .noLink)
+refused("javascript:alert(1)", "javascript:", .noLink)
+refused("https://example.com", "another site", .notGlideball)
+refused(String(repeating: "A", count: 2049), "a bare payload over 2,048", .noLink)
+refused(SharedSetup.base64url(Data("hello there, this is not deflate".utf8)), "a bare payload that isn't one", .damaged)
+if case .empty = ImportPaste.read("  \n\t\u{200B} ") {} else { check(false, "whitespace and a zero-width space weren't empty") }
+if case .empty = ImportPaste.read("") {} else { check(false, "nothing wasn't empty") }
+
+// Mangled messages: nothing crashes, and anything accepted came from one of the two prefixes or a bare payload.
+var pasteRandom = SystemRandomNumberGenerator()
+let junk: [Character] = ["\u{200B}", "\u{202E}", "\u{FEFF}", "\u{0000}", "é", "ı", "İ", "/", "#", "@", ":", ".", " ", "\n", "%", "?", "&", "=", "\u{FF0F}", "😀", "a", "Z", "-", "_"]
+var acceptedMangled = 0
+for i in 0..<2_000 {
+    var chars = Array("see \(i % 2 == 0 ? pasteWeb : pasteApp) thanks")
+    for _ in 0..<Int.random(in: 1...4, using: &pasteRandom) {
+        let at = Int.random(in: 0...chars.count, using: &pasteRandom)
+        switch Int.random(in: 0..<3, using: &pasteRandom) {
+        case 0: chars.insert(junk.randomElement(using: &pasteRandom)!, at: at)
+        case 1: if at < chars.count { chars.remove(at: at) }
+        default: if at < chars.count { chars[at] = junk.randomElement(using: &pasteRandom)! }
+        }
+    }
+    let text = String(chars)
+    if case .share = ImportPaste.read(text) {
+        acceptedMangled += 1
+        let plain = String(String.UnicodeScalarView(text.unicodeScalars.filter { $0.properties.generalCategory != .format })).lowercased()
+        check(plain.contains("https://glideball.netlify.app/s/#") || plain.contains("glideball://import?"),
+              "a mangled message was accepted without one of Glideball's links: \(text.debugDescription.prefix(120))")
+    }
+}
+print("  (\(acceptedMangled) of 2,000 mangled messages still read as a setup, each through a Glideball link)")
+
 // MARK: - Settings files (the plain import)
 
 section("Settings files: the same checks")

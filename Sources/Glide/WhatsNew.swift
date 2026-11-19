@@ -162,7 +162,7 @@ extension AppModel {
     var promptShowing: Bool {
         showingWelcomeTour || showingWhatsNew || showingIconChoice || showingSmallFavor
             || showingFeedback || showingAbout || showingShortcuts || pendingImport != nil
-            || pendingIncoming != nil || shareRequest != nil
+            || pendingIncoming != nil || shareRequest != nil || pasteBox != nil
             || RecapCenter.shared.showing != nil || CommandPalette.shared.isOpen
     }
 
