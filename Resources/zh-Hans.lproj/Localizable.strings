@@ -2723,3 +2723,13 @@
 "Turn it while you hold the button to change the volume. It won’t scroll meanwhile." = "按住按钮时转动它可调节音量，此时不会滚动。";
 "Turn it while you hold the button to move between tabs." = "按住按钮时转动它可切换标签页。";
 "Turn it while you hold the button to zoom in and out (⌘+ and ⌘−)." = "按住按钮时转动它可放大和缩小（⌘+ 和 ⌘−）。";
+
+/* Automatic updates (Settings › Updates, the update button, the Software Update window) */
+"Install updates automatically" = "自动安装更新";
+"Install updates automatically from now on" = "从现在起自动安装更新";
+"Glideball downloads a new version in the background, checks that it’s signed by me, and switches to it once you’ve been away from your trackball for a few minutes. You’ll see a short note the next time you open Glideball." = "Glideball 会在后台下载新版本，确认它由我签名，并在你几分钟没有使用轨迹球时切换到新版本。下次打开 Glideball 时，你会看到一条简短的提示。";
+"Glideball tells you when there’s a new version and waits for you to install it." = "有新版本时 Glideball 会告诉你，并等你来安装。";
+"Let Glideball install new versions by itself, while you’re away from your trackball." = "让 Glideball 在你没有使用轨迹球时自行安装新版本。";
+"auto update, automatic updates, background update, self update, silent update" = "自动更新, 自动安装, 后台更新, 静默更新, auto update";
+"Glideball updated itself to %@." = "Glideball 已自动更新到 %@。";
+"%@ is downloaded. Glideball switches to it once you’ve been away from your trackball for a few minutes." = "%@ 已下载。你几分钟没有使用轨迹球后，Glideball 会切换到新版本。";

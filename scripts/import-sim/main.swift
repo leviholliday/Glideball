@@ -441,6 +441,118 @@ check(!ImportJSON.depthIsWithin(Data((String(repeating: "[", count: 40) + String
 check(ImportJSON.depthIsWithin(Data("{\"a\":\"[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[\"}".utf8)), "brackets inside a string counted")
 check(ImportJSON.depthIsWithin(Data("{\"a\":\"\\\"[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[\"}".utf8)), "an escaped quote confused the depth check")
 
+// MARK: - A shortcut's name is never the file's
+
+section("Shortcut names: what's shown is what the key code presses, on every way in")
+// Key code 12 is Q. The file says "C": a button that would quit the app in front, dressed up as Copy.
+let cmd = CGEventFlags.maskCommand.rawValue
+func spoof(_ name: String, code: Int = 12) -> String { #"{"keyCode":\#(code),"modifiers":\#(cmd),"keyName":"\#(name)"}"# }
+/// Every shortcut in `c`, wherever it sits.
+func shortcuts(in c: GlideConfig) -> [KeyShortcut] {
+    func of(_ a: ButtonAction) -> [KeyShortcut] {
+        switch a {
+        case .shortcut(let s), .holdShortcut(let s): return [s]
+        case .gesture(let g):
+            var out: [KeyShortcut] = of(g.tap)
+            for d in GestureDirection.allCases {
+                guard let step = g[d] else { continue }
+                out += of(step.action)
+                for place in step.more ?? [] { if let place { out += of(place.action) } }
+            }
+            if let up = g.ringUp { out += of(up) }
+            if let down = g.ringDown { out += of(down) }
+            return out
+        case .switcher(let s): return of(s.tap)
+        default: return []
+        }
+    }
+    let actions = Array(c.buttons.values) + c.chords.map(\.action) + c.appProfiles.flatMap { Array(($0.buttons ?? [:]).values) + ($0.chords ?? []).map(\.action) }
+    return actions.flatMap(of)
+}
+func honest(_ c: GlideConfig, _ what: String, expect: Int) {
+    let all = shortcuts(in: c)
+    check(all.count == expect, "\(what): \(all.count) shortcuts came through, expected \(expect)")
+    for s in all {
+        check(s.display == "⌘Q" && s.keyName == "Q" && s.keyLabel == "Q", "\(what): a ⌘Q shortcut shows as \(s.display) (stored name \(s.keyName.debugDescription))")
+    }
+    // And what's written back out (a share, a backup, sync, an export) carries the real name too.
+    let written = String(decoding: (try? JSONEncoder().encode(c)) ?? Data(), as: UTF8.self)
+    check(!written.contains("\"keyName\":\"C\"") && !written.contains("Copy") && !written.contains("\u{202E}"), "\(what): the file's name was written back out")
+    let review = ImportReview.changes(from: GlideConfig(), to: c)
+    check(!review.contains { ($0.after ?? "").contains("⌘C") || ($0.after ?? "").contains("Copy") }, "\(what): the preview shows the file's name")
+    check(review.contains { ($0.after ?? "").contains("⌘Q") && $0.caution }, "\(what): the preview doesn't show ⌘Q, marked")
+}
+// One of each place a shortcut can sit: a button, a held one, a gesture's direction, its More, its tap, its ring pair, a Switcher's tap, a combo, an app setup.
+let spoofedButtons = """
+{"1":{"shortcut":{"_0":\(spoof("C"))}},"2":{"holdShortcut":{"_0":\(spoof("⌘C"))}},
+  "3":{"gesture":{"_0":{"up":{"action":{"shortcut":{"_0":\(spoof("Copy"))}},"repeats":false},
+       "left":{"action":{"disabled":{}},"repeats":false,"more":[{"action":{"shortcut":{"_0":\(spoof("C"))}},"repeats":false},null,null,null,null,null,null,null]},
+       "tap":{"shortcut":{"_0":\(spoof("C"))}},"ring":"own","ringUp":{"shortcut":{"_0":\(spoof("C"))}},"ringDown":{"shortcut":{"_0":\(spoof("\\u202EC"))}}}}},
+  "4":{"switcher":{"_0":{"tap":{"shortcut":{"_0":\(spoof("C"))}}}}}}
+"""
+let spoofedChords = #"[{"id":"00000000-0000-0000-0000-000000000001","buttons":[1,2],"action":{"shortcut":{"_0":\#(spoof("C"))}}}]"#
+let spoofedApp = #"{"bundleID":"com.apple.Safari","name":"Safari","buttons":{"1":{"shortcut":{"_0":\#(spoof("C"))}}}}"#
+let spoofedConfig = "{\"buttons\":\(spoofedButtons),\"chords\":\(spoofedChords),\"appProfiles\":[\(spoofedApp)]}"
+// Two buttons, a gesture's direction, More, tap and ring pair, a Switcher's tap, a combo, an app setup's button.
+let spoofedCount = 10
+// A share, as a file and as a link (both kinds of file: beta 12's one-kind and today's parts).
+for (what, json) in [("a share file (everything)", #"{"format":"glideball-share","version":2,"kind":"everything","config":"# + spoofedConfig + "}"),
+                     ("a share file (parts)", #"{"format":"glideball-share","version":2,"kind":"parts","parts":["buttons","combos","gestures","app:com.apple.Safari"],"gesturesEnabled":true,"buttons":"#
+                      + spoofedButtons + ",\"chords\":" + spoofedChords + ",\"apps\":[" + spoofedApp + "]}")] {
+    if let s = try? SharedSetup.decode(file: Data(json.utf8)) {
+        honest(s.applied(to: GlideConfig()), what, expect: spoofedCount)
+    } else { check(false, "\(what): didn't read (the test is wrong)") }
+    if let s = try? SharedSetup.decode(linkPayload: packed(json)) {
+        honest(s.applied(to: GlideConfig()), what + " as a link", expect: spoofedCount)
+    } else { check(false, "\(what) as a link: didn't read (the test is wrong)") }
+}
+// A settings file (Import…, a double-clicked file), through ImportFile as the app reads it.
+let spoofedFile = Data(("{\"version\":2,\"config\":" + spoofedConfig + "}").utf8)
+if case .settings(let file)? = try? ImportFile.parse(spoofedFile), let c = try? file.validatedConfig() {
+    honest(c.sanitizedForImport(), "a settings file", expect: spoofedCount)
+    honest(c, "a settings file before it's cleaned", expect: spoofedCount)
+} else { check(false, "the spoofed settings file didn't read (the test is wrong)") }
+// A backup being restored, another Mac's settings from sync and the saved settings are all a GlideConfig read from JSON.
+if let c = try? JSONDecoder().decode(GlideConfig.self, from: Data(spoofedConfig.utf8)) {
+    honest(c, "a backup, sync or saved settings", expect: spoofedCount)
+    honest(c.clamped(), "the same, clamped as the engine gets it", expect: spoofedCount)
+} else { check(false, "the spoofed config didn't read (the test is wrong)") }
+// A global shortcut with a lying name (settings files, backups and sync can carry one; a share can't).
+if let c = try? JSONDecoder().decode(GlideConfig.self, from: Data(#"{"globalShortcuts":{"pause":\#(spoof("C"))}}"#.utf8)) {
+    check(c.globalShortcuts.pause?.display == "⌘Q", "a global shortcut shows as \(c.globalShortcuts.pause?.display ?? "nothing")")
+} else { check(false, "the spoofed global shortcut didn't read (the test is wrong)") }
+// No name at all, or one that isn't text, is fine now: it was never needed.
+for (what, json) in [("no keyName", #"{"keyCode":8,"modifiers":\#(cmd)}"#), ("a numeric keyName", #"{"keyCode":8,"modifiers":\#(cmd),"keyName":7}"#),
+                     ("a 100 KB keyName", "{\"keyCode\":8,\"modifiers\":\(cmd),\"keyName\":\"\(String(repeating: "C", count: 100_000))\"}")] {
+    let s = try? JSONDecoder().decode(KeyShortcut.self, from: Data(json.utf8))
+    check(s?.display == "⌘C" && s?.keyName == "C", "\(what): reads as \(s?.display ?? "nothing")")
+}
+// The same key and modifiers are the same shortcut whatever a file called it, so a lying name is never a "change" either.
+check(try! JSONDecoder().decode(KeyShortcut.self, from: Data(spoof("C", code: 8).utf8)) == .copy
+      && (try! JSONDecoder().decode(KeyShortcut.self, from: Data(spoof("Paste", code: 8).utf8))) == .copy, "a name made two shortcuts differ")
+check(KeyShortcut(keyCode: 12, modifiers: cmd, keyName: "C").display == "⌘Q", "a shortcut made in code can still carry its own name")
+// Every key code has a name that fits, and no two ways of asking disagree.
+for code in 0...127 {
+    let name = KeyNames.name(UInt16(code))
+    check(!name.isEmpty && name.count <= ImportLimits.maxKeyNameLength && ImportText.clean(name) == name, "key code \(code) is called \(name.debugDescription)")
+}
+check(KeyNames.name(200) == "Key 200", "an unknown key code is called \(KeyNames.name(200))")
+check(KeyShortcut.copy.display == "⌘C" && KeyShortcut.missionControl.display == "⌃↑" && KeyShortcut.spotlight.display == "⌘Space"
+      && KeyShortcut.redo.display == "⇧⌘Z" && KeyShortcut.browserBack.display == "⌘[", "a built-in shortcut reads differently now")
+// The keyboard layout decides letters (key code 12 is A on a French keyboard), and only letters:
+// the app hands the names over, and a layout can't rename an arrow or hand over junk.
+KeyNames.setLayout(plain: [12: "A", 0: "Q", 6: "\u{7}", 13: "TOOLONG", 123: "X", 1: "\u{202E}S", 2: ""], withCommand: [12: "Q"])
+check(KeyShortcut(keyCode: 12, modifiers: 0).display == "A" && KeyShortcut(keyCode: 0, modifiers: CGEventFlags.maskShift.rawValue).display == "⇧Q",
+      "the layout's names aren't used")
+check(KeyShortcut(keyCode: 12, modifiers: cmd).display == "⌘Q", "a layout whose ⌘ keys differ (Dvorak – QWERTY ⌘) isn't followed")
+check(KeyNames.name(6) == "Z" && KeyNames.name(13) == "W" && KeyNames.name(1) == "S" && KeyNames.name(2) == "D", "a layout handed over a name that can't be shown, and it was used")
+check(KeyNames.name(123) == "←", "a layout renamed an arrow key")
+if let c = try? JSONDecoder().decode(GlideConfig.self, from: Data(spoofedConfig.utf8)) {
+    check(shortcuts(in: c).allSatisfy { $0.display == "⌘Q" }, "with another layout, a spoofed name got through")
+}
+KeyNames.setLayout(plain: [:], withCommand: [:])
+check(KeyNames.name(12) == "Q", "the US names didn't come back")
+
 // MARK: - KensingtonWorks
 
 section("KensingtonWorks: the real file's shape")

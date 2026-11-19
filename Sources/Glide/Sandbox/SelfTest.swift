@@ -1029,6 +1029,40 @@ enum SelfTest {
             return "\(cases.count + 1) cases: invisible characters, any case, drive names with spaces"
         }
 
+        step("automatic updates") {
+            // Off until asked for; in the sandbox the switch shows and saves, and nothing is ever downloaded for it.
+            try check(!model.autoInstallUpdates && !model.updates.autoInstall, "automatic updates are on without being asked for")
+            model.autoInstallUpdates = true
+            defer { model.autoInstallUpdates = false }
+            try check(UserDefaults.standard.bool(forKey: AutoUpdateSetting.defaultsKey), "the switch isn't saved")
+            try check(!model.updates.autoInstall && model.updates.staged == nil && !model.updates.isFetching,
+                      "the switch started the updater in the sandbox")
+            // What the app tells the updater about this moment: anything held or switched on means wait,
+            // whatever else is true (the rule itself is checked in scripts/update-fuzz).
+            let modes = model.modes
+            defer { model.modes = modes }
+            let holds: [(String, WritableKeyPath<Engine.Modes, Bool>, SafeMoment.Reason)] = [
+                ("a gesture", \.gestureHeld, .holdInFlight), ("a ring", \.wheelHeld, .holdInFlight), ("the Switcher", \.switcherHeld, .holdInFlight),
+                ("Precision", \.precision, .modeOn), ("Scroll with ball", \.ballScrolling, .modeOn), ("Drag lock", \.dragLocked, .modeOn),
+                ("Try it", \.gesturePractice, .modeOn),
+            ]
+            for (what, path, reason) in holds {
+                model.modes = Engine.Modes()
+                model.modes[keyPath: path] = true
+                try check(model.safeMomentNow().verdict == .wait(reason), "\(what) held: \(model.safeMomentNow().verdict)")
+            }
+            model.modes = Engine.Modes()
+            model.engine.telemetry.button(2, down: true)
+            let held = model.safeMomentNow()
+            model.engine.telemetry.button(2, down: false)
+            try check(held.verdict == .wait(.buttonDown), "a trackball button down: \(held.verdict)")
+            try check(model.safeMomentNow().verdict != .go, "a moment after a button was let go is safe")
+            // And a shortcut's name is the key's, not the file's (scripts/import-sim has every way in).
+            let spoofed = try JSONDecoder().decode(KeyShortcut.self, from: Data(#"{"keyCode":12,"modifiers":1048576,"keyName":"C"}"#.utf8))
+            try check(spoofed.display == "⌘Q" && KeyCaps.parts(spoofed) == ["⌘", "Q"], "a file's ⌘Q named “C” shows as \(spoofed.display)")
+            return "off by default; a hold, a mode or a button down means wait; shortcut names come from the key"
+        }
+
         step("nothing live") {
             try check(!model.engine.isRunning, "the engine started")
             let shown = NSApp.windows.filter(\.isVisible)

@@ -135,6 +135,18 @@ final class AppModel {
             updates.check()
         }
     }
+    /// "Install updates automatically". Per-Mac, never synced, off until the person turns
+    /// it on (Settings › Updates, or where an update is offered). See AutoUpdate.swift.
+    var autoInstallUpdates = AutoUpdateSetting.isEnabled {
+        didSet {
+            guard autoInstallUpdates != oldValue else { return }
+            UserDefaults.standard.set(autoInstallUpdates, forKey: AutoUpdateSetting.defaultsKey)
+            // A render or the self-test shows the switch; nothing is ever downloaded for it.
+            guard !Sandbox.isActive else { return }
+            updates.autoInstall = autoInstallUpdates
+            updates.autoStep()
+        }
+    }
     /// Shares settings with the user's other Macs through iCloud Drive.
     /// (`--render-ui` and `--self-test` give it a temp folder instead: Sandbox.swift.)
     let sync = SettingsSync(onRemoteConfig: { AppModel.shared.applyRemoteConfig($0) }, folder: Sandbox.syncFolder)
@@ -357,6 +369,14 @@ final class AppModel {
                                                           object: nil, queue: .main) { [weak self] note in
             self?.frontmostChanged(note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication)
         }
+        // Automatic updates: the safe-moment question, and a look when the screen locks or
+        // sleeps (nobody's watching then, so a staged update doesn't wait for the long idle).
+        updates.safeMoment = { [weak self] in self?.safeMomentNow() ?? SafeMoment(busy: true) }
+        let screenAway: (Notification) -> Void = { [weak self] _ in
+            DispatchQueue.main.asyncAfter(deadline: .now() + SafeMoment.awayQuiet + 2) { self?.updates.installStagedIfSafe() }
+        }
+        DistributedNotificationCenter.default().addObserver(forName: .init("com.apple.screenIsLocked"), object: nil, queue: .main, using: screenAway)
+        NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.screensDidSleepNotification, object: nil, queue: .main, using: screenAway)
         updateSampling()   // the slow housekeeping tick, until the window opens
         backups.start(current: cfg)   // before sync, so today's backup is this Mac's own settings
         sync.syncNow(current: cfg)   // pick up changes made on other Macs while Glide was closed
@@ -834,8 +854,51 @@ final class AppModel {
     @ObservationIgnored private var lastClickCount = Int.max
     @ObservationIgnored private var lastSave = 0.0
 
+    // MARK: Automatic updates
+
+    /// What automatic updates look at before restarting Glideball (`SafeMoment`): the
+    /// trackball, the modes, the Mac's own idle time, the screen, and Glideball's windows.
+    func safeMomentNow() -> SafeMoment {
+        let activity = engine.telemetry.activity()
+        let delegate = NSApp.delegate as? AppDelegate
+        let main = delegate?.window
+        // Settings, Software Update, a panel: any titled window of ours besides the main one.
+        let otherWindow = NSApp.windows.contains { $0 !== main && $0.styleMask.contains(.titled) && ($0.isVisible || $0.isMiniaturized) }
+        let busy = promptShowing || showingWelcomeTour || mappingsSuspended || TryPreview.shared.isActive
+            || LaunchExperience.shared.show != nil || pinnedProfileID != nil || fullScreen || panelOpen
+            || otherWindow || main?.isMiniaturized == true || toast?.action != nil
+        // Any input at all (kCGAnyInputEventType), from the keyboard, the trackball or another mouse.
+        let macIdle = CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: CGEventType(rawValue: ~0)!)
+        return SafeMoment(buttonDown: activity.buttonDown,
+                          holdInFlight: modes.gestureHeld || modes.wheelHeld || modes.switcherHeld,
+                          modeOn: modes.precision || modes.ballScrolling || modes.dragLocked || modes.gesturePractice,
+                          trackballIdle: activity.idle, macIdle: macIdle,
+                          screenAway: Self.screenIsAway, windowOpen: main?.isVisible == true, busy: busy)
+    }
+
+    /// The screen is locked, or the main display is asleep.
+    static var screenIsAway: Bool {
+        if CGDisplayIsAsleep(CGMainDisplayID()) != 0 { return true }
+        let session = CGSessionCopyCurrentDictionary() as? [String: Any]
+        return session?["CGSSessionScreenIsLocked"] as? Bool == true
+    }
+
+    /// After Glideball updated itself: one short line, the first time the window is in
+    /// use again. What's New still follows its own rule (once per version that has one).
+    func showAutoUpdateNoteIfDue() {
+        guard !Sandbox.isActive, LaunchExperience.shared.show == nil else { return }
+        var ledger = AutoUpdateLedger.load()
+        guard let version = ledger.note else { return }
+        ledger.note = nil
+        ledger.save()
+        show(Toast(symbol: "arrow.down.circle",
+                   text: String(localized: "Glideball updated itself to \(GlideVersion(version)?.display ?? version).",
+                                comment: "A short note after an automatic update; %@ is a version, like 2.11")))
+    }
+
     /// Told by the window's delegate whenever it's shown, hidden, covered, or gains/loses focus.
     func windowStateChanged(visible: Bool, key: Bool) {
+        if key && !windowIsKey { showAutoUpdateNoteIfDue() }
         if windowIsKey != key { windowIsKey = key }
         let changed = visible != windowVisible
         let becameVisible = visible && changed

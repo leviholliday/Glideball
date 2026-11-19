@@ -171,7 +171,7 @@ struct KeyCaps: View {
         if s.flags.contains(.maskAlternate) { out.append("⌥") }
         if s.flags.contains(.maskShift) { out.append("⇧") }
         if s.flags.contains(.maskCommand) { out.append("⌘") }
-        out.append(s.keyName)
+        out.append(s.keyLabel)
         return out
     }
 }

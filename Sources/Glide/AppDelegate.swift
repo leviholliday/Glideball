@@ -41,6 +41,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         // so they're ready by the time the window shows.
         DispatchQueue.global(qos: .userInitiated).async { _ = OrbArt.layers }
         _ = AppLanguage.atLaunch   // the language on screen, before anyone can change it
+        KeyLayout.install()   // what this keyboard calls its keys, for showing shortcuts (KeyNames)
         _ = Sounds.shared.enabled   // settles "Sounds" (the launch reads it) before anything plays
         AppIconChoice.shared.setUp(firstLaunch: firstLaunch)   // the Dock icon: the Orb, or the classic one
         buildMenu()
@@ -55,14 +56,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         watchModes()
         startHotKeys()
         ExternalControlCenter.shared.start()   // status.json, if "Allow Raycast and scripts" is on
-        let quietLaunch = launchedAtLogin || launchedForURL
+        // The other half of an automatic update: start as quietly as the old version left
+        // (no window, no animation, no chime), and put the window back if it was open.
+        var quietAfterUpdate = false, restoreWindow = false
+        if !Sandbox.isActive {
+            switch Self.autoUpdateLaunch() {
+            case .updated(_, let quiet, let windowOpen), .swapFailed(let quiet, let windowOpen):
+                quietAfterUpdate = quiet
+                restoreWindow = windowOpen
+            case .plain: break
+            }
+        }
+        let quietLaunch = launchedAtLogin || launchedForURL || quietAfterUpdate
         let showsWindow = firstLaunch || !quietLaunch || !AppModel.shared.permissionsOK
         // The launch animation; the first-launch intro opens the tour itself when it ends.
         let introPlays = LaunchExperience.shared.prepare(firstLaunch: firstLaunch, showsWindow: showsWindow)
         if firstLaunch && !introPlays { AppModel.shared.showWelcomeTour() }
-        if showsWindow { showWindow() }
+        if showsWindow { showWindow() } else if restoreWindow { showWindow(activating: false) }
         if Sandbox.mode == .selfTest { return SelfTest.launched(self) }   // checks the rest, then exits
         ShareData.shared.start()   // opt-in crash reports and stats; does nothing unless chosen
+    }
+
+    /// Reads (and clears) what an automatic update left for the next launch: see `AutoUpdateLedger.launched`.
+    private static func autoUpdateLaunch() -> AutoUpdateLedger.Launch {
+        var ledger = AutoUpdateLedger.load()
+        guard ledger.handoff != nil else { return .plain }
+        let running = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        let outcome = ledger.launched(running: running, now: Date())
+        ledger.save()
+        return outcome
     }
 
     // Closing the window keeps Glide running so the trackball stays tuned.
@@ -204,12 +226,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         AppModel.shared.saveTotals()
     }
 
-    func showWindow() {
+    /// `activating: false` puts the window back after an automatic update without bringing
+    /// Glideball to the front.
+    func showWindow(activating: Bool = true) {
         makeWindow()
         guard !Sandbox.isActive else { return }   // `--self-test` builds the window but never shows it
         let opening = window?.isVisible != true
-        window?.makeKeyAndOrderFront(nil)
-        NSApp.activate()
+        if activating {
+            window?.makeKeyAndOrderFront(nil)
+            NSApp.activate()
+        } else {
+            window?.orderFront(nil)
+        }
         reportWindowState()
         // Opening the window with no launch animation playing (a reopened
         // window, a launch at login opened later): What's New or the small

@@ -97,12 +97,12 @@ extension KeyShortcut {
     static let allowedModifiers: UInt64 = CGEventFlags.maskShift.rawValue | CGEventFlags.maskControl.rawValue
         | CGEventFlags.maskAlternate.rawValue | CGEventFlags.maskCommand.rawValue | CGEventFlags.maskSecondaryFn.rawValue
 
-    /// A real key code (0…127), only the modifiers above, and a short printable name.
+    /// A real key code (0…127) and only the modifiers above. Its name is never the
+    /// file's: `KeyShortcut` works it out from the key code (`KeyNames`), so what an
+    /// import's preview shows is what the button will press.
     func sanitized() -> KeyShortcut? {
         guard keyCode <= 127 else { return nil }
-        var name = ImportText.clean(keyName, max: ImportLimits.maxKeyNameLength)
-        if name.isEmpty { name = "?" }
-        return KeyShortcut(keyCode: keyCode, modifiers: modifiers & Self.allowedModifiers, keyName: name)
+        return KeyShortcut(keyCode: keyCode, modifiers: modifiers & Self.allowedModifiers)
     }
 }
 

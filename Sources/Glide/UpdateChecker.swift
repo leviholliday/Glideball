@@ -70,14 +70,56 @@ final class UpdateChecker {
     static let legacyAssetName = "Glide.zip"
     @ObservationIgnored private var timer: Timer?
     @ObservationIgnored private var inFlight: Download?
+
+    // MARK: Automatic updates (the rules are in AutoUpdate.swift)
+
+    /// A version that's been downloaded and passed every check, waiting for a safe moment.
+    struct Staged: Equatable {
+        let update: Update
+        let app: URL
+        var version: String { update.version }
+    }
+    private(set) var staged: Staged?
+    /// "Install updates automatically". Call `autoStep()` after changing it.
+    @ObservationIgnored var autoInstall = AutoUpdateSetting.isEnabled
+    /// The app's answer to "is this a safe moment?", asked on the main thread. Without one, never.
+    @ObservationIgnored var safeMoment: (() -> SafeMoment)?
+    /// The session the release list is asked through; a test names its own (never the network).
+    @ObservationIgnored var listSession: URLSession = .shared
+    /// Where the ledger is kept; a test names its own.
+    @ObservationIgnored var ledgerDefaults: UserDefaults = .standard
+    /// The session and folder background downloads use; a test names its own.
+    @ObservationIgnored var autoSession: URLSession = .shared
+    @ObservationIgnored var autoWorkRoot: URL = FileManager.default.temporaryDirectory
+    @ObservationIgnored var autoBundleID: String? = Bundle.main.bundleIdentifier
+    @ObservationIgnored var autoRequirement: SecRequirement?
+    /// What "restart into it" does; a test names its own, so nothing is ever swapped or quit there.
+    @ObservationIgnored var autoRelaunch: ((Staged) -> Bool)?
+    /// The running version, when a test says otherwise.
+    @ObservationIgnored var versionOverride: String?
+    @ObservationIgnored private var fetching: (version: String, download: Download)?
+    @ObservationIgnored private var waitTimer: Timer?
+    @ObservationIgnored private var rechecking = false
+    @ObservationIgnored private var lastRecheck: Date?
+    @ObservationIgnored private var verifyingStaged = false
+    /// The helper has been started and Glideball is on its way out: nothing more is tried.
+    @ObservationIgnored private var handedOff = false
+    /// How often a staged update looks for its moment, and how fresh the check behind it must be.
+    static let waitInterval: TimeInterval = 30
+    static let recheckAfter: TimeInterval = 3600
+    static let recheckEvery: TimeInterval = 1800
     /// Offer prereleases too — Early updates. Call `check()` after changing it.
     @ObservationIgnored var includePrereleases = EarlyUpdates.isEnabled
 
     var currentVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
+        if let versionOverride { return versionOverride }
+        return Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
     }
 
     func start() {
+        // Whatever an earlier run left unpacked (a staged update that never got its moment).
+        let root = autoWorkRoot
+        DispatchQueue.global(qos: .utility).async { Self.sweepStale(in: root) }
         DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in self?.check() }
         timer = Timer.scheduledTimer(withTimeInterval: 24 * 3600, repeats: true) { [weak self] _ in self?.check() }
     }
@@ -102,7 +144,7 @@ final class UpdateChecker {
         var request = URLRequest(url: Self.releasesAPI, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 15)
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
         let prereleases = includePrereleases
-        URLSession.shared.dataTask(with: request) { [weak self] data, response, _ in
+        listSession.dataTask(with: request) { [weak self] data, response, _ in
             guard let self, let data, (response as? HTTPURLResponse)?.statusCode == 200 else {
                 DispatchQueue.main.async { completion?(false) }
                 return
@@ -114,6 +156,7 @@ final class UpdateChecker {
                 guard prereleases == self.includePrereleases else { completion?(true); return }
                 self.available = newer ? newest : nil
                 self.lastChecked = Date()
+                self.autoStep()
                 completion?(true)
             }
         }.resume()
@@ -204,6 +247,24 @@ final class UpdateChecker {
             if let page = available?.page { NSWorkspace.shared.open(page) }
             return
         }
+        // Asked for by hand: a background download of it stops, and a copy that's
+        // already staged is used (checked again first) instead of downloading twice.
+        stopFetching()
+        if let staged, staged.version == update.version {
+            installState = .installing
+            reverify(staged) { [weak self] ok in
+                guard let self else { return }
+                if ok {
+                    self.relaunch(into: staged.app)
+                } else {
+                    self.dropStaged()
+                    self.installState = .idle
+                    self.install()   // the staged copy was no good: download it afresh
+                }
+            }
+            return
+        }
+        dropStaged()
         installState = .downloading(0)
         inFlight = Self.startDownload(download, expectedVersion: update.version, progress: { [weak self] fraction in
             DispatchQueue.main.async {
@@ -415,7 +476,6 @@ final class UpdateChecker {
 
     private static func unpack(zip: URL, into work: URL, expectedVersion: String,
                                bundleID: String?, requirement: SecRequirement?, limits: ZipLimits) throws -> URL {
-        let fm = FileManager.default
         let unzip = Process()
         unzip.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
         unzip.arguments = ["-x", "-k", zip.path, work.path]
@@ -442,22 +502,33 @@ final class UpdateChecker {
         if stopped || folderIsOverLimits(work, limits) { throw UpdateError(String(localized: "Couldn’t unpack the update.")) }
         guard unzip.terminationStatus == 0 else { throw UpdateError(String(localized: "Couldn’t unpack the update.")) }
 
-        // "Glideball.app" since 2.8; older releases unpack "Glide.app". It must be a real folder
-        // that came out of the zip: a link (to the installed app, say) would pass the checks below
-        // by being the very thing they trust, and then be moved into place as a link.
-        func isRealFolder(_ url: URL) -> Bool {
-            guard let type = try? fm.attributesOfItem(atPath: url.path)[.type] as? FileAttributeType else { return false }
-            return type == .typeDirectory   // attributesOfItem doesn't follow a final link
-        }
+        // "Glideball.app" since 2.8; older releases unpack "Glide.app".
         let app = ["Glideball.app", "Glide.app"].map { work.appendingPathComponent($0) }.first { isRealFolder($0) }
             ?? work.appendingPathComponent("Glideball.app")
+        try checkApp(app, expectedVersion: expectedVersion, bundleID: bundleID, requirement: requirement)
+        return app
+    }
+
+    /// attributesOfItem doesn't follow a final link, so a link to a folder isn't one.
+    private static func isRealFolder(_ url: URL) -> Bool {
+        guard let type = try? FileManager.default.attributesOfItem(atPath: url.path)[.type] as? FileAttributeType else { return false }
+        return type == .typeDirectory
+    }
+
+    /// Every check an unpacked app must pass before it may replace the running one. It must
+    /// be a real folder that came out of the zip (a link to the installed app, say, would pass
+    /// the rest by being the very thing they trust, and then be moved into place as a link),
+    /// carry our bundle identifier and the advertised version, and be signed by the same
+    /// developer. Run when it's unpacked, and again on a staged copy just before it's used:
+    /// an automatic update is never checked less than one you click.
+    static func checkApp(_ app: URL, expectedVersion: String, bundleID: String? = Bundle.main.bundleIdentifier,
+                         requirement: SecRequirement? = nil) throws {
         guard isRealFolder(app), let info = Bundle(url: app)?.infoDictionary,
               info["CFBundleIdentifier"] as? String == bundleID,
               info["CFBundleShortVersionString"] as? String == expectedVersion else {
             throw UpdateError(String(localized: "The download isn’t the expected Glideball \(expectedVersion)."))
         }
         try verifySignature(of: app, against: requirement)
-        return app
     }
 
     /// How strictly the new app is checked: every architecture in the binary, every piece of nested
@@ -486,7 +557,8 @@ final class UpdateChecker {
     }
 
     /// The helper's whole script. Arguments: $1 where the app lives, $2 where it is now (differs
-    /// only when Glide.app moves to Glideball.app), $3 the new app, $4 Glideball's process ID.
+    /// only when Glide.app moves to Glideball.app), $3 the new app, $4 Glideball's process ID,
+    /// $5 "quiet" for an automatic update (the app opens in the background, without coming forward).
     static let swapScript = """
     current="$1"; old="$2"; new="$3"
     while kill -0 "$4" 2>/dev/null; do sleep 0.2; done
@@ -500,28 +572,195 @@ final class UpdateChecker {
       current="$old"
     fi
     xattr -dr com.apple.quarantine "$current" 2>/dev/null
-    open "$current"
+    if [ "$5" = quiet ]; then open -g "$current"; else open "$current"; fi
     """
 
-    /// Hands off to a tiny shell helper that swaps the app once Glide has quit.
-    private func relaunch(into newApp: URL) {
-        installState = .installing
+    /// Hands off to a tiny shell helper that swaps the app once Glide has quit. Quitting goes
+    /// through `applicationWillTerminate` either way, so every held key, mode and the pointer
+    /// are let go exactly as they are for a pause or a quit. `quiet` is an automatic update:
+    /// nothing is shown, and a helper that won't start is a failure for the ledger, not a message.
+    @discardableResult
+    private func relaunch(into newApp: URL, quiet: Bool = false) -> Bool {
+        if !quiet { installState = .installing }
         let current = AppRename.installPath(for: Bundle.main.bundleURL).path
         let old = Bundle.main.bundleURL.path   // differs only when moving Glide.app → Glideball.app
         let pid = ProcessInfo.processInfo.processIdentifier
         let helper = Process()
         helper.executableURL = URL(fileURLWithPath: "/bin/sh")
         // The paths go in as arguments, never spliced into the script: a folder name with a quote or a $ in it can't change what runs.
-        helper.arguments = ["-c", Self.swapScript, "glideball-update", current, old, newApp.path, String(pid)]
+        helper.arguments = ["-c", Self.swapScript, "glideball-update", current, old, newApp.path, String(pid)] + (quiet ? ["quiet"] : [])
         do {
             try helper.run()
         } catch {
-            installState = .failed(String(localized: "Couldn’t start the installer: \(error.localizedDescription)"))
-            return
+            if !quiet { installState = .failed(String(localized: "Couldn’t start the installer: \(error.localizedDescription)")) }
+            return false
         }
         // Glide normally refuses to quit unless asked from its own menu; the
         // update's relaunch counts as asked.
         if let app = NSApp.delegate as? AppDelegate { app.quitNow() } else { NSApp.terminate(nil) }
+        return true
+    }
+
+    // MARK: Automatic updates
+
+    private var ledger: AutoUpdateLedger {
+        get { AutoUpdateLedger.load(from: ledgerDefaults) }
+        set { newValue.save(to: ledgerDefaults) }
+    }
+
+    /// An update the person clicked is downloading or installing: it has the floor.
+    private var manualBusy: Bool {
+        switch installState {
+        case .downloading, .installing: true
+        case .idle, .failed: false
+        }
+    }
+
+    /// A background download is running (for a test to wait on).
+    var isFetching: Bool { fetching != nil }
+
+    /// After a check, or the switch changing: keep, drop or fetch the staged copy
+    /// (`AutoUpdatePlan`). Main thread.
+    func autoStep(now: Date = Date()) {
+        // An update being installed by hand has the floor.
+        guard !manualBusy else { return }
+        let plan = AutoUpdatePlan.next(enabled: autoInstall, offered: available?.version, hasDownload: available?.download != nil,
+                                       running: currentVersion, staged: staged?.version, fetching: fetching?.version,
+                                       ledger: ledger, now: now)
+        if plan.discard {
+            stopFetching()
+            dropStaged()
+        }
+        if let version = plan.fetch, let update = available, update.version == version, let url = update.download {
+            fetch(update, from: url)
+        }
+        syncWaitTimer()
+    }
+
+    /// The background download: the same `startDownload` (size cap, zip checks, unpack limits,
+    /// version, identifier, signature) an update you click goes through.
+    private func fetch(_ update: Update, from url: URL) {
+        let box = DownloadBox()
+        let download = Self.startDownload(url, session: autoSession, expectedVersion: update.version, bundleID: autoBundleID,
+                                          requirement: autoRequirement, workRoot: autoWorkRoot, progress: { _ in },
+                                          completion: { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self, let mine = box.download, self.fetching?.download === mine else {
+                    // Stopped or replaced meanwhile: whatever arrived isn't wanted.
+                    if case .success(let app) = result { Self.removeTree(app.deletingLastPathComponent()) }
+                    return
+                }
+                self.fetching = nil
+                switch result {
+                case .success(let app):
+                    self.staged = Staged(update: update, app: app)
+                    self.autoStep()   // still what's offered? (the answer may have changed while it downloaded)
+                case .failure:
+                    // Quietly: nothing is shown, and it's tried again after `retryAfter`.
+                    var l = self.ledger
+                    l.failed(update.version, now: Date())
+                    self.ledger = l
+                }
+                self.syncWaitTimer()
+            }
+        })
+        box.download = download
+        fetching = (update.version, download)
+    }
+
+    private func stopFetching() {
+        guard let f = fetching else { return }
+        fetching = nil   // first, so its completion knows it was stopped and counts no failure
+        f.download.task.cancel()
+    }
+
+    /// Forgets the staged copy and deletes its folder.
+    private func dropStaged() {
+        guard let s = staged else { return }
+        staged = nil
+        let folder = s.app.deletingLastPathComponent()
+        DispatchQueue.global(qos: .utility).async { Self.removeTree(folder) }
+        syncWaitTimer()
+    }
+
+    /// The timer exists only while something is staged; nothing runs otherwise.
+    private func syncWaitTimer() {
+        if staged != nil, autoInstall {
+            guard waitTimer == nil else { return }
+            let t = Timer(timeInterval: Self.waitInterval, repeats: true) { [weak self] _ in self?.installStagedIfSafe() }
+            t.tolerance = Self.waitInterval * 0.2
+            RunLoop.main.add(t, forMode: .common)
+            waitTimer = t
+        } else {
+            waitTimer?.invalidate()
+            waitTimer = nil
+        }
+    }
+
+    /// The staged copy's checks again, off the main thread: it may have sat for hours.
+    private func reverify(_ s: Staged, then: @escaping (Bool) -> Void) {
+        let bundleID = autoBundleID, requirement = autoRequirement
+        DispatchQueue.global(qos: .utility).async {
+            let ok = (try? Self.checkApp(s.app, expectedVersion: s.version, bundleID: bundleID, requirement: requirement)) != nil
+            DispatchQueue.main.async { then(ok) }
+        }
+    }
+
+    /// Restarts into the staged update if this is a safe moment. Called by the wait
+    /// timer, and by the app when the screen locks or goes to sleep. Main thread.
+    func installStagedIfSafe(now: Date = Date()) {
+        guard let s = staged, autoInstall, !manualBusy, !verifyingStaged, !rechecking, !handedOff else { return }
+        guard AutoUpdatePlan.mayInstall(staged: s.version, running: currentVersion, ledger: ledger, now: now) else {
+            dropStaged()
+            return
+        }
+        guard let safeMoment, safeMoment().isSafe else { return }
+        // Is it still what GitHub offers? A release can be pulled. If the last answer is over
+        // an hour old, ask again first (at most every half hour); no answer, no install.
+        if lastChecked.map({ now.timeIntervalSince($0) > Self.recheckAfter }) ?? true {
+            guard lastRecheck.map({ now.timeIntervalSince($0) >= Self.recheckEvery }) ?? true else { return }
+            lastRecheck = now
+            rechecking = true
+            check { [weak self] _ in self?.rechecking = false }   // `autoStep` runs with the answer; the next tick installs
+            return
+        }
+        verifyingStaged = true
+        reverify(s) { [weak self] ok in
+            guard let self else { return }
+            self.verifyingStaged = false
+            guard self.staged == s, self.autoInstall, !self.manualBusy else { return }
+            guard ok else {
+                self.dropStaged()
+                var l = self.ledger
+                l.failed(s.version, now: Date())
+                self.ledger = l
+                return
+            }
+            // The check took a moment: look again before going.
+            guard let moment = self.safeMoment?(), moment.isSafe else { return }
+            var l = self.ledger
+            l.handoff = .init(from: self.currentVersion, to: s.version, at: Date(), windowOpen: moment.windowOpen)
+            self.ledger = l
+            let started = self.autoRelaunch.map { $0(s) } ?? self.relaunch(into: s.app, quiet: true)
+            self.handedOff = started
+            if !started {
+                var l = self.ledger
+                l.handoff = nil
+                l.failed(s.version, now: Date())
+                self.ledger = l
+                self.dropStaged()
+            }
+        }
+    }
+
+    /// Removes unpack folders an earlier run left in `root` (a staged update that never got
+    /// its moment, a download that was dropped as the app quit).
+    static func sweepStale(in root: URL) {
+        let fm = FileManager.default
+        for name in (try? fm.contentsOfDirectory(atPath: root.path)) ?? [] where name.hasPrefix("GlideUpdate-") {
+            let folder = root.appendingPathComponent(name, isDirectory: true)
+            if isRealFolder(folder) { removeTree(folder) }
+        }
     }
 }
 

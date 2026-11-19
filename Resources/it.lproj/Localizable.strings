@@ -2723,3 +2723,13 @@
 "Turn it while you hold the button to change the volume. It won’t scroll meanwhile." = "Girala mentre tieni premuto il tasto per cambiare il volume. Intanto non scorre.";
 "Turn it while you hold the button to move between tabs." = "Girala mentre tieni premuto il tasto per passare da una scheda all’altra.";
 "Turn it while you hold the button to zoom in and out (⌘+ and ⌘−)." = "Girala mentre tieni premuto il tasto per ingrandire e ridurre (⌘+ e ⌘−).";
+
+/* Automatic updates (Settings › Updates, the update button, the Software Update window) */
+"Install updates automatically" = "Installa gli aggiornamenti automaticamente";
+"Install updates automatically from now on" = "Installa gli aggiornamenti automaticamente d’ora in poi";
+"Glideball downloads a new version in the background, checks that it’s signed by me, and switches to it once you’ve been away from your trackball for a few minutes. You’ll see a short note the next time you open Glideball." = "Glideball scarica la nuova versione in background, controlla che sia firmata da me e passa a quella quando non tocchi la trackball da qualche minuto. Vedrai una breve nota la prossima volta che apri Glideball.";
+"Glideball tells you when there’s a new version and waits for you to install it." = "Glideball ti avvisa quando c’è una nuova versione e aspetta che tu la installi.";
+"Let Glideball install new versions by itself, while you’re away from your trackball." = "Lascia che Glideball installi le nuove versioni da solo, mentre non stai usando la trackball.";
+"auto update, automatic updates, background update, self update, silent update" = "aggiornamento automatico, aggiornamenti automatici, aggiornamento in background, aggiornamento silenzioso, auto update";
+"Glideball updated itself to %@." = "Glideball si è aggiornato da solo alla versione %@.";
+"%@ is downloaded. Glideball switches to it once you’ve been away from your trackball for a few minutes." = "La versione %@ è stata scaricata. Glideball passa a quella quando non tocchi la trackball da qualche minuto.";

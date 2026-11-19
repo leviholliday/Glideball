@@ -2723,3 +2723,13 @@
 "Turn it while you hold the button to change the volume. It won’t scroll meanwhile." = "Gire enquanto segura o botão para mudar o volume. Enquanto isso, ele não rola.";
 "Turn it while you hold the button to move between tabs." = "Gire enquanto segura o botão para passar de uma aba para outra.";
 "Turn it while you hold the button to zoom in and out (⌘+ and ⌘−)." = "Gire enquanto segura o botão para ampliar e reduzir (⌘+ e ⌘−).";
+
+/* Automatic updates (Settings › Updates, the update button, the Software Update window) */
+"Install updates automatically" = "Instalar atualizações automaticamente";
+"Install updates automatically from now on" = "Instalar atualizações automaticamente a partir de agora";
+"Glideball downloads a new version in the background, checks that it’s signed by me, and switches to it once you’ve been away from your trackball for a few minutes. You’ll see a short note the next time you open Glideball." = "O Glideball baixa a versão nova em segundo plano, confere se ela foi assinada por mim e muda para ela quando você fica alguns minutos sem mexer no seu trackball. Você vai ver um aviso curto na próxima vez que abrir o Glideball.";
+"Glideball tells you when there’s a new version and waits for you to install it." = "O Glideball avisa quando há uma versão nova e espera você instalar.";
+"Let Glideball install new versions by itself, while you’re away from your trackball." = "Deixe o Glideball instalar as versões novas sozinho, enquanto você não está usando o seu trackball.";
+"auto update, automatic updates, background update, self update, silent update" = "atualização automática, atualizações automáticas, atualizar em segundo plano, atualizar sozinho, atualização silenciosa, auto update";
+"Glideball updated itself to %@." = "O Glideball se atualizou sozinho para a versão %@.";
+"%@ is downloaded. Glideball switches to it once you’ve been away from your trackball for a few minutes." = "A versão %@ já foi baixada. O Glideball muda para ela quando você fica alguns minutos sem mexer no seu trackball.";
