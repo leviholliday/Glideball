@@ -2834,3 +2834,26 @@
 "Your setup makes this a long prompt. If the chatbot cuts it short, leave app names out and copy it again." = "你的设置让提示词变得很长。如果聊天机器人截断了它，就不包含 App 名称再拷贝一次。";
 "ai, chatbot, chatgpt, claude, gemini, assistant, help me, set up, setup code, paste code, voice, dictation, ideas, suggestions" = "ai, 人工智能, 聊天机器人, chatgpt, claude, gemini, 助手, 帮我, 设置, 设置代码, 粘贴代码, 语音, 听写, 主意, 建议";
 "Your trackball’s model, Glideball’s version and the language Glideball is in" = "你的轨迹球型号、Glideball 的版本和 Glideball 使用的语言";
+
+/* Import review: shortcuts that delete, quit or log out; nested places; Undo Last Import */
+"A big jump from %@: much faster than you have it. Try it before you keep it." = "从 %@ 大幅改变：比你现在快很多。保留之前先试试。";
+"A big jump from %@: much slower than you have it. Try it before you keep it." = "从 %@ 大幅改变：比你现在慢很多。保留之前先试试。";
+"Closes every window of the app in front." = "关闭最前面 App 的所有窗口。";
+"Deletes the selected files for good, skipping the Trash (Finder asks first)." = "永久删除所选文件，不经过废纸篓（访达会先询问）。";
+"Empties the Trash (Finder asks first)." = "清倒废纸篓（访达会先询问）。";
+"Empties the Trash without asking." = "不经询问就清倒废纸篓。";
+"Empty" = "空";
+"Held down, force quits the app in front. Unsaved work is lost." = "按住时会强制退出最前面的 App。未存储的工作会丢失。";
+"Include this shortcut" = "包含这个快捷键";
+"Logs you out (macOS asks first)." = "退出登录（macOS 会先询问）。";
+"Logs you out without asking. Unsaved work can be lost." = "不经询问就退出登录。未存储的工作可能会丢失。";
+"Moves the selected files to the Trash, and deletes things in many apps." = "把所选文件移到废纸篓，在很多 App 中会删除内容。";
+"Opens the Force Quit window." = "打开“强制退出”窗口。";
+"Presses a shortcut that deletes, quits or logs out" = "会按下删除、退出或退出登录的快捷键";
+"Quits the app in front, often without asking." = "退出最前面的 App，常常不经询问。";
+"Ring ↺" = "滚动环 ↺";
+"Ring ↻" = "滚动环 ↻";
+"Shortcuts flagged in red are left out unless you tick them." = "标为红色的快捷键不会应用，除非你勾选它们。";
+"That’s no slower than your pointer speed, so Precision won’t slow the pointer down." = "这不比你的指针速度慢，所以精准模式不会让指针变慢。";
+"The bottom-left button always clicks. To undo, press ⌘Z in Glideball or choose Undo Last Import in the File menu or the menu-bar icon’s menu." = "左下按钮始终是点按。要撤销，请在 Glideball 中按 ⌘Z，或在“文件”菜单或菜单栏图标的菜单中选取“撤销上次导入”。";
+"Undo Last Import" = "撤销上次导入";

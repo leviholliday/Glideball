@@ -1,21 +1,28 @@
-Here's the plan we landed on, read back one more time:
+Okay, here's everything we landed on, one more time:
 
-- **Top left** (the one you never use) becomes your Wispr Flow key: hold it, talk, let go.
-- **Top right** stays Back when you tap it, but hold it and roll to switch desktops (left and right), Mission Control (up) and App Exposé (down). If you pause, a little ring shows what's where. While you hold it, the scroll ring turns the volume.
-- **Both top buttons together** play or pause your music.
-- **In Figma only:** a slower pointer, the page follows the scroll ring and goes further per tick, and bottom right becomes a "hold for precision" button for nudging things.
-- **Steady hands** is on, so a wobble while you hold a button won't count as a roll.
+- **Kept as you have them:** top left stays Copy, and bottom right stays your right click. Top right still goes Back when you tap it, and the four ways you roll it (desktops left and right, Mission Control, App Exposé) stay put.
+- **New on top right:** roll down and to the right and you get a small second ring for screenshots. From there, up takes a screenshot of an area, right opens the screenshot and recording tools, and down opens Emoji & Symbols. Coming back up-left gets you out again.
+- **Both top buttons together** now play or pause your music. That combo used to open Mission Control, which you said you already get by rolling up.
+- **Safari** goes back to your normal pointer speed. The slower one there was from a while ago and you said it drags now. Its buttons stay the same.
+- **In Figma only:** a slower pointer, the page follows the scroll ring and goes a bit further per tick, and bottom right becomes a "hold for precision" button for nudging things.
+- **Steady hands** is on, so a little wobble while you hold a button won't count as a roll. That should go easier on your wrist too.
 
 ```json
 {
   "format": "glideball-ai-setup",
   "version": 1,
   "buttons": {
-    "2": "holdKeys:ctrl+space",
-    "3": {"gesture": {"left": "keys:ctrl+left", "right": "keys:ctrl+right", "up": "keys:ctrl+up", "down": "keys:ctrl+down", "tap": "back", "show": "afterPause", "ring": "volume"}}
+    "3": {"gesture": {
+      "left": "keys:ctrl+left", "right": "keys:ctrl+right", "up": "keys:ctrl+up", "down": "keys:ctrl+down",
+      "downRight": {"more": {"up": "keys:cmd+shift+4", "right": "keys:cmd+shift+5", "down": "keys:ctrl+cmd+space"}},
+      "tap": "back", "show": "afterPause", "ring": "volume"
+    }}
   },
-  "combos": [{"buttons": [2, 3], "action": "media:playPause"}],
-  "apps": [{"app": "Figma", "trackingSpeed": 3, "scroll": {"scrollMode": "follow", "scrollDistance": 22}, "buttons": {"1": "precisionHold"}}],
+  "combos": [{"buttons": [3, 2], "action": "media:playPause"}],
+  "apps": [
+    {"app": "Safari", "trackingSpeed": null},
+    {"app": "Figma", "trackingSpeed": 3, "scroll": {"scrollMode": "follow", "scrollDistance": 22}, "buttons": {"1": "precisionHold"}}
+  ],
   "gestureSteadyHands": true
 }
 ```

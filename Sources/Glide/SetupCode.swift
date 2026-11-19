@@ -613,7 +613,11 @@ enum SetupCode {
         var cut = false
         var failure: Problem?
         let straight = String(text.map { curly[$0] ?? $0 })
-        for candidate in (straight == text ? [text] : [text, straight]) {
+        var candidates = straight == text ? [text] : [text, straight]
+        // A code that went through a web page's HTML on the way (&quot; for every "): read
+        // unescaped, but only after it couldn't be read as it is (a real code never needs it).
+        if let unescaped = htmlUnescaped(straight) { candidates.append(unescaped) }
+        for candidate in candidates {
             let bytes = Array(candidate.utf8)
             for range in blocks(in: bytes, cut: &cut) {
                 guard range.count <= maxBytes else { failure = failure ?? .tooBig; continue }
@@ -628,6 +632,27 @@ enum SetupCode {
         }
         if let failure { throw failure }
         throw cut ? Problem.cutOff : Problem.notJSON
+    }
+
+    /// The entities a chat page's HTML puts in place of JSON's characters.
+    static let htmlEntities: [(String, String)] = [("&quot;", "\""), ("&#34;", "\""), ("&#x22;", "\""), ("&#39;", "'"), ("&#x27;", "'"),
+                                                   ("&apos;", "'"), ("&lt;", "<"), ("&gt;", ">"), ("&amp;", "&")]
+
+    /// `text` with HTML's escapes undone, only when it's clearly a code that was escaped:
+    /// "&quot;" is there and quotes the code's own words (`{&quot;` or `&quot;format&quot;`),
+    /// and there's no plain `"` before the first `{&quot;` that would make it real JSON. Nil
+    /// otherwise. `&amp;` goes last, so `&amp;quot;` comes back as the text `&quot;`.
+    static func htmlUnescaped(_ text: String) -> String? {
+        guard text.contains("&quot;") || text.contains("&#34;") || text.contains("&#x22;") else { return nil }
+        let quote = ["&quot;", "&#34;", "&#x22;"].first { text.contains($0) }!
+        let marked = text.contains("\(quote)format\(quote)") || text.contains(quote + formatMarker + quote)
+        let opens = text.range(of: "{" + quote) ?? text.range(of: "{ " + quote) ?? text.range(of: "{\n" + quote)
+        guard marked || opens != nil else { return nil }
+        // JSON with real quotes around its keys isn't an escaped code, whatever its strings say.
+        if text.contains("{\"") || text.contains("\":") { return nil }
+        var out = text
+        for (entity, plain) in htmlEntities { out = out.replacingOccurrences(of: entity, with: plain, options: .caseInsensitive) }
+        return out == text ? nil : out
     }
 
     /// From a `{` at `start`, the index just past the `}` that closes it (strings skipped); nil if it never closes.

@@ -2834,3 +2834,26 @@
 "Your setup makes this a long prompt. If the chatbot cuts it short, leave app names out and copy it again." = "設定が多いため、プロンプトが長くなっています。チャットボットが途中で切ってしまう場合は、App名を含めずにもう一度コピーしてください。";
 "ai, chatbot, chatgpt, claude, gemini, assistant, help me, set up, setup code, paste code, voice, dictation, ideas, suggestions" = "ai, チャットボット, chatgpt, claude, gemini, アシスタント, 手伝って, 設定, 設定コード, コードをペースト, 音声, 音声入力, アイデア, 提案";
 "Your trackball’s model, Glideball’s version and the language Glideball is in" = "トラックボールのモデル、Glideball のバージョン、Glideball の表示言語";
+
+/* Import review: shortcuts that delete, quit or log out; nested places; Undo Last Import */
+"A big jump from %@: much faster than you have it. Try it before you keep it." = "%@ からの大きな変化です。今よりかなり速くなります。使い続ける前に試してください。";
+"A big jump from %@: much slower than you have it. Try it before you keep it." = "%@ からの大きな変化です。今よりかなり遅くなります。使い続ける前に試してください。";
+"Closes every window of the app in front." = "最前面の App のウインドウをすべて閉じます。";
+"Deletes the selected files for good, skipping the Trash (Finder asks first)." = "選択したファイルをゴミ箱に入れずに完全に削除します（Finder が先に確認します）。";
+"Empties the Trash (Finder asks first)." = "ゴミ箱を空にします（Finder が先に確認します）。";
+"Empties the Trash without asking." = "確認なしでゴミ箱を空にします。";
+"Empty" = "なし";
+"Held down, force quits the app in front. Unsaved work is lost." = "押し続けると、最前面の App を強制終了します。保存していない作業は失われます。";
+"Include this shortcut" = "このショートカットを含める";
+"Logs you out (macOS asks first)." = "ログアウトします（macOS が先に確認します）。";
+"Logs you out without asking. Unsaved work can be lost." = "確認なしでログアウトします。保存していない作業が失われることがあります。";
+"Moves the selected files to the Trash, and deletes things in many apps." = "選択したファイルをゴミ箱に入れます。多くの App では何かを削除します。";
+"Opens the Force Quit window." = "「アプリケーションの強制終了」ウインドウを開きます。";
+"Presses a shortcut that deletes, quits or logs out" = "削除、終了、ログアウトをするショートカットを押します";
+"Quits the app in front, often without asking." = "最前面の App を終了します。確認なしのことがよくあります。";
+"Ring ↺" = "リング ↺";
+"Ring ↻" = "リング ↻";
+"Shortcuts flagged in red are left out unless you tick them." = "赤で示したショートカットは、チェックを入れない限り適用されません。";
+"That’s no slower than your pointer speed, so Precision won’t slow the pointer down." = "ポインタの速度より遅くないので、精密モードでもポインタは遅くなりません。";
+"The bottom-left button always clicks. To undo, press ⌘Z in Glideball or choose Undo Last Import in the File menu or the menu-bar icon’s menu." = "左下のボタンは常にクリックです。元に戻すには、Glideball で ⌘Z を押すか、「ファイル」メニューかメニューバーアイコンのメニューで「最後の読み込みを取り消す」を選んでください。";
+"Undo Last Import" = "最後の読み込みを取り消す";

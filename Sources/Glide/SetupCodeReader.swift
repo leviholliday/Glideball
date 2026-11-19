@@ -59,10 +59,17 @@ final class SetupCodeReader {
                           text: SetupCode.quote(raw), why: why, hint: hint))
     }
 
-    /// A value that isn't the kind its setting takes: quoted as `key: value`.
+    /// A value that isn't the kind its setting takes: quoted as `key: value`. A null says
+    /// where null does work instead.
     private func wrong(_ p: Place, _ key: String, _ raw: Any?, _ hint: String) {
-        leave(p.at(key), "\(key): \(SetupCode.quote(raw))", .wrongValue, hint)
+        leave(p.at(key), "\(key): \(SetupCode.quote(raw))", .wrongValue, raw is NSNull ? Self.nullHint : hint)
     }
+
+    /// Where null works (the reference says the same): in an app setup, for its
+    /// "trackingSpeed", "scroll", "buttons", "combos" or one of its buttons (back to the main
+    /// setup's); as a combo's "action" (the combo goes); inside a gesture or a More (that
+    /// place is empty, as if it were left out). Anywhere else it's left out with this.
+    static let nullHint = "null only works in an app setup (back to the main setup's), as a combo's \"action\" (removes it) or inside a gesture (empty); leave the key out to keep what I have"
 
     private func range(_ r: ClosedRange<Double>) -> String {
         "a number from \(SetupJSON.show(r.lowerBound)) to \(SetupJSON.show(r.upperBound))"
@@ -112,6 +119,14 @@ final class SetupCodeReader {
 
     /// The shared setup `o` means, or nil when nothing in it could be used.
     func setup(_ o: [String: Any]) -> SharedSetup? {
+        // null on the main setup's own settings means nothing here: said, and left out.
+        var o = o
+        for key in o.keys.sorted() where o[key] is NSNull {
+            if SetupFields.topKeys.contains(key) || SetupFields.topAliases[key] != nil {
+                leave(Place(label: SetupCode.quote(key), path: key), "\(key): null", .wrongValue, Self.nullHint)
+                o[key] = nil
+            }
+        }
         var s = SharedSetup(version: 1, parts: [])
         var parts: [SharePart] = []
         let pointer = Place(label: ImportChange.Area.pointer.title, path: "")
@@ -231,6 +246,8 @@ final class SetupCodeReader {
             if key == "scrollMode" {
                 if let m = Self.choice(v, ScrollMode.self) { out.scrollMode = m; used = true }
                 else { wrong(p, key, v, "one of: " + Self.names(ScrollMode.self)) }
+            } else if v is NSNull {
+                wrong(p, key, v, Self.nullHint)
             } else if let f = SetupFields.scrollNumbers.first(where: { $0.key == key }) {
                 if let n = Self.number(v) { out[keyPath: f.path] = n.clamped(to: f.range, or: base[keyPath: f.path]); used = true }
                 else { wrong(p, key, v, range(f.range)) }
@@ -249,7 +266,8 @@ final class SetupCodeReader {
     // MARK: Buttons and combos
 
     /// The buttons a code lists ("1" to "7"; never 0). `was`: what those buttons do now.
-    private func buttons(_ raw: Any, was: [Int: ButtonAction], at p: Place, prefix: String) -> [Int: ButtonAction]? {
+    /// `inApp`: an app setup's, where a button's null means "as in the main setup".
+    private func buttons(_ raw: Any, was: [Int: ButtonAction], at p: Place, prefix: String, inApp: Bool = false) -> [Int: ButtonAction]? {
         let area = Place(label: prefix + ImportChange.Area.buttons.title, path: p.path)
         guard let d = raw as? [String: Any] else {
             leave(area, raw, .wrongValue, "\"buttons\" is an object: {\"1\": action, \"2\": action, \"3\": action}")
@@ -268,6 +286,10 @@ final class SetupCodeReader {
             }
             guard ImportLimits.buttons.contains(b) else {
                 leave(place, nil, .wrongValue, "there's no button with this number")
+                continue
+            }
+            if d[key] is NSNull {
+                if inApp { out[b] = current.buttons[b] ?? .system } else { leave(place, "null", .wrongValue, Self.nullHint) }
                 continue
             }
             if let a = action(d[key], at: place, was: was[b], nested: false) { out[b] = a }
@@ -375,7 +397,7 @@ final class SetupCodeReader {
                 }
                 // Buttons it doesn't list keep doing what they do in this app now.
                 let base = (p.buttons ?? current.buttons).filter { ImportLimits.buttons.contains($0.key) }
-                guard let map = buttons(v, was: base, at: place.at("buttons"), prefix: prefix), !map.isEmpty else { break }
+                guard let map = buttons(v, was: base, at: place.at("buttons"), prefix: prefix, inApp: true), !map.isEmpty else { break }
                 p.buttons = base.merging(map) { $1 }.filter { $0.value != .system }
                 used = true
             case "combos":
@@ -514,6 +536,8 @@ final class SetupCodeReader {
         }
         if raw is [String: Any] {
             leave(p, raw, .unknownAction, "write an action as its short text, like \"keys:cmd+c\", or as {\"gesture\": {…}} or {\"switcher\": {…}}")
+        } else if raw is NSNull {
+            leave(p, raw, .wrongValue, Self.nullHint)
         } else {
             leave(p, raw, .wrongValue, "an action is text, like \"rightClick\" or \"keys:cmd+c\"")
         }
@@ -585,10 +609,13 @@ final class SetupCodeReader {
     private func gesture(_ raw: Any, at p: Place, was: ButtonGesture?) -> ButtonGesture? {
         var body = raw
         if let d = raw as? [String: Any], d.count == 1, let inner = d["_0"] { body = inner }
-        guard let d = body as? [String: Any] else {
+        guard let whole = body as? [String: Any] else {
             leave(p, raw, .wrongValue, "write Gestures as {\"gesture\": {\"up\": action, \"down\": action, \"tap\": action}}")
             return nil
         }
+        // Inside a gesture, null is the same as leaving the key out: that place is empty, a
+        // setting is the usual one.
+        let d = whole.filter { !($0.value is NSNull) }
         var g = ButtonGesture()
         var diagonal = false
         for dir in GestureDirection.allCases {
@@ -660,6 +687,7 @@ final class SetupCodeReader {
                 return s
             }
         }
+        if d["more"] is NSNull || (d["more"] == nil && (d["do"] ?? d["action"]) is NSNull) { return nil }   // null inside a gesture: empty
         if let more = d["more"] {
             guard let direction else {
                 leave(p, "more", .notHere, "a More can't be inside a More")
@@ -703,7 +731,7 @@ final class SetupCodeReader {
         guard let a = fired(inner, at: p, was: oldAction) else { return nil }
         var s = GestureStep(a)
         s.mode = SetupCode.defaultMode(a)
-        if let m = d["mode"] {
+        if let m = d["mode"], !(m is NSNull) {
             if let t = m as? String, let mode = GestureStep.Mode(rawValue: t.trimmingCharacters(in: .whitespaces).lowercased()) {
                 s.mode = mode
             } else {

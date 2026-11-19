@@ -17,16 +17,20 @@ struct IncomingSetupSheet: View {
     let incoming: IncomingSetup
     /// Set when the preview isn't the model's own sheet (it's inside Set up with AI).
     var onCancel: (() -> Void)?
-    var onApply: ((Set<SharePart>?) -> Void)?
+    /// The ticked parts (nil: all) and the ticked red flags (`ImportChange.Risk.id`).
+    var onApply: ((Set<SharePart>?, Set<String>) -> Void)?
     @State private var chosen: Set<SharePart>
+    /// The destructive shortcuts the person ticked to include. Unticked ones are left out.
+    @State private var confirmed: Set<String>
 
-    init(model: AppModel, incoming: IncomingSetup, chosen: Set<SharePart>? = nil,
-         onCancel: (() -> Void)? = nil, onApply: ((Set<SharePart>?) -> Void)? = nil) {
+    init(model: AppModel, incoming: IncomingSetup, chosen: Set<SharePart>? = nil, confirmed: Set<String> = [],
+         onCancel: (() -> Void)? = nil, onApply: ((Set<SharePart>?, Set<String>) -> Void)? = nil) {
         self.model = model
         self.incoming = incoming
         self.onCancel = onCancel
         self.onApply = onApply
         _chosen = State(initialValue: chosen ?? Set(incoming.parts))
+        _confirmed = State(initialValue: confirmed)
     }
 
     private var isShare: Bool { incoming.share != nil }
@@ -36,6 +40,7 @@ struct IncomingSetupSheet: View {
         let all = isShare ? sections.flatMap(\.changes) : model.changes(for: incoming)
         let picked = isShare ? sections.filter { chosen.contains($0.part) }.flatMap(\.changes) : all
         let cautions = picked.filter(\.caution).count
+        let leftOut = picked.flatMap(\.risks).filter { $0.tier == .destructive && !confirmed.contains($0.id) }.count
         VStack(alignment: .leading, spacing: 0) {
             header
                 .padding(.horizontal, 24)
@@ -53,7 +58,7 @@ struct IncomingSetupSheet: View {
                     if isShare {
                         ForEach(sections.filter { !$0.changes.isEmpty }, id: \.part) { s in
                             PartChangeSection(part: s.part, title: s.part.title(apps: incoming.share?.apps ?? []),
-                                              changes: s.changes, isOn: binding(s.part))
+                                              changes: s.changes, isOn: binding(s.part), confirmed: $confirmed)
                         }
                         let same = sections.filter { $0.changes.isEmpty }.map { $0.part.title(apps: incoming.share?.apps ?? []) }
                         if !same.isEmpty && !all.isEmpty {
@@ -65,7 +70,7 @@ struct IncomingSetupSheet: View {
                         }
                     } else {
                         ForEach(ImportChange.Area.allCases.filter { a in all.contains { $0.area == a } }, id: \.self) { area in
-                            ChangeSection(area: area, changes: all.filter { $0.area == area })
+                            ChangeSection(area: area, changes: all.filter { $0.area == area }, confirmed: $confirmed)
                         }
                     }
                     if !incoming.notes.isEmpty {
@@ -81,7 +86,7 @@ struct IncomingSetupSheet: View {
             .scrollIndicators(.automatic)
             .frame(height: Self.scrollHeight(changes: all, notes: incoming.notes.count + incoming.leftOut.count))
             Hairline()
-            footer(cautions: cautions, nothing: picked.isEmpty)
+            footer(cautions: cautions, leftOut: leftOut, nothing: picked.isEmpty)
                 .padding(.horizontal, 24)
                 .padding(.vertical, 16)
         }
@@ -98,7 +103,9 @@ struct IncomingSetupSheet: View {
     static func scrollHeight(changes: [ImportChange], notes: Int) -> CGFloat {
         let sections = Set(changes.map(\.area)).count + (notes > 0 ? 1 : 0)
         let rows = max(changes.count, 1) + notes
-        return min(max(CGFloat(rows) * 48 + CGFloat(sections) * 40 + 16, 120), 420)
+        // A gesture's places are short lines of their own; a flag adds its reason and tick.
+        let lines = changes.reduce(0) { $0 + $1.details.count } + changes.flatMap(\.risks).count * 2 + changes.filter { $0.note != nil }.count
+        return min(max(CGFloat(rows) * 48 + CGFloat(lines) * 18 + CGFloat(sections) * 40 + 16, 120), 420)
     }
 
     private var header: some View {
@@ -151,10 +158,18 @@ struct IncomingSetupSheet: View {
         }
     }
 
-    private func footer(cautions: Int, nothing: Bool) -> some View {
+    private func footer(cautions: Int, leftOut: Int, nothing: Bool) -> some View {
         HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
             Group {
-                if cautions > 0 {
+                if leftOut > 0 {
+                    Label {
+                        Text("Shortcuts flagged in red are left out unless you tick them.",
+                             comment: "Import preview footer: destructive shortcuts (empty the Trash, quit, log out) aren't applied unless ticked one by one")
+                    } icon: {
+                        Image(systemName: "exclamationmark.octagon.fill").foregroundStyle(Theme.bad)
+                    }
+                } else if cautions > 0 {
                     Label {
                         Text("Some of these open apps or press keyboard shortcuts. Check them before you apply.")
                     } icon: {
@@ -168,6 +183,11 @@ struct IncomingSetupSheet: View {
                     Text("Apply saves a backup first, and you can undo right after.")
                 }
             }
+            // Whatever the new setup does to the buttons, there's a way back without them.
+            Text("The bottom-left button always clicks. To undo, press ⌘Z in Glideball or choose Undo Last Import in the File menu or the menu-bar icon’s menu.",
+                 comment: "Import preview footer: the way back if a new setup makes the trackball hard to use")
+                .foregroundStyle(.tertiary)
+            }
             .font(Theme.Font.hint)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
@@ -176,7 +196,7 @@ struct IncomingSetupSheet: View {
                 .keyboardShortcut(.cancelAction)
             Button {
                 let parts = isShare ? chosen : nil
-                if let onApply { onApply(parts) } else { model.applyIncoming(parts: parts) }
+                if let onApply { onApply(parts, confirmed) } else { model.applyIncoming(parts: parts, confirmed: confirmed) }
             } label: {
                 Text(incoming.source == .kensingtonWorks ? "Import" : "Apply")
                     .frame(minWidth: 60)
@@ -196,6 +216,7 @@ private struct PartChangeSection: View {
     let title: String
     let changes: [ImportChange]
     @Binding var isOn: Bool
+    @Binding var confirmed: Set<String>
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Space.titleToGroup) {
@@ -216,7 +237,7 @@ private struct PartChangeSection: View {
             .toggleStyle(.checkbox)
             .accessibilityAddTraits(.isHeader)
             RowGroup {
-                ForEach(changes) { ChangeRow(change: $0) }
+                ForEach(changes) { ChangeRow(change: $0, confirmed: $confirmed) }
             }
             .opacity(isOn ? 1 : 0.4)
         }
@@ -236,6 +257,7 @@ private struct PartChangeSection: View {
 private struct ChangeSection: View {
     let area: ImportChange.Area
     let changes: [ImportChange]
+    @Binding var confirmed: Set<String>
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Space.titleToGroup) {
@@ -246,7 +268,7 @@ private struct ChangeSection: View {
             }
             .accessibilityAddTraits(.isHeader)
             RowGroup {
-                ForEach(changes) { ChangeRow(change: $0) }
+                ForEach(changes) { ChangeRow(change: $0, confirmed: $confirmed) }
             }
         }
     }
@@ -264,11 +286,19 @@ private struct ChangeSection: View {
 /// "Top left    Copy (⌘C)" with what it was under it, struck through.
 private struct ChangeRow: View {
     let change: ImportChange
+    @Binding var confirmed: Set<String>
+
+    private var worst: ShortcutRisk? { change.risks.map(\.tier).max() }
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
             HStack(spacing: 5) {
-                if change.caution {
+                if worst == .destructive {
+                    Image(systemName: "exclamationmark.octagon.fill")
+                        .font(.system(size: 10))
+                        .foregroundStyle(Theme.bad)
+                        .help(Text("Presses a shortcut that deletes, quits or logs out", comment: "Import preview: the red flag's tooltip"))
+                } else if change.caution || change.note != nil {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.system(size: 10))
                         .foregroundStyle(Theme.warn)
@@ -301,12 +331,88 @@ private struct ChangeRow: View {
                         .font(.system(size: 11))
                         .foregroundStyle(.tertiary)
                 }
+                if let note = change.note {
+                    Text(verbatim: note)
+                        .font(.system(size: 11))
+                        .foregroundStyle(Theme.warn)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if let risk = change.risk { RiskFlag(risk: risk, confirmed: $confirmed) }
+                if !change.details.isEmpty {
+                    VStack(alignment: .leading, spacing: 5) {
+                        ForEach(change.details) { DetailLine(detail: $0, confirmed: $confirmed) }
+                    }
+                    .padding(.top, 4)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.horizontal, Theme.Space.rowHorizontal)
         .padding(.vertical, 9)
+        .accessibilityElement(children: .contain)
+    }
+}
+
+/// One place inside a gesture, a More or a Switcher: "↘ More › ↖   ⌥⇧⌘⌫", what it was
+/// struck through under it, and its flag. A place that stays as it is is dim.
+private struct DetailLine: View {
+    let detail: ImportChange.Detail
+    @Binding var confirmed: Set<String>
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(verbatim: detail.label)
+                .font(.system(size: 11.5, weight: .medium))
+                .foregroundStyle(detail.risk?.tier == .destructive ? AnyShapeStyle(Theme.bad) : AnyShapeStyle(.secondary))
+                .frame(width: 74, alignment: .leading)
+            VStack(alignment: .leading, spacing: 1) {
+                if let after = detail.after {
+                    Text(verbatim: after)
+                        .font(.system(size: 11.5, weight: detail.changed ? .semibold : .regular))
+                        .foregroundStyle(detail.changed ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    Text("Empty", comment: "Import preview: a place in a gesture that would do nothing")
+                        .font(.system(size: 11.5, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                }
+                if let before = detail.before {
+                    Text(verbatim: before)
+                        .font(.system(size: 10.5))
+                        .strikethrough()
+                        .foregroundStyle(.tertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if let risk = detail.risk { RiskFlag(risk: risk, confirmed: $confirmed) }
+            }
+        }
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// Why a shortcut is flagged. A destructive one has its own tick, off until the person
+/// ticks it: unticked, Apply leaves it out.
+private struct RiskFlag: View {
+    let risk: ImportChange.Risk
+    @Binding var confirmed: Set<String>
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(verbatim: risk.why)
+                .font(.system(size: 11, weight: risk.tier == .destructive ? .medium : .regular))
+                .foregroundStyle(risk.tier == .destructive ? Theme.bad : Theme.warn)
+                .fixedSize(horizontal: false, vertical: true)
+            if risk.tier == .destructive {
+                Toggle(isOn: Binding(get: { confirmed.contains(risk.id) },
+                                     set: { on in if on { confirmed.insert(risk.id) } else { confirmed.remove(risk.id) } })) {
+                    Text("Include this shortcut", comment: "Import preview: the tick on a shortcut that deletes, quits or logs out; unticked, it's left out")
+                        .font(.system(size: 11))
+                }
+                .toggleStyle(.checkbox)
+                .controlSize(.small)
+            }
+        }
+        .padding(.top, 2)
     }
 }
 

@@ -51,7 +51,7 @@ struct SetupWithAISheet: View {
             if let incoming = flow.reviewing {
                 IncomingSetupSheet(model: model, incoming: incoming,
                                    onCancel: { model.cancelAIReview() },
-                                   onApply: { model.applyAIReview(parts: $0) })
+                                   onApply: { model.applyAIReview(parts: $0, confirmed: $1) })
                     .id(incoming.id)
                     .transition(.opacity)
             } else {
@@ -307,6 +307,7 @@ struct SetupWithAISheet: View {
                 }
                 Spacer(minLength: 0)
                 Button("Undo") { model.undoAISetup() }
+                    .keyboardShortcut("z", modifiers: .command)   // the way back without the mouse
                 Button("Paste Another Code") {
                     flow.applied = false
                     flow.appliedLeftOut = []

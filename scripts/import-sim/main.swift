@@ -76,20 +76,41 @@ func isSane(_ c: GlideConfig, _ what: String, primary: ButtonAction? = nil) {
 /// Every new action that opens an app or presses keys is on the preview list, marked.
 func cautionListed(_ old: GlideConfig, _ new: GlideConfig, _ what: String) {
     let changes = ImportReview.changes(from: old, to: new)
+    // A gesture's or Switcher's every place that opens an app or presses keys is a line of its
+    // own in its row, so nothing hides inside a summary; a destructive one is flagged there.
+    func placesShown(_ row: ImportChange?, _ a: ButtonAction, _ where_: String) {
+        guard let row, ImportReview.hasPlaces(a) else { return }
+        for p in ImportReview.places(a) where p.action.needsCaution {
+            let d = row.details.first { $0.id == p.key }
+            check(d?.after == p.text, "\(what): \(where_)'s \(p.label) (\(p.text)) isn't its own line in the review")
+        }
+    }
     for (b, a) in new.buttons where a.needsCaution && !(old.buttons[b] ?? .system).sameEffect(as: a, on: b) {
-        check(changes.contains { $0.caution && $0.title == ImportReview.buttonName(b) && $0.after == ImportReview.describe(a, on: b) },
-              "\(what): \(ImportReview.buttonName(b)) → \(ImportReview.describe(a)) isn't listed")
+        let row = changes.first { $0.caution && $0.title == ImportReview.buttonName(b) && $0.after == ImportReview.describe(a, on: b, directions: !ImportReview.hasPlaces(a)) }
+        check(row != nil, "\(what): \(ImportReview.buttonName(b)) → \(ImportReview.describe(a)) isn't listed")
+        placesShown(row, a, ImportReview.buttonName(b))
     }
     for c in new.chords where c.action.needsCaution && old.chords.first(where: { $0.buttons == c.buttons })?.action != c.action {
-        check(changes.contains { $0.caution && $0.title == ImportReview.comboName(c.buttons) }, "\(what): combo \(c.buttons) isn't listed")
+        let row = changes.first { $0.caution && $0.title == ImportReview.comboName(c.buttons) }
+        check(row != nil, "\(what): combo \(c.buttons) isn't listed")
+        placesShown(row, c.action, ImportReview.comboName(c.buttons))
     }
     for p in new.appProfiles {
         for (b, a) in p.buttons ?? [:] where a.needsCaution {
             let before = old.profile(for: p.bundleID)?.buttons?[b] ?? old.buttons[b] ?? .system
             if before.sameEffect(as: a, on: b) { continue }
-            check(changes.contains { $0.caution && $0.title == "\(p.name) · \(ImportReview.buttonName(b))" }, "\(what): \(p.name)'s \(b) isn't listed")
+            let row = changes.first { $0.caution && $0.title == "\(p.name) · \(ImportReview.buttonName(b))" }
+            check(row != nil, "\(what): \(p.name)'s \(b) isn't listed")
+            placesShown(row, a, "\(p.name) · \(ImportReview.buttonName(b))")
         }
     }
+    // Apply leaves every unticked red flag out: what's left has nothing destructive that's new.
+    let safe = ImportReview.leavingOut(from: old, in: new, confirmed: [])
+    check(ImportReview.destructiveRisks(from: old, to: safe).isEmpty,
+          "\(what): a destructive shortcut got through without its tick: \(ImportReview.destructiveRisks(from: old, to: safe).map(\.id))")
+    // Ticking every flag keeps exactly what came in.
+    let all = Set(ImportReview.destructiveRisks(from: old, to: new).map(\.id))
+    check(ImportReview.leavingOut(from: old, in: new, confirmed: all) == new, "\(what): ticking every flag didn't keep the import as it was")
 }
 
 func link(_ d: String) -> String { "glideball://import?d=" + d }
@@ -585,6 +606,103 @@ check(ImportJSON.depthIsWithin(Data("{\"a\":\"[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[
 check(ImportJSON.depthIsWithin(Data("{\"a\":\"\\\"[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[\"}".utf8)), "an escaped quote confused the depth check")
 
 // MARK: - A shortcut's name is never the file's
+
+section("Shortcuts that delete, quit or log out: the list, by key and exact modifiers")
+do {
+    func ks(_ code: UInt16, _ mods: CGEventFlags) -> KeyShortcut { KeyShortcut(keyCode: code, modifiers: mods.rawValue) }
+    let cmd: CGEventFlags = .maskCommand, opt: CGEventFlags = .maskAlternate, shift: CGEventFlags = .maskShift, ctrl: CGEventFlags = .maskControl
+    let table: [(KeyShortcut, ShortcutRisk?, String)] = [
+        (ks(51, [opt, shift, cmd]), .destructive, "⌥⇧⌘⌫"), (ks(51, [shift, cmd]), .destructive, "⇧⌘⌫"), (ks(51, [opt, cmd]), .destructive, "⌥⌘⌫"),
+        (ks(51, cmd), .destructive, "⌘⌫"), (ks(12, [opt, shift, cmd]), .destructive, "⌥⇧⌘Q"), (ks(12, [shift, cmd]), .destructive, "⇧⌘Q"),
+        (ks(12, cmd), .destructive, "⌘Q"), (ks(12, [cmd, .maskSecondaryFn]), .destructive, "fn⌘Q"), (ks(53, [opt, shift, cmd]), .destructive, "⌥⇧⌘⎋"),
+        (ks(53, [opt, cmd]), .mild, "⌥⌘⎋"), (ks(13, [opt, cmd]), .mild, "⌥⌘W"),
+        (ks(12, [ctrl, cmd]), nil, "⌃⌘Q (lock screen)"), (ks(13, cmd), nil, "⌘W (Close Tab)"), (ks(51, []), nil, "⌫"), (ks(51, [ctrl, cmd]), nil, "⌃⌘⌫"),
+        (ks(12, []), nil, "Q"), (ks(117, cmd), nil, "⌘⌦"), (ks(12, [ctrl, opt, shift, cmd]), nil, "⌃⌥⇧⌘Q"), (ks(53, cmd), nil, "⌘⎋"),
+    ]
+    for (s, want, name) in table {
+        check(RiskyShortcuts.kind(s).map(RiskyShortcuts.risk) == want, "\(name) is \(String(describing: RiskyShortcuts.kind(s))), not \(String(describing: want))")
+    }
+    for kind in RiskyShortcuts.Kind.allCases { check(!RiskyShortcuts.why(kind).isEmpty, "\(kind) has no reason") }
+    // Glideball's own named shortcuts are never red (Lock Screen, Close Tab and the rest).
+    for p in ButtonAction.presets {
+        if let s = p.action.pressedShortcut { check(RiskyShortcuts.kind(s).map(RiskyShortcuts.risk) != .destructive, "the preset \(p.title) is flagged red") }
+    }
+    // Letters go by the keyboard layout, as macOS matches menu shortcuts: on a French layout
+    // key code 12 types A (⌘A is Select All) and key code 0 types Q.
+    KeyNames.setLayout(plain: [12: "a", 0: "q"], withCommand: [12: "a", 0: "q"])
+    check(RiskyShortcuts.kind(ks(12, cmd)) == nil && RiskyShortcuts.kind(ks(0, cmd)) == .quitApp, "the list doesn't follow the keyboard layout")
+    KeyNames.setLayout(plain: [:], withCommand: [:])
+    check(RiskyShortcuts.kind(ks(12, cmd)) == .quitApp, "back on a US layout, ⌘Q isn't flagged")
+    // A held shortcut is flagged like a pressed one.
+    let held = ImportReview.risk(.holdShortcut(ks(53, [opt, shift, cmd])), id: "x")
+    check(held?.tier == .destructive, "a held ⌥⇧⌘⎋ isn't flagged")
+}
+
+section("The review: every place a share changes is shown, red flags where they sit, left out unless ticked")
+do {
+    let cmd = CGEventFlags.maskCommand.rawValue, opt = CGEventFlags.maskAlternate.rawValue, shift = CGEventFlags.maskShift.rawValue
+    let emptyTrash = KeyShortcut(keyCode: 51, modifiers: cmd | opt | shift), quit = KeyShortcut(keyCode: 12, modifiers: cmd)
+    var g = ButtonGesture()
+    g.up = GestureStep(.shortcut(.copy))
+    g.right = .moreRing([GestureStep(.shortcut(.paste)), GestureStep(.shortcut(emptyTrash))] + Array(repeating: nil, count: 6))
+    g.eight = true
+    g.tap = .back
+    var xcode = AppProfile(bundleID: "com.apple.dt.Xcode", name: "Xcode")
+    xcode.buttons = [3: .gesture(g)]
+    var new = sampleConfig()
+    new.buttons[1] = .holdShortcut(quit)
+    new.chords.append(Chord(buttons: [1, 2], action: .shortcut(KeyShortcut(keyCode: 51, modifiers: cmd | shift))))
+    new.appProfiles.append(xcode)
+    let old = sampleConfig()
+    let rows = ImportReview.changes(from: old, to: new)
+    let row = rows.first { $0.title == "Xcode · Top right" }
+    let diag = row?.details.first { $0.id == "right.more.upRight" }
+    check(diag?.risk?.tier == .destructive && diag?.risk?.why == RiskyShortcuts.why(.emptyTrashNow) && diag?.label.contains("More") == true
+          && diag?.after == "⌥⇧⌘⌫", "the Empty Trash on a More's diagonal in an app setup isn't shown and flagged: \(String(describing: diag))")
+    check(row?.details.first { $0.id == "right.more.up" }?.risk == nil && row?.details.first { $0.id == "up" }?.risk == nil
+          && row?.details.first { $0.id == "tap" }?.after == ImportReview.describe(.back), "a gesture's other places: \(row?.details.map(\.id) ?? [])")
+    check(row?.risk == nil && row?.after?.contains("⌥⇧⌘⌫") == false, "the flag isn't on the exact place, or the place hides in the row's summary")
+    check(rows.first { $0.title == "Bottom right" }?.risk?.tier == .destructive, "a held ⌘Q on a button isn't flagged")
+    check(rows.first { $0.title == "Bottom right + Top left" }?.risk?.why == RiskyShortcuts.why(.emptyTrash), "a ⇧⌘⌫ combo isn't flagged")
+    check(rows.first { $0.title == "Xcode · Top right" }?.caution == true, "the app's gesture isn't marked as pressing keys")
+    // Unticked: each goes back (a button to what it did, a new combo away, a place in a More empty).
+    let none = ImportReview.leavingOut(from: old, in: new, confirmed: [])
+    check(none.buttons[1] == old.buttons[1] && !none.chords.contains { $0.buttons == [1, 2] }, "an unticked button or combo was applied")
+    if case .gesture(let kept)? = none.profile(for: "com.apple.dt.Xcode")?.buttons?[3] {
+        check(kept.right?.more?[1] == nil && kept.right?.more?[0]?.action == .shortcut(.paste) && kept.up?.action == .shortcut(.copy) && kept.tap == .back,
+              "leaving the diagonal out took more with it: \(kept)")
+    } else { check(false, "leaving one place out dropped the whole gesture") }
+    // Ticked: just that one comes in.
+    let one = ImportReview.leavingOut(from: old, in: new, confirmed: [diag?.risk?.id ?? ""])
+    if case .gesture(let kept)? = one.profile(for: "com.apple.dt.Xcode")?.buttons?[3] {
+        check(kept.right?.more?[1]?.action == .shortcut(emptyTrash) && one.buttons[1] == old.buttons[1], "ticking one flag didn't keep just that one")
+    } else { check(false, "ticked: the gesture went") }
+    // A More with only the flagged place in it goes empty as a whole direction.
+    var lonely = new
+    var g2 = g
+    g2.right = .moreRing([nil, GestureStep(.shortcut(emptyTrash))] + Array(repeating: nil, count: 6))
+    lonely.appProfiles[lonely.appProfiles.count - 1].buttons = [3: .gesture(g2)]
+    if case .gesture(let kept)? = ImportReview.leavingOut(from: old, in: lonely, confirmed: []).profile(for: "com.apple.dt.Xcode")?.buttons?[3] {
+        check(kept.right == nil && kept.up != nil, "a More left with nothing in it")
+    }
+    // A shortcut you already have isn't flagged again (it's yours), and a place that doesn't change isn't either.
+    var mine = sampleConfig()
+    mine.buttons[1] = .shortcut(quit)
+    var more = mine
+    more.trackingSpeed = 7
+    check(ImportReview.destructiveRisks(from: mine, to: more).isEmpty, "a ⌘Q the person already has was flagged")
+    // Big changes in pointer speed get an amber note; Precision at or above the pointer's speed too.
+    var fast = old
+    fast.trackingSpeed = old.trackingSpeed * 2
+    fast.precisionSpeed = 3
+    fast.trackingSpeed = 2.5
+    let notes = ImportReview.changes(from: old, to: fast)
+    check(notes.first { $0.id.hasSuffix("/speed") }?.note != nil, "a pointer speed far below yours has no note")
+    check(notes.first { $0.id.hasSuffix("/precision") }?.note != nil, "Precision faster than the pointer has no note")
+    var near = old
+    near.trackingSpeed = old.trackingSpeed * 1.5
+    check(ImportReview.changes(from: old, to: near).first { $0.id.hasSuffix("/speed") }?.note == nil, "a small change in speed has a note")
+}
 
 section("Shortcut names: what's shown is what the key code presses, on every way in")
 // Key code 12 is Q. The file says "C": a button that would quit the app in front, dressed up as Copy.

@@ -262,10 +262,10 @@ extension AppModel {
     }
 
     /// Apply in the preview: the same as any shared setup (a backup first, Undo after).
-    func applyAIReview(parts: Set<SharePart>?) {
+    func applyAIReview(parts: Set<SharePart>?, confirmed: Set<String> = []) {
         guard let incoming = aiSetup.reviewing else { return }
         aiSetup.reviewing = nil
-        if apply(incoming, parts: parts) {
+        if apply(incoming, parts: parts, confirmed: confirmed) {
             aiSetup.applied = true
             aiSetup.appliedLeftOut = incoming.leftOut
         }

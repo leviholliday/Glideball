@@ -2834,3 +2834,26 @@
 "Your setup makes this a long prompt. If the chatbot cuts it short, leave app names out and copy it again." = "Dein Setup macht den Prompt lang. Wenn der Chatbot ihn abschneidet, lass die App-Namen weg und kopier ihn nochmal.";
 "ai, chatbot, chatgpt, claude, gemini, assistant, help me, set up, setup code, paste code, voice, dictation, ideas, suggestions" = "ki, ai, chatbot, chatgpt, claude, gemini, assistent, hilf mir, einrichten, setup-code, code einsetzen, sprache, diktat, ideen, vorschläge";
 "Your trackball’s model, Glideball’s version and the language Glideball is in" = "Das Modell deines Trackballs, Glideballs Version und die Sprache, in der Glideball ist";
+
+/* Import review: shortcuts that delete, quit or log out; nested places; Undo Last Import */
+"A big jump from %@: much faster than you have it. Try it before you keep it." = "Ein großer Sprung von %@: viel schneller, als du es eingestellt hast. Probier es aus, bevor du es behältst.";
+"A big jump from %@: much slower than you have it. Try it before you keep it." = "Ein großer Sprung von %@: viel langsamer, als du es eingestellt hast. Probier es aus, bevor du es behältst.";
+"Closes every window of the app in front." = "Schließt alle Fenster der App im Vordergrund.";
+"Deletes the selected files for good, skipping the Trash (Finder asks first)." = "Löscht die ausgewählten Dateien endgültig, ohne Papierkorb (der Finder fragt vorher).";
+"Empties the Trash (Finder asks first)." = "Leert den Papierkorb (der Finder fragt vorher).";
+"Empties the Trash without asking." = "Leert den Papierkorb ohne Nachfrage.";
+"Empty" = "Leer";
+"Held down, force quits the app in front. Unsaved work is lost." = "Gedrückt gehalten, beendet es die App im Vordergrund sofort. Nicht gesicherte Arbeit geht verloren.";
+"Include this shortcut" = "Diesen Kurzbefehl übernehmen";
+"Logs you out (macOS asks first)." = "Meldet dich ab (macOS fragt vorher).";
+"Logs you out without asking. Unsaved work can be lost." = "Meldet dich ohne Nachfrage ab. Nicht gesicherte Arbeit kann verloren gehen.";
+"Moves the selected files to the Trash, and deletes things in many apps." = "Legt die ausgewählten Dateien in den Papierkorb und löscht in vielen Apps etwas.";
+"Opens the Force Quit window." = "Öffnet das Fenster „Sofort beenden“.";
+"Presses a shortcut that deletes, quits or logs out" = "Drückt einen Kurzbefehl, der löscht, beendet oder abmeldet";
+"Quits the app in front, often without asking." = "Beendet die App im Vordergrund, oft ohne Nachfrage.";
+"Ring ↺" = "Ring ↺";
+"Ring ↻" = "Ring ↻";
+"Shortcuts flagged in red are left out unless you tick them." = "Rot markierte Kurzbefehle werden weggelassen, außer du hakst sie an.";
+"That’s no slower than your pointer speed, so Precision won’t slow the pointer down." = "Das ist nicht langsamer als dein Zeigertempo, also bremst Präzision den Zeiger nicht.";
+"The bottom-left button always clicks. To undo, press ⌘Z in Glideball or choose Undo Last Import in the File menu or the menu-bar icon’s menu." = "Die Taste unten links klickt immer. Zum Widerrufen drück ⌘Z in Glideball oder wähl „Letzten Import widerrufen“ im Menü „Ablage“ oder im Menü des Symbols in der Menüleiste.";
+"Undo Last Import" = "Letzten Import widerrufen";

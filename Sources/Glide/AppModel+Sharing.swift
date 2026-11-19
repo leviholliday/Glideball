@@ -344,18 +344,21 @@ extension AppModel {
     }
 
     /// Apply: a backup checkpoint, the change (only `parts`, or all of it), and a toast with Undo.
-    func applyIncoming(parts chosen: Set<SharePart>? = nil) {
+    /// `confirmed`: the red-flagged shortcuts the person ticked (`ImportChange.Risk.id`).
+    func applyIncoming(parts chosen: Set<SharePart>? = nil, confirmed: Set<String> = []) {
         guard let incoming = pendingIncoming else { return }
         pendingIncoming = nil
         lastIncomingClosed = ProcessInfo.processInfo.systemUptime
-        apply(incoming, parts: chosen)
+        apply(incoming, parts: chosen, confirmed: confirmed)
     }
 
     /// The same for anything that was previewed (the sheet's, or the one inside Set up with
-    /// AI). Returns whether something changed.
+    /// AI). Returns whether something changed. A destructive shortcut (`RiskyShortcuts`)
+    /// whose tick isn't in `confirmed` is left out: its button or combo keeps what it does
+    /// now, and its place in a gesture stays empty.
     @discardableResult
-    func apply(_ incoming: IncomingSetup, parts chosen: Set<SharePart>? = nil) -> Bool {
-        var updated = incoming.applied(to: config, parts: chosen)
+    func apply(_ incoming: IncomingSetup, parts chosen: Set<SharePart>? = nil, confirmed: Set<String> = []) -> Bool {
+        var updated = ImportReview.leavingOut(from: config, in: incoming.applied(to: config, parts: chosen), confirmed: confirmed)
         updated.enabled = config.enabled
         updated.buttons[0] = config.buttons[0]
         let look = incoming.look(parts: chosen)
@@ -372,6 +375,7 @@ extension AppModel {
         lookBeforeImport = lookChanges ? BallThemeStore.shared.look : nil
         soundsBeforeImport = soundsChange ? before : nil
         config = updated
+        importUndo = ImportUndo(at: ProcessInfo.processInfo.systemUptime, applied: config)
         if case .kensingtonWorks = incoming.content { FeatureUse.mark(.kensingtonWorks) }
         if lookChanges, let look { BallThemeStore.shared.use(look) }
         if soundsChange, let sounds { sounds.use() }
