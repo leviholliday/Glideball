@@ -272,6 +272,16 @@ struct SharedSetup {
             kept.append(part)
         }
         guard !kept.isEmpty else { return nil }
+        // A Switcher's hidden apps stay on this Mac: they say which apps you have, and they're
+        // about your apps, not the person you share with. Backups, sync and settings files keep them.
+        map = map.mapValues(\.withoutHiddenApps)
+        s.chords = s.chords?.map { var c = $0; c.action = c.action.withoutHiddenApps; return c }
+        s.apps = s.apps?.map { p in
+            var p = p
+            p.buttons = p.buttons?.mapValues(\.withoutHiddenApps)
+            p.chords = p.chords?.map { var c = $0; c.action = c.action.withoutHiddenApps; return c }
+            return p
+        }
         if !map.isEmpty { s.buttons = map }
         s.parts = kept
         s.version = s.requiredVersion

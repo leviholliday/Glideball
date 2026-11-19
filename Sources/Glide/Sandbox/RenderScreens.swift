@@ -574,6 +574,24 @@ extension RenderUI {
         add("switcher-overlay-many-busy", "Switcher", "24 apps over a bright, busy wallpaper (contrast)") { dark, scale in
             switcherOverlay(apps: 24, selected: 5, busy: true, dark: dark, scale: scale)
         }
+        add("switcher-overlay-end", "Switcher", "Six apps, rolled to the last one (the ball stops there; it never wraps round)") { dark, scale in
+            switcherOverlay(apps: 6, selected: 5, busy: false, dark: dark, scale: scale)
+        }
+        add("switcher-overlay-hidden", "Switcher", "Top left pressed with Notebook lit: it's hidden, the row closed up, and the hint offers Undo") { dark, scale in
+            switcherOverlay(apps: 6, selected: 2, busy: false, hidden: [2], undoable: true, dark: dark, scale: scale)
+        }
+        add("switcher-overlay-hidden-many", "Switcher", "24 apps with two hidden this hold: the rows closed up, the light moved on") { dark, scale in
+            switcherOverlay(apps: 24, selected: 9, busy: false, hidden: [3, 10], dark: dark, scale: scale)
+        }
+        add("switcher-overlay-no-hint", "Switcher", "A Switcher on a combo of every other button: nothing to hide apps with, so no hint") { dark, scale in
+            switcherOverlay(apps: 5, selected: 1, busy: false, hint: false, dark: dark, scale: scale)
+        }
+        add("buttons-switcher-hidden", "Switcher", "Top right is a Switcher that hides two apps: the list under its editor, each with Show",
+            prepare: {
+                model.config.buttons[3] = .switcher(AppSwitcher(hidden: ["com.apple.Music", "com.apple.TV"]))
+            }, cleanup: restoreButtons) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale)
+        }
 
         func displays(_ n: Int, enabled: Bool = true) {
             let all = [DisplayInfo(key: "610-41271-1", name: "Built-in Retina Display", isMain: true,

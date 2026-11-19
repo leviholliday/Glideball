@@ -2722,3 +2722,12 @@
 
 /* Buttons page, a folded Switcher editor's summary */
 "Shows your open apps" = "显示打开的应用";
+
+/* The Switcher: hiding apps from it (Nov 18) */
+"Hidden" = "已隐藏";
+"Hide app" = "隐藏应用";
+"Hidden from the Switcher" = "在应用切换器中隐藏";
+"None. To leave an app out, press %@ while it’s lit in the Switcher." = "无。要排除某个应用，请在应用切换器中选中它时按%@。";
+"Show %@ in the Switcher again" = "在应用切换器中重新显示“%@”";
+"Apps a Switcher leaves out. Show one again here, or hide one right from the Switcher with another button." = "应用切换器不显示的应用。可以在这里重新显示，也可以在切换器中用另一个按钮直接隐藏。";
+"hide app, hidden apps, exclude, leave out, remove app, show again, switcher" = "隐藏应用, 已隐藏的应用, 排除, 移除应用, 重新显示, 应用切换器, switcher";

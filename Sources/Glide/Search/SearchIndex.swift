@@ -77,6 +77,7 @@ enum SearchIndex {
         case Findable.installID.id, Findable.deleteMyData.id: return ShareData.shared.installID != nil
         case Findable.kensingtonWorks.id: return KensingtonWorksSource.found
         case Findable.gestureDistance.id, Findable.steadyHands.id: return model.config.anyAction(\.holdsTheBall)
+        case Findable.switcherHiddenApps.id: return model.config.anyAction(\.isSwitcher)
         default: return true
         }
     }

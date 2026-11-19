@@ -2722,3 +2722,12 @@
 
 /* Buttons page, a folded Switcher editor's summary */
 "Shows your open apps" = "Mostra le app aperte";
+
+/* The Switcher: hiding apps from it (Nov 18) */
+"Hidden" = "Nascosta";
+"Hide app" = "Nascondi app";
+"Hidden from the Switcher" = "Nascoste nel selettore app";
+"None. To leave an app out, press %@ while it’s lit in the Switcher." = "Nessuna. Per escludere un’app, premi %@ mentre è evidenziata nel selettore app.";
+"Show %@ in the Switcher again" = "Mostra di nuovo %@ nel selettore app";
+"Apps a Switcher leaves out. Show one again here, or hide one right from the Switcher with another button." = "Le app che un selettore app lascia fuori. Mostrane di nuovo una qui, oppure nascondine una direttamente dal selettore con un altro pulsante.";
+"hide app, hidden apps, exclude, leave out, remove app, show again, switcher" = "nascondi app, app nascoste, escludi, lascia fuori, rimuovi app, mostra di nuovo, selettore app, switcher";

@@ -380,15 +380,20 @@ enum RenderUI {
     /// The Switcher's panel as it shows on a display: the real `SwitcherOverlayView` on a stand-in
     /// wallpaper (`busy`: a bright, many-colored one, to judge contrast), with the stand-in pointer
     /// where the hold left it.
+    /// `hidden`: places in the list hidden during this hold (the row closed up), `undoable`: the
+    /// hint offering to bring the last one back; `hint`: the hide hint under the apps.
     static func switcherOverlay(apps: Int, selected: Int, firstRow: Int = 0, maxRows: Int = 3, busy: Bool,
+                                hidden: [Int] = [], undoable: Bool = false, hint: Bool = true,
                                 dark: Bool, scale: CGFloat) -> NSBitmapImageRep? {
         let entries = fakeSwitcherEntries(apps)
-        let grid = SwitcherGrid.fitting(count: apps, maxColumns: SwitcherLayout.maxColumns, maxRows: maxRows)
+        let full = SwitcherGrid.fitting(count: apps, maxColumns: SwitcherLayout.maxColumns, maxRows: maxRows)
+        let grid = full.keeping(apps - hidden.count)
         let state = SwitcherOverlayState()
         state.entries = entries
-        state.model = SwitcherOverlayModel(session: 1, grid: grid, selected: selected, firstRow: firstRow)
+        state.model = SwitcherOverlayModel(session: 1, grid: grid, selected: selected, firstRow: firstRow, hidden: hidden, undoable: undoable)
         state.shown = true
-        let canvas = SwitcherLayout.canvas(grid)
+        state.hideButton = hint ? SwitcherOverlayPanel.hideButton(besides: [3]) : nil
+        let canvas = SwitcherLayout.canvas(full, footer: hint)
         let size = CGSize(width: max(canvas.width + 120, 720), height: canvas.height + 120)
         let wallpaper: [Color] = busy
             ? [Color(red: 1.0, green: 0.85, blue: 0.3), Color(red: 0.95, green: 0.35, blue: 0.45), Color(red: 0.25, green: 0.65, blue: 0.95), .white]

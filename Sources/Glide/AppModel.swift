@@ -427,6 +427,13 @@ final class AppModel {
         engine.update(resolved)
     }
 
+    /// The Switcher's panel hid an app (or brought it back, `hidden` false): saved in the Switcher
+    /// that was held, the one in effect now (the app setup's own, if it has one on those buttons).
+    func setSwitcherApp(_ bundleID: String, hidden: Bool, buttons: [Int]) {
+        guard let changed = config.settingSwitcherApp(bundleID, hidden: hidden, buttons: buttons, appSetup: profileTarget) else { return }
+        config = changed
+    }
+
     /// Adds a setup for an app (or selects it if it already has one).
     func addProfile(bundleID: String, name: String) {
         if !config.appProfiles.contains(where: { $0.bundleID == bundleID }) {

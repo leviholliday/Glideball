@@ -190,8 +190,20 @@ final class Rig {
         route(config.buttons[b] ?? .system, [b])
     }
 
+    /// What other buttons did to the Switcher's apps (Engine.routeButton: hide or bring back).
+    var hides: [SwitcherHold.HideResult] = []
+
     /// One button down (`Engine.handleButton`).
     func press(_ b: Int) {
+        // Another trackball button while the Switcher's panel is up: the Switcher's (never the
+        // primary button, never the hold's own), and nothing else happens.
+        if b != 0, machine.switcherHeld, switcherPanel != nil, pending.isEmpty, let r = machine.switcherHide(button: b) {
+            hides.append(r)
+            overrides[b] = "swallow"
+            check(machine.hold?.switcher?.dismissed == false, "hiding an app never dismisses the Switcher")
+            invariants()
+            return
+        }
         if machine.isHeld { machine.otherPress(b) }
         let comboButtons = Set(config.chords.flatMap(\.buttons))
         guard comboButtons.contains(b) else {
@@ -960,10 +972,14 @@ do {
     let fl = Rig([3: sw])
     fl.press(3); fl.roll(dx: 12, dy: 0, steps: 5, dt: 0.004); fl.release(3)
     check(fl.switches.map(\.index) == [2] && fl.taps.isEmpty, "a flick right and release switches one past the previous app (\(fl.switches.map(\.index)))")
-    // Left wraps from the front app to the last one.
+    // The ball stops at the ends (beta 33): left twice from the previous app stays on the first,
+    // never wrapping round to the last.
     let wl = Rig([3: sw])
     wl.press(3); wl.roll(dx: -4, dy: 0, steps: 24); wl.release(3)
-    check(wl.switches.map(\.index) == [5], "left twice from the previous app wraps to the last (\(wl.switches.map(\.index)))")
+    check(wl.switches.map(\.index) == [0], "left twice from the previous app stops at the first (\(wl.switches.map(\.index)))")
+    let wr = Rig([3: sw])
+    wr.press(3); wr.roll(dx: 4, dy: 0, steps: 120); wr.release(3)
+    check(wr.switches.map(\.index) == [5], "rolling far right stops on the last app (\(wr.switches.map(\.index)))")
     // The ring: one app per report, clockwise forward; it never runs anything while held.
     let rg = Rig([3: sw])
     rg.press(3); rg.advance(0.05)
@@ -979,8 +995,12 @@ do {
     e.release(3)
     check(e.switches.isEmpty && e.taps.isEmpty, "Esc: nothing switches, no tap")
     let d = Rig([3: sw])
-    d.press(3); d.advance(0.3); d.press(1); d.release(1); d.release(3)
-    check(d.switches.isEmpty && d.taps.isEmpty, "another trackball button dismisses it")
+    d.press(3); d.advance(0.3); d.press(0); d.release(0); d.release(3)
+    check(d.switches.isEmpty && d.taps.isEmpty && d.primaryPasses == 1, "the primary button dismisses it, and is still a plain click")
+    // Another button before the panel shows: dismissed, as before (nothing to hide yet).
+    let early = Rig([3: sw])
+    early.press(3); early.advance(0.05); early.press(1); early.release(1); early.release(3)
+    check(early.switches.isEmpty && early.taps.isEmpty && early.hides.isEmpty, "another button before the panel shows dismisses it")
     // Every way out without its release: nothing switches.
     for reason in [GestureCancel.pause, .quit, .unplug, .tapDisabled, .sleep, .lostRelease, .timeout, .configChanged] {
         let x = Rig([3: sw])
@@ -1095,6 +1115,221 @@ do {
         for b in 0..<4 { z.release(b) }
         check(!z.frozen, "random Switcher holds: pointer free at the end")
     }
+}
+
+section("the Switcher holds still (beta 33: \"sometimes it jumps around\")")
+do {
+    let sw = ButtonAction.switcher(.standard)
+    // The ball is a puck: it stops at the edges; the ring is a dial and goes round.
+    let g = SwitcherGrid(count: 10, columns: 4, visibleRows: 3)
+    check(g.stepped(3, .right) == 3 && g.stepped(4, .left) == 4 && g.stepped(2, .right) == 3, "left and right stay in their row")
+    check(g.stepped(1, .up) == 1 && g.stepped(9, .down) == 9 && g.stepped(7, .down) == 9 && g.stepped(5, .down) == 9, "up and down stop at the top and bottom (a short last row: its last app)")
+    for i in 0..<10 { for m in [SwitcherGrid.Move.left, .right, .up, .down] { check((0..<10).contains(g.stepped(i, m)), "every ball step stays in the grid") } }
+    // Most of a step, a rest, then the jiggle of letting go: the light stays put.
+    let j = Rig([3: sw])
+    j.press(3); j.advance(0.3); j.roll(dx: 4, dy: 0, steps: 11)   // 44 of 48 counts
+    j.advance(0.3); j.roll(dx: 3, dy: 0, steps: 2)                // the hand settling
+    check(j.machine.hold?.switcher?.index == 1, "a rest forgets most of a step: the jiggle after it moves nothing (\(String(describing: j.machine.hold?.switcher?.index)))")
+    j.release(3)
+    check(j.switches.map(\.index) == [1], "and the release switches to the app that was lit")
+    // Without the rest, the same roll carries on into a step (rolling is rolling).
+    let c = Rig([3: sw])
+    c.press(3); c.advance(0.3); c.roll(dx: 4, dy: 0, steps: 11); c.roll(dx: 3, dy: 0, steps: 2)
+    check(c.machine.hold?.switcher?.index == 2, "a roll that keeps going still steps")
+    c.release(3)
+    // A hard flick moves the light a step or two, never across the panel.
+    let f = Rig([3: sw])
+    f.switcherGrid = SwitcherGrid.fitting(count: 8, maxColumns: 8, maxRows: 3)
+    f.press(3); f.advance(0.3); f.roll(dx: 120, dy: 0, steps: 6, dt: 0.008)   // 720 counts in 48 ms
+    let flung = (f.machine.hold?.switcher?.index ?? 0) - 1
+    check(flung >= 1 && flung <= 2, "a flick moves one or two apps (\(flung))")
+    f.release(3)
+    // Never two steps closer than 50 ms, however fast the ball goes.
+    let r = Rig([3: sw])
+    r.switcherGrid = SwitcherGrid.fitting(count: 24, maxColumns: 24, maxRows: 1)
+    r.press(3); r.advance(0.3)
+    var last = r.machine.hold?.switcher?.index ?? 0, lastAt = -1.0
+    for _ in 0..<60 {
+        r.advance(0.008); r.ball(40, 0)
+        let now = r.machine.hold?.switcher?.index ?? 0
+        if now != last { check(lastAt < 0 || r.now - lastAt >= SwitcherHold.minStepInterval - 1e-9, "steps never closer than 50 ms"); last = now; lastAt = r.now }
+    }
+    r.release(3)
+    // On a grid of rows, a roll along a row that drifts a little never changes rows.
+    let d = Rig([3: sw])
+    d.switcherGrid = SwitcherGrid(count: 12, columns: 4, visibleRows: 3)
+    d.press(3); d.advance(0.3); d.roll(dx: 4, dy: 2.5, steps: 36)   // mostly right, some down
+    check((d.machine.hold?.switcher?.index ?? 0) / 4 == 0, "a drifting roll along the row stays in it (\(String(describing: d.machine.hold?.switcher?.index)))")
+    d.release(3)
+    // A diagonal is no clear way: nothing moves until one way leads.
+    let dg = Rig([3: sw])
+    dg.switcherGrid = SwitcherGrid(count: 12, columns: 4, visibleRows: 3)
+    dg.press(3); dg.advance(0.3); dg.roll(dx: 4, dy: 4, steps: 20)
+    check(dg.machine.hold?.switcher?.index == 1, "a diagonal moves nothing")
+    dg.release(3)
+    // A single row ignores up and down altogether.
+    let one = Rig([3: sw])
+    one.press(3); one.advance(0.3); one.roll(dx: 0, dy: 6, steps: 40); one.roll(dx: 4, dy: 3, steps: 12)
+    check(one.machine.hold?.switcher?.index == 2, "one row: up and down never block or move (\(String(describing: one.machine.hold?.switcher?.index)))")
+    one.release(3)
+    // The app in front hidden from this Switcher: the first app in the list is lit, not the second.
+    let nf = Rig([3: sw])
+    nf.switcherGrid = SwitcherGrid.fitting(count: 5, maxColumns: 8, maxRows: 3, frontFirst: false)
+    nf.press(3); nf.advance(0.3); nf.release(3)
+    check(nf.switches.map(\.index) == [0], "without the app in front, a hold and release goes to the first app")
+}
+
+section("hiding apps from the Switcher")
+do {
+    let sw = ButtonAction.switcher(.standard)
+    // Top left with the previous app (place 1) lit: hidden, the rest close up, the light stays.
+    let h = Rig([3: sw])
+    h.press(3); h.advance(0.3); h.press(2)
+    check(h.hides == [.hid(1)], "another button hides the lit app (\(h.hides))")
+    check(h.overrides[2] == "swallow", "its press and release are the Switcher's (nothing reaches apps)")
+    check(h.switcherPanel?.grid.count == 5 && h.switcherPanel?.hidden == [1] && h.switcherPanel?.undoable == true, "the row closes up and Undo is offered")
+    check(h.switcherPanel?.selected == 1, "the light stays where it was (on the next app)")
+    h.release(2)
+    check(h.machine.isHeld && h.switches.isEmpty, "letting go of it changes nothing")
+    h.release(3)
+    check(h.switches.map(\.index) == [2], "the release switches to the app that took its place (place 2 in the list) (\(h.switches.map(\.index)))")
+    check(!h.frozen && h.taps.isEmpty, "pointer free, no tap")
+    // Pressed again before the light moves: it comes back, lit.
+    let u = Rig([3: sw])
+    u.press(3); u.advance(0.3); u.press(2); u.release(2); u.press(1); u.release(1)
+    check(u.hides == [.hid(1), .restored(1)], "pressing again brings it back (any free button) (\(u.hides))")
+    check(u.switcherPanel?.grid.count == 6 && u.switcherPanel?.hidden == [] && u.switcherPanel?.undoable == false, "the row opens again")
+    u.release(3)
+    check(u.switches.map(\.index) == [1], "and the release switches to it")
+    // After the light moves, a press hides the newly lit app instead.
+    let m = Rig([3: sw])
+    m.press(3); m.advance(0.3); m.press(2); m.release(2); m.roll(dx: 4, dy: 0, steps: 12); m.press(2); m.release(2)
+    check(m.hides == [.hid(1), .hid(3)], "after a move, the next press hides the lit app (\(m.hides))")
+    check(m.switcherPanel?.grid.count == 4, "two hidden")
+    m.release(3)
+    check(m.switches.map(\.index) == [4], "places stay the list's own: the release names the right app (\(m.switches.map(\.index)))")
+    // Hiding down to one app: the last one can't go.
+    let l = Rig([3: sw])
+    l.switcherGrid = SwitcherGrid.fitting(count: 1, maxColumns: 8, maxRows: 3)
+    l.press(3); l.advance(0.3); l.press(2); l.release(2)
+    check(l.hides == [.nothing], "the last app showing can't be hidden (\(l.hides))")
+    l.release(3)
+    check(l.switches.map(\.index) == [0], "it switches to it")
+    let two = Rig([3: sw])
+    two.switcherGrid = SwitcherGrid.fitting(count: 2, maxColumns: 8, maxRows: 3)
+    two.press(3); two.advance(0.3); two.press(2); two.release(2); two.roll(dx: 4, dy: 0, steps: 14); two.press(1); two.release(1)
+    check(two.hides == [.hid(1), .restored(1)], "one app left, it can't move, so the next press is still Undo (\(two.hides))")
+    two.release(3)
+    // The primary button never hides: it dismisses, and its click goes through.
+    let p = Rig([3: sw])
+    p.press(3); p.advance(0.3); p.press(0); p.release(0); p.release(3)
+    check(p.hides.isEmpty && p.switches.isEmpty && p.primaryPasses == 1 && p.primaryReleases == 1, "the primary button never hides an app, and stays a plain click")
+    // On a combo: its own buttons never hide (a repeat press of one is the hold's), a free one does.
+    let cb = Rig([:], chords: [Chord(buttons: [1, 3], action: sw)])
+    cb.combo([1, 3]); cb.advance(0.3); cb.press(2); cb.release(2)
+    check(cb.hides == [.hid(1)], "a combo Switcher: the free button hides")
+    cb.release(3); cb.release(1)
+    check(cb.switches.map(\.index) == [2] && !cb.frozen, "and the first of its buttons up switches")
+    // Esc after a hide: nothing switches; the hide was already saved (it's the engine's job to say so).
+    let e = Rig([3: sw])
+    e.press(3); e.advance(0.3); e.press(2); e.release(2); e.machine.dismissWheel(); e.press(1); e.release(1); e.release(3)
+    check(e.switches.isEmpty && e.hides == [.hid(1)], "dismissed: no switch, and no more hides (\(e.hides))")
+    // Every way out mid-hide: pointer free, nothing switches.
+    for reason in [GestureCancel.pause, .quit, .unplug, .tapDisabled, .sleep, .timeout] {
+        let x = Rig([3: sw])
+        x.press(3); x.advance(0.3); x.press(2); x.cancel(reason); x.release(2); x.release(3)
+        check(x.switches.isEmpty && !x.frozen, "\(reason.rawValue) with the hide button down: nothing switches, pointer free")
+    }
+    // The grid after hides: one row closes up, several keep their width.
+    let row = SwitcherGrid.fitting(count: 6, maxColumns: 8, maxRows: 3)
+    check(row.keeping(5) == SwitcherGrid(count: 5, columns: 5, visibleRows: 1), "a single row loses a column")
+    let rows = SwitcherGrid(count: 10, columns: 5, visibleRows: 2)
+    check(rows.keeping(9).columns == 5 && rows.keeping(9).count == 9, "several rows keep their width")
+    // Random hides and rolls: the light always on an app showing, the release on a place in the list never hidden.
+    var seed: UInt64 = 0x41DE
+    func rnd() -> Double { seed = seed &* 6364136223846793005 &+ 1442695040888963407; return Double(seed >> 11) / Double(1 << 53) }
+    for _ in 0..<2000 {
+        let z = Rig([3: sw])
+        z.switcherGrid = SwitcherGrid.fitting(count: 1 + Int(rnd() * 20), maxColumns: 2 + Int(rnd() * 7), maxRows: 1 + Int(rnd() * 3))
+        z.press(3); z.advance(0.25)
+        for _ in 0..<40 {
+            switch Int(rnd() * 5) {
+            case 0: let b = [1, 2][Int(rnd() * 2)]; z.press(b); z.release(b)
+            case 1, 2: z.roll(dx: rnd() * 16 - 8, dy: rnd() * 16 - 8, steps: 1 + Int(rnd() * 8))
+            case 3: z.ring(rnd() < 0.5 ? 1 : -1)
+            default: z.advance(rnd() * 0.2)
+            }
+            if let s = z.machine.hold?.switcher, let g = s.grid {
+                check(g.count == (z.switcherGrid?.count ?? 0) - s.hidden.count && g.count >= 1, "what's showing is the list less what's hidden")
+                check(Set(s.hidden).count == s.hidden.count, "nothing hidden twice")
+            }
+        }
+        let hiddenNow = z.machine.hold?.switcher?.hidden ?? []
+        z.release(3)
+        if let sw = z.switches.last { check(!hiddenNow.contains(sw.index), "never switches to an app hidden this hold") }
+        check(!z.frozen, "random hides: pointer free at the end")
+    }
+}
+
+section("a Switcher's hidden apps in settings")
+do {
+    var c = GlideConfig()
+    c.buttons[3] = .switcher(AppSwitcher(hidden: ["com.apple.Music", "com.example.Chat"]))
+    let data = try! JSONEncoder().encode(GlideSettingsFile(config: c, exportedFrom: "Test"))
+    let back = try! JSONDecoder().decode(GlideSettingsFile.self, from: data)
+    check(back.config == c, "hidden apps round-trip in a settings file")
+    var plain = GlideConfig()
+    plain.buttons[3] = .switcher(.standard)
+    let plainData = try! JSONEncoder().encode(plain)
+    check(!String(decoding: plainData, as: UTF8.self).contains("hidden"), "a Switcher hiding nothing writes no hidden field (older files unchanged)")
+    // An older build's file (no field) loads with none hidden; a file with junk is cleaned.
+    let old = try? JSONDecoder().decode(GlideConfig.self, from: Data(#"{"buttons":{"3":{"switcher":{"_0":{"tap":{"system":{}}}}}}}"#.utf8))
+    check(old?.buttons[3] == .switcher(.standard), "an older Switcher loads with nothing hidden")
+    let junk = try? JSONDecoder().decode(GlideConfig.self, from: Data(#"{"buttons":{"3":{"switcher":{"_0":{"hidden":["com.ok.App","../etc","com.ok.App","",5,"a b"]}}}}}"#.utf8))
+    check(junk?.buttons[3] == nil || junk?.buttons[3] == .switcher(AppSwitcher(hidden: ["com.ok.App"])) || junk?.buttons[3] == .switcher(.standard),
+          "junk in the hidden list never loads as an app (\(String(describing: junk?.buttons[3])))")
+    let many = AppSwitcher(hidden: (0..<200).map { "com.example.app\($0)" })
+    check(many.hidden.count == AppSwitcher.maxHidden, "at most \(AppSwitcher.maxHidden) hidden apps")
+    check(ButtonAction.switcher(AppSwitcher(hidden: ["com.ok.App", "bad id"])).clamped() == .switcher(AppSwitcher(hidden: ["com.ok.App"])), "clamped keeps only real bundle IDs")
+    check(ButtonAction.switcher(AppSwitcher(hidden: ["com.ok.App"])).sanitized() == .switcher(AppSwitcher(hidden: ["com.ok.App"])), "your own imported settings keep them")
+    // Hiding from the panel: the main setup's Switcher, or the app setup's own when it has one.
+    var main = GlideConfig()
+    main.buttons[3] = .switcher(.standard)
+    main.chords = [Chord(buttons: [1, 2], action: .switcher(.standard))]
+    var setup = AppProfile(bundleID: "com.example.Editor", name: "Editor")
+    setup.buttons = [3: .switcher(AppSwitcher(tap: .back))]
+    main.appProfiles = [setup]
+    let a = main.settingSwitcherApp("com.apple.Music", hidden: true, buttons: [3], appSetup: nil)
+    check(a?.buttons[3] == .switcher(AppSwitcher(hidden: ["com.apple.Music"])), "hidden in the main setup's Switcher")
+    check(a?.settingSwitcherApp("com.apple.Music", hidden: true, buttons: [3], appSetup: nil) == nil, "hiding it twice changes nothing")
+    check(a?.settingSwitcherApp("com.apple.Music", hidden: false, buttons: [3], appSetup: nil)?.buttons[3] == .switcher(.standard), "and shown again")
+    let s = main.settingSwitcherApp("com.apple.Music", hidden: true, buttons: [3], appSetup: "com.example.Editor")
+    check(s?.appProfiles[0].buttons?[3] == .switcher(AppSwitcher(tap: .back, hidden: ["com.apple.Music"])) && s?.buttons[3] == .switcher(.standard),
+          "with an app setup's own Switcher in effect, that one")
+    let k = main.settingSwitcherApp("com.apple.Music", hidden: true, buttons: [2, 1], appSetup: "com.example.Editor")
+    check(k?.chords.first?.action == .switcher(AppSwitcher(hidden: ["com.apple.Music"])), "a combo Switcher (the app setup has no combos of its own)")
+    check(main.settingSwitcherApp("com.apple.Music", hidden: true, buttons: [2], appSetup: nil) == nil, "no Switcher on that button: nothing changes")
+    // Sharing with someone: hidden apps stay on this Mac. Backups and settings files keep them.
+    var shared = GlideConfig()
+    shared.buttons[3] = .switcher(AppSwitcher(tap: .back, hidden: ["com.apple.Music"]))
+    shared.chords = [Chord(buttons: [1, 2], action: .switcher(AppSwitcher(hidden: ["com.apple.TV"])))]
+    var p2 = AppProfile(bundleID: "com.example.Editor", name: "Editor")
+    p2.buttons = [3: .switcher(AppSwitcher(hidden: ["com.apple.Mail"]))]
+    shared.appProfiles = [p2]
+    check(shared.switchersHidingApps.count == 3, "every Switcher hiding apps is found (\(shared.switchersHidingApps.count))")
+    // Sync after a beta before hidden apps: they come back where it left the Switcher alone.
+    var older = shared
+    older.buttons[3] = .switcher(AppSwitcher(tap: .back))
+    older.chords[0].action = .switcher(.standard)
+    older.appProfiles[0].buttons = [3: .switcher(.standard)]
+    let merged = older.keepingSwitcherHidden(from: shared)
+    check(merged.kept && merged.config == shared, "sync puts hidden apps back after an older beta")
+    var changedTap = older
+    changedTap.buttons[3] = .switcher(AppSwitcher(tap: .forward))
+    check(changedTap.keepingSwitcherHidden(from: shared).config.buttons[3] == .switcher(AppSwitcher(tap: .forward)), "a Switcher the older one changed wins")
+    check(GlideSettingsFile.predatesSwitcherHidden("2.10-beta.32") && !GlideSettingsFile.predatesSwitcherHidden(GlideSettingsFile.switcherHiddenSince)
+          && !GlideSettingsFile.predatesSwitcherHidden(nil), "which betas predate hidden apps")
+    check(!shared.keepingSwitcherHidden(from: shared).kept, "nothing to put back: nothing changes")
 }
 
 section("the Switcher in settings files")
