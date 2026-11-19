@@ -260,7 +260,7 @@ test("the Usage page shows every setting, grouped, with not reported, everything
   assert.match(html, /Not reported/);
   assert.match(html, /Three columns/);
   assert.match(html, /Used search/);
-  assert.match(html, /<td>Gesture<\/td>/);
+  assert.match(html, /<td>Gestures<\/td>/);
   assert.ok(!html.includes("<img"), "an <img> got through");
   assert.ok(!/\sstyle=|\son[a-z]+=/.test(html.replace(/&lt;[^&]*&gt;/g, "")), "inline style or handler in the output");
   // before any install sends them: a plain note, not an empty page

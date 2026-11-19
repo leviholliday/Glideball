@@ -197,6 +197,10 @@ final class ShareData {
         var gestureDistance: String
         var steadyHands: Bool
         var gestureActions: [String: Int]   // by kind, like `buttons`
+        var gestureShow: [String: Int]      // how many Gestures buttons show the ring never / after a pause / right away
+        var gestureEight: Int               // how many use eight directions
+        var gestureMore: Int                // how many have a More
+        var switcherHidden: Int             // how many apps are hidden from Switchers in all (never which)
         var modesSetUp: [String: Bool]      // Precision, Scroll with ball, Drag lock on a button, combo or shortcut
         // The app
         var menuBarIcon: Bool
@@ -210,6 +214,7 @@ final class ShareData {
         var lowBatteryAlerts: Bool
         var sync: Bool
         var autoBackups: Bool
+        var autoUpdate: Bool                // Install updates automatically
         var globalShortcuts: Int            // how many are set, never which keys
         var displays: String                // "1", "2" or "3+"
         var windowLayout: String            // the main window's last layout class, or "unknown"
@@ -282,6 +287,11 @@ final class ShareData {
                 for s in step.more ?? [step] { if let s { gestureActions[s.action.kind, default: 0] += 1 } }
             }
         }
+        var gestureShow: [String: Int] = [:]
+        for g in gestures { gestureShow[g.show.rawValue, default: 0] += 1 }
+        let switcherHidden = (Array(c.buttons.values) + c.chords.map(\.action)).reduce(0) {
+            if case .switcher(let s) = $1 { $0 + s.hidden.count } else { $0 }
+        }
         let app = ShareData.appInfo
         return Stats(
             installId: installID,
@@ -333,6 +343,10 @@ final class ShareData {
             gestureDistance: c.gestureDistance.rawValue,
             steadyHands: c.gestureSteadyHands,
             gestureActions: gestureActions.mapValues { min($0, 100) },
+            gestureShow: gestureShow.mapValues { min($0, 100) },
+            gestureEight: min(gestures.filter(\.eight).count, 100),
+            gestureMore: min(gestures.filter { g in g.usedDirections.contains { g[$0]?.isMore == true } }.count, 100),
+            switcherHidden: min(switcherHidden, 100),
             modesSetUp: Self.modesSetUp(c),
             menuBarIcon: model.menuBarIcon,
             menuBarStyle: model.menuBarIconStyle.rawValue,
@@ -345,6 +359,7 @@ final class ShareData {
             lowBatteryAlerts: model.lowBatteryAlerts,
             sync: model.sync.isEnabled,
             autoBackups: model.backups.isEnabled,
+            autoUpdate: AutoUpdateSetting.isEnabled,
             globalShortcuts: GlobalShortcuts.Action.allCases.filter { c.globalShortcuts[$0] != nil }.count,
             displays: model.displays.count >= 3 ? "3+" : String(max(model.displays.count, 1)),
             windowLayout: WindowLayoutMemory.last ?? "unknown",
@@ -775,6 +790,14 @@ struct SendPreview {
                 let n = (j["gestureActions"] as? [String: Int] ?? [:]).values.reduce(0, +)
                 return String(localized: "\(n) set, by kind only, never the keys", comment: "Privacy preview: how many button actions; %lld is a number")
             }),
+            (["gestureShow"], String(localized: "Show the ring"), { j in
+                let m = j["gestureShow"] as? [String: Int] ?? [:]
+                let parts = RingShow.allCases.compactMap { r in m[r.rawValue].map { "\(r.title) \($0.formatted())" } }
+                return parts.isEmpty ? String(localized: "None") : parts.joined(separator: " · ")
+            }),
+            (["gestureEight"], String(localized: "8 directions"), { count($0, "gestureEight") }),
+            (["gestureMore"], String(localized: "More"), { count($0, "gestureMore") }),
+            (["switcherHidden"], String(localized: "Hidden from the Switcher"), { count($0, "switcherHidden") }),
             (["gestureDistance"], String(localized: "Gesture distance"), { GestureDistance(rawValue: string($0, "gestureDistance"))?.title ?? string($0, "gestureDistance") }),
             (["steadyHands"], String(localized: "Steady hands"), { onOff($0, "steadyHands") }),
             (["modesSetUp"], String(localized: "Modes you can reach", comment: "Privacy preview: field, which of Precision, Scroll with ball and Drag lock are on a button or a shortcut"), { j in
@@ -797,6 +820,7 @@ struct SendPreview {
             (["lowBatteryAlerts"], String(localized: "Low battery alerts"), { onOff($0, "lowBatteryAlerts") }),
             (["sync"], String(localized: "Sync"), { onOff($0, "sync") }),
             (["autoBackups"], String(localized: "Automatic backups"), { onOff($0, "autoBackups") }),
+            (["autoUpdate"], String(localized: "Install updates automatically"), { onOff($0, "autoUpdate") }),
             (["globalShortcuts"], String(localized: "Keyboard shortcuts set", comment: "Privacy preview: field, how many global shortcuts are set (never which keys)"), { count($0, "globalShortcuts") }),
             (["beta"], String(localized: "Other Kensington trackballs"), { onOff($0, "beta") }),
             (["earlyUpdates"], String(localized: "Early updates"), { onOff($0, "earlyUpdates") }),

@@ -54,6 +54,8 @@ export const ACTION_TYPES = [
   "modifiedClick", "disabled", "precisionHold", "precisionToggle", "ballScrollHold", "dragLock", "media", "openApp",
   // (Sent since gestures arrived in 2.10; without it a ping from a Mac with a gesture button was turned down whole.)
   "gesture",
+  // (Sent since 2.10 beta 25; until 19 Nov 2026 the server didn't know it and left Switcher buttons out.)
+  "switcher",
 ];
 export const ARCHES = ["arm64", "x86_64"];
 
@@ -101,6 +103,12 @@ export const SETTINGS = {
   gestureDistance: ["short", "normal", "long"],
   steadyHands: "bool",
   gestureActions: { kinds: ACTION_TYPES, max: 100 },
+  // From 2.10 beta 36: how many Gestures buttons show the ring, use eight ways or a More,
+  // and how many apps are hidden from Switchers. Counts only, never which.
+  gestureShow: { kinds: ["never", "afterPause", "atOnce"], max: 100 },
+  gestureEight: { max: 100 },
+  gestureMore: { max: 100 },
+  switcherHidden: { max: 100 },
   modesSetUp: { flags: ["precision", "ballScroll", "dragLock"] },
   // The app
   menuBarIcon: "bool",
@@ -114,6 +122,7 @@ export const SETTINGS = {
   lowBatteryAlerts: "bool",
   sync: "bool",
   autoBackups: "bool",
+  autoUpdate: "bool",
   globalShortcuts: { max: 4 },
   displays: ["1", "2", "3+"],
   windowLayout: ["single", "double", "roomy", "triple", "unknown"],

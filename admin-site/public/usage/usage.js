@@ -129,7 +129,7 @@ const ACTION = {
   back: "Back", forward: "Forward", shortcut: "Keyboard shortcut", holdShortcut: "Held shortcut",
   modifiedClick: "Modifier-click", disabled: "Do nothing", precisionHold: "Precision (hold)",
   precisionToggle: "Precision (toggle)", ballScrollHold: "Scroll with ball", dragLock: "Drag lock",
-  media: "Media key", openApp: "Open an app", gesture: "Gesture",
+  media: "Media key", openApp: "Open an app", gesture: "Gestures", switcher: "Switcher",
 };
 const SPEED = { "<2": "Under 2", "2-4": "2 to 4", "4-8": "4 to 8", "8-16": "8 to 16", "16-32": "16 to 32", "32+": "32 or more" };
 
@@ -190,6 +190,10 @@ const SETTING_GROUPS = [
     ["gestureDistance", "Gesture distance", { short: "Short", normal: "Normal", long: "Long" }],
     ["steadyHands", "Steady hands", ON_OFF],
     ["gestureActions", "What gesture directions do (installs using each)", { ...ACTION, none: "No directions set" }],
+    ["gestureShow", "Gestures buttons: show the ring (installs using each)", { never: "Never", afterPause: "After a pause", atOnce: "Right away", none: "No Gestures buttons" }],
+    ["gestureEight", "Gestures buttons with 8 directions", COUNT],
+    ["gestureMore", "Gestures buttons with a More", COUNT],
+    ["switcherHidden", "Apps hidden from Switchers", COUNT],
     ["modesSetUp.precision", "Precision on a button or shortcut", ON_OFF],
     ["modesSetUp.ballScroll", "Scroll with ball on a button or shortcut", ON_OFF],
     ["modesSetUp.dragLock", "Drag lock on a button or shortcut", ON_OFF],
@@ -206,6 +210,7 @@ const SETTING_GROUPS = [
     ["lowBatteryAlerts", "Low battery alerts", ON_OFF],
     ["sync", "iCloud Drive sync", ON_OFF],
     ["autoBackups", "Automatic backups", ON_OFF],
+    ["autoUpdate", "Install updates automatically", ON_OFF],
     ["globalShortcuts", "Global shortcuts set", COUNT],
     ["displays", "Displays", { 1: "1", 2: "2", "3+": "3 or more" }],
     ["windowLayout", "Window layout", { single: "One column", double: "Two columns", roomy: "Two wide columns", triple: "Three columns", unknown: "Never opened" }],

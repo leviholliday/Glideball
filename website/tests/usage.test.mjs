@@ -476,9 +476,9 @@ const SETTINGS_PING = () => ({
   flyPower: "50-75", flyReach: "50-75", flyGlide: "25-50", followDistance: "8-16", followSmoothness: "25-50",
   followAcceleration: "50-75", throwOn: true, throwDistance: "25-50",
   gestures: true, gestureButtons: 2, gestureDistance: "normal", steadyHands: false,
-  gestureActions: { shortcut: 3, media: 2, openApp: 1 }, modesSetUp: { precision: true, ballScroll: false, dragLock: true },
+  gestureActions: { shortcut: 3, media: 2, openApp: 1 }, gestureShow: { never: 1, afterPause: 1 }, gestureEight: 1, gestureMore: 1, switcherHidden: 2, modesSetUp: { precision: true, ballScroll: false, dragLock: true },
   menuBarIcon: true, menuBarStyle: "color", menuBarOpens: "panel", showInDock: true, askBeforeQuitting: true,
-  openAtLogin: true, allowScripts: false, ownLanguage: false, lowBatteryAlerts: false, sync: true, autoBackups: true,
+  openAtLogin: true, allowScripts: false, ownLanguage: false, lowBatteryAlerts: false, sync: true, autoBackups: true, autoUpdate: false,
   globalShortcuts: 1, displays: "2", windowLayout: "double",
   used: { search: true, tryBeforeChange: false, share: true, kensingtonWorks: false, buttonPreset: false },
 });
