@@ -733,7 +733,7 @@ extension GlideConfig {
     }
 
     /// Hold to try on (TryOn.swift): this setup wearing `preset`'s buttons and combos, for the
-    /// engine only, while a preset card is held. It's never saved, synced or backed up: nothing
+    /// engine only, while a preset is being tried. It's never saved, synced or backed up: nothing
     /// but `AppModel.pushToEngine` makes one. The primary button's entry is kept as it is (the
     /// engine never remaps it anyway: it's the button holding the card), and everything else
     /// (speeds, scrolling, app setups, the pause switch) is the person's own.

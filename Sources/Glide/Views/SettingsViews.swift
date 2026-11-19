@@ -471,7 +471,7 @@ struct LookSettingsPane: View {
     var body: some View {
         SettingsPage {
             PlainSection(title: "Ball color",
-                         caption: "Colors the trackball everywhere in Glideball, and the light it throws. Ball blue, ring pink and buttons amber stay the same in charts and badges, so they always mean the same thing.") {
+                         caption: "Colors the trackball everywhere in Glideball, the light it throws, and the Gestures ring and Switcher you steer with the ball. Ball blue, ring pink and buttons amber stay the same in charts and badges, so they always mean the same thing.") {
                 BallColorPicker()
             }
             .findable(.ballColor)

@@ -345,6 +345,49 @@ enum RenderUI {
         return Offscreen.render(view, size: size, chrome: .plain, appearance: appearance(dark), scale: scale)
     }
 
+    /// Hold to try on, from another app: the floating panel at the top of a made-up screen
+    /// (a menu bar, another app's window under it; `busy`: a bright wallpaper), as `TryOnHUD`
+    /// puts it, with its real panel's size.
+    static func tryOnHUD(_ model: AppModel, busy: Bool, dark: Bool, scale: CGFloat) -> NSBitmapImageRep? {
+        let size = NSSize(width: 860, height: 300)
+        let wallpaper: [Color] = busy
+            ? [Color(red: 1.0, green: 0.85, blue: 0.3), Color(red: 0.95, green: 0.35, blue: 0.45), Color(red: 0.25, green: 0.65, blue: 0.95), .white]
+            : dark ? [Color(red: 0.08, green: 0.1, blue: 0.2), Color(red: 0.2, green: 0.12, blue: 0.3), Color(red: 0.05, green: 0.2, blue: 0.25)]
+                   : [Color(red: 0.75, green: 0.86, blue: 0.97), Color(red: 0.96, green: 0.9, blue: 0.86), Color(red: 0.86, green: 0.93, blue: 0.88)]
+        let ink = dark ? Color.white.opacity(0.85) : Color.black.opacity(0.8)
+        let view = ZStack(alignment: .top) {
+            LinearGradient(colors: wallpaper, startPoint: .topLeading, endPoint: .bottomTrailing)
+            // Another app's window, in front, right under the panel.
+            RoundedRectangle(cornerRadius: 14).fill(dark ? Color(white: 0.15) : .white)
+                .overlay(alignment: .topLeading) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack(spacing: 7) { ForEach([Color.red, .yellow, .green], id: \.self) { Circle().fill($0).frame(width: 11, height: 11) } }
+                        ForEach(0..<7, id: \.self) { i in
+                            Text(verbatim: ["Release notes", "Back and Forward on the top buttons", "Try the Media preset in Music",
+                                            "Volume on the ring", "Ship the beta tonight", "Reply to Sam", "Lunch at noon"][i])
+                                .font(.system(size: 13, weight: i == 0 ? .bold : .regular))
+                                .foregroundStyle(ink)
+                        }
+                    }
+                    .padding(16)
+                }
+                .frame(width: 620, height: 280)
+                .offset(y: 54)
+            // The menu bar.
+            Rectangle().fill(.ultraThinMaterial).frame(height: 24)
+                .overlay(alignment: .leading) {
+                    Text(verbatim: "  Notes   File   Edit   View").font(.system(size: 13, weight: .medium)).foregroundStyle(ink)
+                }
+            TryOnPill(tryOn: model.tryOn, floating: true)
+                .fixedSize()
+                .shadow(color: .black.opacity(0.25), radius: 10, y: 3)   // the panel's own shadow, as the window server draws it
+                .padding(.top, 24 + 10)
+        }
+        .frame(width: size.width, height: size.height)
+        .clipped()
+        return Offscreen.render(view, size: size, chrome: .plain, appearance: appearance(dark), scale: scale)
+    }
+
     /// Made-up apps for the Switcher's pictures: generated icons (a rounded square in two
     /// colors with an SF Symbol), so a picture never depends on what's running on this Mac.
     static func fakeSwitcherEntries(_ n: Int) -> [SwitcherEntry] {

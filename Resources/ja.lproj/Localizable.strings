@@ -1757,7 +1757,7 @@
 "Click with ⌘ held: opens links in a background tab." = "⌘を押しながらクリック：リンクをバックグラウンドのタブで開きます。";
 "Click with ⌥ held." = "⌥を押しながらクリック。";
 "Closes the tab or window in front." = "手前のタブまたはウインドウを閉じます。";
-"Colors the trackball everywhere in Glideball, and the light it throws. Ball blue, ring pink and buttons amber stay the same in charts and badges, so they always mean the same thing." = "Glideball全体のトラックボールと、そこから放たれる光に色をつけます。ボールの青、リングのピンク、ボタンのアンバーは、グラフやバッジでも変わらないので、いつも同じ意味で使えます。";
+"Colors the trackball everywhere in Glideball, the light it throws, and the Gestures ring and Switcher you steer with the ball. Ball blue, ring pink and buttons amber stay the same in charts and badges, so they always mean the same thing." = "Glideball全体のトラックボールとそこから放たれる光、そしてボールで操作するジェスチャのリングとアプリスイッチャーに色をつけます。ボールの青、リングのピンク、ボタンのアンバーは、グラフやバッジでも変わらないので、いつも同じ意味で使えます。";
 "Combo maker" = "コンボメーカー";
 "Copied. Paste it anywhere." = "コピーしました。どこにでもペーストできます。";
 "Copies what’s selected." = "選択中のものをコピーします。";
@@ -1894,9 +1894,6 @@
 "Selects everything." = "すべてを選択します。";
 "Sends the window in front to the Dock." = "最前面のウインドウをDockにしまいます。";
 "Sets all your buttons and a few combos at once. You can undo it. Or hold one down to try it first." = "すべてのボタンといくつかのコンボを一度に設定します。元に戻せます。長押しすると、先に試せます。";
-"Trying %@. Let go to put your own buttons back." = "%@を試しています。離すと自分のボタンに戻ります。";
-"Let go to put yours back" = "離すと元に戻ります";
-"Hold the pointer’s button down on it to try it; let go to put your own buttons back." = "ポインタのボタンを押したままにすると試せます。離すと自分のボタンに戻ります。";
 "Setting up and exploring" = "設定と探索";
 "Share your Glideball" = "Glideballをシェア";
 "Shows every open window and your Spaces." = "開いているすべてのウインドウと操作スペースを表示します。";
@@ -2736,3 +2733,10 @@
 "auto update, automatic updates, background update, self update, silent update" = "自動アップデート, 自動更新, バックグラウンド更新, サイレント更新, じどうこうしん, auto update, automatic updates";
 "Glideball updated itself to %@." = "Glideballは自動でバージョン%@にアップデートされました。";
 "%@ is downloaded. Glideball switches to it once you’ve been away from your trackball for a few minutes." = "バージョン%@をダウンロードしました。トラックボールを数分間使っていないときに、Glideballが切り替えます。";
+"Put mine back" = "自分の設定に戻す";
+"Put your own buttons back now" = "今すぐ自分のボタン設定に戻します";
+"Put your own buttons back now (Esc)" = "今すぐ自分のボタン設定に戻します（Esc）";
+"Make this preset yours. You can undo it." = "このプリセットを自分の設定にします。取り消すこともできます。";
+"Make this preset yours. You can undo it. (Return)" = "このプリセットを自分の設定にします。取り消すこともできます。（Return）";
+"Hold the pointer’s button down on it to try it on your trackball for 20 seconds." = "ポインタのボタンを押したままにすると、トラックボールで20秒間試せます。";
+"Trying %@. Press its buttons here or in any app; Keep makes it yours." = "%@を試用中。ここでもほかのアプリでもボタンを押してみてください。「保持」で自分の設定になります。";

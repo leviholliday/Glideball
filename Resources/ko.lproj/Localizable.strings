@@ -1757,7 +1757,7 @@
 "Click with ⌘ held: opens links in a background tab." = "⌘를 누른 채 클릭: 링크를 백그라운드 탭에서 열어요.";
 "Click with ⌥ held." = "⌥를 누른 채 클릭.";
 "Closes the tab or window in front." = "맨 앞의 탭이나 윈도우를 닫아요.";
-"Colors the trackball everywhere in Glideball, and the light it throws. Ball blue, ring pink and buttons amber stay the same in charts and badges, so they always mean the same thing." = "Glideball 전체의 트랙볼과 그 빛에 색을 입혀요. 볼 파란색, 링 분홍색, 버튼 호박색은 차트와 배지에서도 그대로여서 항상 같은 뜻이에요.";
+"Colors the trackball everywhere in Glideball, the light it throws, and the Gestures ring and Switcher you steer with the ball. Ball blue, ring pink and buttons amber stay the same in charts and badges, so they always mean the same thing." = "Glideball 전체의 트랙볼과 그 빛, 그리고 볼로 조작하는 제스처 링과 앱 전환기에 색을 입혀요. 볼 파란색, 링 분홍색, 버튼 호박색은 차트와 배지에서도 그대로여서 항상 같은 뜻이에요.";
 "Combo maker" = "콤보 메이커";
 "Copied. Paste it anywhere." = "복사됨. 어디에든 붙여넣으세요.";
 "Copies what’s selected." = "선택한 항목을 복사해요.";
@@ -1894,9 +1894,6 @@
 "Selects everything." = "모두 선택해요.";
 "Sends the window in front to the Dock." = "맨 앞의 윈도우를 Dock으로 보내요.";
 "Sets all your buttons and a few combos at once. You can undo it. Or hold one down to try it first." = "모든 버튼과 몇 가지 콤보를 한 번에 설정해요. 되돌릴 수 있어요. 하나를 길게 누르면 먼저 써 볼 수 있어요.";
-"Trying %@. Let go to put your own buttons back." = "%@ 써 보는 중이에요. 놓으면 내 버튼으로 돌아와요.";
-"Let go to put yours back" = "놓으면 내 설정으로 돌아와요";
-"Hold the pointer’s button down on it to try it; let go to put your own buttons back." = "포인터 버튼을 누른 채로 있으면 써 볼 수 있어요. 놓으면 내 버튼으로 돌아와요.";
 "Setting up and exploring" = "설정하고 둘러보기";
 "Share your Glideball" = "내 Glideball 공유";
 "Shows every open window and your Spaces." = "열린 모든 윈도우와 스페이스를 보여줘요.";
@@ -2736,3 +2733,10 @@
 "auto update, automatic updates, background update, self update, silent update" = "자동 업데이트, 자동 설치, 백그라운드 업데이트, 조용한 업데이트, auto update";
 "Glideball updated itself to %@." = "Glideball이 %@ 버전으로 알아서 업데이트했어요.";
 "%@ is downloaded. Glideball switches to it once you’ve been away from your trackball for a few minutes." = "%@ 버전을 내려받았어요. 트랙볼을 몇 분 동안 쓰지 않으면 Glideball이 새 버전으로 바꿔요.";
+"Put mine back" = "내 설정으로 되돌리기";
+"Put your own buttons back now" = "지금 내 버튼 설정으로 되돌려요";
+"Put your own buttons back now (Esc)" = "지금 내 버튼 설정으로 되돌려요 (Esc)";
+"Make this preset yours. You can undo it." = "이 프리셋을 내 설정으로 해요. 실행 취소할 수 있어요.";
+"Make this preset yours. You can undo it. (Return)" = "이 프리셋을 내 설정으로 해요. 실행 취소할 수 있어요. (Return)";
+"Hold the pointer’s button down on it to try it on your trackball for 20 seconds." = "포인터 버튼을 누른 채로 있으면 트랙볼에서 20초 동안 써 볼 수 있어요.";
+"Trying %@. Press its buttons here or in any app; Keep makes it yours." = "%@ 시험 중이에요. 여기나 다른 앱에서 버튼을 눌러 보세요. ‘유지’를 누르면 내 설정이 돼요.";

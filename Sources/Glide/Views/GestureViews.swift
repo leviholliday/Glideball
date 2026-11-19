@@ -319,7 +319,7 @@ struct GestureEditor: View {
                         .font(.system(size: 12, weight: .semibold))
                     Image(systemName: "chevron.up.chevron.down").font(.system(size: 8.5, weight: .semibold)).foregroundStyle(.secondary)
                 }
-                .foregroundStyle(Theme.ball)
+                .foregroundStyle(Theme.lightInk)   // a More's color on the ring
                 .fixedSize()
             }
             .help("Choose what this does")
@@ -881,7 +881,7 @@ private struct GestureChipButton: View {
             WheelChip(slot: slot, lit: lit, size: size, pulse: pulse, emptySymbol: "plus", moreDots: moreDots)
                 .background {
                     shape.fill(hovering && !lit ? Theme.hoverFill : .clear)
-                        .pixelBorder(shape, hovering && !lit ? Theme.ball.opacity(0.45) : .clear)
+                        .pixelBorder(shape, hovering && !lit ? Theme.light.opacity(0.45) : .clear)
                 }
                 .contentShape(shape)
         }

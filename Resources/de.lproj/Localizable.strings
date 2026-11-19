@@ -1757,7 +1757,7 @@
 "Click with ⌘ held: opens links in a background tab." = "Klick mit gehaltener ⌘: öffnet Links in einem Hintergrund-Tab.";
 "Click with ⌥ held." = "Klick mit gehaltener ⌥.";
 "Closes the tab or window in front." = "Schließt den vordersten Tab oder das vorderste Fenster.";
-"Colors the trackball everywhere in Glideball, and the light it throws. Ball blue, ring pink and buttons amber stay the same in charts and badges, so they always mean the same thing." = "Färbt den Trackball überall in Glideball ein, samt dem Licht, das er wirft. Kugelblau, Ringrosa und Tastenbernstein bleiben in Diagrammen und Abzeichen gleich, damit sie immer dasselbe bedeuten.";
+"Colors the trackball everywhere in Glideball, the light it throws, and the Gestures ring and Switcher you steer with the ball. Ball blue, ring pink and buttons amber stay the same in charts and badges, so they always mean the same thing." = "Färbt den Trackball überall in Glideball ein, samt dem Licht, das er wirft, und dem Gesten-Ring und dem App-Umschalter, die du mit der Kugel steuerst. Kugelblau, Ringrosa und Tastenbernstein bleiben in Diagrammen und Abzeichen gleich, damit sie immer dasselbe bedeuten.";
 "Combo maker" = "Kombi-Macher";
 "Copied. Paste it anywhere." = "Kopiert. Füg es überall ein.";
 "Copies what’s selected." = "Kopiert die Auswahl.";
@@ -1894,9 +1894,6 @@
 "Selects everything." = "Wählt alles aus.";
 "Sends the window in front to the Dock." = "Schickt das vorderste Fenster ins Dock.";
 "Sets all your buttons and a few combos at once. You can undo it. Or hold one down to try it first." = "Belegt alle deine Tasten und ein paar Kombis auf einmal. Du kannst es rückgängig machen. Oder halte eins gedrückt, um es erst auszuprobieren.";
-"Trying %@. Let go to put your own buttons back." = "Du probierst %@ aus. Lass los, und deine eigenen Tasten sind zurück.";
-"Let go to put yours back" = "Loslassen: deine sind zurück";
-"Hold the pointer’s button down on it to try it; let go to put your own buttons back." = "Halte die Zeigertaste darauf gedrückt, um es auszuprobieren; lass los, und deine eigenen Tasten sind zurück.";
 "Setting up and exploring" = "Einrichten und Entdecken";
 "Share your Glideball" = "Teile dein Glideball";
 "Shows every open window and your Spaces." = "Zeigt alle offenen Fenster und deine Spaces.";
@@ -2736,3 +2733,10 @@
 "auto update, automatic updates, background update, self update, silent update" = "auto update, automatische updates, hintergrund-update, selbst aktualisieren, stilles update";
 "Glideball updated itself to %@." = "Glideball hat sich selbst auf Version %@ aktualisiert.";
 "%@ is downloaded. Glideball switches to it once you’ve been away from your trackball for a few minutes." = "Version %@ ist geladen. Glideball wechselt zu ihr, sobald du deinen Trackball ein paar Minuten nicht benutzt hast.";
+"Put mine back" = "Meine zurück";
+"Put your own buttons back now" = "Jetzt deine eigenen Tasten zurückholen";
+"Put your own buttons back now (Esc)" = "Jetzt deine eigenen Tasten zurückholen (Esc)";
+"Make this preset yours. You can undo it." = "Mach dieses Preset zu deinem. Du kannst es rückgängig machen.";
+"Make this preset yours. You can undo it. (Return)" = "Mach dieses Preset zu deinem. Du kannst es rückgängig machen. (Return)";
+"Hold the pointer’s button down on it to try it on your trackball for 20 seconds." = "Halte die Zeigertaste darauf gedrückt, um es 20 Sekunden lang auf deinem Trackball auszuprobieren.";
+"Trying %@. Press its buttons here or in any app; Keep makes it yours." = "Du probierst %@ aus. Drück seine Tasten hier oder in jeder App; „Behalten“ macht es zu deinem.";
