@@ -197,6 +197,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         // A value on trial goes back first, so it's never what's left saved.
         MainActor.assumeIsolated { TryPreview.shared.revert(.quit) }
+        AppModel.shared.tryOn.end(.quit)   // (a tried-on preset was never saved: this just tidies up)
         ExternalControlCenter.shared.stop()   // status.json goes with the app
         AppModel.shared.engine.releaseHeldKeys()
         AppModel.shared.engine.releaseAll()

@@ -361,6 +361,14 @@ class EngineIO {
     /// The engine is alive and still wants the panel up. False if the watchdog took it down.
     func keepSwitcher() -> Bool { switcher.keep() }
 
+    /// The release is about to switch to app `index` of hold `session`: the panel leaves by
+    /// lifting that app's icon (call it before the hold ends, so it's on the main thread before
+    /// the take-down). Drawing only; nothing waits for it.
+    func switcherChose(session: Int, index: Int) {
+        guard Self.switcherPresenter != nil else { return }
+        DispatchQueue.main.async { Self.switcherPresenter?.switcherChose(session: session, index: index) }
+    }
+
     /// Switches to app `index` of Switcher hold `session` (the release). On the main thread.
     func activateSwitcher(session: Int, index: Int) {
         DispatchQueue.main.async { Self.switcherPresenter?.activateSwitcher(session: session, index: index) }

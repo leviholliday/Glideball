@@ -1893,7 +1893,10 @@
 "Searches the page or document." = "在页面或文稿中搜索。";
 "Selects everything." = "选中全部内容。";
 "Sends the window in front to the Dock." = "将最前面的窗口收到程序坞。";
-"Sets all your buttons and a few combos at once. You can undo it." = "一次设定好你所有的按钮和几个组合键。可以撤销。";
+"Sets all your buttons and a few combos at once. You can undo it. Or hold one down to try it first." = "一次设定好你所有的按钮和几个组合键。可以撤销。也可以按住其中一个先试试。";
+"Trying %@. Let go to put your own buttons back." = "正在试用“%@”。松开就恢复你自己的按钮。";
+"Let go to put yours back" = "松开即可恢复你的设置";
+"Hold the pointer’s button down on it to try it; let go to put your own buttons back." = "在它上面按住指针按钮即可试用；松开就恢复你自己的按钮。";
 "Setting up and exploring" = "设置与探索";
 "Share your Glideball" = "分享你的 Glideball";
 "Shows every open window and your Spaces." = "显示所有已打开的窗口和你的空间。";

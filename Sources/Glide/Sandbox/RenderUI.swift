@@ -391,16 +391,21 @@ enum RenderUI {
     /// where the hold left it.
     /// `hidden`: places in the list hidden during this hold (the row closed up), `undoable`: the
     /// hint offering to bring the last one back; `hint`: the hide hint under the apps.
+    /// `lean`: the leftover roll, in eighths of a step each way; `exit`: leaving, held part-way.
     static func switcherOverlay(apps: Int, selected: Int, firstRow: Int = 0, maxRows: Int = 3, busy: Bool,
                                 hidden: [Int] = [], undoable: Bool = false, hint: Bool = true,
+                                lean: (x: Int, y: Int) = (0, 0), exit: SwitcherExit? = nil,
                                 dark: Bool, scale: CGFloat) -> NSBitmapImageRep? {
         let entries = fakeSwitcherEntries(apps)
         let full = SwitcherGrid.fitting(count: apps, maxColumns: SwitcherLayout.maxColumns, maxRows: maxRows)
         let grid = full.keeping(apps - hidden.count)
         let state = SwitcherOverlayState()
         state.entries = entries
-        state.model = SwitcherOverlayModel(session: 1, grid: grid, selected: selected, firstRow: firstRow, hidden: hidden, undoable: undoable)
-        state.shown = true
+        state.model = SwitcherOverlayModel(session: 1, grid: grid, selected: selected, firstRow: firstRow, hidden: hidden, undoable: undoable,
+                                           leanX: lean.x, leanY: lean.y)
+        state.shown = exit == nil
+        state.exit = exit
+        state.frozenExit = exit != nil
         state.hideButton = hint ? SwitcherOverlayPanel.hideButton(besides: [3]) : nil
         let canvas = SwitcherLayout.canvas(full, footer: hint)
         let size = CGSize(width: max(canvas.width + 120, 720), height: canvas.height + 120)

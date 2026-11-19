@@ -282,6 +282,28 @@ extension RenderUI {
             cleanup: { ButtonsView.sandboxPreview = nil }) { dark, scale in
             fullPage(page(.buttons, model), dark: dark, scale: scale)
         }
+        // Hold to try on: a card held down and winding up, then the trackball wearing it.
+        add("buttons-try-building", "Buttons and picker", "Holding the Media card: the line of light two thirds round, nothing tried yet",
+            prepare: { PresetCard.sandboxCharge = 0.66; model.tryOn.sandboxShow(pressing: "preset:media") },
+            cleanup: { PresetCard.sandboxCharge = nil; model.tryOn.sandboxShow() }) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale)
+        }
+        add("buttons-try-on", "Buttons and picker", "Still holding: the trackball wears Media, the map shows it, and letting go puts yours back",
+            prepare: {
+                let p = ButtonPreset.all.first { $0.id == "media" }!
+                model.tryOn.sandboxShow(trying: .init(id: "preset:media", name: p.title)) { $0 = $0.tryingOn(p) }
+            },
+            cleanup: { model.tryOn.sandboxShow() }) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale)
+        }
+        add("buttons-try-on-window", "Buttons and picker", "The same in the window, as it opens",
+            prepare: {
+                let p = ButtonPreset.all.first { $0.id == "gestures" }!
+                model.tryOn.sandboxShow(trying: .init(id: "preset:gestures", name: p.title)) { $0 = $0.tryingOn(p) }
+            },
+            cleanup: { model.tryOn.sandboxShow() }) { dark, scale in
+            mainWindow(model, tab: .buttons, dark: dark, scale: scale)
+        }
         add("buttons-preset-applied", "Buttons and picker", "The Media preset in use",
             prepare: { model.config.apply(ButtonPreset.all.first { $0.id == "media" }!) },
             cleanup: { model.config.buttons = DemoData.config.buttons; model.config.chords = DemoData.config.chords }) { dark, scale in
@@ -640,6 +662,24 @@ extension RenderUI {
         }
         add("switcher-overlay-end", "Switcher", "Six apps, rolled to the last one (the ball stops there; it never wraps round)") { dark, scale in
             switcherOverlay(apps: 6, selected: 5, busy: false, dark: dark, scale: scale)
+        }
+        add("switcher-overlay-lean", "Switcher", "Rolling right, most of a step along: the lens and its light lean toward the next app") { dark, scale in
+            switcherOverlay(apps: 6, selected: 2, busy: false, lean: (7, 0), dark: dark, scale: scale)
+        }
+        add("switcher-overlay-lean-left", "Switcher", "The same roll the other way (compare the two: the icons don't move)") { dark, scale in
+            switcherOverlay(apps: 6, selected: 2, busy: false, lean: (-7, 0), dark: dark, scale: scale)
+        }
+        add("switcher-overlay-lean-down", "Switcher", "24 apps, rolling down from the middle row: the lean points down") { dark, scale in
+            switcherOverlay(apps: 24, selected: 12, busy: false, lean: (0, 8), dark: dark, scale: scale)
+        }
+        add("switcher-overlay-chosen", "Switcher", "Let go on Notebook: its icon lifts and brightens as the panel falls away (held part-way)") { dark, scale in
+            switcherOverlay(apps: 6, selected: 2, busy: false, exit: SwitcherExit(kind: .launch, chosen: 2), dark: dark, scale: scale)
+        }
+        add("switcher-overlay-chosen-busy", "Switcher", "The same over a bright, busy wallpaper") { dark, scale in
+            switcherOverlay(apps: 9, selected: 4, busy: true, exit: SwitcherExit(kind: .launch, chosen: 4), dark: dark, scale: scale)
+        }
+        add("switcher-overlay-cancelled", "Switcher", "Esc: the light has gone out, the lit app settled back, and the panel is fading (held part-way)") { dark, scale in
+            switcherOverlay(apps: 6, selected: 2, busy: false, exit: SwitcherExit(kind: .drain), dark: dark, scale: scale)
         }
         add("switcher-overlay-hidden", "Switcher", "Top left pressed with Notebook lit: it's hidden, the row closed up, and the hint offers Undo") { dark, scale in
             switcherOverlay(apps: 6, selected: 2, busy: false, hidden: [2], undoable: true, dark: dark, scale: scale)

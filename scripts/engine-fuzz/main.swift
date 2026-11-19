@@ -2178,7 +2178,12 @@ func generate(seed: UInt64, count: Int) -> (configs: [GlideConfig], ops: [Op]) {
     // Every third seed leans on gestures: gesture buttons and combos everywhere, more
     // flicks, fewer pauses and unplugs (which otherwise keep most holds from starting).
     let focus = seed % 3 == 0
-    let configs = (0..<6).map { _ in focus ? gestureHeavy(randomConfig(&r), &r) : randomConfig(&r) }
+    var configs = (0..<6).map { _ in focus ? gestureHeavy(randomConfig(&r), &r) : randomConfig(&r) }
+    // Hold to try on (TryOn.swift): settings 6 and 7 are settings 0 and 1 wearing a preset, which
+    // is what a held preset card hands the engine and takes away again, at any moment.
+    let presets = ButtonPreset.all
+    configs.append(configs[0].tryingOn(presets[Int(seed % UInt64(presets.count))]))
+    configs.append(configs[1].tryingOn(presets[Int((seed / 7) % UInt64(presets.count))]))
     let rare = focus ? 0.25 : 1.0, flicks = focus ? 18.0 : 6.0
     var ops: [Op] = []
     ops.reserveCapacity(count)
@@ -2228,6 +2233,8 @@ func generate(seed: UInt64, count: Int) -> (configs: [GlideConfig], ops: [Op]) {
         (1.2, { _ in .esc }),
         (0.25, { r in .wheelOverlay(r.int(3)) }),
         (0.35, { r in .switcherPanel(r.int(14)) }),
+        (0.5, { r in .config(6 + r.int(2)) }),   // a preset tried on…
+        (0.5, { r in .config(r.int(2)) }),       // …and taken off
     ]
     let total = weights.reduce(0) { $0 + $1.0 }
     for _ in 0..<count {
@@ -2929,7 +2936,62 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
          [.unplug(2), .oPress(2), .replug(3), .config(1), .overlap(4, 5 + 8 + 32), .wait(1.167), .overlap(2, 4 + 16 + 128),
           .unplug(0), .replug(0), .overlap(4, 0 + 8 + 16 + 32)]),
     ]
-    return gestureCases + older + fresh
+    // Hold to try on (Nov 19): a preset card held with the primary button; after 0.4 s the engine
+    // is handed the person's setup wearing the preset (`GlideConfig.tryingOn`), and their own
+    // again by every way the hold can end. Whatever the moment, the press holding the card is one
+    // left click, nothing the preset started stays down, and their own buttons work after.
+    func preset(_ id: String) -> ButtonPreset { ButtonPreset.all.first { $0.id == id }! }
+    var mine = GlideConfig()
+    mine.buttons[2] = .shortcut(.copy)
+    mine.buttons[3] = .holdShortcut(.wisprFlow)
+    var mineChord = mine
+    mineChord.chords = [Chord(buttons: [0, 2, 3], action: .holdShortcut(.wisprFlow))]
+    let spaces = [mine, mine.tryingOn(preset("spaces"))]
+    let gesturesOn = [mine, mine.tryingOn(preset("gestures"))]
+    let wisprOn = [mine, mine.tryingOn(preset("wispr"))]
+    let on: [Op] = [.wait(0.4), .config(1)], off: [Op] = [.config(0)], again: [Op] = [.config(1)]
+    func w(_ t: Double) -> [Op] { [.wait(t)] }
+    func one(_ op: Op) -> [Op] { [op] }
+    func seq(_ parts: [Op]...) -> [Op] { parts.flatMap { $0 } }
+    let d0 = down(0), u0 = up(0), d2 = down(2), u2 = up(2), d3 = down(3), u3 = up(3)
+    let own2 = seq(d2, u2, settle)   // afterwards: the person's own top-left button (Copy)
+    let r6 = roll(5, 0, 6), r12 = roll(5, 0, 12)
+    var tryOns: [(String, [GlideConfig], [Op])] = []
+    func add(_ name: String, _ configs: [GlideConfig], _ ops: [Op]) { tryOns.append((name, configs, ops)) }
+    add("try on: hold the card, press a tried-on button, let go: one left click, the preset's key, then yours again", spaces,
+        seq(d0, on, d2, u2, u0, off, settle, own2))
+    add("try on: let go of the card with a tried-on button still down: its release does nothing, yours work after", spaces,
+        seq(d0, on, d2, w(0.1), u0, off, w(0.2), u2, settle, own2))
+    // A press made while the preset was on that's still waiting for a combo partner (70 ms) when
+    // the card is let go hasn't done anything yet: it then does what the person's own button does.
+    add("try on: let go of the card while a tried-on press still waits for its combo: it's the person's own button", spaces,
+        seq(d0, on, d2, u0, off, w(0.2), u2, settle, own2))
+    add("try on: yours come back in the middle of a tried-on gesture: the hold ends cleanly", gesturesOn,
+        seq(d0, on, d3, r12, u0, off, r12, u3, settle))
+    add("try on: a shortcut of yours held since before the card is still let go once", spaces,
+        seq(d3, w(0.1), d0, on, u3, u0, off, settle))
+    add("try on: yours come back while a tried-on combo waits for its partner", spaces,
+        seq(d0, on, d2, w(0.02), off, d3, w(0.3), u2, u3, u0, settle))
+    add("try on: a tried-on combo, then let go", spaces,
+        seq(d0, on, d2, w(0.01), d3, w(0.3), u3, u2, u0, off, settle))
+    add("try on: a preset's combo with the primary button can't form while it holds the card", wisprOn,
+        seq(d0, on, d2, w(0.01), d3, w(0.4), u3, u2, u0, off, settle))
+    add("try on: your own combo with the primary button: the card's press still gets through, once",
+        [mineChord, mineChord.tryingOn(preset("spaces"))], seq(d0, on, d2, u2, u0, off, settle))
+    add("try on: paused mid-hold with a tried-on gesture held", gesturesOn,
+        seq(d0, on, d3, r6, one(.pause), off, one(.resume), u3, u0, settle, own2))
+    add("try on: unplugged mid-hold", spaces,
+        seq(d0, on, d2, one(.unplug(0)), off, w(1), one(.replug(0)), w(2), own2))
+    add("try on: the Mac sleeps mid-hold", gesturesOn,
+        seq(d0, on, d3, r6, one(.sleep), off, one(.wake), w(1), u3, u0, settle))
+    add("try on: the tap switched off mid-hold (the mouse-up is lost)", spaces,
+        seq(d0, on, d2, one(.tapOff(2)), u2, u0, w(0.3), off, settle, own2))
+    add("try on: quit mid-hold", gesturesOn, seq(d0, on, d3, r6, one(.quit)))
+    add("try on: held past the 30 s limit with a tried-on gesture held", gesturesOn,
+        seq(d0, on, d3, w(31), off, u3, u0, settle, own2))
+    add("try on: taken off and put on again within one press", spaces,
+        seq(d0, on, d2, off, again, u2, d3, off, u3, u0, settle))
+    return gestureCases + older + fresh + tryOns
 }
 
 // MARK: - Main
@@ -3102,7 +3164,47 @@ if args.contains("--threads") {
     exit(ok ? 0 : 1)
 }
 /// What a regression case must also have done (beyond every rule holding).
+/// Hold to try on: the press that holds the card reached apps as one left click (down, then up,
+/// in that order, `times` times) whatever was tried on meanwhile, and the keys named were
+/// pressed this often (a virtual key code: how many times it went down).
+func cardClick(_ w: World, times: Int = 1, keys: [Int: Int] = [:]) -> String? {
+    let primary = w.outLog.filter { $0.hasPrefix("kensington down 0") || $0.hasPrefix("kensington up 0") }
+    let want = (0..<times).flatMap { _ in ["kensington down 0", "kensington up 0"] }
+    if primary.map({ $0.replacingOccurrences(of: " raw", with: "") }) != want { return "the card's press reached apps as \(primary): \(w.outLog)" }
+    for (code, n) in keys.sorted(by: { $0.key < $1.key }) {
+        let got = w.outLog.filter { $0 == "key down \(code)" }.count
+        if got != n { return "key \(code) went down \(got) times, expected \(n): \(w.outLog)" }
+    }
+    return nil
+}
+
 let expectations: [String: (World) -> String?] = [
+    "try on: hold the card, press a tried-on button, let go: one left click, the preset's key, then yours again": { w in
+        cardClick(w, keys: [kVK_LeftArrow: 1, kVK_ANSI_C: 1]) },
+    "try on: let go of the card with a tried-on button still down: its release does nothing, yours work after": { w in
+        cardClick(w, keys: [kVK_LeftArrow: 1, kVK_ANSI_C: 1]) },
+    "try on: let go of the card while a tried-on press still waits for its combo: it's the person's own button": { w in
+        cardClick(w, keys: [kVK_LeftArrow: 0, kVK_ANSI_C: 2]) },
+    "try on: yours come back in the middle of a tried-on gesture: the hold ends cleanly": { w in
+        cardClick(w, keys: [kVK_Space: 0]) ?? (w.gestureHolds + w.wheelHolds == 1 ? nil : "\(w.gestureHolds) gesture holds, \(w.wheelHolds) ring holds") },
+    "try on: a shortcut of yours held since before the card is still let go once": { w in
+        cardClick(w, keys: [kVK_Space: 1, kVK_RightArrow: 0]) ?? (w.outLog.filter { $0 == "key up \(kVK_Space)" }.count == 1 ? nil : "Space wasn't let go once: \(w.outLog)") },
+    "try on: yours come back while a tried-on combo waits for its partner": { w in
+        // Top left was pressed as the preset's, top right as the person's own (a held ⌃Space): no combo, nothing left down.
+        cardClick(w, keys: [kVK_UpArrow: 0, kVK_Space: 1]) },
+    "try on: a tried-on combo, then let go": { w in cardClick(w, keys: [kVK_UpArrow: 1, kVK_LeftArrow: 0, kVK_RightArrow: 0, kVK_Space: 0]) },
+    "try on: a preset's combo with the primary button can't form while it holds the card": { w in
+        cardClick(w, keys: [kVK_Space: 0, kVK_LeftArrow: 1, kVK_RightArrow: 1]) },
+    "try on: your own combo with the primary button: the card's press still gets through, once": { w in
+        cardClick(w, keys: [kVK_LeftArrow: 1, kVK_Space: 0, kVK_ANSI_C: 0]) },
+    "try on: paused mid-hold with a tried-on gesture held": { w in cardClick(w, keys: [kVK_ANSI_C: 1]) },
+    "try on: unplugged mid-hold": { w in
+        w.outLog.filter { $0 == "key down \(kVK_ANSI_C)" }.count == 1 ? nil : "the person's own top-left button didn't work after: \(w.outLog)" },
+    "try on: the Mac sleeps mid-hold": { w in cardClick(w, keys: [kVK_Space: 0]) },
+    "try on: the tap switched off mid-hold (the mouse-up is lost)": { w in
+        w.outLog.filter { $0 == "key down \(kVK_ANSI_C)" }.count == 1 ? nil : "the person's own top-left button didn't work after: \(w.outLog)" },
+    "try on: held past the 30 s limit with a tried-on gesture held": { w in cardClick(w, keys: [kVK_ANSI_C: 1]) },
+    "try on: taken off and put on again within one press": { w in cardClick(w, keys: [kVK_LeftArrow: 1, kVK_Space: 1]) },
     "chained gesture: left, up, left in one hold fires twice left only if not once": { w in
         w.hold?.byDirection == [.left: 1, .up: 1] ? nil : "fired \(w.hold?.byDirection ?? [:]), expected left once (once per hold) and up once" },
     "chained gesture: right three times, numbered 1, 2, 3": { w in
@@ -3374,6 +3476,26 @@ for (name, configs, ops) in regressionCases() {
     }
 }
 keepOutLog = false
+// Press-to-action timing (PressTiming.swift) is measurement only, but it has to be measuring:
+// the cases above pressed, released and rolled into actions, so each of those has samples, and
+// the summary line reads as counts, a median and a worst.
+do {
+    let line = PressTiming.shared.summary(every: 0) ?? ""
+    let missing = ["press→action", "release→action", "roll→action", "release→app switch"].filter { !line.contains($0 + " ") }
+    if missing.isEmpty { print("  ✓ timing: the cases above were measured (\(line.prefix(110))…)") }
+    else { failed += 1; print("  ✗ timing: nothing measured for \(missing) in “\(line)”") }
+    let t = PressTiming()
+    for ms in [3.0, 1.0, 2.0, 40.0, 2.5] { t.add(.releaseToAction, from: 100, to: 100 + ms / 1000) }
+    t.add(.releaseToAction, from: 100, to: 99)      // backwards: not a measurement
+    t.add(.releaseToAction, from: 100, to: 500)     // minutes: not one either
+    t.askedFor(.ring, pressedAt: PressTiming.now() - 0.2)
+    t.shown(.ring); t.shown(.ring)                  // the second has nothing to close
+    let own = t.summary(every: 0) ?? ""
+    let ok = own.hasPrefix("timing (ms): release→action 5× med 2.5 worst 40 · press→ring 1× med 2") && own.contains("ring drawn in 1× med 0.")
+        && t.summary(every: 0) == nil               // nothing new: no second line
+    if ok { print("  ✓ timing: count, median and worst; odd values dropped; quiet when nothing's new") }
+    else { failed += 1; print("  ✗ timing: the summary read “\(own)”") }
+}
 if args.contains("--regressions-only") { exit(failed == 0 ? 0 : 1) }
 
 print("▸ random sequences (\(eventsPerSeed) events per seed)")

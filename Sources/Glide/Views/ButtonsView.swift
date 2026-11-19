@@ -15,6 +15,12 @@ struct ButtonsView: View {
     /// Renders: draw the map previewing this preset.
     nonisolated(unsafe) static var sandboxPreview: String?
 
+    /// The preset whose card is held down and being tried on (TryOn.swift), if one is.
+    private var trying: ButtonPreset? {
+        guard let s = model.tryOn.session else { return nil }
+        return ButtonPreset.all.first { PresetStrip.tryID($0) == s.id }
+    }
+
     private let buttons: [(index: Int, name: String, normally: String)] = (0..<4).map {
         ($0, AppModel.buttonName($0), AppModel.buttonDefault($0))
     }
@@ -24,7 +30,7 @@ struct ButtonsView: View {
         // Wide: the map on the left, staying in view; Quick Assign, presets, the list and combos on the right.
         // (The map and its labels need about 570 pt, so two columns wait for a roomy page.)
         PageColumns(share: 0.54, from: .roomy) {
-            ButtonMap(model: model, openPad: $openPad, preview: preview)
+            ButtonMap(model: model, openPad: $openPad, preview: trying ?? preview, trying: trying)
                 .pageSticky(from: .roomy)
 
             if model.assignStep != .idle {
@@ -74,6 +80,10 @@ struct ButtonsView: View {
         // buttons opens its picker. Not the primary button: that's the one you click this
         // window with, and it would tick (and open things) at every click.
         .onChange(of: model.pressed) { old, new in
+            // A preset card is held and being tried (or was a moment ago, with a button still
+            // down): presses are for feeling it, so they tick but never open a picker.
+            let tryingOn = model.tryOn.isTrying || model.tryOn.settling
+            if new.isEmpty { model.tryOn.buttonsSettled() }
             guard model.windowIsKey else { return }
             let down = new.subtracting(old).subtracting([0]), up = old.subtracting(new).subtracting([0])
             if !down.isEmpty { Sounds.shared.detent(pitch: 1.05, volume: 0.45, kind: .buttons) }
@@ -81,10 +91,12 @@ struct ButtonsView: View {
             // One button let go, alone: open its picker (a combo opens nothing, and neither
             // does a gesture button: you press those here to try them).
             if old.count == 1, new.isEmpty, let b = old.first, b != 0, openPad == nil,
-               model.assignStep == .idle, preview == nil, !(model.buttonsInEffect[b]?.holdsTheBall ?? false) {
+               model.assignStep == .idle, preview == nil, !tryingOn, !(model.buttonsInEffect[b]?.holdsTheBall ?? false) {
                 openPad = b
             }
         }
+        // Leaving the page with a card still held: your own buttons are back.
+        .onDisappear { model.tryOn.end(.pageLeft) }
         // Each command a gesture fires: a quiet tick, on this page only (the Sounds switches decide).
         .onChange(of: model.modes.gestureFlash) { _, f in
             guard model.windowIsKey, let f, f.direction != nil else { return }
@@ -174,11 +186,13 @@ extension Findable {
 /// The left pads' labels sit on the left, the right pads' on the right, each
 /// joined to its pad by a short line. Clicking a pad or a label opens its
 /// picker. While a preset is previewed, the labels show the preset's actions
-/// (the ones that would change ringed in amber).
+/// (the ones that would change ringed in amber). While a preset card is held and tried
+/// on (`trying`), they show what the buttons do right now, and the caption says how to go back.
 struct ButtonMap: View {
     let model: AppModel
     @Binding var openPad: Int?
     let preview: ButtonPreset?
+    var trying: ButtonPreset? = nil
     @Environment(ShellState.self) private var shell: ShellState?
     @Environment(\.colorScheme) private var scheme
     @Environment(\.pageWidth) private var pageWidth
@@ -187,7 +201,10 @@ struct ButtonMap: View {
         // Larger beside the list on a wide page (PageLayout.swift).
         let side: CGFloat = pageWidth == .triple ? 260 : 214
         VStack(alignment: .leading, spacing: Theme.Space.titleToGroup) {
-            SectionTitle(title: nil, caption: preview == nil
+            let tryName = trying?.title ?? ""
+            SectionTitle(title: nil, caption: trying != nil
+                         ? "Trying \(tryName). Let go to put your own buttons back."
+                         : preview == nil
                          ? "Click a button here, or press it on your trackball, to choose what it does."
                          : "Previewing a preset. Nothing changes until you apply it.") {
                 if model.assignStep == .idle {
@@ -381,18 +398,22 @@ private struct PadTargets: View {
 
 /// Ready-made sets, each a card with a tiny map of what it does. Clicking one
 /// previews it on the map above; Apply sets every button and combo at once
-/// (after a backup, with Undo in the toast).
+/// (after a backup, with Undo in the toast). Holding one tries it on: the trackball
+/// wears it until you let go (TryOn.swift).
 struct PresetStrip: View {
     let model: AppModel
     @Binding var preview: ButtonPreset?
 
+    /// A preset's card, to `TryOn`.
+    static func tryID(_ preset: ButtonPreset) -> String { "preset:\(preset.id)" }
+
     var body: some View {
         let current = model.config.matchingPreset
         VStack(alignment: .leading, spacing: Theme.Space.titleToGroup) {
-            SectionTitle(title: "Presets", caption: "Sets all your buttons and a few combos at once. You can undo it.")
+            SectionTitle(title: "Presets", caption: "Sets all your buttons and a few combos at once. You can undo it. Or hold one down to try it first.")
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
                 ForEach(ButtonPreset.all) { p in
-                    PresetCard(preset: p, applied: current?.id == p.id, selected: preview?.id == p.id) {
+                    PresetCard(preset: p, applied: current?.id == p.id, selected: preview?.id == p.id, tryOn: model.tryOn) {
                         withAnimation(Theme.Motion.spring) { preview = preview?.id == p.id ? nil : p }
                         Sounds.shared.detent(pitch: 1.1, volume: 0.45)
                     }
@@ -413,14 +434,29 @@ struct PresetStrip: View {
     }
 }
 
-private struct PresetCard: View {
+struct PresetCard: View {
     let preset: ButtonPreset
     let applied: Bool
     let selected: Bool
+    let tryOn: TryOn
     let action: () -> Void
     @State private var hovering = false
+    /// The pointer's button is down on the card (and still over it).
+    @State private var down = false
+    /// The build-up while it's held: 0 at rest, 1 once it's tried on.
+    @State private var charge = 0.0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// Renders: draw the held card's build-up this far along (a picture has no clock).
+    nonisolated(unsafe) static var sandboxCharge: Double?
 
     var body: some View {
+        let id = PresetStrip.tryID(preset)
+        let trying = tryOn.isTrying(id)
+        let building = tryOn.pressing == id
+        let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
+        let fixed: Double? = PresetCard.sandboxCharge
+        let wound: Double = fixed == nil ? charge : (building ? (fixed ?? 0) : 0)
         Button(action: action) {
             HStack(spacing: 10) {
                 MiniPadMap(actions: (0..<4).map(preset.action(for:)), size: 46)
@@ -429,7 +465,13 @@ private struct PresetCard: View {
                         .font(.system(size: 12.5, weight: .semibold))
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
-                    if applied {
+                    if trying {
+                        Text("Let go to put yours back", comment: "Preset card, while it's held down and being tried on")
+                            .font(.system(size: 10.5, weight: .medium))
+                            .foregroundStyle(Theme.buttons)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                    } else if applied {
                         Label("In use", systemImage: "checkmark")
                             .font(.system(size: 10.5, weight: .medium))
                             .foregroundStyle(Theme.ball)
@@ -446,18 +488,69 @@ private struct PresetCard: View {
             .padding(9)
             .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
             .background {
-                let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
-                shape.fill(selected ? Theme.buttons.opacity(0.12) : hovering ? Theme.hoverFill : Theme.groupFill)
-                    .pixelBorder(shape, selected ? Theme.buttons : applied ? Theme.ball.opacity(0.6) : Theme.groupBorder)
-                    .shadow(color: selected ? Theme.buttons.opacity(0.35) : .clear, radius: 8)
+                let lit = selected || trying
+                shape.fill(lit ? Theme.buttons.opacity(0.12) : hovering ? Theme.hoverFill : Theme.groupFill)
+                    .pixelBorder(shape, lit ? Theme.buttons : applied ? Theme.ball.opacity(0.6) : Theme.groupBorder)
+                    .shadow(color: lit ? Theme.buttons.opacity(trying ? 0.5 : 0.35) : .clear, radius: trying ? 11 : 8)
                     .flattened(room: 20)
             }
-            .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay {
+                // The hold winding up: amber warms the card and a line of light runs round its
+                // edge; it's all the way round at the moment the trackball starts wearing the preset.
+                if wound > 0 && !trying {
+                    shape.fill(Theme.buttons.opacity(0.10 * wound))
+                    shape.trim(from: 0, to: reduceMotion ? 1 : wound)
+                        .stroke(Theme.buttons.opacity(reduceMotion ? wound : 1), style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
+                        .shadow(color: Theme.buttons.opacity(0.7), radius: 3)
+                        .padding(0.75)
+                }
+            }
+            .contentShape(shape)
         }
         .buttonStyle(PressableStyle())
-        .onHover { hovering = $0 }
-        .help(preset.detail)
+        // The mouse goes to the catcher (a click and a hold are told apart there); the Button
+        // underneath is for the keyboard and VoiceOver.
+        .overlay {
+            PressCatcher(help: preset.detail,
+                         onDown: {
+                             down = true
+                             // The one in use has nothing to try: it's what the trackball does now.
+                             if !applied {
+                                 tryOn.press(id: id, name: preset.title) { $0 = $0.tryingOn(preset) }
+                             }
+                         },
+                         onInside: { inside in
+                             down = inside
+                             if !inside { tryOn.cancelPress() }   // dragged off before it took: an ordinary press
+                         },
+                         onUp: { inside in
+                             down = false
+                             let tried = tryOn.release(id: id)
+                             if !tried && inside { action() }
+                         },
+                         onHover: { hovering = $0 })
+        }
+        .scaleEffect(reduceMotion ? 1 : trying ? 1.025 : down ? 0.97 : 1)
+        .animation(down && !trying ? .easeOut(duration: 0.08) : .spring(response: 0.3, dampingFraction: 0.55), value: down)
+        .animation(.spring(response: 0.32, dampingFraction: 0.58), value: trying)
+        .onChange(of: building) { _, on in
+            guard PresetCard.sandboxCharge == nil else { return }
+            if on {
+                withAnimation(.easeIn(duration: TryOn.engageDelay - TryOn.chargeDelay).delay(TryOn.chargeDelay)) { charge = 1 }
+            } else if !tryOn.isTrying(id) {
+                withAnimation(.easeOut(duration: 0.14)) { charge = 0 }   // let go early: a click, nothing tried
+            }
+        }
+        .onChange(of: trying) { _, _ in
+            guard PresetCard.sandboxCharge == nil else { return }
+            // Tried on: the wind-up is done (the card's own lit edge takes over). Let go: gone.
+            var t = Transaction()
+            t.disablesAnimations = true
+            withTransaction(t) { charge = 0 }
+        }
         .accessibilityLabel(Text(verbatim: preset.title + ". " + preset.detail))
+        .accessibilityHint(Text("Hold the pointer’s button down on it to try it; let go to put your own buttons back.",
+                                comment: "VoiceOver hint on a button preset card"))
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 

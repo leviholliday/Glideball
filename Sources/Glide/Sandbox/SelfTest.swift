@@ -560,6 +560,196 @@ enum SelfTest {
             return "goes back after 10 s (never mid-drag), Keep keeps, Esc, pause, unplug and quit put it back, one at a time"
         }
 
+        step("hold to try on") {
+            // Holding a preset card puts the preset on the engine only, and every way the hold
+            // can end takes it off again. The person's own settings (the model's, and what's
+            // saved) are never the tried-on ones, so a crash mid-hold has nothing to undo.
+            let t = model.tryOn
+            let good = TryOn.Conditions(enabled: true, connected: true, active: true, windowKey: true, leftDown: true,
+                                        trackballPrimaryDown: true, trackballButtonsDown: true, busy: false)
+            var c = good
+            let realConditions = t.conditions
+            let saved = (model.status, model.config.enabled)
+            t.conditions = { c }
+            defer {
+                t.end(.quit)
+                t.conditions = realConditions
+                model.status = saved.0
+                model.config.enabled = saved.1
+            }
+            model.config.enabled = true
+            model.status = DemoData.connected
+            model.pushToEngine()
+            let mine = model.config
+            let own = model.engineConfig
+            // Two presets that aren't what the buttons already do (a returning user has Spaces).
+            let different = ButtonPreset.all.filter { $0.buttons[2] != nil && $0.buttons[2] != own.buttons[2] }
+            let preset = try unwrap(different.first, "no preset differs from the setup")
+            let other = try unwrap(different.dropFirst().first, "no second preset differs from the setup")
+            let id = PresetStrip.tryID(preset)
+            var t0 = Date()
+
+            @MainActor func untouched(_ when: String) throws {
+                try check(model.config == mine, "\(when): the model's settings changed")
+                try check(GlideConfig.load() == mine, "\(when): what's saved isn't the person's own setup")
+            }
+            @MainActor func wearing(_ p: ButtonPreset, _ when: String) throws {
+                let e = model.engineConfig
+                try check(e.buttons[2] == p.buttons[2] && e.buttons[3] == p.buttons[3]
+                            && e.chords.map(\.buttons) == p.chords.map(\.buttons) && e.chords.map(\.action) == p.chords.map(\.action),
+                          "\(when): the engine isn't wearing \(p.id)")
+                try check(e.buttons[0] == own.buttons[0], "\(when): the primary button's entry changed")
+                try untouched(when)
+            }
+            @MainActor func hold(_ when: String) throws {
+                c = good
+                t0 = Date()
+                try check(t.press(id: id, name: preset.title, now: t0) { $0 = $0.tryingOn(preset) }, "\(when): the press was refused")
+                t.tick(now: t0.addingTimeInterval(TryOn.engageDelay / 2))
+                try check(!t.isTrying && t.pressing == id && model.engineConfig == own, "\(when): tried on before the hold was long enough")
+                t.tick(now: t0.addingTimeInterval(TryOn.engageDelay))
+                try check(t.isTrying(id) && t.pressing == nil, "\(when): holding didn't try it on")
+                try wearing(preset, when)
+            }
+            @MainActor func back(_ why: TryOn.Ending, _ when: String) throws {
+                try check(!t.isTrying && t.pressing == nil, "\(when): still trying")
+                try check(t.lastEnding == why, "\(when): ended as \(String(describing: t.lastEnding)), expected \(why)")
+                try check(model.engineConfig == own, "\(when): the engine didn't get the person's own setup back")
+                try untouched(when)
+            }
+
+            // A click is still a click: let go before the hold takes, nothing is ever tried.
+            try check(t.press(id: id, name: preset.title, now: t0) { $0 = $0.tryingOn(preset) }, "a click's press was refused")
+            t.tick(now: t0.addingTimeInterval(0.15))
+            try check(!t.release(id: id) && !t.isTrying && model.engineConfig == own, "a quick click tried the preset on")
+            // Dragged off the card before it took: nothing tried, however long it's held.
+            _ = t.press(id: id, name: preset.title, now: t0) { $0 = $0.tryingOn(preset) }
+            t.cancelPress()
+            t.tick(now: t0.addingTimeInterval(TryOn.engageDelay + 1))
+            try check(!t.isTrying && !t.release(id: id), "a press dragged off the card was tried on")
+
+            // 1. Letting go. The release isn't a click.
+            try hold("let go")
+            try check(t.release(id: id), "letting go of a tried-on card counted as a click")
+            try back(.released, "let go")
+            // The page drawn mid-try, then taken away (its onDisappear): that's an ending too.
+            try hold("the page goes")
+            try draw(ButtonsView(model: model).frame(width: Theme.Space.contentMaxWidth), "the Buttons page with a preset tried on")
+            try back(.pageLeft, "the page went away")
+            // 2. The mouse-up never arrives: macOS says the button is up (two looks in a row).
+            try hold("lost mouse-up")
+            c.leftDown = false
+            t.tick(now: t0.addingTimeInterval(1))
+            try check(t.isTrying, "one odd answer about the button ended the try")
+            t.tick(now: t0.addingTimeInterval(1.1))
+            try back(.lostRelease, "lost mouse-up")
+            try check(t.release(id: id), "the late mouse-up after a lost one counted as a click")
+            // 3. macOS still has the left button down (something else holds it), but the
+            //    trackball's own report says its primary button came up.
+            try hold("trackball's button up")
+            c.trackballPrimaryDown = false
+            t.tick(now: t0.addingTimeInterval(1)); t.tick(now: t0.addingTimeInterval(1.1))
+            try back(.lostRelease, "trackball's button up")
+            // (Held with another mouse, the trackball's primary button was never down: that's not an ending.)
+            c = good; c.trackballPrimaryDown = false
+            t0 = Date()
+            _ = t.press(id: id, name: preset.title, now: t0) { $0 = $0.tryingOn(preset) }
+            let noTrackball = c
+            t.conditions = { noTrackball }
+            t.tick(now: t0.addingTimeInterval(TryOn.engageDelay)); t.tick(now: t0.addingTimeInterval(2)); t.tick(now: t0.addingTimeInterval(3))
+            try check(t.isTrying(id), "a card held with another mouse stopped being tried")
+            t.conditions = { c }
+            _ = t.release(id: id)
+            try back(.released, "another mouse let go")
+            // 4. Pause (the model's own switch), and what the engine gets is paused, nothing else.
+            try hold("pause")
+            model.config.enabled = false
+            try check(!t.isTrying && t.lastEnding == .paused, "pausing left the preset tried on")
+            try check(model.engineConfig.buttons == own.buttons && model.engineConfig.chords == own.chords, "paused with the preset's buttons")
+            c.enabled = false
+            try check(!t.press(id: id, name: preset.title) { $0 = $0.tryingOn(preset) }, "a card can be tried while paused")
+            model.config.enabled = true
+            try back(.paused, "resumed")
+            // 5. Unplugged (the engine's status).
+            try hold("unplug")
+            var off = model.status
+            off.deviceConnected = false
+            model.status = off
+            try check(!t.isTrying && t.lastEnding == .unplugged && model.engineConfig == own, "unplugging left the preset tried on")
+            c.connected = false
+            try check(!t.press(id: id, name: preset.title) { $0 = $0.tryingOn(preset) }, "a card can be tried with no trackball")
+            model.status = DemoData.connected
+            // 6. The watchdog's own looks: paused, unplugged, another app in front, the window without the keys, Quick Assign.
+            for (change, why): ((inout TryOn.Conditions) -> Void, TryOn.Ending) in [
+                ({ $0.enabled = false }, .paused), ({ $0.connected = false }, .unplugged), ({ $0.active = false }, .deactivated),
+                ({ $0.windowKey = false }, .windowLeft), ({ $0.busy = true }, .busy)] {
+                try hold("watchdog \(why.rawValue)")
+                change(&c)
+                t.tick(now: t0.addingTimeInterval(1))
+                try back(why, "watchdog \(why.rawValue)")
+            }
+            // 7. Another app comes to the front, the app hides, the Mac sleeps, the screen sleeps,
+            //    the user is switched: the real notices.
+            t.watchTheApp()
+            let app = NotificationCenter.default, work = NSWorkspace.shared.notificationCenter
+            for (center, name, why): (NotificationCenter, Notification.Name, TryOn.Ending) in [
+                (app, NSApplication.didResignActiveNotification, .deactivated), (app, NSApplication.didHideNotification, .deactivated),
+                (work, NSWorkspace.willSleepNotification, .slept), (work, NSWorkspace.screensDidSleepNotification, .slept),
+                (work, NSWorkspace.sessionDidResignActiveNotification, .slept)] {
+                try hold(name.rawValue)
+                center.post(name: name, object: nil)
+                try back(why, name.rawValue)
+            }
+            // 8. The window loses the keys or closes, the page goes away, the tour takes the buttons, quit.
+            try hold("window"); model.windowStateChanged(visible: true, key: false); try back(.windowLeft, "window lost the keys")
+            try hold("page"); t.end(.pageLeft); try back(.pageLeft, "left the page")
+            try hold("tour"); model.mappingsSuspended = true; try check(!t.isTrying && t.lastEnding == .busy, "the tour left it on")
+            model.mappingsSuspended = false; model.pushToEngine(); try back(.busy, "the tour")
+            try hold("quit"); t.end(.quit); try back(.quit, "quit")
+            // 9. Thirty seconds at most.
+            try hold("limit")
+            t.tick(now: t0.addingTimeInterval(TryOn.engageDelay + TryOn.limit - 1))
+            try check(t.isTrying, "ended before the limit")
+            t.tick(now: t0.addingTimeInterval(TryOn.engageDelay + TryOn.limit + 0.1))
+            try back(.timedOut, "limit")
+            // 10. Another card: the first comes off before anything else can go on.
+            try hold("another card")
+            try check(t.press(id: PresetStrip.tryID(other), name: other.title, now: t0) { $0 = $0.tryingOn(other) }, "second press refused")
+            try check(!t.isTrying && t.lastEnding == .replaced && model.engineConfig == own, "another card pressed: the first stayed on")
+            t.cancelPress()
+            try back(.replaced, "another card pressed")
+            // 11. Their own settings changing underneath (sync, a slider): theirs change, the preset
+            //     stays on top, and letting go leaves exactly theirs.
+            try hold("a change underneath")
+            model.config.trackingSpeed = mine.trackingSpeed + 1
+            try check(model.engineConfig.trackingSpeed == mine.trackingSpeed + 1 && model.engineConfig.buttons[2] == preset.buttons[2],
+                      "a change of their own mid-try didn't reach the engine under the preset")
+            try check(GlideConfig.load().buttons == mine.buttons && GlideConfig.load().chords == mine.chords, "the preset was saved with their change")
+            _ = t.release(id: id)
+            model.config.trackingSpeed = mine.trackingSpeed
+            try back(.released, "after a change underneath")
+
+            // The card's mouse catcher: down, dragged off, back on, up; and torn down mid-press.
+            let catcher = PressCatcher.CatcherView(frame: NSRect(x: 0, y: 0, width: 100, height: 60))
+            var log: [String] = []
+            catcher.onDown = { log.append("down") }
+            catcher.onInside = { log.append($0 ? "in" : "out") }
+            catcher.onUp = { log.append($0 ? "up inside" : "up outside") }
+            @MainActor func mouse(_ type: NSEvent.EventType, _ x: CGFloat) throws -> NSEvent {
+                try unwrap(NSEvent.mouseEvent(with: type, location: NSPoint(x: x, y: 10), modifierFlags: [], timestamp: 0, windowNumber: 0,
+                                              context: nil, eventNumber: 0, clickCount: 1, pressure: 1), "no mouse event")
+            }
+            catcher.mouseDown(with: try mouse(.leftMouseDown, 10))
+            catcher.mouseDragged(with: try mouse(.leftMouseDragged, 300))
+            catcher.mouseDragged(with: try mouse(.leftMouseDragged, 20))
+            catcher.mouseUp(with: try mouse(.leftMouseUp, 20))
+            catcher.mouseUp(with: try mouse(.leftMouseUp, 20))   // a second one does nothing
+            catcher.mouseDown(with: try mouse(.leftMouseDown, 10))
+            catcher.viewDidMoveToWindow()                        // no window: taken off the page while down
+            try check(log == ["down", "out", "in", "up inside", "down", "up outside"], "the card's mouse catcher reported \(log)")
+            return "a click stays a click; a hold puts the preset on the engine only; let go, a lost mouse-up, the trackball's own report, pause, unplug, another app, hide, sleep, the window, the page, the tour, quit, 30 s and another card all take it off; settings and what's saved never change"
+        }
+
         step("menu bar panel") {
             try check(MenuBarPanelController.shared.opens == .menu, "the menu-bar icon should open its menu unless the panel is picked")
             try check(!MenuBarPanelController.shared.isOpen && !model.panelOpen, "the panel is open")

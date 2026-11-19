@@ -1893,7 +1893,10 @@
 "Searches the page or document." = "ページや書類の中を検索します。";
 "Selects everything." = "すべてを選択します。";
 "Sends the window in front to the Dock." = "最前面のウインドウをDockにしまいます。";
-"Sets all your buttons and a few combos at once. You can undo it." = "すべてのボタンといくつかのコンボを一度に設定します。元に戻せます。";
+"Sets all your buttons and a few combos at once. You can undo it. Or hold one down to try it first." = "すべてのボタンといくつかのコンボを一度に設定します。元に戻せます。長押しすると、先に試せます。";
+"Trying %@. Let go to put your own buttons back." = "%@を試しています。離すと自分のボタンに戻ります。";
+"Let go to put yours back" = "離すと元に戻ります";
+"Hold the pointer’s button down on it to try it; let go to put your own buttons back." = "ポインタのボタンを押したままにすると試せます。離すと自分のボタンに戻ります。";
 "Setting up and exploring" = "設定と探索";
 "Share your Glideball" = "Glideballをシェア";
 "Shows every open window and your Spaces." = "開いているすべてのウインドウと操作スペースを表示します。";

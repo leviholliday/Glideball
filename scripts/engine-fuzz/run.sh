@@ -39,6 +39,7 @@ swiftc "${FLAGS[@]}" -swift-version 5 -o "$OUT" \
   Sources/Glide/PointerTuner.swift \
   Sources/Glide/Telemetry.swift \
   Sources/Glide/Diagnostics.swift \
+  Sources/Glide/PressTiming.swift \
   Sources/Glide/Config.swift \
   Sources/Glide/AppProfile.swift \
   scripts/engine-fuzz/main.swift

@@ -150,6 +150,10 @@ struct SwitcherHold: Equatable {
     var firstRow = 0
     /// Roll not yet turned into steps, each way.
     var ax = 0.0, ay = 0.0
+    /// Drawing only: how many times leftover roll has been forgotten after a rest. The panel
+    /// lets its lean fall back by itself after `restForgets`; this makes the next model differ
+    /// from the last one drawn, so a roll that leans just as far again is drawn again.
+    var rests = 0
     /// When the ball last moved, and when the highlight last stepped (time since the press).
     var lastMove = 0.0
     var lastStep = -Double.infinity
@@ -196,6 +200,7 @@ struct SwitcherHold: Equatable {
         if travel >= tapSlop { revealed = true }
         guard !dismissed else { return }
         if grid != nil, now - lastMove >= Self.restForgets {
+            if ax != 0 || ay != 0 { rests &+= 1 }   // (drawing only)
             ax = 0
             ay = 0
         }
@@ -321,11 +326,39 @@ struct SwitcherHold: Equatable {
         return .hid(gone)
     }
 
+    /// Drawing only: leftover roll under this share of a step shows no lean (a resting hand).
+    static let leanDeadBand = 0.15
+    /// Drawing only: the lean is told in this many parts of a step each way.
+    static let leanParts = 8
+
+    /// Drawing only: how far the roll left over since the last step has got toward the next
+    /// one, each way, in eighths of a step (−8…8; +x right, +y down). Nothing toward an edge
+    /// the light can't go past, nothing under the dead band, and when neither way clearly
+    /// leads (a diagonal, which never steps) both show at half. It decides nothing: the
+    /// stepping above never reads it.
+    var lean: (x: Int, y: Int) {
+        guard let grid, grid.count > 0, step > 0, !dismissed else { return (0, 0) }
+        func part(_ a: Double, _ forward: SwitcherGrid.Move, _ back: SwitcherGrid.Move) -> Double {
+            guard a != 0, grid.stepped(index, a > 0 ? forward : back) != index else { return 0 }
+            let f = (abs(a) / step - Self.leanDeadBand) / (1 - Self.leanDeadBand)
+            return (a > 0 ? 1 : -1) * min(max(f, 0), 1)
+        }
+        var x = part(ax, .right, .left)
+        var y = grid.rows > 1 ? part(ay, .down, .up) : 0
+        if abs(ax) >= Self.dominance * abs(ay) { y = 0 }
+        else if abs(ay) >= Self.dominance * abs(ax) { x = 0 }
+        else { x /= 2; y /= 2 }
+        let n = Double(Self.leanParts)
+        return (Int((x * n).rounded(.towardZero)), Int((y * n).rounded(.towardZero)))
+    }
+
     /// The panel as it should look now; nil while it's hidden.
     var overlay: SwitcherOverlayModel? {
         guard shown, let grid else { return nil }
+        let lean = lean
         return SwitcherOverlayModel(session: session, grid: grid, selected: index, firstRow: firstRow,
-                                    hidden: hidden, undoable: undoable != nil)
+                                    hidden: hidden, undoable: undoable != nil,
+                                    leanX: lean.x, leanY: lean.y, rests: rests)
     }
 }
 
@@ -343,6 +376,10 @@ struct SwitcherOverlayModel: Equatable {
     var hidden: [Int] = []
     /// The last hide can be undone by pressing again (the panel says so).
     var undoable = false
+    /// Drawing only: how far the leftover roll leans toward the next app each way, in eighths
+    /// of a step (`SwitcherHold.lean`), and how often a rest has dropped it (`SwitcherHold.rests`).
+    var leanX = 0, leanY = 0
+    var rests = 0
 }
 
 /// Builds the app list, draws the panel and switches apps for the Switcher (the app's
@@ -357,6 +394,9 @@ protocol SwitcherPresenting: AnyObject {
     func hideSwitcher()
     /// Switches to app `index` of `session`'s list (once; the list is gone afterwards).
     func activateSwitcher(session: Int, index: Int)
+    /// Drawing only: the release is about to switch to app `index` of `session`'s list (sent
+    /// before the panel is taken down, so it can leave by lifting that app's icon).
+    func switcherChose(session: Int, index: Int)
     /// App `index` of `session`'s list was hidden from its Switcher (`hidden`), or brought back.
     func switcherAppHidden(session: Int, index: Int, hidden: Bool)
 }
