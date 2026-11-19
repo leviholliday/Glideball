@@ -1,5 +1,173 @@
 [
  {
+  "body": "Hold a preset on the Buttons page to try it on: your trackball wears it while you hold, and letting go puts your own buttons back. Glideball can now install updates by itself, only when you've left the ball alone; turn it on where an update shows. The Switcher's light leans with the ball, and the app you choose lifts as the panel falls away. A setup you import now always shows the keys a shortcut really presses.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `523a2bb3e7f5efef33c1e0036fd2d798256f3548baa6ac449a14280a6d8dda07`",
+  "date": "2026-11-19T06:56:47Z",
+  "name": "Glideball 2.10 beta 35",
+  "prerelease": true,
+  "tag": "v2.10-beta.35",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.35"
+ },
+ {
+  "body": "The Gestures ring now comes out of the pointer: a ring of light rolls outward and each action flies out its own way. A beam of light leans toward where you roll, the action you run flares as the rest falls away, and turning the scroll ring spins a pink dial on the edge. The Gestures editor on the Buttons page is now the ring itself: click a place to choose its action, the middle is the tap, and More opens right there.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `2d3192808afa9c45cde8d778a38dd3f5f8825a8be9a9a7b236cf49e329a03692`",
+  "date": "2026-11-19T05:46:27Z",
+  "name": "Glideball 2.10 beta 34",
+  "prerelease": true,
+  "tag": "v2.10-beta.34",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.34"
+ },
+ {
+  "body": "The Switcher holds steady now: the highlight moves only when you mean it, stops at the ends, and your apps keep their places between holds. It has a new look too, with a lens of light that glides to the app you're on. And you can hide an app right from the Switcher: press another button while it's lit. Press again to undo, or bring it back on the Buttons page.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `a5e95ef31efec04c11e9532f5c0e38510ef864e7d901979102c085b53f0c0d0a`",
+  "date": "2026-11-19T04:45:50Z",
+  "name": "Glideball 2.10 beta 33",
+  "prerelease": true,
+  "tag": "v2.10-beta.33",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.33"
+ },
+ {
+  "body": "No more little hop when you press a Gestures button. More now opens only when you mean it: rest on it for a moment or roll on past it, and in its ring nothing runs until you let go. The ring moves now too: a light glides to your choice, More's ring grows out of its chip, and the choice you run gives a little pulse.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `6089671227b091dde3442e46386563fef653ed4a34554b0b272ce916f3c06156`",
+  "date": "2026-11-19T03:52:46Z",
+  "name": "Glideball 2.10 beta 32",
+  "prerelease": true,
+  "tag": "v2.10-beta.32",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.32"
+ },
+ {
+  "body": "The pointer no longer hops after you let go of a Gestures button. More and Back now start in the middle with nothing lit and wait a moment for your hand, so rolling on no longer runs whatever is on that side. Gestures and Switcher editors on the Buttons page fold to one line. The sidebar no longer leaves a page lit, or misses a click, after an interrupted press.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `7f80c0072d096704b625a466a08c6b0b67341553e07cea404164f35532c8c900`",
+  "date": "2026-11-19T00:25:09Z",
+  "name": "Glideball 2.10 beta 31",
+  "prerelease": true,
+  "tag": "v2.10-beta.31",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.31"
+ },
+ {
+  "body": "The French text now uses vous throughout, and the Korean text uses one polite style throughout, instead of mixing them.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `7d79340f91acc6a5505c5540a882ce2adf7e913b028567f600ef7ab51abc3475`",
+  "date": "2026-11-18T21:16:44Z",
+  "name": "Glideball 2.10 beta 30",
+  "prerelease": true,
+  "tag": "v2.10-beta.30",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.30"
+ },
+ {
+  "body": "What's New is ready for 2.10, leading with Gestures and the Switcher. A round of small fixes: the Japanese and Korean text no longer calls the app Glide, the Saved pill no longer covers the Share menu, Gestures on a showing ring say they run when you let go, and a few hints now match what the setting really does.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `9646e65300138b1d3e86dfb9d752cc9bee0ed2e594a611b119fa03f116359b5c`",
+  "date": "2026-11-18T20:42:46Z",
+  "name": "Glideball 2.10 beta 29",
+  "prerelease": true,
+  "tag": "v2.10-beta.29",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.29"
+ },
+ {
+  "body": "The Wheel and gestures are now one thing again, called Gestures. You choose when the ring shows: never, after you hold still for a moment, or right away. Any direction can be More, which opens a second ring. The scroll ring's job has a Reverse switch. Your old gestures and Wheels carry over as they were.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `f0feeff644ed69e7c234e1eb65ddbba45cfaa654d62c7a5a386a14c7b87a882f`",
+  "date": "2026-11-18T19:57:21Z",
+  "name": "Glideball 2.10 beta 28",
+  "prerelease": true,
+  "tag": "v2.10-beta.28",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.28"
+ },
+ {
+  "body": "The live activity keeps going while you scroll a page, and shows the last 12 seconds instead of 8. The dotted circle around the ball in the Wheel editor is gone.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `abc0c5dcc245f32e94be51342b3119a9a57300f1c91ea7026aa0a35de55c4c9c`",
+  "date": "2026-11-18T18:22:37Z",
+  "name": "Glideball 2.10 beta 27",
+  "prerelease": true,
+  "tag": "v2.10-beta.27",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.27"
+ },
+ {
+  "body": "Button fixes for rare moments with two devices. Ten cases where a click could be matched to the wrong device, or a button could be let go twice, after an unplug, a relaunch or macOS switching Glideball off for a moment. All found by long test runs, none seen on a real trackball.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `f847911bd9425f6599c1957f03d45b68500c37259d82140bbb3b72bbc46305c0`",
+  "date": "2026-11-18T09:31:29Z",
+  "name": "Glideball 2.10 beta 26",
+  "prerelease": true,
+  "tag": "v2.10-beta.26",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.26"
+ },
+ {
+  "body": "New: the Switcher, a ⌘-Tab for the trackball. In Buttons, set a button (not bottom-left) or a combo to Switcher. Hold it and your open apps appear; roll the ball or turn the scroll ring to pick one and let go to switch. Hold and let go without rolling to flip back to the app you used last. It has only been tested in simulation, so tell me how it feels.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `38496f26f15ed50812c37b60e9bb06912d700100950281143a17ad1806cc810b`",
+  "date": "2026-11-18T07:42:20Z",
+  "name": "Glideball 2.10 beta 25",
+  "prerelease": true,
+  "tag": "v2.10-beta.25",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.25"
+ },
+ {
+  "body": "New: the Wheel. In Buttons, set a button (not bottom-left) or a combo to Wheel. Hold it and a ring of choices appears around the pointer: roll toward one and let go to run it, or roll back to the middle to cancel. While you hold it, the scroll ring is a dial for volume, zoom, undo and redo, tabs or brightness. It has only been tested in simulation, so tell me how it feels.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `86a21c868b8b8e490795aa57299373c031b156d77967e694eaa97ec437a45d28`",
+  "date": "2026-11-18T07:25:47Z",
+  "name": "Glideball 2.10 beta 24",
+  "prerelease": true,
+  "tag": "v2.10-beta.24",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.24"
+ },
+ {
+  "body": "While you hold a gesture button or Scroll with ball, Glideball now hides the real pointer and shows a picture of it in place, so it should look completely still however fast you roll. Scrolling Glideball's own pages is smoother. There's a Search button in the sidebar (Settings › General hides it). The idle ball no longer jumps when you click away from the window and back.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `7889b3cbb235963817b7882c4bda5accf2685d58aa3f247be1280cf9dc0746f2`",
+  "date": "2026-11-18T06:06:34Z",
+  "name": "Glideball 2.10 beta 23",
+  "prerelease": true,
+  "tag": "v2.10-beta.23",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.23"
+ },
+ {
+  "body": "Holding a gesture button or Scroll with ball should now keep the pointer completely still, instead of nearly still. Glideball asks macOS to ignore the ball for a moment each time it puts the pointer back, and keeps asking while you roll.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `6d819ea2ee9688f8405002a1ca8d168548e34f6c0c2f10594b866a374b2e5c82`",
+  "date": "2026-11-17T18:16:50Z",
+  "name": "Glideball 2.10 beta 22",
+  "prerelease": true,
+  "tag": "v2.10-beta.22",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.22"
+ },
+ {
+  "body": "Scrolling a page in Glideball should feel smoother: the glow behind the trackball now holds still while the page moves, and the trackball picture keeps turning.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `d0e5150ad7f51e82358c134ae2f79ea4c095956c773978dea44f21917675c181`",
+  "date": "2026-11-17T16:38:43Z",
+  "name": "Glideball 2.10 beta 21",
+  "prerelease": true,
+  "tag": "v2.10-beta.21",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.21"
+ },
+ {
+  "body": "Another mouse or the trackpad pressing a button no longer ends what the trackball is holding on that same button, and its own click goes through untouched. A button you're already holding when Glideball starts, resumes, or the trackball is plugged in no longer fires its action when you let go.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `b5c36553a789b4c4291a9fc33c714af325d5c0805860354ae7666a4d24b97c15`",
+  "date": "2026-11-17T09:06:22Z",
+  "name": "Glideball 2.10 beta 20",
+  "prerelease": true,
+  "tag": "v2.10-beta.20",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.20"
+ },
+ {
+  "body": "The trackball picture and the light keep moving while you scroll a page in Glideball, and scrolling stays smooth. Only the live graphs still wait until the page stops.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `16249e7a998462f28f205785b8865b8ab72606067b15d60ac5e0d6db9f1b0500`",
+  "date": "2026-11-17T05:42:03Z",
+  "name": "Glideball 2.10 beta 19",
+  "prerelease": true,
+  "tag": "v2.10-beta.19",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.19"
+ },
+ {
+  "body": "Gestures: reversing direction now works from where the ball is. Before, after rolling up you had to roll back past where you started before down would fire. Another try at keeping the pointer still during a gesture or Scroll with ball: Glideball now also goes by where each move says the pointer is, and movement from another device at the same moment as the trackball's no longer makes the hold follow it. The updater now refuses downloads and zips that are far too big, and checks the signature more strictly.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `cbd7c8cf2e2c7c65d841ad38b0ab9a6f408d654737e8e918d5c1fdaff90b2556`",
+  "date": "2026-11-17T05:31:19Z",
+  "name": "Glideball 2.10 beta 18",
+  "prerelease": true,
+  "tag": "v2.10-beta.18",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.18"
+ },
+ {
+  "body": "Gestures and Scroll with ball: the pointer stays where it is while you hold the button, in any app. Beta 16's fix couldn't work, because the way Glideball froze the pointer also hid its real position from Glideball. Now it only puts the pointer back. With Glideball in front you may see a tiny flicker; tell me if you do.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `5b9b71547e5a579bf8110d1fd4c977114679e473aef4828068fba92890b86d9e`",
+  "date": "2026-11-17T04:25:21Z",
+  "name": "Glideball 2.10 beta 17",
+  "prerelease": true,
+  "tag": "v2.10-beta.17",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.17"
+ },
+ {
+  "body": "Scrolling inside Glideball's own window is smoother. While a page is moving, the light, the trackball picture and the graphs hold still, then carry on a moment after you stop. Overview and Settings also do less work on every scroll frame.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `5cda9ea03d735b78417508bd8b621b95265c887c621a27e909065849ce1264ba`",
+  "date": "2026-11-17T00:18:53Z",
+  "name": "Glideball 2.10 beta 16",
+  "prerelease": true,
+  "tag": "v2.10-beta.16",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.16"
+ },
+ {
+  "body": "Gestures and Scroll with ball: the pointer should now really stay still while you hold the button, in any app. Fixed a gesture on a combo not starting when the ball moved a little. Fixed Scroll with ball jumping far after very fast rolls. The trackball is picked up again more reliably after you unplug and replug it. If you chose crash reports and stats, the stats now include which settings you use (look, sounds, scrolling and more, never app names, keys or anything you type). Settings > Privacy shows the full list. The updater is stricter about what it accepts. Tour: the speed names fit now.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `7292517e4502209fa03cdb2f78f3541ffa12b18a8ca66203ca13eee53f73b2f1`",
+  "date": "2026-11-16T23:45:02Z",
+  "name": "Glideball 2.10 beta 15",
+  "prerelease": true,
+  "tag": "v2.10-beta.15",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.15"
+ },
+ {
   "body": "Fixed: Glideball kept saying Connected after you unplugged the trackball. Gestures and Scroll with ball now hold the pointer still in every app, not only in Glideball. Fixed a crash when copying a badge's share picture. The Settings window now fits on smaller screens, with new Trackball and Sharing tabs. Sliders and presets have a Try button, so you can test a change for 10 seconds before you keep it. New: Help > Copy Connection Details, for when something looks wrong.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `f52f1e536d61a651e5067cb70f4a169265998c0c540ee3494487bd8ca4253149`",
   "date": "2026-11-13T08:43:17Z",
   "name": "Glideball 2.10 beta 14",

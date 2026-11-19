@@ -213,9 +213,10 @@ export function readAction(v, nested = false) {
     case 'holdShortcut': {
       const s = body._0;
       if (!isObject(s) || !Number.isInteger(s.keyCode) || s.keyCode < 0 || s.keyCode > 127) return null;
-      if (!Number.isSafeInteger(s.modifiers) || s.modifiers < 0 || typeof s.keyName !== 'string') return null;
-      const keyName = cleanText(s.keyName, LIMITS.maxKeyName) || '?';
-      return { type, keyCode: s.keyCode, modifiers: Number(BigInt(s.modifiers) & ALLOWED_MODS), keyName };
+      if (!Number.isSafeInteger(s.modifiers) || s.modifiers < 0) return null;
+      // The file's keyName is whatever the sender wrote ("C" beside the key code for Q), so
+      // it's never read: the key code decides the name, as in the Mac app (KeyNames).
+      return { type, keyCode: s.keyCode, modifiers: Number(BigInt(s.modifiers) & ALLOWED_MODS), keyName: keyNameFor(s.keyCode) };
     }
     case 'modifiedClick':
       if (!Number.isInteger(body.button) || body.button < 0 || body.button > 4) return null;
@@ -517,6 +518,30 @@ export function glideballLink(d) {
 
 const SHIFT = 0x20000, CTRL = 0x40000, ALT = 0x80000, CMD = 0x100000;
 
+// KeyNames in Config.swift: fixed names, then what a US keyboard prints (a page can't read the
+// person's layout by key code; on another layout the Mac app's own preview is the one that counts).
+const KEY_NAMES = {
+  123: '←', 124: '→', 125: '↓', 126: '↑', 49: 'Space', 36: '↩', 48: '⇥', 51: '⌫', 117: '⌦', 53: '⎋',
+  115: 'Home', 119: 'End', 116: 'PgUp', 121: 'PgDn', 114: 'Help',
+  122: 'F1', 120: 'F2', 99: 'F3', 118: 'F4', 96: 'F5', 97: 'F6', 98: 'F7', 100: 'F8', 101: 'F9', 109: 'F10',
+  103: 'F11', 111: 'F12', 105: 'F13', 107: 'F14', 113: 'F15', 106: 'F16', 64: 'F17', 79: 'F18', 80: 'F19', 90: 'F20',
+  82: 'Num 0', 83: 'Num 1', 84: 'Num 2', 85: 'Num 3', 86: 'Num 4', 87: 'Num 5', 88: 'Num 6', 89: 'Num 7',
+  91: 'Num 8', 92: 'Num 9', 65: 'Num .', 67: 'Num *', 69: 'Num +', 78: 'Num -', 75: 'Num /', 81: 'Num =',
+  76: 'Num ↩', 71: 'Num Clear', 72: 'Vol +', 73: 'Vol -', 74: 'Mute', 57: '⇪',
+  56: '⇧', 60: '⇧', 59: '⌃', 62: '⌃', 58: '⌥', 61: '⌥', 55: '⌘', 54: '⌘', 63: 'fn',
+  0: 'A', 11: 'B', 8: 'C', 2: 'D', 14: 'E', 3: 'F', 5: 'G', 4: 'H', 34: 'I', 38: 'J', 40: 'K', 37: 'L', 46: 'M',
+  45: 'N', 31: 'O', 35: 'P', 12: 'Q', 15: 'R', 1: 'S', 17: 'T', 32: 'U', 9: 'V', 13: 'W', 7: 'X', 16: 'Y', 6: 'Z',
+  29: '0', 18: '1', 19: '2', 20: '3', 21: '4', 23: '5', 22: '6', 26: '7', 28: '8', 25: '9',
+  24: '=', 27: '-', 33: '[', 30: ']', 39: "'", 41: ';', 42: '\\', 43: ',', 44: '/', 47: '.', 50: '`',
+  10: '§', 93: '¥', 94: '_',
+};
+
+/** What a key code is called, never what a file says it is. */
+export function keyNameFor(keyCode) {
+  return Object.hasOwn(KEY_NAMES, keyCode) ? KEY_NAMES[keyCode] : `Key ${keyCode}`;
+}
+
+
 /** "⌃⌥⇧⌘" then the key, as Glideball writes a shortcut. */
 export function shortcutText(s) {
   let out = '';
@@ -524,7 +549,7 @@ export function shortcutText(s) {
   if (s.modifiers & ALT) out += '⌥';
   if (s.modifiers & SHIFT) out += '⇧';
   if (s.modifiers & CMD) out += '⌘';
-  return out + s.keyName;
+  return out + keyNameFor(s.keyCode);
 }
 
 const sc = (keyCode, keyName, modifiers) => ({ keyCode, keyName, modifiers });
@@ -552,7 +577,7 @@ const SIMPLE_TITLES = {
   ballScrollHold: 'Scroll with ball (hold)', dragLock: 'Drag lock',
 };
 export const MEDIA_TITLES = { 0: 'Volume Up', 1: 'Volume Down', 7: 'Mute', 16: 'Play or Pause', 17: 'Next Track', 18: 'Previous Track' };
-const sameKeys = (a, b) => a.keyCode === b.keyCode && a.modifiers === b.modifiers && a.keyName === b.keyName;
+const sameKeys = (a, b) => a.keyCode === b.keyCode && a.modifiers === b.modifiers;
 
 /** What a button does without Glideball. */
 export function normalTitle(button) {

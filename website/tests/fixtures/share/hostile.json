@@ -19,6 +19,21 @@
    }
   },
   {
+   "name": "a shortcut named C that presses Q shows Q",
+   "d": "pY1NCsIwEEbvMuu09E8tWdq9FxCR1KQ2tE1KMlVKCXgiD-VJTCjuBBfO4psZ5vFmgUabgSFQuPaSi5r1fWRbZgQQuAljpVZAUwKdVNxDIzNo_Wnt9Aj1hKiVhROBu5GIQu1nz2VxmkS1QBanucc_FF0gC2FbbfAyYZjPSchOzJXmwv_KCAyay0b6735NinKz25IAHNjgAajAOUcg_1-kx_n1eK664oeu_GZzod4",
+   "expect": {
+    "parts": [
+     "buttons"
+    ],
+    "from": null,
+    "buttons": {
+     "2": "shortcut",
+     "3": "shortcut",
+     "4": "shortcut"
+    }
+   }
+  },
+  {
    "name": "huge numbers are clamped",
    "d": "bZFNT8MwDIb_i6-0VduBxHrbBIILF3pEHNLMbSOypHK8TWPaf8fpBxMSpySv7ee14wu0nvaKoYLOmh02yto09IoQEjgiBeMdVEUCX8btJGlQxEFC01l9wOCNYySRgiZvrXEdfCZwIsOMbnuWmjIr8rRBVlmxkjwmpYXW1QOiIAu8W-WPQiTUJtrNeroEJi5Ul_n25nco1Fau_iQ8p9gcsR5jc22ePSTQ2vOTCaycxpuLiBut0SJJVRxtSX2J08fnanq_o9L9HA5777mvf-ermA64NHbzKMtFq8cChyFEwv0i_-PMPfnTs1ONjX1P3FHb7P3ByVpSSSKMm5hHhKpVNkT73rQ8aeHVk_n2jmV75wlzTSDu8s-3rNfXHw",
    "expect": {

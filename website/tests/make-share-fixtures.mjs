@@ -110,6 +110,9 @@ addH('script and img tags stay plain text', base(['app:com.evil.app', 'buttons']
   apps: [{ bundleID: 'com.evil.app', name: '<img src=x onerror=alert(1)>' }],
   buttons: { 2: sc(8, '<b>x</b>', CMD) },
 }), { parts: ['buttons', 'app:com.evil.app'], from: '<script>alert(1)</script>'.slice(0, 40), apps: ['com.evil.app'], buttons: { 2: 'shortcut' } });
+addH('a shortcut named C that presses Q shows Q', base(['buttons'], {
+  buttons: { 2: sc(12, 'C', CMD), 3: { shortcut: { _0: { keyCode: 12, modifiers: CMD, keyName: 'Copy\u202E' } } }, 4: { shortcut: { _0: { keyCode: 8, modifiers: CMD } } } },
+}), { parts: ['buttons'], from: null, buttons: { 2: 'shortcut', 3: 'shortcut', 4: 'shortcut' } });
 addH('huge numbers are clamped', base(['pointer', 'scrolling'], {
   trackingSpeed: 1e308, precisionSpeed: -1e308, scroll: { ...scroll, flyDistance: 1e308, throwAmount: -5 }, ballScrollSpeed: 99,
 }), { parts: ['pointer', 'scrolling'], from: null, trackingSpeed: 80, scrollMode: 'follow' });

@@ -75,11 +75,22 @@ test('a share right at the inflate cap is refused, just under it is read', async
   assert.equal((await decodePayload(d(pad(65_536)))).ok, false);
 });
 
+test('a shortcut shows its real key, never the name the file gives it', async () => {
+  const c = load('hostile.json').find((x) => x.name.startsWith('a shortcut named C'));
+  const r = await decodePayload(c.d);
+  assert.equal(r.ok, true);
+  const b = r.share.buttons;
+  assert.equal(describeAction(b[2]), '⌘Q');
+  assert.equal(describeAction(b[3]), '⌘Q');
+  assert.equal(describeAction(b[4]), 'Copy (⌘C)');
+  assert.equal(describeAction({ type: 'shortcut', keyCode: 110, modifiers: 1048576, keyName: 'C' }), '⌘Key 110');
+});
+
 test('the app’s words', () => {
   assert.equal(describeAction({ type: 'shortcut', keyCode: 8, modifiers: 1048576, keyName: 'C' }), 'Copy (⌘C)');
   assert.equal(describeAction({ type: 'holdShortcut', keyCode: 49, modifiers: 262144, keyName: 'Space' }), 'Wispr Flow (⌃Space)');
   assert.equal(describeAction({ type: 'holdShortcut', keyCode: 1, modifiers: 1048576 | 524288, keyName: 'S' }), 'Hold ⌥⌘S');
-  assert.equal(describeAction({ type: 'shortcut', keyCode: 1, modifiers: 262144 | 131072, keyName: 'K' }), '⌃⇧K');
+  assert.equal(describeAction({ type: 'shortcut', keyCode: 40, modifiers: 262144 | 131072, keyName: 'K' }), '⌃⇧K');
   assert.equal(describeAction({ type: 'system' }, 1), 'Right click');
   assert.equal(describeAction({ type: 'system' }, 5), 'Default');
   assert.equal(describeAction({ type: 'modifiedClick', button: 0, modifiers: 262144 }), 'Control-click');
