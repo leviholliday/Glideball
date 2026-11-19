@@ -1732,6 +1732,18 @@ final class Engine {
             if n > 0 { counts[b] = n }
         }
         appButtons.set(counts)
+        // A press remapped to a button apps now have up (with nothing of the engine's on its way):
+        // its hold went by while the tap was off (a release of that button past the tap let go
+        // of it). It holds nothing any more, so nothing may let go of it later: "letting go" would
+        // be a release of whatever else holds that button now, another mouse's press, say. Its
+        // trigger's release does nothing. (`passReal` let go of such a remap for the trackball's
+        // next press of that button, and that release ended another mouse's press for apps, whose
+        // own release was then swallowed. Found by scripts/fuzz.sh, seed 1003752.)
+        for (b, o) in overrides {
+            guard case .remap(let target, _) = o, counts[target] == nil else { continue }
+            overrides[b] = .swallow
+            diagnostics.record("button \(b)'s remap to button \(target) is up for apps: it holds nothing now")
+        }
         // Releases waiting to be told apart go out now, by the reports so far (and after the
         // count, so whatever they set off knows what's down), before the reports are forgotten.
         resolveDeferredUps()

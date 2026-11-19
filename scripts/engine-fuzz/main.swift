@@ -2332,6 +2332,8 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
     hold.buttons[3] = .holdShortcut(.wisprFlow)
     var remap = GlideConfig()
     remap.buttons[1] = .middleClick
+    var remapOverOff = remap   // button 2 does nothing, so its release past an off tap is apps' only word of it
+    remapOverOff.buttons[2] = .disabled
     var fly = GlideConfig()
     fly.scrollMode = .flywheel
     var drag = GlideConfig()
@@ -2584,6 +2586,13 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
          [.unplug(0), .wait(1), .replugHeld(1, 2), .wait(2)] + up(1) + settle),
         ("held through a relaunch while another mouse holds the same button: both let go", [remap],
          [.oPress(1)] + down(1) + [.quit] + up(1) + [.oRelease(1)] + settle),
+        // Seed 1003752 (scripts/fuzz.sh): a remap's hold ended by a release past the switched-off
+        // tap, then another mouse holds that button; the trackball's next press of it "let go" of
+        // the remap, which ended the other mouse's press for apps, and its release was swallowed.
+        ("remap's hold let go of past the switched-off tap, another mouse then holds that button: its release reaches apps",
+         [remapOverOff, remap],
+         down(1, 2) + [.tapOff(1), .kRelease(2, hidFirst: true), .oPress(2), .wait(0.05), .config(1)]
+         + down(2) + up(2) + up(1) + [.wait(2.1), .oRelease(2)] + settle),
     ]
     gestureCases += both + held
     // The Wheel (Nov 18): a ring of slots around the pointer, the ball picks, the release runs it;
