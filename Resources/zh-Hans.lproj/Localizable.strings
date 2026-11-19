@@ -2664,7 +2664,7 @@
 "Swap which way of turning the ring does what" = "交换圆环两个转动方向的作用";
 "The ring scrolls as usual while you hold it." = "按住时，圆环照常滚动。";
 "The ring shows as soon as you hold the button. Roll toward an action and let go to run it." = "一按住按钮圆环就会出现。朝一个操作滚动，松开即可执行。";
-"This is the ring More opens. Roll back through the middle to get to the first ring again; letting go in the middle cancels." = "这是“更多”打开的圆环。经过中间滚回去即可回到第一个圆环；在中间松开则取消。";
+"This is the ring More opens. It waits for your hand to settle first, so the roll that opened it can’t run anything here. Roll back through the middle to get to the first ring again; letting go in the middle cancels." = "这是“更多”打开的圆环。它会先等你的手停稳，所以打开它的那次滚动不会在这里运行任何操作。经过中间滚回去即可回到第一个圆环；在中间松开则取消。";
 "gestures, hold and roll, ring, wheel, radial menu, pie menu, more, show the ring, reverse" = "手势, 按住滚动, 圆环, 滚轮, 径向菜单, 饼状菜单, 更多, 显示圆环, 反向";
 
 /* What’s New 2.10: Gestures, the Switcher, search and sharing */
@@ -2695,3 +2695,30 @@
 
 /* What’s New 2.10: the line under the title */
 "Here’s what changed since 2.9.1. Your settings are all still here." = "这是 2.9.1 以来的变化。你的设置都还在。";
+
+/* Buttons page: the chevron that opens a folded Gestures or Switcher editor */
+"Show its settings" = "显示设置";
+
+/* Buttons page: the chevron that folds a Gestures or Switcher editor away */
+"Hide its settings" = "隐藏设置";
+
+/* Buttons page, a folded Gestures editor's summary: Show the ring is Never */
+"No ring" = "不显示圆环";
+
+/* Buttons page, a folded Gestures editor's summary: Show the ring is After a pause */
+"Ring after a pause" = "停顿后显示圆环";
+
+/* Buttons page, a folded Gestures editor's summary: Show the ring is Right away */
+"Ring right away" = "立即显示圆环";
+
+/* Buttons page, a folded Gestures editor's summary */
+"4 directions" = "4 个方向";
+
+/* Buttons page, a folded Gestures editor's summary */
+"8 directions" = "8 个方向";
+
+/* Buttons page, a folded Gestures editor's summary: what the scroll ring does while it's held, like “Volume on the ring” */
+"%@ on the ring" = "圆环控制%@";
+
+/* Buttons page, a folded Switcher editor's summary */
+"Shows your open apps" = "显示打开的应用";

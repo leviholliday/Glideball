@@ -87,15 +87,87 @@ struct WheelHold: Equatable {
     /// its way since it last fired. It fired when it lit, then every `GestureTuning.step`.
     var runProgress = 0.0
     var running: Int?
+    /// A ring that just opened (More) or came back (Back) starts in the middle with nothing lit,
+    /// and the roll that brought it there can't carry on into it (Levi, beta 30: rolling into a
+    /// More on the right ran the sub ring's right; rolling back to Back ran the first ring's left).
+    /// Until it's armed the ball moves nothing: for `settle` all movement is ignored; after that it
+    /// arms once the ball has been at rest for `restToArm`, or has rolled the tap slop in a clearly
+    /// different way from the one it came in by (more than `entryCone` off it). Rolling on the way
+    /// it came is ignored until a rest, so going on that way needs a deliberate pause.
+    var armed = true
+    var settleUntil = -Double.infinity
+    /// The way the roll came in (a unit vector, +y toward you), and the roll since the settle.
+    var entryX = 0.0, entryY = 0.0
+    var probeX = 0.0, probeY = 0.0
 
     /// The ring appears this long after the press if nothing else brought it up (Right away).
     static let revealDelay = 0.18
+    static let settle = 0.16
+    static let restToArm = 0.1
+    static let entryCone = 50.0
 
     /// Where a More ring's way back is: opposite the More that opened it.
     var back: Int? { level.map { ($0 + 4) % 8 } }
 
     /// The places in use: 0, 2, 4, 6 with four; all eight with eight.
     var usedPlaces: [Int] { eight ? Array(0..<8) : [0, 2, 4, 6] }
+
+    /// Starts this ring unarmed, centred, nothing lit, having come in from `place`'s way.
+    mutating func settle(cameFrom place: Int, now: Double) {
+        armed = false
+        settleUntil = now + Self.settle
+        let v = GestureDirection(place: place).vector
+        entryX = v.x
+        entryY = v.y
+        probeX = 0
+        probeY = 0
+        x = 0
+        y = 0
+        selected = nil
+        running = nil
+    }
+
+    /// Arms the ring by time alone: the settle is over and the ball has been at rest (`quietFor`).
+    mutating func armIfRested(quietFor: Double, now: Double) {
+        guard !armed, now >= settleUntil, quietFor >= Self.restToArm else { return }
+        armed = true
+        x = 0
+        y = 0
+    }
+
+    /// Movement (dx, dy) while unarmed. True once the ring is armed, with the point placed so
+    /// that this movement can be added to it as usual; false while it's still settling.
+    mutating func arm(dx: Double, dy: Double, quietFor: Double, now: Double) -> Bool {
+        if now < settleUntil {
+            probeX = 0
+            probeY = 0
+            return false
+        }
+        if quietFor >= Self.restToArm {
+            // The hand came to rest: this movement starts fresh from the centre.
+            armed = true
+            x = 0
+            y = 0
+            return true
+        }
+        probeX += dx
+        probeY += dy
+        let r = (probeX * probeX + probeY * probeY).squareRoot()
+        guard r >= geometry.tapSlop else { return false }
+        if (probeX * entryX + probeY * entryY) / r > cos(Self.entryCone * .pi / 180) {
+            // Still the roll that brought the ring here: ignored.
+            probeX = 0
+            probeY = 0
+            return false
+        }
+        // A clear turn: the ring is armed and the turn so far counts.
+        armed = true
+        x = probeX - dx
+        y = probeY - dy
+        probeX = 0
+        probeY = 0
+        return true
+    }
 
     /// The places the ball can light: what fires or opens More, and a More ring's way back.
     var selectable: [Int] {
@@ -114,6 +186,8 @@ struct WheelOverlayModel: Equatable {
     var showsRing = true
     /// The place lit in the ball's blue.
     var selected: Int?
+    /// A ring that just opened or came back and can't light anything yet (`WheelHold.armed`).
+    var settling = false
     /// Where the ball has rolled to, -1…1 of the ring's reach each way (+y down), in steps
     /// of 1/16 so a slow roll doesn't redraw it for every count.
     var dot: CGPoint
@@ -154,7 +228,7 @@ extension WheelHold {
             return s.firable.map { _ in .action(s.action) }
         }
         return WheelOverlayModel(slots: slots, eight: eight, sub: level != nil, showsRing: true, selected: selected,
-                                 dot: CGPoint(x: step(x), y: step(y)), ring: readout)
+                                 settling: !armed, dot: CGPoint(x: step(x), y: step(y)), ring: readout)
     }
 }
 

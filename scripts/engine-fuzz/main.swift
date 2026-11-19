@@ -144,12 +144,15 @@ final class FakeIO: EngineIO {
     var anchorExpect: CGPoint?
     var warps = 0
     override func warpPointer(_ point: CGPoint) -> Bool {
-        if !frozen { warpedWhileFree = true }
+        if !frozen && !hopping { warpedWhileFree = true }
         warps += 1
         cursor = point
         return true
     }
     var warpedWhileFree = false
+    /// A move after a hold is coming from where macOS's event stream got to, not from where the
+    /// pointer was put (`Op.kHop`): the engine may put that one back.
+    var hopping = false
 
     /// The stand-in pointer, as the engine asked for it, and the real pointer's hidden state as
     /// EngineIO keeps it (hidden once at a first show, shown once at a take-down).
@@ -268,6 +271,15 @@ final class FakeIO: EngineIO {
     }
     var keyTap: CFMachPort?
     override func post(_ event: CGEvent, tap: CGEventTapLocation) { posted.append(event) }
+    /// The move posted as a hold lets go (or a hop is put back) puts the pointer where it says.
+    override func postResync(_ event: CGEvent) {
+        if frozen { standInFault = "a move was posted while the pointer was held" }
+        if !hopping, event.location != cursor { standInFault = "a move posted as the hold let go moved the pointer: \(cursor) → \(event.location)" }
+        cursor = event.location
+        resyncs += 1
+        posted.append(event)
+    }
+    var resyncs = 0
     var appButtons: () -> Set<Int64> = { [] }
     override func buttonsDown() -> Set<Int64> { appButtons() }
     override func buttonDown(_ button: Int64) -> Bool { appButtons().contains(button) }
@@ -354,6 +366,9 @@ enum Op: CustomStringConvertible {
     case kPress(Int, hidFirst: Bool)
     case kRelease(Int, hidFirst: Bool)
     case kBall(Int, Int)
+    /// A trackball move just after a hold whose event comes from where macOS's event stream got
+    /// to during the hold, (hx, hy) off from where the pointer was put (beta 30's hop).
+    case kHop(Int, Int, hx: Int, hy: Int)
     case kWheel(Int)
     case oPress(Int), oRelease(Int), oWheel(Int), oBall
     case oReleaseCGFirst(Int) // another mouse's release, its HID report after the CG event
@@ -398,6 +413,7 @@ enum Op: CustomStringConvertible {
         case .kPress(let b, let h): "kPress(\(b)\(h ? "" : ", cgFirst"))"
         case .kRelease(let b, let h): "kRelease(\(b)\(h ? "" : ", cgFirst"))"
         case .kBall(let x, let y): "kBall(\(x),\(y))"
+        case .kHop(let x, let y, let hx, let hy): "kHop(\(x),\(y), stream off by \(hx),\(hy))"
         case .kWheel(let t): "kWheel(\(t))"
         case .oPress(let b): "otherMousePress(\(b))"
         case .oRelease(let b): "otherMouseRelease(\(b))"
@@ -691,6 +707,7 @@ final class World {
     var identityAt = -1e9, listAt = -1e9, aliveAt = -1e9
     var plugGraceUntil = -1e9   // until then "connected" and "works" aren't judged
     var oddReplug = false       // the latest replug was published late in some way (Op.replug bits 1-8)
+    var hopsSeen = 0            // kHop moves the landing judged
     var holdDisturbed = false   // the trackball moved during such a replug while the pointer was held
     var holdCheckAt: Double?    // a held pointer moved with nothing after it: back on its anchor by then
     let echo = echoShadow       // the shadow pointer echoes the trackball's every movement
@@ -908,6 +925,13 @@ final class World {
         e.setIntegerValueField(.mouseEventButtonNumber, value: Int64(button))
         e.setIntegerValueField(srcField, value: Int64(id))
         e.flags = io.kbFlags
+        return e
+    }
+
+    /// The move's own delta on its event, as macOS sets it.
+    func withDelta(_ e: CGEvent, _ dx: Int, _ dy: Int) -> CGEvent {
+        e.setIntegerValueField(.mouseEventDeltaX, value: Int64(dx))
+        e.setIntegerValueField(.mouseEventDeltaY, value: Int64(dy))
         return e
     }
 
@@ -1288,10 +1312,10 @@ final class World {
             func sendTapEvent(drag: Bool) {
                 if drag, let b = kDown.min() {
                     let id = newID(InputInfo(source: .kensington, button: b, type: World.type(b, 2), flags: io.kbFlags, time: io.clock))
-                    deliver(mouseEvent(World.type(b, 2), button: b, id: id), source: .kensington)
+                    deliver(withDelta(mouseEvent(World.type(b, 2), button: b, id: id), dx, dy), source: .kensington)
                 } else if io.moveTap != nil {
                     let id = newID(InputInfo(source: .kensington, button: 0, type: .mouseMoved, flags: io.kbFlags, time: io.clock))
-                    deliver(mouseEvent(.mouseMoved, button: 0, id: id), source: .kensington)
+                    deliver(withDelta(mouseEvent(.mouseMoved, button: 0, id: id), dx, dy), source: .kensington)
                 }
             }
             checkTimed()   // an earlier move's deadline that has come is judged before this move lands
@@ -1320,6 +1344,24 @@ final class World {
             case 3: sendHID(); movePointer(); sendTapEvent(drag: false); checkLater = io.moveTap == nil
             default: sendHID(); movePointer(); sendTapEvent(drag: true)
             }
+        case .kHop(let dx, let dy, let hx, let hy):
+            // macOS moves the pointer from where its stream got to; the engine should put it where
+            // this move takes it from where it was (if it's in its landing).
+            guard kConnected, !io.frozen, io.moveTap != nil else { return }
+            let from = io.cursor
+            let landing = engine.landingForChecks
+            if dx != 0 { hid(kKey, page: kHIDPage_GenericDesktop, usage: kHIDUsage_GD_X, value: dx) }
+            if dy != 0 { hid(kKey, page: kHIDPage_GenericDesktop, usage: kHIDUsage_GD_Y, value: dy) }
+            lastKMoveAt = io.clock
+            io.cursor = CGPoint(x: from.x + CGFloat(dx + hx), y: from.y + CGFloat(dy + hy))
+            io.hopping = true
+            let id = newID(InputInfo(source: .kensington, button: 0, type: .mouseMoved, flags: io.kbFlags, time: io.clock))
+            deliver(withDelta(mouseEvent(.mouseMoved, button: 0, id: id), dx, dy), source: .kensington)
+            settle()
+            io.hopping = false
+            let want = CGPoint(x: from.x + CGFloat(dx), y: from.y + CGFloat(dy))
+            if landing { hopsSeen += 1 }
+            if landing, io.cursor != want { fail("landing", "a move after the hold hopped: \(from) → \(io.cursor), expected \(want)") }
         case .kWheel(let t):
             guard kConnected else { return }
             noteScrollInput()
@@ -2355,6 +2397,16 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
     gestureCases.append(("stand-in unavailable: the hold works as before", [g], [.standIn(1)] + down(3) + fast + up(3) + settle))
     gestureCases.append(("stand-in taken down by the watchdog: the hold goes on without it", [g],
                          down(3) + fast + [.standIn(2), .wait(0.5)] + fast + up(3) + down(3) + fast + up(3) + settle))
+    // Beta 30 (Levi: "after i do a command and let go the mouse jumps like to a different
+    // spot"): macOS's event stream can be somewhere else than where the hold put the pointer, so
+    // the first move after letting go came from there. Letting go posts a move to the held spot,
+    // and a hop in the landing just after is put back where that move should have gone.
+    gestureCases.append(("landing: after a gesture, the first move comes from where macOS's stream got to: put back", [g],
+                         [.front(1)] + down(3) + fast + [.wait(0.1)] + up(3) + [.kHop(3, 1, hx: 160, hy: -40)] + settle))
+    gestureCases.append(("landing: after Scroll with ball, a hop then ordinary moves", [scrollHold],
+                         down(4) + fast + up(4) + [.kHop(-2, 0, hx: -90, hy: 0), .kBall(4, 2), .wait(0.01), .kBall(3, 0)] + settle))
+    gestureCases.append(("landing: ordinary moves after letting go are left alone", [g],
+                         down(3) + fast + [.wait(0.1)] + up(3) + [.kBall(6, 0), .wait(0.01), .kBall(5, -2), .wait(0.3), .kBall(4, 0)] + settle))
     gestureCases.append(("replugged with new IDs, old ones still listed dead: connected, then not", [holdKey],
                          [.unplug(3), .replug(0), .reconcile, .wait(1)] + down(3) + [.unplug(1), .reconcile, .wait(1)] + settle))
     // Beta 14 (Levi, Nov 13): unplugged and plugged back in, the trackball no longer worked in
@@ -2571,14 +2623,30 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
     var neverVolC = GlideConfig()
     neverVolC.buttons[3] = .gesture(neverVol)
     let upRoll = roll(0, -5, 12)
+    var sideG = ButtonGesture.standard   // More on the right (with its own right), volume up repeating
+    sideG.show = .atOnce
+    sideG.right = .moreRing([nil, nil, GestureStep(.shortcut(.screenshot)), nil, nil, nil, nil])
+    sideG[.left] = GestureStep(.shortcut(.lockScreen))
+    sideG[.up] = GestureStep(.media(.volumeUp), repeats: true)
+    var sideC = GlideConfig()
+    sideC.buttons[3] = .gesture(sideG)
     let merged: [(String, [GlideConfig], [Op])] = [
         ("gestures: More opened, let go in the middle: nothing runs", [moreC], down(3) + slow + upRoll + up(3) + settle),
-        ("gestures: More opened, then right and let go runs More's right", [moreC], down(3) + slow + upRoll + right + up(3) + settle),
+        ("gestures: More opened, then right and let go runs More's right", [moreC], down(3) + slow + upRoll + [.wait(0.25)] + right + up(3) + settle),
         ("gestures: More opened, then the watchdog: nothing runs, nothing shows", [moreC],
          down(3) + slow + upRoll + [.wheelOverlay(2), .wait(0.3)] + right + up(3) + settle),
+        // Beta 30 (Levi): the roll into More carried on into its ring's place that way, and the
+        // roll back to Back carried on into the first ring's place opposite More. Now a ring that
+        // opens or comes back settles: nothing in it lights or runs until the hand rests or turns.
+        ("gestures: More with the roll carrying on: nothing in its ring runs", [sideC],
+         down(3) + slow + roll(6, 0, 50) + up(3) + settle),
+        ("gestures: Back with the roll carrying on: nothing in the first ring runs", [sideC],
+         down(3) + slow + roll(6, 0, 12) + [.wait(0.25)] + roll(-6, 0, 50) + up(3) + settle),
+        ("gestures: More, a rest, then on the same way runs its place that way", [sideC],
+         down(3) + slow + roll(6, 0, 20) + [.wait(0.25)] + roll(6, 0, 12) + up(3) + settle),
         ("gestures: More opened blind (Never), then a pause: down, nothing runs", [moreBlindC],
          down(3) + upRoll + right + [.pause, .resume] + up(3) + settle),
-        ("gestures: More, blind: up then left runs More's left", [moreBlindC], down(3) + upRoll + roll(-5, 0, 12) + up(3) + settle),
+        ("gestures: More, blind: up then left runs More's left", [moreBlindC], down(3) + upRoll + roll(-5, 0, 30) + up(3) + settle),
         ("gestures: After a pause, a fast flick: no overlay ever requested", [pauseC],
          down(3) + [.kBall(0, -30), .wait(0.004), .kBall(0, -30)] + up(3) + settle),
         ("gestures: After a pause, held still: the ring comes up and right runs", [pauseC], down(3) + [.wait(0.4)] + right + up(3) + settle),
@@ -2971,6 +3039,12 @@ let expectations: [String: (World) -> String?] = [
     "stand-in: Scroll with ball, another mouse moves the hold": { w in standInShown(w, 1) },
     "stand-in: Scroll with ball from the keyboard, the trackpad moves the pointer: the stand-in goes with it": { w in
         w.io.standInMoves == 2 ? standInShown(w, 1) : "the stand-in moved \(w.io.standInMoves) times, expected 2" },
+    "landing: after a gesture, the first move comes from where macOS's stream got to: put back": { w in
+        w.hopsSeen == 1 && w.io.resyncs >= 2 ? standInShown(w, 1) : "\(w.hopsSeen) hops judged, \(w.io.resyncs) moves posted (expected 1, at least 2)" },
+    "landing: after Scroll with ball, a hop then ordinary moves": { w in
+        w.hopsSeen == 1 ? standInShown(w, 1) : "\(w.hopsSeen) hops judged" },
+    "landing: ordinary moves after letting go are left alone": { w in
+        w.io.resyncs == 1 ? standInShown(w, 1) : "\(w.io.resyncs) moves posted, expected 1 (at the release)" },
     "stand-in unavailable: the hold works as before": { w in
         w.io.standInShows == 0 && w.io.warps > 0 ? nil : "shown \(w.io.standInShows) times, \(w.io.warps) put-backs" },
     "stand-in taken down by the watchdog: the hold goes on without it": { w in standInShown(w, 2) },
@@ -3022,6 +3096,12 @@ let expectations: [String: (World) -> String?] = [
     "gestures: More opened, then the watchdog: nothing runs, nothing shows": { w in wheelDid(w, holds: 1, picks: 0, shows: 1) },
     "gestures: More opened blind (Never), then a pause: down, nothing runs": { w in
         wheelDid(w, holds: 1, picks: 0, shows: 1) ?? (w.gestureFires == 0 ? nil : "\(w.gestureFires) fires") },
+    "gestures: More with the roll carrying on: nothing in its ring runs": { w in
+        wheelDid(w, holds: 1, picks: 0, shows: 1) ?? (w.gestureFires == 0 && w.wheelRepeats == 0 ? nil : "\(w.gestureFires) fires, \(w.wheelRepeats) repeats") },
+    "gestures: Back with the roll carrying on: nothing in the first ring runs": { w in
+        wheelDid(w, holds: 1, picks: 0, shows: 1) ?? (w.gestureFires == 0 && w.wheelRepeats == 0 ? nil : "\(w.gestureFires) fires, \(w.wheelRepeats) repeats") },
+    "gestures: More, a rest, then on the same way runs its place that way": { w in
+        wheelDid(w, holds: 1, picks: 1, shows: 1) ?? (w.modes.wheelFlash?.kind == .slot(2) && w.modes.wheelLevel == nil ? nil : "ran \(String(describing: w.modes.wheelFlash))") },
     "gestures: More, blind: up then left runs More's left": { w in
         wheelDid(w, holds: 1, picks: 1, shows: 1) ?? (w.modes.wheelFlash?.kind == .slot(6) && w.gestureFires == 0 ? nil : "ran \(String(describing: w.modes.wheelFlash))") },
     "gestures: After a pause, a fast flick: no overlay ever requested": { w in

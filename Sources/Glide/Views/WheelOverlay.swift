@@ -87,11 +87,14 @@ struct WheelOverlayView: View {
                 .overlay { track.stroke(Color.white.opacity(scheme == .dark ? 0.14 : 0.5), lineWidth: 0.5) }
                 .shadow(color: .black.opacity(scheme == .dark ? 0.35 : 0.12), radius: 18, y: 6)
                 .frame(width: (layout.radius + band) * 2, height: (layout.radius + band) * 2)
+            // Just opened (More) or back (Back): the chips wait, a little dimmed, until the hand
+            // has settled; then they come up to full and the dot appears (the engine's `armed`).
             ForEach(m.usedPlaces, id: \.self) { place in
                 WheelChip(slot: m.slots[place], lit: m.selected == place, size: layout.chip)
+                    .opacity(m.settling ? 0.5 : 1)
                     .offset(layout.offset(place))
             }
-            WheelHub(dot: m.dot, size: layout.hub, lit: m.selected != nil)
+            WheelHub(dot: m.dot, size: layout.hub, lit: m.selected != nil, settling: m.settling)
             if let r = m.ring {
                 WheelRingReadout(readout: r)
                     .offset(y: layout.radius + layout.chip.height / 2 + 30)
@@ -102,6 +105,7 @@ struct WheelOverlayView: View {
         .animation(reduceMotion ? nil : .spring(response: 0.16, dampingFraction: 0.82), value: m.selected)
         .animation(reduceMotion ? nil : .easeOut(duration: 0.06), value: m.dot)
         .animation(.easeOut(duration: 0.12), value: m.ring?.job)
+        .animation(.easeOut(duration: 0.12), value: m.settling)
     }
 }
 
@@ -190,6 +194,8 @@ struct WheelHub: View {
     let dot: CGPoint
     let size: CGFloat
     let lit: Bool
+    /// The ring is settling: no dot yet, just the hub.
+    var settling = false
 
     var body: some View {
         let travel = size / 2 - 6
@@ -203,6 +209,7 @@ struct WheelHub: View {
                 .frame(width: 9, height: 9)
                 .shadow(color: Theme.ball.opacity(lit ? 0.9 : 0.5), radius: lit ? 6 : 3)
                 .offset(x: dot.x * travel, y: dot.y * travel)
+                .opacity(settling ? 0 : 1)
         }
     }
 }

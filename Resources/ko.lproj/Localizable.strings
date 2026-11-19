@@ -2664,7 +2664,7 @@
 "Swap which way of turning the ring does what" = "링을 돌리는 방향별 동작을 서로 바꾸기";
 "The ring scrolls as usual while you hold it." = "누르고 있는 동안에도 링은 평소처럼 스크롤해요.";
 "The ring shows as soon as you hold the button. Roll toward an action and let go to run it." = "버튼을 누르자마자 링이 나타나요. 동작 쪽으로 굴린 뒤 손을 떼면 실행돼요.";
-"This is the ring More opens. Roll back through the middle to get to the first ring again; letting go in the middle cancels." = "더 보기가 여는 링이에요. 가운데를 지나 되돌아가면 첫 번째 링으로 돌아가고, 가운데에서 손을 떼면 취소돼요.";
+"This is the ring More opens. It waits for your hand to settle first, so the roll that opened it can’t run anything here. Roll back through the middle to get to the first ring again; letting go in the middle cancels." = "더 보기가 여는 링이에요. 먼저 손이 멈출 때까지 기다리니까, 링을 연 굴림이 여기서 뭔가를 실행하지는 않아요. 가운데를 지나 되돌아가면 첫 번째 링으로 돌아가고, 가운데에서 손을 떼면 취소돼요.";
 "gestures, hold and roll, ring, wheel, radial menu, pie menu, more, show the ring, reverse" = "제스처, 누르고 굴리기, 링, 휠, 방사형 메뉴, 파이 메뉴, 더 보기, 링 표시, 반대로";
 
 /* What’s New 2.10: Gestures, the Switcher, search and sharing */
@@ -2695,3 +2695,30 @@
 
 /* What’s New 2.10: the line under the title */
 "Here’s what changed since 2.9.1. Your settings are all still here." = "2.9.1 이후 바뀐 점이에요. 설정은 모두 그대로예요.";
+
+/* Buttons page: the chevron that opens a folded Gestures or Switcher editor */
+"Show its settings" = "설정 보기";
+
+/* Buttons page: the chevron that folds a Gestures or Switcher editor away */
+"Hide its settings" = "설정 숨기기";
+
+/* Buttons page, a folded Gestures editor's summary: Show the ring is Never */
+"No ring" = "링 없음";
+
+/* Buttons page, a folded Gestures editor's summary: Show the ring is After a pause */
+"Ring after a pause" = "잠시 멈추면 링 표시";
+
+/* Buttons page, a folded Gestures editor's summary: Show the ring is Right away */
+"Ring right away" = "바로 링 표시";
+
+/* Buttons page, a folded Gestures editor's summary */
+"4 directions" = "4방향";
+
+/* Buttons page, a folded Gestures editor's summary */
+"8 directions" = "8방향";
+
+/* Buttons page, a folded Gestures editor's summary: what the scroll ring does while it's held, like “Volume on the ring” */
+"%@ on the ring" = "링으로 %@";
+
+/* Buttons page, a folded Switcher editor's summary */
+"Shows your open apps" = "열려 있는 앱을 보여줘요";

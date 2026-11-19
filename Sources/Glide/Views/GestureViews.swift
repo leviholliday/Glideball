@@ -202,7 +202,7 @@ struct GestureEditor: View {
 
     private var explanation: String {
         if level != nil {
-            return String(localized: "This is the ring More opens. Roll back through the middle to get to the first ring again; letting go in the middle cancels.",
+            return String(localized: "This is the ring More opens. It waits for your hand to settle first, so the roll that opened it can’t run anything here. Roll back through the middle to get to the first ring again; letting go in the middle cancels.",
                           comment: "Gestures editor, while a More's ring is being edited")
         }
         return isCombo

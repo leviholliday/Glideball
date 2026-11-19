@@ -249,6 +249,8 @@ final class GestureMachine {
         guard let h = hold else { return false }
         return h.switcher != nil || h.gesture.takesRing
     }
+    /// A ring that just opened or came back, not armed yet (the engine looks again every so often).
+    var wheelSettling: Bool { hold?.wheel.map { !$0.armed && !$0.dismissed } ?? false }
     /// An After a pause hold still waiting for its pause (the engine looks again every so often).
     var waitsForPause: Bool {
         guard let h = hold else { return false }
@@ -388,6 +390,8 @@ final class GestureMachine {
             w.revealed = true
             h.wheel = w
         }
+        // A ring settling after More or Back arms once the hand has been at rest.
+        h.wheel?.armIfRested(quietFor: now - h.lastMove, now: now)
         hold = h
         let readout = h.ringUsed ? h.lastRingClockwise.map { WheelOverlayModel.RingReadout(job: h.gesture.ring, clockwise: $0, steps: h.ringSteps) } : nil
         if let w = h.wheel { return w.overlay(readout: readout) }
@@ -438,6 +442,7 @@ final class GestureMachine {
         h.dx += dx
         h.dy += dy
         h.travel = max(h.travel, (h.dx * h.dx + h.dy * h.dy).squareRoot())
+        let quietFor = now - h.lastMove   // how long the ball had been at rest before this movement
         // After a pause: any real movement starts the wait again.
         let sx = h.dx - h.stillX, sy = h.dy - h.stillY
         if sx * sx + sy * sy > Self.pauseSlop * Self.pauseSlop {
@@ -447,7 +452,7 @@ final class GestureMachine {
         }
         defer { hold = h }
         if var w = h.wheel {
-            let effects = Self.ringBall(&h, &w, dx: dx, dy: dy, now: now)
+            let effects = Self.ringBall(&h, &w, dx: dx, dy: dy, quietFor: quietFor, now: now)
             h.wheel = w
             return effects
         }
@@ -465,12 +470,14 @@ final class GestureMachine {
 
     /// The ring in play: the ball moves a point around the centre and the place it points at
     /// lights. More opens its ring, the way back returns; a place that repeats runs as it lights.
-    private static func ringBall(_ h: inout Hold, _ w: inout WheelHold, dx: Double, dy: Double, now: Double) -> [GestureEffect] {
+    private static func ringBall(_ h: inout Hold, _ w: inout WheelHold, dx: Double, dy: Double, quietFor: Double, now: Double) -> [GestureEffect] {
         w.rawX += dx
         w.rawY += dy
         w.travel = h.travel
-        place(&w, dx: w.x + dx, dy: w.y + dy)
         if w.travel >= w.geometry.tapSlop { w.revealed = true }
+        // Just opened or came back: nothing moves, lights or runs until it's armed.
+        guard w.armed || w.arm(dx: dx, dy: dy, quietFor: quietFor, now: now) else { return [] }
+        place(&w, dx: w.x + dx, dy: w.y + dy)
         guard !w.dismissed else { return [] }
         let before = w.selected
         w.selected = w.geometry.pick(x: w.x, y: w.y, current: w.selected, filled: w.selectable)
@@ -478,15 +485,19 @@ final class GestureMachine {
         if s != before {
             w.running = nil
             if s == w.back {
-                // Back through the centre to where you came from: the first ring again.
+                // Back through the centre to where you came from: the first ring again, in its
+                // middle, nothing lit, and the roll that got here can't carry on into it.
+                let way = s
                 w = ring(h, level: nil)
                 w.revealed = true
+                w.settle(cameFrom: way, now: now)
                 return []
             }
             if w.level == nil, w.steps[s]?.isMore == true {
-                // More: its ring opens in place, centred where the first one was.
+                // More: its ring opens in place, centred where the first one was, settling the same way.
                 w = ring(h, level: s)
                 w.revealed = true
+                w.settle(cameFrom: s, now: now)
                 return []
             }
             guard let step = w.steps[s], step.repeats, let action = step.firable else { return [] }
@@ -512,9 +523,10 @@ final class GestureMachine {
 
     /// Opens the More in `direction` from a blind hold: its ring comes up in place (a More ring
     /// always shows, whatever Show the ring says), centred where the ball is now.
-    private static func openMore(_ h: inout Hold, _ direction: GestureDirection) {
+    private static func openMore(_ h: inout Hold, _ direction: GestureDirection, now: Double) {
         var w = ring(h, level: direction.place)
         w.revealed = true
+        w.settle(cameFrom: direction.place, now: now)
         h.wheel = w
     }
 
@@ -581,7 +593,7 @@ final class GestureMachine {
         h.continuous = step?.repeats == true
         h.lastCross = now
         if step?.isMore == true {
-            openMore(&h, way)
+            openMore(&h, way, now: now)
             return []
         }
         guard let step, let action = step.firable, !(step.once && h.spent.contains(way)),
@@ -657,7 +669,7 @@ final class GestureMachine {
         h.continuous = step.repeats
         h.lastCross = now
         if step.isMore {
-            openMore(&h, best)
+            openMore(&h, best, now: now)
             return []
         }
         guard let action = step.firable, !(step.once && h.spent.contains(best)),

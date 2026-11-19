@@ -44,7 +44,8 @@ struct ButtonsView: View {
                               isPressed: model.pressed.contains(b.index), model: model,
                               action: Binding(
                                 get: { model.config.buttons[b.index] ?? .system },
-                                set: { model.config.buttons[b.index] = $0 }))
+                                set: { model.config.buttons[b.index] = $0 }),
+                              foldID: EditorFolds.buttonID(b.index), spotID: Findable.buttonID(b.index))
                         .findable(id: Findable.buttonID(b.index))
                 }
             }
@@ -610,27 +611,60 @@ struct ButtonRow: View {
     /// For a gesture button's editor (what's held right now, Try it).
     var model: AppModel? = nil
     @Binding var action: ButtonAction
+    /// Where its editor's folded state is kept (`EditorFolds`); nil: never folds.
+    var foldID: String? = nil
+    /// The search palette's row this is (`Findable.buttonID`): sent here, a folded editor opens.
+    var spotID: String? = nil
 
     @State private var pulse = 0.0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     static let dividerInset = Theme.Space.rowHorizontal + 26 + Theme.Space.symbolGap
 
+    private var hasEditor: Bool { index != 0 && (action.isGesture || action.isSwitcher) }
+    private var folded: Bool { hasEditor && foldID.map { EditorFolds.shared.isFolded($0) } == true }
+
+    private func toggleFold() {
+        guard let foldID else { return }
+        withAnimation(reduceMotion ? .easeOut(duration: 0.15) : Theme.Motion.spring) { EditorFolds.shared.toggle(foldID) }
+    }
+
+    private func openFold() {
+        guard let foldID, EditorFolds.shared.isFolded(foldID) else { return }
+        withAnimation(reduceMotion ? .easeOut(duration: 0.15) : Theme.Motion.spring) { EditorFolds.shared.set(foldID, folded: false) }
+    }
+
+    /// Reduce Motion: the editor fades in and out with no slide.
+    private var editorTransition: AnyTransition {
+        reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .top))
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             row
-            if case .gesture(let g) = action, index != 0 {
-                GestureEditor(model: model, button: index,
-                              gesture: Binding(get: { g }, set: { action = .gesture($0) }))
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-            if case .switcher(let s) = action, index != 0 {
-                SwitcherEditor(model: model, buttons: [index], switcher: Binding(get: { s }, set: { action = .switcher($0) }))
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+            if folded {
+                FoldSummary(action: action)
+                    .transition(.opacity)
+            } else {
+                if case .gesture(let g) = action, index != 0 {
+                    GestureEditor(model: model, button: index,
+                                  gesture: Binding(get: { g }, set: { action = .gesture($0) }))
+                        .transition(editorTransition)
+                }
+                if case .switcher(let s) = action, index != 0 {
+                    SwitcherEditor(model: model, buttons: [index], switcher: Binding(get: { s }, set: { action = .switcher($0) }))
+                        .transition(editorTransition)
+                }
             }
         }
+        .clipped()
         .animation(Theme.Motion.spring, value: action.isGesture)
         .animation(Theme.Motion.spring, value: action.isSwitcher)
+        // Just given an editor (picked Gestures or the Switcher): it opens, ready to set up.
+        .onChange(of: hasEditor) { was, now in if now, !was { openFold() } }
+        // The search palette sent you here: whatever's folded opens.
+        .onChange(of: SettingsSpotlight.shared.row) { _, row in if let spotID, row == spotID { openFold() } }
+        .onAppear { if let spotID, SettingsSpotlight.shared.row == spotID { openFold() } }
     }
 
     private var row: some View {
@@ -646,6 +680,9 @@ struct ButtonRow: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            // Clicking the name folds or opens its editor, like the chevron.
+            .contentShape(Rectangle())
+            .onTapGesture { if hasEditor && foldID != nil { toggleFold() } }
 
             if index == 0 {
                 Label("Left click", systemImage: "lock.fill")
@@ -656,6 +693,11 @@ struct ButtonRow: View {
                     .accessibilityLabel("Left click · locked")
             } else {
                 ActionPickerButton(action: action, button: index) { action = $0 }
+                if hasEditor, foldID != nil {
+                    FoldChevron(folded: folded, toggle: toggleFold)
+                        .padding(.leading, -4)
+                        .transition(.opacity)
+                }
             }
         }
         .padding(.horizontal, Theme.Space.rowHorizontal)
@@ -726,5 +768,128 @@ struct TrailingIconLabelStyle: LabelStyle {
             configuration.title
             configuration.icon.font(.system(size: 10))
         }
+    }
+}
+
+// MARK: - Folding a button's editor away
+
+/// Which button and combo editors (Gestures, the Switcher) are folded away, on this Mac only
+/// (never synced or shared: it's how the page looks here, not what the buttons do). Every editor
+/// starts open; folding one is remembered until it's opened again. A button or combo that's just
+/// been given an editor opens it, and so does the search palette sending you to it.
+@MainActor
+@Observable
+final class EditorFolds {
+    static let shared = EditorFolds()
+    static let key = "GlideFoldedEditors"
+
+    /// Renders: draw with these folded (nil: what UserDefaults says).
+    nonisolated(unsafe) static var sandboxFolded: Set<String>?
+
+    private(set) var folded: Set<String>
+
+    private init() {
+        folded = Set(UserDefaults.standard.stringArray(forKey: Self.key) ?? [])
+    }
+
+    func isFolded(_ id: String) -> Bool { (Self.sandboxFolded ?? folded).contains(id) }
+
+    func set(_ id: String, folded fold: Bool) {
+        guard isFolded(id) != fold else { return }
+        if fold { folded.insert(id) } else { folded.remove(id) }
+        if fold { Self.sandboxFolded?.insert(id) } else { Self.sandboxFolded?.remove(id) }
+        UserDefaults.standard.set(folded.sorted(), forKey: Self.key)
+    }
+
+    func toggle(_ id: String) { set(id, folded: !isFolded(id)) }
+
+    /// A button's editor on the Buttons page, or in an app setup.
+    static func buttonID(_ index: Int, setup: String? = nil) -> String {
+        setup.map { "app-\($0)-button-\(index)" } ?? "button-\(index)"
+    }
+
+    /// A combo's editor (an app setup's own combos have their own IDs).
+    static func comboID(_ id: UUID) -> String { "combo-\(id.uuidString)" }
+}
+
+/// The chevron at the end of a row whose editor folds: down while it's open, pointing to the
+/// side while folded. Clicking the row's name does the same.
+struct FoldChevron: View {
+    let folded: Bool
+    let toggle: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var hovering = false
+
+    private var label: String {
+        folded ? String(localized: "Show its settings", comment: "Buttons page: the chevron that opens a folded Gestures or Switcher editor")
+               : String(localized: "Hide its settings", comment: "Buttons page: the chevron that folds a Gestures or Switcher editor away")
+    }
+
+    var body: some View {
+        Button(action: toggle) {
+            Image(systemName: "chevron.down")
+                .font(.system(size: 11, weight: .semibold))
+                .rotationEffect(.degrees(folded ? -90 : 0))
+                .foregroundStyle(hovering ? .primary : .secondary)
+                .frame(width: 24, height: 24)
+                .background(Circle().fill(Color.primary.opacity(hovering ? 0.08 : 0)))
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .animation(reduceMotion ? nil : Theme.Motion.spring, value: folded)
+        .help(label)
+        .accessibilityLabel(label)
+    }
+}
+
+/// While an editor is folded: one line under the row saying what it's set to.
+struct FoldSummary: View {
+    let action: ButtonAction
+
+    var body: some View {
+        if let text = Self.text(action) {
+            Text(verbatim: text)
+                .font(Theme.Font.hint)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .padding(.leading, ButtonRow.dividerInset)
+                .padding(.trailing, Theme.Space.rowHorizontal)
+                .padding(.bottom, 10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    /// "Ring after a pause · 4 directions · Volume on the ring"
+    static func text(_ action: ButtonAction) -> String? {
+        var parts: [String] = []
+        switch action {
+        case .gesture(let g):
+            switch g.show {
+            case .never: parts.append(String(localized: "No ring", comment: "Buttons page, a folded Gestures editor's summary: Show the ring is Never"))
+            case .afterPause: parts.append(String(localized: "Ring after a pause", comment: "Buttons page, a folded Gestures editor's summary: Show the ring is After a pause"))
+            case .atOnce: parts.append(String(localized: "Ring right away", comment: "Buttons page, a folded Gestures editor's summary: Show the ring is Right away"))
+            }
+            parts.append(g.eight ? String(localized: "8 directions", comment: "Buttons page, a folded Gestures editor's summary")
+                                 : String(localized: "4 directions", comment: "Buttons page, a folded Gestures editor's summary"))
+            if g.ring != .scroll, g.ring != .off {
+                let job = g.ring.title
+                parts.append(String(localized: "\(job) on the ring", comment: "Buttons page, a folded Gestures editor's summary: what the scroll ring does while it's held, like “Volume on the ring”"))
+            }
+            if g.tapAction != .system {
+                let tap = g.tapAction.title
+                parts.append(String(localized: "Tap: \(tap)"))
+            }
+        case .switcher(let s):
+            parts.append(String(localized: "Shows your open apps", comment: "Buttons page, a folded Switcher editor's summary"))
+            if s.tap != .system {
+                let tap = s.tap.title
+                parts.append(String(localized: "Tap: \(tap)"))
+            }
+        default:
+            return nil
+        }
+        return parts.joined(separator: " · ")
     }
 }
