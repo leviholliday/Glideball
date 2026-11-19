@@ -182,6 +182,7 @@ extension RenderUI {
         ShareSetupSheet.sandboxDone = nil
         model.pendingIncoming = nil
         model.shareRequest = nil
+        model.pasteBox = nil
     }
 
     /// The Pointer page's header with its share menu drawn open under the button.
@@ -190,7 +191,10 @@ extension RenderUI {
         var body: some View {
             VStack(alignment: .trailing, spacing: 6) {
                 PageHeader(title: .verbatim(GlideTab.pointer.title), subtitle: .verbatim(GlideTab.pointer.summary)) {
-                    PageShareMenu(tab: .pointer, model: model)
+                    HStack(spacing: 6) {
+                        PageImportMenu(model: model)
+                        PageShareMenu(tab: .pointer, model: model)
+                    }
                 }
                 PopoverMock {
                     VStack(alignment: .leading, spacing: 2) {

@@ -67,6 +67,10 @@ struct Findable: Identifiable, Sendable, Equatable {
                                          detail: String(localized: "Open a settings file and see what it changes before you use it.", comment: "Search palette: Import Settings"),
                                          keywords: String(localized: "open, load, file, restore", comment: "Search words for Import Settings (comma-separated)"),
                                          symbol: "square.and.arrow.down", place: .tab(.backup))
+    static let pasteLink = Findable(id: "sync-paste-link", title: String(localized: "Paste a Link…", comment: "File menu and the Import menu: opens the box a shared link is pasted into"),
+                                    detail: String(localized: "Open a setup someone sent you as a link. You see what it changes first.", comment: "Search palette: Paste a Link"),
+                                    keywords: String(localized: "paste, link, url, import, shared setup, clipboard, friend, open link", comment: "Search words for pasting a shared link (comma-separated)"),
+                                    symbol: "link", place: .tab(.backup))
     static let shareSetup = Findable(id: "sync-share", title: String(localized: "Share a setup with someone"),
                                      detail: String(localized: "Everything or just one part, as a link, a file or a picture. They see a preview before anything changes."),
                                      keywords: String(localized: "share, send, link, qr code, picture, friend", comment: "Search words for sharing a setup (comma-separated)"),

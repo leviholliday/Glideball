@@ -353,6 +353,12 @@ private struct ImportSection: View {
                     .controlSize(.small)
                     .keyboardShortcut("o", modifiers: .command)
             }
+            SettingRow(title: "Paste a shared link",
+                       hint: "A link someone sent you. You see what it changes first, and nothing is sent anywhere.",
+                       symbol: "link") {
+                Button("Paste a Link…") { model.openPasteBox() }
+                    .controlSize(.small)
+            }
         }
         .overlay {
             RoundedRectangle(cornerRadius: Theme.Radius.group, style: .continuous)

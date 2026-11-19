@@ -400,9 +400,11 @@ struct ShareSetupSheet: View {
             .frame(maxHeight: Self.listHeight(rows: available.count, sections: apps.isEmpty ? 3 : 4))
             SectionBlock(title: "Send it", dividerInset: inset) {
                 SettingRow(title: "Link", hint: LocalizedStringKey(linkHint), symbol: "link") {
-                    Button("Copy Link") { copyLink() }
+                    CopyButton(id: "link", source: "link", title: Text("Copy Link"), symbol: nil, copy: copyLink,
+                               sandboxGhost: { link.map { .link($0.absoluteString) } })
                         .disabled(link == nil)
                 }
+                .overlay(alignment: .leading) { Self.symbolSpot.copySource("link") }
                 SettingRow(title: "Settings file", hint: "Small enough for any message. Double-click it to open it in Glideball.", symbol: "doc") {
                     HStack(spacing: 8) {
                         Button("Share…") { shareFile() }
@@ -415,11 +417,13 @@ struct ShareSetupSheet: View {
                            hint: link == nil ? "A picture of the key settings." : "A picture of the key settings, with a QR code of the link.",
                            symbol: "photo") {
                     HStack(spacing: 8) {
-                        Button("Copy") { copyPicture() }
+                        CopyButton(id: "picture", source: "picture", symbol: nil, copy: copyPicture,
+                                   sandboxGhost: { ShareImage.render(card, delight: model.delight)?.cgImage.map { .picture($0) } })
                         Button("Save…") { savePicture() }
                     }
                     .disabled(share == nil)
                 }
+                .overlay(alignment: .leading) { Self.symbolSpot.copySource("picture") }
             }
             .controlSize(.small)
             HStack(spacing: 12) {
@@ -443,6 +447,7 @@ struct ShareSetupSheet: View {
         }
         .padding(24)
         .frame(width: 560)
+        .copyStage()
         .background(GlideBackground(anchor: UnitPoint(x: 0.2, y: -0.1), strength: 0.7))
         .onAppear { if let d = Self.sandboxDone { done = d } }
         .onExitCommand { close() }
@@ -495,12 +500,21 @@ struct ShareSetupSheet: View {
 
     private func say(_ text: String) { withAnimation(Theme.Motion.fade) { done = text } }
 
-    private func copyLink() {
-        guard let link else { return }
+    /// Where a row's ghost lifts off: its leading symbol.
+    private static var symbolSpot: some View {
+        Color.clear
+            .frame(width: Theme.Space.symbolColumn, height: Theme.Space.symbolColumn)
+            .padding(.leading, Theme.Space.rowHorizontal)
+            .allowsHitTesting(false)
+    }
+
+    private func copyLink() -> CopyOutcome {
+        guard let link else { return .failed }
         let pb = NSPasteboard.general
         pb.clearContents()
         pb.setString(link.absoluteString, forType: .string)
         say(String(localized: "Link copied. Paste it anywhere."))
+        return .copied(.link(link.absoluteString))
     }
 
     private var fileName: String { String(localized: "Glideball setup – \(name)", comment: "Share picture file name; %@ is what's shared, like “Scroll feel”") }
@@ -528,9 +542,10 @@ struct ShareSetupSheet: View {
         .setup(model.setupCard(parts: chosen, link: link?.absoluteString))
     }
 
-    private func copyPicture() {
-        guard let image = ShareImage.render(card, delight: model.delight), ShareImage.copy(image) else { return }
+    private func copyPicture() -> CopyOutcome {
+        guard let image = ShareImage.render(card, delight: model.delight), ShareImage.copy(image) else { return .failed }
         say(String(localized: "Copied. Paste it anywhere."))
+        return .copied(image.cgImage.map { .picture($0) })
     }
 
     private func savePicture() {

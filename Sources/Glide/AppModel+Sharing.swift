@@ -240,9 +240,58 @@ extension AppModel {
     // MARK: Receiving
 
     /// A shared setup arrived (a link or a file): show what it would change.
-    /// Dropped while another preview is open or just closed.
-    func receiveShare(_ share: SharedSetup, from source: IncomingSetup.Source) {
-        present(IncomingSetup(source: source, content: .shared(share)))
+    /// Dropped while another preview is open or just closed. `cooldown: false` is for
+    /// a link the person pasted into Glideball themselves: the pause after a preview
+    /// closes is there to stop a web page firing links one after another, and a
+    /// person clicking Review in Glideball's own window isn't that.
+    func receiveShare(_ share: SharedSetup, from source: IncomingSetup.Source, cooldown: Bool = true) {
+        present(IncomingSetup(source: source, content: .shared(share)), cooldown: cooldown)
+    }
+
+    // MARK: Pasting a link
+
+    /// The clipboard's text, read only on the person's action (the paste box's Paste,
+    /// ⌘V, Import Setup from Clipboard). `--self-test` and `--render-ui` never touch
+    /// the real clipboard: they get nothing, or the self-test's own text.
+    nonisolated(unsafe) static var readClipboard: () -> String? = {
+        Sandbox.isActive ? nil : NSPasteboard.general.string(forType: .string)
+    }
+
+    /// Paste a Link…: the paste box, empty, or with text the person already pasted.
+    func openPasteBox(_ text: String = "") {
+        guard pendingIncoming == nil, shareRequest == nil else { return }
+        if !Sandbox.isActive { (NSApp.delegate as? AppDelegate)?.showWindow() }
+        pasteBox = PasteBoxRequest(text: text)
+    }
+
+    /// The paste box's Review Changes…: the share goes the way every glideball://import
+    /// link goes (`receiveShare`, its preview, Apply's backup and Undo). It waits while the
+    /// box closes, then takes its turn like any preview that had to wait.
+    func reviewPasted(_ share: SharedSetup) {
+        receiveShare(share, from: .link, cooldown: false)
+        pasteBox = nil
+    }
+
+    /// File › Import Setup from Clipboard, and ⌘V on the main window when nothing's being
+    /// typed (`quiet`). Only ever on the person's own action; the clipboard is read once,
+    /// here, and nothing is sent anywhere. A link goes straight to its preview. A link
+    /// Glideball won't open goes into the paste box, which says why. Text with no link in
+    /// it: from the menu, a toast; from ⌘V, nothing (it wasn't meant for us).
+    func importFromClipboard(quiet: Bool) {
+        let text = Self.readClipboard() ?? ""
+        let reading = ImportPaste.read(text)
+        switch reading {
+        case .share(let share, _):
+            receiveShare(share, from: .link, cooldown: false)
+        case .refused(.noLink), .empty:
+            guard !quiet else { return }
+            show(.init(symbol: "doc.on.clipboard", text: String(localized: "There’s no Glideball link on the clipboard.", comment: "Toast after Import Setup from Clipboard")))
+        case .refused(.tooLong):
+            guard !quiet else { return }
+            show(.init(symbol: "exclamationmark.triangle.fill", text: ImportPaste.Refusal.tooLong.message, isError: true))
+        case .refused:
+            openPasteBox(text)
+        }
     }
 
     /// Reads KensingtonWorks' settings (read-only) and previews importing them.

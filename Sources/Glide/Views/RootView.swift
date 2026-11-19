@@ -262,6 +262,7 @@ private struct SharingSheets: ViewModifier {
         content
             .sheet(item: $model.pendingIncoming, onDismiss: { model.cancelIncoming() }) { IncomingSetupSheet(model: model, incoming: $0) }
             .sheet(item: $model.shareRequest) { ShareSetupSheet(model: model, request: $0) }
+            .sheet(item: $model.pasteBox) { PasteLinkSheet(model: model, request: $0) }
             .onChange(of: model.incomingMustWait) { _, waiting in
                 if primary && !waiting { model.incomingMayShow() }
             }
@@ -308,7 +309,12 @@ struct TabPage: View {
     var body: some View {
         let _ = PerfProbe.count("TabPage")
         VStack(alignment: .leading, spacing: Theme.Space.section) {
-            PageHeader(title: .verbatim(tab.title), subtitle: .verbatim(tab.summary)) { PageShareMenu(tab: tab, model: model) }
+            PageHeader(title: .verbatim(tab.title), subtitle: .verbatim(tab.summary)) {
+                HStack(spacing: 6) {
+                    PageImportMenu(model: model)
+                    PageShareMenu(tab: tab, model: model)
+                }
+            }
             switch tab {
             case .overview: OverviewView(model: model)
             case .pointer: PointerView(model: model)

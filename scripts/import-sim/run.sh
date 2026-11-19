@@ -13,5 +13,8 @@ swiftc -O -swift-version 5 -o "$OUT" \
   Sources/Glide/ImportReview.swift \
   Sources/Glide/KensingtonWorks.swift \
   Sources/Glide/DeviceSupport.swift \
+  Sources/Glide/ImportPaste.swift \
+  Sources/Glide/ExternalControl.swift \
+  Sources/Glide/Commands.swift \
   scripts/import-sim/main.swift
 "$OUT" scripts/import-sim/fixtures "$@"

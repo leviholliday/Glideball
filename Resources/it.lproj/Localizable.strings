@@ -2736,3 +2736,27 @@
 "auto update, automatic updates, background update, self update, silent update" = "aggiornamento automatico, aggiornamenti automatici, aggiornamento in background, aggiornamento silenzioso, auto update";
 "Glideball updated itself to %@." = "Glideball si è aggiornato da solo alla versione %@.";
 "%@ is downloaded. Glideball switches to it once you’ve been away from your trackball for a few minutes." = "La versione %@ è stata scaricata. Glideball passa a quella quando non tocchi la trackball da qualche minuto.";
+
+/* Pasting a shared link (Views/PasteViews.swift) */
+"A link someone sent you. You see what it changes first, and nothing is sent anywhere." = "Un link che ti ha mandato qualcuno. Prima vedi cosa cambia, e non viene inviato niente da nessuna parte.";
+"Import Setup from Clipboard" = "Importa configurazione dagli appunti";
+"Import a File…" = "Importa un file…";
+"Nothing is sent anywhere. Glideball reads the link right here on your Mac." = "Non viene inviato niente da nessuna parte. Glideball legge il link qui, sul tuo Mac.";
+"Open a setup someone sent you as a link. You see what it changes first." = "Apri una configurazione che qualcuno ti ha mandato come link. Prima vedi cosa cambia.";
+"Open a setup someone shared with you: paste its link, or choose its file" = "Apri una configurazione condivisa con te: incolla il suo link o scegli il suo file";
+"Paste a Glideball link someone sent you. You’ll see exactly what it would change before anything does, the same as opening it from the website." = "Incolla un link di Glideball che ti ha mandato qualcuno. Vedrai esattamente cosa cambierebbe prima che cambi qualcosa, come aprendolo dal sito web.";
+"Paste a Link…" = "Incolla un link…";
+"Paste a shared link" = "Incolla un link condiviso";
+"Paste what’s on the clipboard into the box" = "Incolla nel riquadro il contenuto degli appunti";
+"Review Changes…" = "Controlla le modifiche…";
+"Shared link" = "Link condiviso";
+"That isn’t a Glideball share link, so it won’t be opened. They start with https://glideball.netlify.app/s/#." = "Questo non è un link di condivisione di Glideball, quindi non verrà aperto. Iniziano con https://glideball.netlify.app/s/#.";
+"That link is damaged or cut off. Ask for it again, or for the file." = "Il link è danneggiato o tagliato. Fattelo mandare di nuovo, oppure chiedi il file.";
+"That was shared from a newer Glideball. Update Glideball, then paste it again." = "È stato condiviso da un Glideball più recente. Aggiorna Glideball, poi incollalo di nuovo.";
+"That’s a Glideball command link, not a shared setup. Pasting only opens shared setups." = "È un link di comando di Glideball, non una configurazione condivisa. Incollando si aprono solo configurazioni condivise.";
+"That’s a lot of text for a link. Paste just the link." = "È molto testo per un link. Incolla solo il link.";
+"There’s more than one setup in that. Paste one link at a time." = "C’è più di una configurazione. Incolla un link alla volta.";
+"There’s no Glideball link in that. Shared links start with glideball.netlify.app/s/#." = "Non c’è nessun link di Glideball. I link condivisi iniziano con glideball.netlify.app/s/#.";
+"There’s no Glideball link on the clipboard." = "Negli appunti non c’è nessun link di Glideball.";
+"paste, link, url, import, shared setup, clipboard, friend, open link" = "incolla, link, url, importa, configurazione condivisa, appunti, amico, apri link";
+"Paste with ⌘V, or click Paste. Glideball only reads the clipboard when you do." = "Incolla con ⌘V o fai clic su Incolla. Glideball legge gli appunti solo quando lo fai tu.";

@@ -6,7 +6,6 @@ import SwiftUI
 struct AboutView: View {
     @Bindable var model: AppModel
     @Environment(\.dismiss) private var dismiss
-    @State private var copied = false
 
     private static let website = URL(string: "https://glideball.netlify.app")!
     private static let releases = SiteLinks.changelog
@@ -48,17 +47,12 @@ struct AboutView: View {
                                 .textSelection(.enabled)
                                 .fixedSize(horizontal: false, vertical: true)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                            Button {
+                            CopyButton(id: "support-info", help: Text("Copy the support info")) {
                                 NSPasteboard.general.clearContents()
                                 NSPasteboard.general.setString(supportInfo, forType: .string)
-                                copied = true
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 2) { copied = false }
-                            } label: {
-                                Label(copied ? "Copied" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc")
-                                    .contentTransition(.symbolEffect(.replace))
+                                return .copied(nil)
                             }
                             .buttonStyle(ChipButtonStyle())
-                            .help("Copy the support info")
                         }
                         .padding(.horizontal, Theme.Space.rowHorizontal)
                         .padding(.vertical, 12)

@@ -74,6 +74,8 @@ final class AppModel {
     @ObservationIgnored var incomingIgnoresLaunch = false
     /// Share…: the sheet that makes a link, file or picture of part of your setup.
     var shareRequest: ShareRequest?
+    /// Paste a Link…: the box a shared link is pasted into (Views/PasteViews.swift).
+    var pasteBox: PasteBoxRequest?
     /// A badge's Share…: the picture panel, as a sheet over the window (never inside the
     /// badge's popover, whose resize crashed betas 10 and 13).
     var sharingPicture: SharePictureRequest?
