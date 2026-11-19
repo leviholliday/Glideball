@@ -82,13 +82,27 @@ final class WheelOverlayState {
     var frozenFlare = 0.0
     var frozenDial = 0.0
 
+    /// How strong this appearance's ring of light is. The wave carries no information, and
+    /// something seen five times in ten seconds stops being seen, so it's at its full strength
+    /// after a rest and gentler when the ring was up a moment ago. Where and when everything
+    /// else moves never changes.
+    private(set) var waveStrength = WheelOverlayState.fullWave
+    static let fullWave = 0.85
+    @ObservationIgnored private var lastShown = -Double.infinity
+
     /// A new appearance: the entrance plays again and nothing is left of the last exit.
-    func appear() {
+    func appear(now: Double = CACurrentMediaTime()) {
         ran = nil
         exit = nil
         appearCount &+= 1
+        // 0.4 right after the last one, rising to the full 0.85 over eight seconds of rest.
+        waveStrength = 0.4 + (Self.fullWave - 0.4) * max(0, min(1, (now - lastShown) / 8))
+        lastShown = now
         shown = true
     }
+
+    /// The ring went: the rest that brings the wave back to full starts now.
+    func left(now: Double = CACurrentMediaTime()) { lastShown = now }
 
     private func follow(from old: WheelOverlayModel?) {
         followLight(from: old)
@@ -358,7 +372,7 @@ private struct WheelRings: View {
             }
             if !reduceMotion, let wave {
                 // Ignition: one ring of light from the hub to the band's outer edge, then it's gone.
-                WheelWave(progress: wave, start: hub / 2, end: layout.outer)
+                WheelWave(progress: wave, start: hub / 2, end: layout.outer, strength: state.waveStrength)
                     .animation(WheelMotion.wave, value: entered)
             }
             WheelHub(dot: m.dot, size: hub, lit: m.selected != nil, settling: m.settling, ignite: reduceMotion ? 0 : unit(1 - e.hub))
@@ -771,7 +785,7 @@ struct WheelChip: View {
     /// The editor: what an empty place shows (a faint plus to click), and a More's filled places
     /// drawn as a ring of dots round its symbol.
     var emptySymbol = "circle.dashed"
-    var moreDots: [Bool]? = nil
+    var moreDots: [Bool?]? = nil
 
     private var symbol: String {
         switch slot {
@@ -841,21 +855,23 @@ struct WheelChip: View {
 /// A More in the editor: its symbol's circle drawn as dots, one per place of its ring, the
 /// filled ones bright. So the chip shows what's inside without a number to explain.
 struct WheelMoreDots: View {
-    /// By place, clockwise from up (four or eight of them).
-    let filled: [Bool]
+    /// By place, clockwise from up: filled or not (nil: a place that isn't in use).
+    let filled: [Bool?]
     let lit: Bool
     let size: CGFloat
 
     var body: some View {
         ZStack {
             Image(systemName: "ellipsis")
-                .font(.system(size: size * 0.5, weight: .bold))
+                .font(.system(size: size * 0.42, weight: .bold))
             ForEach(filled.indices, id: \.self) { i in
-                let a = Double(i) * 2 * .pi / Double(filled.count)
-                Circle()
-                    .opacity(filled[i] ? 1 : 0.3)
-                    .frame(width: filled[i] ? 3.6 : 2.6, height: filled[i] ? 3.6 : 2.6)
-                    .offset(x: size * 0.5 * CGFloat(sin(a)), y: -size * 0.5 * CGFloat(cos(a)))
+                if let on = filled[i] {
+                    let a = Double(i) * 2 * .pi / Double(filled.count)
+                    Circle()
+                        .opacity(on ? 1 : 0.3)
+                        .frame(width: on ? 3.6 : 2.6, height: on ? 3.6 : 2.6)
+                        .offset(x: size * 0.62 * CGFloat(sin(a)), y: -size * 0.62 * CGFloat(cos(a)))
+                }
             }
         }
         .frame(width: size, height: size)
@@ -1019,6 +1035,7 @@ final class WheelOverlayPanel: WheelPresenting {
         let work = DispatchWorkItem { [weak self] in
             guard let self else { return }
             window.orderOut(nil)
+            state.left()
             state.model = nil
             state.shown = false
             state.ran = nil

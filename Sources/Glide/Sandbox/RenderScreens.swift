@@ -332,7 +332,7 @@ extension RenderUI {
             cleanup: { restoreButtons(); GestureFlashClock.sandboxHold = false }) { dark, scale in
             mainWindow(model, tab: .buttons, dark: dark, scale: scale)
         }
-        add("buttons-gesture-held-page", "Gestures", "Holding top right, rolling up (before it fires): the compass leans up",
+        add("buttons-gesture-held-page", "Gestures", "Holding top right, rolling up (before it fires): the editor's ring lights up, with the beam",
             prepare: { gestureButtons(); hold(.up) },
             cleanup: { restoreButtons(); GestureFlashClock.sandboxHold = false }) { dark, scale in
             fullPage(page(.buttons, model), dark: dark, scale: scale)
@@ -347,7 +347,7 @@ extension RenderUI {
             cleanup: { restoreButtons(); GestureEditor.sandboxTrying = false }) { dark, scale in
             fullPage(page(.buttons, model), dark: dark, scale: scale)
         }
-        add("buttons-gesture-tap", "Gestures", "A tap (no roll): the tap's picker flashes",
+        add("buttons-gesture-tap", "Gestures", "A tap (no roll): the hub, where the tap is set, lights amber",
             prepare: { gestureButtons(); hold(nil, fired: .some(nil), tapped: true); GestureEditor.sandboxTrying = true },
             cleanup: { restoreButtons(); GestureFlashClock.sandboxHold = false; GestureEditor.sandboxTrying = false }) { dark, scale in
             fullPage(page(.buttons, model), dark: dark, scale: scale)
@@ -359,7 +359,7 @@ extension RenderUI {
             card(PopoverMock { ActionPickerPanel(current: .shortcut(.nextSpace), purpose: .gestureDirection) { _ in } },
                  width: 470, dark: dark, scale: scale)
         }
-        add("buttons-gesture-combo", "Gestures", "A combo as a gesture: top left + top right with the Tabs set, its compass under the combo",
+        add("buttons-gesture-combo", "Gestures", "A combo as a gesture: top left + top right with the Tabs set, its ring under the combo",
             prepare: gestureCombo, cleanup: restoreButtons) { dark, scale in
             fullPage(page(.buttons, model), dark: dark, scale: scale)
         }
@@ -471,7 +471,7 @@ extension RenderUI {
             prepare: { model.config.buttons[3] = .gesture(withMore) }, cleanup: restoreButtons) { dark, scale in
             fullPage(page(.buttons, model), dark: dark, scale: scale)
         }
-        add("buttons-ring-more-open", "Gestures ring", "Editing up's More: its ring in the same place, the way back opposite, First Ring to go back",
+        add("buttons-ring-more-open", "Gestures ring", "Editing up's More: its ring opened in place over the first one, Back in the middle and opposite, its own picker above",
             prepare: { model.config.buttons[3] = .gesture(withMore); GestureEditor.sandboxEditing = 0 },
             cleanup: { restoreButtons(); GestureEditor.sandboxEditing = nil }) { dark, scale in
             fullPage(page(.buttons, model), dark: dark, scale: scale)
@@ -485,6 +485,22 @@ extension RenderUI {
             prepare: { ringButtons(); ringHeld(slot: 2) },
             cleanup: restoreButtons) { dark, scale in
             mainWindow(model, tab: .buttons, dark: dark, scale: scale)
+        }
+        add("buttons-ring-held-page", "Gestures ring", "The same hold, whole page: the editor's ring lit like the one on screen (light, beam)",
+            prepare: { ringButtons(); ringHeld(slot: 2) },
+            cleanup: restoreButtons) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale)
+        }
+        add("buttons-ring-own-pair", "Gestures ring", "Scroll ring: Your own, with its two actions under the row; eight directions, a More at up left",
+            prepare: {
+                var g = moreEight
+                g[.upLeft] = .moreRing([GestureStep(.shortcut(.newTab))])
+                g.ring = .custom
+                g.ringUp = .shortcut(.nextSpace)
+                g.ringDown = .shortcut(.previousSpace)
+                model.config.buttons[3] = .gesture(g)
+            }, cleanup: restoreButtons) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale)
         }
         add("buttons-picker-gesture-more", "Gestures ring", "The picker for a direction on the first ring: More at the top") { dark, scale in
             card(PopoverMock { ActionPickerPanel(current: .shortcut(.nextSpace), purpose: .gestureDirection, onMore: {}) { _ in } },
