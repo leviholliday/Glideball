@@ -1,4 +1,5 @@
 import AppKit
+import Carbon.HIToolbox
 import SwiftUI
 
 enum KeyCapture {
@@ -8,18 +9,54 @@ enum KeyCapture {
         if e.modifierFlags.contains(.option) { f.insert(.maskAlternate) }
         if e.modifierFlags.contains(.shift) { f.insert(.maskShift) }
         if e.modifierFlags.contains(.command) { f.insert(.maskCommand) }
-        return KeyShortcut(keyCode: e.keyCode, modifiers: f.rawValue, keyName: keyName(e))
+        // The name comes from the key code (`KeyNames`), the same way it does for a shortcut from a file.
+        return KeyShortcut(keyCode: e.keyCode, modifiers: f.rawValue)
+    }
+}
+
+/// Reads the current keyboard layout's names for the keys a layout decides and hands
+/// them to `KeyNames`, at launch and whenever the layout changes. Main thread only
+/// (the Text Input Sources calls insist on it). Not in a render or the self-test,
+/// whose pictures use the US names on every Mac.
+enum KeyLayout {
+    nonisolated(unsafe) private static var observer: NSObjectProtocol?
+
+    static func install() {
+        guard !Sandbox.isActive, observer == nil else { return }
+        refresh()
+        observer = DistributedNotificationCenter.default().addObserver(
+            forName: .init(kTISNotifySelectedKeyboardInputSourceChanged as String), object: nil, queue: .main) { _ in refresh() }
     }
 
-    static func keyName(_ e: NSEvent) -> String {
-        let special: [UInt16: String] = [
-            123: "←", 124: "→", 125: "↓", 126: "↑", 49: "Space", 36: "↩", 48: "⇥", 51: "⌫", 117: "⌦",
-            115: "Home", 119: "End", 116: "PgUp", 121: "PgDn",
-            122: "F1", 120: "F2", 99: "F3", 118: "F4", 96: "F5", 97: "F6", 98: "F7", 100: "F8",
-            101: "F9", 109: "F10", 103: "F11", 111: "F12",
-        ]
-        if let s = special[e.keyCode] { return s }
-        return (e.charactersIgnoringModifiers ?? "?").uppercased()
+    static func refresh() {
+        // The keyboard layout under an input method too (Japanese, Chinese, Korean), else the ASCII one.
+        let sources = [TISCopyCurrentKeyboardLayoutInputSource(), TISCopyCurrentASCIICapableKeyboardLayoutInputSource()]
+        for source in sources.compactMap({ $0?.takeRetainedValue() }) {
+            guard let raw = TISGetInputSourceProperty(source, kTISPropertyUnicodeKeyLayoutData) else { continue }
+            let data = Unmanaged<CFData>.fromOpaque(raw).takeUnretainedValue() as Data
+            guard !data.isEmpty else { continue }
+            var plain: [Int: String] = [:], withCommand: [Int: String] = [:]
+            data.withUnsafeBytes { bytes in
+                guard let layout = bytes.bindMemory(to: UCKeyboardLayout.self).baseAddress else { return }
+                for code in KeyNames.layoutKeys {
+                    if let name = translate(layout, code, modifiers: 0) { plain[code] = name }
+                    if let name = translate(layout, code, modifiers: UInt32(cmdKey >> 8) & 0xFF) { withCommand[code] = name }
+                }
+            }
+            KeyNames.setLayout(plain: plain, withCommand: withCommand)
+            return
+        }
+        KeyNames.setLayout(plain: [:], withCommand: [:])
+    }
+
+    private static func translate(_ layout: UnsafePointer<UCKeyboardLayout>, _ code: Int, modifiers: UInt32) -> String? {
+        var dead: UInt32 = 0, length = 0
+        var chars = [UniChar](repeating: 0, count: 4)
+        let status = UCKeyTranslate(layout, UInt16(code), UInt16(kUCKeyActionDisplay), modifiers, UInt32(LMGetKbdType()),
+                                    OptionBits(kUCKeyTranslateNoDeadKeysBit), &dead, chars.count, &length, &chars)
+        guard status == noErr, length > 0 else { return nil }
+        let name = String(utf16CodeUnits: chars, count: length).uppercased()
+        return KeyNames.usable(name) ? name : nil
     }
 }
 

@@ -114,7 +114,22 @@ Button, combo, gesture-direction and tap actions are Swift's default `Codable` f
 | `{"gesture":{"_0":{"up":{"action":…,"repeats":false,"once":true},"down":…,"left":…,"right":…,"tap":…,"distance":"short"}}}` | Hold and roll. Each direction is optional; `repeats` (continuous) and `once` (once per hold) are optional; `tap` defaults to Default. |
 
 Modifier bits are macOS's `CGEventFlags`: ⇧ 131072, ⌃ 262144, ⌥ 524288, ⌘ 1048576, fn 8388608.
-A shortcut reads as ⌃⌥⇧⌘ (in that order, the ones that are set) followed by `keyName`.
+A shortcut reads as ⌃⌥⇧⌘ (in that order, the ones that are set) followed by the key's name, **worked
+out from `keyCode`**. `keyName` is still written (older versions and the other platforms want a
+string there) but it's whatever the sender's file says, so it must never be what's shown: a share
+could say `"keyName": "C"` beside `"keyCode": 12`, which is Q. Since 2.10 beta 35 the Mac app ignores
+it (`KeyNames` in `Config.swift`: arrows, Space, ↩, ⇥, ⌫, ⌦, ⎋, Home, End, PgUp, PgDn, F1–F20 and the
+keypad by fixed names; letters, digits and punctuation by the reader's keyboard layout, the US one
+when it can't be read; `Key 110` for anything else).
+
+**The website's `/s/` page still shows `keyName`** (`website/s/share-decode.js`, `shortcutText`). It
+needs the same change: a table from key code to name (the fixed names above plus the US letters,
+digits and punctuation, since a page can't read the keyboard layout by key code; `Key N` otherwise),
+used instead of `s.keyName`, with `keyName` no longer required to be a string; `sameKeys` comparing
+key code and modifiers only; `hostile.json` gaining a spoofed-name case; and
+`website/tests/share-page.test.mjs` checking that the page shows ⌘Q for it. On a non-US layout the
+page's letter can differ from what the app's preview then shows; the app's preview is the one that
+counts, and it's right.
 
 ## Checks (both sides, the same)
 
@@ -129,7 +144,7 @@ anyone can make a `/s/` link.
   distance per tick 1–40, Scroll with ball 0.25–4, display speeds 0.5–80, sound volume 0–1.
 - Buttons: keys `"1"`–`"7"` only. An action that isn't one of the above is skipped (that button
   isn't set). A shortcut needs `keyCode` 0–127; modifiers are masked to ⇧⌃⌥⌘fn; `keyName` is
-  cleaned to 12 characters (`?` if empty). A modified click's button is 0–4. An Open's bundle ID
+  not read by the app (the website still cleans it to 12 characters, `?` if empty: see above). A modified click's button is 0–4. An Open's bundle ID
   is 1–155 ASCII letters, digits, `.`, `-` and `_`, not starting or ending with `.` and without
   `..`. A gesture can't contain a gesture.
 - Combos: 2–4 distinct buttons from 0–7, a set at most once, at most 24 combos.

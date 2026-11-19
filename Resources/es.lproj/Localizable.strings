@@ -2723,3 +2723,13 @@
 "Turn it while you hold the button to change the volume. It won’t scroll meanwhile." = "Gíralo mientras mantienes el botón para cambiar el volumen. Mientras tanto no desplaza.";
 "Turn it while you hold the button to move between tabs." = "Gíralo mientras mantienes el botón para moverte entre pestañas.";
 "Turn it while you hold the button to zoom in and out (⌘+ and ⌘−)." = "Gíralo mientras mantienes el botón para acercar y alejar (⌘+ y ⌘−).";
+
+/* Automatic updates (Settings › Updates, the update button, the Software Update window) */
+"Install updates automatically" = "Instalar actualizaciones automáticamente";
+"Install updates automatically from now on" = "Instalar las actualizaciones automáticamente a partir de ahora";
+"Glideball downloads a new version in the background, checks that it’s signed by me, and switches to it once you’ve been away from your trackball for a few minutes. You’ll see a short note the next time you open Glideball." = "Glideball descarga la versión nueva en segundo plano, comprueba que esté firmada por mí y cambia a ella cuando llevas unos minutos sin tocar tu trackball. Verás una nota breve la próxima vez que abras Glideball.";
+"Glideball tells you when there’s a new version and waits for you to install it." = "Glideball te avisa cuando hay una versión nueva y espera a que la instales.";
+"Let Glideball install new versions by itself, while you’re away from your trackball." = "Deja que Glideball instale las versiones nuevas por su cuenta, mientras no estás usando tu trackball.";
+"auto update, automatic updates, background update, self update, silent update" = "actualización automática, actualizaciones automáticas, actualizar en segundo plano, actualizarse solo, actualización silenciosa, auto update";
+"Glideball updated itself to %@." = "Glideball se actualizó solo a la versión %@.";
+"%@ is downloaded. Glideball switches to it once you’ve been away from your trackball for a few minutes." = "La versión %@ ya está descargada. Glideball cambia a ella cuando llevas unos minutos sin tocar tu trackball.";

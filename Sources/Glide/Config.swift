@@ -2,13 +2,125 @@ import Carbon.HIToolbox
 import CoreGraphics
 import Foundation
 
+/// What a key is called, worked out from its key code and nothing else.
+///
+/// A shortcut in a settings file carries a `keyName` beside its key code, written by
+/// whoever made the file. Up to 2.10 beta 34 that text was what Glideball showed, so a
+/// shared setup could say "⌘C" over a button that presses ⌘Q. Now the name always comes
+/// from here: `KeyShortcut` ignores the file's text when it's read, shows this, and
+/// writes this.
+///
+/// Keys that mean the same on every keyboard (arrows, Space, Return, F-keys…) have fixed
+/// names. Letters, digits and punctuation depend on the keyboard layout (key code 0 is A
+/// on a US keyboard and Q on a French one), so the app hands over the current layout's
+/// names (`KeyLayout`, on the main thread, again when the layout changes); until it does,
+/// and in the simulators and renders, they're the US ones.
+enum KeyNames {
+    static let fixed: [Int: String] = [
+        kVK_LeftArrow: "←", kVK_RightArrow: "→", kVK_DownArrow: "↓", kVK_UpArrow: "↑",
+        kVK_Space: "Space", kVK_Return: "↩", kVK_Tab: "⇥", kVK_Delete: "⌫", kVK_ForwardDelete: "⌦", kVK_Escape: "⎋",
+        kVK_Home: "Home", kVK_End: "End", kVK_PageUp: "PgUp", kVK_PageDown: "PgDn", kVK_Help: "Help",
+        kVK_F1: "F1", kVK_F2: "F2", kVK_F3: "F3", kVK_F4: "F4", kVK_F5: "F5", kVK_F6: "F6", kVK_F7: "F7", kVK_F8: "F8",
+        kVK_F9: "F9", kVK_F10: "F10", kVK_F11: "F11", kVK_F12: "F12", kVK_F13: "F13", kVK_F14: "F14", kVK_F15: "F15",
+        kVK_F16: "F16", kVK_F17: "F17", kVK_F18: "F18", kVK_F19: "F19", kVK_F20: "F20",
+        kVK_ANSI_Keypad0: "Num 0", kVK_ANSI_Keypad1: "Num 1", kVK_ANSI_Keypad2: "Num 2", kVK_ANSI_Keypad3: "Num 3",
+        kVK_ANSI_Keypad4: "Num 4", kVK_ANSI_Keypad5: "Num 5", kVK_ANSI_Keypad6: "Num 6", kVK_ANSI_Keypad7: "Num 7",
+        kVK_ANSI_Keypad8: "Num 8", kVK_ANSI_Keypad9: "Num 9", kVK_ANSI_KeypadDecimal: "Num .", kVK_ANSI_KeypadMultiply: "Num *",
+        kVK_ANSI_KeypadPlus: "Num +", kVK_ANSI_KeypadMinus: "Num -", kVK_ANSI_KeypadDivide: "Num /", kVK_ANSI_KeypadEquals: "Num =",
+        kVK_ANSI_KeypadEnter: "Num ↩", kVK_ANSI_KeypadClear: "Num Clear",
+        kVK_VolumeUp: "Vol +", kVK_VolumeDown: "Vol -", kVK_Mute: "Mute", kVK_CapsLock: "⇪",
+        kVK_Shift: "⇧", kVK_RightShift: "⇧", kVK_Control: "⌃", kVK_RightControl: "⌃", kVK_Option: "⌥", kVK_RightOption: "⌥",
+        kVK_Command: "⌘", kVK_RightCommand: "⌘", kVK_Function: "fn",
+    ]
+
+    /// The keys a layout decides, by what a US keyboard prints on them.
+    static let us: [Int: String] = [
+        kVK_ANSI_A: "A", kVK_ANSI_B: "B", kVK_ANSI_C: "C", kVK_ANSI_D: "D", kVK_ANSI_E: "E", kVK_ANSI_F: "F", kVK_ANSI_G: "G",
+        kVK_ANSI_H: "H", kVK_ANSI_I: "I", kVK_ANSI_J: "J", kVK_ANSI_K: "K", kVK_ANSI_L: "L", kVK_ANSI_M: "M", kVK_ANSI_N: "N",
+        kVK_ANSI_O: "O", kVK_ANSI_P: "P", kVK_ANSI_Q: "Q", kVK_ANSI_R: "R", kVK_ANSI_S: "S", kVK_ANSI_T: "T", kVK_ANSI_U: "U",
+        kVK_ANSI_V: "V", kVK_ANSI_W: "W", kVK_ANSI_X: "X", kVK_ANSI_Y: "Y", kVK_ANSI_Z: "Z",
+        kVK_ANSI_0: "0", kVK_ANSI_1: "1", kVK_ANSI_2: "2", kVK_ANSI_3: "3", kVK_ANSI_4: "4", kVK_ANSI_5: "5", kVK_ANSI_6: "6",
+        kVK_ANSI_7: "7", kVK_ANSI_8: "8", kVK_ANSI_9: "9",
+        kVK_ANSI_Equal: "=", kVK_ANSI_Minus: "-", kVK_ANSI_LeftBracket: "[", kVK_ANSI_RightBracket: "]", kVK_ANSI_Quote: "'",
+        kVK_ANSI_Semicolon: ";", kVK_ANSI_Backslash: "\\", kVK_ANSI_Comma: ",", kVK_ANSI_Slash: "/", kVK_ANSI_Period: ".",
+        kVK_ANSI_Grave: "`", kVK_ISO_Section: "§", kVK_JIS_Yen: "¥", kVK_JIS_Underscore: "_",
+    ]
+
+    /// The key codes whose name the keyboard layout decides.
+    static var layoutKeys: [Int] { us.keys.sorted() }
+
+    private static let lock = NSLock()
+    nonisolated(unsafe) private static var plain: [Int: String] = [:]
+    nonisolated(unsafe) private static var withCommand: [Int: String] = [:]
+
+    /// The current layout's names for `layoutKeys`: as typed, and as typed with ⌘ held
+    /// (a layout like "Dvorak – QWERTY ⌘" differs). Empty goes back to the US names.
+    static func setLayout(plain: [Int: String], withCommand: [Int: String]) {
+        lock.withLock {
+            self.plain = plain.filter { us[$0.key] != nil && usable($0.value) }
+            self.withCommand = withCommand.filter { us[$0.key] != nil && usable($0.value) }
+        }
+    }
+
+    /// A layout's answer is only used if it's something to show: short, visible, no controls.
+    static func usable(_ name: String) -> Bool {
+        !name.isEmpty && name.count <= 3 && name.unicodeScalars.allSatisfy { u in
+            switch u.properties.generalCategory {
+            case .control, .format, .privateUse, .surrogate, .unassigned, .spaceSeparator, .lineSeparator, .paragraphSeparator: false
+            default: true
+            }
+        }
+    }
+
+    static func name(_ keyCode: UInt16, command: Bool = false) -> String {
+        let code = Int(keyCode)
+        if let fixed = fixed[code] { return fixed }
+        guard let us = us[code] else { return "Key \(code)" }
+        return lock.withLock { (command ? withCommand[code] : nil) ?? plain[code] } ?? us
+    }
+}
+
 /// A keyboard shortcut a button can fire.
+///
+/// `keyName` is only ever what `KeyNames` says the key is: the text in a file is not
+/// read (it's written, for older versions and the other platforms, which still want it).
+/// Two shortcuts are the same when their key and modifiers are.
 struct KeyShortcut: Codable, Hashable {
     var keyCode: UInt16
     var modifiers: UInt64
-    var keyName: String
+    private(set) var keyName: String
+
+    init(keyCode: UInt16, modifiers: UInt64, keyName: String = "") {
+        self.keyCode = keyCode
+        self.modifiers = modifiers
+        // Whatever the caller thought the key was called, the key code decides.
+        self.keyName = KeyNames.name(keyCode, command: CGEventFlags(rawValue: modifiers).contains(.maskCommand))
+    }
+
+    private enum CodingKeys: String, CodingKey { case keyCode, modifiers, keyName }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(keyCode: try c.decode(UInt16.self, forKey: .keyCode), modifiers: try c.decode(UInt64.self, forKey: .modifiers))
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(keyCode, forKey: .keyCode)
+        try c.encode(modifiers, forKey: .modifiers)
+        try c.encode(keyLabel, forKey: .keyName)
+    }
+
+    static func == (a: KeyShortcut, b: KeyShortcut) -> Bool { a.keyCode == b.keyCode && a.modifiers == b.modifiers }
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(keyCode)
+        hasher.combine(modifiers)
+    }
 
     var flags: CGEventFlags { CGEventFlags(rawValue: modifiers) }
+
+    /// The key's name, from its key code and the current keyboard layout.
+    var keyLabel: String { KeyNames.name(keyCode, command: flags.contains(.maskCommand)) }
 
     var display: String {
         var s = ""
@@ -16,7 +128,7 @@ struct KeyShortcut: Codable, Hashable {
         if flags.contains(.maskAlternate) { s += "⌥" }
         if flags.contains(.maskShift) { s += "⇧" }
         if flags.contains(.maskCommand) { s += "⌘" }
-        return s + keyName
+        return s + keyLabel
     }
 
     static func make(_ key: Int, _ name: String, _ flags: CGEventFlags) -> KeyShortcut {
@@ -2009,8 +2121,7 @@ enum ConfigLimits {
 
 extension KeyShortcut {
     func clamped() -> KeyShortcut {
-        KeyShortcut(keyCode: keyCode, modifiers: modifiers & ConfigLimits.modifierMask,
-                    keyName: ConfigLimits.trimmed(keyName))
+        KeyShortcut(keyCode: keyCode, modifiers: modifiers & ConfigLimits.modifierMask)
     }
 }
 

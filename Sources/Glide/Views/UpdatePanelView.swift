@@ -149,6 +149,10 @@ struct UpdatePanelView: View {
                 .font(Theme.Font.hint)
                 .fixedSize(horizontal: false, vertical: true)
             }
+            Toggle("Install updates automatically from now on", isOn: AutoUpdateOffer.binding)
+                .toggleStyle(.checkbox)
+                .font(Theme.Font.hint)
+                .help("Glideball downloads a new version in the background, checks that it’s signed by me, and switches to it once you’ve been away from your trackball for a few minutes. You’ll see a short note the next time you open Glideball.")
             buttons {
                 Button("Release Notes") { NSWorkspace.shared.open(update.notesPage) }
                     .help("Opens this version’s notes on the Glideball website")

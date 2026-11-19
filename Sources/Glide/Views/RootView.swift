@@ -748,6 +748,14 @@ struct PermissionsBanner: View {
 
 // MARK: - Update
 
+/// Where an update is offered, the offer to stop being asked: the same switch as
+/// Settings › Updates › Install updates automatically.
+enum AutoUpdateOffer {
+    static var binding: Binding<Bool> {
+        Binding(get: { AppModel.shared.autoInstallUpdates }, set: { AppModel.shared.autoInstallUpdates = $0 })
+    }
+}
+
 /// "2.11" in the sidebar's footer: install in place, or read what's new.
 struct UpdateButton: View {
     let updates: UpdateChecker
@@ -771,6 +779,8 @@ struct UpdateButton: View {
                 Button("Install \(update.displayVersion) & Relaunch") { updates.install() }
                 Button("Details…") { (NSApp.delegate as? AppDelegate)?.showUpdatePanel(check: false) }
                 Button("What’s New in \(update.displayVersion)…") { NSWorkspace.shared.open(update.notesPage) }
+                Divider()
+                Toggle("Install updates automatically", isOn: AutoUpdateOffer.binding)
                 if update.isPrerelease {
                     Divider()
                     Text("An early update. It may have bugs")

@@ -43,6 +43,9 @@ final class Telemetry: @unchecked Sendable {
         var notchBinStart = 0.0, notchBin = 0.0
         var ballBinStart = 0.0, ballBin = 0.0
         var lastScroll = 0.0, scrollRun = 0.0
+        /// When the ball, the ring, a button or Glideball's own scrolling last did anything
+        /// (from launch, so a fresh start never looks like hours of stillness).
+        var lastActivity = CACurrentMediaTime()
     }
 
     static let notchWindow = 0.2
@@ -56,6 +59,7 @@ final class Telemetry: @unchecked Sendable {
         let d = (Double(dx * dx + dy * dy)).squareRoot()
         let now = CACurrentMediaTime()
         state.withLock { s in
+            if d > 0 { s.lastActivity = now }
             s.ball += d
             s.ballX += Double(dx)
             s.ballY += Double(dy)
@@ -73,6 +77,7 @@ final class Telemetry: @unchecked Sendable {
     func addNotch(direction: Int = 1) {
         let now = CACurrentMediaTime()
         state.withLock { s in
+            s.lastActivity = now
             s.notches += 1
             s.notchSum += direction < 0 ? -1 : 1
             if now - s.notchBinStart >= Self.notchWindow {
@@ -87,6 +92,7 @@ final class Telemetry: @unchecked Sendable {
     func addScroll(points: Double) {
         let now = CACurrentMediaTime()
         state.withLock { s in
+            s.lastActivity = now
             s.totals.scrollPoints += abs(points)
             if now - s.lastScroll > Self.flickGap { s.scrollRun = 0 }
             s.lastScroll = now
@@ -105,7 +111,9 @@ final class Telemetry: @unchecked Sendable {
     }
 
     func button(_ index: Int, down: Bool) {
+        let now = CACurrentMediaTime()
         state.withLock {
+            $0.lastActivity = now
             if down {
                 if $0.pressed.insert(index).inserted { $0.totals.clicks += 1 }
                 $0.tapped.insert(index)
@@ -113,6 +121,12 @@ final class Telemetry: @unchecked Sendable {
                 $0.pressed.remove(index)
             }
         }
+    }
+
+    /// Whether a trackball button is down right now, and how long since the trackball last
+    /// did anything. Read by automatic updates (`SafeMoment`); it changes nothing.
+    func activity(now: Double = CACurrentMediaTime()) -> (buttonDown: Bool, idle: Double) {
+        state.withLock { (!$0.pressed.isEmpty, max(0, now - $0.lastActivity)) }
     }
 
     func restore(_ totals: Totals) { state.withLock { $0.totals = totals } }

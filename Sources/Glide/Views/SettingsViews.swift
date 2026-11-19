@@ -810,13 +810,21 @@ struct UpdatesSettingsPane: View {
                 .findable(.releaseNotes)
             }
             SectionBlock(title: "Getting updates", dividerInset: SettingsLayout.symbolInset) {
+                SettingsToggle(title: "Install updates automatically", hint: autoHint, symbol: "arrow.down.circle.dotted", isOn: $model.autoInstallUpdates)
+                    .findable(.autoInstallUpdates)
                 SettingsToggle(title: "Early updates", hint: earlyHint, symbol: "flask", isOn: $model.earlyUpdates)
                     .findable(.earlyUpdates)
             }
         }
     }
 
-    static let findables: [Findable] = [.checkForUpdates, .releaseNotes, .earlyUpdates]
+    static let findables: [Findable] = [.checkForUpdates, .releaseNotes, .autoInstallUpdates, .earlyUpdates]
+
+    private var autoHint: String {
+        model.autoInstallUpdates
+            ? String(localized: "Glideball downloads a new version in the background, checks that it’s signed by me, and switches to it once you’ve been away from your trackball for a few minutes. You’ll see a short note the next time you open Glideball.")
+            : String(localized: "Glideball tells you when there’s a new version and waits for you to install it.")
+    }
 
     private var whatsNewHint: String {
         String(localized: "The release notes for \(GlideVersion(model.updates.currentVersion)?.display ?? model.updates.currentVersion) on the Glideball website.",
@@ -841,6 +849,11 @@ extension Findable {
         detail: String(localized: "The release notes on the Glideball website.", comment: "Search palette: What's new in this version"),
         keywords: String(localized: "changelog, release notes, changes, news", comment: "Search words for the release notes (comma-separated)"),
         symbol: "doc.text", place: .settings(.updates))
+    static let autoInstallUpdates = Findable(
+        id: "auto-install-updates", title: String(localized: "Install updates automatically"),
+        detail: String(localized: "Let Glideball install new versions by itself, while you’re away from your trackball.", comment: "Search palette: Install updates automatically"),
+        keywords: String(localized: "auto update, automatic updates, background update, self update, silent update", comment: "Search words for Install updates automatically (comma-separated)"),
+        symbol: "arrow.down.circle.dotted", place: .settings(.updates))
     static let earlyUpdates = Findable(
         id: "early-updates", title: String(localized: "Early updates"),
         detail: String(localized: "Get new versions before everyone else, while they’re still being tested.", comment: "Search palette: Early updates"),
@@ -897,6 +910,10 @@ struct UpdatesRow: View {
 
     private var status: String {
         if let update = updates.available {
+            if updates.autoInstall, updates.staged?.version == update.version {
+                return String(localized: "\(update.displayVersion) is downloaded. Glideball switches to it once you’ve been away from your trackball for a few minutes.",
+                              comment: "%@ is a version, like 2.11. Shown when Install updates automatically is on")
+            }
             return String(localized: "\(update.displayVersion) is ready to install. Your settings and permissions carry over.",
                           comment: "%@ is a version, like 2.11")
         }

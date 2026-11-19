@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import QuartzCore
 import Security
 
 // Hostile input for the updater: see run.sh. Everything runs the real UpdateChecker code.
@@ -781,12 +782,21 @@ final class StubServer: URLProtocol {
     nonisolated(unsafe) static var sent: Int64 = 0
     nonisolated(unsafe) static var hungUp = false
     nonisolated(unsafe) static var finished = false
+    /// For the automatic-update cases: answers by the last part of the URL (the release list, each zip)
+    /// instead of `script`, and counts how often each was asked for.
+    nonisolated(unsafe) static var routes: [String: Script] = [:]
+    nonisolated(unsafe) static var hits: [String: Int] = [:]
+    static let routeLock = NSLock()
     private let stop = NSLock()
     private var stopped = false
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
     override func startLoading() {
-        let s = Self.script
+        let key = request.url?.lastPathComponent ?? ""
+        Self.routeLock.lock()
+        Self.hits[key, default: 0] += 1
+        let s = Self.routes[key] ?? Self.script
+        Self.routeLock.unlock()
         Self.sent = 0; Self.hungUp = false; Self.finished = false
         var headers: [String: String] = [:]
         if let d = s.declared { headers["Content-Length"] = String(d) }
@@ -909,7 +919,7 @@ for tool in ["open", "xattr"] {
 }
 /// Runs the helper's script the way relaunch() does, in a sandbox folder, with a fake `open`.
 func swap(_ name: String, folderName: String, currentName: String = "Glideball.app", oldName: String? = nil, makeNew: Bool = true, makeCurrent: Bool = true,
-          expectNew: Bool = true) {
+          expectNew: Bool = true, extra: [String] = []) {
     worker.run("install script: \(name)") {
         let box = root.appendingPathComponent("swap-\(UUID().uuidString.prefix(6))", isDirectory: true)
         let dir = box.appendingPathComponent(folderName, isDirectory: true)
@@ -924,7 +934,7 @@ func swap(_ name: String, folderName: String, currentName: String = "Glideball.a
         try? fm.removeItem(at: openLog)
         let p = Process()
         p.executableURL = URL(fileURLWithPath: "/bin/sh")
-        p.arguments = ["-c", Checker.swapScript, "glideball-update", current.path, old.path, new.path, "4000000"]   // a process ID that can't exist: "Glideball has quit"
+        p.arguments = ["-c", Checker.swapScript, "glideball-update", current.path, old.path, new.path, "4000000"] + extra   // a process ID that can't exist: "Glideball has quit"
         p.environment = ["PATH": fakeBin.path + ":/usr/bin:/bin", "HOME": box.path]
         p.currentDirectoryURL = box
         p.standardOutput = FileHandle.nullDevice
@@ -937,7 +947,9 @@ func swap(_ name: String, folderName: String, currentName: String = "Glideball.a
         check(!fm.fileExists(atPath: current.path + ".old"), "\(name): a .old copy was left")
         if oldName != nil && expectNew { check(!fm.fileExists(atPath: old.path), "\(name): the old-named app was left") }
         let opened = (try? String(contentsOf: openLog, encoding: .utf8)) ?? ""
-        check(opened == current.path + "\n", "\(name): opened \(opened.debugDescription), expected \(current.path)")
+        // An automatic update opens the app in the background (-g); any other fifth word changes nothing.
+        let expected = (extra == ["quiet"] ? "-g\n" : "") + current.path + "\n"
+        check(opened == expected, "\(name): opened \(opened.debugDescription), expected \(expected.debugDescription)")
         try? fm.removeItem(at: box)
     }
 }
@@ -947,7 +959,547 @@ for folder in awkward { swap("folder \(folder.debugDescription)", folderName: fo
 swap("renaming Glide.app to Glideball.app", folderName: "rename", currentName: "Glideball.app", oldName: "Glide.app", makeCurrent: false)
 swap("no new app: the old one is put back and opened", folderName: "failed swap", makeNew: false, expectNew: false)
 swap("nothing installed yet", folderName: "fresh", makeCurrent: false)
+swap("an automatic update: swapped the same way, opened in the background", folderName: "quiet", extra: ["quiet"])
+swap("an automatic update whose new app is gone: the old one is put back, in the background", folderName: "quiet failed", makeNew: false, expectNew: false, extra: ["quiet"])
+swap("an automatic update in an awkward folder", folderName: "sub $(touch ../pwned) it's", extra: ["quiet"])
+for word in ["loud", "quiet; touch ../pwned", "$(touch ../pwned)", "-g", ""] { swap("a fifth word that isn't quiet: \(word.debugDescription)", folderName: "fifth", extra: [word]) }
 endSection("install helper", "\(awkward.count) awkward folder names")
+
+// MARK: - 6. Automatic updates: the safe moment
+
+beginSection()
+/// The rule written out a second way, to check `SafeMoment.verdict` against.
+func shouldGo(_ m: SafeMoment) -> Bool {
+    if m.buttonDown || m.holdInFlight || m.modeOn || m.busy { return false }
+    if m.windowOpen && !m.screenAway { return false }
+    let need: (Double, Double) = m.screenAway ? (20, 20) : (180, 120)
+    guard m.trackballIdle.isFinite || m.trackballIdle == .infinity, m.macIdle.isFinite || m.macIdle == .infinity else { return false }
+    return m.trackballIdle >= need.0 && m.macIdle >= need.1
+}
+let idleTimes: [Double] = [-.infinity, -1, 0, 0.5, 19.9, 20, 60, 119.9, 120, 179.9, 180, 3600, 1e12, .infinity, .nan]
+let away = SafeMoment(trackballIdle: 1e9, macIdle: 1e9)
+worker.run("safe moment: nobody there, nothing held") {
+    check(away.verdict == .go, "a quiet Mac with nothing held: \(away.verdict)")
+    check(SafeMoment().verdict != .go, "a moment nobody filled in is safe")
+    var m = away; m.trackballIdle = 179; check(m.verdict == .wait(.trackballInUse), "179 s since the trackball: \(m.verdict)")
+    m = away; m.macIdle = 119; check(m.verdict == .wait(.macInUse), "119 s since the keyboard: \(m.verdict)")
+    m = away; m.windowOpen = true; check(m.verdict == .wait(.windowOpen), "the window open, screen on: \(m.verdict)")
+    m.screenAway = true; check(m.verdict == .go, "the window open, screen locked: \(m.verdict)")
+    m = SafeMoment(trackballIdle: 25, macIdle: 25, screenAway: true); check(m.verdict == .go, "screen locked for 25 s: \(m.verdict)")
+    m.macIdle = 5; check(m.verdict == .wait(.macInUse), "typing a password at the lock screen: \(m.verdict)")
+    m = away; m.busy = true; m.screenAway = true; check(m.verdict == .wait(.busy), "a tour, a trial or Settings open: \(m.verdict)")
+}
+worker.run("safe moment: the idle rule can't fire mid-hold") {
+    // Whatever the idle times and the screen say, a button down, a hold or a mode means wait.
+    for t in idleTimes { for k in idleTimes { for screen in [false, true] { for window in [false, true] {
+        for (what, held) in [("a button down", SafeMoment(buttonDown: true)), ("a gesture, ring or Switcher hold", SafeMoment(holdInFlight: true)),
+                             ("Precision, Drag lock or Scroll with ball", SafeMoment(modeOn: true))] {
+            var m = held
+            m.trackballIdle = t; m.macIdle = k; m.screenAway = screen; m.windowOpen = window
+            if case .go = m.verdict { fail("\(what), idle \(t) / \(k), screen away \(screen): go") }
+        }
+    } } } }
+    var m = away; m.screenAway = true; m.buttonDown = true
+    check(m.verdict == .wait(.buttonDown), "a button down behind a locked screen: \(m.verdict)")
+    m = away; m.holdInFlight = true; check(m.verdict == .wait(.holdInFlight), "a hold: \(m.verdict)")
+    m = away; m.modeOn = true; check(m.verdict == .wait(.modeOn), "a mode: \(m.verdict)")
+}
+worker.run("safe moment: every combination against the rule written out") {
+    var cases = 0, goes = 0
+    for bits in 0..<64 { for t in idleTimes { for k in idleTimes {
+        let m = SafeMoment(buttonDown: bits & 1 != 0, holdInFlight: bits & 2 != 0, modeOn: bits & 4 != 0, trackballIdle: t, macIdle: k,
+                           screenAway: bits & 8 != 0, windowOpen: bits & 16 != 0, busy: bits & 32 != 0)
+        cases += 1
+        if m.isSafe { goes += 1 }
+        if m.isSafe != shouldGo(m) { fail("safe moment \(m): \(m.verdict), expected \(shouldGo(m) ? "go" : "wait")") }
+    } } }
+    check(goes > 0 && goes < cases / 20, "\(goes) of \(cases) moments are safe")
+}
+worker.run("safe moment: random moments (seed \(seed))") {
+    for _ in 0..<50_000 {
+        let m = SafeMoment(buttonDown: Int.random(in: 0..<6, using: &rng) == 0, holdInFlight: Int.random(in: 0..<6, using: &rng) == 0,
+                           modeOn: Int.random(in: 0..<6, using: &rng) == 0, trackballIdle: Double.random(in: -10...400, using: &rng),
+                           macIdle: Double.random(in: -10...400, using: &rng), screenAway: Bool.random(using: &rng),
+                           windowOpen: Bool.random(using: &rng), busy: Int.random(in: 0..<6, using: &rng) == 0)
+        if m.isSafe != shouldGo(m) { fail("safe moment \(m) (seed \(seed)): \(m.verdict)") }
+    }
+}
+worker.run("safe moment: what the engine's counters say about a hold") {
+    // The real Telemetry, as the input thread feeds it. A held button stays "down" however long it's held.
+    let t = Telemetry()
+    let start = CACurrentMediaTime()
+    func moment(after seconds: Double) -> SafeMoment {
+        let a = t.activity(now: start + seconds)
+        return SafeMoment(buttonDown: a.buttonDown, trackballIdle: a.idle, macIdle: 1e9)
+    }
+    check(moment(after: 1).verdict == .wait(.trackballInUse), "just launched counts as hours of stillness: \(moment(after: 1))")
+    check(moment(after: 600).verdict == .go, "ten quiet minutes after launch: \(moment(after: 600).verdict)")
+    t.button(3, down: true)
+    for held: Double in [0, 1, 179, 181, 3600, 259_200] {
+        check(moment(after: held).verdict == .wait(.buttonDown), "a button held \(held) s: \(moment(after: held).verdict)")
+    }
+    t.button(1, down: true)
+    t.button(3, down: false)
+    check(moment(after: 9_000).verdict == .wait(.buttonDown), "two buttons, one let go: \(moment(after: 9_000).verdict)")
+    t.button(1, down: false)
+    let released = CACurrentMediaTime() - start
+    check(moment(after: released + 100).verdict == .wait(.trackballInUse), "100 s after letting go: \(moment(after: released + 100).verdict)")
+    check(moment(after: released + 200).verdict == .go, "200 s after letting go: \(moment(after: released + 200).verdict)")
+    // The ball, the ring and Glideball's own scrolling (a flywheel still coasting) each start the wait again.
+    for (what, act) in [("the ball", { t.addBall(dx: 3, dy: 0) }), ("the ring", { t.addNotch(direction: 1) }), ("scrolling", { t.addScroll(points: 12) })] as [(String, () -> Void)] {
+        Thread.sleep(forTimeInterval: 0.02)
+        let before = t.activity().idle
+        act()
+        check(t.activity().idle < before && t.activity().idle < 0.01, "\(what) didn't count as activity")
+    }
+    Thread.sleep(forTimeInterval: 0.02)
+    let before = t.activity().idle
+    t.addBall(dx: 0, dy: 0)
+    check(t.activity().idle >= before, "a ball report that moved nothing counted as activity")
+    check(t.activity(now: 0).idle == 0, "a clock before the last activity gives a negative idle time")
+}
+endSection("the safe moment", "\(idleTimes.count) idle times squared, every switch, the engine's counters")
+
+// MARK: - 7. Automatic updates: bookkeeping
+
+beginSection()
+let day0 = Date(timeIntervalSince1970: 1_800_000_000)
+let hour: TimeInterval = 3600
+func plan(enabled: Bool = true, offered: String?, hasDownload: Bool = true, running: String = current, staged: String? = nil, fetching: String? = nil,
+          ledger: AutoUpdateLedger = AutoUpdateLedger(), now: Date = day0) -> AutoUpdatePlan {
+    AutoUpdatePlan.next(enabled: enabled, offered: offered, hasDownload: hasDownload, running: running, staged: staged, fetching: fetching, ledger: ledger, now: now)
+}
+worker.run("plan: what a check leads to") {
+    check(plan(enabled: false, offered: "2.11") == AutoUpdatePlan(), "off: \(plan(enabled: false, offered: "2.11"))")
+    check(plan(enabled: false, offered: "2.11", staged: "2.11") == AutoUpdatePlan(discard: true), "switched off with one staged: kept")
+    check(plan(enabled: false, offered: "2.11", fetching: "2.11") == AutoUpdatePlan(discard: true), "switched off mid-download: carried on")
+    check(plan(offered: "2.11") == AutoUpdatePlan(fetch: "2.11"), "a newer version: \(plan(offered: "2.11"))")
+    check(plan(offered: "2.11", hasDownload: false) == AutoUpdatePlan(), "a release with no zip: \(plan(offered: "2.11", hasDownload: false))")
+    check(plan(offered: nil) == AutoUpdatePlan(), "nothing offered: \(plan(offered: nil))")
+    check(plan(offered: "2.11", staged: "2.11") == AutoUpdatePlan(), "already staged: \(plan(offered: "2.11", staged: "2.11"))")
+    check(plan(offered: "2.11", fetching: "2.11") == AutoUpdatePlan(), "already downloading: a second download")
+    // Superseded: the old copy goes and the new one is fetched.
+    check(plan(offered: "2.12", staged: "2.11") == AutoUpdatePlan(discard: true, fetch: "2.12"), "superseded: \(plan(offered: "2.12", staged: "2.11"))")
+    check(plan(offered: "2.12", fetching: "2.11") == AutoUpdatePlan(discard: true, fetch: "2.12"), "superseded mid-download: \(plan(offered: "2.12", fetching: "2.11"))")
+    // A release pulled, or Early updates switched off: what's staged is no longer offered.
+    check(plan(offered: nil, staged: "2.11") == AutoUpdatePlan(discard: true), "a pulled release stays staged")
+    check(plan(offered: "2.10", running: "2.9", staged: "2.11-beta.1") == AutoUpdatePlan(discard: true, fetch: "2.10"), "left the betas: the staged beta stays")
+}
+worker.run("plan: never a version that isn't newer") {
+    for (offered, running) in [("2.10-beta.14", "2.10-beta.14"), ("2.10-beta.13", "2.10-beta.14"), ("2.9", "2.10-beta.14"), ("2.10", "2.10"), ("2.10-beta.99", "2.10"),
+                               ("1.0", "2.10"), ("garbage", "2.10"), ("", "2.10"), ("2.10.0", "2.10"), ("v2.10", "2.10")] {
+        let p = plan(offered: offered, running: running)
+        check(p.fetch == nil, "\(offered) over \(running): fetched")
+        check(plan(offered: offered, running: running, staged: offered) == AutoUpdatePlan(discard: true), "\(offered) staged over \(running): kept")
+        check(!AutoUpdatePlan.mayInstall(staged: offered, running: running, ledger: AutoUpdateLedger(), now: day0), "\(offered) over \(running): may install")
+    }
+    check(AutoUpdatePlan.mayInstall(staged: "2.11", running: "2.10-beta.14", ledger: AutoUpdateLedger(), now: day0), "2.11 over 2.10 beta 14 refused")
+    check(AutoUpdatePlan.mayInstall(staged: "2.10", running: "2.10-beta.14", ledger: AutoUpdateLedger(), now: day0), "2.10 over its own beta refused")
+    check(!AutoUpdatePlan.mayInstall(staged: "2.11", running: "who knows", ledger: AutoUpdateLedger(), now: day0), "installed over a version that can't be read")
+    // Every pair from the ordered list: only ever upward.
+    for (i, a) in ordered.enumerated() { for (j, b) in ordered.enumerated() {
+        let may = AutoUpdatePlan.mayInstall(staged: a, running: b, ledger: AutoUpdateLedger(), now: day0)
+        check(may == (i > j), "\(a) over \(b): \(may ? "allowed" : "refused")")
+        check((plan(offered: a, running: b).fetch != nil) == (i > j), "\(a) offered to \(b): \(plan(offered: a, running: b))")
+    } }
+}
+worker.run("ledger: a failure waits a day, and the third is the last") {
+    var l = AutoUpdateLedger()
+    check(l.mayTry("2.11", now: day0), "a version that never failed may not be tried")
+    l.failed("2.11", now: day0)
+    check(l.failure == .init(version: "2.11", count: 1, last: day0), "first failure: \(String(describing: l.failure))")
+    for after in [0, 1, 60, hour, 19.9 * hour] { check(!l.mayTry("2.11", now: day0 + after), "tried again \(after) s after failing") }
+    check(!l.mayTry("2.11", now: day0 - hour), "tried again when the clock went back an hour")
+    check(l.mayTry("2.11", now: day0 + 20 * hour) && l.mayTry("2.11", now: day0 + 24 * hour), "not tried again the next day")
+    check(plan(offered: "2.11", ledger: l, now: day0 + hour) == AutoUpdatePlan(), "a failed version is fetched again within the day")
+    check(plan(offered: "2.11", staged: "2.10.5", ledger: l, now: day0 + hour) == AutoUpdatePlan(discard: true), "superseded by a version that just failed: \(plan(offered: "2.11", staged: "2.10.5", ledger: l, now: day0 + hour))")
+    check(plan(offered: "2.11", ledger: l, now: day0 + 24 * hour) == AutoUpdatePlan(fetch: "2.11"), "a failed version isn't fetched the next day")
+    check(l.mayTry("2.12", now: day0), "one version's failure blocks another")
+    l.failed("2.11", now: day0 + 24 * hour)
+    l.failed("2.11", now: day0 + 48 * hour)
+    check(l.failure?.count == 3, "three failures count as \(l.failure?.count ?? 0)")
+    for after in [48 * hour, 72 * hour, 24 * 365 * hour] { check(!l.mayTry("2.11", now: day0 + after), "a fourth try, \(after / hour) h on") }
+    check(!AutoUpdatePlan.mayInstall(staged: "2.11", running: current, ledger: l, now: day0 + 1000 * hour), "installed after three failures")
+    l.failed("2.11", now: day0 + 100 * hour)
+    check(l.failure?.count == 3, "the count runs past three")
+    l.failed("2.12", now: day0 + 100 * hour)
+    check(l.failure == .init(version: "2.12", count: 1, last: day0 + 100 * hour), "a newer version doesn't start afresh: \(String(describing: l.failure))")
+    // Simulate a year of daily checks against a version that always fails: three tries, ever.
+    var year = AutoUpdateLedger(), tries = 0
+    for h in stride(from: 0.0, to: 24 * 365, by: 1) {
+        let now = day0 + h * hour
+        if plan(offered: "2.11", ledger: year, now: now).fetch != nil { tries += 1; year.failed("2.11", now: now) }
+    }
+    check(tries == 3, "a version that always fails was tried \(tries) times in a year of hourly checks")
+}
+worker.run("ledger: the launch after a restart") {
+    var l = AutoUpdateLedger()
+    check(l.launched(running: "2.11", now: day0) == .plain && l == AutoUpdateLedger(), "an ordinary launch isn't plain")
+    l.handoff = .init(from: "2.10", to: "2.11", at: day0, windowOpen: true)
+    l.failure = .init(version: "2.11", count: 1, last: day0 - 30 * hour)
+    var a = l
+    check(a.launched(running: "2.11", now: day0 + 3) == .updated(to: "2.11", quiet: true, windowOpen: true), "the new version starting 3 s later")
+    check(a.handoff == nil && a.note == "2.11" && a.failure == nil, "after it: \(a)")
+    check(a.launched(running: "2.11", now: day0 + 4) == .plain, "the handoff answers twice")
+    // The swap didn't happen: the old version is back. Quiet, counted, and not tried again today.
+    a = l
+    check(a.launched(running: "2.10", now: day0 + 3) == .swapFailed(quiet: true, windowOpen: true), "the old version coming back")
+    check(a.handoff == nil && a.note == nil && a.failure == .init(version: "2.11", count: 2, last: day0 + 3), "after a failed swap: \(a)")
+    check(!a.mayTry("2.11", now: day0 + hour) && plan(offered: "2.11", running: "2.10", ledger: a, now: day0 + hour) == AutoUpdatePlan(), "a failed swap is retried within the hour (a loop)")
+    // Something else entirely is running (the person installed 2.12 by hand meanwhile).
+    a = l
+    check(a.launched(running: "2.12", now: day0 + 3) == .swapFailed(quiet: true, windowOpen: true) && a.note == nil, "another version running claims the update")
+    // Glideball didn't come back by itself; the person opened it an hour later: an ordinary launch, with the note.
+    a = l
+    check(a.launched(running: "2.11", now: day0 + hour) == .updated(to: "2.11", quiet: false, windowOpen: false), "an hour later is still a quiet launch")
+    check(a.note == "2.11", "an hour later: no note")
+    a = l
+    check(a.launched(running: "2.11", now: day0 - 60) == .updated(to: "2.11", quiet: false, windowOpen: false), "a handoff from the future is a quiet launch")
+    a = l; a.handoff?.windowOpen = false
+    check(a.launched(running: "2.11", now: day0 + 3) == .updated(to: "2.11", quiet: true, windowOpen: false), "a window comes back that wasn't open")
+}
+worker.run("ledger: kept in UserDefaults, and hostile data there") {
+    let suite = "glide-update-fuzz-\(UUID().uuidString)"
+    let d = UserDefaults(suiteName: suite)!
+    defer { d.removePersistentDomain(forName: suite) }
+    check(AutoUpdateLedger.load(from: d) == AutoUpdateLedger(), "an empty store isn't an empty ledger")
+    var l = AutoUpdateLedger()
+    l.failed("2.11", now: day0)
+    l.handoff = .init(from: "2.10", to: "2.11", at: day0, windowOpen: true)
+    l.note = "2.11"
+    l.save(to: d)
+    check(AutoUpdateLedger.load(from: d) == l, "the ledger doesn't read back: \(AutoUpdateLedger.load(from: d))")
+    AutoUpdateLedger().save(to: d)
+    check(d.object(forKey: AutoUpdateLedger.defaultsKey) == nil, "an empty ledger leaves something stored")
+    let hostile: [Any] = [Data("not json".utf8), Data(), Data(count: 100_000), "a string", 42, ["a": 1], Data("{\"failure\":{\"version\":7}}".utf8),
+                          Data("[1,2,3]".utf8), Data(("{\"note\":\"" + String(repeating: "x", count: 10_000) + "\"}").utf8)]
+    for value in hostile {
+        d.set(value, forKey: AutoUpdateLedger.defaultsKey)
+        check(AutoUpdateLedger.load(from: d) == AutoUpdateLedger(), "hostile ledger \(String(describing: value).prefix(40)) was read")
+    }
+    // Odd numbers that do decode: nothing crashes, and three more failures still end it.
+    d.set(Data("{\"failure\":{\"version\":\"2.11\",\"count\":-5,\"last\":1e300},\"note\":\"2.11\"}".utf8), forKey: AutoUpdateLedger.defaultsKey)
+    var odd = AutoUpdateLedger.load(from: d)
+    _ = odd.mayTry("2.11", now: day0)
+    for i in 0..<12 { odd.failed("2.11", now: day0 + Double(i) * 24 * hour) }
+    check(!odd.mayTry("2.11", now: day0 + 9_000 * hour), "a ledger with odd numbers never gives up")
+    check(UserDefaults(suiteName: "glide-update-fuzz-empty-\(UUID().uuidString)")!.bool(forKey: AutoUpdateSetting.defaultsKey) == false, "the switch defaults to on")
+}
+endSection("bookkeeping", "plans, never downgrading, failures, the launch after a restart")
+
+// MARK: - 8. Automatic updates: the real updater, staged and not installed
+
+// Everything below runs the real UpdateChecker on the main thread with the stub server for both the
+// release list and the zip, its own UserDefaults, and a stand-in for the restart: nothing is ever
+// swapped, quit or launched, and nothing leaves the process.
+beginSection()
+let app212 = makeApp(version: "2.12")
+let zip212 = try! Data(contentsOf: zip(app212))
+let unsignedZip = try! Data(contentsOf: zip(makeApp(signedAs: nil)))
+func listData(_ versions: [(String, String)]) -> Data {   // (tag, zip's name on the stub)
+    json(versions.map { tag, file in
+        ["tag_name": "v" + tag, "html_url": "https://example.invalid/releases/\(tag)", "draft": false, "prerelease": GlideVersion(tag)?.isPrerelease == true, "body": "",
+         "assets": [["name": "Glideball-update.zip", "browser_download_url": "https://example.invalid/\(file)"]]] as [String: Any]
+    })
+}
+func serve(list: [(String, String)], zips: [String: Data]) {
+    StubServer.routeLock.lock()
+    StubServer.routes = ["releases": .init(body: listData(list))]
+    for (name, data) in zips { StubServer.routes[name] = .init(declared: Int64(data.count), body: data) }
+    StubServer.routeLock.unlock()
+}
+func hits(_ name: String) -> Int { StubServer.routeLock.lock(); defer { StubServer.routeLock.unlock() }; return StubServer.hits[name] ?? 0 }
+/// Runs the main run loop (timers, main-queue blocks) until `done` or the timeout.
+@discardableResult
+func pump(_ seconds: Double = 20, until done: () -> Bool) -> Bool {
+    let end = Date().addingTimeInterval(seconds)
+    while !done() {
+        if Date() > end { return false }
+        RunLoop.main.run(mode: .default, before: Date().addingTimeInterval(0.01))
+    }
+    return true
+}
+func settle(_ seconds: Double = 0.4) { pump(seconds) { false } }
+
+final class AutoRig {
+    let checker = UpdateChecker()
+    let suite = "glide-update-fuzz-\(UUID().uuidString)"
+    let defaults: UserDefaults
+    var moment = SafeMoment(buttonDown: true)
+    var relaunched: [UpdateChecker.Staged] = []
+    var relaunchWorks = true
+    var asked = 0
+    init(on: Bool = true, running: String = current) {
+        defaults = UserDefaults(suiteName: suite)!
+        checker.autoRelaunch = { [unowned self] s in relaunched.append(s); return relaunchWorks }   // first: the real restart can never run here
+        checker.listSession = stubSession
+        checker.autoSession = stubSession
+        checker.autoWorkRoot = tmp
+        checker.autoBundleID = bundleID
+        checker.autoRequirement = pinned
+        checker.ledgerDefaults = defaults
+        checker.versionOverride = running
+        checker.includePrereleases = false
+        checker.safeMoment = { [unowned self] in asked += 1; return moment }
+        checker.autoInstall = on
+    }
+    var ledger: AutoUpdateLedger { AutoUpdateLedger.load(from: defaults) }
+    /// One check, to its end, and any background download it started.
+    func check_() {
+        var done = false
+        checker.check { _ in done = true }
+        if !pump(until: { done && !self.checker.isFetching }) { fail("a check or its download didn't finish") }
+        settle(0.1)
+    }
+    func tryInstall(now: Date = Date()) { checker.installStagedIfSafe(now: now); settle() }
+    func end() {
+        checker.autoInstall = false
+        checker.autoStep()
+        settle(0.2)
+        defaults.removePersistentDomain(forName: suite)
+    }
+}
+func autoCase(_ name: String, _ body: () -> Void) {
+    sectionCases += 1
+    setCase("auto: " + name)
+    StubServer.routeLock.lock(); StubServer.hits = [:]; StubServer.routeLock.unlock()
+    body()
+    settle(0.3)   // deleted folders go on a background queue
+    check(tmpListing().isEmpty, "auto: \(name): unpack folders left behind: \(tmpListing())")
+}
+let goodList = [("2.11", "good.zip"), ("2.10-beta.14", "old.zip"), ("2.9", "old.zip")]
+
+autoCase("off: an update is found and nothing is downloaded") {
+    serve(list: goodList, zips: ["good.zip": goodBytes])
+    let rig = AutoRig(on: false)
+    rig.moment = away
+    rig.check_()
+    check(rig.checker.available?.version == "2.11", "off: the update isn't offered: \(String(describing: rig.checker.available?.version))")
+    check(rig.checker.staged == nil && !rig.checker.isFetching && hits("good.zip") == 0, "off: something was downloaded (\(hits("good.zip")) requests)")
+    rig.tryInstall()
+    check(rig.relaunched.isEmpty && rig.asked == 0, "off: a restart was considered")
+    rig.end()
+}
+autoCase("on: downloaded, checked, staged, and nothing more until the moment is safe") {
+    serve(list: goodList, zips: ["good.zip": goodBytes])
+    let rig = AutoRig()
+    rig.check_()
+    guard let staged = rig.checker.staged else { fail("on: nothing staged (failure: \(String(describing: rig.ledger.failure)))"); rig.end(); return }
+    check(staged.version == "2.11" && fm.fileExists(atPath: staged.app.path) && staged.app.path.hasPrefix(tmp.path), "on: staged \(staged.version) at \(staged.app.path)")
+    check(hits("good.zip") == 1, "on: the zip was asked for \(hits("good.zip")) times")
+    check(rig.checker.installState == .idle, "on: the background download shows: \(rig.checker.installState)")
+    rig.check_()
+    check(hits("good.zip") == 1 && rig.checker.staged == staged, "on: a second check downloaded it again")
+    // Mid-hold, however long the trackball has been still: nothing.
+    for m in [SafeMoment(buttonDown: true, trackballIdle: 1e9, macIdle: 1e9, screenAway: true), SafeMoment(holdInFlight: true, trackballIdle: 1e9, macIdle: 1e9),
+              SafeMoment(modeOn: true, trackballIdle: 1e9, macIdle: 1e9), SafeMoment(trackballIdle: 10, macIdle: 1e9), SafeMoment(trackballIdle: 1e9, macIdle: 1e9, busy: true),
+              SafeMoment(trackballIdle: 1e9, macIdle: 1e9, windowOpen: true)] {
+        rig.moment = m
+        rig.tryInstall()
+        check(rig.relaunched.isEmpty, "on: restarted at \(m)")
+    }
+    check(rig.asked >= 6 && rig.ledger.handoff == nil, "on: the moment wasn't asked about, or a handoff was written early")
+    rig.moment = away
+    rig.tryInstall()
+    check(rig.relaunched == [staged], "on: a safe moment restarted \(rig.relaunched.count) times")
+    for _ in 0..<3 { rig.tryInstall() }
+    check(rig.relaunched.count == 1, "on: the helper was started \(rig.relaunched.count) times for one update")
+    check(rig.ledger.handoff?.to == "2.11" && rig.ledger.handoff?.from == current && rig.ledger.handoff?.windowOpen == false, "on: the handoff is \(String(describing: rig.ledger.handoff))")
+    check(rig.ledger.failure == nil, "on: a failure was counted: \(String(describing: rig.ledger.failure))")
+    rig.end()
+    settle(0.3)
+    check(!fm.fileExists(atPath: staged.app.path), "on: switching off left the staged copy")
+}
+autoCase("the moment changes while the staged copy is checked again") {
+    serve(list: goodList, zips: ["good.zip": goodBytes])
+    let rig = AutoRig()
+    rig.check_()
+    rig.moment = away
+    var calls = 0
+    rig.checker.safeMoment = { calls += 1; return calls == 1 ? away : SafeMoment(buttonDown: true, trackballIdle: 1e9, macIdle: 1e9) }
+    rig.tryInstall()
+    check(calls == 2 && rig.relaunched.isEmpty && rig.ledger.handoff == nil, "a button pressed during the check: asked \(calls) times, restarted \(rig.relaunched.count)")
+    check(rig.checker.staged != nil, "a button pressed during the check dropped the staged copy")
+    rig.end()
+}
+autoCase("superseded: 2.12 comes out while 2.11 is staged") {
+    serve(list: goodList, zips: ["good.zip": goodBytes])
+    let rig = AutoRig()
+    rig.check_()
+    guard let first = rig.checker.staged else { fail("superseded: nothing staged"); rig.end(); return }
+    serve(list: [("2.12", "newer.zip")] + goodList, zips: ["good.zip": goodBytes, "newer.zip": zip212])
+    rig.check_()
+    check(rig.checker.staged?.version == "2.12", "superseded: staged is \(String(describing: rig.checker.staged?.version))")
+    settle(0.3)
+    check(!fm.fileExists(atPath: first.app.path), "superseded: 2.11's copy is still there")
+    check(tmpListing().count == 1, "superseded: \(tmpListing().count) unpack folders")
+    rig.moment = away
+    rig.tryInstall()
+    check(rig.relaunched.map(\.version) == ["2.12"], "superseded: restarted into \(rig.relaunched.map(\.version))")
+    rig.end()
+}
+autoCase("a download that fails its checks: dropped quietly, not tried again today") {
+    for (what, zipData) in [("unsigned", unsignedZip), ("the wrong version", zip212), ("not a zip", Data(count: 4096)), ("cut short", goodBytes.prefix(goodBytes.count / 2))] {
+        serve(list: goodList, zips: ["good.zip": zipData])
+        StubServer.routeLock.lock(); StubServer.hits = [:]; StubServer.routeLock.unlock()
+        let rig = AutoRig()
+        rig.moment = away
+        rig.check_()
+        check(rig.checker.staged == nil, "\(what): staged")
+        check(rig.ledger.failure?.version == "2.11" && rig.ledger.failure?.count == 1, "\(what): the failure isn't counted: \(String(describing: rig.ledger.failure))")
+        check(rig.checker.installState == .idle && rig.checker.available?.version == "2.11", "\(what): the failure shows (\(rig.checker.installState)), or the update is no longer offered")
+        for _ in 0..<5 { rig.check_() }
+        check(hits("good.zip") == 1, "\(what): downloaded \(hits("good.zip")) times in six checks (a loop)")
+        rig.tryInstall()
+        check(rig.relaunched.isEmpty, "\(what): restarted")
+        rig.end()
+        settle(0.2)
+        check(tmpListing().isEmpty, "\(what): left \(tmpListing())")
+    }
+}
+autoCase("the server says 404, or never stops sending") {
+    StubServer.routeLock.lock()
+    StubServer.routes = ["releases": .init(body: listData(goodList)), "good.zip": .init(status: 404, declared: 5, body: Data("nope\n".utf8))]
+    StubServer.routeLock.unlock()
+    let rig = AutoRig()
+    rig.check_()
+    check(rig.checker.staged == nil && rig.ledger.failure?.count == 1 && rig.checker.installState == .idle, "404: \(String(describing: rig.ledger.failure)), \(rig.checker.installState)")
+    rig.end()
+}
+autoCase("not newer: the same version, an older one, a beta without Early updates") {
+    for (what, list, running) in [("the same version", [("2.10-beta.14", "good.zip")], current), ("an older one", [("2.9", "good.zip")], current),
+                                  ("a beta, Early updates off", [("2.12-beta.1", "good.zip")], "2.11"), ("nothing at all", [], current)] {
+        serve(list: list, zips: ["good.zip": goodBytes])
+        StubServer.routeLock.lock(); StubServer.hits = [:]; StubServer.routeLock.unlock()
+        let rig = AutoRig(running: running)
+        rig.moment = away
+        rig.check_()
+        rig.tryInstall()
+        check(rig.checker.available == nil && rig.checker.staged == nil && hits("good.zip") == 0 && rig.relaunched.isEmpty, "\(what): offered \(String(describing: rig.checker.available?.version)), \(hits("good.zip")) downloads")
+        rig.end()
+    }
+}
+autoCase("a staged copy that's no longer newer is dropped, never installed") {
+    serve(list: goodList, zips: ["good.zip": goodBytes])
+    for running in ["2.11", "2.12", "3.0"] {
+        let rig = AutoRig()
+        rig.check_()
+        guard let staged = rig.checker.staged else { fail("no longer newer: nothing staged"); rig.end(); continue }
+        rig.checker.versionOverride = running   // as if this were already that version
+        rig.moment = away
+        rig.tryInstall()
+        check(rig.relaunched.isEmpty && rig.checker.staged == nil && rig.ledger.handoff == nil, "2.11 staged over \(running): restarted \(rig.relaunched.count) times")
+        settle(0.3)
+        check(!fm.fileExists(atPath: staged.app.path), "2.11 staged over \(running): the copy is still there")
+        rig.end()
+    }
+}
+autoCase("a staged copy changed on disk is caught by the second check") {
+    let changes: [(String, (URL) -> Void)] = [
+        ("a file changed", { try! Data("changed".utf8).write(to: $0.appendingPathComponent("Contents/Resources/data.txt")) }),
+        ("a file added", { try! Data("x".utf8).write(to: $0.appendingPathComponent("Contents/Resources/extra.txt")) }),
+        ("the binary swapped", { try? fm.removeItem(at: $0.appendingPathComponent("Contents/MacOS/Glide")); try! fm.copyItem(at: URL(fileURLWithPath: "/bin/echo"), to: $0.appendingPathComponent("Contents/MacOS/Glide")) }),
+        ("the app replaced by a link", { let t = $0.deletingLastPathComponent().appendingPathComponent("real.app"); try! fm.moveItem(at: $0, to: t); try! fm.createSymbolicLink(at: $0, withDestinationURL: goodApp) }),
+        ("the app gone", { try! fm.removeItem(at: $0) }),
+    ]
+    for (what, change) in changes {
+        serve(list: goodList, zips: ["good.zip": goodBytes])
+        let rig = AutoRig()
+        rig.check_()
+        guard let staged = rig.checker.staged else { fail("\(what): nothing staged"); rig.end(); continue }
+        change(staged.app)
+        rig.moment = away
+        rig.tryInstall()
+        check(rig.relaunched.isEmpty, "\(what): restarted into it")
+        check(rig.checker.staged == nil && rig.ledger.failure?.version == "2.11" && rig.ledger.handoff == nil, "\(what): kept, or not counted: \(String(describing: rig.ledger.failure))")
+        rig.tryInstall()
+        rig.check_()
+        check(rig.relaunched.isEmpty && rig.checker.staged == nil, "\(what): fetched or restarted again the same day")
+        rig.end()
+        settle(0.3)
+    }
+}
+autoCase("a pulled release: the staged copy goes at the next check") {
+    serve(list: goodList, zips: ["good.zip": goodBytes])
+    let rig = AutoRig()
+    rig.check_()
+    check(rig.checker.staged != nil, "pulled: nothing staged")
+    serve(list: [("2.10-beta.14", "old.zip")], zips: [:])
+    rig.check_()
+    rig.moment = away
+    rig.tryInstall()
+    check(rig.checker.staged == nil && rig.relaunched.isEmpty, "pulled: still staged, or installed")
+    rig.end()
+}
+autoCase("an old answer is asked again before installing") {
+    serve(list: goodList, zips: ["good.zip": goodBytes])
+    let rig = AutoRig()
+    rig.check_()
+    rig.moment = away
+    let listHits = hits("releases")
+    // Two hours on, the answer is stale: GitHub is asked first, and nothing restarts on that look.
+    serve(list: [("2.10-beta.14", "old.zip")], zips: [:])   // meanwhile the release was pulled
+    rig.tryInstall(now: Date().addingTimeInterval(2 * hour))
+    pump(5) { hits("releases") > listHits && rig.checker.staged == nil }
+    check(hits("releases") == listHits + 1, "stale: GitHub was asked \(hits("releases") - listHits) times")
+    check(rig.relaunched.isEmpty && rig.checker.staged == nil, "stale: a pulled release was installed (\(rig.relaunched.count)) or kept")
+    rig.end()
+    // Offline: no answer, no install, and no asking again for half an hour.
+    serve(list: goodList, zips: ["good.zip": goodBytes])
+    let rig2 = AutoRig()
+    rig2.check_()
+    rig2.moment = away
+    StubServer.routeLock.lock(); StubServer.routes["releases"] = .init(status: 503, body: Data()); StubServer.hits = [:]; StubServer.routeLock.unlock()
+    let later = Date().addingTimeInterval(2 * hour)
+    for i in 0..<5 { rig2.tryInstall(now: later.addingTimeInterval(Double(i) * 60)) }
+    check(hits("releases") == 1 && rig2.relaunched.isEmpty && rig2.checker.staged != nil, "offline: asked \(hits("releases")) times, restarted \(rig2.relaunched.count)")
+    rig2.tryInstall(now: later.addingTimeInterval(31 * 60))
+    check(hits("releases") == 2, "offline: not asked again after half an hour")
+    rig2.end()
+}
+autoCase("the helper won't start: counted, dropped, no handoff left") {
+    serve(list: goodList, zips: ["good.zip": goodBytes])
+    let rig = AutoRig()
+    rig.relaunchWorks = false
+    rig.check_()
+    rig.moment = away
+    rig.tryInstall()
+    check(rig.relaunched.count == 1 && rig.checker.staged == nil, "helper: tried \(rig.relaunched.count) times")
+    check(rig.ledger.handoff == nil && rig.ledger.failure?.count == 1, "helper: \(rig.ledger)")
+    for _ in 0..<3 { rig.check_(); rig.tryInstall() }
+    check(rig.relaunched.count == 1 && hits("good.zip") == 1, "helper: tried again the same day (\(rig.relaunched.count) restarts, \(hits("good.zip")) downloads)")
+    rig.end()
+}
+autoCase("switched off mid-download: what arrives is thrown away") {
+    serve(list: goodList, zips: ["good.zip": goodBytes])
+    let rig = AutoRig()
+    var done = false
+    rig.checker.check { _ in done = true }
+    pump(until: { done })
+    rig.checker.autoInstall = false
+    rig.checker.autoStep()
+    settle(1.5)
+    check(rig.checker.staged == nil && !rig.checker.isFetching && rig.ledger.failure == nil, "switched off: staged \(String(describing: rig.checker.staged?.version)), failure \(String(describing: rig.ledger.failure))")
+    rig.end()
+}
+autoCase("folders an earlier run left behind are swept, and only those") {
+    let stale = tmp.appendingPathComponent("GlideUpdate-STALE", isDirectory: true)
+    try! fm.createDirectory(at: stale.appendingPathComponent("Glideball.app/Contents"), withIntermediateDirectories: true)
+    let locked = tmp.appendingPathComponent("GlideUpdate-LOCKED/inner", isDirectory: true)
+    try! fm.createDirectory(at: locked, withIntermediateDirectories: true)
+    try! fm.setAttributes([.posixPermissions: 0o000], ofItemAtPath: locked.path)
+    let other = tmp.appendingPathComponent("SomethingElse", isDirectory: true)
+    try! fm.createDirectory(at: other, withIntermediateDirectories: true)
+    let link = tmp.appendingPathComponent("GlideUpdate-LINK")
+    try! Data("keep".utf8).write(to: decoy.appendingPathComponent("keep.txt"))
+    try! fm.createSymbolicLink(at: link, withDestinationURL: decoy)
+    Checker.sweepStale(in: tmp)
+    check(!fm.fileExists(atPath: stale.path) && !fm.fileExists(atPath: locked.deletingLastPathComponent().path), "stale folders are still there: \(tmpListing())")
+    check(fm.fileExists(atPath: other.path), "a folder that isn't ours was removed")
+    check(fm.fileExists(atPath: decoy.appendingPathComponent("keep.txt").path), "a link was followed and its target emptied")
+    try? fm.removeItem(at: other); try? fm.removeItem(at: link); try? fm.removeItem(at: decoy.appendingPathComponent("keep.txt"))
+}
+endSection("automatic updates", "the real updater against a stub server; nothing installed, quit or launched")
 
 // MARK: - 5. Random mutations of a release list
 
