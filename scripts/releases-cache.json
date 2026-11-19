@@ -1,5 +1,29 @@
 [
  {
+  "body": "New: Set up with AI. Copy a prompt, talk it through with any chatbot (voice mode works best), and paste the setup code it gives you back into Glideball. You see every change before it happens, anything it can't use is left out with a note for the chatbot, and one Undo puts it all back. Glideball has no AI in it and sends nothing anywhere. Find it in the Import menu next to Share.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `22b7f050c9b808ee07c1ea692887fc0fa5c356bf04aa738fe5f71ccbce47b131`",
+  "date": "2026-11-19T18:57:16Z",
+  "name": "Glideball 2.10 beta 38",
+  "prerelease": true,
+  "tag": "v2.10-beta.38",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.38"
+ },
+ {
+  "body": "You can paste a shared setup link straight into Glideball now: Import › Paste a Link…, or press ⌘V in the window. You see what it would change before anything does, and nothing is sent anywhere. Copying a link or a picture now lands with a little pop and a check.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `e41dd1778b0d642440fc1fdad089edcb13e7442bb98703115de510e150faca42`",
+  "date": "2026-11-19T18:03:45Z",
+  "name": "Glideball 2.10 beta 37",
+  "prerelease": true,
+  "tag": "v2.10-beta.37",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.37"
+ },
+ {
+  "body": "Hold a preset to try it on, then let go: the try now lasts 20 seconds with both hands free, even in other apps, and a small bar shows the time left with Keep and Put mine back. The Gestures ring and the Switcher now light up in your ball colour. Fixed a rare case where another mouse's button could stay pressed for apps, and the Send Feedback box no longer risks hiding what you type when it first opens.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `bd01db091c7180cff89a56ce7a2ff1572f70d7b1a336cf1b2c817e48757b44a4`",
+  "date": "2026-11-19T17:39:19Z",
+  "name": "Glideball 2.10 beta 36",
+  "prerelease": true,
+  "tag": "v2.10-beta.36",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.36"
+ },
+ {
   "body": "Hold a preset on the Buttons page to try it on: your trackball wears it while you hold, and letting go puts your own buttons back. Glideball can now install updates by itself, only when you've left the ball alone; turn it on where an update shows. The Switcher's light leans with the ball, and the app you choose lifts as the panel falls away. A setup you import now always shows the keys a shortcut really presses.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `523a2bb3e7f5efef33c1e0036fd2d798256f3548baa6ac449a14280a6d8dda07`",
   "date": "2026-11-19T06:56:47Z",
   "name": "Glideball 2.10 beta 35",
