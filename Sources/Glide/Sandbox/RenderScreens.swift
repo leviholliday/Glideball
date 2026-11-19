@@ -441,6 +441,28 @@ extension RenderUI {
             prepare: ringButtons, cleanup: restoreButtons) { dark, scale in
             fullPage(page(.buttons, model), dark: dark, scale: scale)
         }
+        // Folding the editors away (Levi, beta 30: with Gestures the page got long): top right
+        // and top left folded to their one-line summaries, a Switcher combo folded too.
+        func foldedButtons() {
+            ringButtons()
+            var c = model.config.chords
+            if let i = c.firstIndex(where: { !$0.buttons.contains(0) }) { c[i].action = .switcher(.standard) }
+            else { c.append(Chord(buttons: [1, 3], action: .switcher(.standard))) }
+            model.config.chords = c
+        }
+        add("buttons-folded", "Gestures ring", "Top right (four, Volume on the ring) and top left (eight, Zoom) folded to one line each, a Switcher combo folded",
+            prepare: {
+                foldedButtons()
+                EditorFolds.sandboxFolded = Set([EditorFolds.buttonID(2), EditorFolds.buttonID(3)] + model.config.chords.map { EditorFolds.comboID($0.id) })
+            },
+            cleanup: { restoreButtons(); EditorFolds.sandboxFolded = nil }) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale)
+        }
+        add("buttons-unfolded", "Gestures ring", "The same buttons and combo with every editor open (how they start)",
+            prepare: { foldedButtons(); EditorFolds.sandboxFolded = [] },
+            cleanup: { restoreButtons(); EditorFolds.sandboxFolded = nil }) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale)
+        }
         add("buttons-ring-show-never", "Gestures ring", "Show the ring: Never (blind gestures, as they always were)",
             prepare: { showButton(.never) }, cleanup: restoreButtons) { dark, scale in
             fullPage(page(.buttons, model), dark: dark, scale: scale)

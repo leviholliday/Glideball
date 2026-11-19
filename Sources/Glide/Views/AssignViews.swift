@@ -156,6 +156,8 @@ struct CombosCard: View {
     var title: LocalizedStringKey? = "Combos"
     /// For a gesture combo's editor (what's held right now, Try it).
     var model: AppModel? = nil
+    /// The search palette's row for these combos: sent here, folded editors open.
+    var spotID: String? = nil
 
     init(chords: Binding<[Chord]>, title: LocalizedStringKey? = "Combos") {
         _chords = chords
@@ -165,6 +167,7 @@ struct CombosCard: View {
     init(model: AppModel) {
         _chords = Binding(get: { model.config.chords }, set: { model.config.chords = $0 })
         self.model = model
+        spotID = Findable.combos.id
     }
 
     private func actionBinding(_ id: UUID) -> Binding<ButtonAction> {
@@ -180,60 +183,106 @@ struct CombosCard: View {
                            symbol: "square.on.square")
             }
             ForEach(chords) { chord in
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack(spacing: 10) {
-                        ButtonChips(buttons: chord.buttons)
-                        Image(systemName: "arrow.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(.tertiary)
-                        ActionPickerButton(action: chord.action, comboButtons: chord.buttons) { action in
-                            if let i = chords.firstIndex(where: { $0.id == chord.id }) {
-                                chords[i].action = action
-                            }
-                        }
-                        Spacer(minLength: 8)
-                        IconButton(symbol: "trash", help: "Delete combo", size: 24) {
-                            withAnimation(Theme.Motion.spring) { chords.removeAll { $0.id == chord.id } }
-                        }
-                    }
-                    .padding(.horizontal, Theme.Space.rowHorizontal)
-                    .padding(.vertical, 8)
-                    .frame(minHeight: Theme.Space.rowMinHeight)
-                    if case .switcher(let s) = chord.action {
-                        if chord.buttons.contains(0) {
-                            // Never on the primary button (see GestureRoute.decide): say what happens instead.
-                            Label("Includes your primary click, so this combo does the Switcher’s tap instead of the Switcher.",
-                                  systemImage: "info.circle")
-                                .font(Theme.Font.hint)
-                                .foregroundStyle(.secondary)
-                                .padding(.leading, ButtonRow.dividerInset)
-                                .padding(.trailing, Theme.Space.rowHorizontal)
-                                .padding(.bottom, 10)
-                        } else {
-                            SwitcherEditor(model: model, buttons: chord.buttons,
-                                           switcher: Binding(get: { s }, set: { actionBinding(chord.id).wrappedValue = .switcher($0) }))
-                                .transition(.opacity.combined(with: .move(edge: .top)))
-                        }
-                    }
-                    if case .gesture(let g) = chord.action {
-                        if chord.buttons.contains(0) {
-                            // Gestures never use the primary button (see GestureRoute.decide): say what happens instead.
-                            Label("Includes your primary click, so this combo does the gesture’s tap instead of a gesture.",
-                                  systemImage: "info.circle")
-                                .font(Theme.Font.hint)
-                                .foregroundStyle(.secondary)
-                                .padding(.leading, ButtonRow.dividerInset)
-                                .padding(.trailing, Theme.Space.rowHorizontal)
-                                .padding(.bottom, 10)
-                        } else {
-                            GestureEditor(model: model, buttons: chord.buttons,
-                                          gesture: Binding(get: { g }, set: { actionBinding(chord.id).wrappedValue = .gesture($0) }))
-                                .transition(.opacity.combined(with: .move(edge: .top)))
-                        }
-                    }
-                }
-                .animation(Theme.Motion.spring, value: chord.action.holdsTheBall)
+                ComboRow(chord: chord, model: model, spotID: spotID,
+                         setAction: { actionBinding(chord.id).wrappedValue = $0 },
+                         delete: { withAnimation(Theme.Motion.spring) { chords.removeAll { $0.id == chord.id } } })
             }
             NewComboRow(chords: $chords)
         }
+    }
+}
+
+/// One saved combo: its buttons, what they do, delete; and for Gestures or the Switcher the
+/// editor under it, which folds away like a button's (`EditorFolds`).
+private struct ComboRow: View {
+    let chord: Chord
+    let model: AppModel?
+    let spotID: String?
+    let setAction: (ButtonAction) -> Void
+    let delete: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var foldID: String { EditorFolds.comboID(chord.id) }
+    /// An editor to fold: Gestures or the Switcher, on a combo without the primary button.
+    private var hasEditor: Bool { chord.action.holdsTheBall && !chord.buttons.contains(0) }
+    private var folded: Bool { hasEditor && EditorFolds.shared.isFolded(foldID) }
+    private var motion: Animation { reduceMotion ? .easeOut(duration: 0.15) : Theme.Motion.spring }
+    private var editorTransition: AnyTransition { reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .top)) }
+
+    private func toggleFold() { withAnimation(motion) { EditorFolds.shared.toggle(foldID) } }
+    private func openFold() {
+        guard EditorFolds.shared.isFolded(foldID) else { return }
+        withAnimation(motion) { EditorFolds.shared.set(foldID, folded: false) }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 10) {
+                HStack(spacing: 10) {
+                    ButtonChips(buttons: chord.buttons)
+                    Image(systemName: "arrow.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(.tertiary)
+                }
+                // Clicking the buttons folds or opens the editor, like the chevron.
+                .contentShape(Rectangle())
+                .onTapGesture { if hasEditor { toggleFold() } }
+                ActionPickerButton(action: chord.action, comboButtons: chord.buttons) { setAction($0) }
+                Spacer(minLength: 8)
+                    .contentShape(Rectangle())
+                    .onTapGesture { if hasEditor { toggleFold() } }
+                if hasEditor {
+                    FoldChevron(folded: folded, toggle: toggleFold)
+                        .transition(.opacity)
+                }
+                IconButton(symbol: "trash", help: "Delete combo", size: 24, action: delete)
+            }
+            .padding(.horizontal, Theme.Space.rowHorizontal)
+            .padding(.vertical, 8)
+            .frame(minHeight: Theme.Space.rowMinHeight)
+            if folded {
+                FoldSummary(action: chord.action)
+                    .transition(.opacity)
+            } else {
+                if case .switcher(let s) = chord.action {
+                    if chord.buttons.contains(0) {
+                        // Never on the primary button (see GestureRoute.decide): say what happens instead.
+                        Label("Includes your primary click, so this combo does the Switcher’s tap instead of the Switcher.",
+                              systemImage: "info.circle")
+                            .font(Theme.Font.hint)
+                            .foregroundStyle(.secondary)
+                            .padding(.leading, ButtonRow.dividerInset)
+                            .padding(.trailing, Theme.Space.rowHorizontal)
+                            .padding(.bottom, 10)
+                    } else {
+                        SwitcherEditor(model: model, buttons: chord.buttons,
+                                       switcher: Binding(get: { s }, set: { setAction(.switcher($0)) }))
+                            .transition(editorTransition)
+                    }
+                }
+                if case .gesture(let g) = chord.action {
+                    if chord.buttons.contains(0) {
+                        // Gestures never use the primary button (see GestureRoute.decide): say what happens instead.
+                        Label("Includes your primary click, so this combo does the gesture’s tap instead of a gesture.",
+                              systemImage: "info.circle")
+                            .font(Theme.Font.hint)
+                            .foregroundStyle(.secondary)
+                            .padding(.leading, ButtonRow.dividerInset)
+                            .padding(.trailing, Theme.Space.rowHorizontal)
+                            .padding(.bottom, 10)
+                    } else {
+                        GestureEditor(model: model, buttons: chord.buttons,
+                                      gesture: Binding(get: { g }, set: { setAction(.gesture($0)) }))
+                            .transition(editorTransition)
+                    }
+                }
+            }
+        }
+        .clipped()
+        .animation(Theme.Motion.spring, value: chord.action.holdsTheBall)
+        // Just given an editor: it opens, ready to set up.
+        .onChange(of: hasEditor) { was, now in if now, !was { openFold() } }
+        // The search palette sent you to the combos: folded editors open.
+        .onChange(of: SettingsSpotlight.shared.row) { _, row in if let spotID, row == spotID { openFold() } }
+        .onAppear { if let spotID, SettingsSpotlight.shared.row == spotID { openFold() } }
     }
 }
 

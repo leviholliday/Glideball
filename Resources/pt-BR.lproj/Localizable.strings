@@ -2664,7 +2664,7 @@
 "Swap which way of turning the ring does what" = "Trocar o que cada sentido de giro do anel faz";
 "The ring scrolls as usual while you hold it." = "O anel rola como sempre enquanto você segura.";
 "The ring shows as soon as you hold the button. Roll toward an action and let go to run it." = "O anel aparece assim que você segura o botão. Role até uma ação e solte para executá-la.";
-"This is the ring More opens. Roll back through the middle to get to the first ring again; letting go in the middle cancels." = "Este é o anel que Mais abre. Role de volta pelo meio para voltar ao primeiro anel; soltar no meio cancela.";
+"This is the ring More opens. It waits for your hand to settle first, so the roll that opened it can’t run anything here. Roll back through the middle to get to the first ring again; letting go in the middle cancels." = "Este é o anel que Mais abre. Ele espera sua mão parar primeiro, então o movimento que o abriu não executa nada aqui. Role de volta pelo meio para voltar ao primeiro anel; soltar no meio cancela.";
 "gestures, hold and roll, ring, wheel, radial menu, pie menu, more, show the ring, reverse" = "gestos, segurar e rolar, anel, roda, menu radial, menu circular, mais, mostrar o anel, inverter";
 
 /* What’s New 2.10: Gestures, the Switcher, search and sharing */
@@ -2695,3 +2695,30 @@
 
 /* What’s New 2.10: the line under the title */
 "Here’s what changed since 2.9.1. Your settings are all still here." = "Veja o que mudou desde a 2.9.1. Seus ajustes continuam todos aí.";
+
+/* Buttons page: the chevron that opens a folded Gestures or Switcher editor */
+"Show its settings" = "Mostrar os ajustes";
+
+/* Buttons page: the chevron that folds a Gestures or Switcher editor away */
+"Hide its settings" = "Ocultar os ajustes";
+
+/* Buttons page, a folded Gestures editor's summary: Show the ring is Never */
+"No ring" = "Sem anel";
+
+/* Buttons page, a folded Gestures editor's summary: Show the ring is After a pause */
+"Ring after a pause" = "Anel depois de uma pausa";
+
+/* Buttons page, a folded Gestures editor's summary: Show the ring is Right away */
+"Ring right away" = "Anel na hora";
+
+/* Buttons page, a folded Gestures editor's summary */
+"4 directions" = "4 direções";
+
+/* Buttons page, a folded Gestures editor's summary */
+"8 directions" = "8 direções";
+
+/* Buttons page, a folded Gestures editor's summary: what the scroll ring does while it's held, like “Volume on the ring” */
+"%@ on the ring" = "%@ no anel";
+
+/* Buttons page, a folded Switcher editor's summary */
+"Shows your open apps" = "Mostra seus apps abertos";

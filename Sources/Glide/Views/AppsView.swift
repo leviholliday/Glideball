@@ -319,7 +319,8 @@ private struct ProfileEditor: View {
                     ForEach(Self.buttonRows, id: \.index) { b in
                         ButtonRow(index: b.index, name: AppModel.buttonName(b.index), normally: b.normally,
                                   isPressed: model.pressed.contains(b.index),
-                                  action: buttonBinding(b.index))
+                                  action: buttonBinding(b.index),
+                                  foldID: EditorFolds.buttonID(b.index, setup: profileID))
                     }
                 }
             }
