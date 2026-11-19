@@ -419,8 +419,6 @@ struct FeedbackView: View {
     @Bindable var model: AppModel
     @Bindable var draft = FeedbackDraft.shared
     @Environment(\.dismiss) private var dismiss
-    @FocusState private var titleFocused: Bool
-    @State private var showFacts = false
     @State private var dropTargeted = false
 
     var body: some View {
@@ -435,7 +433,7 @@ struct FeedbackView: View {
                         messageSection
                         attachmentsSection
                         aboutYouSection
-                        factsDisclosure
+                        FactsDisclosure(model: model, draft: draft)
                     }
                     .padding(.horizontal, 24)
                     .padding(.top, 4)
@@ -452,7 +450,6 @@ struct FeedbackView: View {
         .onAppear {
             draft.isPresented = true
             draft.prepareToShow()
-            if draft.title.isEmpty { titleFocused = true }
         }
         .onDisappear { draft.isPresented = false }
     }
@@ -491,32 +488,7 @@ struct FeedbackView: View {
                 ForEach(FeedbackDraft.Kind.allCases) { kind in kindButton(kind) }
             }
 
-            TextField(draft.kind.titlePrompt, text: $draft.title)
-                .textFieldStyle(.plain)
-                .font(.system(size: 15, weight: .medium))
-                .focused($titleFocused)
-                .padding(.horizontal, 12)
-                .frame(height: 38)
-                .background(FieldBackground(focused: titleFocused))
-
-            ZStack(alignment: .topLeading) {
-                if draft.details.isEmpty {
-                    Text(draft.kind.detailsPrompt)
-                        .font(Theme.Font.body)
-                        .foregroundStyle(.tertiary)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 9)
-                        .allowsHitTesting(false)
-                }
-                TextEditor(text: $draft.details)
-                    .font(Theme.Font.body)
-                    .scrollContentBackground(.hidden)
-                    .scrollIndicators(.never)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 8)
-            }
-            .frame(height: 110)
-            .background(FieldBackground())
+            MessageFields(draft: draft)
 
             if draft.kind == .bug {
                 VStack(alignment: .leading, spacing: 6) {
@@ -723,50 +695,6 @@ struct FeedbackView: View {
         .frame(maxWidth: .infinity)
     }
 
-    // MARK: Sent along
-
-    private var factsDisclosure: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Button {
-                withAnimation(Theme.Motion.spring) { showFacts.toggle() }
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 9, weight: .bold))
-                        .rotationEffect(.degrees(showFacts ? 90 : 0))
-                    Text("Also sent: \(draft.factsLine(model))")
-                        .font(Theme.Font.hint)
-                        .lineLimit(1)
-                    Spacer()
-                }
-                .foregroundStyle(.secondary)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-
-            if showFacts {
-                VStack(alignment: .leading, spacing: 5) {
-                    ForEach(draft.facts(model)) { fact in
-                        HStack(alignment: .firstTextBaseline) {
-                            Text(fact.label).font(Theme.Font.hint).foregroundStyle(.secondary)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.8)
-                                .frame(width: 110, alignment: .leading)
-                            Text(fact.value).font(Theme.Font.hint.weight(.medium))
-                                .textSelection(.enabled)
-                            Spacer()
-                        }
-                    }
-                    Text("So I know where it happened. Nothing else about your Mac is sent.")
-                        .font(Theme.Font.hint).foregroundStyle(.tertiary)
-                        .padding(.top, 2)
-                }
-                .padding(.leading, 15)
-                .transition(.opacity)
-            }
-        }
-    }
-
     // MARK: Footer
 
     private var footer: some View {
@@ -816,14 +744,7 @@ struct FeedbackView: View {
     }
 
     private func sendButton(title: LocalizedStringKey, symbol: String) -> some View {
-        Button { draft.send(model) } label: {
-            Label(title, systemImage: symbol)
-        }
-        .buttonStyle(.borderedProminent)
-        .tint(Theme.ball)
-        .keyboardShortcut(.return, modifiers: .command)
-        .disabled(!draft.canSend)
-        .help(draft.canSend ? "Send (⌘↩)" : "Give it a title first")
+        SendButton(model: model, draft: draft, title: title, symbol: symbol)
     }
 
     private var sendSummary: String {
@@ -839,6 +760,149 @@ struct FeedbackView: View {
 }
 
 // MARK: - Pieces
+
+// The parts that read what's being typed are views of their own, so a keystroke
+// only re-evaluates them, never the whole sheet. Before, the sheet's body read the
+// title and details itself (Send's state, the facts), so every keystroke ran the
+// whole sheet again and updated both live text views under the typing.
+
+/// The title and the details: the two fields the report is written in.
+private struct MessageFields: View {
+    @Bindable var draft: FeedbackDraft
+    private enum Field: Hashable { case title, details }
+    @FocusState private var focus: Field?
+    @Environment(\.controlActiveState) private var windowState
+    /// The title is waiting to be focused once the sheet is up and its window is key.
+    @State private var wantsFirstFocus = false
+
+    /// About how long a sheet takes to come in.
+    private static let presentDelay = 0.3
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            TextField(draft.kind.titlePrompt, text: $draft.title)
+                .textFieldStyle(.plain)
+                .font(.system(size: 15, weight: .medium))
+                .focused($focus, equals: .title)
+                .padding(.horizontal, 12)
+                .frame(height: 38)
+                .background(FieldBackground(focused: focus == .title))
+
+            // The prompt is always there under the editor and only fades, so the
+            // first keystroke (or emptying the box) never adds or removes a view
+            // next to the text view that's being typed into.
+            ZStack(alignment: .topLeading) {
+                Text(draft.kind.detailsPrompt)
+                    .font(Theme.Font.body)
+                    .foregroundStyle(.tertiary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 9)
+                    .opacity(draft.details.isEmpty ? 1 : 0)
+                    .accessibilityHidden(true)
+                    .allowsHitTesting(false)
+                TextEditor(text: $draft.details)
+                    .font(Theme.Font.body)
+                    .scrollContentBackground(.hidden)
+                    .scrollIndicators(.never)
+                    .focused($focus, equals: .details)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 8)
+            }
+            .frame(height: 110)
+            .background(FieldBackground(focused: focus == .details))
+        }
+        // Typing into an empty title as the sheet opens. This used to happen in
+        // onAppear, which starts the field's editing session while the sheet is
+        // still being presented (its window not key yet, still coming in). The
+        // report "I can't see what I'm typing; when I click out I can see it, now
+        // it's working" fits that session going wrong: clicking out and back in
+        // starts a fresh one, in a settled, key window. So it waits for both.
+        .task {
+            guard draft.title.isEmpty else { return }
+            if !Sandbox.isActive {
+                try? await Task.sleep(for: .seconds(Self.presentDelay))
+                guard !Task.isCancelled else { return }
+            }
+            wantsFirstFocus = true
+            focusTitleIfReady()
+        }
+        .onChange(of: windowState) { focusTitleIfReady() }
+    }
+
+    private func focusTitleIfReady() {
+        guard wantsFirstFocus, windowState == .key || Sandbox.isActive else { return }
+        wantsFirstFocus = false
+        // Never take the keys from a field the person already clicked into.
+        if focus == nil && draft.title.isEmpty { focus = .title }
+    }
+}
+
+private struct SendButton: View {
+    let model: AppModel
+    let draft: FeedbackDraft
+    let title: LocalizedStringKey
+    let symbol: String
+
+    var body: some View {
+        Button { draft.send(model) } label: {
+            Label(title, systemImage: symbol)
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(Theme.ball)
+        .keyboardShortcut(.return, modifiers: .command)
+        .disabled(!draft.canSend)
+        .help(draft.canSend ? "Send (⌘↩)" : "Give it a title first")
+    }
+}
+
+/// "Also sent: …", and what that is when it's opened (its Topics come from the words).
+private struct FactsDisclosure: View {
+    let model: AppModel
+    let draft: FeedbackDraft
+    @State private var showFacts = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button {
+                withAnimation(Theme.Motion.spring) { showFacts.toggle() }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 9, weight: .bold))
+                        .rotationEffect(.degrees(showFacts ? 90 : 0))
+                    Text("Also sent: \(draft.factsLine(model))")
+                        .font(Theme.Font.hint)
+                        .lineLimit(1)
+                    Spacer()
+                }
+                .foregroundStyle(.secondary)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if showFacts {
+                VStack(alignment: .leading, spacing: 5) {
+                    ForEach(draft.facts(model)) { fact in
+                        HStack(alignment: .firstTextBaseline) {
+                            Text(fact.label).font(Theme.Font.hint).foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                                .frame(width: 110, alignment: .leading)
+                            Text(fact.value).font(Theme.Font.hint.weight(.medium))
+                                .textSelection(.enabled)
+                            Spacer()
+                        }
+                    }
+                    Text("So I know where it happened. Nothing else about your Mac is sent.")
+                        .font(Theme.Font.hint).foregroundStyle(.tertiary)
+                        .padding(.top, 2)
+                }
+                .padding(.leading, 15)
+                .transition(.opacity)
+            }
+        }
+    }
+}
 
 private struct FieldBackground: View {
     var warning = false

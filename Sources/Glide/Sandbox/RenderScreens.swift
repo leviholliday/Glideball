@@ -912,6 +912,15 @@ extension RenderUI {
             }) { dark, scale in
             sheet(FeedbackView(model: model), dark: dark, scale: scale)
         }
+        // Typing: the title's field editor, then the details box, each focused with text going in.
+        add("feedback-typing-title", "Sheets", "Send Feedback, typing a title (focused, field editor up)",
+            prepare: { let d = FeedbackDraft.shared; d.kind = .bug; d.title = ""; d.details = ""; d.phase = .writing }) { dark, scale in
+            feedbackTyping(model, into: .title, dark: dark, scale: scale)
+        }
+        add("feedback-typing-details", "Sheets", "Send Feedback, typing the details (focused)",
+            prepare: { let d = FeedbackDraft.shared; d.kind = .bug; d.title = ""; d.details = ""; d.phase = .writing }) { dark, scale in
+            feedbackTyping(model, into: .details, dark: dark, scale: scale)
+        }
         add("feedback-sending", "Sheets", "Send Feedback, sending",
             prepare: { fillFeedback(); FeedbackDraft.shared.phase = .sending(0.6, String(localized: "Sending…")) }) { dark, scale in
             sheet(FeedbackView(model: model), dark: dark, scale: scale)
@@ -1419,6 +1428,54 @@ extension RenderUI {
     }
 
     /// A bug report, part written.
+    enum FeedbackField { case title, details }
+
+    /// The feedback sheet with a field focused and text typed into it the way keys do
+    /// (`insertText` on the first responder), drawn while it's still being edited. Prints
+    /// what the editing text view will draw with, so a field whose text can't be seen
+    /// while typing shows up in the log as well as the picture.
+    static func feedbackTyping(_ model: AppModel, into field: FeedbackField, dark: Bool, scale: CGFloat) -> NSBitmapImageRep? {
+        let d = FeedbackDraft.shared   // each appearance starts empty (prepare runs once per screen)
+        d.kind = .bug; d.title = ""; d.details = ""; d.phase = .writing
+        let (window, content) = Offscreen.host(FeedbackView(model: model), size: nil, chrome: .plain,
+                                               appearance: NSAppearance(named: dark ? .darkAqua : .aqua), settle: 0.6)
+        defer { window.contentView = nil; window.close() }
+        func views(_ v: NSView) -> [NSView] { [v] + v.subviews.flatMap(views) }
+        let editor: NSTextView?
+        let typed: String
+        switch field {
+        case .title:
+            if !(window.firstResponder is NSTextView),
+               let tf = views(content).compactMap({ $0 as? NSTextField }).first(where: \.isEditable) {
+                window.makeFirstResponder(tf)
+            }
+            editor = window.firstResponder as? NSTextView
+            typed = "Scrolling jumps in Safari after the Mac wakes"
+        case .details:
+            editor = views(content).compactMap { $0 as? NSTextView }.first { !$0.isFieldEditor }
+            if let editor { window.makeFirstResponder(editor) }
+            typed = "After waking from sleep, the first spin of the ring scrolls about a page too far."
+        }
+        guard let editor else { print("feedback-typing: no text view to type into"); return nil }
+        Offscreen.settleDown(content, seconds: 0.1)
+        for word in typed.split(separator: " ", omittingEmptySubsequences: false).enumerated() {
+            editor.insertText((word.offset == 0 ? "" : " ") + word.element, replacementRange: NSRange(location: NSNotFound, length: 0))
+            Sandbox.spin(0.02)
+        }
+        Offscreen.settleDown(content, seconds: 0.2)
+        let ap = editor.effectiveAppearance
+        var color = "?"
+        ap.performAsCurrentDrawingAppearance {
+            let c = (editor.typingAttributes[.foregroundColor] as? NSColor ?? editor.textColor)?.usingColorSpace(.sRGB)
+            color = c.map { String(format: "%.2f %.2f %.2f a%.2f", $0.redComponent, $0.greenComponent, $0.blueComponent, $0.alphaComponent) } ?? "nil"
+        }
+        let shown = editor.visibleRect.intersection(editor.bounds)
+        print("feedback-typing \(field) \(dark ? "dark" : "light"): first responder \(type(of: window.firstResponder!)), "
+              + "\(editor.string.count) characters, text colour \(color), appearance \(ap.name.rawValue), "
+              + "editor \(editor.frame.size) shown \(shown.size)")
+        return Offscreen.draw(window, content: content, chrome: .plain, scale: scale)
+    }
+
     static func fillFeedback() {
         let d = FeedbackDraft.shared
         d.kind = .bug
