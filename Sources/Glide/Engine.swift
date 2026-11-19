@@ -447,6 +447,7 @@ final class Engine {
         let done = DispatchSemaphore(value: 0)
         perform {
             self.handedBack = true
+            if let line = PressTiming.shared.summary(every: 0) { self.diagnostics.record(line); self.diagnostics.flush() }   // quit: the last word
             self.io.restorePointer()
             done.signal()
         }
@@ -613,6 +614,7 @@ final class Engine {
         if tap == nil { installTap() }
         syncTap()   // also re-enables it if macOS ever switched it off while a trackball is connected
         applyPointer()
+        if let line = PressTiming.shared.summary() { diagnostics.record(line) }   // at most once a minute, only when there's something new
         diagnostics.flush()
         // Wireless models' battery: once a minute, and only for one that's battery powered.
         maintainTicks += 1
@@ -1159,6 +1161,9 @@ final class Engine {
     /// One HID value from device `k` (scripts/engine-fuzz calls this directly).
     func hidInput(key k: Int, identity: @autoclosure () -> DeviceIdentity, page: Int, usage: Int, value v: Int,
                   stamp: UInt64, logicalMin: Int = 0, logicalMax: Int = 100) {
+        // A roll or a ring turn during a hold: what it fires is timed from the report's own stamp.
+        if gestures.isHeld { actionOrigin = (.rollToAction, PressTiming.time(hidStamp: stamp)) }
+        defer { actionOrigin = nil }
         // Only devices that arrived (deviceAdded) count. A value delivered after its
         // device's removal used to re-add it here as supported, so "Connected" stayed
         // on after an unplug until a relaunch. A device whose removal never came is
@@ -1786,7 +1791,33 @@ final class Engine {
     }
 
     /// The event tap's callback (scripts/engine-fuzz calls it directly).
+    // MARK: Timing (measurement only: PressTiming.swift)
+
+    /// The press, release or roll being handled right now, and when macOS stamped it: what it
+    /// posts is timed from there (`keysTimed`). Nil outside an event's own handling, so anything
+    /// done from a timer (a combo's wait, a ring's delay) isn't measured. Input thread.
+    private var actionOrigin: (series: PressTiming.Series, at: Double)?
+    /// When the press that began the current hold was stamped (for press → ring or panel).
+    private var holdPressedAt = 0.0
+
+    /// `io.keys`, and when it has run, how long that was after the event that asked for it.
+    private func keysTimed(_ work: @escaping () -> Void) {
+        guard let origin = actionOrigin else { return io.keys(work) }
+        io.keys {
+            work()
+            PressTiming.shared.add(origin.series, from: origin.at)
+        }
+    }
+
     func handle(_ type: CGEventType, _ event: CGEvent) -> Unmanaged<CGEvent>? {
+        switch type {
+        case .leftMouseDown, .rightMouseDown, .otherMouseDown:
+            actionOrigin = (.pressToAction, PressTiming.time(eventNanoseconds: event.timestamp))
+        case .leftMouseUp, .rightMouseUp, .otherMouseUp:
+            actionOrigin = (.releaseToAction, PressTiming.time(eventNanoseconds: event.timestamp))
+        default: break
+        }
+        defer { actionOrigin = nil }
         let out = route(type, event)
         if let e = out?.takeUnretainedValue() {
             // One posted from the input thread was noted as it was posted: not twice.
@@ -2370,7 +2401,7 @@ final class Engine {
             // Keep Flow's shortcut down until a button in the chord is released.
             let alreadyHeld = holding(shortcut)
             for p in pressedButtons { overrides[p.button] = .heldShortcut(shortcut) }
-            if !alreadyHeld { io.keys { self.sendDown(shortcut) } }
+            if !alreadyHeld { keysTimed { self.sendDown(shortcut) } }
         } else {
             for p in pressedButtons { overrides[p.button] = .swallow }   // their releases are ours too
             fireLater(action)
@@ -2453,12 +2484,12 @@ final class Engine {
             return nil
         case .shortcut(let shortcut):
             overrides[button] = .swallow
-            io.keys { self.send(shortcut) }
+            keysTimed { self.send(shortcut) }
             return nil
         case .holdShortcut(let shortcut):
             let alreadyHeld = holding(shortcut)
             overrides[button] = .heldShortcut(shortcut)
-            if !alreadyHeld { io.keys { self.sendDown(shortcut) } }   // another button holds it: this one joins
+            if !alreadyHeld { keysTimed { self.sendDown(shortcut) } }   // another button holds it: this one joins
             return nil
         case .media, .openApp:
             overrides[button] = .swallow
@@ -3291,6 +3322,7 @@ final class Engine {
     /// Starts a Gestures or Switcher hold. Both are the same hold to the engine: the `.gesture`
     /// override on its buttons, the pointer frozen, and every way out through `gestures`.
     private func beginHold(_ kind: HoldKind, buttons: [Int64]) {
+        holdPressedAt = actionOrigin?.at ?? PressTiming.now()
         let effects: [GestureEffect]
         switch kind {
         case .gesture(let g):
@@ -3356,6 +3388,7 @@ final class Engine {
         if let m = want, let a = anchor {
             guard m != wheelShown || a != wheelShownAt else { return }
             if wheelShown == nil {
+                if m.showsRing { PressTiming.shared.askedFor(.ring, pressedAt: holdPressedAt) }
                 wheelKeeper?.invalidate()
                 wheelKeeper = io.schedule(Self.standInKeepInterval, repeats: true) { [unowned self] in
                     guard wheelShown != nil else { return }
@@ -3435,6 +3468,7 @@ final class Engine {
         if let m = want, let a = anchor {
             guard m != switcherShown || a != switcherShownAt else { return }
             if switcherShown == nil {
+                PressTiming.shared.askedFor(.switcher, pressedAt: holdPressedAt)
                 switcherKeeper?.invalidate()
                 switcherKeeper = io.schedule(Self.standInKeepInterval, repeats: true) { [unowned self] in
                     guard switcherShown != nil else { return }
@@ -3533,6 +3567,11 @@ final class Engine {
         if wheelShown != nil, let place = effects.lazy.compactMap({ if case .wheelPick(_, let p) = $0 { p } else { nil } }).first {
             io.wheelRan(place: place)
         }
+        // The same for the Switcher: the panel leaves by lifting the chosen app (drawing only;
+        // the switch itself is sent below, as ever).
+        if switcherShown != nil, !practicing {
+            for case .switchApp(let session, let index) in effects { io.switcherChose(session: session, index: index) }
+        }
         for effect in effects {
             switch effect {
             case .freeze(let on):
@@ -3571,7 +3610,11 @@ final class Engine {
             case .switchApp(let session, let index):
                 diagnostics.record("switcher: switched")   // never which app
                 flashSwitcher(.switched(index: index), buttons: lastHoldButtons)
-                if !practicing { io.activateSwitcher(session: session, index: index) }
+                if !practicing {
+                    io.activateSwitcher(session: session, index: index)
+                    // Queued behind it on the main thread: how long from the release to the switch being asked for.
+                    if let origin = actionOrigin { io.toMain { PressTiming.shared.add(.releaseToSwitch, from: origin.at) } }
+                }
             }
         }
     }
@@ -3616,7 +3659,7 @@ final class Engine {
             // The button's own click (a combo has none). Never the primary button.
             guard buttons.count == 1, let b = buttons.first, b != 0 else { return }
             guard !appButtons.contains(Int64(b)) else { return }   // already down for apps: a click would be a second press
-            io.keys { self.click(button: Int64(b)) }
+            keysTimed { self.click(button: Int64(b)) }
         case .precisionToggle:
             precisionToggled.toggle()
             precisionManual = false
@@ -3718,7 +3761,7 @@ final class Engine {
             diagnostics.record("click on button \(b) skipped: it's already down")
             return
         }
-        io.keys { self.fire(action) }
+        keysTimed { self.fire(action) }
     }
 
     /// Fires an action that isn't tied to a held button (combos): clicks are a

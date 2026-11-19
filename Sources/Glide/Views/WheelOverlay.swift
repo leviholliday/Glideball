@@ -976,8 +976,16 @@ final class WheelOverlayPanel: WheelPresenting {
     private var leaving: DispatchWorkItem?
     private var lastSelected: Int?
 
-    /// Hooks it up to the engine. Called once at launch.
-    static func install() { EngineIO.wheelPresenter = shared }
+    /// Hooks it up to the engine. Called once at launch. The window and its hosting view used
+    /// to be built inside the first hold's own show (so the first ring after a launch paid for
+    /// them between the press and the ring); they're built a few seconds after launch instead.
+    static func install() {
+        EngineIO.wheelPresenter = shared
+        guard !Sandbox.isActive else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            MainActor.assumeIsolated { if shared.window == nil { _ = shared.make() } }
+        }
+    }
 
     nonisolated func showWheel(_ model: WheelOverlayModel, at point: CGPoint) {
         MainActor.assumeIsolated { show(model, at: point) }
@@ -1019,6 +1027,8 @@ final class WheelOverlayPanel: WheelPresenting {
             // The entrance is the view's own (`WheelRings`): the ring is up from this frame.
             state.appear()
             window.orderFrontRegardless()
+            // Measurement only: the window is in, and this is when its first frame is committed.
+            if model.showsRing { PressTiming.afterThisCommit { PressTiming.shared.shown(.ring) } }
         }
     }
 

@@ -1893,7 +1893,10 @@
 "Searches the page or document." = "Busca en la página o el documento.";
 "Selects everything." = "Selecciona todo.";
 "Sends the window in front to the Dock." = "Envía la ventana de delante al Dock.";
-"Sets all your buttons and a few combos at once. You can undo it." = "Configura todos tus botones y unas cuantas combinaciones de una vez. Puedes deshacerlo.";
+"Sets all your buttons and a few combos at once. You can undo it. Or hold one down to try it first." = "Configura todos tus botones y unas cuantas combinaciones de una vez. Puedes deshacerlo. O mantén pulsado uno para probarlo antes.";
+"Trying %@. Let go to put your own buttons back." = "Probando %@. Suelta para recuperar tus botones.";
+"Let go to put yours back" = "Suelta para recuperar los tuyos";
+"Hold the pointer’s button down on it to try it; let go to put your own buttons back." = "Mantén pulsado el botón del puntero sobre él para probarlo; suelta para recuperar tus botones.";
 "Setting up and exploring" = "Configurar y explorar";
 "Share your Glideball" = "Comparte tu Glideball";
 "Shows every open window and your Spaces." = "Muestra todas las ventanas abiertas y tus Espacios.";

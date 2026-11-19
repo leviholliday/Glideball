@@ -1893,7 +1893,10 @@
 "Searches the page or document." = "페이지나 문서에서 검색해요.";
 "Selects everything." = "모두 선택해요.";
 "Sends the window in front to the Dock." = "맨 앞의 윈도우를 Dock으로 보내요.";
-"Sets all your buttons and a few combos at once. You can undo it." = "모든 버튼과 몇 가지 콤보를 한 번에 설정해요. 되돌릴 수 있어요.";
+"Sets all your buttons and a few combos at once. You can undo it. Or hold one down to try it first." = "모든 버튼과 몇 가지 콤보를 한 번에 설정해요. 되돌릴 수 있어요. 하나를 길게 누르면 먼저 써 볼 수 있어요.";
+"Trying %@. Let go to put your own buttons back." = "%@ 써 보는 중이에요. 놓으면 내 버튼으로 돌아와요.";
+"Let go to put yours back" = "놓으면 내 설정으로 돌아와요";
+"Hold the pointer’s button down on it to try it; let go to put your own buttons back." = "포인터 버튼을 누른 채로 있으면 써 볼 수 있어요. 놓으면 내 버튼으로 돌아와요.";
 "Setting up and exploring" = "설정하고 둘러보기";
 "Share your Glideball" = "내 Glideball 공유";
 "Shows every open window and your Spaces." = "열린 모든 윈도우와 스페이스를 보여줘요.";

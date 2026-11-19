@@ -1179,6 +1179,78 @@ do {
     check(nf.switches.map(\.index) == [0], "without the app in front, a hold and release goes to the first app")
 }
 
+section("the Switcher's lens leans toward the next app (drawing only)")
+do {
+    let sw = ButtonAction.switcher(.standard)
+    func lean(_ r: Rig) -> (x: Int, y: Int) { r.machine.hold?.switcher?.lean ?? (99, 99) }
+    func shown(_ r: Rig) -> (x: Int, y: Int) {
+        let m = r.machine.switcherOverlay(now: r.now)
+        return (m?.leanX ?? 99, m?.leanY ?? 99)
+    }
+    // Six apps in a row, the second lit. Normal distance: 48 counts a step.
+    let a = Rig([3: sw])
+    a.press(3); a.advance(0.3)
+    check(lean(a) == (0, 0), "nothing rolled: no lean")
+    a.roll(dx: 3, dy: 0, steps: 2)
+    check(lean(a) == (0, 0), "6 counts of 48 is a resting hand: no lean (\(lean(a)))")
+    a.roll(dx: 3, dy: 0, steps: 6)
+    check(lean(a).x == 3 && lean(a).y == 0, "half a step along leans about half way (\(lean(a)))")
+    a.roll(dx: 4, dy: 0, steps: 5)
+    check(lean(a).x == 7 && a.machine.hold?.switcher?.index == 1, "44 of 48 counts: nearly all the way, and no step yet (\(lean(a)))")
+    check(shown(a) == lean(a), "the panel's model carries it")
+    a.roll(dx: 4, dy: 0, steps: 1)
+    check(a.machine.hold?.switcher?.index == 2 && lean(a) == (0, 0), "the step itself is as ever, and the lean starts again from what's left (\(lean(a)))")
+    // Rolling back the other way leans the other way.
+    a.roll(dx: -4, dy: 0, steps: 8)
+    check(lean(a).x < 0, "rolling left leans left (\(lean(a)))")
+    // A rest: the engine drops that roll at the next movement, and says so (`rests`), so the
+    // panel, which let the lean fall by itself, draws the next one even if it's the same.
+    let before = a.machine.hold?.switcher?.rests ?? -1
+    a.advance(0.3); a.roll(dx: -1, dy: 0, steps: 1)
+    check(lean(a) == (0, 0) && a.machine.hold?.switcher?.rests == before + 1, "a rest drops the lean and counts it")
+    check(a.machine.hold?.switcher?.index == 2, "and moves nothing")
+    a.release(3)
+    // One row: up and down lean nowhere. At the end of the row: nothing to lean toward.
+    let e = Rig([3: sw])
+    e.press(3); e.advance(0.3)
+    e.roll(dx: 0, dy: 4, steps: 8)
+    check(lean(e) == (0, 0), "one row: rolling down leans nowhere (\(lean(e)))")
+    e.advance(0.3)
+    for _ in 0..<6 { e.roll(dx: 6, dy: 0, steps: 8, dt: 0.02) }
+    check(e.machine.hold?.switcher?.index == 5, "rolled to the last app")
+    e.advance(0.3); e.roll(dx: 4, dy: 0, steps: 8)
+    check(lean(e) == (0, 0), "at the last app, rolling on leans nowhere: there's nothing there (\(lean(e)))")
+    e.advance(0.3); e.roll(dx: -4, dy: 0, steps: 8)
+    check(lean(e).x < 0, "and back the other way it leans again")
+    e.release(3)
+    // Several rows: down leans down; a diagonal (which never steps) leans half as far both ways.
+    let g = Rig([3: sw])
+    g.switcherGrid = SwitcherGrid(count: 24, columns: 8, visibleRows: 3)
+    g.press(3); g.advance(0.3)
+    g.roll(dx: 0, dy: 4, steps: 10)
+    check(lean(g).x == 0 && lean(g).y > 4, "rolling down leans down (\(lean(g)))")
+    g.advance(0.3); g.roll(dx: 4, dy: 4, steps: 10)
+    check(lean(g).x > 0 && lean(g).x <= 4 && lean(g).x == lean(g).y, "a diagonal leans half as far, both ways (\(lean(g)))")
+    check(g.machine.hold?.switcher?.index == 1, "and still moves nothing")
+    g.release(3)
+    // It only draws: the same rolls step the same whether or not anyone looks at the lean.
+    var seed: UInt64 = 42
+    func next() -> Double { seed = seed &* 6364136223846793005 &+ 1442695040888963407; return Double(Int(seed >> 40) % 41) - 20 }
+    let p = Rig([3: sw]), q = Rig([3: sw])
+    p.switcherGrid = SwitcherGrid(count: 24, columns: 8, visibleRows: 3); q.switcherGrid = p.switcherGrid
+    p.press(3); q.press(3); p.advance(0.3); q.advance(0.3)
+    var same = true
+    for i in 0..<2500 {
+        let dx = next(), dy = next(), dt = i % 37 == 0 ? 0.15 : 0.004
+        p.roll(dx: dx, dy: dy, steps: 1, dt: dt); q.roll(dx: dx, dy: dy, steps: 1, dt: dt)
+        _ = lean(p); _ = p.machine.switcherOverlay(now: p.now)
+        let l = lean(q)
+        if abs(l.x) > 8 || abs(l.y) > 8 { same = false }
+        if p.machine.hold?.switcher?.index != q.machine.hold?.switcher?.index { same = false }
+    }
+    check(same, "2,500 random rolls: reading the lean never changes a step, and it stays within a step")
+}
+
 section("hiding apps from the Switcher")
 do {
     let sw = ButtonAction.switcher(.standard)

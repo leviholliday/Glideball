@@ -19,10 +19,16 @@ import SwiftUI
 // NSRunningApplication, window counts from CGWindowList without titles (no Screen Recording,
 // no Accessibility).
 //
-// Motion: the open grows and fades in (a 0.22 s spring), the close fades out in 0.1 s, the
-// light glides with the guide's selection spring, and a hidden app's row closes up the same
-// way. Reduce Motion: fades only (the light cross-fades from app to app, nothing scales or
-// slides). Everything moves only when the model changes, so nothing animates while it's away.
+// Motion: the open grows and fades in (a 0.22 s spring), the light glides with the guide's
+// selection spring, and a hidden app's row closes up the same way. Between steps the lens and
+// its light lean a few points toward where the ball is rolling (`SwitcherHold.lean`: drawing
+// only, it falls back when the roll is dropped after a rest), so a roll that hasn't made a
+// step yet is still answered. It leaves the way the ring does (`SwitcherExit`): choosing an
+// app lifts and brightens its icon while the panel falls away behind it; anything else (Esc,
+// a dismissal, the app already in front, a hold that ended for safety) drains the light and
+// fades. The switch itself is sent at the release as ever; none of this waits for or delays it.
+// Reduce Motion: fades only (the light cross-fades from app to app, nothing scales, slides
+// or leans). Everything moves only when the model changes, so nothing animates while it's away.
 
 /// One app in the panel.
 struct SwitcherEntry: Identifiable {
@@ -56,6 +62,13 @@ enum SwitcherLayout {
     static let litScale: CGFloat = 0.16
     static let litLift: CGFloat = 7
     static let falloff: CGFloat = 1.1
+    /// The lean: how far the lens, and the light spilling from it, shift toward the next app
+    /// when the roll is a whole step's worth along (points). Felt, not watched.
+    static let lensLean: CGFloat = 4
+    static let lightLean: CGFloat = 10
+    /// The chosen app's icon as the panel leaves: how much more it grows and lifts.
+    static let flareScale: CGFloat = 0.10
+    static let flareLift: CGFloat = 6
 
     /// The panel itself (without the margin) for `grid`.
     static func panelSize(_ grid: SwitcherGrid, footer: Bool = false) -> CGSize {
@@ -92,6 +105,27 @@ final class SwitcherOverlayState {
     var shown = false
     /// The button named in the hint ("Top left"), or nil when there's none to hide an app with.
     var hideButton: String?
+    /// The ball has rested since the lean was last drawn: it has fallen back (the engine drops
+    /// that leftover roll at the next movement; `SwitcherOverlayPanel.show` keeps this).
+    var leanRested = false
+    /// How the panel is leaving, once it is (nil while it's up).
+    var exit: SwitcherExit?
+    /// Renders: hold the exit part-way, so a picture shows it (there's no clock in a picture).
+    var frozenExit = false
+}
+
+/// How the panel leaves. `launch`: an app was chosen (its place among those showing): its icon
+/// lifts and brightens as the panel falls away. `drain`: nothing was (Esc, dismissed, the app
+/// already in front, or a hold that ended for safety): the light goes out and the panel fades.
+struct SwitcherExit: Equatable {
+    enum Kind { case launch, drain }
+    var kind: Kind
+    var chosen: Int?
+
+    /// From the take-down to the window going. The drain is what closing always took.
+    static func duration(_ kind: Kind) -> Double { kind == .launch ? 0.24 : 0.11 }
+    /// The panel itself falling away.
+    static func fall(_ kind: Kind) -> Animation { .easeIn(duration: kind == .launch ? 0.12 : 0.1) }
 }
 
 struct SwitcherOverlayView: View {
@@ -101,9 +135,8 @@ struct SwitcherOverlayView: View {
     var body: some View {
         ZStack {
             if let m = state.model, !state.entries.isEmpty {
-                SwitcherPanel(model: m, entries: state.entries, hideButton: state.hideButton)
-                    .scaleEffect(state.shown || reduceMotion ? 1 : 0.97)
-                    .opacity(state.shown ? 1 : 0)
+                SwitcherPanel(model: m, entries: state.entries, hideButton: state.hideButton,
+                              leans: !state.leanRested, shown: state.shown, exit: state.exit, frozenExit: state.frozenExit)
                     .transition(reduceMotion ? .opacity : .scale(scale: 0.94).combined(with: .opacity))
             }
         }
@@ -118,11 +151,27 @@ struct SwitcherPanel: View {
     let model: SwitcherOverlayModel
     let entries: [SwitcherEntry]
     let hideButton: String?
+    /// The lean is drawn (false once the ball has rested: it has fallen back).
+    var leans = true
+    /// False while it's leaving.
+    var shown = true
+    var exit: SwitcherExit?
+    var frozenExit = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         let m = model
+        // How it leaves: the light goes out at once either way; a chosen app's icon is drawn
+        // again above the panel (`flare`), so it can outlast the glass it was sitting on.
+        let launch = exit?.kind == .launch ? exit?.chosen : nil
+        let lightOn: Double = exit == nil ? 1 : 0
+        let away: Double = shown ? 0 : frozenExit ? 0.6 : 1
+        // The lean, in points: toward the next app, by how far the roll has got.
+        let parts = CGFloat(SwitcherHold.leanParts)
+        let lean = leans && !reduceMotion && exit == nil
+            ? CGSize(width: CGFloat(m.leanX) / parts, height: CGFloat(m.leanY) / parts) : .zero
+        let leanMotion = Animation.spring(response: 0.16, dampingFraction: 0.9)
         let g = m.grid
         let gone = Set(m.hidden)
         let showing = entries.filter { !gone.contains($0.id) }
@@ -139,11 +188,16 @@ struct SwitcherPanel: View {
                                 y: SwitcherLayout.padding + (litRow + 0.5) * cell.height + shift)
         let dark = scheme == .dark
         let motion: Animation = reduceMotion ? .easeOut(duration: 0.14) : .spring(response: 0.26, dampingFraction: 0.86)
-        return ZStack(alignment: .topLeading) {
-            // The ball's light, spilling across the glass from the lit app (it glides with it).
+        let core = ZStack(alignment: .topLeading) {
+            // The ball's light, spilling across the glass from the lit app (it glides with it,
+            // and leans ahead of it toward where the ball is rolling).
             RadialGradient(colors: [Theme.ball.opacity(dark ? 0.30 : 0.22), Theme.ball.opacity(dark ? 0.08 : 0.05), .clear],
                            center: .center, startRadius: 0, endRadius: cell.width * 1.7)
                 .frame(width: cell.width * 3.4, height: cell.width * 3.4)
+                .offset(x: lean.width * SwitcherLayout.lightLean, y: lean.height * SwitcherLayout.lightLean)
+                .opacity(lightOn)
+                .animation(leanMotion, value: lean)
+                .animation(.easeOut(duration: 0.07), value: exit)
                 .position(litCentre)
                 .blendMode(dark ? .plusLighter : .normal)
             // Everything that scrolls: the lens under the lit app, then the apps.
@@ -151,13 +205,21 @@ struct SwitcherPanel: View {
                 if !reduceMotion {
                     SwitcherLens()
                         .frame(width: cell.width - 10, height: cell.height - 8)
+                        .offset(x: lean.width * SwitcherLayout.lensLean, y: lean.height * SwitcherLayout.lensLean)
+                        .opacity(lightOn)
+                        .animation(leanMotion, value: lean)
+                        .animation(.easeOut(duration: 0.07), value: exit)
                         .offset(x: litCol * cell.width + 5, y: litRow * cell.height + 4)
                 }
                 ForEach(Array(showing.enumerated()), id: \.element.id) { i, entry in
                     let col = CGFloat(i % columns), row = CGFloat(i / columns)
                     let distance = ((col - litCol) * (col - litCol) + (row - litRow) * (row - litRow) * 1.4).squareRoot()
-                    SwitcherCell(entry: entry, lit: i == selected,
-                                 closeness: reduceMotion ? (i == selected ? 1 : 0) : SwitcherLayout.closeness(distance))
+                    // Draining: the lit app settles back among the others as its light goes.
+                    let near = exit?.kind == .drain ? 0 : SwitcherLayout.closeness(distance)
+                    SwitcherCell(entry: entry, lit: i == selected && exit?.kind != .drain,
+                                 closeness: reduceMotion ? (i == selected && exit?.kind != .drain ? 1 : 0) : near)
+                        .opacity(launch == i ? 0 : 1)   // drawn above the panel instead (`flare`)
+                        .transaction { if launch == i { $0.animation = nil } }
                         .frame(width: cell.width, height: cell.height)
                         .offset(x: col * cell.width, y: row * cell.height)
                         .transition(reduceMotion ? .opacity : .scale(scale: 0.5).combined(with: .opacity))
@@ -205,6 +267,46 @@ struct SwitcherPanel: View {
         .animation(motion, value: m.selected)
         .animation(motion, value: m.hidden)
         .animation(reduceMotion ? .easeOut(duration: 0.14) : .spring(response: 0.28, dampingFraction: 0.88), value: m.firstRow)
+        return ZStack(alignment: .topLeading) {
+            // The panel falls away (a little further back when an app was chosen).
+            core
+                .scaleEffect(reduceMotion ? 1 : 1 - (launch != nil ? 0.05 : 0.03) * away)
+                .opacity(1 - away)
+            // The chosen app's icon, exactly where its cell drew it, lifting as the panel goes.
+            if let place = launch, showing.indices.contains(place) {
+                SwitcherFlare(entry: showing[place], frozen: frozenExit)
+                    .frame(width: cell.width, height: cell.height)
+                    .offset(x: SwitcherLayout.padding + CGFloat(place % columns) * cell.width,
+                            y: SwitcherLayout.padding + CGFloat(place / columns) * cell.height + shift)
+            }
+        }
+        .frame(width: size.width, height: size.height, alignment: .topLeading)
+    }
+}
+
+/// The chosen app's icon as the panel leaves: drawn where its cell had it (lit, lifted), then it
+/// grows and lifts a little more with a bloom of the ball's light behind it, and fades. One
+/// short spring and one fade, started as it appears; gone with the window 0.24 s after the
+/// release. Reduce Motion: it only fades, a moment after the panel.
+struct SwitcherFlare: View {
+    let entry: SwitcherEntry
+    /// Renders: held at its brightest.
+    var frozen = false
+    @State private var up = false
+    @State private var faded = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        let risen = (up || frozen) && !reduceMotion
+        SwitcherCell(entry: entry, lit: true, closeness: reduceMotion ? 0 : 1, solo: true,
+                     extraScale: risen ? SwitcherLayout.flareScale : 0, extraLift: risen ? SwitcherLayout.flareLift : 0,
+                     bloom: up || frozen ? 1 : 0.35)
+            .opacity(faded && !frozen ? 0 : 1)
+            .onAppear {
+                guard !frozen else { return }
+                withAnimation(.spring(response: 0.18, dampingFraction: 0.7)) { up = true }
+                withAnimation(.easeIn(duration: 0.12).delay(0.10)) { faded = true }
+            }
     }
 }
 
@@ -241,17 +343,31 @@ struct SwitcherCell: View {
     let lit: Bool
     /// 1 on the lit app, falling to 0 a couple of apps away (the Dock's magnification).
     let closeness: CGFloat
+    /// The chosen app's icon alone, above the leaving panel (`SwitcherFlare`): no name, no
+    /// lens, a little more size and lift, and the ball's light blooming behind it.
+    var solo = false
+    var extraScale: CGFloat = 0
+    var extraLift: CGFloat = 0
+    var bloom: Double = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
-        let scale = reduceMotion ? 1 : 1 + SwitcherLayout.litScale * closeness
-        let lift = reduceMotion ? 0 : -SwitcherLayout.litLift * closeness
+        let scale = reduceMotion ? 1 : 1 + SwitcherLayout.litScale * closeness + extraScale
+        let lift = reduceMotion ? 0 : -SwitcherLayout.litLift * closeness - extraLift
         VStack(spacing: 0) {
             Image(nsImage: entry.icon)
                 .resizable()
                 .interpolation(.high)
                 .frame(width: SwitcherLayout.icon, height: SwitcherLayout.icon)
+                .brightness(solo ? 0.06 * bloom : 0)
+                .background {
+                    if solo {
+                        Circle().fill(Theme.ball.opacity(0.55 * bloom))
+                            .blur(radius: 18)
+                            .padding(-6)
+                    }
+                }
                 .opacity(entry.hidden && !lit ? 0.55 : 1)
                 .overlay(alignment: .topTrailing) {
                     if entry.windows >= 2 {
@@ -279,12 +395,12 @@ struct SwitcherCell: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
                 .padding(.horizontal, 6)
-                .opacity(lit ? 1 : 0)
+                .opacity(lit && !solo ? 1 : 0)
                 .padding(.bottom, 12)
         }
         .background {
             // Reduce Motion: no gliding lens, so each app has its own, cross-fading.
-            if reduceMotion {
+            if reduceMotion && !solo {
                 SwitcherLens().padding(.horizontal, 5).padding(.vertical, 4).opacity(lit ? 1 : 0)
             }
         }
@@ -475,6 +591,10 @@ final class SwitcherOverlayPanel: SwitcherPresenting {
     private var window: NSPanel?
     private var leaving: DispatchWorkItem?
     private var lastSelected: Int?
+    /// The lean falls back by itself once the ball has rested (one shot, only after a lean was drawn).
+    private var leanFall: DispatchWorkItem?
+    /// The release's choice (its place in the list as it came), told just before the take-down.
+    private var chose: (session: Int, index: Int, at: CFTimeInterval)?
     /// The hold's list and the display it's for. Only the latest hold's, only until it's used.
     private var list: (session: Int, entries: [SwitcherEntry], grid: SwitcherGrid, area: CGRect, buttons: [Int], hideButton: String?)?
     private var forget: DispatchWorkItem?
@@ -511,7 +631,16 @@ final class SwitcherOverlayPanel: SwitcherPresenting {
         MainActor.assumeIsolated { appHidden(session: session, index: index, hidden: hidden) }
     }
 
+    nonisolated func switcherChose(session: Int, index: Int) {
+        MainActor.assumeIsolated { chose = (session, index, CACurrentMediaTime()) }
+    }
+
     private func prepare(session: Int, near point: CGPoint, buttons: [Int], hidden: [String]) -> SwitcherGrid {
+        let began = PressTiming.now()
+        defer { PressTiming.shared.add(.switcherList, from: began) }
+        // The press readies what the panel will need: its window is built now, during the 0.2 s
+        // before it can show, not inside the first show of a launch.
+        if window == nil { _ = make() }
         let entries = SwitcherRecents.shared.apps(hiding: Set(hidden))
         let front = NSWorkspace.shared.frontmostApplication?.processIdentifier
         let frontFirst = front != nil && entries.first?.app?.processIdentifier == front
@@ -542,8 +671,23 @@ final class SwitcherOverlayPanel: SwitcherPresenting {
                                  userInfo: [.announcement: showing[model.selected].name, .priority: NSAccessibilityPriorityLevel.high.rawValue])
         }
         lastSelected = model.selected
+        // The lean: drawn as it comes, and let fall once the ball has rested as long as the
+        // engine takes to drop that roll (a little longer, so a slow steady roll never flickers).
+        leanFall?.cancel()
+        leanFall = nil
+        if state.leanRested { state.leanRested = false }
+        if model.leanX != 0 || model.leanY != 0 {
+            let fall = DispatchWorkItem { [weak self] in
+                guard let self else { return }
+                leanFall = nil
+                withAnimation(.easeOut(duration: 0.2)) { self.state.leanRested = true }
+            }
+            leanFall = fall
+            DispatchQueue.main.asyncAfter(deadline: .now() + SwitcherHold.restForgets + 0.03, execute: fall)
+        }
         let appearing = !window.isVisible || !state.shown
         if appearing {
+            state.exit = nil
             // Sized once for the whole list as it came: hiding an app only ever shrinks the panel
             // inside it, so nothing re-centres or jumps while it's up.
             let size = SwitcherLayout.canvas(list.grid, footer: list.hideButton != nil)
@@ -558,6 +702,8 @@ final class SwitcherOverlayPanel: SwitcherPresenting {
                 state.model = model
                 state.shown = true
             }
+            // Measurement only: the window is in, and this is when its first frame is committed.
+            PressTiming.afterThisCommit { PressTiming.shared.shown(.switcher) }
         } else {
             state.model = model
         }
@@ -565,17 +711,37 @@ final class SwitcherOverlayPanel: SwitcherPresenting {
 
     private func hide() {
         lastSelected = nil
+        leanFall?.cancel()
+        leanFall = nil
         guard let window, window.isVisible, leaving == nil else { return }
-        withAnimation(.easeIn(duration: 0.1)) { state.shown = false }
+        // An app was chosen (told a moment ago, for this hold, and it's the one lit): its icon
+        // lifts as the panel goes. Anything else drains: Esc, a dismissal, a hold that ended
+        // for safety, and choosing the app that's already in front (nothing will change).
+        var kind = SwitcherExit.Kind.drain
+        var place: Int?
+        if let chose, CACurrentMediaTime() - chose.at < 0.1, let list, list.session == chose.session, let m = state.model {
+            let gone = Set(m.hidden)
+            let showing = list.entries.filter { !gone.contains($0.id) }
+            if let i = showing.firstIndex(where: { $0.id == chose.index }),
+               showing[i].app == nil || showing[i].app?.processIdentifier != NSWorkspace.shared.frontmostApplication?.processIdentifier {
+                kind = .launch
+                place = i
+            }
+        }
+        chose = nil
+        state.exit = SwitcherExit(kind: kind, chosen: place)
+        withAnimation(SwitcherExit.fall(kind)) { state.shown = false }
         let work = DispatchWorkItem { [weak self] in
             guard let self else { return }
             window.orderOut(nil)
             state.model = nil
             state.entries = []   // nothing about the apps stays drawn
+            state.exit = nil
+            state.leanRested = false
             leaving = nil
         }
         leaving = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.11, execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + SwitcherExit.duration(kind), execute: work)
         forgetLater(after: 3)   // the release's switch, if any, comes right after this
     }
 

@@ -15,6 +15,7 @@ final class AppModel {
             backups.willChange(from: oldValue)
             config.save()
             if !config.enabled && oldValue.enabled {
+                tryOn.end(.paused)   // a preset being tried on goes with the pause
                 engine.releaseHeldKeys()
                 engine.releaseAll()
                 pinnedProfileID = nil   // a pause hands app setups back to the app in front
@@ -31,6 +32,7 @@ final class AppModel {
     var status = Engine.Status() {
         didSet {
             if status.deviceConnected != oldValue.deviceConnected { updateSampling() }
+            if !status.deviceConnected && oldValue.deviceConnected { tryOn.end(.unplugged) }
             if status.batteryPercent != oldValue.batteryPercent {
                 batteryNotifier.update(percent: status.batteryPercent, deviceName: status.deviceName, enabled: lowBatteryAlerts)
             }
@@ -210,6 +212,7 @@ final class AppModel {
     @ObservationIgnored private var assignProfileID: String?
 
     func beginAssign(for profileID: String? = nil) {
+        tryOn.end(.busy)
         assignProfileID = profileID
         assignStep = .waitingForButtons
         // Never wait forever: give up after 10 seconds.
@@ -295,6 +298,9 @@ final class AppModel {
     static let countsPerInch = 400.0
 
     @ObservationIgnored let engine: Engine
+    /// Hold a preset card to try it on: what's being tried only ever exists in what
+    /// `pushToEngine` hands the engine, never in `config` (TryOn.swift).
+    @ObservationIgnored let tryOn = TryOn()
     let updates = UpdateChecker()
     /// Milestones, records, the setup checklist and their celebrations.
     @ObservationIgnored let delight: DelightCenter
@@ -324,6 +330,15 @@ final class AppModel {
         delight = DelightCenter(config: cfg)
         engine.onStatus = { [weak self] s in self?.status = s }
         engine.onModes = { [weak self] m in self?.modes = m }
+        tryOn.push = { [weak self] in self?.pushToEngine() }
+        tryOn.conditions = { [weak self] in
+            guard let self else { return TryOn.Conditions(enabled: false) }
+            return TryOn.Conditions(enabled: self.config.enabled, connected: self.status.deviceConnected,
+                                    active: NSApp.isActive, windowKey: self.windowIsKey,
+                                    leftDown: CGEventSource.buttonState(.combinedSessionState, button: .left),
+                                    trackballPrimaryDown: self.pressed.contains(0), trackballButtonsDown: !self.pressed.isEmpty,
+                                    busy: self.assignStep != .idle || self.mappingsSuspended)
+        }
         delight.reloadHistory(currentKey: totalsDay)
         delight.present = { [weak self] in self?.show($0) }
         delight.canCelebrate = { [weak self] in
@@ -343,6 +358,7 @@ final class AppModel {
         // `--render-ui` and `--self-test`: a model with nothing live — no engine,
         // timers, observers, sync or update checks (see Sandbox.swift).
         guard !Sandbox.isActive else { return }
+        tryOn.watchTheApp()
         engine.start()
         engine.setDisplays(displayRegions)
         // A display connected, disconnected, moved or changed resolution.
@@ -404,7 +420,11 @@ final class AppModel {
         didSet { if pinnedProfileID != oldValue { pushToEngine() } }
     }
     /// While the Welcome Tour asks you to press each button, run without remaps or combos.
-    @ObservationIgnored var mappingsSuspended = false
+    @ObservationIgnored var mappingsSuspended = false {
+        didSet { if mappingsSuspended { tryOn.end(.busy) } }
+    }
+    /// What the engine was last handed (the self-test checks a tried-on preset comes off it).
+    var engineConfig: GlideConfig { pushedConfig }
 
     /// Whose setup the engine should run: the frontmost app's, or — while
     /// Glide itself is in front — the one open on the Apps tab, else the main setup.
@@ -421,6 +441,7 @@ final class AppModel {
     private func frontmostChanged(_ app: NSRunningApplication?) {
         let isGlide = app?.processIdentifier == ProcessInfo.processInfo.processIdentifier
         let id = app?.bundleIdentifier
+        if !isGlide { tryOn.end(.deactivated) }
         if glideIsFrontmost != isGlide { glideIsFrontmost = isGlide }
         if frontmostBundleID != id { frontmostBundleID = id }
         pushToEngine()
@@ -438,6 +459,7 @@ final class AppModel {
     /// Sends the setup for whoever's in front to the engine, if it changed.
     func pushToEngine() {
         var resolved = config.resolved(for: profileTarget)
+        tryOn.applied(to: &resolved)   // a preset card held down: worn by the engine only, never saved
         if mappingsSuspended {
             resolved.buttons = [:]
             resolved.chords = []
@@ -900,6 +922,7 @@ final class AppModel {
     func windowStateChanged(visible: Bool, key: Bool) {
         if key && !windowIsKey { showAutoUpdateNoteIfDue() }
         if windowIsKey != key { windowIsKey = key }
+        if !key { tryOn.end(.windowLeft) }
         let changed = visible != windowVisible
         let becameVisible = visible && changed
         if changed { windowVisible = visible }
