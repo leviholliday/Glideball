@@ -2,7 +2,7 @@ import AppKit
 import Carbon.HIToolbox
 import SwiftUI
 
-final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuDelegate {
     private(set) var window: NSWindow?
     private var launchedAtLogin = false
     /// Launched to open a glideball:// URL: start quietly, like at login.
@@ -390,8 +390,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         // Scroll with ball and Drag lock act at the pointer, which is up here
         // in the menu bar after choosing an item — so only Precision is offered.
         precisionItem = menu.addItem(withTitle: String(localized: "Precision"), action: #selector(togglePrecision), keyEquivalent: "")
-        menu.addItem(withTitle: String(localized: "Undo Last Import", comment: "Menu item: puts back the settings from before the last shared setup, file or setup code was applied"),
-                     action: #selector(undoLastImport), keyEquivalent: "").isHidden = true
+        undoImportItem = menu.addItem(withTitle: String(localized: "Undo Last Import", comment: "Menu item: puts back the settings from before the last shared setup, file or setup code was applied"),
+                                      action: #selector(undoLastImport), keyEquivalent: "")
+        undoImportItem?.isHidden = true
         menu.addItem(.separator())
         menu.addItem(withTitle: String(localized: "Settings…"), action: #selector(openSettings), keyEquivalent: ",")
         menu.addItem(withTitle: String(localized: "Check for Updates…"), action: #selector(checkForUpdates), keyEquivalent: "")
@@ -399,8 +400,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         menu.addItem(.separator())
         menu.addItem(withTitle: String(localized: "Quit Glideball"), action: #selector(quitGlide), keyEquivalent: "q")
         menu.items.forEach { $0.target = self }
+        // Shows or hides Undo Last Import each time the menu opens (a hidden item isn't validated).
+        menu.delegate = self
         statusMenu = menu
         return menu
+    }
+
+    /// The menu-bar icon's Undo Last Import, there only while an import can be undone.
+    private var undoImportItem: NSMenuItem?
+
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        guard menu === statusMenu else { return }
+        undoImportItem?.isHidden = !MainActor.assumeIsolated { AppModel.shared.canUndoImport }
     }
 
     /// The menu-bar icon shows Precision and Drag lock, even with the window closed.

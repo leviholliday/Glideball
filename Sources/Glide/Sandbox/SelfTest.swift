@@ -580,9 +580,15 @@ enum SelfTest {
             try check(window.validateMenuItem(undoItem), "⌘Z doesn't undo the import on the main window")
             let fileUndo = NSMenuItem(title: "Undo Last Import", action: #selector(AppDelegate.undoLastImport(_:)), keyEquivalent: "")
             try check(delegate.validateMenuItem(fileUndo), "Undo Last Import is off in the menus after an import")
+            let statusMenu = try unwrap(delegate.statusMenu, "no menu-bar icon menu")
+            func statusUndoShown() -> Bool {
+                delegate.menuNeedsUpdate(statusMenu)
+                return statusMenu.items.contains { $0.action == #selector(AppDelegate.undoLastImport(_:)) && !$0.isHidden }
+            }
+            try check(statusUndoShown(), "Undo Last Import isn't in the menu-bar icon's menu after an import")
             window.undo(nil)
-            try check(model.config == before && !model.canUndoImport && !window.validateMenuItem(undoItem) && !delegate.validateMenuItem(fileUndo),
-                      "⌘Z on the window didn't undo the import, or Undo stayed on")
+            try check(model.config == before && !model.canUndoImport && !window.validateMenuItem(undoItem) && !delegate.validateMenuItem(fileUndo)
+                      && !statusUndoShown(), "⌘Z on the window didn't undo the import, or Undo stayed on")
             flow.text = risky
             model.reviewAICode()
             let ticked = try unwrap(flow.reviewing, "the code didn't open the preview again")
