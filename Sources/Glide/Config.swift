@@ -78,6 +78,18 @@ enum KeyNames {
         guard let us = us[code] else { return "Key \(code)" }
         return lock.withLock { (command ? withCommand[code] : nil) ?? plain[code] } ?? us
     }
+
+    /// The other way round, for a shortcut someone wrote as text ("cmd+c" in a setup code,
+    /// SetupCode.swift): the key that types `name` on this Mac's keyboard layout (with ⌘
+    /// held, when the layout differs then), else where a US keyboard has it. Only the keys
+    /// a layout decides; the lowest key code when two keys type the same thing.
+    static func code(typing name: String, command: Bool = false) -> Int? {
+        func find(_ map: [Int: String]) -> Int? {
+            map.filter { $0.value.caseInsensitiveCompare(name) == .orderedSame }.keys.min()
+        }
+        let layout = lock.withLock { (command ? find(withCommand) : nil) ?? find(plain) }
+        return layout ?? find(us)
+    }
 }
 
 /// A keyboard shortcut a button can fire.

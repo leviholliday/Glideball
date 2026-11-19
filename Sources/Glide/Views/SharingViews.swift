@@ -15,11 +15,17 @@ import SwiftUI
 struct IncomingSetupSheet: View {
     let model: AppModel
     let incoming: IncomingSetup
+    /// Set when the preview isn't the model's own sheet (it's inside Set up with AI).
+    var onCancel: (() -> Void)?
+    var onApply: ((Set<SharePart>?) -> Void)?
     @State private var chosen: Set<SharePart>
 
-    init(model: AppModel, incoming: IncomingSetup, chosen: Set<SharePart>? = nil) {
+    init(model: AppModel, incoming: IncomingSetup, chosen: Set<SharePart>? = nil,
+         onCancel: (() -> Void)? = nil, onApply: ((Set<SharePart>?) -> Void)? = nil) {
         self.model = model
         self.incoming = incoming
+        self.onCancel = onCancel
+        self.onApply = onApply
         _chosen = State(initialValue: chosen ?? Set(incoming.parts))
     }
 
@@ -65,12 +71,15 @@ struct IncomingSetupSheet: View {
                     if !incoming.notes.isEmpty {
                         NotesSection(notes: incoming.notes)
                     }
+                    if !incoming.leftOut.isEmpty {
+                        LeftOutSection(model: model, notes: incoming.leftOut)
+                    }
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 16)
             }
             .scrollIndicators(.automatic)
-            .frame(height: Self.scrollHeight(changes: all, notes: incoming.notes.count))
+            .frame(height: Self.scrollHeight(changes: all, notes: incoming.notes.count + incoming.leftOut.count))
             Hairline()
             footer(cautions: cautions, nothing: picked.isEmpty)
                 .padding(.horizontal, 24)
@@ -126,9 +135,10 @@ struct IncomingSetupSheet: View {
     }
 
     private var symbol: String {
+        if incoming.source == .aiCode { return "text.bubble" }
         switch incoming.content {
-        case .kensingtonWorks: "arrow.down.left.arrow.up.right"
-        case .shared(let s): s.kind.symbol
+        case .kensingtonWorks: return "arrow.down.left.arrow.up.right"
+        case .shared(let s): return s.kind.symbol
         }
     }
 
@@ -162,10 +172,11 @@ struct IncomingSetupSheet: View {
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
-            Button("Cancel") { model.cancelIncoming() }
+            Button("Cancel") { if let onCancel { onCancel() } else { model.cancelIncoming() } }
                 .keyboardShortcut(.cancelAction)
             Button {
-                model.applyIncoming(parts: isShare ? chosen : nil)
+                let parts = isShare ? chosen : nil
+                if let onApply { onApply(parts) } else { model.applyIncoming(parts: parts) }
             } label: {
                 Text(incoming.source == .kensingtonWorks ? "Import" : "Apply")
                     .frame(minWidth: 60)
@@ -319,6 +330,42 @@ private struct NotesSection: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, Theme.Space.rowHorizontal)
                     .padding(.vertical, 9)
+                }
+            }
+        }
+    }
+}
+
+/// What a chatbot's setup code asked for that Glideball left out, each with why, and a
+/// note to copy back to the chatbot so it can fix them (Set up with AI). None of it is applied.
+struct LeftOutSection: View {
+    let model: AppModel
+    let notes: [SetupCode.Note]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Theme.Space.titleToGroup) {
+            SectionTitle(title: "Left out",
+                         caption: "Glideball couldn’t use these, so they aren’t applied. The note tells the chatbot what to fix.") {
+                CopyButton(id: "left-out-note", title: Text("Copy Note for the AI"),
+                           help: Text("Copies a short note to paste back to the chatbot, so it can fix these"),
+                           copy: { model.copyAINote(notes) ? .copied(nil) : .failed })
+                    .controlSize(.small)
+            }
+            RowGroup {
+                ForEach(notes) { note in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(verbatim: note.text.isEmpty ? note.place : "\(note.place): \(note.text)")
+                            .font(.system(size: 12, weight: .medium))
+                            .lineLimit(2)
+                        Text(verbatim: note.why.shown)
+                            .font(Theme.Font.hint)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, Theme.Space.rowHorizontal)
+                    .padding(.vertical, 9)
+                    .accessibilityElement(children: .combine)
                 }
             }
         }

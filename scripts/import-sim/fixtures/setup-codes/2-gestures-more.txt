@@ -1,0 +1,37 @@
+Here's what this code changes:
+
+- **Top right** becomes a Gestures button. Roll left or right to switch desktops, up for Mission Control, and down opens a second ring (More) with your music controls. A quick press is still Back.
+- While you hold it, the scroll ring turns the volume.
+- Up-left takes a screenshot, so it has eight directions now.
+
+```json
+{
+  "format": "glideball-ai-setup",
+  "version": 1,
+  "buttons": {
+    "3": {
+      "gesture": {
+        "left": "keys:ctrl+left",
+        "right": "keys:ctrl+right",
+        "up": { "do": "keys:ctrl+up", "mode": "once" },
+        "down": {
+          "more": {
+            "left": "media:previous",
+            "right": "media:next",
+            "down": "media:playPause",
+            "downRight": { "do": "media:volumeDown", "mode": "chain" }
+          }
+        },
+        "upLeft": "keys:cmd+shift+4",
+        "tap": "back",
+        "show": "afterPause",
+        "ring": "volume",
+        "distance": "short"
+      }
+    }
+  },
+  "gestureSteadyHands": true
+}
+```
+
+Copy the code, go back to Glideball and paste it. Glideball shows every change before anything is applied, and you can undo it.

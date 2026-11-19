@@ -28,6 +28,8 @@ final class BackupStore {
         case beforeImport = "before import"
         case beforeRestore = "before restore"
         case beforePreset = "before preset"
+        /// Before a setup code from a chatbot was applied (Set up with AI).
+        case beforeAI = "before AI setup"
         case manual = "saved by you"
     }
 

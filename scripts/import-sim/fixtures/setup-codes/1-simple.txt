@@ -1,0 +1,1 @@
+{"format": "glideball-ai-setup", "version": 1, "trackingSpeed": 5.5, "buttons": {"2": "keys:cmd+w"}}

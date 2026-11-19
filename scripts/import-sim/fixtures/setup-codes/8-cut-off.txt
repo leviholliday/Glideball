@@ -1,0 +1,7 @@
+```json
+{
+  "format": "glideball-ai-setup",
+  "version": 1,
+  "buttons": {
+    "2": "keys:cmd+w",
+    "3": { "gesture": { "left": "keys:ctrl+left", "right": "keys:ctr

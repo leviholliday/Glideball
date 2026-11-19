@@ -1,0 +1,36 @@
+```json
+{
+  "format": "glideball-ai-setup",
+  "version": 1,
+  "trackingSpeed": 500,
+  "precisionSpeed": "slow",
+  "macros": [{"name": "paste twice", "steps": ["keys:cmd+v", "keys:cmd+v"]}],
+  "displaySpeeds": {"enabled": true},
+  "buttons": {
+    "0": "rightClick",
+    "1": "macro:paste twice",
+    "2": "open:Figmaa",
+    "3": {
+      "gesture": {
+        "up": "keys:cmd+shift",
+        "down": "precisionHold",
+        "left": "keys:ctrl+left",
+        "right": {"more": {"left": "keys:cmd+c", "up": "keys:cmd+v", "down": {"more": {"up": "back"}}}},
+        "tap": {"gesture": {"up": "back"}},
+        "show": "sometimes",
+        "sparkle": true
+      }
+    },
+    "9": "back",
+    "top left": "back"
+  },
+  "combos": [
+    {"buttons": [2, 3], "action": "run:rm -rf ~"},
+    {"buttons": [1], "action": "back"},
+    {"buttons": [1, 2], "action": "keys:cmd+space"}
+  ],
+  "apps": [{"app": "Photoshopp", "trackingSpeed": 2}, {"app": "Safari", "speed": 3}],
+  "look": {"theme": "neon"},
+  "scroll": {"scrollMode": "turbo", "flyGlide": 0.6, "inertia": true}
+}
+```

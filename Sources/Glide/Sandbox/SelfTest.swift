@@ -448,6 +448,112 @@ enum SelfTest {
             return "a link in a message read and previewed (cooldown or not), Apply, checkpoint, Undo; the clipboard: a link, a look-alike, a command link, plain text; ⌘V reaches the window"
         }
 
+        step("set up with AI") {
+            // Copy prompt → a chatbot's code pasted into the box → the preview inside the sheet →
+            // Apply (a "before AI setup" checkpoint) → Undo, through the real model. Nothing is
+            // copied for real (the sandbox never touches the clipboard) and nothing is sent.
+            // Settings no backup holds yet, so Apply's checkpoint is a new one.
+            let original = model.config
+            model.config.ballScrollSpeed = original.ballScrollSpeed == 1.75 ? 1.5 : 1.75
+            let before = model.config
+            let flow = model.aiSetup
+            let sharingName = SharingName.name()
+            SharingName.setName("Robin Quill")
+            defer {
+                SharingName.setName(sharingName)
+                model.config = original
+                flow.reset()
+                model.showingAISetup = false
+                model.pendingIncoming = nil
+                model.queuedIncoming = nil
+                model.pasteBox = nil
+                model.incomingIgnoresLaunch = false
+                model.lastIncomingClosed = -.infinity
+                AppModel.readClipboard = { nil }
+            }
+            flow.reset()
+            let prompt = model.aiPrompt()
+            try check(prompt.contains("<my_setup>") && prompt.contains(SetupCode.formatMarker) && prompt.contains("<what_glideball_can_change>"),
+                      "the prompt lacks the setup or the reference")
+            try check(AIReference.roughTokens(prompt) < AIReference.comfortableTokens, "the prompt is about \(AIReference.roughTokens(prompt)) tokens")
+            try check(!prompt.contains("Robin"), "the prompt has the sharing name in it")
+            flow.leaveAppNamesOut = true
+            // (The reference's own examples name Safari and Figma; your setup is what's checked.)
+            let quiet = model.aiSetupCode()
+            try check(!model.config.appProfiles.contains { quiet.contains($0.name) || quiet.contains($0.bundleID) } && !quiet.contains("\"apps\""),
+                      "Leave app names out left an app setup in the prompt")
+            flow.leaveAppNamesOut = false
+
+            model.showAISetup()
+            try check(model.showingAISetup && model.promptShowing && flow.step == 1, "Set up with AI didn't open at step 1, or something else could show over it")
+            try draw(SetupWithAISheet(model: model), "Set up with AI, step 1")
+            try check(model.copyAIPrompt() && flow.copied && flow.step == 2, "Copy Prompt didn't move on to step 2")
+
+            // Your own setup pasted back changes nothing and leaves nothing out.
+            flow.text = "```json\n" + model.aiSetupCode() + "\n```"
+            let own = model.aiReading(flow.text)
+            guard case .code(let ownCode) = own else { throw Failure("your own setup didn't read back as a code: \(own)") }
+            try check(ownCode.notes.isEmpty && model.readingMatches(own), "your own setup, pasted back, would change something or left something out: \(ownCode.notes.map(\.path))")
+
+            // A chatbot's code with a mistake in it.
+            let code = """
+            Here you go! This makes the top left button close tabs and adds a combo for Notes.
+            ```json
+            {"format": "glideball-ai-setup", "version": 1, "trackingSpeed": \(before.trackingSpeed == 9 ? 10 : 9),
+             "buttons": {"0": "rightClick", "2": "keys:cmd+w", "1": "macro:paste twice"},
+             "combos": [{"buttons": [1, 2], "action": "open:Notes"}]}
+            ```
+            """
+            flow.text = code
+            guard case .code(let r) = model.aiReading(code) else { throw Failure("a chatbot's code wasn't read") }
+            try check(r.notes.count == 2 && r.notes.contains { $0.why == .primaryButton }, "the code's mistakes weren't left out: \(r.notes.map(\.path))")
+            try draw(SetupWithAISheet(model: model), "Set up with AI, a code pasted")
+            model.reviewAICode()
+            let incoming = try unwrap(flow.reviewing, "Review Changes… didn't show the preview")
+            try check(incoming.source == .aiCode && incoming.from == nil && incoming.leftOut.count == 2, "the preview isn't labelled as a chatbot's, or lost what was left out")
+            try check(model.config == before, "reviewing changed something")
+            try draw(SetupWithAISheet(model: model), "Set up with AI's preview")
+            model.cancelAIReview()
+            try check(flow.reviewing == nil && flow.text == code && model.config == before, "Cancel didn't go back to the box as it was")
+            model.reviewAICode()
+            model.applyAIReview(parts: nil)
+            try check(flow.applied && flow.appliedLeftOut.count == 2, "Apply didn't move on to Applied")
+            try check(model.config.trackingSpeed != before.trackingSpeed && model.config.buttons[2] == .shortcut(.closeTab)
+                      && model.config.buttons[0] == before.buttons[0] && model.config.buttons[1] == before.buttons[1]
+                      && model.config.enabled == before.enabled, "Apply didn't apply the code, or changed what it couldn't")
+            try check(model.config.chords.contains { $0.buttons == [1, 2] && $0.action == .openApp(bundleID: "com.apple.Notes") }, "the combo for Notes wasn't added")
+            try check(model.backups.backups.first?.kind == .beforeAI && model.toast?.action == .undoImport, "no \"before AI setup\" checkpoint, or no Undo")
+            try draw(SetupWithAISheet(model: model), "Set up with AI, applied")
+            model.undoAISetup()
+            try check(model.config == before && !flow.applied, "Undo in the sheet didn't put everything back")
+
+            // Closing the sheet and opening it again finds the box as it was.
+            model.showingAISetup = false
+            model.showAISetup()
+            try check(flow.text == code, "closing the sheet lost what was in the box")
+            model.showingAISetup = false
+
+            // A code on the clipboard: ⌘V opens Set up with AI with it in the box.
+            AppModel.readClipboard = { code }
+            model.importFromClipboard(quiet: true)
+            try check(model.showingAISetup && flow.text == code && model.pendingIncoming == nil && model.config == before, "⌘V with a setup code didn't open Set up with AI with it")
+            model.showingAISetup = false
+
+            // Paste a Link… takes a code too: the usual preview, labelled as a chatbot's.
+            model.incomingIgnoresLaunch = true
+            model.reviewPastedCode(r)
+            if model.pendingIncoming == nil, let waiting = model.queuedIncoming {
+                model.pendingIncoming = waiting
+                model.queuedIncoming = nil
+            }
+            let pending = try unwrap(model.pendingIncoming, "a code in Paste a Link… didn't open a preview")
+            try check(pending.source == .aiCode && pending.leftOut.count == 2, "a code in Paste a Link… isn't labelled as a chatbot's")
+            try draw(IncomingSetupSheet(model: model, incoming: pending), "a chatbot's code in the usual preview")
+            model.cancelIncoming()
+            try check(model.config == before, "a code in Paste a Link… changed something before Apply")
+            return "prompt built (\(AIReference.roughTokens(prompt)) tokens), app names left out on request; copy, paste, review inside the sheet, Cancel, Apply (before AI setup checkpoint), Undo; your own setup matches; ⌘V and Paste a Link… take a code"
+        }
+
         step("search index") {
             // Every row on every page and Settings tab sits inside a `.findable`, and every
             // Findable is drawn on its page: the index can't drift from the pages.

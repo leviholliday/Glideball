@@ -37,9 +37,12 @@ import Foundation
 //
 // Foundation only, so scripts/import-sim can throw hostile text at it.
 //
-// Set up with AI (.claude/plans/2026-11-19-set-up-with-ai.md) plugs in here:
-// its setup code is one more `Carrier`, recognized before the links, and the
-// paste box (Views/PasteViews.swift) already shows whatever `read` returns.
+// Set up with AI (SetupCode.swift) plugs in here: `read(_:codes:codeFirst:)` also
+// takes a setup code, the plain JSON a chatbot writes. The links above are still
+// found by exactly the rules above; the JSON goes to `SetupCode.read`, which turns
+// it into an ordinary `SharedSetup` (and its "Left out" notes) through the share
+// decoder. A link that isn't one of the two above never becomes a code's way in:
+// the code is read from its JSON or not at all.
 
 enum ImportPaste {
     /// More than this is refused without being read.
@@ -52,6 +55,8 @@ enum ImportPaste {
     /// How the setup arrived in the text.
     enum Carrier: Equatable {
         case web, app, bare
+        /// A share's own JSON (a .glide-settings file's text), pasted.
+        case json
     }
 
     /// Why a paste was refused (shown in the box, or a toast).
@@ -70,15 +75,47 @@ enum ImportPaste {
         case empty
         case share(SharedSetup, Carrier)
         case refused(Refusal)
+        /// A setup code (Set up with AI): the share it means, and what was left out of it.
+        case code(SetupCode.Reading)
+        /// Text read as a setup code that can't be used, and why.
+        case codeRefused(SetupCode.Problem)
 
         var share: SharedSetup? {
-            if case .share(let s, _) = self { return s }
-            return nil
+            switch self {
+            case .share(let s, _): s
+            case .code(let r): r.share
+            default: nil
+            }
         }
 
         var refusal: Refusal? {
             if case .refused(let r) = self { return r }
             return nil
+        }
+    }
+
+    /// The same, for a box that also takes a setup code (`codes`: what a code is read
+    /// against). A Glideball link in the text is read first, by the rules above, unless
+    /// the text is marked as a setup code. Text with a `{` in it is read as a code. Text
+    /// with neither: with `codeFirst` (Set up with AI's box) it's "not a setup code";
+    /// otherwise (Paste a Link…) whatever the link rules say.
+    static func read(_ text: String, codes: SetupCode.Context?, codeFirst: Bool = false) -> Reading {
+        guard let codes else { return read(text) }
+        let link = read(text)
+        if case .empty = link { return .empty }
+        let marked = text.utf8.count <= SetupCode.maxPasteBytes && text.contains(SetupCode.formatMarker)
+        if case .share = link, !marked { return link }
+        let brace = text.utf8.count <= SetupCode.maxPasteBytes && text.unicodeScalars.contains("{")
+        // A link Glideball won't open says so, unless there's JSON to read instead.
+        let quietLink = link.refusal == .noLink || link.refusal == .tooLong
+        guard brace || (codeFirst && quietLink) else { return link }
+        switch SetupCode.read(text, codes) {
+        case .success(.code(let r)): return .code(r)
+        case .success(.share(let s)): return .share(s, .json)
+        case .failure(let p):
+            if (p == .notJSON || p == .notASetup), !quietLink { return link }
+            if !codeFirst, !marked, p == .notJSON || p == .notASetup, quietLink { return link }
+            return .codeRefused(p)
         }
     }
 

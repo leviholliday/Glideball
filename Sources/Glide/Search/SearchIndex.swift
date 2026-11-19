@@ -304,6 +304,12 @@ enum SearchIndex {
             PaletteRouter.close()
             AppModel.shared.openPasteBox()
         })
+        out.append(PaletteItem(id: "app:set-up-with-ai", group: .actions, title: Findable.setUpWithAI.title,
+                               detail: Findable.setUpWithAI.detail, keywords: Findable.setUpWithAI.keywords,
+                               symbol: Findable.setUpWithAI.symbol) {
+            PaletteRouter.close()
+            AppModel.shared.showAISetup()
+        })
         // Share… for each part (an app's setup is shared from its row on the Apps page).
         for kind in ShareKind.choosable {
             out.append(PaletteItem(id: "app:share-\(kind.rawValue)", group: .actions, title: PageShareMenu.menuTitle(kind),

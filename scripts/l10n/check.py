@@ -90,6 +90,7 @@ COMPONENTS: dict[str, set] = {
     "ActionRow": {"title", "hint"},      # SheetComponents
     "icon": {"label"},                   # AppIconChoice (IconChoicePrompt)
     "link": {1},                         # AboutView
+    "bullet": {0},                       # SetupWithAIView (What’s in it)
 }
 
 # Interpolations that are Int (→ %lld). Everything else is %@ unless it has

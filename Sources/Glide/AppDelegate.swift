@@ -214,6 +214,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     @objc private func importSettings() { showWindow(); AppModel.shared.importSettings() }
     @objc private func importFromClipboard() { showWindow(); MainActor.assumeIsolated { AppModel.shared.importFromClipboard(quiet: false) } }
     @objc private func openPasteBox() { showWindow(); MainActor.assumeIsolated { AppModel.shared.openPasteBox() } }
+    @objc private func openAISetup() { showWindow(); MainActor.assumeIsolated { AppModel.shared.showAISetup() } }
 
     /// View › Search… (⌘K, ⌘F): the search palette over the main window.
     @objc func openSearch(_ sender: Any?) { MainActor.assumeIsolated { CommandPalette.shared.toggle() } }
@@ -605,6 +606,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                          action: #selector(importFromClipboard), keyEquivalent: "").target = self
         fileMenu.addItem(withTitle: String(localized: "Paste a Link…", comment: "File menu and the Import menu: opens the box a shared link is pasted into"),
                          action: #selector(openPasteBox), keyEquivalent: "").target = self
+        fileMenu.addItem(withTitle: String(localized: "Set Up with AI…", comment: "File menu and the Import menu: opens Set up with AI (copy a prompt for a chatbot, paste back its setup code)"),
+                         action: #selector(openAISetup), keyEquivalent: "").target = self
         fileMenu.addItem(.separator())
         AppShortcuts.addItem("close", title: String(localized: "Close Window"), action: #selector(NSWindow.performClose(_:)), to: fileMenu, target: nil)
         fileItem.submenu = fileMenu

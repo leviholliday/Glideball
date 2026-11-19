@@ -190,6 +190,79 @@ The rule:
 
 `scripts/import-sim` ("Pasting") checks every case above, plus 2,000 mangled messages.
 
+## Setup codes (Set up with AI)
+
+Glideball has no AI in it and sends nothing anywhere. Set up with AI copies a prompt (built by
+`AIReference.swift` at copy time) that the person pastes into any chatbot; the chatbot ends with a
+**setup code**, plain JSON the person pastes back into the same paste box. A chatbot can't write the
+link (it can't deflate), and it gets key codes, modifier masks and bundle IDs wrong, so a code is
+this format with a thinner skin. `SetupCode.swift` and `SetupCodeReader.swift` turn it into an
+ordinary `SharedSetup`, which is written out and read back through `SharedSetup.decode(json:)`; from
+there it's the same clamps, `ImportSafety`, preview, backup checkpoint ("Before AI setup") and Undo
+as any share. Only the app reads codes; the website doesn't.
+
+```json
+{"format": "glideball-ai-setup", "version": 1,
+ "trackingSpeed": 6,
+ "scroll": {"scrollMode": "follow", "scrollDistance": 18},
+ "buttons": {"2": "keys:cmd+w",
+             "3": {"gesture": {"left": "keys:ctrl+left", "right": "keys:ctrl+right",
+                               "down": {"more": {"left": "media:previous", "right": "media:next"}},
+                               "tap": "back", "show": "afterPause", "ring": "volume"}}},
+ "combos": [{"buttons": [2, 3], "action": "open:Notes"}, {"buttons": [1, 3], "remove": true}],
+ "apps": [{"app": "Safari", "buttons": {"2": "keys:cmd+t"}}],
+ "look": {"theme": "ocean"},
+ "sounds": {"volume": 0.5}}
+```
+
+What's different from a share:
+
+- **Actions are short text**: `system leftClick rightClick middleClick back forward disabled
+  precisionHold precisionToggle ballScrollHold dragLock switcher`, `keys:<mods+key>`,
+  `holdKeys:<mods+key>`, `click:<mods+left|right|middle>`, `media:<playPause|next|previous|volumeUp|volumeDown|mute>`,
+  `open:<app name or bundle ID>`, or `{"gesture": {…}}` / `{"switcher": {"tap": action}}`. Modifiers
+  are `cmd ctrl opt shift fn` (and their long names); a key is one of `SetupKeys.fixed`, `key<0–127>`,
+  or the character the key types on this Mac's layout (the US one when it can't be found), so
+  `keys:cmd+a` presses the key that types A here. A shortcut needs a real key. The share format's own
+  `{"shortcut":{"_0":…}}` is not read in a code at all (so a spoofed `keyName` never gets in).
+- **Apps by name**, found on this Mac through Launch Services (`InstalledApps`), or by the exact bundle
+  ID of an app already in the person's setup. Never guessed: an app that isn't found is left out.
+- **Only what changes.** `parts` is worked out from the fields there. `scroll` and `sounds` are laid
+  over the person's current values, and so are an app setup's areas, its buttons, and the combos (a
+  combo for the same buttons replaces that one, `"remove": true` takes one away). `null` on an app
+  setup's area hands it back to the main setup. A code can't delete an app setup.
+- **Never read from a code**: button 0 (the primary button), `from`, `writtenBy`, `displaySpeeds`,
+  global shortcuts, the pause switch, a whole settings object (`config`), and a Switcher's `hidden`
+  (the apps it already hides stay hidden). Each is listed as left out if it's there.
+- **Nothing is left out quietly.** Every value that can't be used (wrong type, unknown action, key,
+  app or setting, a gesture inside a gesture, something held on a direction, a More's way back)
+  becomes a `Note`: shown in the preview's "Left out" section, and in **Copy Note for the AI**, an
+  English note built from fixed text plus the code's own words cleaned and cut to 80 characters.
+
+Finding the code (`SetupCode.object(in:)`): at most 256 KB of text; the `{…}` around the last
+`"glideball-ai-setup"` first, then the biggest blocks; read as it is, then tidied (curly quotes
+straightened, `//` and `/* */` comments and trailing commas dropped, never inside a string); at most
+64 KB of JSON, nested at most 32. A code that starts and never ends says it's cut off. Text that's a
+share's own JSON goes to the share decoder as it is.
+
+In the paste box (`ImportPaste.read(_:codes:codeFirst:)`): a Glideball link in the text is still
+found by the link rules above, unless the text is marked as a code. A code wrapped in or beside a
+link (`https://glideball.netlify.app/s/#{…}`, `glideball://pause {…}`, a look-alike host) is read
+from its JSON, as a chatbot's, and never runs anything. ⌘V on the window with a marked code opens
+Set up with AI with it in the box; Paste a Link… takes a code too and shows the usual preview,
+labelled "Written by a chatbot".
+
+There is no action that runs a command, a script or a file (`SetupCode.isSettingsOnly` is an
+exhaustive switch over `ButtonAction`, so a new action can't be added without deciding).
+`scripts/import-sim` ("Setup codes", "The prompt", "The paste box") checks: every action and preset
+written and read back, every key on a US and a French layout, the reference against the model (every
+action, range, default, enum case and setting), the person's setup round-tripping with nothing
+private in it, nine golden codes as chatbots write them (`fixtures/setup-codes/`), hostile ones
+(huge, deep, wrong types, control and bidi characters, spoofed key names, paths and commands as app
+names, codes pretending to be links) and 7,500 fuzzed ones: nothing may change the primary button,
+the pause switch, global shortcuts or per-display speeds, and every Open or shortcut is marked in the
+preview.
+
 ## Beta 12 shares (still read)
 
 `kind` was one of these, with `version`, `format`, `writtenBy` and only that part's fields. Each is

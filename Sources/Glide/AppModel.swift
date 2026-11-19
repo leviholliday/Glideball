@@ -104,6 +104,10 @@ final class AppModel {
     var showingFeedback = false
     /// The About & Help sheet over the main window.
     var showingAbout = false
+    /// "Set up with AI" over the main window (AppModel+AISetup.swift).
+    var showingAISetup = false
+    /// Where that sheet is and what's in its box, kept for the launch so closing it loses nothing.
+    let aiSetup = AISetupFlow()
     /// The Welcome Tour over the main window (see WelcomeTour.swift).
     var showingWelcomeTour = false
     /// The "A small favor" card over the main window (see `showNextPrompt()`).

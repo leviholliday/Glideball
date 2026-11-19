@@ -1,0 +1,13 @@
+Great, here's where we landed. Earlier I suggested this:
+
+```json
+{"format": "glideball-ai-setup", "version": 1, "trackingSpeed": 9}
+```
+
+but you said 9 felt twitchy, so I've brought it down. A setting looks like {"scrollMode": "follow"} inside "scroll". The final code:
+
+```json
+{"format": "glideball-ai-setup", "version": 1, "trackingSpeed": 6, "scroll": {"reverseScroll": true}}
+```
+
+Copy the code, go back to Glideball and paste it.
