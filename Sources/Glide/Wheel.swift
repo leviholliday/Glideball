@@ -258,6 +258,9 @@ struct WheelOverlayModel: Equatable {
     var dot: CGPoint
     /// The ring job's readout, once the ring has been turned this hold.
     var ring: RingReadout?
+    /// For drawing only: how far from the middle a place lights, as a share of the reach (the
+    /// same scale as `dot`). The overlay's beam grows toward it.
+    var selectAt: CGFloat = 0.4
 
     enum Slot: Equatable {
         case action(ButtonAction)
@@ -292,6 +295,7 @@ extension WheelHold {
         if level != nil, let first { m.behind = Self.slots(first, eight: eight, back: nil) }
         if armed, let s = selected, opens(s) { m.opening = s }
         m.pulse = pulse
+        if geometry.reach > 0 { m.selectAt = CGFloat(geometry.select / geometry.reach) }
         return m
     }
 

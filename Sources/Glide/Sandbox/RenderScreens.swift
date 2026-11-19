@@ -526,6 +526,54 @@ extension RenderUI {
         add("ring-overlay-readout", "Gestures ring", "A blind hold (Never) turning the volume: only the ring job's readout") { dark, scale in
             wheelOverlay(readout, busy: false, dark: dark, scale: scale)
         }
+        // The ring's motion, a moment of each held still (a picture has no clock): the entrance
+        // about 0.1 s in, the beam leaning before anything is lit, a run's flare, a cancel
+        // draining, and the rim dial turning with the scroll ring.
+        let restFour = WheelOverlayModel.of(ringFour, level: nil, selected: nil, dot: .zero, ring: nil)
+        let restEight = WheelOverlayModel.of(ringEight, level: nil, selected: nil, dot: .zero, ring: nil)
+        let leanFour = WheelOverlayModel.of(ringFour, level: nil, selected: nil, dot: CGPoint(x: 0.3125, y: -0.125), ring: nil)
+        let leanEight = WheelOverlayModel.of(ringEight, level: nil, selected: nil, dot: CGPoint(x: -0.25, y: 0.1875), ring: nil)
+        let litFour = WheelOverlayModel.of(ringFour, level: nil, selected: 2, dot: CGPoint(x: 0.75, y: 0), ring: nil)
+        let midEntrance = WheelEntrance(hub: 0.95, band: 0.7, chips: 0.55, wave: 0.6)
+        add("ring-overlay-rest", "Gestures ring motion", "The ring up and at rest: nothing lit, no beam, nothing moving") { dark, scale in
+            wheelOverlay(restFour, busy: false, dark: dark, scale: scale)
+        }
+        add("ring-overlay-entrance-start", "Gestures ring motion", "The entrance's first frame: the hub small and bright, the band half there, the wave leaving the pointer") { dark, scale in
+            wheelOverlay(restFour, busy: false, dark: dark, scale: scale, entrance: WheelEntrance(hub: 0.25, band: 0.15, chips: 0.08, wave: 0.12))
+        }
+        add("ring-overlay-entrance", "Gestures ring motion", "The entrance about 0.1 s in: the ring of light rolling out, the chips travelling out along their directions") { dark, scale in
+            wheelOverlay(restFour, busy: false, dark: dark, scale: scale, entrance: midEntrance)
+        }
+        add("ring-overlay-entrance-8", "Gestures ring motion", "The same moment with eight directions, on a busy desktop") { dark, scale in
+            wheelOverlay(restEight, busy: true, dark: dark, scale: scale, entrance: midEntrance)
+        }
+        add("ring-overlay-lean", "Gestures ring motion", "The beam leaning toward the roll (right and a little up) before anything is lit") { dark, scale in
+            wheelOverlay(leanFour, busy: false, dark: dark, scale: scale)
+        }
+        add("ring-overlay-lean-8", "Gestures ring motion", "Eight: the beam leaning down left, nearly at a choice") { dark, scale in
+            wheelOverlay(leanEight, busy: false, dark: dark, scale: scale)
+        }
+        add("ring-overlay-beam", "Gestures ring motion", "The beam locked onto the lit chip (Next Space): one shaft of light from the ball to the choice") { dark, scale in
+            wheelOverlay(litFour, busy: false, dark: dark, scale: scale)
+        }
+        add("ring-overlay-beam-busy", "Gestures ring motion", "The same on a busy desktop") { dark, scale in
+            wheelOverlay(litFour, busy: true, dark: dark, scale: scale)
+        }
+        add("ring-overlay-run", "Gestures ring motion", "Let go on Next Space: its chip flares and lifts outward, the rest goes grey and falls back") { dark, scale in
+            wheelOverlay(litFour, busy: false, dark: dark, scale: scale, ran: 2, exit: WheelExit(kind: .launch, fall: 0.3, sent: 0.7, gone: 0), flare: 1)
+        }
+        add("ring-overlay-run-late", "Gestures ring motion", "A moment later: only the chip that ran is left, on its way out") { dark, scale in
+            wheelOverlay(litFour, busy: false, dark: dark, scale: scale, ran: 2, exit: WheelExit(kind: .launch, fall: 0.85, sent: 1, gone: 0.35), flare: 0.3)
+        }
+        add("ring-overlay-cancel", "Gestures ring motion", "Let go in the middle: the ring drains back into the pointer, grey and quiet") { dark, scale in
+            wheelOverlay(leanFour, busy: false, dark: dark, scale: scale, exit: WheelExit(kind: .drain, fall: 0.45))
+        }
+        add("ring-overlay-dial", "Gestures ring motion", "The scroll ring turning the volume: the rim's ticks turn with it, pink where they pass the top") { dark, scale in
+            wheelOverlay(fourModel, busy: false, dark: dark, scale: scale, dial: 1)
+        }
+        add("ring-overlay-dial-8", "Gestures ring motion", "Eight, zooming, on a busy desktop: the rim dial") { dark, scale in
+            wheelOverlay(eightModel, busy: true, dark: dark, scale: scale, dial: 1)
+        }
 
         // The Switcher: its row on the Buttons page, the picker, a held Switcher, and its panel
         // on screen (made-up apps with generated icons: never what's running on this Mac).

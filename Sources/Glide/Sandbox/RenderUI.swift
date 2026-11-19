@@ -304,10 +304,19 @@ enum RenderUI {
     /// The Wheel's ring as it shows over a desktop: the real `WheelOverlayView` on a stand-in
     /// wallpaper (`busy`: a bright, many-colored one, to judge contrast), with the pointer at
     /// its centre as the stand-in pointer draws it.
-    static func wheelOverlay(_ m: WheelOverlayModel, busy: Bool, dark: Bool, scale: CGFloat) -> NSBitmapImageRep? {
+    /// The ring on screen, on a made-up desktop. A picture has no clock, so a moment of its motion
+    /// is held by hand: `entrance` (how far each part has come up), `ran` and `exit` (a release,
+    /// part-way through leaving), `flare` and `dial` (the run's bloom and the rim's pink at their peak).
+    static func wheelOverlay(_ m: WheelOverlayModel, busy: Bool, dark: Bool, scale: CGFloat, entrance: WheelEntrance = .done,
+                             ran: Int? = nil, exit: WheelExit? = nil, flare: Double = 0, dial: Double = 0) -> NSBitmapImageRep? {
         let state = WheelOverlayState()
         state.model = m
         state.shown = true
+        state.frozen = entrance
+        state.ran = ran
+        state.exit = exit
+        state.frozenFlare = flare
+        state.frozenDial = dial
         let size = WheelLayout.canvas
         let wallpaper: [Color] = busy
             ? [Color(red: 1.0, green: 0.85, blue: 0.3), Color(red: 0.95, green: 0.35, blue: 0.45), Color(red: 0.25, green: 0.65, blue: 0.95), .white]
