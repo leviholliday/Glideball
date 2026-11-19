@@ -212,6 +212,8 @@ final class GestureMachine {
         var switcher: SwitcherHold?
         /// Esc, another trackball button or the ring's overlay lost: nothing more runs this hold.
         var dismissed = false
+        /// Runs of repeating places on the ring this hold (the overlay pulses the chip on each).
+        var ringRuns = 0
         /// The ring job: turned this hold (then no tap), how many steps, the last one.
         var ringUsed = false
         var ringSteps = 0
@@ -249,8 +251,9 @@ final class GestureMachine {
         guard let h = hold else { return false }
         return h.switcher != nil || h.gesture.takesRing
     }
-    /// A ring that just opened or came back, not armed yet (the engine looks again every so often).
-    var wheelSettling: Bool { hold?.wheel.map { !$0.armed && !$0.dismissed } ?? false }
+    /// A ring waiting on time alone: settling after More or Back, a lit More or Back about to open,
+    /// a careful ring's repeating place about to start (the engine looks every 50 ms and calls `wheelTick`).
+    var wheelWaiting: Bool { hold?.wheel?.waiting ?? false }
     /// An After a pause hold still waiting for its pause (the engine looks again every so often).
     var waitsForPause: Bool {
         guard let h = hold else { return false }
@@ -306,8 +309,11 @@ final class GestureMachine {
     }
 
     /// The ring for this hold at `level` (nil: the first one), centred where the ball is now.
-    private static func ring(_ h: Hold, level: Int?) -> WheelHold {
-        var w = WheelHold(level: level, steps: h.gesture.steps(level: level), eight: h.gesture.eight, geometry: WheelGeometry(h.tuning))
+    /// `careful`: a More's ring, or the first one after Back (`WheelHold.careful`).
+    private static func ring(_ h: Hold, level: Int?, careful: Bool = false) -> WheelHold {
+        var w = WheelHold(level: level, steps: h.gesture.steps(level: level), eight: h.gesture.eight,
+                          geometry: WheelGeometry(h.tuning, careful: careful))
+        w.careful = careful
         w.travel = h.travel
         w.rawX = h.dx
         w.rawY = h.dy
@@ -384,20 +390,56 @@ final class GestureMachine {
             w.revealed = true
             Self.place(&w, dx: h.dx - h.ox, dy: h.dy - h.oy)
             w.selected = w.geometry.pick(x: w.x, y: w.y, current: nil, filled: w.selectable)
+            w.litSince = now
             h.wheel = w
         }
-        if var w = h.wheel, !w.revealed, now - h.start >= WheelHold.revealDelay {
+        if var w = h.wheel, !w.revealed, !w.quiet, now - h.start >= WheelHold.revealDelay {
             w.revealed = true
             h.wheel = w
         }
-        // A ring settling after More or Back arms once the hand has been at rest.
-        h.wheel?.armIfRested(quietFor: now - h.lastMove, now: now)
         hold = h
         let readout = h.ringUsed ? h.lastRingClockwise.map { WheelOverlayModel.RingReadout(job: h.gesture.ring, clockwise: $0, steps: h.ringSteps) } : nil
-        if let w = h.wheel { return w.overlay(readout: readout) }
+        if let w = h.wheel { return w.overlay(readout: readout, first: h.gesture.steps(level: nil), pulse: h.ringRuns) }
         guard let readout, !h.dismissed, !h.readoutLost else { return nil }
         return WheelOverlayModel(slots: Array(repeating: nil, count: 8), eight: h.gesture.eight, showsRing: false,
                                  selected: nil, dot: .zero, ring: readout)
+    }
+
+    /// What only time brings to a ring (the engine calls this every 50 ms while `wheelWaiting`):
+    /// a ring settling after More or Back arms once the hand has rested; a lit More or Back that
+    /// has stayed lit `WheelHold.confirmDwell` opens; a careful ring's lit repeating place that has
+    /// stayed lit `WheelHold.repeatDwell` starts (and goes on as you roll, as any repeating place).
+    func wheelTick(now: Double) -> [GestureEffect] {
+        guard var h = hold, var w = h.wheel, !w.dismissed, !h.dismissed else { return [] }
+        w.armIfRested(quietFor: now - h.lastMove, now: now)
+        var effects: [GestureEffect] = []
+        if w.armed, let s = w.selected {
+            if w.opens(s) {
+                if w.confirmed(now: now) { Self.open(&h, &w, s, now: now) }
+            } else if w.careful, w.running == s, !w.runStarted, now - w.litSince >= WheelHold.repeatDwell,
+                      let step = w.steps[s], step.repeats, let action = step.firable {
+                w.runStarted = true
+                w.runProgress = 0
+                effects = Self.repeatFire(&h, action, place: s, now: now)
+            }
+        }
+        h.wheel = w
+        hold = h
+        return effects
+    }
+
+    /// Opens the lit More (its ring, in place) or goes Back (the first ring), settling either way.
+    private static func open(_ h: inout Hold, _ w: inout WheelHold, _ s: Int, now: Double) {
+        if s == w.back {
+            // Back: the first ring again, in its middle, nothing lit, careful from now on, and the
+            // roll that got here can't carry on into it.
+            w = ring(h, level: nil, careful: true)
+        } else {
+            // More: its ring opens in place, centred where the first one was, settling the same way.
+            w = ring(h, level: s, careful: true)
+        }
+        w.revealed = true
+        w.settle(cameFrom: s, now: now)
     }
 
     /// One report from the scroll ring while something is held: the Switcher's highlight, or a
@@ -474,36 +516,35 @@ final class GestureMachine {
         w.rawX += dx
         w.rawY += dy
         w.travel = h.travel
-        if w.travel >= w.geometry.tapSlop { w.revealed = true }
+        if w.travel >= w.geometry.tapSlop, !w.quiet { w.revealed = true }
         // Just opened or came back: nothing moves, lights or runs until it's armed.
         guard w.armed || w.arm(dx: dx, dy: dy, quietFor: quietFor, now: now) else { return [] }
         place(&w, dx: w.x + dx, dy: w.y + dy)
         guard !w.dismissed else { return [] }
         let before = w.selected
         w.selected = w.geometry.pick(x: w.x, y: w.y, current: w.selected, filled: w.selectable)
-        guard let s = w.selected else { w.running = nil; return [] }
+        guard let s = w.selected else { w.running = nil; w.runStarted = false; return [] }
         if s != before {
             w.running = nil
-            if s == w.back {
-                // Back through the centre to where you came from: the first ring again, in its
-                // middle, nothing lit, and the roll that got here can't carry on into it.
-                let way = s
-                w = ring(h, level: nil)
-                w.revealed = true
-                w.settle(cameFrom: way, now: now)
-                return []
-            }
-            if w.level == nil, w.steps[s]?.isMore == true {
-                // More: its ring opens in place, centred where the first one was, settling the same way.
-                w = ring(h, level: s)
-                w.revealed = true
-                w.settle(cameFrom: s, now: now)
+            w.runStarted = false
+            w.litSince = now
+            // More and Back only light: they open once they've stayed lit a moment, or the roll
+            // goes on out (`WheelHold.confirmed`), never just for crossing into them (beta 32).
+            if w.opens(s) {
+                if w.confirmed(now: now) { open(&h, &w, s, now: now) }
                 return []
             }
             guard let step = w.steps[s], step.repeats, let action = step.firable else { return [] }
             w.running = s
             w.runProgress = 0
+            // A careful ring's repeating place only lights; rolling on its way (or staying) starts it.
+            if w.careful { return [] }
+            w.runStarted = true
             return repeatFire(&h, action, place: s, now: now)
+        }
+        if w.opens(s) {
+            if w.confirmed(now: now) { open(&h, &w, s, now: now) }
+            return []
         }
         guard w.running == s, let step = w.steps[s], step.repeats, let action = step.firable else { return [] }
         let v = GestureDirection(place: s).vector
@@ -511,6 +552,7 @@ final class GestureMachine {
         guard w.runProgress >= h.tuning.step else { return [] }
         // Steps consumed whether or not they fire: faster than the rate limit is dropped, not queued.
         w.runProgress = w.runProgress.truncatingRemainder(dividingBy: h.tuning.step)
+        w.runStarted = true
         return repeatFire(&h, action, place: s, now: now)
     }
 
@@ -518,15 +560,23 @@ final class GestureMachine {
         guard now - h.lastFire >= h.tuning.minRepeatInterval else { return [] }
         h.lastFire = now
         h.fired += 1
+        h.ringRuns += 1
         return [.ringRepeat(action, place: place)]
     }
 
-    /// Opens the More in `direction` from a blind hold: its ring comes up in place (a More ring
-    /// always shows, whatever Show the ring says), centred where the ball is now.
-    private static func openMore(_ h: inout Hold, _ direction: GestureDirection, now: Double) {
-        var w = ring(h, level: direction.place)
-        w.revealed = true
-        w.settle(cameFrom: direction.place, now: now)
+    /// A blind hold rolled into a More (`rx`, `ry` from where the roll started): the first ring
+    /// comes into play with More lit, the point where the roll got to. More opens the way it does on
+    /// a showing ring: after staying on it a moment, or rolling on further (beta 32; before, crossing
+    /// the distance opened it at once). With Show the ring: Never, the first ring stays hidden and only
+    /// the More's ring shows (a More ring always shows).
+    private static func lightMore(_ h: inout Hold, _ direction: GestureDirection, rx: Double, ry: Double, now: Double) {
+        var w = ring(h, level: nil)
+        w.quiet = h.gesture.show == .never
+        w.revealed = !w.quiet
+        place(&w, dx: rx, dy: ry)
+        w.selected = direction.place
+        w.litSince = now
+        if w.confirmed(now: now) { open(&h, &w, direction.place, now: now) }
         h.wheel = w
     }
 
@@ -586,16 +636,16 @@ final class GestureMachine {
         let dominance = h.direction == nil ? t.dominance : t.chainDominance
         guard major >= t.commit, major >= dominance * minor || major >= t.commit * t.forceCommitFactor else { return [] }
         let step = h.gesture[way]
+        if step?.isMore == true {
+            lightMore(&h, way, rx: rx, ry: ry, now: now)
+            return []
+        }
         h.ox = h.dx
         h.oy = h.dy
         h.peak = horizontal ? h.dx : h.dy
         h.direction = way
         h.continuous = step?.repeats == true
         h.lastCross = now
-        if step?.isMore == true {
-            openMore(&h, way, now: now)
-            return []
-        }
         guard let step, let action = step.firable, !(step.once && h.spent.contains(way)),
               now - h.lastFire >= t.minRepeatInterval else { return [] }
         if step.once { h.spent.insert(way) }
@@ -662,16 +712,16 @@ final class GestureMachine {
         let margin = h.direction == nil ? 10.0 : 8.0
         let next = ranked.count > 1 ? WheelGeometry.gap(angle, ranked[1].place) : 180
         guard WheelGeometry.gap(angle, best.place) + margin <= next || r >= t.commit * t.forceCommitFactor else { return [] }
+        if step.isMore {
+            lightMore(&h, best, rx: rx, ry: ry, now: now)
+            return []
+        }
         h.ox = h.dx
         h.oy = h.dy
         h.peak = 0
         h.direction = best
         h.continuous = step.repeats
         h.lastCross = now
-        if step.isMore {
-            openMore(&h, best, now: now)
-            return []
-        }
         guard let action = step.firable, !(step.once && h.spent.contains(best)),
               now - h.lastFire >= t.minRepeatInterval else { return [] }
         if step.once { h.spent.insert(best) }
