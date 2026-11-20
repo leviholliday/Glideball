@@ -151,9 +151,16 @@ final class BackupStore {
         }
         do {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            var url = folder.appendingPathComponent(Self.fileName(for: now(), kind: kind))
+            // Names carry whole seconds, and the list is ordered by them. Two backups in the same
+            // second (an import's checkpoint, then Undo Last Import's "before restore") would tie,
+            // and either could come out as the newest, so a new one is always stamped after it.
+            var date = now()
+            if let newest = backups.first?.date, newest.timeIntervalSince(date) > -1, newest.timeIntervalSince(date) < 5 {
+                date = newest.addingTimeInterval(1)
+            }
+            var url = folder.appendingPathComponent(Self.fileName(for: date, kind: kind))
             if FileManager.default.fileExists(atPath: url.path) {   // two in the same second
-                url = folder.appendingPathComponent(Self.fileName(for: now().addingTimeInterval(1), kind: kind))
+                url = folder.appendingPathComponent(Self.fileName(for: date.addingTimeInterval(1), kind: kind))
             }
             try Self.encode(config).write(to: url, options: .atomic)
             newestConfig = (url, config)
