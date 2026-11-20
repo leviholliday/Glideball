@@ -232,6 +232,7 @@ struct MenuBarPanelView: View {
                         .truncationMode(.middle)
                 }
             }
+            AIAppsCountdown()   // while "Allow AI apps" is on: how long it has left, and Stop
 
             Hairline()
 

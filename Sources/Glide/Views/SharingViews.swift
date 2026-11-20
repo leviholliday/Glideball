@@ -22,6 +22,11 @@ struct IncomingSetupSheet: View {
     @State private var chosen: Set<SharePart>
     /// The destructive shortcuts the person ticked to include. Unticked ones are left out.
     @State private var confirmed: Set<String>
+    /// An AI app's proposal opens by itself, maybe while the person is typing or clicking
+    /// somewhere else: its Apply takes a click of its own (Return doesn't press it) and
+    /// can't be clicked in the first moment it's up.
+    @State private var armed: Bool
+    static let armingDelay = 1.2
 
     init(model: AppModel, incoming: IncomingSetup, chosen: Set<SharePart>? = nil, confirmed: Set<String> = [],
          onCancel: (() -> Void)? = nil, onApply: ((Set<SharePart>?, Set<String>) -> Void)? = nil) {
@@ -31,6 +36,7 @@ struct IncomingSetupSheet: View {
         self.onApply = onApply
         _chosen = State(initialValue: chosen ?? Set(incoming.parts))
         _confirmed = State(initialValue: confirmed)
+        _armed = State(initialValue: incoming.proposal == nil || Sandbox.isActive)
     }
 
     private var isShare: Bool { incoming.share != nil }
@@ -92,6 +98,11 @@ struct IncomingSetupSheet: View {
         }
         .frame(width: 580)
         .background(GlideBackground(anchor: UnitPoint(x: 0.2, y: -0.1), strength: 0.7))
+        .task {
+            guard !armed else { return }
+            try? await Task.sleep(for: .seconds(Self.armingDelay))
+            armed = true
+        }
     }
 
     private func binding(_ part: SharePart) -> Binding<Bool> {
@@ -142,7 +153,7 @@ struct IncomingSetupSheet: View {
     }
 
     private var symbol: String {
-        if incoming.source == .aiCode { return "text.bubble" }
+        if incoming.source.isAI { return "text.bubble" }
         switch incoming.content {
         case .kensingtonWorks: return "arrow.down.left.arrow.up.right"
         case .shared(let s): return s.kind.symbol
@@ -203,8 +214,8 @@ struct IncomingSetupSheet: View {
             }
             .buttonStyle(.borderedProminent)
             .tint(Theme.ball)
-            .keyboardShortcut(.defaultAction)
-            .disabled(nothing)
+            .keyboardShortcut(incoming.proposal == nil ? .defaultAction : nil)
+            .disabled(nothing || !armed)
         }
         .controlSize(.large)
     }

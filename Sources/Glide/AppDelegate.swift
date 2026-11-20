@@ -56,6 +56,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         watchModes()
         startHotKeys()
         ExternalControlCenter.shared.start()   // status.json, if "Allow Raycast and scripts" is on
+        AIAppsCenter.shared.start()   // "Allow AI apps" always starts off; a socket file a crash left goes
         // The other half of an automatic update: start as quietly as the old version left
         // (no window, no animation, no chime), and put the window back if it was open.
         var quietAfterUpdate = false, restoreWindow = false
@@ -234,6 +235,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         MainActor.assumeIsolated { TryPreview.shared.revert(.quit) }
         AppModel.shared.tryOn.end(.quit)   // (a tried-on preset was never saved: this just tidies up)
         ExternalControlCenter.shared.stop()   // status.json goes with the app
+        AIAppsCenter.shared.turnOff()   // and so does the AI apps socket file
         AppModel.shared.engine.releaseHeldKeys()
         AppModel.shared.engine.releaseAll()
         AppModel.shared.engine.handBackPointer()   // after releaseAll, which re-applies Glide's speed
@@ -242,13 +244,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
 
     /// `activating: false` puts the window back after an automatic update without bringing
     /// Glideball to the front.
-    func showWindow(activating: Bool = true) {
+    func showWindow(activating: Bool = true, inFront: Bool = false) {
         makeWindow()
         guard !Sandbox.isActive else { return }   // `--self-test` builds the window but never shows it
         let opening = window?.isVisible != true
         if activating {
             window?.makeKeyAndOrderFront(nil)
             NSApp.activate()
+        } else if inFront {
+            // An AI app's proposal: where the person can see it, without taking the keyboard
+            // from whatever they're typing in.
+            window?.orderFrontRegardless()
         } else {
             window?.orderFront(nil)
         }

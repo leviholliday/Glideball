@@ -29,6 +29,18 @@ struct IncomingSetup: Identifiable {
         case aiCode
         /// A shared setup's own text, pasted into the same box.
         case pasted
+        /// A setup code an AI app on this Mac proposed while "Allow AI apps" was on
+        /// (AIApps.swift). The text is the name the app gave for itself: shown as that, never
+        /// trusted, and like a chatbot's code it never shows a sender's name.
+        case aiApp(String)
+
+        /// Written by an AI: a chatbot's code that was pasted, or an AI app's proposal.
+        var isAI: Bool {
+            switch self {
+            case .aiCode, .aiApp: true
+            default: false
+            }
+        }
     }
 
     enum Content {
@@ -41,6 +53,8 @@ struct IncomingSetup: Identifiable {
     let content: Content
     /// What a setup code asked for that Glideball left out, and why (Set up with AI).
     var leftOut: [SetupCode.Note] = []
+    /// The AI app's proposal this is (`AIAppsService`), so Apply and Cancel can say what became of it.
+    var proposal: String?
 
     /// The parts a share holds (none for KensingtonWorks, which is all or nothing).
     var parts: [SharePart] {
@@ -78,11 +92,12 @@ struct IncomingSetup: Identifiable {
 
     /// The sender's name as they typed it (never checked), if they sent it. Never for a
     /// chatbot's code.
-    var from: String? { source == .aiCode ? nil : share?.from }
+    var from: String? { source.isAI ? nil : share?.from }
 
     /// The headline: "A shared scroll feel", "Settings from KensingtonWorks".
     var title: String {
         if source == .aiCode { return String(localized: "A setup from a chatbot", comment: "Import preview title: a setup code a chatbot wrote (Set up with AI)") }
+        if case .aiApp = source { return String(localized: "A setup from an AI app", comment: "Import preview title: a setup an AI app on this Mac proposed (Allow AI apps)") }
         switch content {
         case .kensingtonWorks: return String(localized: "Your KensingtonWorks settings", comment: "Import preview title")
         case .shared(let s):
@@ -116,6 +131,12 @@ struct IncomingSetup: Identifiable {
         case .aiCode: String(localized: "Written by a chatbot. Check it like you’d check anything from someone else. Nothing has changed yet.",
                              comment: "Import preview: where a setup code came from (Set up with AI)")
         case .pasted: String(localized: "From what you pasted. Nothing has changed yet.", comment: "Import preview: a shared setup pasted as text")
+        case .aiApp(let name):
+            name.isEmpty
+                ? String(localized: "Sent by an AI app on this Mac. Check it like you’d check anything from someone else. Nothing has changed yet.",
+                         comment: "Import preview: a setup an AI app proposed (Allow AI apps), when the app gave no name")
+                : String(localized: "Sent by an AI app on this Mac that calls itself “\(name)”. Glideball hasn’t checked that name. Check the setup like you’d check anything from someone else. Nothing has changed yet.",
+                         comment: "Import preview: a setup an AI app proposed (Allow AI apps); %@ is the name the app gave for itself, which nobody verifies")
         case .kensingtonWorks:
             if case .kensingtonWorks(let k) = content {
                 String(localized: "Found on this Mac, for your \(k.deviceName). Glideball only reads them; KensingtonWorks’ files stay as they are.",
@@ -339,6 +360,7 @@ extension AppModel {
 
     /// Cancel (or Escape): nothing changes.
     func cancelIncoming() {
+        if let proposal = pendingIncoming?.proposal { AIAppsCenter.shared.resolved(proposal, applied: nil) }
         pendingIncoming = nil
         lastIncomingClosed = ProcessInfo.processInfo.systemUptime
     }
@@ -349,7 +371,24 @@ extension AppModel {
         guard let incoming = pendingIncoming else { return }
         pendingIncoming = nil
         lastIncomingClosed = ProcessInfo.processInfo.systemUptime
-        apply(incoming, parts: chosen, confirmed: confirmed)
+        guard let proposal = incoming.proposal else {
+            apply(incoming, parts: chosen, confirmed: confirmed)
+            return
+        }
+        // An AI app's proposal: only while it's still the one waiting and Allow AI apps is
+        // still on (checked now, not when the sheet opened).
+        guard AIAppsCenter.shared.isWaiting(proposal) else {
+            show(.init(symbol: "clock", text: String(localized: "The AI app’s suggestion was taken down. Nothing changed.",
+                                                     comment: "Toast when a proposal from an AI app expired or Allow AI apps went off while it waited")))
+            return
+        }
+        // What it's told afterwards: the parts that changed something, and how many red flags stayed out.
+        let kept = incoming.parts.filter { chosen?.contains($0) ?? true }
+        let changed = kept.filter { !changes(for: incoming, part: $0).isEmpty }
+        let flagsLeft = changed.flatMap { changes(for: incoming, part: $0) }.flatMap(\.risks)
+            .filter { $0.tier == .destructive && !confirmed.contains($0.id) }.count
+        let applied = apply(incoming, parts: chosen, confirmed: confirmed)
+        AIAppsCenter.shared.resolved(proposal, applied: applied ? changed.map(\.id) : nil, flaggedLeftOut: flagsLeft)
     }
 
     /// The same for anything that was previewed (the sheet's, or the one inside Set up with
@@ -382,7 +421,7 @@ extension AppModel {
             show(Self.nothingChangedToast(leftOut: leftOut))
             return false
         }
-        backups.checkpoint(config, kind: incoming.source == .aiCode ? .beforeAI : .beforeImport)
+        backups.checkpoint(config, kind: incoming.source.isAI ? .beforeAI : .beforeImport)
         configBeforeImport = config
         lookBeforeImport = lookChanges ? BallThemeStore.shared.look : nil
         soundsBeforeImport = soundsChange ? before : nil
@@ -394,7 +433,7 @@ extension AppModel {
         let text: String = switch incoming.content {
         case .kensingtonWorks: String(localized: "Imported your KensingtonWorks settings", comment: "Toast")
         case .shared:
-            incoming.source == .aiCode ? String(localized: "Applied your new setup", comment: "Toast: a setup code from a chatbot was applied (Set up with AI)")
+            incoming.source.isAI ? String(localized: "Applied your new setup", comment: "Toast: a setup code from a chatbot was applied (Set up with AI)")
                 : String(localized: "Applied “\(incoming.title)”", comment: "Toast; the name of a button preset")
         }
         show(.init(symbol: "arrow.down.doc.fill", text: text, action: .undoImport))
