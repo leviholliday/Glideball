@@ -203,7 +203,7 @@ extension AppModel {
     /// Everything Copy prompt copies. Built now, from the settings model and your setup as they are.
     func aiPrompt() -> String {
         AIReference.prompt(setup: aiSetupCode(), device: setupDevice, language: AppLanguage.onScreen.englishName,
-                           showApps: !aiSetup.leaveAppNamesOut, version: GlideSettingsFile.appVersion)
+                           showApps: !aiSetup.leaveAppNamesOut, version: GlideSettingsFile.appVersion, fresh: AIReference.isFresh(config))
     }
 
     /// The prompt is long enough that a small chatbot may cut it short.

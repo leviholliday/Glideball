@@ -231,13 +231,18 @@ What's different from a share:
   over the person's current values, and so are an app setup's areas, its buttons, and the combos (a
   combo for the same buttons, in any order, replaces that one's action, `"remove": true` takes one
   away). A code can't delete an app setup.
-- **`null` works in exactly three places** (the prompt's rules say the same, and import-sim checks
-  both): in an app setup, on `trackingSpeed`, `scroll`, `buttons`, `combos` or one of its buttons
-  (back to what the main setup has: for one button, the main setup's action at the time); as a
-  combo's `action` (the combo goes, like `"remove": true`); inside a gesture or a More (that place,
-  tap or setting is empty or the usual one, as if it were left out). Anywhere else (a main setup's
-  setting or button, a scroll or sound key, `look`) it's left out with a note
-  (`SetupCodeReader.nullHint`) saying where null works.
+- **`null` works in exactly three places**: in an app setup, on `trackingSpeed`, `scroll`,
+  `buttons`, `combos` or one of its buttons (back to what the main setup has: for one button, the
+  main setup's action at the time); as a combo's `action` (the combo goes, like `"remove": true`);
+  inside a gesture or a More (that place, tap or setting is empty or the usual one, as if it were
+  left out). Anywhere else (a main setup's setting or button, a scroll or sound key, `look`) it's
+  left out with a note (`SetupCodeReader.nullHint`).
+  The prompt teaches only the first (one way to say each thing: a combo goes with
+  `"remove": true`, an empty direction is left out); the reader takes the other two because
+  chatbots write them anyway. import-sim checks both the prompt's wording and the reader.
+- **A held shortcut inside a gesture** (`holdKeys:` as a direction, a More's place or the tap) is
+  read and kept, and fires as one quick press (`GestureStep.firable`); the prompt's reference says
+  so. The modes that hold (`precisionHold`, `ballScrollHold`, `dragLock`) can't be a direction.
 - **Never read from a code**: button 0 (the primary button), `from`, `writtenBy`, `displaySpeeds`,
   global shortcuts, the pause switch, a whole settings object (`config`), and a Switcher's `hidden`
   (the apps it already hides stay hidden). Each is listed as left out if it's there.

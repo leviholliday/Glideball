@@ -344,6 +344,14 @@ Receiving is the dangerous side, since any page can open the link:
   so closing it to go talk to a chatbot loses nothing. The format and its checks are in
   [SHARE-FORMAT.md](SHARE-FORMAT.md#setup-codes-set-up-with-ai); the self-test's "set up with AI" runs
   copy, paste, review, Cancel, Apply, Undo through the real model; render-ui: `ai-setup-*`.
+  The conversation rules (`AIReference.talk`, `codeRules`) say what the first message is, treat the
+  questions as things to learn and not a script, keep small oddities until they matter, and make the
+  chatbot check a code before sending it (gestures written whole, nothing lost, a one-app shortcut in
+  that app's setup); the prompt also says whether the buttons are still as Glideball came
+  (`AIReference.isFresh`). To try a prompt change against a real setup, import-sim takes
+  `GLIDE_PROMPT_FROM=<a .glide-settings file, or "fresh">` with `GLIDE_PROMPT_OUT=<file>` (writes the
+  prompt that setup would copy) and `GLIDE_READ_CODE=<a chatbot's reply>` (reads it over that setup
+  and prints what was left out and the setup afterwards).
 - Copying something to share (Copy Link, a picture's Copy, Post on, the Copy chips) is one component,
   `CopyButton` (`Views/CopyBeat.swift`): the copy happens on the click, then a ghost of what was
   copied arcs into the button (0.28 s), which pops to 108% with its icon morphing into a check and a

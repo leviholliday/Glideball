@@ -329,13 +329,21 @@ func runSetupCodeTests() {
         check(notes.map(\.path) == ["buttons.2.gesture.\(dir).more.\(back)"], "a More on \(dir): its way back isn't \(back): \(notes.map(\.path))")
     }
     // null: the code's rules say where it works; the reader does exactly that ("null works where the rules say").
+    // One way to say each thing: null is only "back to the main setup's", a combo goes with "remove": true, an empty
+    // direction is left out. (The reader still takes a null action or a null direction: tested below.)
     check(AIReference.codeRules.contains("null only works in an app setup (\"trackingSpeed\", \"scroll\", \"buttons\", \"combos\" or one button: back to the main")
-          && AIReference.codeRules.contains("as a combo's \"action\" (removes it) and inside a gesture or More (that place is empty). Elsewhere, leave the key out."),
+          && AIReference.codeRules.contains("setup's). Everywhere else, leave the key out."),
           "the rules don't say where null works")
+    check(!AIReference.codeRules.contains("(removes it)") && reference.contains("\"remove\": true} takes one away (the only way to)"), "the prompt gives two ways to remove a combo")
     check(!reference.contains("null goes back"), "the reference says something about null the rules don't")
     // The conversation: power users, a look for anything odd, the three things that matter most.
-    for line in ["ask what's working and", "never suggest something I already have", "precisionSpeed at or above trackingSpeed",
-                 "a shortcut that deletes, quits or logs out on an", "These three matter most", "A good small setup now"] {
+    for line in ["first question what's working and what to keep", "never suggest something I already have", "above trackingSpeed, a gesture direction or More that does nothing",
+                 "a shortcut that deletes, quits or logs out on", "These three matter most", "A good small setup now",
+                 "Your first message is a short hello", "keep anything odd in my setup until I've answered", "not a script",
+                 "One question at a time; two only if they belong together", "leave them unless I say the pointer feels slow or overshoots",
+                 "one concrete example", "within about ten questions", "Let me choose which way means what", "Four directions are the surest",
+                 "which parts were your guesses",
+                 "show it in red and leave it"] {
         check(AIReference.talk.contains(line), "the conversation lost \"\(line)\"")
     }
 
@@ -434,7 +442,9 @@ func runSetupCodeTests() {
     let plain = AIReference.prompt(setup: SetupCode.write(GlideConfig(), look: ShareLook(theme: "orb", custom: nil), sounds: testSounds, apps: testApps).lines,
                                    device: .expertMouse, language: "English", showApps: true, version: "2.10")
     print("  the prompt: about \(AIReference.roughTokens(fixed)) tokens before your setup, \(AIReference.roughTokens(plain)) with a fresh one, \(AIReference.roughTokens(prompt)) with a busy one")
-    check(AIReference.roughTokens(fixed) < 4_600, "the prompt's fixed text is about \(AIReference.roughTokens(fixed)) tokens")
+    // Room for the conversation rules (the first message, the hand, remembering, the check before a code); the whole
+    // prompt still has to stay comfortable for a small chatbot (next line).
+    check(AIReference.roughTokens(fixed) < 4_750, "the prompt's fixed text is about \(AIReference.roughTokens(fixed)) tokens")
     check(AIReference.roughTokens(prompt) < AIReference.comfortableTokens, "a busy setup's prompt is about \(AIReference.roughTokens(prompt)) tokens")
     // GLIDE_PROMPT_OUT=<file> writes a whole prompt (a typical setup) to read.
     if let out = ProcessInfo.processInfo.environment["GLIDE_PROMPT_OUT"] {
@@ -445,7 +455,52 @@ func runSetupCodeTests() {
         try? text.write(toFile: out, atomically: true, encoding: .utf8)
         print("  wrote a whole prompt to \(out) (about \(AIReference.roughTokens(text)) tokens)")
     }
+    // GLIDE_PROMPT_FROM=<a .glide-settings file, or "fresh"> with GLIDE_PROMPT_OUT writes the prompt that setup would copy
+    // (app setups keep their names; other apps a button opens are written as hidden).
+    if let from = ProcessInfo.processInfo.environment["GLIDE_PROMPT_FROM"], let out = ProcessInfo.processInfo.environment["GLIDE_PROMPT_OUT"],
+       let file = from == "fresh" ? GlideSettingsFile(config: GlideConfig(), exportedFrom: nil)
+                                  : FileManager.default.contents(atPath: from).flatMap({ try? GlideSettingsFile.decode($0) }) {
+        let names = Dictionary(file.config.appProfiles.map { ($0.name, $0.bundleID) }, uniquingKeysWith: { a, _ in a })
+        let text = AIReference.prompt(setup: SetupCode.write(file.config, look: ShareLook(theme: "orb", custom: nil), sounds: testSounds, apps: .fixed(names)).lines,
+                                      device: .expertMouse, language: "English", showApps: true, version: "2.10", fresh: AIReference.isFresh(file.config))
+        try? text.write(toFile: out, atomically: true, encoding: .utf8)
+        print("  wrote the prompt for \(from) to \(out) (about \(AIReference.roughTokens(text)) tokens)")
+    }
+    // GLIDE_READ_CODE=<a chatbot's reply> with GLIDE_PROMPT_FROM reads it over that setup and says what it left out and changed.
+    if let from = ProcessInfo.processInfo.environment["GLIDE_PROMPT_FROM"], let codeFile = ProcessInfo.processInfo.environment["GLIDE_READ_CODE"],
+       let reply = try? String(contentsOfFile: codeFile, encoding: .utf8),
+       let file = from == "fresh" ? GlideSettingsFile(config: GlideConfig(), exportedFrom: nil)
+                                  : FileManager.default.contents(atPath: from).flatMap({ try? GlideSettingsFile.decode($0) }) {
+        let names = Dictionary(file.config.appProfiles.map { ($0.name, $0.bundleID) }, uniquingKeysWith: { a, _ in a })
+            .merging(["Visual Studio Code": "com.microsoft.VSCode", "Google Chrome": "com.google.Chrome", "Spotify": "com.spotify.client",
+                      "DaVinci Resolve": "com.blackmagic-design.DaVinciResolve", "Safari": "com.apple.Safari"]) { a, _ in a }
+        switch SetupCode.read(reply, current: file.config, sounds: testSounds, lookIsCustom: false, apps: .fixed(names)) {
+        case .success(.code(let r)):
+            print("  read \(codeFile): left out \(r.notes.count)")
+            for n in r.notes { print("    left out \(n.path): \(n.hint)") }
+            let after = r.share.applied(to: file.config)
+            print("    after: " + SetupCode.write(after, look: ShareLook(theme: "orb", custom: nil), sounds: testSounds, apps: .fixed(names)).lines)
+        case let other: print("  read \(codeFile): not a code: \(other)")
+        }
+    }
     check(AIReference.followUp(setup: mine).contains(mine) && AIReference.followUp(setup: mine).count < mine.count + 200, "Copy my setup isn't short")
+    // The prompt says whether the buttons are still as Glideball came, so the chatbot needn't work it out.
+    var speedOnly = GlideConfig()
+    speedOnly.trackingSpeed = 9
+    check(AIReference.isFresh(GlideConfig()) && AIReference.isFresh(speedOnly) && !AIReference.isFresh(rich) && !AIReference.isFresh(typicalForFresh()),
+          "isFresh: only buttons, combos and app setups count")
+    check(AIReference.prompt(setup: "", device: .expertMouse, language: "English", showApps: true, version: "2.10", fresh: true).contains("I haven't set them up yet")
+          && prompt.contains("I've changed the buttons from how Glideball came"), "the prompt doesn't say whether the buttons are changed")
+    // Before the code goes out: the check that catches a gesture written in part, and the way back to the chat.
+    for line in ["every gesture you touch is written whole", "nothing I use is gone unless we agreed",
+                 "try it for a day or two and come back", "A first code can be small",
+                 "a shortcut that belongs to one app is in that app's setup"] {
+        check(AIReference.codeRules.contains(line), "the code's rules lost \"\(line)\"")
+    }
+    check(reference.contains("holdKeys there is pressed once, the same as keys") && reference.contains("below every app's own"), "the reference lost how held keys fire in a step, or Precision in an app")
+    check(prompt.hasSuffix("Now write your first message: a short hello, the tip about talking, and one question."), "the prompt doesn't end on the first message")
+
+    func typicalForFresh() -> GlideConfig { var c = GlideConfig(); c.chords = [Chord(buttons: [2, 3], action: .rightClick)]; return c }
 
     // MARK: A code only changes what it lists
 
@@ -532,7 +587,7 @@ func runSetupCodeTests() {
     }
     if let r = reading(code(#""apps":[{"app":"Safari","buttons":{"2":null}}]"#), over: rich, "the hint names every place null works") {
         _ = r
-        for place in ["app setup", "combo's \"action\"", "inside a gesture"] { check(SetupCodeReader.nullHint.contains(place), "the null hint doesn't name \(place)") }
+        for place in ["app setup", "\"remove\": true"] { check(SetupCodeReader.nullHint.contains(place), "the null hint doesn't name \(place)") }
     }
     if let r = reading(code(#""apps":[{"app":"Safari"},{"app":"Notes"},{"app":"Notes","trackingSpeed":2},{"app":"notes","trackingSpeed":9}]"#), over: rich, "app setups with nothing in them") {
         check(r.share.apps?.map(\.bundleID) == ["com.apple.Notes"] && r.share.apps?.first?.trackingSpeed == 2 && r.notes.count == 1, "empty or repeated app setups: \(String(describing: r.share.apps?.map(\.bundleID))) \(r.notes.map(\.hint))")

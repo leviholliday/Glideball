@@ -65,11 +65,12 @@ final class SetupCodeReader {
         leave(p.at(key), "\(key): \(SetupCode.quote(raw))", .wrongValue, raw is NSNull ? Self.nullHint : hint)
     }
 
-    /// Where null works (the reference says the same): in an app setup, for its
-    /// "trackingSpeed", "scroll", "buttons", "combos" or one of its buttons (back to the main
-    /// setup's); as a combo's "action" (the combo goes); inside a gesture or a More (that
-    /// place is empty, as if it were left out). Anywhere else it's left out with this.
-    static let nullHint = "null only works in an app setup (back to the main setup's), as a combo's \"action\" (removes it) or inside a gesture (empty); leave the key out to keep what I have"
+    /// Where null works: in an app setup, for its "trackingSpeed", "scroll", "buttons", "combos"
+    /// or one of its buttons (back to the main setup's); as a combo's "action" (the combo goes);
+    /// inside a gesture or a More (that place is empty, as if it were left out). Anywhere else
+    /// it's left out with this. The hint, like the prompt, teaches one way to say each thing:
+    /// null for "back to the main setup's", "remove": true for a combo.
+    static let nullHint = "null only works in an app setup (back to the main setup's); leave the key out to keep what I have, and use \"remove\": true to take a combo away"
 
     private func range(_ r: ClosedRange<Double>) -> String {
         "a number from \(SetupJSON.show(r.lowerBound)) to \(SetupJSON.show(r.upperBound))"
