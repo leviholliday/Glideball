@@ -97,7 +97,7 @@ struct AIAppsCountdown: View {
 enum AIAppsConnect {
     /// Renders and the self-test show where Glideball usually lives, not the sandbox copy.
     static var helperPath: String {
-        Sandbox.isActive ? "/Applications/Glideball.app/Contents/MacOS/Glideball" : (Bundle.main.executablePath ?? "")
+        Sandbox.isActive ? "/Applications/Glideball.app/Contents/MacOS/Glide" : (Bundle.main.executablePath ?? "")
     }
 
     /// For a terminal: `claude mcp add glideball -- '/Applications/Glideball.app/…/Glideball' --mcp`.
