@@ -358,7 +358,10 @@ extension AppModel {
     /// now, and its place in a gesture stays empty.
     @discardableResult
     func apply(_ incoming: IncomingSetup, parts chosen: Set<SharePart>? = nil, confirmed: Set<String> = []) -> Bool {
-        var updated = ImportReview.leavingOut(from: config, in: incoming.applied(to: config, parts: chosen), confirmed: confirmed)
+        // (Combos you already have keep their ids, so an import that changes nothing is equal
+        // to what you have, and is told apart from one that does.)
+        var updated = ImportReview.leavingOut(from: config, in: ImportReview.keepingComboIDs(from: config, in: incoming.applied(to: config, parts: chosen)),
+                                              confirmed: confirmed)
         updated.enabled = config.enabled
         updated.buttons[0] = config.buttons[0]
         let look = incoming.look(parts: chosen)
@@ -367,7 +370,16 @@ extension AppModel {
         let before = ShareSounds.current
         let soundsChange = sounds != nil && sounds != before
         guard updated != config || lookChanges || soundsChange else {
-            show(.init(symbol: "checkmark.circle.fill", text: String(localized: "Your settings already match")))
+            // Nothing to do. "Already match" is only true when all of it matches: when what
+            // would have changed was left out (a red flag or a part unticked, or something
+            // the reader left out of a chatbot's code), the toast says that instead.
+            var all = ImportReview.keepingComboIDs(from: config, in: incoming.applied(to: config))
+            all.enabled = config.enabled
+            all.buttons[0] = config.buttons[0]
+            let allLook = incoming.look(), allSounds = incoming.sounds()
+            let leftOut = all != config || (allLook != nil && allLook != BallThemeStore.shared.look)
+                || (allSounds != nil && allSounds != before) || !incoming.leftOut.isEmpty
+            show(Self.nothingChangedToast(leftOut: leftOut))
             return false
         }
         backups.checkpoint(config, kind: incoming.source == .aiCode ? .beforeAI : .beforeImport)
@@ -387,6 +399,16 @@ extension AppModel {
         }
         show(.init(symbol: "arrow.down.doc.fill", text: text, action: .undoImport))
         return true
+    }
+
+    /// The toast after an import that changed nothing: it all matched already, or (`leftOut`)
+    /// everything in it that would have changed was left out.
+    static func nothingChangedToast(leftOut: Bool) -> Toast {
+        leftOut
+            ? Toast(symbol: "minus.circle.fill",
+                    text: String(localized: "Nothing changed. Everything that would have changed was left out.",
+                                 comment: "Toast after an import's Apply when every change in it was unticked or left out"))
+            : Toast(symbol: "checkmark.circle.fill", text: String(localized: "Your settings already match"))
     }
 
     /// Every setting the preview would change (all of it).

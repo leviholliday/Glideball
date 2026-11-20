@@ -397,6 +397,27 @@ enum ImportReview {
         return out
     }
 
+    /// `new` with every combo that `old` has too (the same buttons, in the main setup or the
+    /// same app's) keeping the id it has in `old`. An import makes each combo afresh, so
+    /// without this an import that changes nothing would still differ from the settings it
+    /// was laid over, and a combo's folded editor would open again.
+    static func keepingComboIDs(from old: GlideConfig, in new: GlideConfig) -> GlideConfig {
+        func keep(_ list: [Chord], _ was: [Chord]) -> [Chord] {
+            list.map { c in
+                var c = c
+                if let same = was.first(where: { $0.buttons == c.buttons }) { c.id = same.id }
+                return c
+            }
+        }
+        var out = new
+        out.chords = keep(new.chords, old.chords)
+        for i in out.appProfiles.indices {
+            guard let list = out.appProfiles[i].chords, let was = old.profile(for: out.appProfiles[i].bundleID)?.chords else { continue }
+            out.appProfiles[i].chords = keep(list, was)
+        }
+        return out
+    }
+
     // MARK: A whole settings file (Import Settings…)
 
     /// What a settings file would make of `current`, before anything flagged is left out: the
@@ -406,7 +427,7 @@ enum ImportReview {
         guard var incoming = try? file.validatedConfig() else { return nil }
         incoming = incoming.sanitizedForImport()
         incoming.enabled = current.enabled
-        return incoming
+        return keepingComboIDs(from: current, in: incoming)
     }
 
     /// The rows of going from `old` to `new` that hold a flagged shortcut (red or amber), each

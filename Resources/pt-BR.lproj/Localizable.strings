@@ -2860,3 +2860,6 @@
 
 /* Import Settings…: a whole settings file's flagged shortcuts (Views/BackupView.swift) */
 "Shortcuts in this file that are hard to take back" = "Atalhos deste arquivo que são difíceis de desfazer";
+
+/* Import toast: everything that would have changed was left out */
+"Nothing changed. Everything that would have changed was left out." = "Nada mudou. Tudo o que teria mudado ficou de fora.";

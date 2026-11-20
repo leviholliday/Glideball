@@ -377,6 +377,12 @@ Receiving is the dangerous side, since any page can open the link:
   More's diagonal inside an app setup) and, for every share, file, KensingtonWorks, golden, hostile
   and fuzzed code, that nothing destructive is left after `leavingOut` and that ticking every flag
   changes nothing.
+- **Apply with nothing to apply** says which it was (`AppModel.nothingChangedToast`): "Your settings
+  already match" only when all of it matches; when what would have changed was left out (a red flag
+  or a part unticked, something the reader left out of a code), "Nothing changed. Everything that
+  would have changed was left out." No backup and no Undo either way. An import makes every combo
+  afresh, so `ImportReview.keepingComboIDs` gives a combo you already have its id back first:
+  that's what makes "nothing changed" equal to your settings (and keeps a combo's editor folded).
 - **Amber notes** (`ImportChange.note`): a pointer speed at least twice or at most half what it was
   (main or an app's), and a Precision speed at or above the pointer speed. Glideball still takes them
   (within the sliders); the note is so a big change is no surprise, and the way back is below.

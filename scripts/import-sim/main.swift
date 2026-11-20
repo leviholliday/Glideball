@@ -710,6 +710,19 @@ do {
         check(safe.buttons[1] == old.buttons[1] && !safe.chords.contains { $0.buttons == [1, 2] } && safe.trackingSpeed == whole.trackingSpeed,
               "a settings file's unticked shortcuts were applied, or the rest wasn't")
     } else { check(false, "the settings file with flagged shortcuts didn't read (the test is wrong)") }
+    // Your own settings back as a file, or as a share, are your settings: a combo you have keeps
+    // its id, so "nothing changed" can be told from a change (an import makes each combo afresh).
+    if case .settings(let file)? = try? ImportFile.parse(encoder.encode(GlideSettingsFile(config: old, exportedFrom: "Sim"))),
+       let same = ImportReview.settingsFile(file, onto: old) {
+        check(same == old, "your own settings as a file differ from your settings")
+    } else { check(false, "your own settings as a file didn't read (the test is wrong)") }
+    let ownShare = SharedSetup.make([.pointer, .scrolling, .buttons, .combos, .gestures, .app("com.apple.Safari")], from: old, look: nil, sounds: nil)!
+    check(ownShare.applied(to: old) != old, "a share's combos aren't made afresh any more (keepingComboIDs may not be needed)")
+    check(ImportReview.keepingComboIDs(from: old, in: ownShare.applied(to: old)) == old, "your own setup as a share differs from your settings")
+    var swapped = old
+    swapped.chords[0].action = .middleClick
+    let keptIDs = ImportReview.keepingComboIDs(from: old, in: SharedSetup.make([.combos], from: swapped, look: nil, sounds: nil)!.applied(to: old))
+    check(keptIDs.chords.map(\.id) == old.chords.map(\.id) && keptIDs.chords[0].action == .middleClick, "a changed combo lost its id, or its change")
     // A file that takes an app setup away, where the app would then follow a main button
     // that's ⌘Q already: flagged for that app, and unticked the app setup stays.
     do {

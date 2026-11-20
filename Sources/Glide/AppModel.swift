@@ -753,6 +753,13 @@ final class AppModel {
     func confirmImport(confirmed: Set<String> = []) {
         guard let pending = pendingImport, let whole = incomingConfig(pending) else { return }
         let incoming = ImportReview.leavingOut(from: config, in: whole, confirmed: confirmed)
+        // The file's only changes were shortcuts left unticked: nothing to replace, and no
+        // "Imported" (or backup, or Undo) for something that didn't happen.
+        if incoming == config, whole != config {
+            pendingImport = nil
+            show(Self.nothingChangedToast(leftOut: true))
+            return
+        }
         backups.checkpoint(config, kind: .beforeImport)
         configBeforeImport = config
         lookBeforeImport = nil; soundsBeforeImport = nil

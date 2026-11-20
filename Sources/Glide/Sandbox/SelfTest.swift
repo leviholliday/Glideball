@@ -327,6 +327,45 @@ enum SelfTest {
                 if let url = URL(string: bad), case .success? = ExternalControl.parseImport(url) { throw Failure("a hostile link was accepted") }
             }
 
+            // Apply with nothing left to apply: the toast says which it was. Everything left out
+            // (here a lone ⌘Q, unticked) isn't "your settings already match"; a real match is.
+            do {
+                var quitter = before
+                quitter.buttons[2] = .shortcut(KeyShortcut(keyCode: 12, modifiers: CGEventFlags.maskCommand.rawValue))
+                let backupsNow = model.backups.backups.count
+                model.lastIncomingClosed = -.infinity
+                model.receiveShare(try unwrap(SharedSetup.make([.buttons, .combos], from: quitter, look: nil, sounds: nil), "couldn't make a share with ⌘Q"), from: .link)
+                try check(model.pendingIncoming != nil, "the ⌘Q share didn't open its preview")
+                model.applyIncoming()
+                let leftOut = AppModel.nothingChangedToast(leftOut: true), same = AppModel.nothingChangedToast(leftOut: false)
+                try check(leftOut.text != same.text, "the two toasts read the same")
+                try check(model.config == before && model.toast?.text == leftOut.text && model.toast?.action == nil
+                          && model.backups.backups.count == backupsNow && !model.canUndoImport,
+                          "everything left out: the toast said “\(model.toast?.text ?? "nothing")”, or something changed")
+                model.lastIncomingClosed = -.infinity
+                model.receiveShare(try unwrap(SharedSetup.make([.buttons, .combos], from: before, look: nil, sounds: nil), "couldn't make a share of the buttons"), from: .link)
+                try check(model.pendingIncoming != nil, "a share of your own buttons didn't open its preview")
+                model.applyIncoming()
+                try check(model.config == before && model.toast?.text == same.text, "a real match: the toast said “\(model.toast?.text ?? "nothing")”")
+                // The same for a whole settings file whose only change is that ⌘Q. (From settings
+                // as a file gives them back, so the cleaning a file gets changes nothing by itself.)
+                let cleaned = try unwrap(ImportReview.settingsFile(GlideSettingsFile(config: before), onto: before), "your own settings didn't read as a file")
+                model.config = cleaned
+                defer { model.config = before }
+                var quitFileConfig = cleaned
+                quitFileConfig.buttons[2] = quitter.buttons[2]
+                let encoder = JSONEncoder()
+                encoder.dateEncodingStrategy = .iso8601
+                let quitFile = Sandbox.folder.appendingPathComponent("Self-test quitter").appendingPathExtension(GlideSettingsFile.fileExtension)
+                try encoder.encode(GlideSettingsFile(config: quitFileConfig)).write(to: quitFile, options: .atomic)
+                model.previewImport(quitFile)
+                try check(model.pendingImport != nil, "the ⌘Q settings file didn't open the Replace preview")
+                defer { model.pendingImport = nil }
+                model.confirmImport()
+                try check(model.config == cleaned && model.pendingImport == nil && !model.canUndoImport, "a settings file with only an unticked ⌘Q changed something")
+                try check(model.toast?.text == leftOut.text, "a settings file with everything left out: the toast said “\(model.toast?.text ?? "nothing")”")
+            }
+
             // A shared file opens the same preview (and Cancel changes nothing).
             model.lastIncomingClosed = -.infinity
             let file = try unwrap(model.shareFile(share, name: "Self-test share"), "couldn't write a share file")
@@ -401,7 +440,7 @@ enum SelfTest {
             let picture = try unwrap(ShareImage.render(.setup(model.setupCard(.scrolling, link: scrollLink)), delight: model.delight), "the setup picture didn't draw")
             try check(picture.pixelsWide == 1200 && !Offscreen.isBlank(picture), "the setup picture is wrong")
             model.lastIncomingClosed = -.infinity
-            return "link and file previewed, nothing changed until Apply; checkpoint, Undo; one at a time; 3 hostile links refused; a settings file's red flags shown and left out unless ticked; KensingtonWorks previewed; Share… and its picture drawn"
+            return "link and file previewed, nothing changed until Apply; checkpoint, Undo; one at a time; 3 hostile links refused; a settings file's red flags shown and left out unless ticked; everything left out says so; KensingtonWorks previewed; Share… and its picture drawn"
         }
 
         step("pasting a shared link") {
