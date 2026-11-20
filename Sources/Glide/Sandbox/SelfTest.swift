@@ -821,27 +821,82 @@ enum SelfTest {
             model.applyIncoming(parts: nil, confirmed: [])
             try check(model.config == before && model.pendingIncoming == nil, "an expired proposal was applied")
 
-            // The 15 minutes end with a proposal up: off by itself, the sheet goes, every tool refuses.
-            now += center.service.gate.remaining - 30
+            // The 15 minutes end with a proposal up: off by itself and every tool refuses, but the
+            // proposal you're reading stays until you answer it or its own five minutes end.
+            @MainActor func nearTheEnd() throws -> String {
+                center.turnOn()
+                now += center.service.gate.remaining - 30
+                center.tick()
+                let id = try propose(["trackingSpeed": 12])["id"] as? String ?? ""
+                try check(model.pendingIncoming?.proposal == id && AIAppsService.isID(id), "the proposal didn't open near the end")
+                now += 60
+                center.tick()
+                try check(!center.isOn && center.secondsLeft == 0 && !center.service.gate.isOpen, "it didn't turn itself off after 15 minutes")
+                return id
+            }
+            @MainActor func refusesAll(_ id: String, _ when: String) throws {
+                let showing = model.pendingIncoming?.proposal
+                for tool in AIAppsTool.names {
+                    let r = try ask(tool, tool == "check_proposal" ? ["id": id] : tool == "propose_changes" ? ["setup": ["trackingSpeed": 14]] : [:])
+                    try check(!r.ok && r.text == AIAppsText.off, "\(tool) answered \(when)")
+                }
+                try check(model.pendingIncoming?.proposal == showing && model.queuedIncoming == nil && !center.isOn, "a request got in \(when)")
+            }
+            // Apply still works for it, with its checkpoint and Undo; nothing else gets in before or after.
+            id = try nearTheEnd()
+            try check(model.pendingIncoming?.proposal == id && model.config == before, "the 15 minutes ending took away a suggestion you were reading")
+            try refusesAll(id, "after it turned itself off, with the suggestion still up")
+            let kept = try unwrap(model.pendingIncoming, "a refused request took the suggestion down")
+            model.applyIncoming(parts: nil, confirmed: [])
+            try check(model.config.trackingSpeed == 12 && model.canUndoImport && model.pendingIncoming == nil && !center.isOn,
+                      "Apply didn't work for a suggestion that was up when the 15 minutes ended")
+            try refusesAll(id, "after Apply, past the 15 minutes")
+            model.undoImport()
+            try check(model.config == before, "Undo didn't put it back")
+            model.pendingIncoming = kept
+            model.applyIncoming(parts: nil, confirmed: [])
+            try check(model.config == before && model.pendingIncoming == nil, "the same suggestion was applied twice")
+            center.turnOn()
+            try check(json(try ask("check_proposal", ["id": id]))["status"] as? String == "applied", "the AI app isn't told about the Apply once it's let in again")
+            // Cancel after the end: nothing written.
+            id = try nearTheEnd()
+            model.cancelIncoming()
+            try check(model.config == before && model.pendingIncoming == nil && !center.isOn, "Cancel after the 15 minutes wrote something")
+            try refusesAll(id, "after Cancel, past the 15 minutes")
+            center.turnOn()
+            try check(json(try ask("check_proposal", ["id": id]))["status"] as? String == "declined", "Cancel after the 15 minutes isn't declined")
+            // Its own five minutes still take it down after the end, and a sheet that stayed can't apply it.
+            id = try nearTheEnd()
+            let last = try unwrap(model.pendingIncoming, "the suggestion went with the 15 minutes")
+            now += AIAppsLimits.proposalLife - 90
             center.tick()
-            id = try propose(["trackingSpeed": 12])["id"] as? String ?? ""
-            let last = try unwrap(model.pendingIncoming, "the proposal didn't open near the end")
+            try check(model.pendingIncoming?.proposal == id, "it was taken down before its five minutes were up")
             now += 60
             center.tick()
-            try check(!center.isOn && center.secondsLeft == 0 && model.pendingIncoming == nil && model.config == before, "it didn't turn itself off, or left the proposal up")
+            try check(model.pendingIncoming == nil && model.config == before && !center.isOn, "a suggestion outlived its five minutes after the 15 ended")
             model.pendingIncoming = last
             model.applyIncoming(parts: nil, confirmed: [])
-            try check(model.config == before, "a proposal was applied after Allow AI apps turned itself off")
-            for tool in AIAppsTool.names {
-                let r = try ask(tool, tool == "check_proposal" ? ["id": id] : tool == "propose_changes" ? ["setup": ["trackingSpeed": 12]] : [:])
-                try check(!r.ok && r.text == AIAppsText.off, "\(tool) answered after it turned itself off")
-            }
+            try check(model.config == before && model.pendingIncoming == nil, "a suggestion was applied after its five minutes, past the 15")
+            try refusesAll(id, "after the suggestion ran out of time, past the 15 minutes")
+            // A stop after the end (Glideball quitting, the Mac going to sleep) takes it down.
+            id = try nearTheEnd()
+            let stopped = try unwrap(model.pendingIncoming, "the suggestion went with the 15 minutes")
+            center.turnOff()
+            try check(model.pendingIncoming == nil && model.config == before, "a stop after the 15 minutes left the suggestion up")
+            model.pendingIncoming = stopped
+            model.applyIncoming(parts: nil, confirmed: [])
+            try check(model.config == before, "a suggestion was applied after a stop")
+            try refusesAll(id, "after a stop")
 
             // The person turning it off takes a waiting proposal down too; three turned down in a row turn it off.
             center.turnOn()
             _ = try propose(["trackingSpeed": 12])
+            let handOff = try unwrap(model.pendingIncoming, "the proposal didn't open")
             center.turnOff()
             try check(!center.isOn && model.pendingIncoming == nil && model.config == before, "turning it off left the proposal up")
+            model.pendingIncoming = handOff
+            model.applyIncoming(parts: nil, confirmed: [])
+            try check(model.config == before, "a proposal was applied after you turned Allow AI apps off")
             center.turnOn()
             for speed in [11, 12, 13] {
                 _ = try propose(["trackingSpeed": speed])
@@ -890,7 +945,7 @@ enum SelfTest {
             let entry = (try? JSONSerialization.jsonObject(with: Data(AIAppsConnect.json("/A \"b\"/Glideball").utf8))) as? [String: Any]
             let server = (entry?["mcpServers"] as? [String: Any])?["glideball"] as? [String: Any]
             try check(server?["command"] as? String == "/A \"b\"/Glideball" && server?["args"] as? [String] == ["--mcp"], "the settings to copy aren't valid JSON for an awkward path")
-            return "off at launch and refusing; on for 15:00, counted down; get_setup; a proposal reviewed, cancelled, applied (before AI setup, Undo), ⌘Q only with its tick, button 0 never; expiry, the window's end, Stop and three declines; nothing saved or in the stats"
+            return "off at launch and refusing; on for 15:00, counted down; get_setup; a proposal reviewed, cancelled, applied (before AI setup, Undo), ⌘Q only with its tick, button 0 never; expiry (not a decline), the 15 minutes ending with one up (it stays, Apply works, nothing else gets in), Stop and three declines; nothing saved or in the stats"
         }
 
         step("search index") {

@@ -95,7 +95,7 @@ final class FakeApp: AIAppsHost {
         guard let s = showing else { return false }
         showing = nil
         service.tick()
-        guard service.gate.isOpen, service.openProposal == s.id else { return false }   // AIAppsCenter.isWaiting
+        guard service.openProposal == s.id else { return false }   // AIAppsCenter.isWaiting
         let confirmed = tick ?? Set(changes(s.reading).flatMap(\.risks).map(\.id))
         var updated = ImportReview.leavingOut(from: config, in: ImportReview.keepingComboIDs(from: config, in: s.reading.share.applied(to: config)),
                                               confirmed: confirmed)
@@ -264,7 +264,7 @@ do {
 
 // MARK: - Cancel, expiry, the window
 
-section("Nothing is written when a proposal is cancelled, expires or outlives the switch")
+section("Cancel, five minutes, the window's end (a proposal being read stays), a stop")
 do {
     let rig = Rig()
     let before = rig.app.config
@@ -287,32 +287,120 @@ do {
     rig.app.showing = stale
     check(!rig.app.personApplies() && rig.app.config == before && rig.app.writes == 0, "an expired proposal was applied")
 
-    // The window ends with a proposal up (shown a minute before the 15 are over).
-    rig.clock += rig.gate.remaining - 60
-    id = rig.propose(code(#""trackingSpeed": 12"#)).json["id"] as? String ?? ""
-    check(AIAppsService.isID(id) && rig.app.showing != nil, "couldn't propose again after an expiry")
-    let waiting = rig.app.showing
-    rig.clock += 59
-    check(rig.gate.isOpen && rig.status(id) == "pending", "the window ended early")
-    rig.clock += 1
-    check(!rig.gate.isOpen, "the window didn't end after 15 minutes")
-    rig.service.tick()   // the app's once-a-second timer
-    check(rig.app.showing == nil && rig.app.withdrawn.last == id, "the proposal outlived the window")
-    rig.app.showing = waiting
-    check(!rig.app.personApplies() && rig.app.config == before && rig.app.writes == 0, "a proposal was applied after the window ended")
-    for (tool, args) in [("get_setup", [:]), ("check_proposal", ["id": id]), ("propose_changes", ["setup": ["trackingSpeed": 3]])] as [(String, [String: Any])] {
-        let r = rig.call(tool, args)
-        check(!r.ok && r.text == AIAppsText.off, "\(tool) answered after the window ended")
+    // The window ends with a proposal up (shown a minute before the 15 are over): the
+    // connection is over, but the person is still reading, so the proposal stays for them.
+    func nothingGetsIn(_ rig: Rig, _ id: String, _ when: String, line: UInt = #line) {
+        let (read, shown, writes) = (rig.app.setupsRead, rig.app.presented, rig.app.writes)
+        var asked: [Data] = [rig.frame("get_setup"), rig.frame("check_proposal", ["id": id]),
+                             rig.frame("propose_changes", ["setup": ["format": "glideball-ai-setup", "version": 1, "trackingSpeed": 3]]),
+                             Data(), Data("not json".utf8), Data(#"{"v":1,"tool":"apply","arguments":{}}"#.utf8)]
+        asked += Array(repeating: rig.frame("propose_changes", ["setup": ["format": "glideball-ai-setup", "version": 1, "trackingSpeed": 4]]), count: 50)
+        for f in asked {
+            rig.clock += 0.1
+            let r = rig.service.answer(f)
+            check(!r.ok && r.text == AIAppsText.off, "\(when): something answered: \(r.text.prefix(60))", line: line)
+        }
+        check(rig.app.setupsRead == read && rig.app.presented == shown && rig.app.writes == writes, "\(when): a request reached Glideball", line: line)
     }
-    check(rig.app.config == before && rig.app.writes == 0, "something was written")
+    /// A proposal shown a minute before the 15 minutes end, and then they end.
+    func outliving(_ rig: Rig, appTimer: Bool = true) -> String {
+        rig.gate.open()
+        rig.clock += rig.gate.remaining - 60
+        let id = rig.propose(code(#""trackingSpeed": 12"#)).json["id"] as? String ?? ""
+        check(AIAppsService.isID(id) && rig.app.showing?.id == id, "couldn't propose a minute before the end")
+        rig.clock += 59
+        check(rig.gate.isOpen && rig.status(id) == "pending", "the window ended early")
+        rig.clock += 1
+        check(!rig.gate.isOpen, "the window didn't end after 15 minutes")
+        rig.service.tick()   // the app's once-a-second timer...
+        if appTimer { rig.service.windowEnded() }   // ...which then closes the connection
+        return id
+    }
 
-    // Turned on again: a fresh 15 minutes, the old proposal still expired.
+    // Apply after the end works, once, and nothing else gets in before or after it.
+    for appTimer in [false, true] {
+        id = outliving(rig, appTimer: appTimer)
+        check(rig.app.showing?.id == id && !rig.app.withdrawn.contains(id) && rig.service.openProposal == id, "the window's end took down a proposal the person was reading")
+        nothingGetsIn(rig, id, "after the window ended, the proposal still up")
+        check(rig.app.showing?.id == id && rig.app.config == before, "a refused request took the proposal down, or wrote something")
+        let waiting = rig.app.showing
+        check(rig.app.personApplies() && rig.app.config.trackingSpeed == 12 && rig.app.writes == 1, "Apply after the window ended didn't apply the proposal the person was reading")
+        check(!rig.gate.isOpen && rig.app.turnedOff == 0, "Apply after the end did something to the switch")
+        nothingGetsIn(rig, id, "after Apply, past the window's end")
+        // The same sheet can't apply twice.
+        rig.app.config = before
+        rig.app.writes = 0
+        rig.app.showing = waiting
+        check(!rig.app.personApplies() && rig.app.config == before && rig.app.writes == 0, "a proposal was applied a second time")
+        // The AI app learns what happened only once the person lets it in again.
+        rig.gate.open()
+        check(rig.gate.remaining == AIAppsLimits.window && rig.status(id) == "applied", "turning it on again isn't a fresh window, or forgot the Apply")
+    }
+
+    // Cancel after the end: nothing written, declined, and not one of the three.
+    id = outliving(rig)
+    rig.app.personCancels()
+    check(rig.app.config == before && rig.app.writes == 0 && rig.app.turnedOff == 0, "Cancel after the window ended wrote something")
+    nothingGetsIn(rig, id, "after Cancel, past the window's end")
     rig.gate.open()
-    check(rig.gate.remaining == AIAppsLimits.window && rig.status(id) == "expired", "turning it on again isn't a fresh window")
+    check(rig.status(id) == "declined", "Cancel after the window ended isn't declined")
+
+    // Its own five minutes still end it after the window's end (four of them were left).
+    id = outliving(rig)
+    var stillUp = rig.app.showing
+    rig.clock += AIAppsLimits.proposalLife - 61
+    rig.service.tick()
+    check(rig.app.showing?.id == id && rig.service.openProposal == id, "it was taken down before its five minutes were up")
+    rig.clock += 1
+    rig.service.tick()
+    check(rig.app.showing == nil && rig.app.withdrawn.last == id && rig.service.openProposal == nil, "a proposal outlived its five minutes after the window ended")
+    rig.app.showing = stillUp
+    check(!rig.app.personApplies() && rig.app.config == before && rig.app.writes == 0, "a proposal was applied after its five minutes, past the window's end")
+    nothingGetsIn(rig, id, "after a proposal ran out of time, past the window's end")
+    rig.gate.open()
+    check(rig.status(id) == "expired", "it isn't expired")
+    // ...and Apply checks the time itself, whether or not a timer ran.
+    id = outliving(rig)
+    rig.clock += AIAppsLimits.proposalLife - 60
+    check(!rig.app.personApplies() && rig.app.config == before && rig.app.writes == 0 && rig.app.withdrawn.last == id, "Apply went through after five minutes with no timer")
+
+    // A deliberate stop (the Mac sleeping, Glideball quitting) after the end still takes it down.
+    id = outliving(rig)
+    stillUp = rig.app.showing
+    rig.service.closeGate()
+    check(rig.app.showing == nil && rig.app.withdrawn.last == id, "stopping after the window ended left the proposal up")
+    rig.app.showing = stillUp
+    check(!rig.app.personApplies() && rig.app.config == before && rig.app.writes == 0, "a proposal was applied after a stop")
+    nothingGetsIn(rig, id, "after a stop, past the window's end")
+
+    // A clock that went backwards under a proposal that outlived the window takes it down.
+    id = outliving(rig)
+    rig.clock -= 400
+    check(!rig.app.personApplies() && rig.app.config == before && rig.app.writes == 0 && rig.app.withdrawn.last == id, "a proposal was applied after the clock went backwards")
+    rig.clock += 400
+
+    // The window's end starts the count of declines again: no, no, the end, on again, no, no.
+    for round in 1...4 {
+        if round == 3 {
+            rig.clock += rig.gate.remaining + 1
+            rig.service.tick()
+            rig.service.windowEnded()
+        }
+        rig.gate.open()
+        rig.clock += 2
+        _ = rig.propose(code(#""trackingSpeed": \#(10 + round)"#))
+        rig.app.personCancels()
+    }
+    check(rig.gate.isOpen && rig.app.turnedOff == 0 && rig.app.config == before && rig.app.writes == 0, "declines from before the window's end counted after it")
+    rig.clock += 2
+
     // The person turns it off with a proposal up.
     id = rig.propose(code(#""trackingSpeed": 12"#)).json["id"] as? String ?? ""
     rig.service.closeGate()
     check(rig.app.showing == nil && rig.app.withdrawn.last == id && !rig.gate.isOpen && rig.app.config == before, "turning it off left the proposal up")
+    rig.gate.open()
+    check(rig.status(id) == "expired", "a proposal taken down with the switch isn't expired")
+    rig.gate.close()
     // A clock that jumps (backwards, or far ahead) is as good as off.
     rig.gate.open()
     rig.clock -= 10

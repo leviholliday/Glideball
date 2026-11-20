@@ -16,7 +16,9 @@ import Foundation
 //    15 minutes later (`AIAppsGate`). It's kept in memory only: never saved, never synced,
 //    never part of a settings file or a share, never on again after a relaunch. With it off
 //    the socket file isn't there, and every request that still gets here is refused before
-//    anything in it is read.
+//    anything in it is read. The one thing that can outlive the 15 minutes is a proposal the
+//    person is already looking at: it got in while the switch was on, and it stays until they
+//    answer it or its own 5 minutes end. Turning the switch off by hand takes it down.
 //  - At most 20 requests a second (`TokenBucket`, as glideball:// URLs); the rest are refused.
 //  - A request is at most 64 KB of JSON nested at most 32 deep, with exactly the fields
 //    Glideball's helper writes. Anything else is refused whole.
@@ -140,7 +142,7 @@ protocol AIAppsHost: AnyObject {
     func review(_ reading: SetupCode.Reading) -> (changes: Int, flagged: Int)
     /// Shows the review sheet for it. False when something else is in the way; then nothing was shown.
     func present(_ reading: SetupCode.Reading, proposal: String, client: String) -> Bool
-    /// Takes a waiting proposal's sheet down (it expired, or the switch went off). Nothing changes.
+    /// Takes a waiting proposal's sheet down (it expired, or the person turned the switch off). Nothing changes.
     func withdraw(proposal: String)
     /// The switch turned itself off after too many proposals were turned down.
     func turnedItselfOff()
@@ -217,7 +219,7 @@ enum AIAppsText {
     static let pending = "The person hasn't decided yet. Ask them to look at Glideball, then check again."
     static let applied = "The person applied it in Glideball. They can undo it there with Undo Last Import (File menu) for the next 30 minutes, and from Backup history after that."
     static let declined = "The person didn't apply it. Nothing changed. Ask what they'd like instead before proposing again."
-    static let expired = "The proposal was taken down before the person decided (they have 5 minutes, and Allow AI apps has to stay on). Nothing changed."
+    static let expired = "The proposal was taken down before the person decided (they have 5 minutes, and turning Allow AI apps off takes it down). Nothing changed."
     static let unknown = "Glideball has no proposal with that id."
 }
 
@@ -384,28 +386,46 @@ final class AIAppsService {
         }
     }
 
-    /// Takes a waiting proposal down once its 5 minutes are up or the switch is off. Called
-    /// before every request and by the app's countdown, once a second. Running out of time
-    /// isn't the person saying no, so it doesn't count toward the three that turn the switch
-    /// off (and doesn't start that count again either).
+    /// Takes a waiting proposal down once its 5 minutes are up (or its clock went backwards).
+    /// Called before every request, by the app once a second, and at the moment of Apply.
+    /// Running out of time isn't the person saying no, so it doesn't count toward the three
+    /// that turn the switch off (and doesn't start that count again either).
+    ///
+    /// The 15 minutes ending is not a reason here: a proposal the person is already reading
+    /// stays until they answer it or its own 5 minutes end. Nothing new gets in after the 15
+    /// (`answer` checks the gate first), so the one on screen is the last there can be.
     func tick() {
         guard let open else { return }
-        guard !gate.isOpen || now() - open.at >= AIAppsLimits.proposalLife || now() < open.at else { return }
-        self.open = nil
-        remember(Finished(id: open.id, status: .expired))
-        host?.withdraw(proposal: open.id)
+        guard now() - open.at >= AIAppsLimits.proposalLife || now() < open.at else { return }
+        takeDown(open.id)
     }
 
-    /// The person turned the switch off, or Glideball is quitting.
+    /// The person turned the switch off (the switch, Stop), Glideball is quitting, the Mac is
+    /// going to sleep or the screen locked: a deliberate stop. A waiting proposal goes with it.
     func closeGate() {
         gate.close()
         declinesInARow = 0
-        tick()
+        if let open { takeDown(open.id) }
+    }
+
+    /// The 15 minutes ended by themselves. Every request is refused from here on; a proposal
+    /// already on screen stays for the person (see `tick`).
+    func windowEnded() {
+        gate.close()
+        declinesInARow = 0
+    }
+
+    private func takeDown(_ id: String) {
+        open = nil
+        remember(Finished(id: id, status: .expired))
+        host?.withdraw(proposal: id)
     }
 
     private func turnedDown() {
+        // (A no to a proposal that outlived the 15 minutes has nothing left to switch off.)
+        guard gate.isOpen else { return }
         declinesInARow += 1
-        guard declinesInARow >= AIAppsLimits.declinesBeforeOff, gate.isOpen else { return }
+        guard declinesInARow >= AIAppsLimits.declinesBeforeOff else { return }
         // Something keeps asking and the person keeps saying no: stop it asking.
         closeGate()
         host?.turnedItselfOff()
