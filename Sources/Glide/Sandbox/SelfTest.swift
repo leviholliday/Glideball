@@ -1225,6 +1225,168 @@ enum SelfTest {
             return "\(WelcomeTourView.Step.allCases.count) steps drawn, and a step part-done"
         }
 
+        step("the strike ends the tour, and every way out takes it off") {
+            // The tour's last step: hold the top-right button, roll any way, let go. The engine
+            // isn't running here, so its part is what it's handed (`engineConfig`) and what it
+            // reports back, fed through the same two callbacks it uses (`onStatus`, `onModes`).
+            let d = UserDefaults.standard
+            let saved = (model.status, model.hasAccessibility, model.hasInputMonitoring, model.config, model.showingWelcomeTour,
+                         model.modes, d.object(forKey: WelcomeTour.doneKey), model.struck, model.strikeFumbles)
+            defer {
+                model.armStrike(false)
+                // Closing the tour offers the next card 1.2 s later (`showNextPrompt`). The tour
+                // "stays up" until those have come and gone, so none of them shows anything here
+                // (What's New and the rest are checked, in their order, further down).
+                model.showingWelcomeTour = true
+                Sandbox.spin(1.3)
+                model.status = saved.0; model.hasAccessibility = saved.1; model.hasInputMonitoring = saved.2
+                model.config = saved.3; model.showingWelcomeTour = saved.4; model.modes = saved.5
+                d.set(saved.6, forKey: WelcomeTour.doneKey)
+                model.struck = saved.7; model.strikeFumbles = saved.8
+                model.pushToEngine()
+            }
+            model.hasAccessibility = true; model.hasInputMonitoring = true
+            model.config.enabled = true
+            model.engine.onStatus?(DemoData.connected)
+            let mine = model.config
+            let plain = model.engineConfig
+            @MainActor func on() -> [Int] {
+                model.engineConfig.buttons.filter { $0.value == .gesture(Strike.gesture) }.keys.sorted()
+            }
+            @MainActor func off(_ why: String) throws {
+                try check(on().isEmpty && model.engineConfig == plain, "\(why): the gesture is still on the engine's buttons")
+                try check(!model.modes.gesturePractice, "\(why): practice is still on")
+                try check(model.strikePractice == nil && model.strikeButtons.isEmpty, "\(why): something of the strike is still running")
+                try check(model.config == mine, "\(why): the saved settings changed")
+            }
+            @MainActor func open() {
+                model.showingWelcomeTour = true
+                model.armStrike(true)   // what the last step does as it comes up in the active window
+            }
+            var exits: [String] = []
+
+            // On: the top-right button only, every way the same, nothing sent, nothing saved.
+            open()
+            try check(on() == [3] && model.engineConfig.buttons.count == 1 && model.engineConfig.chords.isEmpty,
+                      "the engine has \(model.engineConfig.buttons.keys.sorted()), not the top-right button alone")
+            try check(model.engineConfig.buttons[0] == nil, "the bottom-left button was given something")
+            try check(model.modes.gesturePractice, "practice isn't on: a roll would really send something")
+            try check(model.config == mine, "arming changed the saved settings")
+            let g = Strike.gesture
+            try check(g.show == .atOnce && [g.up, g.down, g.left, g.right].allSatisfy { $0 == g.up && $0?.firable != nil },
+                      "the strike's gesture isn't the same every way")
+            try check(d.object(forKey: "GlideConfig").flatMap { $0 as? Data }.map { !String(decoding: $0, as: UTF8.self).contains(Bundle.main.bundleIdentifier ?? "?") } ?? true,
+                      "the strike's gesture was written into the settings")
+
+            // Skip Tour, esc and the window closing (all `closeWelcomeTour`): closed, no strike.
+            let struck = model.struck
+            model.closeWelcomeTour()
+            try off("Skip")
+            try check(!model.showingWelcomeTour && model.struck == struck && d.bool(forKey: WelcomeTour.doneKey), "Skip didn't just close the tour")
+            exits.append("Skip")
+
+            // Back, or another app in front: the step isn't up in the active window any more.
+            open(); model.armStrike(false)
+            try off("Back")
+            exits.append("Back / another app")
+
+            // Unplugged, and plugged back in.
+            open()
+            model.engine.onStatus?(Engine.Status(tapActive: true, listening: true))
+            try off("unplugged")
+            try check(model.strikeOffer == .none, "with no trackball the page still asks for the gesture")
+            model.engine.onStatus?(DemoData.connected)
+            try check(on() == [3], "plugged back in, the gesture didn't come back")
+            exits.append("unplug")
+
+            // Paused, and resumed.
+            model.config.enabled = false
+            try check(on().isEmpty && !model.modes.gesturePractice && model.strikeOffer == .none, "paused, the gesture is still on")
+            model.config.enabled = true
+            try check(on() == [3], "resumed, the gesture didn't come back")
+            exits.append("pause")
+
+            // A permission taken away.
+            model.hasInputMonitoring = false
+            model.pushToEngine()   // the page does this when what it can offer changes
+            try off("permission gone")
+            model.hasInputMonitoring = true
+            model.pushToEngine()
+            exits.append("permission")
+
+            // Another Kensington, whose buttons sit differently: any button but the left click.
+            var other = DemoData.connected
+            other.deviceIsBeta = true
+            model.engine.onStatus?(other)
+            try check(model.strikeOffer == .anyButton && on() == [1, 2, 3, 4], "another Kensington has it on \(on())")
+            try check(model.engineConfig.buttons[0] == nil, "another Kensington's left click was given something")
+            model.engine.onStatus?(DemoData.connected)
+            exits.append("another Kensington")
+
+            // The gesture. A hold let go without a roll isn't it; the page says how.
+            var modes = model.modes
+            let fumbles = model.strikeFumbles
+            modes.wheelHeld = true
+            model.engine.onModes?(modes)
+            modes.wheelHeld = false
+            modes.wheelFlash = Engine.WheelFlash(seq: 1, kind: .tap, buttons: [3])
+            model.engine.onModes?(modes)
+            try check(model.showingWelcomeTour && model.strikeFumbles == fumbles + 1 && model.struck == struck, "a tap struck")
+            // Another button's gesture isn't it either.
+            modes.wheelFlash = Engine.WheelFlash(seq: 2, kind: .slot(4), buttons: [2])
+            model.engine.onModes?(modes)
+            try check(model.showingWelcomeTour && model.struck == struck, "another button struck")
+            // Held and rolled: nothing until the button is up. Then everything at once.
+            model.config.enabled = true
+            modes.wheelHeld = true
+            modes.wheelFlash = Engine.WheelFlash(seq: 3, kind: .repeated(6), buttons: [3])
+            model.engine.onModes?(modes)
+            try check(model.showingWelcomeTour && model.struck == struck, "it struck while the button was still down")
+            modes.wheelHeld = false
+            modes.wheelFlash = Engine.WheelFlash(seq: 4, kind: .slot(6), buttons: [3])   // rolled left: any way counts
+            model.engine.onModes?(modes)
+            try check(!model.showingWelcomeTour && model.struck == struck + 1 && model.config.enabled && d.bool(forKey: WelcomeTour.doneKey),
+                      "the gesture didn't close the tour, light the orb and leave Glideball on")
+            try off("the gesture")
+            exits.append("the gesture")
+            // A quick flick, before any ring: the same.
+            open()
+            modes.gestureHeld = false
+            modes.gestureFlash = Engine.GestureFlash(seq: 1, direction: .down, buttons: [3], chain: 1)
+            model.engine.onModes?(modes)
+            try check(!model.showingWelcomeTour && model.struck == struck + 2, "a quick flick didn't strike")
+            try off("a flick")
+            // Nothing the engine says afterwards strikes again.
+            modes.wheelFlash = Engine.WheelFlash(seq: 5, kind: .slot(0), buttons: [3])
+            model.engine.onModes?(modes)
+            try check(model.struck == struck + 2, "it struck with the tour closed")
+
+            // The button and Return: the same thing, with no trackball at all, and from a pause.
+            model.engine.onStatus?(Engine.Status(tapActive: true, listening: true))
+            model.config.enabled = false
+            let paused = model.config
+            open()
+            try check(on().isEmpty && model.strikeOffer == .none, "no trackball, and the gesture is on")
+            model.strike()
+            try check(!model.showingWelcomeTour && model.struck == struck + 3 && model.config.enabled, "the button didn't do what the gesture does")
+            var resumed = paused
+            resumed.enabled = true
+            try check(model.config == resumed, "the button changed more than the on switch")
+            exits.append("the button / Return")
+            model.config = mine
+            model.engine.onStatus?(DemoData.connected)
+
+            // The page, in each of its three forms, and the orb's light part-way.
+            for (status, what) in [(DemoData.connected, "an Expert Mouse"), (other, "another Kensington"),
+                                   (Engine.Status(tapActive: true, listening: true), "no trackball")] {
+                model.status = status
+                try draw(WelcomeTourView(model: model, step: .done, fumbled: status.deviceConnected), "the last step with \(what)", size: RenderUI.windowSize)
+                try draw(WelcomeTourView(model: model, step: .done), "the last step with \(what), smallest", size: AppDelegate.mainWindowMinSize)
+            }
+            try draw(StrikeLight(count: 0, frozen: 0.5), "the orb's light")
+            return "on the top-right button only, nothing sent or saved; off by \(exits.joined(separator: ", ")); a tap and another button don't count; any way does"
+        }
+
         step("sheets and panels") {
             try draw(AboutView(model: model), "About & Help")
             try draw(FeedbackView(model: model), "Send Feedback")

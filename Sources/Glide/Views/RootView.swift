@@ -511,6 +511,7 @@ private struct SidebarHero: View {
                         .scaleEffect(compact ? 0.7 : 1)
                         .opacity(compact ? 0.75 : 1)
                 }
+                .background { StrikeLight(count: model.struck, frozen: StrikeLight.sandboxFrozen) }   // the tour's ending lights the orb, once
                 .animation(reduceMotion ? Theme.Motion.fade : .spring(response: 0.45, dampingFraction: 0.85), value: compact)
 
             VStack(spacing: 3) {
@@ -572,6 +573,63 @@ private struct SidebarAura: View {
         .animation(Theme.Motion.pause, value: look)
         .allowsHitTesting(false)
         .accessibilityHidden(true)
+    }
+}
+
+/// The strike (the Welcome Tour's ending) lighting the sidebar's orb: one bloom of the orb's own
+/// colors that opens from the ball and is gone in a little over a second, as the tour fades off
+/// it. It plays when `count` changes and at no other time; at rest it draws nothing. Reduce
+/// Motion: it only fades up and away, without growing.
+struct StrikeLight: View {
+    let count: Int
+    /// Pictures: held at this moment of it (0…1), since a picture has no clock.
+    var frozen: Double?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorScheme) private var scheme
+
+    struct Moment {
+        var glow = 0.0
+        var spread = 0.0
+    }
+
+    static let duration = 1.2
+    /// `--render-ui`: the sidebar's own one, held part-way.
+    nonisolated(unsafe) static var sandboxFrozen: Double?
+
+    var body: some View {
+        Group {
+            if let frozen {
+                bloom(Moment(glow: 1, spread: frozen))
+            } else {
+                Color.clear
+                    .keyframeAnimator(initialValue: Moment(), trigger: count) { _, m in
+                        bloom(m)
+                    } keyframes: { _ in
+                        KeyframeTrack(\.glow) {
+                            CubicKeyframe(1, duration: 0.22)
+                            CubicKeyframe(1, duration: 0.28)
+                            CubicKeyframe(0, duration: Self.duration - 0.5)
+                        }
+                        KeyframeTrack(\.spread) {
+                            CubicKeyframe(1, duration: Self.duration)
+                        }
+                    }
+            }
+        }
+        .frame(width: 150, height: 150)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    private func bloom(_ m: Moment) -> some View {
+        let k = scheme == .dark ? 1.0 : 0.7
+        return Circle()
+            .fill(RadialGradient(colors: [Theme.orbCyan.opacity(0.85 * k), Theme.orbBlue.opacity(0.6 * k),
+                                          Theme.orbViolet.opacity(0.35 * k), Theme.orbMagenta.opacity(0.18 * k), .clear],
+                                 center: .center, startRadius: 30, endRadius: 190))
+            .frame(width: 380, height: 380)
+            .scaleEffect(reduceMotion ? 1 : 0.55 + 0.6 * m.spread)
+            .opacity(m.glow)
     }
 }
 

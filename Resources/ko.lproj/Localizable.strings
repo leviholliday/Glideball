@@ -2857,3 +2857,8 @@
 "That’s no slower than your pointer speed, so Precision won’t slow the pointer down." = "포인터 속도보다 느리지 않아서, 정밀 모드가 포인터를 느리게 하지 않아요.";
 "The bottom-left button always clicks. To undo, press ⌘Z in Glideball or choose Undo Last Import in the File menu or the menu-bar icon’s menu." = "왼쪽 아래 버튼은 항상 클릭이에요. 되돌리려면 Glideball에서 ⌘Z를 누르거나, 파일 메뉴 또는 메뉴 막대 아이콘의 메뉴에서 '마지막 가져오기 실행 취소'를 선택하세요.";
 "Undo Last Import" = "마지막 가져오기 실행 취소";
+"Start it with one gesture" = "제스처 하나로 시작해요";
+"Hold the top-right button, roll the ball any way you like, and let go." = "오른쪽 위 버튼을 누른 채 볼을 아무 방향으로나 굴리고 손을 떼세요.";
+"Hold any button except left click, roll the ball any way you like, and let go." = "왼쪽 클릭 버튼만 빼고 아무 버튼이나 누른 채 볼을 아무 방향으로나 굴리고 손을 떼세요.";
+"Almost. Roll the ball a little before you let go." = "거의 다 됐어요. 손을 떼기 전에 볼을 조금 굴려 보세요.";
+"Or press Return. See this tour again any time from Help › Show Welcome Tour…" = "Return 키를 눌러도 돼요. 도움말 › 환영 투어 보기…에서 언제든지 이 투어를 다시 볼 수 있어요";

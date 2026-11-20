@@ -896,6 +896,37 @@ extension RenderUI {
             }
         }
 
+        // The tour's ending (the strike): with nothing to do the gesture with, on another
+        // Kensington, after a hold let go without a roll, its ring, and the orb it lights.
+        add("tour-6-done-no-trackball", "Welcome Tour", "The last step with no trackball connected: the button only",
+            prepare: { model.status = Engine.Status(tapActive: true, listening: true); model.live.reset() }) { dark, scale in
+            mainWindow(model, tab: .overview, dark: dark, scale: scale) { WelcomeTourView(model: model, step: .done) }
+        }
+        add("tour-6-done-other-kensington", "Welcome Tour", "The last step on another Kensington: any button but the left click",
+            prepare: {
+                var s = DemoData.connected
+                s.deviceName = "Kensington SlimBlade Pro"
+                s.deviceIsBeta = true
+                model.status = s
+            }) { dark, scale in
+            mainWindow(model, tab: .overview, dark: dark, scale: scale) { WelcomeTourView(model: model, step: .done) }
+        }
+        add("tour-6-done-fumbled", "Welcome Tour", "The last step after a hold let go without a roll") { dark, scale in
+            mainWindow(model, tab: .overview, dark: dark, scale: scale) { WelcomeTourView(model: model, step: .done, fumbled: true) }
+        }
+        add("min-size-tour-6", "Smallest window", "The tour's last step at the minimum size, fumbled") { dark, scale in
+            mainWindow(model, tab: .overview, dark: dark, scale: scale, size: AppDelegate.mainWindowMinSize) {
+                WelcomeTourView(model: model, step: .done, fumbled: true)
+            }
+        }
+        add("tour-strike-ring", "Welcome Tour", "The strike's ring: every way opens Glideball, rolled up") { dark, scale in
+            wheelOverlay(.of(Strike.gesture, level: nil, selected: 0, dot: CGPoint(x: 0, y: -0.75), ring: nil), busy: false, dark: dark, scale: scale)
+        }
+        add("tour-strike-light", "Welcome Tour", "The strike lighting the sidebar's orb as the tour closes (part-way)",
+            prepare: { StrikeLight.sandboxFrozen = 0.45 }, cleanup: { StrikeLight.sandboxFrozen = nil }) { dark, scale in
+            mainWindow(model, tab: .overview, dark: dark, scale: scale)
+        }
+
         add("tour-4-option-try", "Welcome Tour", "Pick a speed: the ⌥ tip, after ⌥-clicking Turbo (its countdown under the presets)",
             prepare: {
                 let old = model.config.trackingSpeed

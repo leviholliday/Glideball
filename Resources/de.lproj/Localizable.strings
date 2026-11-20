@@ -2857,3 +2857,8 @@
 "That’s no slower than your pointer speed, so Precision won’t slow the pointer down." = "Das ist nicht langsamer als dein Zeigertempo, also bremst Präzision den Zeiger nicht.";
 "The bottom-left button always clicks. To undo, press ⌘Z in Glideball or choose Undo Last Import in the File menu or the menu-bar icon’s menu." = "Die Taste unten links klickt immer. Zum Widerrufen drück ⌘Z in Glideball oder wähl „Letzten Import widerrufen“ im Menü „Ablage“ oder im Menü des Symbols in der Menüleiste.";
 "Undo Last Import" = "Letzten Import widerrufen";
+"Start it with one gesture" = "Starte es mit einer einzigen Geste";
+"Hold the top-right button, roll the ball any way you like, and let go." = "Halte die Taste oben rechts gedrückt, rolle die Kugel in eine beliebige Richtung und lass los.";
+"Hold any button except left click, roll the ball any way you like, and let go." = "Halte eine beliebige Taste außer dem Linksklick gedrückt, rolle die Kugel in eine beliebige Richtung und lass los.";
+"Almost. Roll the ball a little before you let go." = "Fast. Rolle die Kugel ein Stück, bevor du loslässt.";
+"Or press Return. See this tour again any time from Help › Show Welcome Tour…" = "Oder drück den Zeilenschalter. Sieh dir diese Tour jederzeit erneut an über Hilfe › Willkommenstour zeigen …";

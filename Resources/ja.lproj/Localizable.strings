@@ -2857,3 +2857,8 @@
 "That’s no slower than your pointer speed, so Precision won’t slow the pointer down." = "ポインタの速度より遅くないので、精密モードでもポインタは遅くなりません。";
 "The bottom-left button always clicks. To undo, press ⌘Z in Glideball or choose Undo Last Import in the File menu or the menu-bar icon’s menu." = "左下のボタンは常にクリックです。元に戻すには、Glideball で ⌘Z を押すか、「ファイル」メニューかメニューバーアイコンのメニューで「最後の読み込みを取り消す」を選んでください。";
 "Undo Last Import" = "最後の読み込みを取り消す";
+"Start it with one gesture" = "ジェスチャーひとつで始めましょう";
+"Hold the top-right button, roll the ball any way you like, and let go." = "右上のボタンを押したまま、ボールを好きな方向に転がして、離してください。";
+"Hold any button except left click, roll the ball any way you like, and let go." = "左クリック以外のボタンを押したまま、ボールを好きな方向に転がして、離してください。";
+"Almost. Roll the ball a little before you let go." = "あと少しです。離す前にボールを少し転がしてください。";
+"Or press Return. See this tour again any time from Help › Show Welcome Tour…" = "Returnキーでも始められます。このツアーは「ヘルプ」›「ようこそツアーを表示…」からいつでも見られます";

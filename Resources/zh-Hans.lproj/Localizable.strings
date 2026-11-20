@@ -2857,3 +2857,8 @@
 "That’s no slower than your pointer speed, so Precision won’t slow the pointer down." = "这不比你的指针速度慢，所以精准模式不会让指针变慢。";
 "The bottom-left button always clicks. To undo, press ⌘Z in Glideball or choose Undo Last Import in the File menu or the menu-bar icon’s menu." = "左下按钮始终是点按。要撤销，请在 Glideball 中按 ⌘Z，或在“文件”菜单或菜单栏图标的菜单中选取“撤销上次导入”。";
 "Undo Last Import" = "撤销上次导入";
+"Start it with one gesture" = "用一个手势启动它";
+"Hold the top-right button, roll the ball any way you like, and let go." = "按住右上按钮，朝任意方向滚动轨迹球，然后松开。";
+"Hold any button except left click, roll the ball any way you like, and let go." = "按住除左键以外的任意按钮，朝任意方向滚动轨迹球，然后松开。";
+"Almost. Roll the ball a little before you let go." = "差一点。松开前先稍微滚动一下轨迹球。";
+"Or press Return. See this tour again any time from Help › Show Welcome Tour…" = "也可以按 Return 键。随时可以从“帮助 › 显示欢迎导览…”再次查看此导览";
