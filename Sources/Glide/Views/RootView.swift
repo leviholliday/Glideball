@@ -673,6 +673,7 @@ private struct SidebarFooter: View {
             if let profile = model.activeProfile {
                 ActiveProfileBadge(model: model, profile: profile)
             }
+            AIAppsCountdown()   // while "Allow AI apps" is on: how long it has left, and Stop
             HStack(spacing: 8) {
                 Text(model.config.enabled ? "Glideball is on" : "Paused")
                     .font(.system(size: 13, weight: .medium))

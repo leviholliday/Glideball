@@ -82,8 +82,7 @@ final class ExternalControl {
     private let log: (String) -> Void
     private let explain: () -> Void
     private var explained = false
-    private var tokens = ExternalControl.perSecond
-    private var lastRefill: Double
+    private var bucket: TokenBucket
     private var dropped = 0
 
     init(target: CommandTarget, isAllowed: @escaping () -> Bool, now: @escaping () -> Double,
@@ -93,7 +92,7 @@ final class ExternalControl {
         self.now = now
         self.log = log
         self.explain = explain
-        lastRefill = now()
+        bucket = TokenBucket(perSecond: Self.perSecond, now: now())
     }
 
     @discardableResult
@@ -205,9 +204,25 @@ final class ExternalControl {
         }
     }
 
-    private func takeToken() -> Bool {
-        let t = now()
-        tokens = min(Self.perSecond, tokens + max(0, t - lastRefill) * Self.perSecond)
+    private func takeToken() -> Bool { bucket.take(now: now()) }
+}
+
+/// The rate limit glideball:// URLs and the AI apps connection (AIApps.swift) share the
+/// shape of: a bucket of `perSecond` tokens, refilled at `perSecond` a second. Each
+/// thing looked at takes one; with none left it's dropped.
+struct TokenBucket {
+    let perSecond: Double
+    private var tokens: Double
+    private var lastRefill: Double
+
+    init(perSecond: Double, now: Double) {
+        self.perSecond = perSecond
+        tokens = perSecond
+        lastRefill = now
+    }
+
+    mutating func take(now t: Double) -> Bool {
+        tokens = min(perSecond, tokens + max(0, t - lastRefill) * perSecond)
         lastRefill = t
         guard tokens >= 1 else { return false }
         tokens -= 1

@@ -173,6 +173,8 @@ struct GeneralSettingsPane: View {
                 SettingsToggle(title: "Allow Raycast and scripts", hint: externalHint, symbol: "link",
                                isOn: $model.allowExternalControl, link: SiteLinks.help)
                     .findable(.externalControl)
+                AllowAIAppsRow()
+                ConnectAIAppRow()
             }
         }
     }
@@ -374,7 +376,8 @@ extension Findable {
 
 extension GeneralSettingsPane {
     static let findables: [Findable] = [.openAtLogin, .launchStyle, .askBeforeQuitting, .menuBarIcon, .menuBarIconStyle, .menuBarOpens,
-                                        .showInDock, .sidebarSearch, .language, .externalControl]
+                                        .showInDock, .sidebarSearch, .language, .externalControl,
+                                        .allowAIApps, .connectAIApp]
 }
 
 /// The menu-bar icon as it looks now, on a little piece of menu bar.

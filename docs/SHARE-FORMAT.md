@@ -282,6 +282,24 @@ the pause switch, global shortcuts or per-display speeds, every Open or shortcut
 preview (inside a gesture or a More, on its own line), and nothing destructive gets through Apply
 without its tick (see "Shortcuts that are hard to take back" in DEVELOPING.md).
 
+### A setup code from an AI app (Allow AI apps)
+
+An AI app on this Mac can send the same setup code through `propose_changes` while Allow AI apps is on
+(DEVELOPING.md, "AI apps on this Mac (MCP)"). There is no second format and no second reader: the
+`setup` argument is a setup code as a JSON object (a string holding one is read too), at most 64 KB,
+handed to `SetupCode.read` exactly as pasted text is. What differs is only what's refused before it
+gets there and what isn't taken at all:
+
+- Only a setup code. A share's own JSON (`"format": "glideball-share"`, which can carry `from`), a link
+  and a whole settings file are refused; pasted, the first two are read.
+- No other arguments: no summary, no "apply", no ticks. The person's ticks exist only in Glideball's preview.
+- What the reader left out goes back to the AI app as `left_out` (`at`: the note's path, `said`: what
+  the code said there, cleaned and at most 80 characters, `fix`: the note's fixed hint), the same
+  notes Copy Note for the AI copies.
+
+`get_setup` writes the person's setup with the writer Copy Prompt uses, so what an AI app reads is
+what it can send back.
+
 ## Beta 12 shares (still read)
 
 `kind` was one of these, with `version`, `format`, `writtenBy` and only that part's fields. Each is

@@ -2870,3 +2870,31 @@
 "Or press Return. See this tour again any time from Help › Show Welcome Tour…" = "也可以按 Return 键。随时可以从“帮助 › 显示欢迎导览…”再次查看此导览";
 "You usually pick before the ring has finished showing. With After a pause, a quick roll just happens and the ring only shows if you wait." = "你通常在圆环完全显示之前就选好了。改用“停顿片刻后”，快速滚动会直接执行，只有稍作等待时圆环才会显示。";
 "Switch to After a pause" = "切换为“停顿片刻后”";
+
+
+/* Allow AI apps (AIApps.swift, AIAppsCenter.swift, Views/AIAppsViews.swift): the timed switch, an AI app's proposal in the preview, Connect an AI app */
+"Allow AI apps" = "允许 AI App";
+"Lets an AI app on this Mac read your Glideball setup and suggest changes. You approve each one in Glideball, and it turns itself off after 15 minutes." = "让这台 Mac 上的 AI App 读取你的 Glideball 设置并提出更改建议。每一项都由你在 Glideball 里批准，15 分钟后会自动关闭。";
+"AI apps on this Mac can read your setup and suggest changes until this turns itself off. You approve each change here, and what they read goes to that app’s AI service." = "在它自动关闭之前，这台 Mac 上的 AI App 可以读取你的设置并提出更改建议。每一项更改都由你在这里批准，它们读到的内容会发送到该 App 的 AI 服务。";
+"Glideball couldn’t open its connection for AI apps, so this stayed off. Try again." = "Glideball 无法打开供 AI App 使用的连接，所以仍处于关闭状态。请再试一次。";
+"Turns itself off in %@" = "%@后自动关闭";
+"AI apps allowed" = "已允许 AI App";
+"Stop" = "停止";
+"Turn off Allow AI apps now" = "立即关闭“允许 AI App”";
+"Allow AI apps turned itself off." = "“允许 AI App”已自动关闭。";
+"Allow AI apps turned itself off after three suggestions you didn’t apply." = "你连续三次没有应用建议，“允许 AI App”已自动关闭。";
+"The AI app’s suggestion was taken down. Nothing changed." = "AI App 的建议已撤下。没有任何更改。";
+"A setup from an AI app" = "来自 AI App 的设置";
+"Sent by an AI app on this Mac. Check it like you’d check anything from someone else. Nothing has changed yet." = "由这台 Mac 上的 AI App 发来。请像检查别人发来的东西一样检查它。目前还没有任何更改。";
+"Sent by an AI app on this Mac that calls itself “%@”. Glideball hasn’t checked that name. Check the setup like you’d check anything from someone else. Nothing has changed yet." = "由这台 Mac 上一个自称“%@”的 AI App 发来。Glideball 没有核实这个名称。请像检查别人发来的东西一样检查这份设置。目前还没有任何更改。";
+"Connect an AI app" = "连接 AI App";
+"What to copy into Claude or another AI app so it can find Glideball." = "需要拷贝到 Claude 或其他 AI App 里的内容，这样它才能找到 Glideball。";
+"Show How…" = "显示方法…";
+"Some AI apps can use tools on your Mac (it’s called MCP). Add Glideball to one and it can read your setup and suggest changes while Allow AI apps is on. You still approve every change in Glideball." = "有些 AI App 可以使用你 Mac 上的工具（这叫 MCP）。把 Glideball 添加进去后，只要“允许 AI App”开着，它就能读取你的设置并提出更改建议。每一项更改仍然由你在 Glideball 里批准。";
+"Run this in Terminal:" = "在“终端”中运行：";
+"Claude’s desktop app and other apps" = "Claude 桌面 App 和其他 App";
+"Add this to the app’s MCP settings, then quit and reopen it. For Claude’s desktop app that’s the file claude_desktop_config.json in ~/Library/Application Support/Claude." = "把这段内容添加到该 App 的 MCP 设置中，然后退出并重新打开它。对 Claude 桌面 App 来说，就是 ~/Library/Application Support/Claude 中的 claude_desktop_config.json 文件。";
+"Both point at where Glideball is now, so copy them again if you move or rename it. Glideball never changes another app’s settings itself. This is new and hasn’t been tried with every AI app yet." = "两者都指向 Glideball 现在所在的位置，所以移动或重新命名 Glideball 后请重新拷贝。Glideball 绝不会自行更改其他 App 的设置。这是新功能，还没有在所有 AI App 上试过。";
+"Let an AI app on this Mac read your setup and suggest changes for 15 minutes." = "让这台 Mac 上的 AI App 在 15 分钟内读取你的设置并提出更改建议。";
+"ai, mcp, claude, assistant, agent, chatbot, model context protocol, local, suggest" = "ai, mcp, claude, 助手, 助理, 智能体, 聊天机器人, model context protocol, 本地, 建议, 人工智能";
+"mcp, claude, claude code, cursor, server, config, json, command, terminal" = "mcp, claude, claude code, cursor, 服务器, 配置, config, json, 命令, 终端";

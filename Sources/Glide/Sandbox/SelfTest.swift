@@ -689,6 +689,182 @@ enum SelfTest {
             return "prompt built (\(AIReference.roughTokens(prompt)) tokens), app names left out on request; copy, paste, review inside the sheet, Cancel, Apply (before AI setup checkpoint), Undo; your own setup matches; ⌘V and Paste a Link… take a code"
         }
 
+        step("allow AI apps") {
+            // "Allow AI apps" through the real model, with the real answering code and no socket
+            // (the sandbox never makes one; scripts/mcp-sim runs the socket and the helper).
+            // A fake AI app's requests go in as the helper would send them.
+            let center = AIAppsCenter.shared
+            let original = model.config
+            model.config.ballScrollSpeed = original.ballScrollSpeed == 1.25 ? 1.5 : 1.25   // settings no backup holds yet
+            let before = model.config
+            var now = 10_000.0
+            AIAppsCenter.clock = { now }
+            let keysBefore = Set(UserDefaults.standard.dictionaryRepresentation().keys)
+            defer {
+                center.turnOff()
+                AIAppsCenter.clock = AIAppsClock.now
+                model.config = original
+                model.pendingIncoming = nil
+                model.queuedIncoming = nil
+                model.showingAbout = false
+                model.incomingIgnoresLaunch = false
+                model.lastIncomingClosed = -.infinity
+                model.toast = nil
+            }
+            model.incomingIgnoresLaunch = true
+            func ask(_ tool: String, _ arguments: [String: Any] = [:]) throws -> AIAppsReply {
+                now += 2   // (requests are a moment apart: the rate limit and the pause after a preview closes)
+                model.lastIncomingClosed = -.infinity
+                guard let frame = AIAppsRequest.frame(tool: tool, client: "Self-test", arguments: arguments),
+                      let reply = AIAppsReply(frame: center.service.handle(frame)) else { throw Failure("a request couldn't be written, or its answer read") }
+                return reply
+            }
+            func json(_ r: AIAppsReply) -> [String: Any] { ((try? JSONSerialization.jsonObject(with: Data(r.text.utf8))) as? [String: Any]) ?? [:] }
+            func propose(_ setup: [String: Any]) throws -> [String: Any] { json(try ask("propose_changes", ["setup": setup])) }
+            func statsNow() throws -> Data {
+                let encoder = JSONEncoder()
+                encoder.outputFormatting = [.sortedKeys]
+                return try encoder.encode(ShareData.shared.stats(model, installID: "00000000-0000-0000-0000-000000000000"))
+            }
+
+            // Off until the person turns it on, and nothing gets through while it's off.
+            try check(AIAppsTool.names == ["get_setup", "propose_changes", "check_proposal"], "the tools are \(AIAppsTool.names)")
+            try check(!center.isOn && center.secondsLeft == 0, "Allow AI apps is on at launch")
+            let statsOff = try statsNow()
+            for (tool, arguments) in [("get_setup", [:]), ("propose_changes", ["setup": ["trackingSpeed": 9]]), ("check_proposal", ["id": String(repeating: "0", count: 32)])] as [(String, [String: Any])] {
+                let r = try ask(tool, arguments)
+                try check(!r.ok && r.text == AIAppsText.off, "\(tool) answered with the switch off: \(r.text.prefix(60))")
+            }
+            try check(model.pendingIncoming == nil && model.config == before, "something got through with the switch off")
+            try draw(GeneralSettingsPane(model: model).frame(width: SettingsWindowController.width), "Settings › General with Allow AI apps off")
+
+            // On: 15 minutes, counted down; the setup can be read, without the sharing name.
+            let sharingName = SharingName.name()
+            SharingName.setName("Robin Quill")
+            defer { SharingName.setName(sharingName) }
+            center.turnOn()
+            try check(center.isOn && center.secondsLeft == Int(AIAppsLimits.window) && center.countdown == "15:00", "turning it on didn't start 15 minutes: \(center.countdown)")
+            now += 28
+            center.tick()
+            try check(center.countdown == "14:32", "the countdown shows \(center.countdown) after 28 seconds")
+            try draw(GeneralSettingsPane(model: model).frame(width: SettingsWindowController.width), "Settings › General with the countdown")
+            try draw(MenuBarPanelView(model: model), "the menu-bar panel with the countdown")
+            let setup = try ask("get_setup")
+            try check(setup.ok && setup.text.contains("<their_setup>") && setup.text.contains("<what_glideball_can_change>"), "get_setup lacks the setup or the reference")
+            try check(!setup.text.contains("Robin"), "get_setup has the sharing name in it")
+
+            // A proposal: the usual preview, labelled as an AI app's, and nothing changed yet.
+            let risky: [String: Any] = ["format": "glideball-ai-setup", "version": 1, "trackingSpeed": before.trackingSpeed == 9 ? 10 : 9,
+                                        "buttons": ["0": "rightClick", "2": "keys:cmd+q", "3": "forward"]]
+            var answer = try propose(risky)
+            var id = answer["id"] as? String ?? ""
+            try check(answer["status"] as? String == "shown" && AIAppsService.isID(id) && answer["flagged_shortcuts"] as? Int == 1
+                      && (answer["left_out"] as? [[String: Any]])?.count == 1, "a proposal wasn't shown, flagged and noted: \(answer)")
+            var pending = try unwrap(model.pendingIncoming, "the proposal didn't open the preview")
+            try check(pending.proposal == id && pending.source == .aiApp("Self-test") && pending.from == nil && pending.leftOut.count == 1,
+                      "the preview isn't labelled as an AI app's")
+            try check(model.config == before && model.promptShowing, "proposing changed something, or something else could show over it")
+            try draw(IncomingSetupSheet(model: model, incoming: pending), "an AI app's proposal in the preview")
+            try check(json(try ask("check_proposal", ["id": id]))["status"] as? String == "pending", "it isn't pending")
+            try check(try statsNow() == statsOff, "the opt-in stats changed with Allow AI apps on")
+            // One at a time, and never queued behind something else.
+            try check(try propose(["trackingSpeed": 12])["status"] as? String == "busy", "a second proposal wasn't refused")
+
+            // Cancel: nothing written, no backup, declined.
+            let backupsBefore = model.backups.backups.count
+            model.cancelIncoming()
+            try check(model.config == before && model.backups.backups.count == backupsBefore && !model.canUndoImport, "Cancel wrote something")
+            try check(json(try ask("check_proposal", ["id": id]))["status"] as? String == "declined", "Cancel isn't declined")
+
+            // Apply with nothing ticked: a "before AI setup" checkpoint, the change, Undo; ⌘Q and button 0 stay out.
+            answer = try propose(risky)
+            id = answer["id"] as? String ?? ""
+            pending = try unwrap(model.pendingIncoming, "the proposal didn't open again")
+            model.applyIncoming(parts: nil, confirmed: [])
+            try check(model.config.trackingSpeed != before.trackingSpeed && model.config.buttons[3] == .forward, "Apply didn't apply the proposal")
+            try check(model.config.buttons[2] == before.buttons[2] && model.config.buttons[0] == before.buttons[0] && model.config.enabled == before.enabled,
+                      "an unticked ⌘Q was applied, or the primary button or the pause switch changed")
+            var safe = before; safe.enabled = true
+            let newest = try unwrap(model.backups.backups.first, "no backup before the AI app's change")
+            try check((newest.kind == .beforeAI || model.backups.load(newest) == safe) && model.toast?.action == .undoImport && model.canUndoImport,
+                      "no \"before AI setup\" checkpoint, or no Undo")
+            let applied = json(try ask("check_proposal", ["id": id]))
+            try check(applied["status"] as? String == "applied" && (applied["parts"] as? [String])?.sorted() == ["buttons", "pointer"]
+                      && applied["flagged_shortcuts_left_out"] as? Int == 1, "check_proposal after Apply: \(applied)")
+            model.undoImport()
+            try check(model.config == before, "Undo didn't put everything back")
+
+            // The tick, in Glideball, is the only thing that lets ⌘Q through.
+            _ = try propose(risky)
+            pending = try unwrap(model.pendingIncoming, "the proposal didn't open a third time")
+            model.applyIncoming(parts: nil, confirmed: Set(model.changes(for: pending).flatMap(\.risks).map(\.id)))
+            try check(model.config.buttons[2] == .shortcut(KeyShortcut(keyCode: 12, modifiers: CGEventFlags.maskCommand.rawValue))
+                      && model.config.buttons[0] == before.buttons[0], "a ticked ⌘Q wasn't applied, or the primary button changed")
+            model.undoImport()
+            try check(model.config == before, "Undo didn't put the ticked one back")
+
+            // A sheet in the way: the AI app is told, and nothing waits behind it.
+            model.showingAbout = true
+            try check(try propose(["trackingSpeed": 12])["status"] as? String == "busy" && model.pendingIncoming == nil && model.queuedIncoming == nil,
+                      "a proposal waited behind a sheet")
+            model.showingAbout = false
+
+            // Five minutes with no answer: the sheet goes, nothing written.
+            id = try propose(["trackingSpeed": 12])["id"] as? String ?? ""
+            let stale = try unwrap(model.pendingIncoming, "the proposal didn't open")
+            now += AIAppsLimits.proposalLife
+            center.tick()
+            try check(model.pendingIncoming == nil && model.config == before && center.isOn, "a proposal outlived its five minutes")
+            try check(json(try ask("check_proposal", ["id": id]))["status"] as? String == "expired", "it isn't expired")
+            // A sheet that somehow stayed up can't apply it.
+            model.pendingIncoming = stale
+            model.applyIncoming(parts: nil, confirmed: [])
+            try check(model.config == before && model.pendingIncoming == nil, "an expired proposal was applied")
+
+            // The 15 minutes end with a proposal up: off by itself, the sheet goes, every tool refuses.
+            now += center.service.gate.remaining - 30
+            center.tick()
+            id = try propose(["trackingSpeed": 12])["id"] as? String ?? ""
+            let last = try unwrap(model.pendingIncoming, "the proposal didn't open near the end")
+            now += 60
+            center.tick()
+            try check(!center.isOn && center.secondsLeft == 0 && model.pendingIncoming == nil && model.config == before, "it didn't turn itself off, or left the proposal up")
+            model.pendingIncoming = last
+            model.applyIncoming(parts: nil, confirmed: [])
+            try check(model.config == before, "a proposal was applied after Allow AI apps turned itself off")
+            for tool in AIAppsTool.names {
+                let r = try ask(tool, tool == "check_proposal" ? ["id": id] : tool == "propose_changes" ? ["setup": ["trackingSpeed": 12]] : [:])
+                try check(!r.ok && r.text == AIAppsText.off, "\(tool) answered after it turned itself off")
+            }
+
+            // The person turning it off takes a waiting proposal down too; three turned down in a row turn it off.
+            center.turnOn()
+            _ = try propose(["trackingSpeed": 12])
+            center.turnOff()
+            try check(!center.isOn && model.pendingIncoming == nil && model.config == before, "turning it off left the proposal up")
+            center.turnOn()
+            for speed in [11, 12, 13] {
+                _ = try propose(["trackingSpeed": speed])
+                model.cancelIncoming()
+            }
+            try check(!center.isOn && model.config == before, "three proposals turned down didn't turn it off")
+
+            // Nothing about any of it is kept: not in the saved settings, the stats or the settings file.
+            let added = Set(UserDefaults.standard.dictionaryRepresentation().keys).subtracting(keysBefore)
+            try check(!added.contains { $0.lowercased().contains("aiapp") || $0.lowercased().contains("mcp") || $0.lowercased().contains("proposal") },
+                      "something about Allow AI apps was saved: \(added.sorted())")
+            try check(try statsNow() == statsOff, "the opt-in stats changed after using Allow AI apps")
+            let file = String(decoding: try JSONEncoder().encode(model.config), as: UTF8.self).lowercased()
+            try check(!file.contains("aiapp") && !file.contains("mcp") && !file.contains("self-test"), "the settings hold something about Allow AI apps")
+            try draw(ConnectAIAppSheet(), "Connect an AI app")
+            try check(AIAppsConnect.commandLine("/Apps/It's here/Glideball.app/Contents/MacOS/Glideball") == #"claude mcp add glideball -- '/Apps/It'\''s here/Glideball.app/Contents/MacOS/Glideball' --mcp"#,
+                      "the command line doesn't quote an awkward path")
+            let entry = (try? JSONSerialization.jsonObject(with: Data(AIAppsConnect.json("/A \"b\"/Glideball").utf8))) as? [String: Any]
+            let server = (entry?["mcpServers"] as? [String: Any])?["glideball"] as? [String: Any]
+            try check(server?["command"] as? String == "/A \"b\"/Glideball" && server?["args"] as? [String] == ["--mcp"], "the settings to copy aren't valid JSON for an awkward path")
+            return "off at launch and refusing; on for 15:00, counted down; get_setup; a proposal reviewed, cancelled, applied (before AI setup, Undo), ⌘Q only with its tick, button 0 never; expiry, the window's end, Stop and three declines; nothing saved or in the stats"
+        }
+
         step("search index") {
             // Every row on every page and Settings tab sits inside a `.findable`, and every
             // Findable is drawn on its page: the index can't drift from the pages.

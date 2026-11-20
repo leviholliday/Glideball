@@ -2870,3 +2870,31 @@
 "Or press Return. See this tour again any time from Help › Show Welcome Tour…" = "Oder drück den Zeilenschalter. Sieh dir diese Tour jederzeit erneut an über Hilfe › Willkommenstour zeigen …";
 "You usually pick before the ring has finished showing. With After a pause, a quick roll just happens and the ring only shows if you wait." = "Du wählst meistens, bevor der Ring ganz da ist. Mit „Nach einer Pause“ passiert ein schnelles Rollen einfach, und der Ring erscheint nur, wenn du wartest.";
 "Switch to After a pause" = "Zu „Nach einer Pause“ wechseln";
+
+
+/* Allow AI apps (AIApps.swift, AIAppsCenter.swift, Views/AIAppsViews.swift): the timed switch, an AI app's proposal in the preview, Connect an AI app */
+"Allow AI apps" = "KI-Apps erlauben";
+"Lets an AI app on this Mac read your Glideball setup and suggest changes. You approve each one in Glideball, and it turns itself off after 15 minutes." = "Lässt eine KI-App auf diesem Mac dein Glideball-Setup lesen und Änderungen vorschlagen. Du bestätigst jede einzelne in Glideball, und nach 15 Minuten schaltet es sich von selbst aus.";
+"AI apps on this Mac can read your setup and suggest changes until this turns itself off. You approve each change here, and what they read goes to that app’s AI service." = "KI-Apps auf diesem Mac können dein Setup lesen und Änderungen vorschlagen, bis sich das von selbst ausschaltet. Du bestätigst jede Änderung hier, und was sie lesen, geht an den KI-Dienst der jeweiligen App.";
+"Glideball couldn’t open its connection for AI apps, so this stayed off. Try again." = "Glideball konnte seine Verbindung für KI-Apps nicht öffnen, deshalb blieb das aus. Versuch es noch einmal.";
+"Turns itself off in %@" = "Schaltet sich in %@ von selbst aus";
+"AI apps allowed" = "KI-Apps erlaubt";
+"Stop" = "Stopp";
+"Turn off Allow AI apps now" = "„KI-Apps erlauben“ jetzt ausschalten";
+"Allow AI apps turned itself off." = "„KI-Apps erlauben“ hat sich von selbst ausgeschaltet.";
+"Allow AI apps turned itself off after three suggestions you didn’t apply." = "„KI-Apps erlauben“ hat sich ausgeschaltet, nachdem du drei Vorschläge nicht angewendet hast.";
+"The AI app’s suggestion was taken down. Nothing changed." = "Der Vorschlag der KI-App wurde zurückgenommen. Nichts geändert.";
+"A setup from an AI app" = "Ein Setup von einer KI-App";
+"Sent by an AI app on this Mac. Check it like you’d check anything from someone else. Nothing has changed yet." = "Von einer KI-App auf diesem Mac geschickt. Prüf es wie alles, was von jemand anderem kommt. Noch hat sich nichts geändert.";
+"Sent by an AI app on this Mac that calls itself “%@”. Glideball hasn’t checked that name. Check the setup like you’d check anything from someone else. Nothing has changed yet." = "Von einer KI-App auf diesem Mac geschickt, die sich „%@“ nennt. Glideball hat diesen Namen nicht geprüft. Prüf das Setup wie alles, was von jemand anderem kommt. Noch hat sich nichts geändert.";
+"Connect an AI app" = "KI-App verbinden";
+"What to copy into Claude or another AI app so it can find Glideball." = "Was du in Claude oder eine andere KI-App kopierst, damit sie Glideball findet.";
+"Show How…" = "Anleitung zeigen …";
+"Some AI apps can use tools on your Mac (it’s called MCP). Add Glideball to one and it can read your setup and suggest changes while Allow AI apps is on. You still approve every change in Glideball." = "Manche KI-Apps können Werkzeuge auf deinem Mac benutzen (das nennt sich MCP). Füg Glideball in einer hinzu, dann kann sie dein Setup lesen und Änderungen vorschlagen, solange „KI-Apps erlauben“ an ist. Jede Änderung bestätigst du weiterhin in Glideball.";
+"Run this in Terminal:" = "Führ das im Terminal aus:";
+"Claude’s desktop app and other apps" = "Die Desktop-App von Claude und andere Apps";
+"Add this to the app’s MCP settings, then quit and reopen it. For Claude’s desktop app that’s the file claude_desktop_config.json in ~/Library/Application Support/Claude." = "Füg das in den MCP-Einstellungen der App hinzu, dann beende sie und öffne sie wieder. Bei der Desktop-App von Claude ist das die Datei claude_desktop_config.json in ~/Library/Application Support/Claude.";
+"Both point at where Glideball is now, so copy them again if you move or rename it. Glideball never changes another app’s settings itself. This is new and hasn’t been tried with every AI app yet." = "Beides zeigt auf den Ort, an dem Glideball jetzt liegt. Kopier es also neu, wenn du Glideball verschiebst oder umbenennst. Glideball ändert nie selbst die Einstellungen einer anderen App. Das hier ist neu und noch nicht mit jeder KI-App ausprobiert.";
+"Let an AI app on this Mac read your setup and suggest changes for 15 minutes." = "Lass eine KI-App auf diesem Mac 15 Minuten lang dein Setup lesen und Änderungen vorschlagen.";
+"ai, mcp, claude, assistant, agent, chatbot, model context protocol, local, suggest" = "ki, ai, mcp, claude, assistent, agent, chatbot, model context protocol, lokal, vorschlagen";
+"mcp, claude, claude code, cursor, server, config, json, command, terminal" = "mcp, claude, claude code, cursor, server, konfiguration, config, json, befehl, terminal";
