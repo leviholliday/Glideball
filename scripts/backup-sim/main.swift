@@ -71,6 +71,89 @@ let todays = store.backups.first { $0.kind == .daily && cal.isDate($0.date, inSa
 check(todays.flatMap(store.load)?.trackingSpeed == before.trackingSpeed || todays == nil,
       "today's daily should hold the start-of-day settings")
 
+// Backups in the same second. Names carry whole seconds, so these tie on the name's time, and
+// the one written last must still be the newest: in the store that wrote it, and in a new
+// store that only has the folder to go by.
+func sameSecond(_ title: String, _ body: (BackupStore, URL, inout Double) -> Void) {
+    let dir = FileManager.default.temporaryDirectory.appendingPathComponent("glide-backup-sim-\(UUID().uuidString)")
+    defer { try? FileManager.default.removeItem(at: dir) }
+    let before = failures
+    var speed = 2.0   // each save adds 1; inside the slider's range, or loading would clamp it
+    body(BackupStore(folder: dir, defaults: defaults, calendar: cal, now: { clock }), dir, &speed)
+    if failures != before { print("  (in: \(title))") }
+}
+/// Saves a checkpoint of settings no backup holds yet and checks it's the newest, here and on disk.
+func saveAndCheck(_ s: BackupStore, _ dir: URL, _ speed: inout Double, _ kind: BackupStore.Kind, _ what: String) {
+    speed += 1
+    var c = GlideConfig(); c.trackingSpeed = speed
+    check(s.checkpoint(c, kind: kind), "\(what): the \(kind.rawValue) checkpoint wasn't written")
+    for (name, list) in [("the store", s.backups),
+                         ("a new store on the same folder", BackupStore(folder: dir, defaults: defaults, calendar: cal, now: { clock }).backups)] {
+        let first = list.first
+        check(first?.kind == kind && first.flatMap(s.load)?.trackingSpeed == speed,
+              "\(what): \(name) lists \(first?.url.lastPathComponent ?? "nothing") as the newest, not the \(kind.rawValue) just saved")
+    }
+    // Every file is one an older Glideball can read: the 19-character time, then the kind.
+    let files = (try? FileManager.default.contentsOfDirectory(atPath: dir.path)) ?? []
+    check(files.allSatisfy { BackupStore.parse(($0 as NSString).deletingPathExtension) != nil } && files.count == s.backups.count,
+          "\(what): a file name older versions can't read, or a file the list doesn't show: \(files.sorted())")
+    // Names stay honest: never more than a few seconds ahead of the clock.
+    check(s.backups.allSatisfy { $0.date.timeIntervalSince(clock) < 10 }, "\(what): a backup is stamped \(s.backups.map { Int($0.date.timeIntervalSince(clock)) }.max() ?? 0) s ahead of the clock")
+}
+let kinds: [BackupStore.Kind] = [.beforeImport, .beforeRestore, .beforePreset, .beforeAI, .manual]
+clock = cal.date(byAdding: .day, value: 3, to: clock)!
+// Two checkpoints of different kinds in one second, every pair in both orders
+// (an import's checkpoint, then Undo Last Import's "before restore").
+for a in kinds {
+    for b in kinds where a != b {
+        sameSecond("\(a.rawValue), then \(b.rawValue)") { s, dir, speed in
+            saveAndCheck(s, dir, &speed, a, "first of two in a second")
+            clock += 0.2
+            saveAndCheck(s, dir, &speed, b, "second of two in a second")
+            clock -= 0.2
+        }
+    }
+}
+// The day's own backup and a checkpoint in the same second (a first launch that imports at once).
+sameSecond("daily, then before import") { s, dir, speed in
+    s.start(current: GlideConfig())
+    check(s.backups.first?.kind == .daily, "no daily on a first launch")
+    saveAndCheck(s, dir, &speed, .beforeImport, "a checkpoint in the daily's second")
+}
+// The same kind twice in a second: both kept, the second one newest.
+sameSecond("before import twice") { s, dir, speed in
+    saveAndCheck(s, dir, &speed, .beforeImport, "first of a kind")
+    saveAndCheck(s, dir, &speed, .beforeImport, "second of a kind in the same second")
+    check(s.backups.count == 2, "two of a kind in one second: \(s.backups.count) kept")
+}
+// A burst: twenty checkpoints in two seconds (the self-test's steps do this), of two kinds in
+// turn and then of every kind. Each is the newest as it lands.
+sameSecond("a burst of two kinds") { s, dir, speed in
+    let start = clock
+    for i in 0..<20 {
+        saveAndCheck(s, dir, &speed, i % 2 == 0 ? .beforeAI : .beforeRestore, "burst, checkpoint \(i + 1)")
+        clock += 0.1
+    }
+    clock = start
+}
+sameSecond("a burst of every kind") { s, dir, speed in
+    let start = clock
+    for i in 0..<20 {
+        saveAndCheck(s, dir, &speed, kinds[i % kinds.count], "burst of every kind, checkpoint \(i + 1)")
+        clock += 0.1
+    }
+    clock = start
+}
+// After a burst, a pause, then one more: it's stamped with the clock again.
+sameSecond("a checkpoint after a burst") { s, dir, speed in
+    let start = clock
+    for _ in 0..<6 { saveAndCheck(s, dir, &speed, .beforeImport, "burst of one kind") }
+    clock += 30
+    saveAndCheck(s, dir, &speed, .beforeRestore, "30 s after a burst")
+    check(abs((s.backups.first?.date ?? .distantPast).timeIntervalSince(clock)) < 1, "30 s after a burst, the new backup isn't stamped with the clock")
+    clock = start
+}
+
 let sample = store.backups.first!
 print("backups now: \(store.backups.count), max ever: \(maxCount), max folder size: \(maxBytes) bytes, one file: \(sample.size) bytes")
 print(store.backups.map { "\($0.date.formatted(date: .abbreviated, time: .omitted)) \($0.kind.rawValue)" }.joined(separator: "\n"))

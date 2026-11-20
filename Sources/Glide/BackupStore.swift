@@ -35,10 +35,24 @@ final class BackupStore {
 
     struct Backup: Identifiable, Equatable {
         let url: URL
+        /// The time in the file's name: whole seconds, what's shown and what retention goes by.
         let date: Date
         let kind: Kind
         let size: Int
+        /// When the file was written (its modification time): the order among backups whose
+        /// names carry the same second.
+        var written: Date = .distantPast
         var id: URL { url }
+
+        /// Newest first. Names carry whole seconds, so two backups can share one (an import's
+        /// checkpoint, then Undo Last Import's "before restore"); the one written last is the
+        /// newer, and the name settles what's left, so the order never depends on how the
+        /// folder happens to be listed.
+        static func newerFirst(_ a: Backup, _ b: Backup) -> Bool {
+            if a.date != b.date { return a.date > b.date }
+            if a.written != b.written { return a.written > b.written }
+            return a.url.lastPathComponent > b.url.lastPathComponent
+        }
     }
 
     /// Newest first.
@@ -61,6 +75,10 @@ final class BackupStore {
     static let keepDays = 365
     /// Checkpoints kept per day (the newest ones); dailies are one per day anyway.
     static let checkpointsPerDay = 5
+    /// How far ahead of the clock the newest backup's name may be and still be followed (see
+    /// `write`). Past that it's a clock that was set back or a file from somewhere else, and
+    /// the clock wins.
+    static let followAhead: TimeInterval = 10 * 60
 
     /// Supplies the live settings for timer-driven snapshots.
     @ObservationIgnored var currentConfig: (() -> GlideConfig)?
@@ -151,16 +169,20 @@ final class BackupStore {
         }
         do {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            // Names carry whole seconds, and the list is ordered by them. Two backups in the same
-            // second (an import's checkpoint, then Undo Last Import's "before restore") would tie,
-            // and either could come out as the newest, so a new one is always stamped after it.
+            // Names carry whole seconds. A backup in the newest one's second gets that same
+            // second and is listed first because it was written later (`Backup.newerFirst`).
+            // Only a second one of the same kind needs the next second for its name, which can
+            // leave the newest a little ahead of the clock; the next backup then takes the
+            // newest's second, never an earlier one, so it's still the newest. A burst of
+            // checkpoints stays within a second or two of the clock this way.
             var date = now()
-            if let newest = backups.first?.date, newest.timeIntervalSince(date) > -1, newest.timeIntervalSince(date) < 5 {
-                date = newest.addingTimeInterval(1)
+            if let newest = backups.first?.date, newest > date, newest.timeIntervalSince(date) < Self.followAhead {
+                date = newest
             }
             var url = folder.appendingPathComponent(Self.fileName(for: date, kind: kind))
-            if FileManager.default.fileExists(atPath: url.path) {   // two in the same second
-                url = folder.appendingPathComponent(Self.fileName(for: date.addingTimeInterval(1), kind: kind))
+            while FileManager.default.fileExists(atPath: url.path) {   // this kind, this second
+                date = date.addingTimeInterval(1)
+                url = folder.appendingPathComponent(Self.fileName(for: date, kind: kind))
             }
             try Self.encode(config).write(to: url, options: .atomic)
             newestConfig = (url, config)
@@ -201,18 +223,19 @@ final class BackupStore {
 
     private func scan() -> [Backup] {
         let urls = (try? FileManager.default.contentsOfDirectory(
-            at: folder, includingPropertiesForKeys: [.fileSizeKey, .isRegularFileKey], options: [.skipsHiddenFiles])) ?? []
+            at: folder, includingPropertiesForKeys: [.fileSizeKey, .isRegularFileKey, .contentModificationDateKey], options: [.skipsHiddenFiles])) ?? []
         return urls.compactMap { url -> Backup? in
             // Only plain files Glideball could have written: never a folder, a pipe or a
             // symbolic link (pruning would delete it; restoring would read whatever it points to).
             guard url.pathExtension == GlideSettingsFile.fileExtension,
-                  let values = try? url.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey]),
+                  let values = try? url.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey, .contentModificationDateKey]),
                   values.isRegularFile == true,
                   let (date, kind) = Self.parse(url.deletingPathExtension().lastPathComponent) else { return nil }
             let size = values.fileSize ?? 0
-            return Backup(url: url, date: date, kind: kind, size: size)
+            return Backup(url: url, date: date, kind: kind, size: size,
+                          written: values.contentModificationDate ?? .distantPast)
         }
-        .sorted { $0.date > $1.date }
+        .sorted(by: Backup.newerFirst)
     }
 
     // MARK: Retention
@@ -228,7 +251,7 @@ final class BackupStore {
 
     /// The backups the retention rules no longer keep. Pure, for testing.
     static func expired(_ backups: [Backup], now: Date, calendar: Calendar) -> [Backup] {
-        let sorted = backups.sorted { $0.date > $1.date }
+        let sorted = backups.sorted(by: Backup.newerFirst)
         guard let newest = sorted.first else { return [] }
         let today = calendar.startOfDay(for: now)
         var keep: Set<URL> = [newest.url]
