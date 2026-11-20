@@ -2857,3 +2857,9 @@
 "That’s no slower than your pointer speed, so Precision won’t slow the pointer down." = "这不比你的指针速度慢，所以精准模式不会让指针变慢。";
 "The bottom-left button always clicks. To undo, press ⌘Z in Glideball or choose Undo Last Import in the File menu or the menu-bar icon’s menu." = "左下按钮始终是点按。要撤销，请在 Glideball 中按 ⌘Z，或在“文件”菜单或菜单栏图标的菜单中选取“撤销上次导入”。";
 "Undo Last Import" = "撤销上次导入";
+
+/* Import Settings…: a whole settings file's flagged shortcuts (Views/BackupView.swift) */
+"Shortcuts in this file that are hard to take back" = "此文件中难以撤销的快捷键";
+
+/* Import toast: everything that would have changed was left out */
+"Nothing changed. Everything that would have changed was left out." = "没有任何更改。本来会改动的内容都没有应用。";

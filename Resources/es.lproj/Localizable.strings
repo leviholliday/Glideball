@@ -2857,3 +2857,9 @@
 "That’s no slower than your pointer speed, so Precision won’t slow the pointer down." = "No es más lenta que la velocidad del puntero, así que Precisión no lo frenará.";
 "The bottom-left button always clicks. To undo, press ⌘Z in Glideball or choose Undo Last Import in the File menu or the menu-bar icon’s menu." = "El botón de abajo a la izquierda siempre hace clic. Para deshacer, pulsa ⌘Z en Glideball o elige Deshacer última importación en el menú Archivo o en el menú del icono de la barra de menús.";
 "Undo Last Import" = "Deshacer última importación";
+
+/* Import Settings…: a whole settings file's flagged shortcuts (Views/BackupView.swift) */
+"Shortcuts in this file that are hard to take back" = "Funciones rápidas de este archivo que son difíciles de deshacer";
+
+/* Import toast: everything that would have changed was left out */
+"Nothing changed. Everything that would have changed was left out." = "No ha cambiado nada. Todo lo que habría cambiado se ha quedado fuera.";

@@ -329,6 +329,14 @@ enum ImportReview {
     /// whatever any import would give, so nothing destructive gets in without its tick.
     static func leavingOut(from old: GlideConfig, in new: GlideConfig, confirmed: Set<String>) -> GlideConfig {
         var out = new
+        /// Where the app's setup is in `out`. A whole settings file can take an app setup away,
+        /// and the app would then follow the main setup (flagged, when that's a shortcut on the
+        /// list): left out, the app setup stays as it was, and there's nothing more to fix (nil).
+        func profileIndex(_ app: String) -> Int? {
+            if let i = out.appProfiles.firstIndex(where: { $0.bundleID == app }) { return i }
+            if let was = old.profile(for: app) { out.appProfiles.append(was) }
+            return nil
+        }
         for change in changes(from: old, to: new) {
             let flagged = change.risks.filter { $0.tier == .destructive && !confirmed.contains($0.id) }
             guard !flagged.isEmpty, let location = change.location else { continue }
@@ -345,7 +353,7 @@ enum ImportReview {
                     return a
                 }
                 if let app {
-                    guard let i = out.appProfiles.firstIndex(where: { $0.bundleID == app }) else { continue }
+                    guard let i = profileIndex(app) else { continue }
                     if out.appProfiles[i].buttons == nil {
                         // It would follow the main setup now: it keeps its own buttons instead.
                         out.appProfiles[i].buttons = old.profile(for: app)?.buttons
@@ -375,7 +383,7 @@ enum ImportReview {
                     return list
                 }
                 if let app {
-                    guard let i = out.appProfiles.firstIndex(where: { $0.bundleID == app }) else { continue }
+                    guard let i = profileIndex(app) else { continue }
                     guard let list = out.appProfiles[i].chords else {
                         out.appProfiles[i].chords = old.profile(for: app)?.chords   // keeps its own, as above
                         continue
@@ -387,6 +395,51 @@ enum ImportReview {
             }
         }
         return out
+    }
+
+    /// `new` with every combo that `old` has too (the same buttons, in the main setup or the
+    /// same app's) keeping the id it has in `old`. An import makes each combo afresh, so
+    /// without this an import that changes nothing would still differ from the settings it
+    /// was laid over, and a combo's folded editor would open again.
+    static func keepingComboIDs(from old: GlideConfig, in new: GlideConfig) -> GlideConfig {
+        func keep(_ list: [Chord], _ was: [Chord]) -> [Chord] {
+            list.map { c in
+                var c = c
+                if let same = was.first(where: { $0.buttons == c.buttons }) { c.id = same.id }
+                return c
+            }
+        }
+        var out = new
+        out.chords = keep(new.chords, old.chords)
+        for i in out.appProfiles.indices {
+            guard let list = out.appProfiles[i].chords, let was = old.profile(for: out.appProfiles[i].bundleID)?.chords else { continue }
+            out.appProfiles[i].chords = keep(list, was)
+        }
+        return out
+    }
+
+    // MARK: A whole settings file (Import Settings…)
+
+    /// What a settings file would make of `current`, before anything flagged is left out: the
+    /// file's settings checked and cleaned, with this Mac's own pause switch. nil: a file
+    /// from a newer Glideball.
+    static func settingsFile(_ file: GlideSettingsFile, onto current: GlideConfig) -> GlideConfig? {
+        guard var incoming = try? file.validatedConfig() else { return nil }
+        incoming = incoming.sanitizedForImport()
+        incoming.enabled = current.enabled
+        return keepingComboIDs(from: current, in: incoming)
+    }
+
+    /// The rows of going from `old` to `new` that hold a flagged shortcut (red or amber), each
+    /// with only its flagged places: what the Replace preview of a whole settings file shows,
+    /// since it replaces everything and doesn't list every setting.
+    static func flagged(from old: GlideConfig, to new: GlideConfig) -> [ImportChange] {
+        changes(from: old, to: new).compactMap { change in
+            guard !change.risks.isEmpty else { return nil }
+            var c = change
+            c.details = change.details.filter { $0.risk != nil }
+            return c
+        }
     }
 
     private static func onOff(_ b: Bool) -> String {

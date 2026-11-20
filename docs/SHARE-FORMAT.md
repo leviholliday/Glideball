@@ -177,8 +177,10 @@ The rule:
   `« »`; then `. , ; : ! ?` are taken off a word's end. So a link in a sentence, quotes, Markdown or
   angle brackets is found.
 - A word is accepted only when it is exactly `https://glideball.netlify.app/s/#<d>` (scheme and host
-  in any ASCII case, then exactly `/s/#`) or a `glideball://import?d=<d>` link that
-  `ExternalControl.parseImport` accepts. Everything else is refused even if what follows its `#`
+  in any ASCII case, then exactly `/s/#`) or a link that starts exactly `glideball://import?d=`
+  (any ASCII case) and that `ExternalControl.parseImport` accepts; `glideball://import:?d=…` (an
+  empty port, which the URL handler refuses too) and `glideball://import/?d=…` read as damaged.
+  Everything else is refused even if what follows its `#`
   decodes: `http://`, no scheme, `www.`, a port, a user, a trailing dot, a query, another path,
   `glideball.netlify.app.evil.com`, `evil.com/glideball.netlify.app/s/#…`, punycode and other
   look-alikes. A `glideball://` link that isn't `import` (`glideball://pause`) is refused: a paste

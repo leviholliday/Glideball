@@ -179,6 +179,24 @@ extension RenderUI {
             }) { dark, scale in
             fullPage(page(.backup, model), dark: dark, scale: scale)
         }
+        add("import-preview-risky", "States", "Importing a settings file with ⌘Q, Empty Trash inside an app setup's More, and Force Quit: flagged where each sits, unticked",
+            prepare: {
+                var incoming = DemoData.config
+                incoming.trackingSpeed = 3
+                let cmd = CGEventFlags.maskCommand.rawValue, opt = CGEventFlags.maskAlternate.rawValue, shift = CGEventFlags.maskShift.rawValue
+                incoming.buttons[2] = .shortcut(KeyShortcut(keyCode: 12, modifiers: cmd))
+                var g = ButtonGesture()
+                g.up = GestureStep(.shortcut(.copy))
+                g.right = .moreRing([GestureStep(.shortcut(.paste)), GestureStep(.shortcut(KeyShortcut(keyCode: 51, modifiers: cmd | opt | shift)))]
+                                    + Array(repeating: nil, count: 6))
+                g.eight = true
+                incoming.appProfiles[1].buttons?[3] = .gesture(g)
+                incoming.chords.append(Chord(buttons: [2, 3], action: .shortcut(KeyShortcut(keyCode: 53, modifiers: cmd | opt))))
+                model.pendingImport = .init(fileName: "Studio Mac setup",
+                                            file: GlideSettingsFile(config: incoming, exportedFrom: "Studio Mac"))
+            }) { dark, scale in
+            fullPage(page(.backup, model), dark: dark, scale: scale)
+        }
         add("apps-empty", "States", "Apps tab with no app setups yet",
             prepare: { model.config.appProfiles = [] },
             cleanup: { model.config.appProfiles = DemoData.config.appProfiles }) { dark, scale in

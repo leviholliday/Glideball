@@ -284,7 +284,8 @@ private struct ChangeSection: View {
 }
 
 /// "Top left    Copy (⌘C)" with what it was under it, struck through.
-private struct ChangeRow: View {
+/// (Also the flagged rows in the Replace preview of a whole settings file, BackupView.swift.)
+struct ChangeRow: View {
     let change: ImportChange
     @Binding var confirmed: Set<String>
 

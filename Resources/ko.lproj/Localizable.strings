@@ -2857,3 +2857,9 @@
 "That’s no slower than your pointer speed, so Precision won’t slow the pointer down." = "포인터 속도보다 느리지 않아서, 정밀 모드가 포인터를 느리게 하지 않아요.";
 "The bottom-left button always clicks. To undo, press ⌘Z in Glideball or choose Undo Last Import in the File menu or the menu-bar icon’s menu." = "왼쪽 아래 버튼은 항상 클릭이에요. 되돌리려면 Glideball에서 ⌘Z를 누르거나, 파일 메뉴 또는 메뉴 막대 아이콘의 메뉴에서 '마지막 가져오기 실행 취소'를 선택하세요.";
 "Undo Last Import" = "마지막 가져오기 실행 취소";
+
+/* Import Settings…: a whole settings file's flagged shortcuts (Views/BackupView.swift) */
+"Shortcuts in this file that are hard to take back" = "이 파일에 있는, 되돌리기 어려운 단축키";
+
+/* Import toast: everything that would have changed was left out */
+"Nothing changed. Everything that would have changed was left out." = "바뀐 게 없어요. 바뀔 항목이 모두 빠졌어요.";

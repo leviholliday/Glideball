@@ -539,6 +539,15 @@ refused("GLIDEBALL://toggle", "an upper-case command", .notAShare)
 refused("glideball://import?d=" + pd + "&d=" + pd, "two d's (the URL handler refuses it)", .damaged)
 refused("glideball://import/evil?d=" + pd, "a path on the import link", .damaged)
 refused("glideball://user@import?d=" + pd, "a user on the import link")
+refused("glideball://import:?d=" + pd, "a colon after import (an empty port; regression)", .damaged)
+refused("glideball://import:/?d=" + pd, "a colon and a slash after import", .damaged)
+refused("glideball://import/?d=" + pd, "a slash after import", .damaged)
+refused("glideball://import?x=1&d=" + pd, "something before d", .damaged)
+refused("see glideball://import:?d=" + pd + " thanks", "a colon after import, in a message", .damaged)
+if let url = URL(string: "glideball://import:?d=" + pd), case .success? = ExternalControl.parseImport(url) {
+    check(false, "the URL handler took glideball://import:?d= (an empty port)")
+}
+accepted("GLIDEBALL://IMPORT?d=" + pd, "an upper-case app link", carrier: .app)
 refused("glideball://import?d=AAAA", "a broken app link", .damaged)
 refused("glideball://import?d=" + String(repeating: "A", count: 2200), "an app link over 2,100 characters", .damaged)
 refused("\(pasteWeb) glideball://import?d=\(pd)&d=\(pd)", "a good link beside a refused app link")
@@ -576,7 +585,7 @@ for i in 0..<2_000 {
     if case .share = ImportPaste.read(text) {
         acceptedMangled += 1
         let plain = String(String.UnicodeScalarView(text.unicodeScalars.filter { $0.properties.generalCategory != .format })).lowercased()
-        check(plain.contains("https://glideball.netlify.app/s/#") || plain.contains("glideball://import?"),
+        check(plain.contains("https://glideball.netlify.app/s/#") || plain.contains("glideball://import?d="),
               "a mangled message was accepted without one of Glideball's links: \(text.debugDescription.prefix(120))")
     }
 }
@@ -595,6 +604,11 @@ if let range = nasty.range(of: "\"config\":") {
     let json = "{\"version\":1,\"config\":" + body + "}"
     if let file = try? JSONDecoder().decode(GlideSettingsFile.self, from: Data(json.utf8)), let c = try? file.validatedConfig() {
         isSane(c.sanitizedForImport(), "hostile settings file")
+        if let whole = ImportReview.settingsFile(file, onto: theirs) {
+            isSane(whole, "hostile settings file, as the Replace preview reads it")
+            check(whole.enabled == theirs.enabled, "a settings file changed the pause switch")
+            cautionListed(theirs, whole, "hostile settings file")
+        } else { check(false, "the hostile settings file has no Replace preview") }
         check(c.sanitizedForImport().globalShortcuts.pause == GlobalShortcuts.defaultPause, "a pause shortcut with no modifier got through")
     } else {
         check(false, "the hostile settings file didn't parse at all (the test is wrong)")
@@ -684,6 +698,54 @@ do {
     lonely.appProfiles[lonely.appProfiles.count - 1].buttons = [3: .gesture(g2)]
     if case .gesture(let kept)? = ImportReview.leavingOut(from: old, in: lonely, confirmed: []).profile(for: "com.apple.dt.Xcode")?.buttons?[3] {
         check(kept.right == nil && kept.up != nil, "a More left with nothing in it")
+    }
+    // A whole settings file (Import Settings…, its own Replace preview): the same flags on the
+    // same places, through the file as the app reads it, and left out unless ticked.
+    let encoder = JSONEncoder()
+    encoder.dateEncodingStrategy = .iso8601
+    if case .settings(let file)? = try? ImportFile.parse(encoder.encode(GlideSettingsFile(config: new, exportedFrom: "Sim"))),
+       let whole = ImportReview.settingsFile(file, onto: old) {
+        let flagged = ImportReview.flagged(from: old, to: whole)
+        check(Set(flagged.map(\.title)) == ["Bottom right", "Bottom right + Top left", "Xcode · Top right"],
+              "a settings file's flagged rows: \(flagged.map(\.title))")
+        let nested = flagged.first { $0.title == "Xcode · Top right" }
+        check(nested?.details.map(\.id) == ["right.more.upRight"] && nested?.details.first?.risk?.tier == .destructive
+              && nested?.details.first?.label.contains("More") == true,
+              "a settings file's Empty Trash on a More's diagonal isn't shown alone, on its place: \(String(describing: nested?.details))")
+        check(flagged.flatMap(\.risks).map(\.id).sorted() == ImportReview.changes(from: old, to: whole).flatMap(\.risks).map(\.id).sorted(),
+              "the Replace preview's flags aren't the review's")
+        cautionListed(old, whole, "a settings file")
+        let safe = ImportReview.leavingOut(from: old, in: whole, confirmed: [])
+        check(safe.buttons[1] == old.buttons[1] && !safe.chords.contains { $0.buttons == [1, 2] } && safe.trackingSpeed == whole.trackingSpeed,
+              "a settings file's unticked shortcuts were applied, or the rest wasn't")
+    } else { check(false, "the settings file with flagged shortcuts didn't read (the test is wrong)") }
+    // Your own settings back as a file, or as a share, are your settings: a combo you have keeps
+    // its id, so "nothing changed" can be told from a change (an import makes each combo afresh).
+    if case .settings(let file)? = try? ImportFile.parse(encoder.encode(GlideSettingsFile(config: old, exportedFrom: "Sim"))),
+       let same = ImportReview.settingsFile(file, onto: old) {
+        check(same == old, "your own settings as a file differ from your settings")
+    } else { check(false, "your own settings as a file didn't read (the test is wrong)") }
+    let ownShare = SharedSetup.make([.pointer, .scrolling, .buttons, .combos, .gestures, .app("com.apple.Safari")], from: old, look: nil, sounds: nil)!
+    check(ownShare.applied(to: old) != old, "a share's combos aren't made afresh any more (keepingComboIDs may not be needed)")
+    check(ImportReview.keepingComboIDs(from: old, in: ownShare.applied(to: old)) == old, "your own setup as a share differs from your settings")
+    var swapped = old
+    swapped.chords[0].action = .middleClick
+    let keptIDs = ImportReview.keepingComboIDs(from: old, in: SharedSetup.make([.combos], from: swapped, look: nil, sounds: nil)!.applied(to: old))
+    check(keptIDs.chords.map(\.id) == old.chords.map(\.id) && keptIDs.chords[0].action == .middleClick, "a changed combo lost its id, or its change")
+    // A file that takes an app setup away, where the app would then follow a main button
+    // that's ⌘Q already: flagged for that app, and unticked the app setup stays.
+    do {
+        var had = sampleConfig()
+        had.buttons[2] = .shortcut(quit)
+        var gone = had
+        gone.appProfiles = []
+        gone.trackingSpeed = 4
+        let flags = ImportReview.destructiveRisks(from: had, to: gone)
+        check(flags.count == 1 && flags[0].id.contains("com.apple.Safari"), "an app that would start following a ⌘Q isn't flagged: \(flags.map(\.id))")
+        let safe = ImportReview.leavingOut(from: had, in: gone, confirmed: [])
+        check(safe.profile(for: "com.apple.Safari") == had.profile(for: "com.apple.Safari") && safe.trackingSpeed == 4,
+              "leaving that flag out didn't keep the app setup, or dropped the rest")
+        cautionListed(had, gone, "a settings file without an app setup")
     }
     // A shortcut you already have isn't flagged again (it's yours), and a place that doesn't change isn't either.
     var mine = sampleConfig()
