@@ -88,6 +88,10 @@ final class Engine {
         var seq: Int
         var kind: Kind
         var buttons: [Int]
+        /// A place that ran at the release of a ring set to show right away: whether that was
+        /// before the ring had finished appearing (`WheelHold.settledBy` after the press). Nil
+        /// for everything else. Only for the app's one mastery hint (`RingHint`): never logged.
+        var early: Bool?
     }
 
     /// One thing a gesture did: a direction fired (nil direction: the tap).
@@ -3335,6 +3339,8 @@ final class Engine {
     /// override on its buttons, the pointer frozen, and every way out through `gestures`.
     private func beginHold(_ kind: HoldKind, buttons: [Int64]) {
         holdPressedAt = actionOrigin?.at ?? PressTiming.now()
+        holdBegan = io.now()
+        if case .gesture(let g) = kind { holdRightAway = g.show == .atOnce } else { holdRightAway = false }
         // The press readies what the release will need: the key queue's thread awake, the event
         // source made. (The ring's own getting-ready is below, once the hold is on.)
         io.warmKeys { _ = Self.keySource }
@@ -3615,7 +3621,8 @@ final class Engine {
                 if !practicing { performTap(action, buttons: buttons) }
             case .wheelPick(let action, let place):
                 diagnostics.record("wheel slot \(place)")
-                flashWheel(.slot(place), buttons: lastHoldButtons)
+                // On a right-away ring: was that before the ring had finished appearing?
+                flashWheel(.slot(place), buttons: lastHoldButtons, early: holdRightAway ? io.now() - holdBegan < WheelHold.settledBy : nil)
                 if !practicing { performTap(action, buttons: []) }   // never `.system`: a slot is a one-shot
             case .ringRepeat(let action, let place):
                 diagnostics.record("ring repeat \(place)")
@@ -3646,10 +3653,13 @@ final class Engine {
         publishModes()
     }
 
-    private func flashWheel(_ kind: WheelFlash.Kind, buttons: [Int]) {
-        wheelFlash = WheelFlash(seq: (wheelFlash?.seq ?? 0) + 1, kind: kind, buttons: buttons)
+    private func flashWheel(_ kind: WheelFlash.Kind, buttons: [Int], early: Bool? = nil) {
+        wheelFlash = WheelFlash(seq: (wheelFlash?.seq ?? 0) + 1, kind: kind, buttons: buttons, early: early)
         publishModes()
     }
+    /// When the current hold began (the engine's clock), and whether its ring shows right away.
+    private var holdBegan = 0.0
+    private var holdRightAway = false
 
     /// "Try it" is on: a gesture shows what it would do and does nothing else.
     /// It switches itself off after two minutes, so it can never be left on.

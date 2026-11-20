@@ -358,6 +358,29 @@ extension RenderUI {
             prepare: gestureButtons, cleanup: restoreButtons) { dark, scale in
             fullPage(page(.buttons, model), dark: dark, scale: scale)
         }
+        add("buttons-gesture-ring-hint", "Gestures", "The mastery hint under Show the ring: top right on Right away, picked early twelve times",
+            prepare: {
+                gestureButtons()
+                var g = ButtonGesture.standard
+                g.show = .atOnce
+                model.config.buttons[3] = .gesture(g)
+                for _ in 0..<RingHint.window { model.ringHint.saw(early: true, buttons: [3]) }
+            },
+            cleanup: restoreButtons) { dark, scale in
+            fullPage(page(.buttons, model), dark: dark, scale: scale)
+        }
+        add("buttons-gesture-ring-hint-narrow", "Gestures", "The mastery hint at the smallest window's width",
+            prepare: {
+                gestureButtons()
+                var g = ButtonGesture.standard
+                g.show = .atOnce
+                model.config.buttons[3] = .gesture(g)
+                for _ in 0..<RingHint.window { model.ringHint.saw(early: true, buttons: [3]) }
+            },
+            cleanup: restoreButtons) { dark, scale in
+            card(page(.buttons, model).frame(width: AppDelegate.mainWindowMinSize.width - Theme.Space.sidebarWidth - Theme.Space.contentSide * 2),
+                 width: AppDelegate.mainWindowMinSize.width - Theme.Space.sidebarWidth, dark: dark, scale: scale)
+        }
         add("buttons-gesture-narrow", "Gestures", "The gesture editor at the smallest window's width (stacked)",
             prepare: gestureButtons, cleanup: restoreButtons) { dark, scale in
             card(page(.buttons, model).frame(width: AppDelegate.mainWindowMinSize.width - Theme.Space.sidebarWidth - Theme.Space.contentSide * 2),

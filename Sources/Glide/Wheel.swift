@@ -120,6 +120,10 @@ struct WheelHold: Equatable {
 
     /// The ring appears this long after the press if nothing else brought it up (Right away).
     static let revealDelay = 0.18
+    /// A right-away ring has finished appearing by this long after the press: the delay, then
+    /// its entrance (settled in about 0.28 s, `WheelMotion`). A pick before this was made
+    /// without the ring's help (the mastery hint counts those; nothing else reads it).
+    static let settledBy = revealDelay + 0.28
 
     // How More and Back behave (beta 32, Levi on beta 31: "way too eager", "a little jumpy").
     // All tunable here; docs/DEVELOPING.md says the same in words.

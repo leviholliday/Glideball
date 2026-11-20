@@ -2862,3 +2862,5 @@
 "Hold any button except left click, roll the ball any way you like, and let go." = "왼쪽 클릭 버튼만 빼고 아무 버튼이나 누른 채 볼을 아무 방향으로나 굴리고 손을 떼세요.";
 "Almost. Roll the ball a little before you let go." = "거의 다 됐어요. 손을 떼기 전에 볼을 조금 굴려 보세요.";
 "Or press Return. See this tour again any time from Help › Show Welcome Tour…" = "Return 키를 눌러도 돼요. 도움말 › 환영 투어 보기…에서 언제든지 이 투어를 다시 볼 수 있어요";
+"You usually pick before the ring has finished showing. With After a pause, a quick roll just happens and the ring only shows if you wait." = "링이 다 나타나기 전에 고르는 일이 많네요. ‘잠시 멈추면’으로 바꾸면 빠르게 굴릴 땐 바로 실행되고, 기다릴 때만 링이 나타나요.";
+"Switch to After a pause" = "‘잠시 멈추면’으로 바꾸기";

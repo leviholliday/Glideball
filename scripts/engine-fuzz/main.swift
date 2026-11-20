@@ -2631,7 +2631,15 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
     wheelPrimary.chords = [Chord(buttons: [0, 2], action: .wheel(.standard))]
     wheelPrimary.buttons[0] = .wheel(.standard)
     let right = roll(5, 0, 12), slow = [Op.wait(0.3)]
+    var pauseRingG = ButtonGesture.standard
+    pauseRingG.show = .afterPause
+    var pauseRingC = GlideConfig()
+    pauseRingC.buttons[3] = .gesture(pauseRingG)
     let wheels: [(String, [GlideConfig], [Op])] = [
+        // The mastery hint's one input (`WheelFlash.early`): on a right-away ring, whether the
+        // pick came before the ring had finished appearing; on any other ring, nothing.
+        ("wheel: a pick once the ring has settled isn't early", [wheelC], down(3) + [.wait(0.7)] + right + up(3) + settle),
+        ("gestures: After a pause, a pick on its ring says nothing about early", [pauseRingC], down(3) + [.wait(0.5)] + right + up(3) + settle),
         ("wheel: roll right and let go runs the right slot, once, after the release", [wheelC], down(3) + slow + right + up(3) + settle),
         ("wheel: a still press is the tap", [wheelC], down(3) + [.wait(0.1)] + up(3) + settle),
         ("wheel: a flick and release before the ring draws still runs that way", [wheelC],
@@ -3411,7 +3419,13 @@ let expectations: [String: (World) -> String?] = [
     "gestures: Never with a ring job: the readout shows, the gesture still fires": { w in
         wheelDid(w, holds: 0, picks: 0, ring: 1, shows: 1) ?? (w.gestureFires == 1 && w.modes.gestureFlash?.direction == .right ? nil : "\(w.gestureFires) fires") },
     "wheel: a flick and release before the ring draws still runs that way": { w in
-        wheelDid(w, holds: 1, picks: 1) ?? (w.modes.wheelFlash?.kind == .slot(0) ? nil : "ran \(String(describing: w.modes.wheelFlash))") },
+        wheelDid(w, holds: 1, picks: 1) ?? (w.modes.wheelFlash?.kind == .slot(0) && w.modes.wheelFlash?.early == true ? nil
+            : "ran \(String(describing: w.modes.wheelFlash))") },
+    "wheel: a pick once the ring has settled isn't early": { w in
+        wheelDid(w, holds: 1, picks: 1, shows: 1) ?? (w.modes.wheelFlash?.kind == .slot(2) && w.modes.wheelFlash?.early == false ? nil
+            : "ran \(String(describing: w.modes.wheelFlash))") },
+    "gestures: After a pause, a pick on its ring says nothing about early": { w in
+        w.modes.wheelFlash?.kind == .slot(2) && w.modes.wheelFlash?.early == nil ? nil : "ran \(String(describing: w.modes.wheelFlash))" },
     "wheel: rolled out and back to the centre runs nothing": { w in wheelDid(w, holds: 1, picks: 0, shows: 1) },
     "wheel: ring turns zoom while held, never scroll, and the release runs nothing": { w in
         let keys = w.outLog.filter { $0.hasPrefix("key down") }.count

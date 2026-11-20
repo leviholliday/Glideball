@@ -528,7 +528,56 @@ struct GestureEditor: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .contentTransition(.opacity)
+            if let hint = model?.ringHint, hint.shows(for: buttons, gesture: gesture) {
+                masteryHint(hint)
+                    .transition(.opacity)
+            }
         }
+        // Changing it by hand while the hint is up answers it just as well.
+        .onChange(of: gesture.show) { _, now in
+            if now != .atOnce, let hint = model?.ringHint, hint.offeredFor == buttons.sorted() { hint.finish() }
+        }
+    }
+
+    /// The one mastery hint (`RingHint`): said once, here, with the one button that does it.
+    private func masteryHint(_ hint: RingHint) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "hare")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(Theme.ball)
+                .frame(height: 16)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("You usually pick before the ring has finished showing. With After a pause, a quick roll just happens and the ring only shows if you wait.",
+                     comment: "Gestures editor: shown once, under Show the ring, to someone on Right away who keeps choosing before the ring appears")
+                    .font(Theme.Font.hint)
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button {
+                    withAnimation(reduceMotion ? Theme.Motion.fade : Theme.Motion.spring) {
+                        gesture.show = .afterPause
+                        hint.finish()
+                    }
+                    Sounds.shared.detent(pitch: 1.1, volume: 0.45)
+                } label: {
+                    Text("Switch to After a pause", comment: "Gestures editor: the mastery hint's one button; After a pause is the Show the ring choice")
+                }
+                .controlSize(.small)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            IconButton(symbol: "xmark", help: "Not Now", size: 22) {
+                withAnimation(Theme.Motion.fade) { hint.finish() }
+            }
+        }
+        .padding(.leading, 10)
+        .padding(.trailing, 6)
+        .padding(.vertical, 8)
+        .background {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Theme.ball.opacity(0.07))
+                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Theme.ball.opacity(0.22), lineWidth: 0.5))
+        }
+        .padding(.top, 2)
     }
 
     /// Talks about now: what holding the button does with this choice.

@@ -1722,6 +1722,118 @@ enum SelfTest {
             return "\(data.count) bytes, nothing named"
         }
 
+        step("the mastery hint is said once, and its count goes nowhere") {
+            // Someone on Right away who keeps picking before the ring has finished appearing is told
+            // once, under that button's "Show the ring". The tally is in memory; one flag is in
+            // this Mac's defaults; neither is in stats, crash reports, settings, sync or shares.
+            let d = UserDefaults.standard
+            let before = model.config
+            let modesBefore = model.modes
+            defer {
+                model.config = before
+                model.modes = modesBefore
+                d.removeObject(forKey: RingHint.doneKey)
+            }
+            d.removeObject(forKey: RingHint.doneKey)
+            var rightAway = ButtonGesture.standard
+            rightAway.show = .atOnce
+            var afterPause = rightAway
+            afterPause.show = .afterPause
+
+            // The rule, on a hint of its own: nine of the last twelve.
+            let rule = RingHint()
+            for _ in 0..<(RingHint.window - 1) { rule.saw(early: true, buttons: [3]) }
+            try check(rule.offeredFor == nil, "it was said after \(RingHint.window - 1) picks")
+            rule.saw(early: true, buttons: [3])
+            try check(rule.shows(for: [3], gesture: rightAway), "twelve early picks in a row didn't bring it")
+            try check(!rule.shows(for: [2], gesture: rightAway) && !rule.shows(for: [3], gesture: afterPause),
+                      "it shows under another button, or one that isn't on Right away")
+            let seldom = RingHint()
+            for i in 0..<200 { seldom.saw(early: i % 3 == 0, buttons: [3]) }   // a third of them early
+            try check(seldom.offeredFor == nil && seldom.held <= RingHint.window, "someone who mostly waits for the ring was told")
+            let mostly = RingHint()
+            for i in 0..<RingHint.window { mostly.saw(early: i % 4 != 0, buttons: [2, 3]) }   // nine of twelve, on a combo
+            try check(mostly.shows(for: [3, 2], gesture: rightAway), "nine of twelve didn't bring it")
+
+            // The real path: what the engine reports, through the callback it uses.
+            let hint = model.ringHint
+            try check(!hint.done && hint.offeredFor == nil && hint.held == 0, "the hint didn't start from nothing")
+            let promptBefore = model.promptShowing, toastBefore = model.toast
+            model.config.buttons[3] = .gesture(rightAway)
+            let statsBefore = try JSONEncoder().encode(ShareData.shared.stats(model, installID: "GB-TEST"))
+            let settingsAsSet = model.config, settingsBefore = try JSONEncoder().encode(model.config)
+            var modes = model.modes
+            modes.gesturePractice = false
+            var seq = 1000
+            @MainActor func pick(_ kind: Engine.WheelFlash.Kind = .slot(2), early: Bool?, practice: Bool = false) {
+                seq += 1
+                modes.gesturePractice = practice
+                modes.wheelFlash = Engine.WheelFlash(seq: seq, kind: kind, buttons: [3], early: early)
+                model.engine.onModes?(modes)
+            }
+            for _ in 0..<40 {
+                pick(early: nil)                    // a ring that isn't on Right away
+                pick(early: true, practice: true)   // Try it
+                pick(.tap, early: nil)
+                pick(.repeated(2), early: nil)
+            }
+            try check(hint.held == 0 && hint.offeredFor == nil, "picks that aren't real right-away picks were counted")
+            for _ in 0..<RingHint.window { pick(early: true) }
+            try check(hint.shows(for: [3], gesture: rightAway), "twelve early picks from the engine didn't bring it")
+
+            // Said in place, and nowhere else: no card, no toast, nothing over the window.
+            try check(model.promptShowing == promptBefore && model.toast == toastBefore, "the hint put something over the window")
+            try draw(GestureEditor(model: model, button: 3, gesture: .constant(rightAway)).frame(width: 600).padding(20), "the hint under Show the ring")
+
+            // Where it isn't: the tally and the offer change nothing that leaves this Mac.
+            @MainActor func clean(_ data: Data, _ what: String) throws {
+                let text = String(decoding: data, as: UTF8.self)
+                for word in ["RingHint", "ringHint", "\"early\"", "mastery"] {
+                    try check(!text.contains(word), "\(what) has “\(word)” in it")
+                }
+            }
+            let statsAfter = try JSONEncoder().encode(ShareData.shared.stats(model, installID: "GB-TEST"))
+            func differing(_ a: Data, _ b: Data) -> [String] {
+                let x = (try? JSONSerialization.jsonObject(with: a)) as? [String: Any] ?? [:]
+                let y = (try? JSONSerialization.jsonObject(with: b)) as? [String: Any] ?? [:]
+                return Set(x.keys).union(y.keys).filter { "\(String(describing: x[$0]))" != "\(String(describing: y[$0]))" }.sorted()
+            }
+            try check(differing(statsBefore, statsAfter).isEmpty, "the stats changed with the tally: \(differing(statsBefore, statsAfter))")
+            try clean(statsAfter, "the stats")
+            try clean(statsBefore, "the stats")
+            try check(model.config == settingsAsSet, "the settings (and so backups and sync) changed with the tally")
+            try clean(settingsBefore, "the settings")
+            try clean(try JSONEncoder().encode(CrashReports.Report.example(installID: "x")), "a crash report")
+            try clean(try unwrap(model.share(parts: Set(SharePart.fixed)), "no share").fileData(), "a share")
+            for choice in ShareChoice.allCases {
+                let preview = SendPreview.make(choice, model: model, installID: "GB-TEST")
+                for field in preview.crash + preview.stats {
+                    try check(!field.label.localizedCaseInsensitiveContains("hint") && !field.value.localizedCaseInsensitiveContains("ringhint"),
+                              "Privacy's “What this sends” has the hint in it (\(field.label))")
+                }
+            }
+            try check(!d.dictionaryRepresentation().keys.contains { $0.contains("RingHint") }, "the tally was written to defaults before the hint was answered")
+            try check(!((try? String(contentsOf: Diagnostics.url, encoding: .utf8)) ?? "").contains("early"), "the scroll log says something about early picks")
+
+            // Acted on: the button switches this gesture to After a pause, and that was the once.
+            model.config.buttons[3] = .gesture(afterPause)
+            hint.finish()
+            try check(hint.done && hint.offeredFor == nil && d.bool(forKey: RingHint.doneKey), "acting on it didn't finish it")
+            model.config.buttons[3] = .gesture(rightAway)
+            for _ in 0..<60 { pick(early: true) }
+            try check(hint.offeredFor == nil && hint.held == 0 && !hint.shows(for: [3], gesture: rightAway), "it was said again after being acted on")
+            // The next launch reads the flag: never again.
+            let relaunched = RingHint()
+            for _ in 0..<60 { relaunched.saw(early: true, buttons: [3]) }
+            try check(relaunched.done && relaunched.offeredFor == nil && relaunched.held == 0, "it came back after a relaunch")
+            // Dismissed instead: the same.
+            rule.finish()
+            for _ in 0..<60 { rule.saw(early: true, buttons: [3]) }
+            try check(rule.done && !rule.shows(for: [3], gesture: rightAway), "it was said again after being dismissed")
+            return "nine early picks of twelve on a right-away ring; under that button only; once, by the button or the x; "
+                + "nothing in stats, settings, crash reports, shares, defaults or the log until it's answered, then one flag"
+        }
+
         step("the sharing name stays private") {
             // The name typed for sharing (Settings › General › Sharing) goes on pictures and links
             // only when switched on, and never into stats, crash reports, settings, backups or sync.

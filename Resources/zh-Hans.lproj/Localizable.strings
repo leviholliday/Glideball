@@ -2862,3 +2862,5 @@
 "Hold any button except left click, roll the ball any way you like, and let go." = "按住除左键以外的任意按钮，朝任意方向滚动轨迹球，然后松开。";
 "Almost. Roll the ball a little before you let go." = "差一点。松开前先稍微滚动一下轨迹球。";
 "Or press Return. See this tour again any time from Help › Show Welcome Tour…" = "也可以按 Return 键。随时可以从“帮助 › 显示欢迎导览…”再次查看此导览";
+"You usually pick before the ring has finished showing. With After a pause, a quick roll just happens and the ring only shows if you wait." = "你通常在圆环完全显示之前就选好了。改用“停顿片刻后”，快速滚动会直接执行，只有稍作等待时圆环才会显示。";
+"Switch to After a pause" = "切换为“停顿片刻后”";

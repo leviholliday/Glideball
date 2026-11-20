@@ -118,6 +118,8 @@ final class AppModel {
     @ObservationIgnored var strikeButtons: [Int] = []
     @ObservationIgnored var strikeRolled = false
     @ObservationIgnored var strikePractice: Task<Void, Never>?
+    /// The one mastery hint: "you usually pick before the ring shows" (RingHint.swift).
+    let ringHint = RingHint()
     /// Counts each strike (the sidebar's orb lights once for each), and each hold let go
     /// without a roll (the tour says how).
     var struck = 0
@@ -356,6 +358,11 @@ final class AppModel {
             let was = self.modes
             self.modes = m
             self.strikeSaw(m, was: was)
+            // A real pick on a right-away ring (not Try it, not the tour's): early or not.
+            if let f = m.wheelFlash, f != was.wheelFlash, case .slot = f.kind, let early = f.early,
+               !m.gesturePractice, self.strikeButtons.isEmpty {
+                self.ringHint.saw(early: early, buttons: f.buttons)
+            }
         }
         tryOn.push = { [weak self] in self?.pushToEngine() }
         tryOn.showHUD = { [weak self] on in

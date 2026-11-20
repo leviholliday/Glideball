@@ -2862,3 +2862,5 @@
 "Hold any button except left click, roll the ball any way you like, and let go." = "左クリック以外のボタンを押したまま、ボールを好きな方向に転がして、離してください。";
 "Almost. Roll the ball a little before you let go." = "あと少しです。離す前にボールを少し転がしてください。";
 "Or press Return. See this tour again any time from Help › Show Welcome Tour…" = "Returnキーでも始められます。このツアーは「ヘルプ」›「ようこそツアーを表示…」からいつでも見られます";
+"You usually pick before the ring has finished showing. With After a pause, a quick roll just happens and the ring only shows if you wait." = "リングが出きる前に選ぶことが多いようです。「少し止めたら」にすると、すばやく転がせばそのまま実行され、待ったときだけリングが出ます。";
+"Switch to After a pause" = "「少し止めたら」に切り替える";
