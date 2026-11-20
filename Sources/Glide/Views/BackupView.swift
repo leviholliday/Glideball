@@ -333,6 +333,7 @@ private struct ImportSection: View {
             }
             if let pending = model.pendingImport {
                 ImportPreview(model: model, pending: pending)
+                    .id(pending.id)   // another file starts with nothing ticked
                     .transition(.opacity)
             } else {
                 dropTarget
@@ -385,10 +386,13 @@ private struct ImportSection: View {
 private struct ImportPreview: View {
     let model: AppModel
     let pending: AppModel.PendingImport
+    /// The destructive shortcuts the person ticked to include. Unticked ones are left out.
+    @State private var confirmed: Set<String> = []
 
     var body: some View {
         let current = model.config.summary
         let incoming = pending.file.config.summary
+        let flagged = model.flaggedShortcuts(in: pending)
         RowGroup {
             HStack(spacing: Theme.Space.symbolGap) {
                 Image(nsImage: NSApp.applicationIconImage)
@@ -430,6 +434,34 @@ private struct ImportPreview: View {
             .padding(.vertical, 12)
             .frame(maxWidth: .infinity, alignment: .leading)
 
+            // A file replaces everything at once, so the shortcuts that delete, quit or log out
+            // are listed one by one, on their exact place, like in every other import.
+            if !flagged.isEmpty {
+                let red = flagged.flatMap(\.risks).contains { $0.tier == .destructive }
+                VStack(alignment: .leading, spacing: 3) {
+                    Label {
+                        Text("Shortcuts in this file that are hard to take back",
+                             comment: "Import Settings preview: the heading over the file's shortcuts that delete, quit or log out")
+                            .font(Theme.Font.body.weight(.semibold))
+                    } icon: {
+                        Image(systemName: red ? "exclamationmark.octagon.fill" : "exclamationmark.triangle.fill")
+                            .foregroundStyle(red ? Theme.bad : Theme.warn)
+                    }
+                    .accessibilityAddTraits(.isHeader)
+                    if red {
+                        Text("Shortcuts flagged in red are left out unless you tick them.",
+                             comment: "Import preview footer: destructive shortcuts (empty the Trash, quit, log out) aren't applied unless ticked one by one")
+                            .font(Theme.Font.hint)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding(.horizontal, Theme.Space.rowHorizontal)
+                .padding(.vertical, Theme.Space.rowVertical)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                ForEach(flagged) { ChangeRow(change: $0, confirmed: $confirmed) }
+            }
+
             HStack(alignment: .center, spacing: 12) {
                 Text("This replaces your current settings with the ones in this file. Glideball saves a backup first, and you can undo right after.")
                     .font(Theme.Font.hint)
@@ -438,7 +470,7 @@ private struct ImportPreview: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Button("Cancel") { model.pendingImport = nil }
                     .keyboardShortcut(.cancelAction)
-                Button(action: model.confirmImport) {
+                Button { model.confirmImport(confirmed: confirmed) } label: {
                     Label("Replace My Settings", systemImage: "arrow.down.doc.fill")
                 }
                 .buttonStyle(.borderedProminent)

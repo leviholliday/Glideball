@@ -2857,3 +2857,6 @@
 "That’s no slower than your pointer speed, so Precision won’t slow the pointer down." = "Non è più lenta della velocità del puntatore, quindi Precisione non lo rallenterà.";
 "The bottom-left button always clicks. To undo, press ⌘Z in Glideball or choose Undo Last Import in the File menu or the menu-bar icon’s menu." = "Il pulsante in basso a sinistra fa sempre clic. Per annullare, premi ⌘Z in Glideball o scegli Annulla ultima importazione nel menu File o nel menu dell’icona nella barra dei menu.";
 "Undo Last Import" = "Annulla ultima importazione";
+
+/* Import Settings…: a whole settings file's flagged shortcuts (Views/BackupView.swift) */
+"Shortcuts in this file that are hard to take back" = "Abbreviazioni in questo file difficili da annullare";

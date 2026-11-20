@@ -735,10 +735,24 @@ final class AppModel {
         }
     }
 
-    func confirmImport() {
-        guard let pending = pendingImport, var incoming = try? pending.file.validatedConfig() else { return }
-        incoming = incoming.sanitizedForImport()
-        incoming.enabled = config.enabled            // the pause switch belongs to this Mac
+    /// What the file waiting in the Replace preview would bring, before anything flagged is
+    /// left out (the pause switch stays this Mac's).
+    func incomingConfig(_ pending: PendingImport) -> GlideConfig? {
+        ImportReview.settingsFile(pending.file, onto: config)
+    }
+
+    /// The file's shortcuts that delete, quit or log out, each on its exact place (and the
+    /// amber ones, with why): the Replace preview shows these row by row.
+    func flaggedShortcuts(in pending: PendingImport) -> [ImportChange] {
+        incomingConfig(pending).map { ImportReview.flagged(from: config, to: $0) } ?? []
+    }
+
+    /// Replace My Settings. `confirmed`: the red-flagged shortcuts the person ticked
+    /// (`ImportChange.Risk.id`). An unticked one is left out, as in every other import: its
+    /// button or combo keeps what it does now, and its place in a gesture stays empty.
+    func confirmImport(confirmed: Set<String> = []) {
+        guard let pending = pendingImport, let whole = incomingConfig(pending) else { return }
+        let incoming = ImportReview.leavingOut(from: config, in: whole, confirmed: confirmed)
         backups.checkpoint(config, kind: .beforeImport)
         configBeforeImport = config
         lookBeforeImport = nil; soundsBeforeImport = nil
