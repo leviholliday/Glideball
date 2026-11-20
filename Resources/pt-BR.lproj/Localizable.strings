@@ -2863,3 +2863,30 @@
 
 /* Import toast: everything that would have changed was left out */
 "Nothing changed. Everything that would have changed was left out." = "Nada mudou. Tudo o que teria mudado ficou de fora.";
+
+/* Allow AI apps (AIApps.swift, AIAppsCenter.swift, Views/AIAppsViews.swift): the timed switch, an AI app's proposal in the preview, Connect an AI app */
+"Allow AI apps" = "Permitir apps de IA";
+"Lets an AI app on this Mac read your Glideball setup and suggest changes. You approve each one in Glideball, and it turns itself off after 15 minutes." = "Deixa um app de IA neste Mac ler sua configuração do Glideball e sugerir alterações. Você aprova cada uma no Glideball, e isso se desativa sozinho depois de 15 minutos.";
+"AI apps on this Mac can read your setup and suggest changes until this turns itself off. You approve each change here, and what they read goes to that app’s AI service." = "Os apps de IA neste Mac podem ler sua configuração e sugerir alterações até isso se desativar sozinho. Você aprova cada alteração aqui, e o que eles leem vai para o serviço de IA daquele app.";
+"Glideball couldn’t open its connection for AI apps, so this stayed off. Try again." = "O Glideball não conseguiu abrir a conexão para apps de IA, então isso continuou desativado. Tente de novo.";
+"Turns itself off in %@" = "Desativa sozinho em %@";
+"AI apps allowed" = "Apps de IA permitidos";
+"Stop" = "Parar";
+"Turn off Allow AI apps now" = "Desativar “Permitir apps de IA” agora";
+"Allow AI apps turned itself off." = "“Permitir apps de IA” se desativou sozinho.";
+"Allow AI apps turned itself off after three suggestions you didn’t apply." = "“Permitir apps de IA” se desativou depois de três sugestões que você não aplicou.";
+"The AI app’s suggestion was taken down. Nothing changed." = "A sugestão do app de IA foi retirada. Nada mudou.";
+"A setup from an AI app" = "Uma configuração de um app de IA";
+"Sent by an AI app on this Mac. Check it like you’d check anything from someone else. Nothing has changed yet." = "Enviado por um app de IA neste Mac. Confira como conferiria qualquer coisa vinda de outra pessoa. Nada mudou ainda.";
+"Sent by an AI app on this Mac that calls itself “%@”. Glideball hasn’t checked that name. Check the setup like you’d check anything from someone else. Nothing has changed yet." = "Enviado por um app de IA neste Mac que diz se chamar “%@”. O Glideball não verificou esse nome. Confira a configuração como conferiria qualquer coisa vinda de outra pessoa. Nada mudou ainda.";
+"Connect an AI app" = "Conectar um app de IA";
+"What to copy into Claude or another AI app so it can find Glideball." = "O que copiar no Claude ou em outro app de IA para ele encontrar o Glideball.";
+"Show How…" = "Mostrar como…";
+"Some AI apps can use tools on your Mac (it’s called MCP). Add Glideball to one and it can read your setup and suggest changes while Allow AI apps is on. You still approve every change in Glideball." = "Alguns apps de IA conseguem usar ferramentas no seu Mac (isso se chama MCP). Adicione o Glideball a um deles e ele poderá ler sua configuração e sugerir alterações enquanto “Permitir apps de IA” estiver ativado. Você continua aprovando cada alteração no Glideball.";
+"Run this in Terminal:" = "Execute isto no Terminal:";
+"Claude’s desktop app and other apps" = "O app de desktop do Claude e outros apps";
+"Add this to the app’s MCP settings, then quit and reopen it. For Claude’s desktop app that’s the file claude_desktop_config.json in ~/Library/Application Support/Claude." = "Adicione isto aos ajustes de MCP do app, depois encerre e abra o app de novo. No app de desktop do Claude, é o arquivo claude_desktop_config.json em ~/Library/Application Support/Claude.";
+"Both point at where Glideball is now, so copy them again if you move or rename it. Glideball never changes another app’s settings itself. This is new and hasn’t been tried with every AI app yet." = "Os dois apontam para onde o Glideball está agora, então copie de novo se você mover ou renomear o app. O Glideball nunca altera sozinho os ajustes de outro app. Isto é novo e ainda não foi testado com todos os apps de IA.";
+"Let an AI app on this Mac read your setup and suggest changes for 15 minutes." = "Deixe um app de IA neste Mac ler sua configuração e sugerir alterações por 15 minutos.";
+"ai, mcp, claude, assistant, agent, chatbot, model context protocol, local, suggest" = "ia, ai, mcp, claude, assistente, agente, chatbot, model context protocol, local, sugerir";
+"mcp, claude, claude code, cursor, server, config, json, command, terminal" = "mcp, claude, claude code, cursor, servidor, configuração, config, json, comando, terminal";

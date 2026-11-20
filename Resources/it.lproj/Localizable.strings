@@ -2863,3 +2863,30 @@
 
 /* Import toast: everything that would have changed was left out */
 "Nothing changed. Everything that would have changed was left out." = "Non è cambiato niente. Tutto quello che sarebbe cambiato è rimasto escluso.";
+
+/* Allow AI apps (AIApps.swift, AIAppsCenter.swift, Views/AIAppsViews.swift): the timed switch, an AI app's proposal in the preview, Connect an AI app */
+"Allow AI apps" = "Consenti app di IA";
+"Lets an AI app on this Mac read your Glideball setup and suggest changes. You approve each one in Glideball, and it turns itself off after 15 minutes." = "Permette a un’app di IA su questo Mac di leggere la tua configurazione di Glideball e proporre modifiche. Approvi ognuna in Glideball, e si disattiva da sola dopo 15 minuti.";
+"AI apps on this Mac can read your setup and suggest changes until this turns itself off. You approve each change here, and what they read goes to that app’s AI service." = "Le app di IA su questo Mac possono leggere la tua configurazione e proporre modifiche finché questa opzione non si disattiva da sola. Approvi ogni modifica qui, e quello che leggono va al servizio di IA di quell’app.";
+"Glideball couldn’t open its connection for AI apps, so this stayed off. Try again." = "Glideball non è riuscito ad aprire la connessione per le app di IA, quindi è rimasto disattivato. Riprova.";
+"Turns itself off in %@" = "Si disattiva da sola tra %@";
+"AI apps allowed" = "App di IA consentite";
+"Stop" = "Ferma";
+"Turn off Allow AI apps now" = "Disattiva subito “Consenti app di IA”";
+"Allow AI apps turned itself off." = "“Consenti app di IA” si è disattivata da sola.";
+"Allow AI apps turned itself off after three suggestions you didn’t apply." = "“Consenti app di IA” si è disattivata dopo tre proposte che non hai applicato.";
+"The AI app’s suggestion was taken down. Nothing changed." = "La proposta dell’app di IA è stata ritirata. Non è cambiato nulla.";
+"A setup from an AI app" = "Una configurazione da un’app di IA";
+"Sent by an AI app on this Mac. Check it like you’d check anything from someone else. Nothing has changed yet." = "Inviato da un’app di IA su questo Mac. Controllalo come faresti con qualsiasi cosa ricevuta da altri. Non è ancora cambiato nulla.";
+"Sent by an AI app on this Mac that calls itself “%@”. Glideball hasn’t checked that name. Check the setup like you’d check anything from someone else. Nothing has changed yet." = "Inviato da un’app di IA su questo Mac che dice di chiamarsi “%@”. Glideball non ha verificato questo nome. Controlla la configurazione come faresti con qualsiasi cosa ricevuta da altri. Non è ancora cambiato nulla.";
+"Connect an AI app" = "Collega un’app di IA";
+"What to copy into Claude or another AI app so it can find Glideball." = "Cosa copiare in Claude o in un’altra app di IA perché trovi Glideball.";
+"Show How…" = "Mostra come…";
+"Some AI apps can use tools on your Mac (it’s called MCP). Add Glideball to one and it can read your setup and suggest changes while Allow AI apps is on. You still approve every change in Glideball." = "Alcune app di IA possono usare strumenti sul tuo Mac (si chiama MCP). Aggiungi Glideball a una di queste e potrà leggere la tua configurazione e proporre modifiche finché “Consenti app di IA” è attiva. Ogni modifica la approvi comunque tu in Glideball.";
+"Run this in Terminal:" = "Esegui questo nel Terminale:";
+"Claude’s desktop app and other apps" = "L’app desktop di Claude e altre app";
+"Add this to the app’s MCP settings, then quit and reopen it. For Claude’s desktop app that’s the file claude_desktop_config.json in ~/Library/Application Support/Claude." = "Aggiungi questo alle impostazioni MCP dell’app, poi chiudila e riaprila. Per l’app desktop di Claude è il file claude_desktop_config.json in ~/Library/Application Support/Claude.";
+"Both point at where Glideball is now, so copy them again if you move or rename it. Glideball never changes another app’s settings itself. This is new and hasn’t been tried with every AI app yet." = "Entrambi puntano a dove si trova Glideball adesso, quindi copiali di nuovo se lo sposti o lo rinomini. Glideball non modifica mai da solo le impostazioni di un’altra app. È una novità e non è ancora stata provata con tutte le app di IA.";
+"Let an AI app on this Mac read your setup and suggest changes for 15 minutes." = "Lascia che un’app di IA su questo Mac legga la tua configurazione e proponga modifiche per 15 minuti.";
+"ai, mcp, claude, assistant, agent, chatbot, model context protocol, local, suggest" = "ia, ai, mcp, claude, assistente, agente, chatbot, model context protocol, locale, proporre, suggerire";
+"mcp, claude, claude code, cursor, server, config, json, command, terminal" = "mcp, claude, claude code, cursor, server, configurazione, config, json, comando, terminale";

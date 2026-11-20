@@ -2863,3 +2863,30 @@
 
 /* Import toast: everything that would have changed was left out */
 "Nothing changed. Everything that would have changed was left out." = "바뀐 게 없어요. 바뀔 항목이 모두 빠졌어요.";
+
+/* Allow AI apps (AIApps.swift, AIAppsCenter.swift, Views/AIAppsViews.swift): the timed switch, an AI app's proposal in the preview, Connect an AI app */
+"Allow AI apps" = "AI 앱 허용";
+"Lets an AI app on this Mac read your Glideball setup and suggest changes. You approve each one in Glideball, and it turns itself off after 15 minutes." = "이 Mac의 AI 앱이 Glideball 설정을 읽고 변경 사항을 제안할 수 있어요. 제안은 하나씩 Glideball에서 승인하고, 15분이 지나면 저절로 꺼져요.";
+"AI apps on this Mac can read your setup and suggest changes until this turns itself off. You approve each change here, and what they read goes to that app’s AI service." = "저절로 꺼질 때까지 이 Mac의 AI 앱이 설정을 읽고 변경 사항을 제안할 수 있어요. 변경 사항은 하나씩 여기서 승인하고, AI 앱이 읽은 내용은 그 앱의 AI 서비스로 전달돼요.";
+"Glideball couldn’t open its connection for AI apps, so this stayed off. Try again." = "AI 앱용 연결을 열지 못해서 꺼진 상태로 남았어요. 다시 시도해 보세요.";
+"Turns itself off in %@" = "%@ 뒤에 저절로 꺼져요";
+"AI apps allowed" = "AI 앱 허용 중";
+"Stop" = "중지";
+"Turn off Allow AI apps now" = "‘AI 앱 허용’ 지금 끄기";
+"Allow AI apps turned itself off." = "‘AI 앱 허용’이 저절로 꺼졌어요.";
+"Allow AI apps turned itself off after three suggestions you didn’t apply." = "제안을 세 번 연속 적용하지 않아서 ‘AI 앱 허용’이 꺼졌어요.";
+"The AI app’s suggestion was taken down. Nothing changed." = "AI 앱의 제안을 내렸어요. 아무것도 바뀌지 않았어요.";
+"A setup from an AI app" = "AI 앱이 보낸 설정";
+"Sent by an AI app on this Mac. Check it like you’d check anything from someone else. Nothing has changed yet." = "이 Mac의 AI 앱이 보냈어요. 다른 사람이 보낸 것처럼 확인해 보세요. 아직 아무것도 바뀌지 않았어요.";
+"Sent by an AI app on this Mac that calls itself “%@”. Glideball hasn’t checked that name. Check the setup like you’d check anything from someone else. Nothing has changed yet." = "이 Mac의 AI 앱이 보냈어요. 앱이 스스로 ‘%@’(이)라고 밝혔지만, Glideball이 그 이름을 확인하지는 않았어요. 다른 사람이 보낸 것처럼 설정을 확인해 보세요. 아직 아무것도 바뀌지 않았어요.";
+"Connect an AI app" = "AI 앱 연결하기";
+"What to copy into Claude or another AI app so it can find Glideball." = "Claude나 다른 AI 앱이 Glideball을 찾을 수 있도록 복사해 넣을 내용이에요.";
+"Show How…" = "방법 보기…";
+"Some AI apps can use tools on your Mac (it’s called MCP). Add Glideball to one and it can read your setup and suggest changes while Allow AI apps is on. You still approve every change in Glideball." = "일부 AI 앱은 Mac에 있는 도구를 사용할 수 있어요(MCP라고 해요). 그런 앱에 Glideball을 추가하면 ‘AI 앱 허용’이 켜져 있는 동안 설정을 읽고 변경 사항을 제안할 수 있어요. 변경 사항은 여전히 하나씩 Glideball에서 승인해요.";
+"Run this in Terminal:" = "터미널에서 다음을 실행하세요:";
+"Claude’s desktop app and other apps" = "Claude 데스크탑 앱 및 다른 앱";
+"Add this to the app’s MCP settings, then quit and reopen it. For Claude’s desktop app that’s the file claude_desktop_config.json in ~/Library/Application Support/Claude." = "앱의 MCP 설정에 이 내용을 추가한 다음 앱을 종료했다가 다시 여세요. Claude 데스크탑 앱에서는 ~/Library/Application Support/Claude에 있는 claude_desktop_config.json 파일이에요.";
+"Both point at where Glideball is now, so copy them again if you move or rename it. Glideball never changes another app’s settings itself. This is new and hasn’t been tried with every AI app yet." = "둘 다 지금 Glideball이 있는 위치를 가리키니까, Glideball을 옮기거나 이름을 바꾸면 다시 복사하세요. Glideball이 다른 앱의 설정을 직접 바꾸는 일은 없어요. 새로 생긴 기능이라 아직 모든 AI 앱에서 써 보지는 못했어요.";
+"Let an AI app on this Mac read your setup and suggest changes for 15 minutes." = "이 Mac의 AI 앱이 15분 동안 설정을 읽고 변경 사항을 제안하도록 허용해요.";
+"ai, mcp, claude, assistant, agent, chatbot, model context protocol, local, suggest" = "ai, mcp, claude, 어시스턴트, 에이전트, 챗봇, model context protocol, 로컬, 제안, 인공지능";
+"mcp, claude, claude code, cursor, server, config, json, command, terminal" = "mcp, claude, claude code, cursor, 서버, 설정, config, json, 명령어, 터미널";
