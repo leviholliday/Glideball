@@ -815,11 +815,18 @@ struct ButtonRow: View {
                     .accessibilityLabel("Left click · locked")
             } else {
                 ActionPickerButton(action: action, button: index) { action = $0 }
-                if hasEditor, foldID != nil {
-                    FoldChevron(folded: folded, toggle: toggleFold)
-                        .padding(.leading, -4)
-                        .transition(.opacity)
+            }
+            // Where editors can fold, every row keeps the chevron's place, so what each button
+            // does lines up down the list whether or not its row has a chevron.
+            if foldID != nil {
+                ZStack {
+                    if hasEditor {
+                        FoldChevron(folded: folded, toggle: toggleFold)
+                            .transition(.opacity)
+                    }
                 }
+                .frame(width: FoldChevron.side, height: FoldChevron.side)
+                .padding(.leading, -4)
             }
         }
         .padding(.horizontal, Theme.Space.rowHorizontal)
@@ -947,13 +954,16 @@ struct FoldChevron: View {
                : String(localized: "Hide its settings", comment: "Buttons page: the chevron that folds a Gestures or Switcher editor away")
     }
 
+    /// Its width and height (rows without one leave this much room where it would be).
+    static let side: CGFloat = 24
+
     var body: some View {
         Button(action: toggle) {
             Image(systemName: "chevron.down")
                 .font(.system(size: 11, weight: .semibold))
                 .rotationEffect(.degrees(folded ? -90 : 0))
                 .foregroundStyle(hovering ? .primary : .secondary)
-                .frame(width: 24, height: 24)
+                .frame(width: Self.side, height: Self.side)
                 .background(Circle().fill(Color.primary.opacity(hovering ? 0.08 : 0)))
                 .contentShape(Circle())
         }
