@@ -346,6 +346,50 @@ do {
         if round == 3 { rig2.app.personApplies() } else { rig2.app.personCancels() }
     }
     check(rig2.gate.isOpen && rig2.app.turnedOff == 0, "an Apply didn't reset the count of declines")
+
+    // Only the person saying no counts. A proposal that ran out of time isn't a no...
+    let rig3 = Rig()
+    for round in 1...4 {
+        rig3.gate.open()   // (four times five minutes is more than the fifteen)
+        rig3.clock += 2
+        let id = rig3.propose(code(#""trackingSpeed": \#(10 + round)"#)).json["id"] as? String ?? ""
+        rig3.clock += AIAppsLimits.proposalLife
+        rig3.service.tick()
+        check(rig3.status(id) == "expired" && rig3.app.showing == nil, "round \(round) didn't run out of time")
+    }
+    check(rig3.gate.isOpen && rig3.app.turnedOff == 0 && rig3.app.withdrawn.count == 4, "proposals that ran out of time turned the switch off")
+    // ...and it doesn't start the count again either: no, no, out of time, no.
+    let rig4 = Rig()
+    for round in 1...4 {
+        rig4.clock += 2
+        _ = rig4.propose(code(#""trackingSpeed": \#(10 + round)"#))
+        if round == 3 {
+            rig4.clock += AIAppsLimits.proposalLife
+            rig4.service.tick()
+            check(rig4.gate.isOpen && rig4.app.showing == nil && rig4.app.turnedOff == 0, "two declines and one out of time turned the switch off")
+        } else {
+            rig4.app.personCancels()
+        }
+    }
+    check(!rig4.gate.isOpen && rig4.app.turnedOff == 1, "a third decline after one ran out of time didn't turn the switch off")
+    // Neither is one that went because the switch did: no, no, switched off with one up, on again, no, no.
+    let rig5 = Rig()
+    for round in 1...5 {
+        rig5.clock += 2
+        _ = rig5.propose(code(#""trackingSpeed": \#(10 + round)"#))
+        if round == 3 {
+            rig5.service.closeGate()
+            check(rig5.app.showing == nil && rig5.app.turnedOff == 0, "switching it off with a proposal up counted as a decline")
+            rig5.gate.open()
+        } else {
+            rig5.app.personCancels()
+        }
+    }
+    check(rig5.gate.isOpen && rig5.app.turnedOff == 0 && rig5.app.presented == 5, "a proposal taken down with the switch counted toward the three")
+    rig5.clock += 2
+    _ = rig5.propose(code(#""trackingSpeed": 19"#))
+    rig5.app.personCancels()
+    check(!rig5.gate.isOpen && rig5.app.turnedOff == 1, "three declines after switching it on again didn't turn it off")
 }
 
 // MARK: - Destructive shortcuts and the primary button

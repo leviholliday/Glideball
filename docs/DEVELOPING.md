@@ -466,8 +466,9 @@ person to turn on Allow AI apps".
 **The switch.** Settings › General › Allow AI apps. Off at every launch. On: 15 minutes from the click
 (`AIAppsGate`, on a clock that keeps running through sleep), with the countdown beside the switch, in
 the sidebar and in the menu-bar panel, each with Stop. It goes off by itself when the time is up, when
-the Mac sleeps or the screen locks, when Glideball quits, and after three proposals in a row weren't
-applied. It works the same paused or not. It lives in memory only: not in UserDefaults, `GlideConfig`,
+the Mac sleeps or the screen locks, when Glideball quits, and after three proposals in a row were
+turned down (Cancel, or the sheet closed some other way; one that ran out of its five minutes or went
+with the switch is neither a no nor a fresh start for the count). It works the same paused or not. It lives in memory only: not in UserDefaults, `GlideConfig`,
 a settings file, a share, sync, backups, status.json, the opt-in stats or a crash report, and a setup
 code can't name it. Nothing about it is logged. The socket file exists only while it's on (a file a
 crash left is deleted at the next launch), and every request is checked against the switch again

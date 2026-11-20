@@ -57,7 +57,8 @@ enum AIAppsLimits {
     static let maxLineBytes = 128 * 1024
     static let perSecond = 20.0
     static let maxClientName = 40
-    /// This many proposals turned down in a row and the switch turns itself off.
+    /// This many proposals turned down in a row (Cancel, or the sheet closed) and the switch
+    /// turns itself off. One that only ran out of time, or went with the switch, isn't one.
     static let declinesBeforeOff = 3
     /// How many finished proposals check_proposal still knows about (ids and outcomes only).
     static let remembered = 8
@@ -384,15 +385,15 @@ final class AIAppsService {
     }
 
     /// Takes a waiting proposal down once its 5 minutes are up or the switch is off. Called
-    /// before every request and by the app's countdown, once a second.
+    /// before every request and by the app's countdown, once a second. Running out of time
+    /// isn't the person saying no, so it doesn't count toward the three that turn the switch
+    /// off (and doesn't start that count again either).
     func tick() {
         guard let open else { return }
-        let gone = !gate.isOpen
-        guard gone || now() - open.at >= AIAppsLimits.proposalLife || now() < open.at else { return }
+        guard !gate.isOpen || now() - open.at >= AIAppsLimits.proposalLife || now() < open.at else { return }
         self.open = nil
         remember(Finished(id: open.id, status: .expired))
         host?.withdraw(proposal: open.id)
-        if !gone { turnedDown() }
     }
 
     /// The person turned the switch off, or Glideball is quitting.

@@ -848,6 +848,34 @@ enum SelfTest {
                 model.cancelIncoming()
             }
             try check(!center.isOn && model.config == before, "three proposals turned down didn't turn it off")
+            // Only your own no counts. Two turned down, then one that ran out of time: still on. A third no: off.
+            center.turnOn()
+            for speed in [11, 12] {
+                _ = try propose(["trackingSpeed": speed])
+                model.cancelIncoming()
+            }
+            _ = try propose(["trackingSpeed": 13])
+            now += AIAppsLimits.proposalLife
+            center.tick()
+            try check(center.isOn && model.pendingIncoming == nil, "a suggestion that ran out of time counted as one you didn't apply")
+            _ = try propose(["trackingSpeed": 13])
+            model.cancelIncoming()
+            try check(!center.isOn && model.config == before, "a third one turned down, after one ran out of time, didn't turn it off")
+            // One that went because you switched it off isn't a no either.
+            center.turnOn()
+            for speed in [11, 12] {
+                _ = try propose(["trackingSpeed": speed])
+                model.cancelIncoming()
+            }
+            _ = try propose(["trackingSpeed": 13])
+            center.turnOff()
+            center.turnOn()
+            for speed in [11, 12] {
+                _ = try propose(["trackingSpeed": speed])
+                model.cancelIncoming()
+            }
+            try check(center.isOn && model.config == before, "a suggestion taken down with the switch counted as one you didn't apply")
+            center.turnOff()
 
             // Nothing about any of it is kept: not in the saved settings, the stats or the settings file.
             let added = Set(UserDefaults.standard.dictionaryRepresentation().keys).subtracting(keysBefore)
