@@ -182,6 +182,8 @@ final class ExternalControl {
         guard text.utf8.count <= maxImportURLLength else { return .failure(.tooLong) }
         guard parts.user == nil, parts.password == nil, parts.port == nil,
               parts.percentEncodedPath.isEmpty || parts.percentEncodedPath == "/" else { return .failure(.malformed) }
+        // "glideball://import:?d=…" has an empty port, which URLComponents gives as none.
+        guard !text.dropFirst(scheme.count + 3).prefix(while: { $0 != "/" && $0 != "?" && $0 != "#" }).contains(":") else { return .failure(.malformed) }
         let items = parts.queryItems ?? []
         guard items.count <= maxQueryItems else { return .failure(.badParameter) }
         let values = items.filter { $0.name == "d" }

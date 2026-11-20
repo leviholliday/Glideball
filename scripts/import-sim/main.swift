@@ -539,6 +539,15 @@ refused("GLIDEBALL://toggle", "an upper-case command", .notAShare)
 refused("glideball://import?d=" + pd + "&d=" + pd, "two d's (the URL handler refuses it)", .damaged)
 refused("glideball://import/evil?d=" + pd, "a path on the import link", .damaged)
 refused("glideball://user@import?d=" + pd, "a user on the import link")
+refused("glideball://import:?d=" + pd, "a colon after import (an empty port; regression)", .damaged)
+refused("glideball://import:/?d=" + pd, "a colon and a slash after import", .damaged)
+refused("glideball://import/?d=" + pd, "a slash after import", .damaged)
+refused("glideball://import?x=1&d=" + pd, "something before d", .damaged)
+refused("see glideball://import:?d=" + pd + " thanks", "a colon after import, in a message", .damaged)
+if let url = URL(string: "glideball://import:?d=" + pd), case .success? = ExternalControl.parseImport(url) {
+    check(false, "the URL handler took glideball://import:?d= (an empty port)")
+}
+accepted("GLIDEBALL://IMPORT?d=" + pd, "an upper-case app link", carrier: .app)
 refused("glideball://import?d=AAAA", "a broken app link", .damaged)
 refused("glideball://import?d=" + String(repeating: "A", count: 2200), "an app link over 2,100 characters", .damaged)
 refused("\(pasteWeb) glideball://import?d=\(pd)&d=\(pd)", "a good link beside a refused app link")
@@ -576,7 +585,7 @@ for i in 0..<2_000 {
     if case .share = ImportPaste.read(text) {
         acceptedMangled += 1
         let plain = String(String.UnicodeScalarView(text.unicodeScalars.filter { $0.properties.generalCategory != .format })).lowercased()
-        check(plain.contains("https://glideball.netlify.app/s/#") || plain.contains("glideball://import?"),
+        check(plain.contains("https://glideball.netlify.app/s/#") || plain.contains("glideball://import?d="),
               "a mangled message was accepted without one of Glideball's links: \(text.debugDescription.prefix(120))")
     }
 }

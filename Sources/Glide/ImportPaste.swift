@@ -23,8 +23,11 @@ import Foundation
 //                                              then exactly "/s/#"; nothing else
 //                                              before the #: no port, user, query,
 //                                              other path, or trailing dot)
-//      glideball://import?d=<d>               (read by ExternalControl.parseImport,
-//                                              exactly as the URL handler reads it)
+//      glideball://import?d=<d>               (starting exactly so, scheme and "import"
+//                                              in any ASCII case, then read by
+//                                              ExternalControl.parseImport as the URL
+//                                              handler reads it; "import:?d=" or
+//                                              "import/?d=" is refused as damaged)
 //    Any other link is refused, even when what follows its # would decode:
 //    http://, glideball.netlify.app.evil.com, evil.com/glideball.netlify.app/s/#,
 //    glideball.netlify.app@evil.com, :443, xn-- look-alikes. A glideball:// link
@@ -51,6 +54,8 @@ enum ImportPaste {
     static let minBarePayload = 24
     static let webPrefix = "https://glideball.netlify.app/s/#"
     static let appScheme = "glideball://"
+    /// How an app link starts, exactly (scheme and "import" in any ASCII case).
+    static let appImportPrefix = "glideball://import?d="
 
     /// How the setup arrived in the text.
     enum Carrier: Equatable {
@@ -138,8 +143,11 @@ enum ImportPaste {
                     continue
                 }
                 switch result {
-                case .success(let share): found.append((appPayload(word), .app, share, false))
-                case .failure: found.append((appPayload(word), .app, nil, true))
+                // The URL handler's reader goes by the URL's parts, and URLComponents reads
+                // "glideball://import:?d=…" (an empty port) and "import/?d=…" as import too.
+                // A pasted link is only taken written exactly as Glideball writes it.
+                case .success(let share) where hasPrefix(word, appImportPrefix): found.append((appPayload(word), .app, share, false))
+                case .success, .failure: found.append((appPayload(word), .app, nil, true))
                 }
             } else if looksLikeALink(word) {
                 linkLike = true
