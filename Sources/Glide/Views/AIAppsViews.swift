@@ -48,7 +48,7 @@ struct ConnectAIAppRow: View {
     @State private var connecting = false
 
     var body: some View {
-        SettingsRow(title: "Connect an AI app", hint: String(localized: "What to copy into Claude or another AI app on this Mac so it can find Glideball.",
+        SettingsRow(title: "Connect an AI app", hint: String(localized: "What to copy into Claude or another AI app so it can find Glideball.",
                                                               comment: "Settings › General hint: Connect an AI app"),
                     symbol: "cable.connector.horizontal") {
             Button("Show How…") { connecting = true }
