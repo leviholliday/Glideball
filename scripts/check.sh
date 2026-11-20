@@ -14,6 +14,7 @@
 #   gesture-sim  scripts/gesture-sim/run.sh      gesture buttons, including unplug/pause mid-gesture
 #   device-sim   scripts/device-sim/run.sh       per-display speed, connection types, battery notices
 #   import-sim   scripts/import-sim/run.sh       settings files, shared setups, KensingtonWorks: good, hostile, fuzzed
+#   mcp-sim      scripts/mcp-sim/run.sh          Allow AI apps: a fake AI app against the real tools, socket and --mcp helper
 #   engine-fuzz  scripts/engine-fuzz/run.sh      the real engine, ~1.2M random events + one random seed
 #   file-fuzz    scripts/file-fuzz/run.sh        hostile settings, shares, links, KensingtonWorks, backup, sync, crash-report files
 #   update-fuzz  scripts/update-fuzz/run.sh      the updater: hostile release lists, versions, zips, signatures, install script (offline)
@@ -33,7 +34,7 @@ VERBOSE=0
 for arg in "$@"; do
   case $arg in
     -v|--verbose) VERBOSE=1 ;;
-    -h|--help) sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) print -u2 "unknown option: $arg"; exit 64 ;;
   esac
 done
@@ -84,6 +85,7 @@ run command-sim "glideball:// URLs and status.json, good and hostile" scripts/co
 run gesture-sim "gesture buttons: scripted, hostile and random events" scripts/gesture-sim/run.sh
 run device-sim "per-display speed, connection types, low-battery notices" scripts/device-sim/run.sh
 run import-sim "settings files, shared setups, KensingtonWorks: good, hostile, fuzzed" scripts/import-sim/run.sh
+run mcp-sim "Allow AI apps: a fake AI app, good and hostile, against the real tools, socket and helper" scripts/mcp-sim/run.sh
 # Short budgets here (a few seconds each once compiled); scripts/fuzz.sh runs them for long.
 # The engine fuzzer adds one random seed each time and prints it in its log, so every
 # check run explores something new and any failure can be replayed.
