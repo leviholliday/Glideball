@@ -216,6 +216,13 @@ final class FakeIO: EngineIO {
         return true
     }
     override func hideWheel() { wheel = nil }
+    /// Presses that asked the overlay to get their ring ready.
+    nonisolated(unsafe) static var primes = 0
+    override func primeWheel(_ model: WheelOverlayModel) {
+        if wheel != nil { wheelFault = "a ring was primed while one was up" }
+        if !model.showsRing || model.selected != nil || model.sub || model.dot != .zero { wheelFault = "the primed ring isn't a fresh first ring" }
+        Self.primes += 1
+    }
     override func keepWheel() -> Bool {
         guard wheel != nil else { return false }
         wheelKeptAt = clock
@@ -3561,6 +3568,17 @@ do {
     let missing = ["press→action", "release→action", "roll→action", "release→app switch"].filter { !line.contains($0 + " ") }
     if missing.isEmpty { print("  ✓ timing: the cases above were measured (\(line.prefix(110))…)") }
     else { failed += 1; print("  ✗ timing: nothing measured for \(missing) in “\(line)”") }
+    // "Press primes everything": a release's action is sent within one display frame (the
+    // engine's own share of it: from the event to the key queue's work having run).
+    if let late = PressTiming.shared.slipped() {
+        failed += 1
+        print("  ✗ timing: \(late)")
+    } else if let s = PressTiming.shared.stat(.releaseToAction) {
+        print("  ✓ timing: release→action within a frame (\(s.count)×, med \(PressTiming.ms(s.median)) ms, worst \(PressTiming.ms(s.worst)) ms; a frame is \(PressTiming.ms(PressTiming.frame())) ms)")
+    }
+    // And the press asked the overlay to get each hold's ring ready before it was due.
+    if FakeIO.primes > 0 { print("  ✓ timing: the press primed the ring (\(FakeIO.primes) holds)") }
+    else { failed += 1; print("  ✗ timing: no press primed its ring") }
     let t = PressTiming()
     for ms in [3.0, 1.0, 2.0, 40.0, 2.5] { t.add(.releaseToAction, from: 100, to: 100 + ms / 1000) }
     t.add(.releaseToAction, from: 100, to: 99)      // backwards: not a measurement

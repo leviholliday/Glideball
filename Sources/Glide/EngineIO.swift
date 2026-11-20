@@ -304,6 +304,14 @@ class EngineIO {
     /// Takes the Wheel's ring down. Safe to call any number of times, from any thread.
     func hideWheel() { wheel.hide() }
 
+    /// A hold that may show `model` has just begun: the overlay gets it ready on the main thread
+    /// (its window, its chips laid out, the tick's sound) while the designed wait runs. Nothing
+    /// is shown, nothing waits for it, and it's queued before any `showWheel` of the same hold.
+    func primeWheel(_ model: WheelOverlayModel) {
+        guard Self.wheelPresenter != nil else { return }
+        DispatchQueue.main.async { Self.wheelPresenter?.primeWheel(model) }
+    }
+
     /// The release is about to run the ring's place `place`: the overlay pulses that chip as it
     /// goes (call it before the hold ends, so it's on the main thread before the take-down).
     /// Drawing only; nothing waits for it.
@@ -473,6 +481,9 @@ class EngineIO {
 
     /// Key and click posting happens off the input thread, in order.
     func keys(_ work: @escaping () -> Void) { keyQueue.async(execute: work) }
+    /// A press whose release will post something: the key queue's thread is woken now (and runs
+    /// `work`, which posts nothing), so the release finds it running.
+    func warmKeys(_ work: @escaping () -> Void = {}) { keyQueue.async(execute: work) }
     /// …and waits for it (pause, quit).
     func keysNow(_ work: () -> Void) { keyQueue.sync(execute: work) }
 

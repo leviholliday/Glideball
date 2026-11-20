@@ -3335,6 +3335,9 @@ final class Engine {
     /// override on its buttons, the pointer frozen, and every way out through `gestures`.
     private func beginHold(_ kind: HoldKind, buttons: [Int64]) {
         holdPressedAt = actionOrigin?.at ?? PressTiming.now()
+        // The press readies what the release will need: the key queue's thread awake, the event
+        // source made. (The ring's own getting-ready is below, once the hold is on.)
+        io.warmKeys { _ = Self.keySource }
         let effects: [GestureEffect]
         switch kind {
         case .gesture(let g):
@@ -3364,6 +3367,8 @@ final class Engine {
             // Only what kind of hold, never what it does.
             diagnostics.record("gesture hold on \(buttons), ring \(g.show.rawValue)")
             if g.takesRing { scroller.stopRing() }   // the ring is the ring job's now: nothing it set going keeps scrolling
+            // The ring isn't due for 180 ms (or a pause): the overlay lays this hold's out now.
+            if let ring = gestures.wheelPreview() { io.primeWheel(ring) }
             wheelReveal?.invalidate()
             wheelReveal = nil
             switch g.show {

@@ -52,10 +52,15 @@ struct WheelLayout {
 @Observable
 final class WheelOverlayState {
     var model: WheelOverlayModel? {
-        didSet { follow(from: oldValue) }
+        didSet { follow(from: fresh ? nil : oldValue) }
     }
     /// The ring is in the window (from the moment it's shown until its exit has played).
     var shown = false
+    /// The press laid this hold's ring out ahead of time: it's in the tree at its entrance's first
+    /// frame, in a window that isn't on screen yet, so showing it only has to start the entrance.
+    private(set) var primed = false
+    /// The next model starts from nothing, whatever a primed ring left behind.
+    @ObservationIgnored private var fresh = false
     /// Changes with every appearance, so each one plays its entrance afresh.
     private(set) var appearCount = 0
     /// Where the light (the lit chip's blue) is around the ring, in degrees clockwise from up,
@@ -90,11 +95,33 @@ final class WheelOverlayState {
     static let fullWave = 0.85
     @ObservationIgnored private var lastShown = -Double.infinity
 
-    /// A new appearance: the entrance plays again and nothing is left of the last exit.
-    func appear(now: Double = CACurrentMediaTime()) {
+    /// The press: lays `m` out (the hold's first ring, nothing rolled or lit) without showing it.
+    /// False if a ring is up or leaving, or this one is already laid out.
+    func prime(_ m: WheelOverlayModel) -> Bool {
+        guard !shown, frozen == nil, !(primed && model == m) else { return false }
         ran = nil
         exit = nil
+        fresh = true
+        model = m
+        fresh = false
         appearCount &+= 1
+        primed = true
+        return true
+    }
+
+    /// A new appearance, showing `m`: the entrance plays again and nothing is left of the last
+    /// exit. If the press laid the same ring out (`prime`), that one is used as it stands; the
+    /// roll since then, and whatever it lit, are only values changing.
+    func appear(_ m: WheelOverlayModel, now: Double = CACurrentMediaTime()) {
+        let warm = primed && model.map { $0.showsRing && m.showsRing && $0.sub == m.sub && $0.eight == m.eight
+            && $0.slots == m.slots && $0.behind == m.behind && $0.ring == m.ring } == true
+        ran = nil
+        exit = nil
+        fresh = primed
+        model = m
+        fresh = false
+        primed = false
+        if !warm { appearCount &+= 1 }
         // 0.4 right after the last one, rising to the full 0.85 over eight seconds of rest.
         waveStrength = 0.4 + (Self.fullWave - 0.4) * max(0, min(1, (now - lastShown) / 8))
         lastShown = now
@@ -252,7 +279,7 @@ struct WheelOverlayView: View {
 
     var body: some View {
         ZStack {
-            if let m = state.model, state.shown {
+            if let m = state.model, state.shown || state.primed {
                 Group {
                     if m.showsRing {
                         WheelRings(state: state, m: m)
@@ -401,12 +428,16 @@ private struct WheelRings: View {
         .animation(WheelMotion.fade, value: m.settling)
         .animation(.easeOut(duration: 0.06), value: state.ran)
         .onAppear {
-            guard state.frozen == nil else { return }
+            // A ring the press laid out ahead waits here, at its first frame, until it's shown.
+            guard state.frozen == nil, state.shown else { return }
             entered = true
         }
-        .task {
+        .onChange(of: state.shown) { _, shown in
+            if shown, state.frozen == nil { entered = true }
+        }
+        .task(id: state.shown) {
             // The wave is only in the tree while it rolls out.
-            guard state.frozen == nil else { return }
+            guard state.frozen == nil, state.shown else { return }
             try? await Task.sleep(for: .seconds(WheelMotion.waveTime + 0.06))
             waving = false
         }
@@ -971,8 +1002,10 @@ private final class WheelWindow: NSPanel {
 final class WheelOverlayPanel: WheelPresenting {
     static let shared = WheelOverlayPanel()
 
-    private let state = WheelOverlayState()
+    let state = WheelOverlayState()
     private var window: NSPanel?
+    /// The self-test draws what's in the window (which it never orders in).
+    var contentForTests: NSView? { Sandbox.isActive ? window?.contentView : nil }
     private var leaving: DispatchWorkItem?
     private var lastSelected: Int?
 
@@ -995,6 +1028,37 @@ final class WheelOverlayPanel: WheelPresenting {
         MainActor.assumeIsolated { hide() }
     }
 
+    nonisolated func primeWheel(_ model: WheelOverlayModel) {
+        MainActor.assumeIsolated { prime(model) }
+    }
+
+    /// The press ("Press primes everything"): everything the ring will need when it's shown is
+    /// made ready now, while the designed wait runs. The window exists, this hold's chips are
+    /// built and laid out in it (still off screen, at the entrance's first frame), and the tick's
+    /// sound is loaded. Nothing is drawn on screen and nothing moves; if the ring never comes
+    /// up, the laid-out ring just waits for the next press (the same ring isn't laid out twice).
+    private func prime(_ model: WheelOverlayModel) {
+        let window = self.window ?? make()
+        guard !onScreen(window), leaving == nil else { return }
+        if state.prime(model) { window.contentView?.layoutSubtreeIfNeeded() }
+        Sounds.shared.warmTicks(kind: .buttons)
+    }
+
+    /// Whether the ring's window is in. The sandbox never orders a window in (self-test): there
+    /// it's a flag, and the first frame is laid out and drawn where it would have been ordered in.
+    private var sandboxUp = false
+    private func onScreen(_ window: NSWindow) -> Bool { Sandbox.isActive ? sandboxUp : window.isVisible }
+    private func orderIn(_ window: NSWindow) {
+        guard Sandbox.isActive else { return window.orderFrontRegardless() }
+        sandboxUp = true
+        window.contentView?.layoutSubtreeIfNeeded()
+        window.contentView?.displayIfNeeded()
+    }
+    private func orderOut(_ window: NSWindow) {
+        sandboxUp = false
+        window.orderOut(nil)
+    }
+
     nonisolated func wheelRan(place: Int) {
         MainActor.assumeIsolated { ran(place) }
     }
@@ -1002,7 +1066,7 @@ final class WheelOverlayPanel: WheelPresenting {
     /// The release ran `place`: its chip flares and the rest dim as the ring goes (the hide comes
     /// just after this, and plays the launch).
     private func ran(_ place: Int) {
-        guard let window, window.isVisible, state.model != nil, state.exit == nil else { return }
+        guard let window, onScreen(window), state.model != nil, state.exit == nil else { return }
         state.ran = place
         state.ranCount &+= 1
         ranAt = CACurrentMediaTime()
@@ -1012,7 +1076,7 @@ final class WheelOverlayPanel: WheelPresenting {
     private func show(_ model: WheelOverlayModel, at point: CGPoint) {
         let window = self.window ?? make()
         // Shown again while it was leaving: it comes up afresh.
-        let appearing = !window.isVisible || !state.shown || leaving != nil
+        let appearing = !onScreen(window) || !state.shown || leaving != nil
         leaving?.cancel()
         leaving = nil
         // One soft tick when the light moves to another slot (none when it goes out).
@@ -1022,19 +1086,20 @@ final class WheelOverlayPanel: WheelPresenting {
         lastSelected = model.selected
         let size = WheelLayout.canvas
         window.setFrame(NSRect(origin: EngineIO.cocoaOrigin(of: point, hotSpot: WheelLayout.centre, height: size.height), size: size), display: false)
-        state.model = model
         if appearing {
             // The entrance is the view's own (`WheelRings`): the ring is up from this frame.
-            state.appear()
-            window.orderFrontRegardless()
+            state.appear(model)
+            orderIn(window)
             // Measurement only: the window is in, and this is when its first frame is committed.
             if model.showsRing { PressTiming.afterThisCommit { PressTiming.shared.shown(.ring) } }
+        } else {
+            state.model = model
         }
     }
 
     private func hide() {
         lastSelected = nil
-        guard let window, window.isVisible, leaving == nil else { return }
+        guard let window, onScreen(window), leaving == nil else { return }
         // Just ran something: the launch (its chip flares and lifts outward, the rest falls back
         // into the pointer; 0.26 s in all, as before). Otherwise the light drains back into the
         // pointer, 0.10 s. The window is click-through and the hold is already over, so nothing
@@ -1044,7 +1109,7 @@ final class WheelOverlayPanel: WheelPresenting {
         state.exit = WheelExit(kind: kind)
         let work = DispatchWorkItem { [weak self] in
             guard let self else { return }
-            window.orderOut(nil)
+            orderOut(window)
             state.left()
             state.model = nil
             state.shown = false

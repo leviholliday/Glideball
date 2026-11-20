@@ -332,4 +332,11 @@ protocol WheelPresenting: AnyObject {
     func hideWheel()
     /// The release ran the place lit at `place` (its chip pulses as the ring goes).
     func wheelRan(place: Int)
+    /// A hold that may show `model` (its first ring, nothing rolled) has just begun: get it ready
+    /// without showing anything.
+    func primeWheel(_ model: WheelOverlayModel)
+}
+
+extension WheelPresenting {
+    func primeWheel(_ model: WheelOverlayModel) {}
 }

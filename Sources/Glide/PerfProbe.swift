@@ -1,4 +1,4 @@
-import Foundation
+import AppKit
 import os
 
 /// How often the window's big views are rebuilt, for chasing jank (a page that
@@ -14,6 +14,14 @@ import os
 /// trackball, which only redraw themselves and keep going while the page scrolls
 /// (the graphs, `LiveTimeline frame`, hold still then).
 /// `defaults delete … GlidePerfProbe` turns it off. `--scroll-bench` reads the counts itself.
+///
+/// It also carries the two numbers a press is judged by ("Press primes everything"): from the
+/// engine deciding to show the ring to its first frame (`ringFirstFrame`; the designed 180 ms and
+/// 0.25 s waits come before that and aren't in it), and from a release to its action being sent
+/// (`releaseToAction`). `PressTiming` takes them whether the probe is on or not (two timestamps
+/// each); with the probe on they're logged once a second beside the rebuilds. Both should stay
+/// under one frame of the display (`frame`): the self-test fails when the ring's doesn't, the
+/// engine fuzzer when the release's doesn't.
 enum PerfProbe {
     static let enabled: Bool = Sandbox.mode == .scrollBench
         || (!Sandbox.isActive && UserDefaults.standard.bool(forKey: "GlidePerfProbe"))
@@ -48,6 +56,32 @@ enum PerfProbe {
         return counts.filter { $0.value > 0 }
     }
 
+    // MARK: The press's two numbers
+
+    struct Press: Equatable {
+        /// The engine asked for the ring → its first frame committed.
+        var ringFirstFrame: PressTiming.Stat?
+        /// A button's release → what it does posted.
+        var releaseToAction: PressTiming.Stat?
+    }
+
+    static func press(_ timing: PressTiming = .shared) -> Press {
+        Press(ringFirstFrame: timing.stat(.drawRing), releaseToAction: timing.stat(.releaseToAction))
+    }
+
+    /// One frame of the display the menu bar is on (60 Hz if there's no display to ask).
+    @MainActor static var frame: Double {
+        PressTiming.frame(hz: NSScreen.main?.maximumFramesPerSecond ?? 60)
+    }
+
+    private static func pressLine() -> String {
+        let p = press()
+        func part(_ name: String, _ s: PressTiming.Stat?) -> String? {
+            s.map { "\(name) \($0.count)× med \(PressTiming.ms($0.median)) worst \(PressTiming.ms($0.worst)) ms" }
+        }
+        return [part("ring first frame", p.ringFirstFrame), part("release→action", p.releaseToAction)].compactMap { $0 }.joined(separator: ", ")
+    }
+
     /// Called with the lock held.
     private static func startReporting() {
         let t = DispatchSource.makeTimerSource(queue: .global(qos: .utility))
@@ -59,6 +93,8 @@ enum PerfProbe {
             lock.unlock()
             let line = snapshot.sorted { $0.key < $1.key }.map { "\($0.key) \($0.value)" }.joined(separator: ", ")
             log.debug("rebuilds/s: \(line, privacy: .public)")
+            let press = pressLine()
+            if !press.isEmpty { log.debug("press: \(press, privacy: .public)") }
         }
         t.resume()
         timer = t

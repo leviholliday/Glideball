@@ -391,6 +391,16 @@ final class GestureMachine {
         h.wheel?.running = nil
     }
 
+    /// The first ring of the hold that has just begun, as it'll look when it comes up with nothing
+    /// rolled or lit (nil: this hold never shows one by itself). For the overlay to get ready at
+    /// the press; it changes nothing here and decides nothing.
+    func wheelPreview() -> WheelOverlayModel? {
+        guard let h = hold, h.switcher == nil, h.gesture.show != .never, !h.dismissed else { return nil }
+        var w = WheelHold(level: nil, steps: h.gesture.steps(level: nil), eight: h.gesture.eight, geometry: WheelGeometry(h.tuning))
+        w.revealed = true
+        return w.overlay(readout: nil, first: h.gesture.steps(level: nil))
+    }
+
     /// The ring's overlay as it should look now (nil: hidden, or nothing to show). Brings the
     /// ring up once `WheelHold.revealDelay` has passed since the press (Right away), or once the
     /// ball has been still for `pauseToShow` with nothing fired (After a pause). A blind hold

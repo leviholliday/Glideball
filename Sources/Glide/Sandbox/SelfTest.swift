@@ -1126,6 +1126,97 @@ enum SelfTest {
             return "sidebar, trackball, menu-bar icon, Overview line and status.json follow an unplug and a replug at once"
         }
 
+        step("press primes everything") {
+            // The ring's first frame, measured the way the app measures it (`PressTiming`: from
+            // the engine asking to the frame's commit), with the real overlay in its real window.
+            // The window is never ordered in here, so this is the main thread's share (building,
+            // laying out and committing the first frame), not the window server's or the glass.
+            let panel = WheelOverlayPanel.shared
+            let timing = PressTiming.shared
+            let rings = [ButtonGesture.standard, .media, .tabs, .zoom].map {
+                WheelOverlayModel.of($0, level: nil, selected: nil, dot: .zero, ring: nil)
+            }
+            let at = CGPoint(x: 400, y: 400)
+            @MainActor func hold(_ ring: WheelOverlayModel, primed: Bool, rolled: Bool = false) {
+                if primed {
+                    panel.primeWheel(ring)   // the press
+                    Sandbox.spin(0.02)       // (some of) the designed wait
+                }
+                var shown = ring
+                if rolled { shown.dot = CGPoint(x: 0.5, y: -0.25); shown.selected = 0 }   // rolled, and lit one, before it came up
+                timing.askedFor(.ring, pressedAt: PressTiming.now())
+                panel.showWheel(shown, at: at)
+                Sandbox.spin(0.03)           // this turn's commit closes the measurement
+                panel.hideWheel()
+                Sandbox.spin(0.14)           // the drain, and the window going
+            }
+            @MainActor func measure(primed: Bool) throws -> PressTiming.Stat {
+                timing.reset()
+                for i in 0..<6 { hold(rings[i % rings.count], primed: primed, rolled: i % 3 == 2) }
+                return try unwrap(PerfProbe.press().ringFirstFrame, "the ring's first frame wasn't measured")
+            }
+            let cold = try measure(primed: false)
+            let warm = try measure(primed: true)
+            try check(cold.count == 6 && warm.count == 6, "measured \(cold.count) and \(warm.count) rings, not 6 and 6")
+            let frame = PerfProbe.frame
+            if let late = timing.slipped(frame: frame) { throw Failure("with the press priming it: \(late)") }
+            try check(PerfProbe.press().releaseToAction == nil, "something posted an action in the sandbox")
+            timing.reset()
+
+            // What priming is allowed to do: lay the ring out, and nothing anyone could see.
+            let state = panel.state
+            try check(state.model == nil && !state.shown && !state.primed, "a ring was left behind")
+            let before = state.appearCount
+            panel.primeWheel(rings[0])
+            try check(state.primed && !state.shown && state.appearCount == before + 1, "the press didn't lay the ring out")
+            panel.primeWheel(rings[0])
+            try check(state.appearCount == before + 1, "the same ring was laid out twice")
+            var rolled = rings[0]
+            rolled.dot = CGPoint(x: 0.25, y: 0)
+            panel.showWheel(rolled, at: at)
+            try check(state.shown && !state.primed && state.appearCount == before + 1 && state.model == rolled,
+                      "showing the ring the press laid out built it again")
+            panel.primeWheel(rings[1])
+            try check(state.model == rolled && !state.primed, "a press changed a ring that was up")
+            panel.hideWheel()
+            Sandbox.spin(0.14)
+            try check(state.model == nil && !state.shown, "the ring didn't go")
+            // A different ring from the one laid out (another button's): built afresh, as it always was.
+            panel.primeWheel(rings[0])
+            panel.showWheel(rings[1], at: at)
+            try check(state.appearCount == before + 3 && state.model == rings[1] && !state.primed, "a different ring reused the one laid out")
+            panel.hideWheel()
+            Sandbox.spin(0.14)
+            // No visible change: a ring the press laid out ends up drawn exactly as one built at
+            // the show does, once its entrance has played.
+            let content = try unwrap(panel.contentForTests, "the ring has no window")
+            @MainActor func settled(primed: Bool) throws -> NSBitmapImageRep {
+                if primed { panel.primeWheel(rings[3]); Sandbox.spin(0.02) }
+                panel.showWheel(rings[3], at: at)
+                Offscreen.settleDown(content, seconds: 0.5)
+                let rep = try unwrap(Offscreen.image(of: content, scale: 1), "the ring didn't draw")
+                panel.hideWheel()
+                Sandbox.spin(0.14)
+                return rep
+            }
+            let built = try settled(primed: false), laidOut = try settled(primed: true)
+            try check(!Offscreen.isBlank(built), "the ring drew nothing")
+            let a = try unwrap(built.bitmapData, "no pixels"), b = try unwrap(laidOut.bitmapData, "no pixels")
+            let bytes = built.bytesPerRow * built.pixelsHigh
+            try check(bytes == laidOut.bytesPerRow * laidOut.pixelsHigh, "the two rings are different sizes")
+            var differing = 0
+            for i in 0..<bytes where abs(Int(a[i]) - Int(b[i])) > 24 { differing += 1 }
+            try check(differing * 200 < bytes, "a primed ring settles differently from one built at the show (\(differing) of \(bytes) bytes differ)")
+
+            // A press whose ring never comes up leaves nothing on screen and nothing running.
+            panel.primeWheel(rings[2])
+            try check(state.primed && !state.shown && NSApp.windows.allSatisfy { !$0.isVisible }, "a primed ring is on screen")
+            func ms(_ s: Double) -> String { String(format: "%.1f", s * 1000) }
+            let same = "settles to the same picture (\(differing) of \(bytes) bytes differ)"
+            return "ring's first frame, offscreen: not primed med \(ms(cold.median)) worst \(ms(cold.worst)) ms; "
+                + "primed at the press med \(ms(warm.median)) worst \(ms(warm.worst)) ms; one frame is \(ms(frame)) ms; \(same)"
+        }
+
         step("welcome tour") {
             for s in WelcomeTourView.Step.allCases {
                 try draw(WelcomeTourView(model: model, step: s), "tour step \(s.rawValue + 1)", size: RenderUI.windowSize)
