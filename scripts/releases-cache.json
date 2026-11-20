@@ -1,5 +1,13 @@
 [
  {
+  "body": "The Welcome Tour now ends with one gesture: hold the top-right button, roll the ball any way and let go, and Glideball turns on. The button still works too. The ring gets ready the moment you press, so it appears sooner. If you keep choosing before the ring has finished appearing, the Buttons page suggests After a pause, once.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `ca26993412791356568fe8fa5c294e6054b639d073474ba9af0d059be8df627a`",
+  "date": "2026-11-20T07:45:28Z",
+  "name": "Glideball 2.10 beta 41",
+  "prerelease": true,
+  "tag": "v2.10-beta.41",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.41"
+ },
+ {
   "body": "Set up with AI's prompt is sharper. The chatbot opens with a short hello and one question, treats its questions as a conversation and not a checklist, and gives you an example to react to when you're not sure what you want. Its ideas fit your hand and are easier to remember, and a shortcut that only works in one app goes in that app's setup. Before it hands you a code it checks nothing you use was lost, tells you what it guessed, and asks you to try it and come back. Import Settings now shows shortcuts that empty the Trash, quit or log out in red and leaves them out unless you tick them. When every change in an import was left out, Glideball says so. On the Buttons page, what each button does lines up on every row. Fixed: two backups saved in the same second could be listed in the wrong order.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `a00bd4c2e9aee971b5df7384a8ea2318a57b0dc090ad46a7043ad73f0e1c91d9`",
   "date": "2026-11-20T07:23:30Z",
   "name": "Glideball 2.10 beta 40",
