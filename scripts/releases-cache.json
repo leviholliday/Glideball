@@ -1,5 +1,13 @@
 [
  {
+  "body": "New: Allow AI apps, in Settings › General. Turn it on and an AI app on this Mac (Claude's desktop app, Claude Code, or another that can use MCP tools) can read your Glideball setup and suggest changes. Every suggestion opens in the same review as an import, and nothing changes until you apply it. It turns itself off after 15 minutes. Connect an AI app shows what to copy into the AI app so it can find Glideball. This is new and hasn't been tried with every AI app yet.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `3eded879c3f13276438658cc03168a41d2f59e9b3fb8108cb77e481cd44f207e`",
+  "date": "2026-11-20T17:10:25Z",
+  "name": "Glideball 2.10 beta 42",
+  "prerelease": true,
+  "tag": "v2.10-beta.42",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.42"
+ },
+ {
   "body": "The Welcome Tour now ends with one gesture: hold the top-right button, roll the ball any way and let go, and Glideball turns on. The button still works too. The ring gets ready the moment you press, so it appears sooner. If you keep choosing before the ring has finished appearing, the Buttons page suggests After a pause, once.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `ca26993412791356568fe8fa5c294e6054b639d073474ba9af0d059be8df627a`",
   "date": "2026-11-20T07:45:28Z",
   "name": "Glideball 2.10 beta 41",
