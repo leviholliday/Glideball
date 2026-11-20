@@ -1500,8 +1500,10 @@ enum SelfTest {
                 // Closing the tour offers the next card 1.2 s later (`showNextPrompt`). The tour
                 // "stays up" until those have come and gone, so none of them shows anything here
                 // (What's New and the rest are checked, in their order, further down).
+                // The system may run a delayed block late (by a tenth of its delay, more on a
+                // busy Mac), so this waits well past 1.2 s: at 1.3 s What's New sometimes slipped out.
                 model.showingWelcomeTour = true
-                Sandbox.spin(1.3)
+                Sandbox.spin(2.0)
                 model.status = saved.0; model.hasAccessibility = saved.1; model.hasInputMonitoring = saved.2
                 model.config = saved.3; model.showingWelcomeTour = saved.4; model.modes = saved.5
                 d.set(saved.6, forKey: WelcomeTour.doneKey)
