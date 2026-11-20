@@ -1,5 +1,13 @@
 [
  {
+  "body": "Set up with AI's prompt is sharper. The chatbot opens with a short hello and one question, treats its questions as a conversation and not a checklist, and gives you an example to react to when you're not sure what you want. Its ideas fit your hand and are easier to remember, and a shortcut that only works in one app goes in that app's setup. Before it hands you a code it checks nothing you use was lost, tells you what it guessed, and asks you to try it and come back. Import Settings now shows shortcuts that empty the Trash, quit or log out in red and leaves them out unless you tick them. When every change in an import was left out, Glideball says so. On the Buttons page, what each button does lines up on every row. Fixed: two backups saved in the same second could be listed in the wrong order.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `a00bd4c2e9aee971b5df7384a8ea2318a57b0dc090ad46a7043ad73f0e1c91d9`",
+  "date": "2026-11-20T07:23:30Z",
+  "name": "Glideball 2.10 beta 40",
+  "prerelease": true,
+  "tag": "v2.10-beta.40",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.40"
+ },
+ {
   "body": "Before you apply a shared setup or a chatbot's code, shortcuts that empty the Trash, quit or log out now show in red and stay off unless you tick them, and every change is listed, even inside a gesture or More. Undo Last Import is in the menu-bar menu and File menu, and ⌘Z works too. Set up with AI's prompt is clearer: it asks what's already working, notices odd spots in your setup, and suggests something sooner.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `dce8b7065362fd34473dabe3e97b6d0db840380a11d15235e7f378aa76b5fb13`",
   "date": "2026-11-19T20:54:02Z",
   "name": "Glideball 2.10 beta 39",
