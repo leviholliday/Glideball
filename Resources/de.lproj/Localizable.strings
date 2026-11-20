@@ -2863,3 +2863,10 @@
 
 /* Import toast: everything that would have changed was left out */
 "Nothing changed. Everything that would have changed was left out." = "Nichts geändert. Alles, was sich geändert hätte, wurde weggelassen.";
+"Start it with one gesture" = "Starte es mit einer einzigen Geste";
+"Hold the top-right button, roll the ball any way you like, and let go." = "Halte die Taste oben rechts gedrückt, rolle die Kugel in eine beliebige Richtung und lass los.";
+"Hold any button except left click, roll the ball any way you like, and let go." = "Halte eine beliebige Taste außer dem Linksklick gedrückt, rolle die Kugel in eine beliebige Richtung und lass los.";
+"Almost. Roll the ball a little before you let go." = "Fast. Rolle die Kugel ein Stück, bevor du loslässt.";
+"Or press Return. See this tour again any time from Help › Show Welcome Tour…" = "Oder drück den Zeilenschalter. Sieh dir diese Tour jederzeit erneut an über Hilfe › Willkommenstour zeigen …";
+"You usually pick before the ring has finished showing. With After a pause, a quick roll just happens and the ring only shows if you wait." = "Du wählst meistens, bevor der Ring ganz da ist. Mit „Nach einer Pause“ passiert ein schnelles Rollen einfach, und der Ring erscheint nur, wenn du wartest.";
+"Switch to After a pause" = "Zu „Nach einer Pause“ wechseln";

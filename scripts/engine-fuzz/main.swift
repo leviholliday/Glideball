@@ -216,6 +216,13 @@ final class FakeIO: EngineIO {
         return true
     }
     override func hideWheel() { wheel = nil }
+    /// Presses that asked the overlay to get their ring ready.
+    nonisolated(unsafe) static var primes = 0
+    override func primeWheel(_ model: WheelOverlayModel) {
+        if wheel != nil { wheelFault = "a ring was primed while one was up" }
+        if !model.showsRing || model.selected != nil || model.sub || model.dot != .zero { wheelFault = "the primed ring isn't a fresh first ring" }
+        Self.primes += 1
+    }
     override func keepWheel() -> Bool {
         guard wheel != nil else { return false }
         wheelKeptAt = clock
@@ -2624,7 +2631,15 @@ func regressionCases() -> [(String, [GlideConfig], [Op])] {
     wheelPrimary.chords = [Chord(buttons: [0, 2], action: .wheel(.standard))]
     wheelPrimary.buttons[0] = .wheel(.standard)
     let right = roll(5, 0, 12), slow = [Op.wait(0.3)]
+    var pauseRingG = ButtonGesture.standard
+    pauseRingG.show = .afterPause
+    var pauseRingC = GlideConfig()
+    pauseRingC.buttons[3] = .gesture(pauseRingG)
     let wheels: [(String, [GlideConfig], [Op])] = [
+        // The mastery hint's one input (`WheelFlash.early`): on a right-away ring, whether the
+        // pick came before the ring had finished appearing; on any other ring, nothing.
+        ("wheel: a pick once the ring has settled isn't early", [wheelC], down(3) + [.wait(0.7)] + right + up(3) + settle),
+        ("gestures: After a pause, a pick on its ring says nothing about early", [pauseRingC], down(3) + [.wait(0.5)] + right + up(3) + settle),
         ("wheel: roll right and let go runs the right slot, once, after the release", [wheelC], down(3) + slow + right + up(3) + settle),
         ("wheel: a still press is the tap", [wheelC], down(3) + [.wait(0.1)] + up(3) + settle),
         ("wheel: a flick and release before the ring draws still runs that way", [wheelC],
@@ -3404,7 +3419,13 @@ let expectations: [String: (World) -> String?] = [
     "gestures: Never with a ring job: the readout shows, the gesture still fires": { w in
         wheelDid(w, holds: 0, picks: 0, ring: 1, shows: 1) ?? (w.gestureFires == 1 && w.modes.gestureFlash?.direction == .right ? nil : "\(w.gestureFires) fires") },
     "wheel: a flick and release before the ring draws still runs that way": { w in
-        wheelDid(w, holds: 1, picks: 1) ?? (w.modes.wheelFlash?.kind == .slot(0) ? nil : "ran \(String(describing: w.modes.wheelFlash))") },
+        wheelDid(w, holds: 1, picks: 1) ?? (w.modes.wheelFlash?.kind == .slot(0) && w.modes.wheelFlash?.early == true ? nil
+            : "ran \(String(describing: w.modes.wheelFlash))") },
+    "wheel: a pick once the ring has settled isn't early": { w in
+        wheelDid(w, holds: 1, picks: 1, shows: 1) ?? (w.modes.wheelFlash?.kind == .slot(2) && w.modes.wheelFlash?.early == false ? nil
+            : "ran \(String(describing: w.modes.wheelFlash))") },
+    "gestures: After a pause, a pick on its ring says nothing about early": { w in
+        w.modes.wheelFlash?.kind == .slot(2) && w.modes.wheelFlash?.early == nil ? nil : "ran \(String(describing: w.modes.wheelFlash))" },
     "wheel: rolled out and back to the centre runs nothing": { w in wheelDid(w, holds: 1, picks: 0, shows: 1) },
     "wheel: ring turns zoom while held, never scroll, and the release runs nothing": { w in
         let keys = w.outLog.filter { $0.hasPrefix("key down") }.count
@@ -3561,6 +3582,17 @@ do {
     let missing = ["press→action", "release→action", "roll→action", "release→app switch"].filter { !line.contains($0 + " ") }
     if missing.isEmpty { print("  ✓ timing: the cases above were measured (\(line.prefix(110))…)") }
     else { failed += 1; print("  ✗ timing: nothing measured for \(missing) in “\(line)”") }
+    // "Press primes everything": a release's action is sent within one display frame (the
+    // engine's own share of it: from the event to the key queue's work having run).
+    if let late = PressTiming.shared.slipped() {
+        failed += 1
+        print("  ✗ timing: \(late)")
+    } else if let s = PressTiming.shared.stat(.releaseToAction) {
+        print("  ✓ timing: release→action within a frame (\(s.count)×, med \(PressTiming.ms(s.median)) ms, worst \(PressTiming.ms(s.worst)) ms; a frame is \(PressTiming.ms(PressTiming.frame())) ms)")
+    }
+    // And the press asked the overlay to get each hold's ring ready before it was due.
+    if FakeIO.primes > 0 { print("  ✓ timing: the press primed the ring (\(FakeIO.primes) holds)") }
+    else { failed += 1; print("  ✗ timing: no press primed its ring") }
     let t = PressTiming()
     for ms in [3.0, 1.0, 2.0, 40.0, 2.5] { t.add(.releaseToAction, from: 100, to: 100 + ms / 1000) }
     t.add(.releaseToAction, from: 100, to: 99)      // backwards: not a measurement

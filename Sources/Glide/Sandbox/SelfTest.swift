@@ -1213,12 +1213,265 @@ enum SelfTest {
             return "sidebar, trackball, menu-bar icon, Overview line and status.json follow an unplug and a replug at once"
         }
 
+        step("press primes everything") {
+            // The ring's first frame, measured the way the app measures it (`PressTiming`: from
+            // the engine asking to the frame's commit), with the real overlay in its real window.
+            // The window is never ordered in here, so this is the main thread's share (building,
+            // laying out and committing the first frame), not the window server's or the glass.
+            let panel = WheelOverlayPanel.shared
+            let timing = PressTiming.shared
+            let rings = [ButtonGesture.standard, .media, .tabs, .zoom].map {
+                WheelOverlayModel.of($0, level: nil, selected: nil, dot: .zero, ring: nil)
+            }
+            let at = CGPoint(x: 400, y: 400)
+            @MainActor func hold(_ ring: WheelOverlayModel, primed: Bool, rolled: Bool = false) {
+                if primed {
+                    panel.primeWheel(ring)   // the press
+                    Sandbox.spin(0.02)       // (some of) the designed wait
+                }
+                var shown = ring
+                if rolled { shown.dot = CGPoint(x: 0.5, y: -0.25); shown.selected = 0 }   // rolled, and lit one, before it came up
+                timing.askedFor(.ring, pressedAt: PressTiming.now())
+                panel.showWheel(shown, at: at)
+                Sandbox.spin(0.03)           // this turn's commit closes the measurement
+                panel.hideWheel()
+                Sandbox.spin(0.14)           // the drain, and the window going
+            }
+            @MainActor func measure(primed: Bool) throws -> PressTiming.Stat {
+                timing.reset()
+                for i in 0..<6 { hold(rings[i % rings.count], primed: primed, rolled: i % 3 == 2) }
+                return try unwrap(PerfProbe.press().ringFirstFrame, "the ring's first frame wasn't measured")
+            }
+            let cold = try measure(primed: false)
+            let warm = try measure(primed: true)
+            try check(cold.count == 6 && warm.count == 6, "measured \(cold.count) and \(warm.count) rings, not 6 and 6")
+            let frame = PerfProbe.frame
+            if let late = timing.slipped(frame: frame) { throw Failure("with the press priming it: \(late)") }
+            try check(PerfProbe.press().releaseToAction == nil, "something posted an action in the sandbox")
+            timing.reset()
+
+            // What priming is allowed to do: lay the ring out, and nothing anyone could see.
+            let state = panel.state
+            try check(state.model == nil && !state.shown && !state.primed, "a ring was left behind")
+            let before = state.appearCount
+            panel.primeWheel(rings[0])
+            try check(state.primed && !state.shown && state.appearCount == before + 1, "the press didn't lay the ring out")
+            panel.primeWheel(rings[0])
+            try check(state.appearCount == before + 1, "the same ring was laid out twice")
+            var rolled = rings[0]
+            rolled.dot = CGPoint(x: 0.25, y: 0)
+            panel.showWheel(rolled, at: at)
+            try check(state.shown && !state.primed && state.appearCount == before + 1 && state.model == rolled,
+                      "showing the ring the press laid out built it again")
+            panel.primeWheel(rings[1])
+            try check(state.model == rolled && !state.primed, "a press changed a ring that was up")
+            panel.hideWheel()
+            Sandbox.spin(0.14)
+            try check(state.model == nil && !state.shown, "the ring didn't go")
+            // A different ring from the one laid out (another button's): built afresh, as it always was.
+            panel.primeWheel(rings[0])
+            panel.showWheel(rings[1], at: at)
+            try check(state.appearCount == before + 3 && state.model == rings[1] && !state.primed, "a different ring reused the one laid out")
+            panel.hideWheel()
+            Sandbox.spin(0.14)
+            // No visible change: a ring the press laid out ends up drawn exactly as one built at
+            // the show does, once its entrance has played.
+            let content = try unwrap(panel.contentForTests, "the ring has no window")
+            @MainActor func settled(primed: Bool) throws -> NSBitmapImageRep {
+                if primed { panel.primeWheel(rings[3]); Sandbox.spin(0.02) }
+                panel.showWheel(rings[3], at: at)
+                Offscreen.settleDown(content, seconds: 0.5)
+                let rep = try unwrap(Offscreen.image(of: content, scale: 1), "the ring didn't draw")
+                panel.hideWheel()
+                Sandbox.spin(0.14)
+                return rep
+            }
+            let built = try settled(primed: false), laidOut = try settled(primed: true)
+            try check(!Offscreen.isBlank(built), "the ring drew nothing")
+            let a = try unwrap(built.bitmapData, "no pixels"), b = try unwrap(laidOut.bitmapData, "no pixels")
+            let bytes = built.bytesPerRow * built.pixelsHigh
+            try check(bytes == laidOut.bytesPerRow * laidOut.pixelsHigh, "the two rings are different sizes")
+            var differing = 0
+            for i in 0..<bytes where abs(Int(a[i]) - Int(b[i])) > 24 { differing += 1 }
+            try check(differing * 200 < bytes, "a primed ring settles differently from one built at the show (\(differing) of \(bytes) bytes differ)")
+
+            // A press whose ring never comes up leaves nothing on screen and nothing running.
+            panel.primeWheel(rings[2])
+            try check(state.primed && !state.shown && NSApp.windows.allSatisfy { !$0.isVisible }, "a primed ring is on screen")
+            func ms(_ s: Double) -> String { String(format: "%.1f", s * 1000) }
+            let same = "settles to the same picture (\(differing) of \(bytes) bytes differ)"
+            return "ring's first frame, offscreen: not primed med \(ms(cold.median)) worst \(ms(cold.worst)) ms; "
+                + "primed at the press med \(ms(warm.median)) worst \(ms(warm.worst)) ms; one frame is \(ms(frame)) ms; \(same)"
+        }
+
         step("welcome tour") {
             for s in WelcomeTourView.Step.allCases {
                 try draw(WelcomeTourView(model: model, step: s), "tour step \(s.rawValue + 1)", size: RenderUI.windowSize)
             }
             try draw(WelcomeTourView(model: model, step: .buttons, found: [0, 2]), "tour, two buttons found", size: RenderUI.windowSize)
             return "\(WelcomeTourView.Step.allCases.count) steps drawn, and a step part-done"
+        }
+
+        step("the strike ends the tour, and every way out takes it off") {
+            // The tour's last step: hold the top-right button, roll any way, let go. The engine
+            // isn't running here, so its part is what it's handed (`engineConfig`) and what it
+            // reports back, fed through the same two callbacks it uses (`onStatus`, `onModes`).
+            let d = UserDefaults.standard
+            let saved = (model.status, model.hasAccessibility, model.hasInputMonitoring, model.config, model.showingWelcomeTour,
+                         model.modes, d.object(forKey: WelcomeTour.doneKey), model.struck, model.strikeFumbles)
+            defer {
+                model.armStrike(false)
+                // Closing the tour offers the next card 1.2 s later (`showNextPrompt`). The tour
+                // "stays up" until those have come and gone, so none of them shows anything here
+                // (What's New and the rest are checked, in their order, further down).
+                model.showingWelcomeTour = true
+                Sandbox.spin(1.3)
+                model.status = saved.0; model.hasAccessibility = saved.1; model.hasInputMonitoring = saved.2
+                model.config = saved.3; model.showingWelcomeTour = saved.4; model.modes = saved.5
+                d.set(saved.6, forKey: WelcomeTour.doneKey)
+                model.struck = saved.7; model.strikeFumbles = saved.8
+                model.pushToEngine()
+            }
+            model.hasAccessibility = true; model.hasInputMonitoring = true
+            model.config.enabled = true
+            model.engine.onStatus?(DemoData.connected)
+            let mine = model.config
+            let plain = model.engineConfig
+            @MainActor func on() -> [Int] {
+                model.engineConfig.buttons.filter { $0.value == .gesture(Strike.gesture) }.keys.sorted()
+            }
+            @MainActor func off(_ why: String) throws {
+                try check(on().isEmpty && model.engineConfig == plain, "\(why): the gesture is still on the engine's buttons")
+                try check(!model.modes.gesturePractice, "\(why): practice is still on")
+                try check(model.strikePractice == nil && model.strikeButtons.isEmpty, "\(why): something of the strike is still running")
+                try check(model.config == mine, "\(why): the saved settings changed")
+            }
+            @MainActor func open() {
+                model.showingWelcomeTour = true
+                model.armStrike(true)   // what the last step does as it comes up in the active window
+            }
+            var exits: [String] = []
+
+            // On: the top-right button only, every way the same, nothing sent, nothing saved.
+            open()
+            try check(on() == [3] && model.engineConfig.buttons.count == 1 && model.engineConfig.chords.isEmpty,
+                      "the engine has \(model.engineConfig.buttons.keys.sorted()), not the top-right button alone")
+            try check(model.engineConfig.buttons[0] == nil, "the bottom-left button was given something")
+            try check(model.modes.gesturePractice, "practice isn't on: a roll would really send something")
+            try check(model.config == mine, "arming changed the saved settings")
+            let g = Strike.gesture
+            try check(g.show == .atOnce && [g.up, g.down, g.left, g.right].allSatisfy { $0 == g.up && $0?.firable != nil },
+                      "the strike's gesture isn't the same every way")
+            try check(d.object(forKey: "GlideConfig").flatMap { $0 as? Data }.map { !String(decoding: $0, as: UTF8.self).contains(Bundle.main.bundleIdentifier ?? "?") } ?? true,
+                      "the strike's gesture was written into the settings")
+
+            // Skip Tour, esc and the window closing (all `closeWelcomeTour`): closed, no strike.
+            let struck = model.struck
+            model.closeWelcomeTour()
+            try off("Skip")
+            try check(!model.showingWelcomeTour && model.struck == struck && d.bool(forKey: WelcomeTour.doneKey), "Skip didn't just close the tour")
+            exits.append("Skip")
+
+            // Back, or another app in front: the step isn't up in the active window any more.
+            open(); model.armStrike(false)
+            try off("Back")
+            exits.append("Back / another app")
+
+            // Unplugged, and plugged back in.
+            open()
+            model.engine.onStatus?(Engine.Status(tapActive: true, listening: true))
+            try off("unplugged")
+            try check(model.strikeOffer == .none, "with no trackball the page still asks for the gesture")
+            model.engine.onStatus?(DemoData.connected)
+            try check(on() == [3], "plugged back in, the gesture didn't come back")
+            exits.append("unplug")
+
+            // Paused, and resumed.
+            model.config.enabled = false
+            try check(on().isEmpty && !model.modes.gesturePractice && model.strikeOffer == .none, "paused, the gesture is still on")
+            model.config.enabled = true
+            try check(on() == [3], "resumed, the gesture didn't come back")
+            exits.append("pause")
+
+            // A permission taken away.
+            model.hasInputMonitoring = false
+            model.pushToEngine()   // the page does this when what it can offer changes
+            try off("permission gone")
+            model.hasInputMonitoring = true
+            model.pushToEngine()
+            exits.append("permission")
+
+            // Another Kensington, whose buttons sit differently: any button but the left click.
+            var other = DemoData.connected
+            other.deviceIsBeta = true
+            model.engine.onStatus?(other)
+            try check(model.strikeOffer == .anyButton && on() == [1, 2, 3, 4], "another Kensington has it on \(on())")
+            try check(model.engineConfig.buttons[0] == nil, "another Kensington's left click was given something")
+            model.engine.onStatus?(DemoData.connected)
+            exits.append("another Kensington")
+
+            // The gesture. A hold let go without a roll isn't it; the page says how.
+            var modes = model.modes
+            let fumbles = model.strikeFumbles
+            modes.wheelHeld = true
+            model.engine.onModes?(modes)
+            modes.wheelHeld = false
+            modes.wheelFlash = Engine.WheelFlash(seq: 1, kind: .tap, buttons: [3])
+            model.engine.onModes?(modes)
+            try check(model.showingWelcomeTour && model.strikeFumbles == fumbles + 1 && model.struck == struck, "a tap struck")
+            // Another button's gesture isn't it either.
+            modes.wheelFlash = Engine.WheelFlash(seq: 2, kind: .slot(4), buttons: [2])
+            model.engine.onModes?(modes)
+            try check(model.showingWelcomeTour && model.struck == struck, "another button struck")
+            // Held and rolled: nothing until the button is up. Then everything at once.
+            model.config.enabled = true
+            modes.wheelHeld = true
+            modes.wheelFlash = Engine.WheelFlash(seq: 3, kind: .repeated(6), buttons: [3])
+            model.engine.onModes?(modes)
+            try check(model.showingWelcomeTour && model.struck == struck, "it struck while the button was still down")
+            modes.wheelHeld = false
+            modes.wheelFlash = Engine.WheelFlash(seq: 4, kind: .slot(6), buttons: [3])   // rolled left: any way counts
+            model.engine.onModes?(modes)
+            try check(!model.showingWelcomeTour && model.struck == struck + 1 && model.config.enabled && d.bool(forKey: WelcomeTour.doneKey),
+                      "the gesture didn't close the tour, light the orb and leave Glideball on")
+            try off("the gesture")
+            exits.append("the gesture")
+            // A quick flick, before any ring: the same.
+            open()
+            modes.gestureHeld = false
+            modes.gestureFlash = Engine.GestureFlash(seq: 1, direction: .down, buttons: [3], chain: 1)
+            model.engine.onModes?(modes)
+            try check(!model.showingWelcomeTour && model.struck == struck + 2, "a quick flick didn't strike")
+            try off("a flick")
+            // Nothing the engine says afterwards strikes again.
+            modes.wheelFlash = Engine.WheelFlash(seq: 5, kind: .slot(0), buttons: [3])
+            model.engine.onModes?(modes)
+            try check(model.struck == struck + 2, "it struck with the tour closed")
+
+            // The button and Return: the same thing, with no trackball at all, and from a pause.
+            model.engine.onStatus?(Engine.Status(tapActive: true, listening: true))
+            model.config.enabled = false
+            let paused = model.config
+            open()
+            try check(on().isEmpty && model.strikeOffer == .none, "no trackball, and the gesture is on")
+            model.strike()
+            try check(!model.showingWelcomeTour && model.struck == struck + 3 && model.config.enabled, "the button didn't do what the gesture does")
+            var resumed = paused
+            resumed.enabled = true
+            try check(model.config == resumed, "the button changed more than the on switch")
+            exits.append("the button / Return")
+            model.config = mine
+            model.engine.onStatus?(DemoData.connected)
+
+            // The page, in each of its three forms, and the orb's light part-way.
+            for (status, what) in [(DemoData.connected, "an Expert Mouse"), (other, "another Kensington"),
+                                   (Engine.Status(tapActive: true, listening: true), "no trackball")] {
+                model.status = status
+                try draw(WelcomeTourView(model: model, step: .done, fumbled: status.deviceConnected), "the last step with \(what)", size: RenderUI.windowSize)
+                try draw(WelcomeTourView(model: model, step: .done), "the last step with \(what), smallest", size: AppDelegate.mainWindowMinSize)
+            }
+            try draw(StrikeLight(count: 0, frozen: 0.5), "the orb's light")
+            return "on the top-right button only, nothing sent or saved; off by \(exits.joined(separator: ", ")); a tap and another button don't count; any way does"
         }
 
         step("sheets and panels") {
@@ -1554,6 +1807,118 @@ enum SelfTest {
             // The server takes at most 4 KB (website/netlify/lib/usage.mjs, MAX_PING_BYTES).
             try check(data.count < 2600, "the stats are \(data.count) bytes; keep them well under the server's 4 KB")
             return "\(data.count) bytes, nothing named"
+        }
+
+        step("the mastery hint is said once, and its count goes nowhere") {
+            // Someone on Right away who keeps picking before the ring has finished appearing is told
+            // once, under that button's "Show the ring". The tally is in memory; one flag is in
+            // this Mac's defaults; neither is in stats, crash reports, settings, sync or shares.
+            let d = UserDefaults.standard
+            let before = model.config
+            let modesBefore = model.modes
+            defer {
+                model.config = before
+                model.modes = modesBefore
+                d.removeObject(forKey: RingHint.doneKey)
+            }
+            d.removeObject(forKey: RingHint.doneKey)
+            var rightAway = ButtonGesture.standard
+            rightAway.show = .atOnce
+            var afterPause = rightAway
+            afterPause.show = .afterPause
+
+            // The rule, on a hint of its own: nine of the last twelve.
+            let rule = RingHint()
+            for _ in 0..<(RingHint.window - 1) { rule.saw(early: true, buttons: [3]) }
+            try check(rule.offeredFor == nil, "it was said after \(RingHint.window - 1) picks")
+            rule.saw(early: true, buttons: [3])
+            try check(rule.shows(for: [3], gesture: rightAway), "twelve early picks in a row didn't bring it")
+            try check(!rule.shows(for: [2], gesture: rightAway) && !rule.shows(for: [3], gesture: afterPause),
+                      "it shows under another button, or one that isn't on Right away")
+            let seldom = RingHint()
+            for i in 0..<200 { seldom.saw(early: i % 3 == 0, buttons: [3]) }   // a third of them early
+            try check(seldom.offeredFor == nil && seldom.held <= RingHint.window, "someone who mostly waits for the ring was told")
+            let mostly = RingHint()
+            for i in 0..<RingHint.window { mostly.saw(early: i % 4 != 0, buttons: [2, 3]) }   // nine of twelve, on a combo
+            try check(mostly.shows(for: [3, 2], gesture: rightAway), "nine of twelve didn't bring it")
+
+            // The real path: what the engine reports, through the callback it uses.
+            let hint = model.ringHint
+            try check(!hint.done && hint.offeredFor == nil && hint.held == 0, "the hint didn't start from nothing")
+            let promptBefore = model.promptShowing, toastBefore = model.toast
+            model.config.buttons[3] = .gesture(rightAway)
+            let statsBefore = try JSONEncoder().encode(ShareData.shared.stats(model, installID: "GB-TEST"))
+            let settingsAsSet = model.config, settingsBefore = try JSONEncoder().encode(model.config)
+            var modes = model.modes
+            modes.gesturePractice = false
+            var seq = 1000
+            @MainActor func pick(_ kind: Engine.WheelFlash.Kind = .slot(2), early: Bool?, practice: Bool = false) {
+                seq += 1
+                modes.gesturePractice = practice
+                modes.wheelFlash = Engine.WheelFlash(seq: seq, kind: kind, buttons: [3], early: early)
+                model.engine.onModes?(modes)
+            }
+            for _ in 0..<40 {
+                pick(early: nil)                    // a ring that isn't on Right away
+                pick(early: true, practice: true)   // Try it
+                pick(.tap, early: nil)
+                pick(.repeated(2), early: nil)
+            }
+            try check(hint.held == 0 && hint.offeredFor == nil, "picks that aren't real right-away picks were counted")
+            for _ in 0..<RingHint.window { pick(early: true) }
+            try check(hint.shows(for: [3], gesture: rightAway), "twelve early picks from the engine didn't bring it")
+
+            // Said in place, and nowhere else: no card, no toast, nothing over the window.
+            try check(model.promptShowing == promptBefore && model.toast == toastBefore, "the hint put something over the window")
+            try draw(GestureEditor(model: model, button: 3, gesture: .constant(rightAway)).frame(width: 600).padding(20), "the hint under Show the ring")
+
+            // Where it isn't: the tally and the offer change nothing that leaves this Mac.
+            @MainActor func clean(_ data: Data, _ what: String) throws {
+                let text = String(decoding: data, as: UTF8.self)
+                for word in ["RingHint", "ringHint", "\"early\"", "mastery"] {
+                    try check(!text.contains(word), "\(what) has “\(word)” in it")
+                }
+            }
+            let statsAfter = try JSONEncoder().encode(ShareData.shared.stats(model, installID: "GB-TEST"))
+            func differing(_ a: Data, _ b: Data) -> [String] {
+                let x = (try? JSONSerialization.jsonObject(with: a)) as? [String: Any] ?? [:]
+                let y = (try? JSONSerialization.jsonObject(with: b)) as? [String: Any] ?? [:]
+                return Set(x.keys).union(y.keys).filter { "\(String(describing: x[$0]))" != "\(String(describing: y[$0]))" }.sorted()
+            }
+            try check(differing(statsBefore, statsAfter).isEmpty, "the stats changed with the tally: \(differing(statsBefore, statsAfter))")
+            try clean(statsAfter, "the stats")
+            try clean(statsBefore, "the stats")
+            try check(model.config == settingsAsSet, "the settings (and so backups and sync) changed with the tally")
+            try clean(settingsBefore, "the settings")
+            try clean(try JSONEncoder().encode(CrashReports.Report.example(installID: "x")), "a crash report")
+            try clean(try unwrap(model.share(parts: Set(SharePart.fixed)), "no share").fileData(), "a share")
+            for choice in ShareChoice.allCases {
+                let preview = SendPreview.make(choice, model: model, installID: "GB-TEST")
+                for field in preview.crash + preview.stats {
+                    try check(!field.label.localizedCaseInsensitiveContains("hint") && !field.value.localizedCaseInsensitiveContains("ringhint"),
+                              "Privacy's “What this sends” has the hint in it (\(field.label))")
+                }
+            }
+            try check(!d.dictionaryRepresentation().keys.contains { $0.contains("RingHint") }, "the tally was written to defaults before the hint was answered")
+            try check(!((try? String(contentsOf: Diagnostics.url, encoding: .utf8)) ?? "").contains("early"), "the scroll log says something about early picks")
+
+            // Acted on: the button switches this gesture to After a pause, and that was the once.
+            model.config.buttons[3] = .gesture(afterPause)
+            hint.finish()
+            try check(hint.done && hint.offeredFor == nil && d.bool(forKey: RingHint.doneKey), "acting on it didn't finish it")
+            model.config.buttons[3] = .gesture(rightAway)
+            for _ in 0..<60 { pick(early: true) }
+            try check(hint.offeredFor == nil && hint.held == 0 && !hint.shows(for: [3], gesture: rightAway), "it was said again after being acted on")
+            // The next launch reads the flag: never again.
+            let relaunched = RingHint()
+            for _ in 0..<60 { relaunched.saw(early: true, buttons: [3]) }
+            try check(relaunched.done && relaunched.offeredFor == nil && relaunched.held == 0, "it came back after a relaunch")
+            // Dismissed instead: the same.
+            rule.finish()
+            for _ in 0..<60 { rule.saw(early: true, buttons: [3]) }
+            try check(rule.done && !rule.shows(for: [3], gesture: rightAway), "it was said again after being dismissed")
+            return "nine early picks of twelve on a right-away ring; under that button only; once, by the button or the x; "
+                + "nothing in stats, settings, crash reports, shares, defaults or the log until it's answered, then one flag"
         }
 
         step("the sharing name stays private") {

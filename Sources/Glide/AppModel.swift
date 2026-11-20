@@ -110,6 +110,20 @@ final class AppModel {
     let aiSetup = AISetupFlow()
     /// The Welcome Tour over the main window (see WelcomeTour.swift).
     var showingWelcomeTour = false
+    /// The tour's last step is up in the active window: a hold and a roll start Glideball
+    /// ("the strike", WelcomeTour.swift). `strikeButtons` are the buttons the engine has it on
+    /// right now (none unless a trackball is there to do it with), `strikeRolled` that the hold
+    /// in progress has rolled far enough. None of it is ever saved.
+    @ObservationIgnored var strikeWanted = false
+    @ObservationIgnored var strikeButtons: [Int] = []
+    @ObservationIgnored var strikeRolled = false
+    @ObservationIgnored var strikePractice: Task<Void, Never>?
+    /// The one mastery hint: "you usually pick before the ring shows" (RingHint.swift).
+    let ringHint = RingHint()
+    /// Counts each strike (the sidebar's orb lights once for each), and each hold let go
+    /// without a roll (the tour says how).
+    var struck = 0
+    var strikeFumbles = 0
     /// The "A small favor" card over the main window (see `showNextPrompt()`).
     var showingSmallFavor = false
     /// What's New over the main window (see WhatsNew.swift).
@@ -334,8 +348,22 @@ final class AppModel {
         engine = Engine(config: initial)
         engine.telemetry.restore(Self.loadTotals())
         delight = DelightCenter(config: cfg)
-        engine.onStatus = { [weak self] s in self?.status = s }
-        engine.onModes = { [weak self] m in self?.modes = m }
+        engine.onStatus = { [weak self] s in
+            guard let self else { return }
+            self.status = s
+            if self.strikeWanted { self.pushToEngine() }   // unplugged or plugged in on the tour's last step
+        }
+        engine.onModes = { [weak self] m in
+            guard let self else { return }
+            let was = self.modes
+            self.modes = m
+            self.strikeSaw(m, was: was)
+            // A real pick on a right-away ring (not Try it, not the tour's): early or not.
+            if let f = m.wheelFlash, f != was.wheelFlash, case .slot = f.kind, let early = f.early,
+               !m.gesturePractice, self.strikeButtons.isEmpty {
+                self.ringHint.saw(early: early, buttons: f.buttons)
+            }
+        }
         tryOn.push = { [weak self] in self?.pushToEngine() }
         tryOn.showHUD = { [weak self] on in
             guard let self else { return }
@@ -474,6 +502,7 @@ final class AppModel {
             resolved.buttons = [:]
             resolved.chords = []
         }
+        strikeLay(over: &resolved)   // the tour's last step: its one gesture, worn by the engine only
         guard resolved != pushedConfig else { return }
         pushedConfig = resolved
         engine.update(resolved)

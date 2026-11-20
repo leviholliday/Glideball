@@ -209,11 +209,24 @@ final class Sounds: @unchecked Sendable {
         }
     }
 
+    /// A press that may tick soon (a Gestures hold's ring): the tick's file is read and its little
+    /// engine built now, off the caller's thread, so the first tick doesn't wait for either.
+    /// Nothing plays and the audio hardware isn't started; with Sounds or `kind` off, nothing happens.
+    func warmTicks(kind: SoundKind = .ticks) {
+        guard enabled, !silentRun, isOn(kind) else { return }
+        queue.async { [self] in _ = tickGraph() }
+    }
+
     private func tickEngine() -> AVAudioPlayerNode? {
-        if let engine, let tickNode {
-            if !engine.isRunning { try? engine.start() }
-            return engine.isRunning ? tickNode : nil
-        }
+        guard let engine = tickGraph(), let tickNode else { return nil }
+        if !engine.isRunning { try? engine.start() }
+        return engine.isRunning ? tickNode : nil
+    }
+
+    /// The tick's engine, with its buffer loaded and its nodes connected: built on first use,
+    /// not started. Only on `queue`.
+    private func tickGraph() -> AVAudioEngine? {
+        if let engine { return engine }
         guard !tickUnavailable,
               let url = Bundle.main.url(forResource: Sound.tick.rawValue, withExtension: "caf"),
               let file = try? AVAudioFile(forReading: url),
@@ -227,9 +240,9 @@ final class Sounds: @unchecked Sendable {
         e.attach(speed)
         e.connect(node, to: speed, format: buffer.format)
         e.connect(speed, to: e.mainMixerNode, format: buffer.format)
-        do { try e.start() } catch { tickUnavailable = true; return nil }
+        e.prepare()
         engine = e; tickNode = node; varispeed = speed; tickBuffer = buffer
-        return node
+        return e
     }
 
     private func start(_ player: AVAudioPlayer) {

@@ -129,7 +129,39 @@ final class PressTiming: @unchecked Sendable {
         return "timing (ms): " + parts.joined(separator: " · ")
     }
 
-    private static func ms(_ seconds: Double) -> String {
+    /// One series so far: how many, the median of the last `keep` and the worst since launch (seconds).
+    struct Stat: Equatable {
+        var count: Int
+        var median: Double
+        var worst: Double
+    }
+
+    func stat(_ series: Series) -> Stat? {
+        lock.lock()
+        defer { lock.unlock() }
+        let s = samples[series.rawValue]
+        guard s.count > 0 else { return nil }
+        let sorted = s.recent.sorted()
+        return Stat(count: s.count, median: sorted[sorted.count / 2], worst: s.worst)
+    }
+
+    /// One frame of a display that refreshes `hz` times a second: what the ring's first frame
+    /// and a release's action each have to stay under ("Press primes everything").
+    static func frame(hz: Int = 60) -> Double { 1 / Double(max(1, hz)) }
+
+    /// The two numbers a press is judged by, and whether either is past one frame: the ring's
+    /// first frame (from the engine asking for it; the designed waits before that don't count)
+    /// and a release's action. Judged on the median, with the worst said beside it: one sample
+    /// on a busy Mac isn't a slip. Nil: both in time (or not measured).
+    func slipped(frame: Double = PressTiming.frame()) -> String? {
+        let late: [String] = [Series.drawRing, .releaseToAction].compactMap { series in
+            guard let s = stat(series), s.median > frame else { return nil }
+            return "\(series.label) med \(Self.ms(s.median)) ms (worst \(Self.ms(s.worst))) is past one frame (\(Self.ms(frame)) ms)"
+        }
+        return late.isEmpty ? nil : late.joined(separator: "; ")
+    }
+
+    static func ms(_ seconds: Double) -> String {
         let v = seconds * 1000
         return v < 10 ? String(format: "%.1f", v) : String(format: "%.0f", v)
     }

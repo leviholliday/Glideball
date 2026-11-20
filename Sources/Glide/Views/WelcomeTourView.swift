@@ -6,6 +6,9 @@ import SwiftUI
 /// a minute, and by the end the scroll ring has glided under your hand and the
 /// pointer is set. Return / → go on, ← goes back, esc skips. Opened by
 /// `AppModel.showingWelcomeTour`; closing it shows the real window underneath.
+///
+/// It ends with the strike (`Strike`, WelcomeTour.swift): hold the top-right button, roll any
+/// way, let go. The button under it and Return do the same thing, and Skip Tour stays.
 struct WelcomeTourView: View {
     @Bindable var model: AppModel
 
@@ -30,15 +33,18 @@ struct WelcomeTourView: View {
     @State private var found: Set<Int>
     /// The first button found: its check bounces, once (the tour's "it works").
     @State private var firstFound: Int?
+    /// The last step: a hold was let go without a roll, so the page says how.
+    @State private var fumbled = false
     @FocusState private var focused: Bool
     @Environment(\.appearsActive) private var appearsActive
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var scheme
 
-    /// `step` other than `.welcome` (and `found`) are for `--render-ui` and `--self-test`, which draw every step.
-    init(model: AppModel, step: Step = .welcome, found: Set<Int> = []) {
+    /// `step` other than `.welcome` (and `found`, `fumbled`) are for `--render-ui` and `--self-test`, which draw every step.
+    init(model: AppModel, step: Step = .welcome, found: Set<Int> = [], fumbled: Bool = false) {
         self.model = model
         _step = State(initialValue: step)
+        _fumbled = State(initialValue: fumbled)
         _found = State(initialValue: found)
         _firstFound = State(initialValue: found.min())
     }
@@ -60,7 +66,6 @@ struct WelcomeTourView: View {
                         .foregroundStyle(.secondary)
                         .keyboardShortcut(.cancelAction)
                         .help("Close the tour (esc). Reopen it from Help › Show Welcome Tour…")
-                        .opacity(step == .done ? 0 : 1)
                 }
                 .padding(.horizontal, 22)
                 .padding(.top, 16)
@@ -90,9 +95,16 @@ struct WelcomeTourView: View {
             focused = true
             updateButtonSuspension()
         }
-        .onDisappear { model.suspendButtonMappings(false) }
+        .onDisappear {
+            model.suspendButtonMappings(false)
+            model.armStrike(false)
+        }
         .onChange(of: step) { updateButtonSuspension() }
         .onChange(of: appearsActive) { updateButtonSuspension() }
+        .onChange(of: model.strikeOffer) { model.pushToEngine() }   // permissions granted, paused, plugged in
+        .onChange(of: model.strikeFumbles) {
+            withAnimation(Theme.Motion.fade) { fumbled = true }
+        }
         .onChange(of: model.pressed) { _, now in
             guard step == .buttons else { return }
             let new = now.intersection(0..<4).subtracting(found)
@@ -164,7 +176,7 @@ struct WelcomeTourView: View {
     private func advance(force: Bool = false) {
         guard force || canAdvance else { return }
         guard let next = Step(rawValue: step.rawValue + 1) else {
-            model.closeWelcomeTour()
+            model.strike()   // the button and Return do what the gesture does
             return
         }
         go(to: next, forward: true)
@@ -183,9 +195,12 @@ struct WelcomeTourView: View {
         }
     }
 
-    /// Only while "Meet your buttons" is on screen in the active window.
+    /// Only while "Meet your buttons" is on screen in the active window. The same for the last
+    /// step's gesture. (A picture or the self-test never arms anything: they draw the page.)
     private func updateButtonSuspension() {
         model.suspendButtonMappings(step == .buttons && appearsActive)
+        if !Sandbox.isActive { model.armStrike(step == .done && appearsActive) }
+        if step != .done { fumbled = false }
     }
 
     // MARK: Pages
@@ -517,14 +532,47 @@ struct WelcomeTourView: View {
     // 5. Done
 
     private var donePage: some View {
-        VStack(spacing: 0) {
+        let offer = model.strikeOffer
+        return VStack(spacing: 0) {
             Spacer(minLength: 0)
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 48))
-                .foregroundStyle(Theme.ok)
-            Text("You’re all set")
-                .font(.system(size: 30, weight: .semibold))
-                .padding(.top, 16)
+            if offer == .none {
+                // No trackball to do it with (or it's paused, or a permission is missing): the button.
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 48))
+                    .foregroundStyle(Theme.ok)
+                Text("You’re all set")
+                    .font(.system(size: 30, weight: .semibold))
+                    .padding(.top, 16)
+            } else {
+                // The strike: the trackball itself, and the one gesture that starts everything.
+                ViewThatFits(in: .vertical) {
+                    stage(120, look: TrackballLook.of(model))
+                    stage(84, look: TrackballLook.of(model))
+                    stage(56, look: TrackballLook.of(model))
+                }
+                Text("Start it with one gesture")
+                    .font(.system(size: 30, weight: .semibold))
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 14)
+                    .accessibilityAddTraits(.isHeader)
+                Text(offer == .topRight
+                     ? "Hold the top-right button, roll the ball any way you like, and let go."
+                     : "Hold any button except left click, roll the ball any way you like, and let go.")
+                    .font(.system(size: 15))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 8)
+                if fumbled {
+                    Text("Almost. Roll the ball a little before you let go.")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Theme.buttons)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 6)
+                        .transition(.opacity)
+                }
+            }
             RowGroup {
                 SettingRow(title: "Pause any time with \(pauseShortcut)",
                            hint: "Your trackball goes straight back to plain macOS. Press it again to resume.",
@@ -544,11 +592,14 @@ struct WelcomeTourView: View {
                 }
             }
             .frame(maxWidth: 480)
-            .padding(.top, 26)
+            .padding(.top, offer == .none ? 26 : 20)
             Spacer(minLength: 0)
-            Text("See this tour again any time from Help › Show Welcome Tour…")
+            Text(offer == .none
+                 ? "See this tour again any time from Help › Show Welcome Tour…"
+                 : "Or press Return. See this tour again any time from Help › Show Welcome Tour…")
                 .font(Theme.Font.hint)
                 .foregroundStyle(.tertiary)
+                .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
     }

@@ -2863,3 +2863,10 @@
 
 /* Import toast: everything that would have changed was left out */
 "Nothing changed. Everything that would have changed was left out." = "Nada mudou. Tudo o que teria mudado ficou de fora.";
+"Start it with one gesture" = "Comece com um único gesto";
+"Hold the top-right button, roll the ball any way you like, and let go." = "Segure o botão superior direito, role a bola para onde quiser e solte.";
+"Hold any button except left click, roll the ball any way you like, and let go." = "Segure qualquer botão menos o do clique esquerdo, role a bola para onde quiser e solte.";
+"Almost. Roll the ball a little before you let go." = "Quase. Role a bola um pouco antes de soltar.";
+"Or press Return. See this tour again any time from Help › Show Welcome Tour…" = "Ou pressione Return. Veja este tour de novo quando quiser em Ajuda › Mostrar Tour de Boas-vindas…";
+"You usually pick before the ring has finished showing. With After a pause, a quick roll just happens and the ring only shows if you wait." = "Você costuma escolher antes de o anel terminar de aparecer. Com “Depois de uma pausa”, uma rolada rápida simplesmente acontece e o anel só aparece se você esperar.";
+"Switch to After a pause" = "Mudar para “Depois de uma pausa”";
