@@ -1,5 +1,13 @@
 [
  {
+  "body": "Allow AI apps: when the 15 minutes end, a suggestion you're already reading stays until you answer it (turning the switch off yourself still takes it down). A suggestion that only ran out of time no longer counts toward the three unapplied ones that turn Allow AI apps off. Fixed: backups written within the same few seconds are always listed in the order they were made, so Undo Last Import puts back the right one. Fixed: glideball:// links with stray parts (an empty port, a fragment) are refused.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `0e70fa0fb54d04f8211011f0765a6c42bebbc1613a5909ad62b7324960c8f179`",
+  "date": "2026-11-21T02:02:25Z",
+  "name": "Glideball 2.10 beta 43",
+  "prerelease": true,
+  "tag": "v2.10-beta.43",
+  "url": "https://github.com/leviholliday/Glideball/releases/tag/v2.10-beta.43"
+ },
+ {
   "body": "New: Allow AI apps, in Settings › General. Turn it on and an AI app on this Mac (Claude's desktop app, Claude Code, or another that can use MCP tools) can read your Glideball setup and suggest changes. Every suggestion opens in the same review as an import, and nothing changes until you apply it. It turns itself off after 15 minutes. Connect an AI app shows what to copy into the AI app so it can find Glideball. This is new and hasn't been tried with every AI app yet.\n\n---\n**Download `Glideball.zip`.** (`Glide.zip` is only for Glide 2.7.1 and older.)\nFirst launch: https://glideball.netlify.app/#install\nGlideball.zip SHA-256: `3eded879c3f13276438658cc03168a41d2f59e9b3fb8108cb77e481cd44f207e`",
   "date": "2026-11-20T17:10:25Z",
   "name": "Glideball 2.10 beta 42",
