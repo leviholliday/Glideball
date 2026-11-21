@@ -375,8 +375,8 @@ extension AppModel {
             apply(incoming, parts: chosen, confirmed: confirmed)
             return
         }
-        // An AI app's proposal: only while it's still the one waiting and Allow AI apps is
-        // still on (checked now, not when the sheet opened).
+        // An AI app's proposal: only while it's still the one waiting (checked now, not when
+        // the sheet opened). The 15 minutes ending while it was up doesn't take it away.
         guard AIAppsCenter.shared.isWaiting(proposal) else {
             show(.init(symbol: "clock", text: String(localized: "The AI app’s suggestion was taken down. Nothing changed.",
                                                      comment: "Toast when a proposal from an AI app expired or Allow AI apps went off while it waited")))

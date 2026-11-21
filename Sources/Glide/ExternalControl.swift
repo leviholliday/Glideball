@@ -146,9 +146,10 @@ final class ExternalControl {
         guard url.scheme?.lowercased() == scheme else { return .failure(.notGlideball) }
         guard url.absoluteString.utf8.count <= maxURLLength else { return .failure(.tooLong) }
         guard let parts = URLComponents(url: url, resolvingAgainstBaseURL: false),
-              parts.user == nil, parts.password == nil, parts.port == nil,
+              parts.user == nil, parts.password == nil, parts.port == nil, parts.fragment == nil,
               parts.percentEncodedPath.isEmpty || parts.percentEncodedPath == "/",
-              let host = parts.percentEncodedHost, !host.isEmpty else { return .failure(.malformed) }
+              let host = parts.percentEncodedHost, !host.isEmpty,
+              isPlainShape(url.absoluteString) else { return .failure(.malformed) }
         // The command is plain letters and hyphens, as typed: "pa%75se" isn't "pause".
         guard host.count <= 32, host.allSatisfy({ $0.isASCII && ($0.isLetter || $0 == "-") }) else {
             return .failure(.unknownCommand)
@@ -170,19 +171,31 @@ final class ExternalControl {
         return .success((command, argument))
     }
 
+    /// The documented shape and nothing more, read from the URL's own text:
+    /// "glideball://", the command, at most one "/", then nothing or "?…". No user or
+    /// password ("@"), no port (":"), no fragment ("#"), not even empty ones.
+    /// URLComponents can't be asked: it gives an empty port ("glideball://pause:") as no
+    /// port at all, so that URL would pass for "glideball://pause".
+    static func isPlainShape(_ text: String) -> Bool {
+        let prefix = scheme + "://"
+        guard text.count > prefix.count, text.prefix(prefix.count).lowercased() == prefix, !text.contains("#") else { return false }
+        let authority = text.dropFirst(prefix.count).prefix(while: { $0 != "/" && $0 != "?" })
+        return !authority.isEmpty && !authority.contains(":") && !authority.contains("@")
+    }
+
     /// nil when the URL isn't glideball://import; otherwise the share it carries, or
     /// why it's ignored. As strict as `parse`: one `d`, nothing in the path, no user,
-    /// password or port, and the share itself decoded with every check in SharedSetup.
+    /// password, port or fragment, and the share itself decoded with every check in SharedSetup.
     static func parseImport(_ url: URL) -> Result<SharedSetup, Rejection>? {
         guard url.scheme?.lowercased() == scheme else { return nil }
         let text = url.absoluteString
         guard let parts = URLComponents(string: String(text.prefix(maxImportURLLength + 1))),
               parts.percentEncodedHost?.lowercased() == "import" else { return nil }
         guard text.utf8.count <= maxImportURLLength else { return .failure(.tooLong) }
-        guard parts.user == nil, parts.password == nil, parts.port == nil,
+        guard parts.user == nil, parts.password == nil, parts.port == nil, parts.fragment == nil,
               parts.percentEncodedPath.isEmpty || parts.percentEncodedPath == "/" else { return .failure(.malformed) }
         // "glideball://import:?d=…" has an empty port, which URLComponents gives as none.
-        guard !text.dropFirst(scheme.count + 3).prefix(while: { $0 != "/" && $0 != "?" && $0 != "#" }).contains(":") else { return .failure(.malformed) }
+        guard isPlainShape(text) else { return .failure(.malformed) }
         let items = parts.queryItems ?? []
         guard items.count <= maxQueryItems else { return .failure(.badParameter) }
         let values = items.filter { $0.name == "d" }

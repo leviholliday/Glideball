@@ -11,6 +11,11 @@ import Observation
 // locks, when Glideball quits, and after three proposals in a row were turned down. It
 // doesn't care whether Glideball is paused: it only ever changes settings.
 //
+// When the 15 minutes end by themselves, the connection closes (the socket file goes, every
+// request is refused, the countdown goes), but a proposal the person is already reading
+// stays up until they answer it or its own five minutes end, and Apply still works for it.
+// Any other way of going off is a deliberate stop and takes the proposal down with it.
+//
 // A proposal is a setup code, so it takes the road every setup code takes: read by
 // `SetupCode.read`, shown in the review sheet (`IncomingSetup`, source `.aiApp`), applied
 // by `AppModel.apply` with a "before AI setup" checkpoint and Undo, red-flagged shortcuts
@@ -91,23 +96,26 @@ final class AIAppsCenter: AIAppsHost {
     }
 
     /// The person turned it off (the switch, Stop), or Glideball is quitting, the Mac is going
-    /// to sleep or the screen locked. A proposal that was waiting is taken down; nothing changes.
+    /// to sleep or the screen locked. A proposal that was waiting is taken down (one that
+    /// outlived the 15 minutes too); nothing changes.
     func turnOff() {
-        guard isOn || listener != nil || gate.isOpen else { return }
+        guard isOn || listener != nil || gate.isOpen || service.openProposal != nil else { return }
         shutDown()
     }
 
-    /// Once a second while it's on (and by the self-test): the countdown, a proposal's five
-    /// minutes, and the end of the fifteen.
+    /// Once a second while it's on or a proposal is still up (and by the self-test): the
+    /// countdown, a proposal's five minutes, and the end of the fifteen.
     func tick() {
         reconcile()
         service.tick()
         let left = gate.remaining
         guard left > 0 else {
             if isOn || listener != nil {
-                shutDown()
+                windowEnded()
                 AppModel.shared.show(.init(symbol: "clock.badge.checkmark", text: String(localized: "Allow AI apps turned itself off.", comment: "Toast when the 15 minutes of Allow AI apps are up")))
             }
+            // The timer only has a proposal's five minutes left to watch; without one it stops.
+            if service.openProposal == nil { stopTimer() }
             return
         }
         secondsLeft = Int(left.rounded(.up))
@@ -120,22 +128,44 @@ final class AIAppsCenter: AIAppsHost {
         service.resolved(proposal: id, applied: nil)
     }
 
+    /// A deliberate stop: nothing gets in from here on, and a waiting proposal is taken down.
     private func shutDown() {
-        service.closeGate()   // refuses from here on, and takes a waiting proposal down
+        service.closeGate()
+        closeConnection()
+        stopTimer()
+    }
+
+    /// The 15 minutes ended by themselves: nothing gets in from here on (the socket file is
+    /// gone and the service refuses before reading), but a proposal already on screen stays.
+    /// Nothing is sent to the AI app about it afterwards; there's no connection left to send
+    /// on, and the helper only ever hears an answer to a request it made. The timer keeps
+    /// going while that proposal is up, so its own five minutes still end it.
+    private func windowEnded() {
+        service.windowEnded()
+        closeConnection()
+    }
+
+    private func closeConnection() {
         listener?.stop()
         listener = nil
+        secondsLeft = 0
+    }
+
+    private func stopTimer() {
         timer?.invalidate()
         timer = nil
-        secondsLeft = 0
     }
 
     // MARK: What the person did with a proposal
 
-    /// The proposal is still the one waiting, and the switch is still on. Checked again at
-    /// the moment of Apply, so a sheet that outlived either can't apply anything.
+    /// The proposal is still the one waiting: it got in while the switch was on, its five
+    /// minutes aren't up and nobody turned the switch off under it. Checked again at the
+    /// moment of Apply, so a sheet that outlived its proposal can't apply anything. The switch
+    /// itself isn't asked: the 15 minutes may have ended while the person was reading, and
+    /// that only stops new requests.
     func isWaiting(_ proposal: String) -> Bool {
         service.tick()
-        return gate.isOpen && service.openProposal == proposal
+        return service.openProposal == proposal
     }
 
     func resolved(_ proposal: String, applied: [String]?, flaggedLeftOut: Int = 0) {
@@ -188,7 +218,7 @@ extension AppModel {
         return true
     }
 
-    /// A proposal's time is up, or Allow AI apps went off while it waited: its sheet closes.
+    /// A proposal's time is up, or the person turned Allow AI apps off while it waited: its sheet closes.
     func withdrawProposal(_ id: String) {
         if queuedIncoming?.proposal == id { queuedIncoming = nil }
         guard pendingIncoming?.proposal == id else { return }

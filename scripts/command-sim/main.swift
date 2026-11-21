@@ -300,6 +300,72 @@ do {
     check(!FileManager.default.fileExists(atPath: "/tmp/\(marker)"), "nothing was run")
 }
 
+section("only the documented shape: no port, user, password or fragment, even empty ones")
+do {
+    // URLComponents gives an empty port ("pause:") as no port at all, so the parser looks
+    // at the text itself.
+    func isIgnored(_ o: ExternalControl.Outcome) -> Bool { if case .ignored = o { return true } else { return false } }
+    func parsesAsMalformed(_ u: URL) -> Bool { if case .failure(.malformed) = ExternalControl.parse(u) { return true } else { return false } }
+    func nothingHappened(_ r: Rig) -> Bool {
+        r.app.changes.isEmpty && !r.app.paused && r.app.openedTabs.isEmpty && r.app.openedSettings.isEmpty && r.app.updateChecks == 0 && r.explanations == 0
+    }
+    let odd: [String] = [
+        "glideball://pause:", "glideball://pause:80", "glideball://pause:0", "glideball://pause:/", "glideball://pause:?source=raycast",
+        "glideball://PAUSE:", "glideball://resume:", "glideball://toggle:", "glideball://precision:?state=on", "glideball://scroll-mode:?mode=follow",
+        "glideball://pointer-speed:?value=40", "glideball://app-setup:?name=Safari", "glideball://open:?tab=pointer", "glideball://settings:",
+        "glideball://check-for-updates:", "glideball://pause:80:80",
+        "glideball://@pause", "glideball://:@pause", "glideball://user@pause", "glideball://user:@pause", "glideball://:pw@pause",
+        "glideball://user:pw@pause", "glideball://pause@pause", "glideball://precision@pause", "glideball://@precision?state=on",
+        "glideball://pause#", "glideball://pause#now", "glideball://pause/#now", "glideball://pause?#", "glideball://pause?source=raycast#x",
+        "glideball://precision?state=on#off", "glideball://scroll-mode?mode=follow#", "glideball://open#pointer", "glideball://settings?tab=general#privacy",
+        "glideball://pointer-speed?value=40#", "glideball://pause:#", "glideball://@pause:#",
+    ]
+    var unparsed = 0
+    for s in odd {
+        let r = Rig()
+        guard let u = URL(string: s) else { unparsed += 1; continue }   // Foundation refusing it outright is a refusal too
+        check(parsesAsMalformed(u), "\(s) should be malformed to parse")
+        let outcome = r.control.handle(u)
+        check(outcome == .ignored(.malformed), "\(s) → malformed, got \(outcome)")
+        check(nothingHappened(r), "\(s) did something: \(r.app.changes)")
+        // The switch off doesn't change that: no explanation for a URL that isn't a command.
+        let off = Rig()
+        off.allowed = false
+        check(off.send(s) == .ignored(.malformed) && nothingHappened(off), "\(s) with the switch off")
+    }
+    check(unparsed < odd.count / 2, "most of the odd URLs never reached the parser (\(unparsed) of \(odd.count)): this proves little")
+    // Other odd shapes: never performed, whatever the reason given.
+    for s in ["glideball:////pause", "glideball://pause%3A80", "glideball://pause%3A", "glideball://pause%40x", "glideball://pause%23", "glideball://pause;x",
+              "glideball://pause//", "glideball://pause/.", "glideball://[pause]", "glideball://[::1]", "glideball://pause\\", "glideball:// pause", "glideball://pause::",
+              "glideball://pause,resume", "glideball://pause&resume", "glideball://pause=1", "glideball://pause+", "glideball://pause.", "glideball://.pause", "glideball://pause%20"] {
+        let r = Rig()
+        let outcome = r.send(s)
+        check(isIgnored(outcome), "\(s.debugDescription) was \(outcome)")
+        check(nothingHappened(r), "\(s.debugDescription) did something")
+    }
+    // The documented shapes still work, in any case, with or without the one slash or an empty query.
+    for s in ["glideball://pause", "glideball://pause/", "glideball://pause?", "glideball://pause/?", "GLIDEBALL://PAUSE", "Glideball://Pause?source=raycast",
+              "glideball://pause?note=a:b@c"] {
+        let r = Rig()
+        check(r.send(s) == .performed("pause") && r.app.paused, "\(s) should pause")
+    }
+    let r = Rig()
+    check(r.send("glideball://pointer-speed?value=4.5") == .performed("pointer-speed") && r.send("glideball://app-setup?name=com.apple.Safari") != .ignored(.malformed),
+          "an ordinary value was refused")
+    // glideball://import is held to the same shape.
+    let good = SharedSetup.make(.pointer, from: GlideConfig(), look: nil)!.appLink()!.absoluteString
+    let d = String(good.dropFirst("glideball://import?d=".count))
+    var previews = 0
+    r.control.onImport = { _ in previews += 1 }
+    check(r.send(good) == .performed("import") && previews == 1, "a good import link wasn't previewed")
+    for s in ["glideball://import:?d=\(d)", "glideball://import:80?d=\(d)", "glideball://@import?d=\(d)", "glideball://:@import?d=\(d)", "glideball://u@import?d=\(d)",
+              "glideball://import?d=\(d)#", "glideball://import?d=\(d)#x", "glideball://import#?d=\(d)", "glideball://import:#?d=\(d)"] {
+        r.clock += 2
+        let outcome = r.send(s)
+        check(outcome == .ignored(.malformed) && previews == 1, "\(s.prefix(40)) → malformed, got \(outcome)")
+    }
+}
+
 // MARK: - Bursts
 
 section("1,000 in a burst")
